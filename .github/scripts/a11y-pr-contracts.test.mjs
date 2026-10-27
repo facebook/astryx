@@ -226,6 +226,10 @@ describe('selectSpecs', () => {
     expect(
       pr([audit], {title: 'fix: [Component Audit] ChatMessageList:'}),
     ).toEqual([]);
+    // GitHub's startsWith, which the per-audit steps used, ignores case.
+    expect(
+      pr([audit], {title: '[component audit] chatmessagelist: fix'}),
+    ).toEqual([audit.file]);
   });
 
   it('never runs a release-only spec on a pull request', () => {
@@ -339,6 +343,11 @@ describe('component audit axe pass', () => {
     // A name with no audit spec and no entry may have no owned Storybook
     // route; axe would refuse it and fail the job.
     expect(planFor('DialogHeader', named, config)).toBeNull();
+    // A title in another case resolves to the configured name.
+    expect(planFor('dateinput', [], config)?.readySelector).toBe(
+      '[role="dialog"]',
+    );
+    expect(planFor('drawer', named, {})?.components).toEqual(['Drawer']);
     expect(planFor(undefined, named, config)).toBeNull();
   });
 
