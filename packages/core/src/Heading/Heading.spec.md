@@ -168,8 +168,8 @@ Tooltip.
 - `spec:AST-024` owns custom visual types, weight precedence, and the rule that
   visual changes leave accessibility unchanged; FR2, ORD1, and AR1 apply it.
 - `component:Text` shares Heading's type styles and truncation mechanism.
-- `architecture:component-theming-surface` owns the `heading` target and the
-  extensible `type` axis.
+- `architecture:component-theming-surface` sets the rules the `heading` target
+  follows (INV6) and qualifies `type` as a theme-extensible axis (INV14).
 
 ## Verification map
 
