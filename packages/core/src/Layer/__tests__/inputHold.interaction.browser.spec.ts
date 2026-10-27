@@ -148,6 +148,126 @@ test("during a presentation's input hold on a modal dialog, a tap on it or besid
   await expect.poll(async () => (await readLog(page)).taps).toBe(1);
 });
 
+test("a mouse on a touch screen keeps today's behavior during a presentation's hold: the dialog's recognizer takes its press, as with no hold, while a finger's tap before it and right after it is held (spec:AST-094 FR35)", async ({
+  page,
+}) => {
+  const driver = await load(page);
+  await open(page, 'dialog');
+  const action = await centre(page, 'action');
+  await hold(page, 'dialog', 'viewport');
+  await driver.tap(action);
+  await settle(page);
+  expect(await readLog(page)).toEqual({clicks: [], taps: 0, toggles: []});
+  // A mouse or a trackpad on the same touch screen moves to the action and
+  // presses it: the shield lets it through and the gesture host's gate
+  // passes it, so the recognizer on the dialog takes it, as with no hold.
+  await page.mouse.move(action.x - 40, action.y);
+  await page.mouse.move(action.x, action.y, {steps: 4});
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect.poll(async () => (await readLog(page)).taps).toBe(1);
+  // A finger right after it is held again.
+  await driver.tap(action);
+  await settle(page);
+  expect(await readLog(page)).toEqual({clicks: [], taps: 1, toggles: []});
+  await release(page);
+  await driver.tap(action);
+  await expect.poll(async () => (await readLog(page)).taps).toBe(2);
+});
+
+test("a mouse clicks a held light-dismissing popover's action, and a click outside dismisses it, as with no hold, while a finger's tap outside between them is held and leaves it open (spec:AST-094 FR35)", async ({
+  page,
+}) => {
+  const driver = await load(page);
+  await open(page, 'pop');
+  const action = await centre(page, 'popAction');
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const outside = {x: viewport.width / 2, y: viewport.height - 40};
+  const isOpen = async () =>
+    page.evaluate(() =>
+      document.getElementById('pop')?.matches(':popover-open'),
+    );
+  await hold(page, 'pop', 'viewport');
+  // A mouse moves to the popover's action and clicks it: the click lands.
+  await page.mouse.move(action.x - 40, action.y);
+  await page.mouse.move(action.x, action.y, {steps: 4});
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await readLog(page)).clicks)
+    .toEqual(['popAction']);
+  // A finger's tap outside while the shield lets the mouse through is still
+  // held, and its release stays the hold's, so the browser's light dismiss
+  // leaves the popover open.
+  await page.mouse.move(outside.x, outside.y - 40, {steps: 4});
+  await driver.tap(outside);
+  await settle(page);
+  expect(await isOpen()).toBe(true);
+  expect(await readLog(page)).toEqual({
+    clicks: ['popAction'],
+    taps: 0,
+    toggles: ['pop:open'],
+  });
+  // The mouse moves again and clicks outside: the popover light-dismisses
+  // and the page takes the click, as with no hold.
+  await page.mouse.move(outside.x, outside.y, {steps: 4});
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await readLog(page)).toggles)
+    .toEqual(['pop:open', 'pop:closed']);
+  expect((await readLog(page)).clicks).toEqual(['popAction', 'under']);
+});
+
+test('a touch that lands during a hold and lifts after its release reaches nothing to its end: no release, end or click lands anywhere, and the next tap clicks (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const driver = await load(page);
+  await open(page, 'pop');
+  const action = await centre(page, 'popAction');
+  await hold(page, 'pop', 'viewport');
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as {__seen: string[]}).__seen = seen;
+    for (const type of ['pointerup', 'touchend', 'click']) {
+      document.addEventListener(
+        type,
+        event => {
+          const target = event.target as Element;
+          seen.push(
+            `${type}:${target.id === '' ? target.tagName.toLowerCase() : target.id}`,
+          );
+        },
+        true,
+      );
+    }
+  });
+  // A drag that lands during the hold and is still moving when it releases.
+  const dragging = driver.play(
+    drag(action, {x: action.x, y: action.y + 120}, {durationMs: 760, hz: 60}),
+  );
+  await page.waitForTimeout(300);
+  await release(page);
+  await dragging;
+  await settle(page);
+  expect(
+    await page.evaluate(() => (window as unknown as {__seen: string[]}).__seen),
+  ).toEqual([]);
+  expect(await readLog(page)).toEqual({
+    clicks: [],
+    taps: 0,
+    toggles: ['pop:open'],
+  });
+  // The next tap is the layer's: its click lands.
+  await driver.tap(action);
+  await expect
+    .poll(async () => (await readLog(page)).clicks)
+    .toEqual(['popAction']);
+});
+
 test('while a dismissal holds it, its content is inert, focus and keys leave it, and the shield still takes every tap; the release restores both', async ({
   page,
 }) => {
