@@ -566,10 +566,10 @@ outside a menu closes it.
   finger; `presentation="popover"` keeps the released behavior (FR25).
 - `module:DropdownMenu/useMenuPress`: the released 500 ms `longPressDelayMs`
   default gives way to FR29's timing; a caller that passes it keeps it (FR25).
-- `module:DropdownMenu/useMenuPress`: its finger rules (FR1–FR3, FR6, FR7
-  and FR9 under a finger) are stated here (FR26–FR30); FR6's last sentence
-  gives way to the cell press profile (FR11); its mouse rules (FR8 and the
-  mouse halves of FR1–FR3) and its non-gesture rules stay in the module.
+- `module:DropdownMenu/useMenuPress`: its finger and pen rules (FR1–FR3, FR6,
+  FR7, FR9, FR11) follow FR26–FR30, FR33, and FR11's profiles under every
+  primary pointer; its mouse rules (the mouse halves of FR1–FR3) and its
+  non-gesture rules stay in the module.
 - `spec:AST-057`: a trackpad's horizontal scroll swipes a row (DEC-7); a
   mouse drag never does.
 - `architecture:react-component-runtime` INV13: gestures attach for every
@@ -793,7 +793,7 @@ they stay on for every pointer, with web inputs mapped in: wheel and trackpad
 scrolling for a pan, a ctrl-wheel for a pinch, and right click or Shift+F10
 for a long press. What would fight the browser is off: a mouse drag's swipe
 actions, a pen's pinch, and the screen-edge pan under a mouse, a trackpad, or a pen. The 44 px target is
-touch-only. A mouse press uses the press model with no delay instead of the
+touch-only, and none of this adds stylesheet bytes. A mouse press uses the press model with no delay instead of the
 browser's `:active`; this supersedes the coarse-only press controller.
 
 Rejected: keeping gestures and press tracking touch-only.

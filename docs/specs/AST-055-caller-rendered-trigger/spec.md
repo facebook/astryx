@@ -287,9 +287,9 @@ reaches CSS through the rendered attribute instead of through new public API.
 Because no current core component styles off `aria-expanded` — every current use
 only emits the attribute — the route has no in-repo example to copy, so FR6
 requires it to be documented on the prop. The same documentation states that
-`:active` is not a substitute: it does not behave the same under a coarse
-pointer, which is why `module:DropdownMenu/useMenuPress` FR6 drops coarse-pointer
-`:active` paint on menu rows.
+`:active` is not a substitute: it does not behave the same under a finger,
+which is why press paint follows `spec:AST-094` FR11's profiles instead of
+`:active`.
 
 ### DEC-4 — Hook trigger props are a different convention
 

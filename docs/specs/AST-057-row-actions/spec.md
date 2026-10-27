@@ -217,7 +217,7 @@ and its panels stay put, so no element is added to any row.
 | the drag's travel        | a private custom property on the row root                                                                                                                               | Written by the gesture during a drag. The root's `transform` reads it; each panel's `transform` reads its negation, so the row moves and the panel appears fixed in the space the row vacates.                                                                                                                                                                                                                                                                       | `0px`    | `spec:AST-057`              | proposed  |
 | the group's clip         | `overflow-inline: clip` on the element containing the rows                                                                                                              | A moving row paints past its group's inline edge unless the group clips. `List` sets it; a host that renders `Item`s outside `List` sets it once. `Item` cannot clip itself: it is the thing moving.                                                                                                                                                                                                                                                                 | —        | `component:List` / the host | proposed  |
 | open state               | closed, resting open                                                                                                                                                    | The row's own. A pointer landing anywhere outside a resting row closes it, which is also how a drag on a neighbour closes it; no group state exists.                                                                                                                                                                                                                                                                                                                 | closed   | `spec:AST-057`              | proposed  |
-| the modality split       | internal                                                                                                                                                                | A mouse drag never starts the swipe; a finger's pointer event or a horizontal wheel gesture does, read from the input event, not a prop or a media query (`architecture:interaction-modality` INV6).                                                                                                                                                                                                                                                                 | —        | `spec:AST-057`              | proposed  |
+| the modality split       | internal                                                                                                                                                                | A mouse drag never starts the swipe; a finger's or a pen's pointer event or a horizontal wheel gesture does, read from the input event, not a prop or a media query (`architecture:interaction-modality` INV6).                                                                                                                                                                                                                                                      | —        | `spec:AST-057`              | proposed  |
 
 Not public: axis-lock distance, commit ratio, fling velocity, durations,
 resistance, panel widths, the custom property's name. They are behavior
@@ -256,7 +256,8 @@ constants.
   change the primary element's role, name, or activation, and MUST add no
   stop while closed.
 - **Stated in documentation, not enforced:** a swipe is a touch accelerator,
-  so a verb reachable only by swipe is unreachable by keyboard and by mouse.
+  so a verb reachable only by swipe is unreachable by keyboard and by a mouse
+  drag.
   The consumer documentation of `swipeActions` MUST say so and MUST show the
   verb also reachable through the row's own content. The component does not
   inspect what else the row offers.
@@ -264,7 +265,7 @@ constants.
 ### Platform support
 
 - Supported feature/engine floor: every supported renderer and browser.
-  A finger's swipe is read from its pointer event; a
+  A finger's or a pen's swipe is read from its pointer event; a
   trackpad's from a horizontal `wheel` gesture, which has no pointer type. A
   mouse's horizontal wheel sends the same events and swipes the same way,
   since the page cannot tell the two apart; a mouse drag never swipes.
@@ -426,8 +427,8 @@ owns the one coordination case.
 **Decider:** `cixzhang`, `2026-10-02`
 
 A mouse drag and hover do nothing with `swipeActions`; horizontal wheel
-input, a trackpad's scroll or a mouse's horizontal wheel, is the one
-non-touch input that swipes a row (DEC-7); what a row offers
+input, a trackpad's scroll or a mouse's horizontal wheel, and a pen are the
+non-finger inputs that swipe a row (DEC-7); what a row offers
 a mouse or a keyboard is the row's own content, which this record does not
 govern.
 
