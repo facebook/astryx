@@ -56,6 +56,7 @@ import {
   tap,
   timeline,
   touchDriver,
+  webInputDriver,
   touchStoryboard,
   trackMarker,
   traceRendering,
@@ -1137,34 +1138,60 @@ test.describe('with a mouse', () => {
     expect(await cursor()).toBe('grab');
   });
 
-  test('where the primary pointer is fine, no recognizer attaches: the gesture host listens to nothing', async ({
+  test('where the primary pointer is fine the hold attaches but the page listens to nothing at rest: a press listens until it ends', async ({
     page,
   }) => {
-    // spec:AST-094 FR19, FR24. The gesture host, which every recognizer
-    // attaches through, listens on the document; each touch listener a page
-    // script puts there is recorded, through a mouse drag too (the test
-    // driver's own listeners are left out).
+    // spec:AST-094 FR43, FR19, FR24: recognizers attach for every pointer;
+    // under a fine primary pointer the list keeps one passive pointerdown
+    // listener and the page none until a press. Each touch listener a page
+    // script adds to or removes from the document is recorded (the test
+    // driver's own are left out).
     await page.addInitScript(() => {
-      const seen: string[] = [];
-      Object.assign(window, {__documentTouchListeners: seen});
+      const added: string[] = [];
+      const removed: string[] = [];
+      Object.assign(window, {__documentTouch: {added, removed}});
+      const fromDriver = () =>
+        (new Error().stack ?? '').includes('InjectedScript');
       const add = EventTarget.prototype.addEventListener;
+      const remove = EventTarget.prototype.removeEventListener;
       EventTarget.prototype.addEventListener = function (
         this: EventTarget,
         type: string,
         ...rest: unknown[]
       ) {
-        if (
-          type.startsWith('touch') &&
-          this === document &&
-          !(new Error().stack ?? '').includes('InjectedScript')
-        ) {
-          seen.push(type);
+        if (type.startsWith('touch') && this === document && !fromDriver()) {
+          added.push(type);
         }
         return (add as (...args: unknown[]) => void).call(this, type, ...rest);
+      };
+      EventTarget.prototype.removeEventListener = function (
+        this: EventTarget,
+        type: string,
+        ...rest: unknown[]
+      ) {
+        if (type.startsWith('touch') && this === document && !fromDriver()) {
+          removed.push(type);
+        }
+        return (remove as (...args: unknown[]) => void).call(
+          this,
+          type,
+          ...rest,
+        );
       };
     });
     await openStory(page, storybook(), STORY);
     await expectFinePointer(page);
+    const read = async () =>
+      page.evaluate(() => {
+        const {added, removed} = (
+          window as unknown as {
+            __documentTouch: {added: string[]; removed: string[]};
+          }
+        ).__documentTouch;
+        return {added: [...added], removed: [...removed]};
+      });
+    // At rest: none.
+    expect((await read()).added).toEqual([]);
     const {pitch} = await pitchOf(page);
     const from = await centerOf(handle(page, 'Inbox'));
     await page.mouse.move(from.x, from.y);
@@ -1174,13 +1201,9 @@ test.describe('with a mouse', () => {
     await expect
       .poll(async () => labels(page))
       .toEqual(['Sent', 'Drafts', 'Inbox', 'Archive', 'Spam', 'Trash']);
-    expect(
-      await page.evaluate(
-        () =>
-          (window as unknown as {__documentTouchListeners: string[]})
-            .__documentTouchListeners,
-      ),
-    ).toEqual([]);
+    // After the press: every listener it added is gone.
+    const after = await read();
+    expect([...after.removed].sort()).toEqual([...after.added].sort());
   });
 
   test('a mouse drag selects no text', async ({page}) => {
@@ -1302,6 +1325,98 @@ async function rowAnimations(locator: Locator) {
 
 // The cross-fade is the animator's Reduced Motion default; the rows take it
 // as every row motion does (no row keeps travel under Reduced Motion).
+test.describe('for every pointer (spec:AST-094 FR43)', () => {
+  test.describe('a pen, where the primary pointer is fine', () => {
+    test.use({
+      hasTouch: false,
+      isMobile: false,
+      viewport: {width: 900, height: 700},
+    });
+
+    test('a pen drags a handle at once, with no hold, and the row lands where it is dropped', async ({
+      page,
+    }) => {
+      await openStory(page, storybook(), STORY);
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const input = await webInputDriver(page);
+      test.skip(!input.pens, 'this engine has no pen input');
+      // The handle allows a pen no pan (spec:AST-094 FR43, FR18): a pen that
+      // sends only pointer events would pan the page and cancel the drag.
+      // CDP's pen never pans, so the style itself is checked.
+      expect(
+        await handle(page, 'Inbox').evaluate(
+          element => getComputedStyle(element).touchAction,
+        ),
+      ).toBe('none');
+      const {pitch} = await pitchOf(page);
+      const from = await centerOf(handle(page, 'Inbox'));
+      // It moves from its first point on: a pen drags as a mouse does
+      // (spec:AST-103 FR3), with no hold first.
+      await input.pen(
+        Array.from({length: 13}, (_, index) => ({
+          x: from.x,
+          y: from.y + (1.6 * pitch * index) / 12,
+          t: index * 16,
+        })),
+      );
+      await expect
+        .poll(async () => labels(page))
+        .toEqual(['Sent', 'Drafts', 'Inbox', 'Archive', 'Spam', 'Trash']);
+    });
+  });
+
+  test.describe('a finger, where the page reads a fine primary pointer', () => {
+    // A touch screen whose primary pointer is fine (a laptop's): the page's
+    // script reads `(pointer: coarse)` as false. Chromium's touch emulation
+    // makes the CSS query coarse, so the script's answer is what is stubbed.
+    test.beforeEach(async ({page}) => {
+      await page.addInitScript(() => {
+        const query = window.matchMedia.bind(window);
+        window.matchMedia = (text: string) => {
+          const list = query(text);
+          if (!/pointer:\s*coarse/.test(text) || text.includes('any-pointer')) {
+            return list;
+          }
+          const fine: MediaQueryList = {
+            matches: false,
+            media: text,
+            onchange: null,
+            addEventListener: list.addEventListener.bind(list),
+            removeEventListener: list.removeEventListener.bind(list),
+            addListener: list.addListener.bind(list),
+            removeListener: list.removeListener.bind(list),
+            dispatchEvent: list.dispatchEvent.bind(list),
+          };
+          return fine;
+        };
+      });
+    });
+
+    test('a finger still holds the handle before it drags', async ({page}) => {
+      await openStory(page, storybook(), STORY);
+      await expect(handle(page, 'Inbox')).toBeVisible();
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const {pitch} = await pitchOf(page);
+      const from = await centerOf(handle(page, 'Inbox'));
+      const driver = await touchDriver(page);
+      await driver.play(
+        drag(
+          from,
+          {x: from.x, y: from.y + 1.6 * pitch},
+          {holdMs: HOLD_MS, durationMs: 300, restMs: 150},
+        ),
+      );
+      await expect
+        .poll(async () => labels(page))
+        .toEqual(['Sent', 'Drafts', 'Inbox', 'Archive', 'Spam', 'Trash']);
+    });
+  });
+});
+
 test.describe('with Reduce Motion', () => {
   test('the rows stay still while the finger drags, and the drop cross-fades the rows it moves into their new places: no travel, at most 200 ms', async ({
     page,
