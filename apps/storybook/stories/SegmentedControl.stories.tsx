@@ -376,7 +376,7 @@ export const SelectionMotion: Story = {
     docs: {
       description: {
         story:
-          'Under a finger the selection slides between segments on UIKit’s spring, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Hold the selected segment to lift it, drag it to another segment, and let go: the segment nearest the finger is chosen. Under Reduce Motion nothing lifts or travels: the old selection fades out as the new one fades in; with a mouse the color fade stays.',
+          'Under a finger the selection slides between segments on UIKit’s spring, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Drag the selected segment to another one and let go: the segment nearest the finger is chosen. Under Reduce Motion nothing travels: the old selection fades out as the new one fades in; with a mouse the color fade stays.',
       },
     },
   },

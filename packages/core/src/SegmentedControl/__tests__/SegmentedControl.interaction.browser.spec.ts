@@ -7,25 +7,24 @@
  *   interaction harness
  * @output Interaction and animation proofs for the touch layer: a tap, an
  *   arrow key and a programmatic change slide the lens (the radiogroup's
- *   ::before) on UIKit's spring (sampled curve vs the spring), a tap lifts it
- *   for its first 230 ms, the surface lands where the segment paints it
+ *   ::before) on UIKit's spring (sampled curve vs the spring) at its resting
+ *   size, the surface lands where the segment paints it
  *   (pixels), the titles switch at once with no second copy, a change
  *   mid-flight keeps position and velocity, Reduce Motion drops the travel,
  *   RTL, the slide keeps moving through a blocked main thread, no Layout or
  *   Paint per frame, assistive technology sees no extra node; under a finger
- *   the lift and its shadow (the ::after), the drag, the commit at the lift
- *   through the item's click (a veto, a parent that adopts later), the
- *   pressed title's dim and face, scrolling, text selection; a mouse keeps
- *   today's control; storyboards.
+ *   no lift by default and the shared pressed overlay with no dim, the drag,
+ *   the commit at the lift through the item's click (a veto, a parent that
+ *   adopts later), the selected face during a drag, scrolling, text
+ *   selection; a mouse keeps today's control; storyboards.
  * @position Browser layer of the SegmentedControl selection motion
  *   (useSegmentedSelectionMotion.ts); the unit layers are
  *   useSegmentedSelectionMotion.test.ts and motion/uikit/segmented.test.ts.
  *
  * The oracles come from the harness (`springStep`, `cubicBezier`): math that
  * shares nothing with the code under test, fed the UIKit constants
- * (response 0.40 s and damping ratio 0.85 for the slide; the lift's spring
- * and growth; 470 ms and 180 ms on (0.25, 0.1, 0.25, 1) for the pressed
- * title), read from UISegmentedControl on the iOS 26.2 simulator.
+ * (response 0.40 s and damping ratio 0.85 for the slide), read from
+ * UISegmentedControl on the iOS 26.2 simulator.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -66,12 +65,6 @@ const storybook = withStorybook(test);
 
 /** UIKit's slide, from the constants table (motion/uikit/segmented.ts). */
 const SLIDE = {response: 0.4, dampingFraction: 0.85} as const;
-/** The lift's spring and growth (motion/uikit/segmented.ts). */
-const LIFT = {response: 0.25, dampingFraction: 1} as const;
-const LIFT_GROWTH = {width: 24, height: 16} as const;
-const TAP_LIFT_HANG_MS = 230;
-/** UIScrollView's content-touch delay (motion/uikit, the press timing). */
-const CONTENT_TOUCH_DELAY_MS = 150;
 /** How far past the end segments the lens follows a finger. */
 const DRAG_OVERSHOOT = 11;
 /** design:reduced-motion DR2: a cross-fade, opacity only, 200 ms or less. */
@@ -88,8 +81,8 @@ interface SegmentBox {
 interface Control {
   driver: TouchDriver;
   /**
-   * The radiogroup. Its ::before is the lens; its ::after casts the lifted
-   * lens's shadow or, under Reduced Motion, shows the surface that fades out.
+   * The radiogroup. Its ::before is the lens; under Reduced Motion its
+   * ::after shows the surface that fades out.
    */
   group: Locator;
   segment: (value: string) => Locator;
@@ -347,11 +340,6 @@ async function sampleLens(
 
 const centerOf = (box: SegmentBox) => box.x + box.width / 2;
 
-/** UIKit's lift: a spring adding `growth` to a resting size. */
-function liftedSize(rest: number, growth: number, t: number): number {
-  return rest + growth * springStep(LIFT, t);
-}
-
 /**
  * Records, on the page's clock (epoch ms), each moment a control's lens
  * hands its surface back (it is hidden again). The animator's keyframes hold
@@ -414,7 +402,7 @@ function boxOf(boxes: ReadonlyArray<SegmentBox>, value: string): SegmentBox {
   return box;
 }
 
-test('a tap slides the selected surface to the new segment on UIKit’s spring, lifted for its first 230 ms', async ({
+test('a tap slides the selected surface to the new segment on UIKit’s spring, at its resting size', async ({
   page,
 }, testInfo) => {
   const control = await openControl(page);
@@ -427,9 +415,8 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
     );
   }
   const from = boxOf(await control.boxes(), 'grid');
-  // Hold the clock still, and each of the lens's animations at its birth:
-  // the lift's curves end with the hang's descent, sooner than a slow engine
-  // reaches a hold after the fact.
+  // Hold the clock still, and each of the lens's animations at its birth, so
+  // a slow engine cannot reach the hold after the slide has moved on.
   await installTimerGate(page);
   await holdLensAnimationsAtBirth(page);
   await control.tapSegment('table');
@@ -442,14 +429,11 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
       a => (a.effect as KeyframeEffect).getComputedTiming().easing,
     );
   });
-  // Baked curves: the lens's translate and scale, and its shadow's (the
-  // ::after's) translate, scale and opacity, which ride on the lens.
-  expect(held.length).toBeGreaterThanOrEqual(5);
+  // Baked curves: the lens's translate and scale; nothing on the ::after (no
+  // lift, so no shadow).
+  expect(held.length).toBeGreaterThanOrEqual(2);
   expect(held.every(easing => easing === 'linear')).toBe(true);
-  const samples = await sampleLens(
-    control.group,
-    timeline(TAP_LIFT_HANG_MS - 20),
-  );
+  const samples = await sampleLens(control.group, timeline(600));
   await releaseAnimations(page);
   await thawTimers(page);
   // The value commits at the lift, as UISegmentedControl's valueChanged does.
@@ -467,17 +451,16 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
       centerOf(from) + (centerOf(to) - centerOf(from)) * springStep(SLIDE, t),
     0.25,
   );
-  // ...while the lens lifts toward the destination's size plus UIKit's growth.
+  // ...and the width follows Grid's to Table's on the same spring; nothing
+  // lifts it (a pressed thumb's lift is a theme's, none by default).
   const width = compareCurve(
     samples.map(s => ({t: s.t, value: s.width})),
-    t =>
-      from.width +
-      (to.width + LIFT_GROWTH.width - from.width) * springStep(LIFT, t),
+    t => from.width + (to.width - from.width) * springStep(SLIDE, t),
     0.25,
   );
   const height = compareCurve(
     samples.map(s => ({t: s.t, value: s.height})),
-    t => liftedSize(to.height, LIFT_GROWTH.height, t),
+    () => to.height,
     0.25,
   );
   await writeEvidence(
@@ -498,7 +481,7 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring, 
   expect(height.maxError, JSON.stringify(height.worst)).toBeLessThanOrEqual(
     0.25,
   );
-  // After the hang the lens comes back down while it lands, and hands back.
+  // It lands and hands back.
   await expectLensHidden(control);
 });
 
@@ -519,7 +502,7 @@ test('the surface lands exactly where the segment paints it', async ({
   await control.tapSegment('list');
   await waitForLens(control);
   await freezeTimers(page);
-  // The slide and the tap's lift run their course on the compositor; with the
+  // The slide runs its course on the compositor; with the
   // timers held the hand-back waits, so this is the last frame of the slide:
   // the lens carries the surface, the segment's own is hidden.
   await page.waitForTimeout(1500);
@@ -750,9 +733,7 @@ test('a change mid-flight paints no press over the lens on the segment it leaves
     };
   });
   await expect(control.segment('list')).toHaveAttribute('aria-checked', 'true');
-  // Under a finger a segment paints no press of its own (its title dims
-  // instead), so nothing at all can cover the lens there.
-  expect(paint.press).toBeNull();
+  expect(paint.press, 'the tap on Table is still fading').not.toBeNull();
   expect(paint.lensVisible).toBe(true);
   // Table paints nothing of its own until the lens lands: its press would
   // cover the lens, which sits under the segments' backgrounds.
@@ -1133,8 +1114,6 @@ test('RTL: the surface slides toward the tapped segment', async ({page}) => {
   const grid = boxOf(await control.boxes(), 'grid');
   await control.tapSegment('table');
   await waitForLens(control);
-  // Past the tap's lift, so the last frame is the resting size.
-  await page.waitForTimeout(TAP_LIFT_HANG_MS + 100);
   await holdLens(control);
   const [start, end] = await sampleLens(control.group, [0, 2000]);
   // Where Table is once its title has its new weight.
@@ -1475,34 +1454,41 @@ async function clientCenter(control: Control, value: string) {
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
 }
 
-test('holding the selected segment lifts the lens in place on UIKit’s lift spring; letting go puts it down', async ({
+test('holding the selected segment lifts nothing by default (a theme’s pressed-thumb lift turns it on): no lens and no shadow; letting go changes nothing', async ({
   page,
 }) => {
   const control = await openControl(page);
-  const grid = boxOf(await control.boxes(), 'grid');
   const selections = await recordSelections(control.group);
-  const at = await clientCenter(control, 'grid');
-  const playing = control.driver.play(touchTap(at, {holdMs: 700}));
-  await waitForLens(control);
-  await installTimerGate(page);
-  await freezeTimers(page);
-  await holdLens(control);
-  const samples = await sampleLens(control.group, timeline(400));
-  await releaseAnimations(page);
-  await thawTimers(page);
-  // Centered on the segment, growing by UIKit's additive 24 × 16 pt.
-  for (const sample of samples) {
-    expect(Math.abs(sample.center - centerOf(grid))).toBeLessThan(0.25);
-    expect(
-      Math.abs(sample.width - liftedSize(grid.width, 24, sample.t)),
-    ).toBeLessThan(0.25);
-    expect(
-      Math.abs(sample.height - liftedSize(grid.height, 16, sample.t)),
-    ).toBeLessThan(0.25);
-  }
-  await playing;
-  await expectLensHidden(control);
-  // Holding the selected segment changes nothing.
+  // Every time the radiogroup's style shows a pseudo-element layer.
+  await control.group.evaluate(group => {
+    const shown: string[] = [];
+    (window as unknown as {__layersShown: string[]}).__layersShown = shown;
+    new MutationObserver(() => {
+      const lens = group.style.getPropertyValue('--_segmented-lens-visibility');
+      const after = group.style.getPropertyValue(
+        '--_segmented-after-visibility',
+      );
+      if (lens !== '' || after !== '') {
+        shown.push(`lens=${lens} after=${after}`);
+      }
+    }).observe(group, {attributes: true, attributeFilter: ['style']});
+  });
+  await control.driver.play(
+    touchTap(await clientCenter(control, 'grid'), {holdMs: 700}),
+  );
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__layersShown: string[]}).__layersShown,
+    ),
+  ).toEqual([]);
+  // The selected segment kept painting its own surface throughout.
+  expect(
+    await control
+      .segment('grid')
+      .evaluate(element =>
+        (element as HTMLElement).style.getPropertyValue('background-color'),
+      ),
+  ).toBe('');
   expect(await selections()).toEqual([]);
 });
 
@@ -1516,14 +1502,10 @@ test('a drag from the selected segment carries the lens and commits once, at the
   const to = await clientCenter(control, 'table');
   const midDrag: {finger: number; lens: number; width: number; at: number}[] =
     [];
-  let downAt = 0;
   const played = await control.driver.play(
     touchDrag(from, to, {durationMs: 600, restMs: 200}),
     {
       onEvent: async (step, index) => {
-        if (step.type === 'touchStart') {
-          downAt = Date.now();
-        }
         if (step.type === 'touchMove' && index % 6 === 0) {
           const now = await presentedNow(control);
           midDrag.push({
@@ -1541,18 +1523,12 @@ test('a drag from the selected segment carries the lens and commits once, at the
   expect(changes.map(change => change.value)).toEqual(['table']);
   // Not before the finger let go.
   expect(changes[0].at).toBeGreaterThanOrEqual((lift?.dispatchedAt ?? 0) - 5);
-  // The lens followed the finger, lifted (trailing it on the tracking
-  // spring, by less than the width of a segment).
+  // The lens followed the finger at its resting size (trailing it on the
+  // tracking spring, by less than the width of a segment).
   const trackLeft = (await control.group.boundingBox())?.x ?? 0;
   for (const sample of midDrag.slice(2)) {
-    // Lifted once the lift spring has had its 0.3 s. (Playwright's WebKit
-    // runs no rendering update while it streams synthetic touch events, so
-    // the lift, a curve from rest that the engine starts at its next
-    // rendering update, stays pending until the finger stops; the lift
-    // during a drag on WebKit is shown by the iOS simulator recording.)
-    if (control.driver.engine === 'chromium' && sample.at - downAt >= 300) {
-      expect(sample.width).toBeGreaterThan(boxOf(boxes, 'grid').width + 12);
-    }
+    // Nothing lifts it: its width stays a segment's.
+    expect(sample.width).toBeLessThan(boxOf(boxes, 'grid').width + 12);
     const lag = sample.finger - trackLeft - sample.lens;
     expect(lag).toBeGreaterThan(-2);
     expect(lag).toBeLessThan(40);
@@ -1647,62 +1623,42 @@ test('a drag that starts on another segment leaves the lens alone and commits wh
   expect((await selections()).map(change => change.value)).toEqual(['table']);
 });
 
-test('a finger on an unselected segment dims it (the item target’s pressed state) on UIKit’s 470 ms ease and paints no press box; at the lift it comes back in 180 ms', async ({
+test('a finger on an unselected segment shows the shared pressed overlay and dims nothing; the lift commits it', async ({
   page,
 }) => {
   const control = await openControl(page);
   const list = control.segment('list');
-  const lastFade = async () =>
-    list.evaluate(element => {
-      const animation = element.getAnimations().at(-1);
-      if (animation == null) {
-        return null;
-      }
-      const effect = animation.effect as KeyframeEffect;
-      return {
-        to: Number(effect.getKeyframes().at(-1)?.opacity),
-        duration: Number(effect.getTiming().duration),
-        easing: effect.getTiming().easing,
-      };
-    });
-  let atLift: Awaited<ReturnType<typeof lastFade>> = null;
+  const shown = async () =>
+    list.evaluate(element => ({
+      press: element.getAttribute('data-astryx-press'),
+      image: getComputedStyle(element).backgroundImage,
+      opacity: getComputedStyle(element).opacity,
+      title: getComputedStyle(
+        element.querySelector('[data-segment-title]') as Element,
+      ).opacity,
+    }));
   const playing = control.driver.play(
     touchTap(await clientCenter(control, 'list'), {holdMs: 400}),
-    {
-      onEvent: async step => {
-        // The return starts at the lift; read it before anything settles.
-        if (step.type === 'touchEnd') {
-          atLift = await lastFade();
-        }
-      },
-    },
   );
-  await expect.poll(lastFade).not.toBeNull();
-  // CSS defines `ease` as exactly UIKit's curve; WebKit serializes it by name.
-  const EASE = ['cubic-bezier(0.25, 0.1, 0.25, 1)', 'ease'];
-  const dim = await lastFade();
-  expect(dim).toMatchObject({to: 0.2, duration: 470});
-  expect(EASE).toContain(dim?.easing);
-  // No press box behind the title (UIKit dims the title instead).
-  expect(
-    await list.evaluate(element => ({
-      image: getComputedStyle(element).backgroundImage,
-      press: element.getAttribute('data-astryx-press'),
-    })),
-  ).toEqual({image: 'none', press: null});
+  // The system's press paint, as everywhere else under a finger: the press
+  // controller marks the segment once it believes the press, and the shared
+  // overlay paints it.
+  await expect.poll(async () => (await shown()).press).toBe('on');
+  const held = await shown();
+  // While the controller paints, the overlay is its image layer.
+  expect(held.image).toContain('gradient');
+  // Nothing dims: not the segment, not its title.
+  expect({opacity: held.opacity, title: held.title}).toEqual({
+    opacity: '1',
+    title: '1',
+  });
   await playing;
-  expect(atLift).toMatchObject({to: 1, duration: 180});
   await expect(list).toHaveAttribute('aria-checked', 'true');
-  expect(EASE).toContain(
-    (atLift as {easing?: string} | null)?.easing ?? 'none',
-  );
-  // Back at rest, nothing is left on the segment.
-  await expect.poll(async () => (await lastFade()) == null).toBe(true);
   await expect(list).toHaveCSS('opacity', '1');
   await expect(list).not.toHaveAttribute('data-pressed');
 });
 
-test('during a lifted drag the selected face follows the lens as a colour, with no weight swap mid-drag, and the commit keeps it as shown', async ({
+test('during a drag the selected face follows the lens as a colour, with no weight swap mid-drag, and the commit keeps it as shown', async ({
   page,
 }) => {
   const control = await openControl(page);
@@ -1821,7 +1777,7 @@ test('a slow ±3 px dither across a boundary changes the selected face at most o
   expect(changes.length, faces.join(' ')).toBeLessThanOrEqual(1);
 });
 
-test('a lifted drag held just past a boundary: at the lift the selected colour snaps to the segment nearest the finger, which it commits', async ({
+test('a drag held just past a boundary: at the lift the selected colour snaps to the segment nearest the finger, which it commits', async ({
   page,
 }) => {
   const control = await openControl(page);
@@ -2260,187 +2216,6 @@ test('a vertical drag that starts on the control scrolls the page and lifts noth
   expect(await selections()).toEqual([]);
 });
 
-test('inside a scrolling page, a held press lifts after UIScrollView’s content-touch delay', async ({
-  page,
-}) => {
-  const control = await openControl(page);
-  await makePageScroll(page);
-  const shown = await recordProxyVisibility(control);
-  const at = await clientCenter(control, 'grid');
-  const played = await control.driver.play(touchTap(at, {holdMs: 600}));
-  const down = played.find(event => event.type === 'touchStart');
-  const [lifted] = await shown();
-  expect(lifted?.visible).toBe(true);
-  // UIScrollView.delaysContentTouches: 150 ms before a control sees the touch.
-  expect(lifted.at - (down?.dispatchedAt ?? 0)).toBeGreaterThanOrEqual(
-    CONTENT_TOUCH_DELAY_MS - 20,
-  );
-  await expectLensHidden(control);
-});
-
-test('the lifted lens casts the theme’s high shadow, its opacity riding the lift', async ({
-  page,
-}) => {
-  const control = await openControl(page);
-  const at = await clientCenter(control, 'grid');
-  const playing = control.driver.play(touchTap(at, {holdMs: 800}));
-  await waitForLens(control);
-  await installTimerGate(page);
-  await freezeTimers(page);
-  await holdLens(control);
-  // The ::after: laid out with the lens, its opacity following the lift.
-  const samples = await control.group.evaluate((element, ts) => {
-    const held =
-      (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ?? [];
-    return ts.map(t => {
-      for (const animation of held) {
-        const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
-        animation.currentTime = Math.min(t, end - 0.5);
-      }
-      const after = getComputedStyle(element, '::after');
-      const lens = getComputedStyle(element, '::before');
-      return {
-        t,
-        opacity: Number(after.opacity),
-        shadow: after.boxShadow,
-        background: after.backgroundColor,
-        sameBox:
-          after.left === lens.left &&
-          after.width === lens.width &&
-          after.scale === lens.scale &&
-          after.translate === lens.translate,
-      };
-    });
-  }, timeline(400));
-  await releaseAnimations(page);
-  await thawTimers(page);
-  // The theme's elevation, not a value of our own...
-  const token = await page.evaluate(() => {
-    const probe = document.createElement('div');
-    probe.style.boxShadow = 'var(--shadow-high)';
-    document.body.append(probe);
-    const value = getComputedStyle(probe).boxShadow;
-    probe.remove();
-    return value;
-  });
-  expect(samples[0].shadow).toBe(token);
-  expect(token).not.toBe('none');
-  expect(samples[0].background).toBe('rgba(0, 0, 0, 0)');
-  // ...on the lens's own box and curves, faded in on the lift spring.
-  for (const sample of samples) {
-    expect(sample.sameBox, JSON.stringify(sample)).toBe(true);
-    expect(Math.abs(sample.opacity - springStep(LIFT, sample.t))).toBeLessThan(
-      0.02,
-    );
-  }
-  await playing;
-  await expectLensHidden(control);
-  expect((await readLayer(control.group, '::after')).visible).toBe(false);
-});
-
-test('a busy main thread cannot hold the lens up: a tap’s lift comes down on time', async ({
-  page,
-  browserName,
-}, testInfo) => {
-  test.skip(
-    browserName !== 'chromium',
-    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
-  );
-  const control = await openControl(page);
-  const rest = boxOf(await control.boxes(), 'table');
-  const cast = await startScreencast(page);
-  await control.tapSegment('table');
-  const [lens] = await waitForLens(control, {minProgressMs: 16});
-  // The whole lens in the marker colour, so the tracked box is its presented
-  // size.
-  await paintLensMarker(control);
-  // Blocked through the lift, the hang and the descent.
-  const block = await blockMainThread(page, 800);
-  await page.waitForTimeout(250);
-  const castFrames = await cast.stop();
-  const tracked = await trackMarker(page, castFrames);
-  const inBlock = tracked.filter(
-    f => f.t >= block.from && f.t <= block.to && f.box != null,
-  );
-  const heights = inBlock.map(f => f.box?.height ?? 0);
-  const proof = busyWindowProof(
-    tracked,
-    {from: block.from, to: block.to},
-    {axis: 'height', settledWithin: 0.5},
-  );
-  await writeEvidence(
-    'busy-main-thread/segmented-tap-lift',
-    {
-      [`${testInfo.project.name}.json`]: JSON.stringify(
-        {
-          block,
-          rest,
-          proof,
-          frames: inBlock.map(f => ({
-            t: +(f.t - block.from).toFixed(1),
-            height: f.box?.height ?? null,
-            width: f.box?.width ?? null,
-          })),
-        },
-        null,
-        1,
-      ),
-    },
-    testInfo,
-  );
-  const film = await castStoryboard(page, castFrames, {
-    name: 'segmented-tap-lift-busy-main-thread',
-    zero: block.from,
-    from: block.from - 20,
-    to: block.to + 20,
-    columns: 8,
-    cellScale: 0.35,
-    data: t => ({height: tracked.find(f => f.t === t)?.box?.height ?? -1}),
-  });
-  await film.write(testInfo, {block});
-  // Frames kept coming while JavaScript was blocked...
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
-  // ...the lens was lifted during the block...
-  expect(Math.max(...heights)).toBeGreaterThan(
-    rest.height + LIFT_GROWTH.height * 0.75,
-  );
-  // ...came down frame by frame after the hang, judged on the frames the
-  // screencast delivered (its cadence, not a frame count): a frame part-way
-  // down, each one no higher than the last, and none missing...
-  const peak = Math.max(...heights);
-  const descentFrom = lens.from + TAP_LIFT_HANG_MS + 20;
-  const descent = inBlock.filter(
-    f => f.t >= descentFrom && (f.box?.height ?? 0) > rest.height + 1,
-  );
-  const landed = inBlock.find(
-    f => f.t >= descentFrom && (f.box?.height ?? 0) <= rest.height + 1,
-  );
-  expect(landed, proof.summary).toBeDefined();
-  expect(
-    descent.some(f => (f.box?.height ?? 0) < peak - 1),
-    'a frame part-way down',
-  ).toBe(true);
-  expect(descent.length).toBeGreaterThanOrEqual(
-    Math.floor(((landed?.t ?? descentFrom) - descentFrom) / proof.cadenceMs) -
-      2,
-  );
-  for (let i = 1; i < descent.length; i++) {
-    expect(descent[i].box?.height ?? 0).toBeLessThanOrEqual(
-      descent[i - 1].box?.height ?? 0,
-    );
-  }
-  // ...and was back at the segment's size well before the block ended (the
-  // lift spring settles within about 0.2 s of the hang), on every frame
-  // delivered from then on. Nothing moves there, so the screencast sends
-  // frames only now and then: no cadence applies, only something to judge.
-  const lateFrom = block.from + TAP_LIFT_HANG_MS + 250;
-  const late = inBlock.filter(f => f.t >= lateFrom);
-  expect(late.length, proof.summary).toBeGreaterThan(0);
-  for (const frame of late) {
-    expect(Math.abs((frame.box?.height ?? 0) - rest.height)).toBeLessThan(1);
-  }
-});
-
 test('RTL: a drag carries the lens toward the finger and commits once, at the lift', async ({
   page,
 }) => {
@@ -2458,14 +2233,10 @@ test('RTL: a drag carries the lens toward the finger and commits once, at the li
   const to = await clientCenter(control, 'table');
   const midDrag: {finger: number; lens: number; width: number; at: number}[] =
     [];
-  let downAt = 0;
   const played = await control.driver.play(
     touchDrag(from, to, {durationMs: 600, restMs: 200}),
     {
       onEvent: async (step, index) => {
-        if (step.type === 'touchStart') {
-          downAt = Date.now();
-        }
         if (step.type === 'touchMove' && index % 6 === 0) {
           const now = await presentedNow(control);
           midDrag.push({
@@ -2482,18 +2253,13 @@ test('RTL: a drag carries the lens toward the finger and commits once, at the li
   const changes = await selections();
   expect(changes.map(change => change.value)).toEqual(['table']);
   expect(changes[0].at).toBeGreaterThanOrEqual((lift?.dispatchedAt ?? 0) - 5);
-  // Lifted, and trailing the finger from the right as it moves left.
+  // Trailing the finger from the right as it moves left, at its resting
+  // size.
   const trackLeft = (await control.group.boundingBox())?.x ?? 0;
   expect(midDrag.length).toBeGreaterThan(3);
   for (const sample of midDrag.slice(2)) {
-    // Lifted once the lift spring has had its 0.3 s. (Playwright's WebKit
-    // runs no rendering update while it streams synthetic touch events, so
-    // the lift, a curve from rest that the engine starts at its next
-    // rendering update, stays pending until the finger stops; the lift
-    // during a drag on WebKit is shown by the iOS simulator recording.)
-    if (control.driver.engine === 'chromium' && sample.at - downAt >= 300) {
-      expect(sample.width).toBeGreaterThan(boxOf(boxes, 'grid').width + 12);
-    }
+    // Nothing lifts it: its width stays a segment's.
+    expect(sample.width).toBeLessThan(boxOf(boxes, 'grid').width + 12);
     const lag = sample.lens - (sample.finger - trackLeft);
     expect(lag).toBeGreaterThan(-2);
     expect(lag).toBeLessThan(40);
@@ -2502,14 +2268,10 @@ test('RTL: a drag carries the lens toward the finger and commits once, at the li
 });
 
 test(
-  'storyboard: hold the selected segment to lift it, drag it, let go',
+  'storyboard: hold the selected segment, drag it, let go',
   {tag: '@storyboard'},
   async ({page}, testInfo) => {
     const control = await openControl(page);
-    // A page that is not white, so the lifted surface's overhang shows.
-    await page.evaluate(() => {
-      document.body.style.background = 'rgb(214, 214, 219)';
-    });
     const box = await control.group.boundingBox();
     if (box == null) {
       throw new Error('no control');
@@ -2534,16 +2296,18 @@ test(
       },
     );
     await board.write(testInfo);
-    const lifted = board.frames
-      .map(frame => frame.data as {width: number; visible: boolean})
-      .filter(data => data.visible);
-    // Lifted while held and dragged.
+    // Nothing lifts while the finger holds the selected segment: the lens
+    // appears only once the drag moves it, at the resting size.
     const rest = boxOf(await control.boxes(), 'grid').width;
-    expect(Math.max(...lifted.map(data => data.width))).toBeGreaterThan(
-      rest + 20,
+    const held = board.frames.filter(frame =>
+      frame.label.startsWith('touchStart'),
     );
-    // Never put down on the way: the selected face moving to the title under
-    // the finger reflows the titles, and the lens stays lifted through it.
+    for (const frame of held) {
+      const data = frame.data as {width: number; visible: boolean};
+      expect(data.visible, frame.label).toBe(false);
+    }
+    // Carried the whole way: the selected face moving to the title under the
+    // finger reflows the titles, and the lens stays with the finger.
     const dragged = board.frames.filter(
       frame => frame.label.startsWith('touchMove') && frame.t >= 450,
     );
@@ -2551,7 +2315,7 @@ test(
     for (const frame of dragged) {
       const data = frame.data as {width: number; visible: boolean};
       expect(data.visible, frame.label).toBe(true);
-      expect(data.width, frame.label).toBeGreaterThan(rest + 12);
+      expect(data.width, frame.label).toBeLessThan(rest + 12);
     }
   },
 );

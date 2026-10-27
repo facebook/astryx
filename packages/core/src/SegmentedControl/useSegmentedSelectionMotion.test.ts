@@ -10,16 +10,17 @@
  *   the segment's own surface hidden meanwhile and handed back on landing; a
  *   change mid-flight keeps the presented position and velocity; resize, a
  *   cleared selection and Reduced Motion (the ::after fading out where it
- *   is); under a finger the lift, its shadow (the ::after), the chase, the
- *   commit at the lift and what happens when the value does not come back;
- *   the pressed title's dim and the face that follows a dragging finger.
+ *   is); under a finger no lift and no dim (a press shows the shared overlay),
+ *   the chase at the lens's resting size, the commit at the lift and what
+ *   happens when the value does not come back, and the face that follows a
+ *   dragging finger.
  * @position Unit tests for useSegmentedSelectionMotion.ts. The browser proofs
  *   (real touch, seeked curves, busy main thread, Layout / Paint, pixels) are
  *   __tests__/SegmentedControl.interaction.browser.spec.ts.
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {motionRoleIn, motionRoleOf} from '../motion/roles';
+import {motionRoleOf} from '../motion/roles';
 import {createAnimator, type Animator} from '../motion/animator';
 import {solveSpring, toSpring} from '../motion/spring';
 import {segmentedControl, springs} from '../motion/uikit';
@@ -135,7 +136,6 @@ function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
     track,
     segments,
     animator,
-    shadowAnimator: afterAnimator,
     leavingAnimator: afterAnimator,
     motion,
     layer,
@@ -154,16 +154,14 @@ function begin(ctx: Ctx, clientX: number): void {
   ctx.motion.begin(ctx.track, targetAt(ctx, clientX));
 }
 
-/** A finger lands at `clientX` and the press is on at once. */
+/** A finger lands at `clientX`. */
 function press(ctx: Ctx, clientX: number): void {
   begin(ctx, clientX);
-  ctx.motion.lift();
 }
 
-/** The finger moves to `clientX`: the lens chases, then the highlight moves. */
+/** The finger moves to `clientX`: a lens it holds chases it. */
 function drag(ctx: Ctx, clientX: number): void {
   ctx.motion.drag(clientX);
-  ctx.motion.highlight(targetAt(ctx, clientX));
 }
 
 /** The finger lets go at `clientX`, on the segment the tracker resolves. */
@@ -252,27 +250,10 @@ async function advance(ms: number): Promise<void> {
 }
 
 describe('the motion roles (spec:AST-094 FR4)', () => {
-  it('plays the slide, the lift and the pressed title through internal segmented roles', () => {
+  it('plays the slide through its internal segmented role', () => {
     setup('grid');
-    const {pressedTitle} = segmentedControl;
-    expect(
-      [
-        segmentedControl.selectionSpring,
-        segmentedControl.liftSpring,
-        pressedTitle.fadeCurve,
-        pressedTitle.liftCurve,
-      ].map(leaf => motionRoleOf(leaf)?.id),
-    ).toEqual([
+    expect(motionRoleOf(segmentedControl.selectionSpring)?.id).toBe(
       'segmented.selectionSpring',
-      'segmented.liftSpring',
-      'segmented.pressedTitle.fadeCurve',
-      'segmented.pressedTitle.liftCurve',
-    ]);
-    expect(motionRoleIn(pressedTitle, 'fadeMs')?.id).toBe(
-      'segmented.pressedTitle.fadeMs',
-    );
-    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')?.id).toBe(
-      'segmented.tapLiftHangMs',
     );
   });
 });
@@ -678,34 +659,24 @@ describe('style reads at a change', () => {
 });
 
 describe('under a finger', () => {
-  it('landing on the selected segment lifts the lens in place, by UIKit’s additive growth on the lift spring', () => {
+  it('landing on the selected segment lifts nothing by default (the pressed-thumb lift is a theme’s): the lens and the ::after stay hidden', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
-    expect(ctx.motion.isSliding).toBe(true);
-    expect(ctx.layer('lens', 'width')).toBe('96px');
-    expectHidden(ctx.segments.grid);
-    const lift = solveSpring(toSpring(segmentedControl.liftSpring), {
-      from: 96,
-      to: 96 + 24,
-      velocity: 0,
-    });
-    for (const t of [16, 50, 100, 200]) {
-      expect(ctx.animator.get('scaleX', 1000 + t) * 96).toBeCloseTo(
-        lift.value(t / 1000),
-        6,
-      );
-    }
-    // Centered: the position does not move.
-    expect(ctx.animator.get('x', 1100)).toBe(0);
-    expect(ctx.animator.get('scaleY', 3000) * 27).toBeCloseTo(27 + 16, 6);
+    await advance(600);
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+    expect(ctx.layer('after', 'visibility')).toBe('');
+    expectOwnSurface(ctx.segments.grid);
   });
 
-  it('a held lens stays lifted until the finger lets go, then comes down and hands back', async () => {
+  it('a drag holds the lens at its resting size until the finger lets go, then it settles back and hands back', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
+    drag(ctx, clientCenterOf('grid') + 10);
     await advance(2000);
     expect(ctx.motion.isSliding).toBe(true);
-    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(1, 6);
+    expect(ctx.animator.get('scaleY')).toBeCloseTo(1, 6);
     expect(release(ctx, clientCenterOf('grid'))).toBeNull();
     await advance(2000);
     expect(ctx.motion.isSliding).toBe(false);
@@ -813,7 +784,7 @@ describe('under a finger', () => {
     expect(ctx.motion.isSliding).toBe(false);
   });
 
-  it('a resize while a finger holds the lens (the selected face reflows the titles) keeps it lifted', async () => {
+  it('a resize while a finger holds the lens (the selected face reflows the titles) keeps it held', async () => {
     const ctx = setup('grid');
     let width = TRACK.width;
     Object.defineProperty(ctx.track, 'offsetWidth', {get: () => width});
@@ -823,7 +794,7 @@ describe('under a finger', () => {
     ctx.motion.resized(ctx.track);
     expect(ctx.motion.isSliding).toBe(true);
     await advance(1000);
-    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+    expect(ctx.motion.isSliding).toBe(true);
   });
 
   it('a drag carries the lens on the shared finger-tracking role, no further than 11 pt past the end segments', async () => {
@@ -848,8 +819,9 @@ describe('under a finger', () => {
       centerOf('table') + segmentedControl.dragOvershoot - centerOf('grid'),
       6,
     );
-    // Still lifted throughout.
-    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
+    // At its resting size throughout: nothing lifts it.
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(1, 6);
+    expect(ctx.animator.get('scaleY')).toBeCloseTo(1, 6);
   });
 
   it('letting go commits the segment nearest the finger: 40 % of the way stays, 60 % moves', async () => {
@@ -896,7 +868,7 @@ describe('under a finger', () => {
     expectOwnSurface(sixty.segments.list);
   });
 
-  it('a tap on another segment slides there lifted, coming down after the hang', async () => {
+  it('a tap on another segment slides there on the slide spring, at its resting size', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('table'));
     expect(release(ctx, clientCenterOf('table'))).toBe('table');
@@ -907,11 +879,12 @@ describe('under a finger', () => {
       velocity: 0,
     });
     expect(ctx.animator.get('x', 1100)).toBeCloseTo(travel.value(0.1), 6);
-    // Lifted toward the destination's lifted size...
-    await advance(segmentedControl.tapLiftHangMs - 10);
-    expect(ctx.animator.get('scaleX') * 106).toBeGreaterThan(106 + 12);
-    // ...then down again while still travelling.
-    await advance(30);
+    // Nothing lifts it on the way: Grid's width grows to Table's on the
+    // same spring, and no further.
+    for (let t = 0; t <= 800; t += 20) {
+      expect(ctx.animator.get('scaleY', 1000 + t)).toBeCloseTo(1, 6);
+      expect(ctx.animator.get('scaleX', 1000 + t)).toBeLessThan(1.02);
+    }
     await advance(2000);
     expect(ctx.animator.get('scaleX')).toBe(1);
     expect(ctx.motion.isSliding).toBe(false);
@@ -931,74 +904,24 @@ describe('under a finger', () => {
     expectOwnSurface(ctx.segments.grid);
   });
 
-  it('the lifted lens casts its shadow with the lift and drops it at the lift of the finger', async () => {
-    const ctx = setup('grid');
-    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
-    press(ctx, clientCenterOf('grid'));
-    // The ::after, laid out with the lens, with its corners and the theme's
-    // elevation shadow, and no fill.
-    for (const property of ['left', 'top', 'width', 'height']) {
-      expect(ctx.layer('after', property)).toBe(ctx.layer('lens', property));
-    }
-    expect(ctx.layer('after', 'border-top-left-radius')).toBe('6px');
-    // Unset: the stylesheet's default, the theme's elevation shadow.
-    expect(ctx.layer('after', 'box-shadow')).toBe('');
-    expect(ctx.layer('after', 'background-color')).toBe('');
-    expect(ctx.layer('after', 'visibility')).toBe('visible');
-    // It moves on the lens's curves.
-    for (const t of [16, 50, 100]) {
-      expect(ctx.shadowAnimator.get('scaleX', 1000 + t)).toBeCloseTo(
-        ctx.animator.get('scaleX', 1000 + t),
-        9,
-      );
-    }
-    const lift = solveSpring(toSpring(segmentedControl.liftSpring), {
-      from: 0,
-      to: 1,
-      velocity: 0,
-    });
-    // The opacity rides the lift spring, on the lens's clock.
-    expect(ctx.shadowAnimator.get('opacity', 1050)).toBeCloseTo(
-      lift.value(0.05),
-      6,
-    );
-    await advance(1000);
-    expect(ctx.shadowAnimator.get('opacity')).toBeCloseTo(1, 6);
-    release(ctx, clientCenterOf('grid'));
-    await advance(2000);
-    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
-    expect(ctx.motion.isSliding).toBe(false);
-  });
-
-  it('a tap’s shadow rises and falls with its lift', async () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('table'));
-    release(ctx, clientCenterOf('table'));
-    select(ctx, 'grid', 'table');
-    await advance(segmentedControl.tapLiftHangMs - 10);
-    expect(ctx.shadowAnimator.get('opacity')).toBeGreaterThan(0.9);
-    await advance(2000);
-    expect(ctx.shadowAnimator.get('opacity')).toBe(0);
-  });
-
-  it('a press waits to lift until it is on (a scroller’s delay), and a drag lifts it then', async () => {
+  it('the lens is bound only once a drag from the selected segment moves it', async () => {
     const ctx = setup('grid');
     begin(ctx, clientCenterOf('grid'));
     expect(ctx.motion.isSliding).toBe(false);
     drag(ctx, clientCenterOf('list'));
     expect(ctx.motion.isSliding).toBe(true);
     await advance(1000);
-    expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
-    expect(ctx.shadowAnimator.get('opacity')).toBeCloseTo(1, 6);
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(1, 6);
+    expect(ctx.layer('after', 'visibility')).toBe('');
     expect(release(ctx, clientCenterOf('list'))).toBe('list');
   });
 
-  it('a press cancelled before it is on leaves everything as it was', () => {
+  it('a press cancelled before it drags leaves everything as it was', () => {
     const ctx = setup('grid');
     begin(ctx, clientCenterOf('grid'));
     ctx.motion.cancel();
     expect(ctx.motion.isSliding).toBe(false);
-    ctx.motion.lift();
+    drag(ctx, clientCenterOf('list'));
     expect(ctx.motion.isSliding).toBe(false);
   });
 
@@ -1042,7 +965,7 @@ describe('under a finger', () => {
   });
 });
 
-describe('the titles under a finger (UIKit, F4 batch 64)', () => {
+describe('the titles under a finger', () => {
   interface Recorded {
     element: HTMLElement;
     keyframes: Keyframe[];
@@ -1051,7 +974,6 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
   }
   let recorded: Recorded[] = [];
   const realAnimate = HTMLElement.prototype.animate;
-  const ease = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 
   beforeEach(() => {
     recorded = [];
@@ -1086,89 +1008,25 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     }
     return title;
   };
-  // A press dims the segment as a whole (an unselected one paints no surface
-  // of its own under a finger), into the item target's pressed state.
+  // Any fade the controller plays on a segment (none: a press shows the
+  // shared overlay, and nothing dims).
   const fadesOf = (segment: HTMLElement) =>
     recorded.filter(r => r.element === segment);
-  const lastFadeOf = (segment: HTMLElement): Recorded => {
-    const fade = fadesOf(segment).at(-1);
-    if (fade == null) {
-      throw new Error('no fade');
-    }
-    return fade;
-  };
   const faceOf = (segment: HTMLElement) => ({
     weight: titleOf(segment).style.fontWeight,
     color: titleOf(segment).style.color,
   });
   const NO_FACE = {weight: '', color: ''};
 
-  it('Reduced Motion: the dim and its recovery fade on the animator’s 200 ms fade, not UIKit’s 470 ms, whatever the roles say (design:reduced-motion DR2, DR4)', () => {
-    reduceMotion = true;
+  it('a finger on an unselected segment dims nothing: no pressed state and no fade on it; the lens stays', () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('list'));
-    const dim = lastFadeOf(ctx.segments.list);
-    expect(dim.keyframes.at(-1)).toEqual({opacity: 0.2});
-    expect(dim.options.duration).toBeGreaterThan(0);
-    expect(dim.options.duration).toBeLessThanOrEqual(200);
-    expect(Object.keys(dim.keyframes[0])).toEqual(['opacity']);
-    release(ctx, clientCenterOf('list'));
-    const back = lastFadeOf(ctx.segments.list);
-    expect(back.keyframes.at(-1)).toEqual({opacity: 1});
-    expect(back.options.duration).toBeLessThanOrEqual(200);
-  });
-
-  it('Reduced Motion with any other pointer: the dim changes at once (DR3)', () => {
-    reduceMotion = true;
-    const ctx = setup('grid', {coarse: false});
-    press(ctx, clientCenterOf('list'));
-    expect(lastFadeOf(ctx.segments.list).options.duration).toBe(0);
-  });
-
-  it('a finger on an unselected segment dims its title to 0.2 over 470 ms on CSS ease; the lens stays', () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('list'));
-    const dim = lastFadeOf(ctx.segments.list);
-    expect(dim.keyframes.at(-1)).toEqual({opacity: 0.2});
-    expect(dim.options.duration).toBe(segmentedControl.pressedTitle.fadeMs);
-    expect(dim.options.duration).toBe(470);
-    expect(dim.options.easing).toBe(ease);
-    expect(fadesOf(ctx.segments.grid)).toHaveLength(0);
-    expect(ctx.motion.isSliding).toBe(false);
-  });
-
-  it('the dim moves with the finger into another segment, and never lands on the selected one', () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('list'));
-    const first = lastFadeOf(ctx.segments.list);
     drag(ctx, clientCenterOf('table'));
-    expect(first.cancel).toHaveBeenCalled();
-    const back = lastFadeOf(ctx.segments.list);
-    expect(back.keyframes.at(-1)).toEqual({opacity: 1});
-    expect(back.options.duration).toBe(470);
-    expect(lastFadeOf(ctx.segments.table).keyframes.at(-1)).toEqual({
-      opacity: 0.2,
-    });
-    drag(ctx, clientCenterOf('grid'));
-    expect(fadesOf(ctx.segments.grid)).toHaveLength(0);
-    expect(lastFadeOf(ctx.segments.table).keyframes.at(-1)).toEqual({
-      opacity: 1,
-    });
-  });
-
-  it('at the lift the chosen title comes back in 180 ms, and the commit switches the faces at once (F4 b64b)', () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('table'));
-    expect(release(ctx, clientCenterOf('table'))).toBe('table');
-    const back = lastFadeOf(ctx.segments.table);
-    expect(back.keyframes.at(-1)).toEqual({opacity: 1});
-    expect(back.options.duration).toBe(segmentedControl.pressedTitle.liftMs);
-    expect(back.options.duration).toBe(180);
-    expect(back.options.easing).toBe(ease);
-    const fades = recorded.length;
-    select(ctx, 'grid', 'table');
-    // The titles take their new faces with the selection: nothing fades.
-    expect(recorded).toHaveLength(fades);
+    for (const segment of Object.values(ctx.segments)) {
+      expect(segment.hasAttribute('data-pressed')).toBe(false);
+      expect(fadesOf(segment)).toEqual([]);
+    }
+    expect(ctx.motion.isSliding).toBe(false);
   });
 
   it('a tap on the selected segment dims nothing', () => {
@@ -1264,15 +1122,6 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(release(ctx, clientCenterOf('grid'))).toBeNull();
     expect(faceOf(ctx.segments.table)).toEqual(NO_FACE);
     expect(faceOf(ctx.segments.grid)).toEqual(NO_FACE);
-  });
-
-  it('a press the page takes away brings the dimmed title back', () => {
-    const ctx = setup('grid');
-    press(ctx, clientCenterOf('list'));
-    ctx.motion.cancel();
-    const back = lastFadeOf(ctx.segments.list);
-    expect(back.keyframes.at(-1)).toEqual({opacity: 1});
-    expect(back.options.duration).toBe(470);
   });
 
   it('a programmatic or keyboard change animates no title: the titles switch at once', () => {

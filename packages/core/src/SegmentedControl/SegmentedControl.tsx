@@ -23,12 +23,7 @@
 
 import React, {useMemo, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  shadowVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
@@ -148,12 +143,11 @@ const styles = stylex.create({
   },
   // The touch presentation's lens: the radiogroup's own pseudo-elements, so
   // no element is added (INV7). ::before is the copy of the selected
-  // segment's surface that a finger lifts and drags and that springs from the
-  // old segment to the new one, then hands the surface back
-  // (useSegmentedSelectionMotion); ::after casts the lifted lens's shadow
-  // (laid out with the lens and moved on its curves), or under Reduced Motion
-  // shows the surface that fades out where it is. Each is painted and laid
-  // out from custom properties written when a motion starts; at rest both are
+  // segment's surface that a finger drags and that springs from the old
+  // segment to the new one, then hands the surface back
+  // (useSegmentedSelectionMotion); under Reduced Motion ::after shows the
+  // surface that fades out where it is. Each is painted and laid out from
+  // custom properties written when a motion starts; at rest both are
   // hidden. A negative z-index keeps them under every segment's content
   // however the engine composites them: WebKit's overlap test misses
   // segments the moving layer will cover, so DOM order alone let it paint
@@ -246,14 +240,7 @@ const styles = stylex.create({
       backgroundOrigin:
         'var(--_segmented-after-background-origin, padding-box)',
       backgroundClip: 'var(--_segmented-after-background-clip, border-box)',
-      boxShadow: {
-        // Unset while the ::after casts the lifted lens's shadow (proposed;
-        // pending owner review): the theme's high elevation.
-        default: `var(--_segmented-after-box-shadow, ${shadowVars['--shadow-high']})`,
-        // The lifted lens's shadow is decoration: forced colors drop it, as
-        // they drop every other (a copied surface has none there either).
-        '@media (forced-colors: active)': 'none',
-      },
+      boxShadow: 'var(--_segmented-after-box-shadow, none)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderTopLeftRadius:
         'var(--_segmented-after-border-top-left-radius, 0px)',

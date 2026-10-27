@@ -12,8 +12,8 @@
  *   tracking included), `SegmentedSelectionMotion` (the controller),
  *   `SURFACE_PROPERTIES` and `layerVariable` (the custom properties that paint
  *   the radiogroup's two pseudo-element layers) and the selectors that find a
- *   segment, its title and its icon: SegmentedControl's touch layer, the
- *   selection slide and the lens a finger lifts, drags and lets go of
+ *   segment and its title: SegmentedControl's touch layer, the
+ *   selection slide and the lens a finger drags and lets go of
  * @position SegmentedControl's touch layer. Its one import site is
  *   SegmentedControl.tsx, which styles the radiogroup's ::before and ::after
  *   from these custom properties.
@@ -22,10 +22,9 @@
  *
  * UISegmentedControl slides one selection indicator from the old segment to
  * the new one on a spring (`segmentedControl.selectionSpring`), after a tap and
- * after a programmatic change alike. Every spring, clock and curve here is
- * UIKit's measured value, played through its internal motion role
- * (`segmented.*`, `spec:AST-094` FR4): no theme retunes them while the roles
- * stay internal (DEC-11).
+ * after a programmatic change alike: UIKit's measured spring, played through
+ * its internal motion role (`segmented.selectionSpring`, `spec:AST-094` FR4),
+ * which no theme retunes while it stays internal (DEC-11).
  *
  * The selected segment paints its own raised surface at rest, so themes keep
  * styling it as they always have. For the slide the lens takes over: the
@@ -46,17 +45,11 @@
  *
  * UNDER A FINGER (useSegmentedTouchTracking.ts reports the touch)
  *
- * - Landing on the selected segment lifts the lens in place: its size grows
- *   by twice the theme's `--spacing-3` across and twice its `--spacing-2` down
- *   (`segmentedControl.liftGrowth`, UIKit's 24 × 16 pt, where the spacing
- *   cannot be read) on `liftSpring`, and the radiogroup's ::after, laid out
- *   with the lens and moved with it on the same curves, casts the theme's
- *   elevation shadow (`--shadow-high`), its opacity following the lift on the
- *   same spring, so the raised lens reads as raised over any page. (UIKit's
- *   lens is glass; that material is an open owner decision.) Inside a
- *   scroller the press waits the content-touch delay, as UIScrollView delays
- *   a control's touches.
- * - Dragging from there carries it: its center chases the finger on
+ * - Landing on the selected segment lifts nothing: a pressed thumb's lift is
+ *   a theme's (a shared pressed-thumb lift role for draggable thumbs, none by
+ *   default; the record owner's decision), not this table's.
+ * - Dragging from there carries the lens at its resting size: its center
+ *   chases the finger on
  *   `springs.fingerTracking` (the shared `spec:AST-094` FR4 role, which
  *   UISegmentedControl's tracking values match), no further than
  *   `dragOvershoot` past the end segments.
@@ -65,15 +58,12 @@
  *   least 8 px) past the boundary (inline, until the commit's own styles take
  *   over); every title keeps its weight until the lift.
  * - Letting go commits the segment nearest the finger: the lens springs
- *   there on `selectionSpring` and comes back down on `liftSpring`.
+ *   there on `selectionSpring`.
  * - A touch that lands on another segment leaves the lens alone until the
- *   finger lifts; then it slides there like any change, lifted for the first
- *   `tapLiftHangMs` of the travel. Meanwhile that segment takes the
- *   `segmented-control-item` target's pressed state, its opacity fading to the
- *   state's (0.2 by default) on the `pressedTitle` fade clock (the dim moves
- *   with the finger to another segment) and back on its lift clock; the
- *   segments paint no press of their own there (SegmentedControlItem.tsx
- *   drops the shared press paint under a finger).
+ *   finger lifts; then it slides there like any change. Meanwhile that
+ *   segment shows the system's pressed overlay, as every pressable surface
+ *   does under a finger (SegmentedControlItem.tsx keeps the shared press
+ *   paint); nothing dims.
  * - The value a finger lets go on is committed through that segment's click.
  *   The commit's titles take their new weights at once, so the lens aims at
  *   the destination's box as it is once the new value shows. A click the
@@ -85,17 +75,16 @@
  *   neighbour just past a boundary.
  * - A cancelled touch (the page took it to scroll) puts the lens back.
  *
- * Reduced Motion (`design:reduced-motion`): nothing lifts, chases, travels
- * or scales. The lens never lifts under a finger; every change hands the
- * animator an entrance at the new segment, so its Reduce Motion cross-fade
- * lands the lens there and fades it in (a touch release fades on any pointer),
- * while the radiogroup's ::after, painted with the surface that was on
- * screen, fades out where it is on the same clock. A pressed segment's dim
- * fades on the animator's Reduce Motion fade, whatever its roles say.
+ * Reduced Motion (`design:reduced-motion`): nothing chases, travels or
+ * scales. Every change hands the animator an entrance at the new segment, so
+ * its Reduce Motion cross-fade lands the lens there and fades it in (a touch
+ * release fades on any pointer), while the radiogroup's ::after, painted
+ * with the surface that was on screen, fades out where it is on the same
+ * clock.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/SegmentedControl.tsx (the pseudo-elements)
- * - /packages/core/src/SegmentedControl/SegmentedControlItem.tsx (title and icon markers)
+ * - /packages/core/src/SegmentedControl/SegmentedControlItem.tsx (the title marker)
  * - /packages/core/src/SegmentedControl/useSegmentedTouchTracking.ts
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.test.ts
  * - /packages/core/src/SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts
@@ -106,14 +95,10 @@ import {
   createAnimator,
   type AnimateOptions,
   type Animator,
-  type MotionCurve,
   type MotionHandle,
   type MotionValues,
   type SpringTransition,
 } from '../motion/animator';
-import {reducedMotionFade} from '../motion/reducedMotion';
-import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {resolveMotion} from '../motion/resolveMotion';
 import {
   registerSegmentedTable,
   segmentedControl,
@@ -121,17 +106,10 @@ import {
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
-import {spacingVars} from '../theme/tokens.stylex';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 /** The segments, in DOM order. */
 export const SEGMENT_SELECTOR = '[role="radio"][data-value]';
-/**
- * The `segmented-control-item` target's pressed state, on the segment a
- * finger dims (an unselected one); its `opacity` is the dim.
- */
-const PRESSED_STATE = 'data-pressed';
-
 /**
  * The selected face moves to another segment only once the lens's center is
  * this far past the boundary: a quarter of that segment's width, at least
@@ -140,23 +118,8 @@ const PRESSED_STATE = 'data-pressed';
 const FACE_HYSTERESIS_RATIO = 0.25;
 const FACE_HYSTERESIS_MIN_PX = 8;
 
-/**
- * The dim the pressed segment's style sets (SegmentedControlItem.tsx gives
- * UIKit's internal 0.2), or UIKit's when it cannot be read.
- */
-function pressedOpacityOf(segment: HTMLElement): number {
-  const view = segment.ownerDocument.defaultView;
-  const opacity =
-    view == null ? NaN : parseFloat(view.getComputedStyle(segment).opacity);
-  return Number.isFinite(opacity)
-    ? opacity
-    : segmentedControl.pressedTitle.opacity;
-}
-
 /** A segment's title: the text assistive technology reads. */
 export const TITLE_SELECTOR = '[data-segment-title]';
-/** A segment's icon. */
-export const ICON_SELECTOR = '[data-segment-icon]';
 
 /** The selected surface's paint, copied into a layer's custom properties. */
 export const SURFACE_PROPERTIES: ReadonlyArray<string> = [
@@ -188,18 +151,10 @@ export const SURFACE_PROPERTIES: ReadonlyArray<string> = [
   '-webkit-backdrop-filter',
 ];
 
-/** The corner radii: what the lifted lens's shadow takes from the lens. */
-const RADII: ReadonlyArray<string> = [
-  'border-top-left-radius',
-  'border-top-right-radius',
-  'border-bottom-right-radius',
-  'border-bottom-left-radius',
-];
-
 /**
  * The radiogroup's two pseudo-element layers: the lens (::before) and the
- * ::after, which casts the lifted lens's shadow or, under Reduced Motion,
- * shows the surface that fades out where it is.
+ * ::after, which under Reduced Motion shows the surface that fades out where
+ * it is.
  */
 export type Layer = 'lens' | 'after';
 
@@ -273,12 +228,8 @@ interface Touch {
   readonly boxes: ReadonlyMap<HTMLElement, Box>;
   /** The segment the finger landed on, if any (the tracker's begin target). */
   readonly origin: HTMLElement | null;
-  /** Whether it landed on the selected segment (it carries the lens). */
+  /** Whether it landed on the selected segment (a drag carries the lens). */
   readonly carriesLens: boolean;
-  /** The segment under the finger now (the tracker's highlight). */
-  under: HTMLElement | null;
-  /** Whether the press is on (at once, or after a scroller's delay). */
-  isPressed: boolean;
   /** The selected title's face and an unselected one, read at landing. */
   readonly faces: {
     readonly selected: TitleFace;
@@ -296,14 +247,10 @@ interface Pending {
   readonly destination: HTMLElement;
   /** The destination's box when the finger landed. */
   readonly box: Box;
-  /** The lifted lens settles there; otherwise it slides from `from`. */
-  readonly isLifted: boolean;
+  /** The held lens settles there; otherwise it slides from `from`. */
+  readonly isHeld: boolean;
   /** The selected segment's box: where a tap's slide starts. */
   readonly from: Box | null;
-}
-
-function cssCubicBezier(points: ReadonlyArray<number>): string {
-  return `cubic-bezier(${points.join(', ')})`;
 }
 
 function faceOf(element: HTMLElement): TitleFace {
@@ -375,23 +322,6 @@ function paintLayer(
 /** Copies the lens's paint onto the ::after. */
 function copyLensPaint(track: HTMLElement): void {
   for (const property of SURFACE_PROPERTIES) {
-    track.style.setProperty(
-      layerVariable('after', property),
-      track.style.getPropertyValue(layerVariable('lens', property)),
-    );
-  }
-}
-
-/**
- * Paints the ::after as the lens's shadow: the lens's corners, no fill and
- * no border, and the theme's elevation shadow (the stylesheet's default for
- * an unset box-shadow, in SegmentedControl.tsx).
- */
-function paintShadow(track: HTMLElement): void {
-  for (const property of SURFACE_PROPERTIES) {
-    track.style.removeProperty(layerVariable('after', property));
-  }
-  for (const property of RADII) {
     track.style.setProperty(
       layerVariable('after', property),
       track.style.getPropertyValue(layerVariable('lens', property)),
@@ -474,113 +404,6 @@ function isSameBox(a: Box, b: Box): boolean {
   );
 }
 
-/** The scale that lifts a lens resting on `box` (UIKit adds, not scales). */
-/**
- * A length token's value in px on `element`, as its theme sets it (a `px` or
- * `rem` length), or `fallback` when it is not one.
- */
-function lengthTokenPx(
-  element: Element | null,
-  token: string,
-  fallback: number,
-): number {
-  const name = /^var\((--[^,)\s]+)/.exec(token)?.[1];
-  const view = element?.ownerDocument.defaultView;
-  if (element == null || name == null || view == null) {
-    return fallback;
-  }
-  const raw = view.getComputedStyle(element).getPropertyValue(name).trim();
-  const match = /^(-?\d*\.?\d+)(px|rem)$/.exec(raw);
-  if (match == null) {
-    return fallback;
-  }
-  const value = parseFloat(match[1]);
-  if (match[2] === 'px') {
-    return value;
-  }
-  const root = parseFloat(
-    view.getComputedStyle(element.ownerDocument.documentElement).fontSize,
-  );
-  return value * (Number.isFinite(root) && root > 0 ? root : 16);
-}
-
-/**
- * How much a finger lifts the lens, px added to its resting size: twice the
- * theme's `--spacing-3` across and twice its `--spacing-2` down (UIKit's
- * 24 × 16 pt at the default spacing), so a theme's spacing retunes it.
- */
-function liftGrowthOf(element: Element | null): {
-  width: number;
-  height: number;
-} {
-  return {
-    width:
-      2 *
-      lengthTokenPx(
-        element,
-        spacingVars['--spacing-3'],
-        segmentedControl.liftGrowth.width / 2,
-      ),
-    height:
-      2 *
-      lengthTokenPx(
-        element,
-        spacingVars['--spacing-2'],
-        segmentedControl.liftGrowth.height / 2,
-      ),
-  };
-}
-
-function lifted(
-  box: Box,
-  growth: {readonly width: number; readonly height: number},
-): MotionValues {
-  return {
-    scaleX: (box.width + growth.width) / box.width,
-    scaleY: (box.height + growth.height) / box.height,
-  };
-}
-
-/** The values the lens's shadow moves with it: its geometry, not opacity. */
-function geometryOf(values: MotionValues): MotionValues {
-  const {opacity: _opacity, ...geometry} = values;
-  return geometry;
-}
-
-/**
- * A tap's lift as one curve: from `from` (with `velocity`) up toward `peak`
- * on the lift spring, then from wherever that is at `hang` s back down to
- * `rest` on the same spring, keeping its velocity. The lens's scale rests at
- * 1; its shadow's opacity rests at 0.
- */
-function liftThenDown(
-  liftSpring: SpringDescription,
-  from: number,
-  peak: number,
-  velocity: number,
-  hang: number,
-  rest = 1,
-): MotionCurve {
-  const spring = toSpring(liftSpring);
-  const up = solveSpring(spring, {from, to: peak, velocity});
-  const down = solveSpring(spring, {
-    from: up.value(hang),
-    to: rest,
-    velocity: up.velocity(hang),
-  });
-  // Settled to a ten-thousandth of the lens's size: under 0.02 px.
-  const tail = Math.min(down.settleTime(1e-4), 4);
-  const duration = hang + tail;
-  return {
-    duration,
-    // Exactly the resting value at the end, so the hand-back is exact.
-    at: t =>
-      t >= duration ? rest : t <= hang ? up.value(t) : down.value(t - hang),
-    velocity: t =>
-      t >= duration ? 0 : t <= hang ? up.velocity(t) : down.velocity(t - hang),
-  };
-}
-
 function isEnabledSegment(segment: HTMLElement): boolean {
   return (
     !segment.hasAttribute('disabled') &&
@@ -592,14 +415,12 @@ function titleOf(segment: HTMLElement): HTMLElement | null {
   return segment.querySelector<HTMLElement>(TITLE_SELECTOR);
 }
 
-/** What a press dims on a segment: its title and icon, as UIKit's label and image. */
 export interface SegmentedSelectionMotionOptions {
   /** The animator's clock (ms, document timeline); `performance.now()` by default. */
   readonly now?: () => number;
   /**
-   * The animator for the radiogroup's ::after (the lifted lens's shadow, or
-   * the surface that fades out under Reduced Motion); one of its own by
-   * default.
+   * The animator for the radiogroup's ::after (the surface that fades out
+   * under Reduced Motion); one of its own by default.
    */
   readonly afterAnimator?: Animator;
 }
@@ -622,10 +443,6 @@ export class SegmentedSelectionMotion {
    * sits under the segments' backgrounds) while the lens is still crossing it.
    */
   private readonly abandoned = new Set<HTMLElement>();
-  /** The segment whose title a press on it dims (the lens is elsewhere). */
-  private pressedTitle: HTMLElement | null = null;
-  /** Each segment's running dim or return (its title and icon). */
-  private readonly titleDims = new Map<HTMLElement, Animation[]>();
   /** The segment showing the selected face under a dragging finger. */
   private facedSegment: HTMLElement | null = null;
   /** The frame request that keeps the face on the lens while it is carried. */
@@ -634,8 +451,8 @@ export class SegmentedSelectionMotion {
   private readonly faceOverrides = new Set<HTMLElement>();
   /** The motions the hand-back waits for. */
   private readonly running = new Set<MotionHandle>();
-  /** A finger holds the lens up. */
-  private isLifted = false;
+  /** A finger holds the lens: a drag from the selected segment carries it. */
+  private isHeld = false;
   private touch: Touch | null = null;
   /**
    * The value a touch already moved the lens to: the selection change that
@@ -649,13 +466,13 @@ export class SegmentedSelectionMotion {
   private isAwaitingValue = false;
   /** The motion a release starts once its commit's click has run. */
   private pending: Pending | null = null;
-  /** What the ::after shows: the lens's shadow, the leaving surface, or nothing. */
-  private afterRole: 'shadow' | 'leaving' | null = null;
+  /** The ::after shows the leaving surface (Reduced Motion). */
+  private isLeavingShown = false;
   /** Bumped by every leaving fade; a finished fade clears only its own. */
   private leaving = 0;
 
   private readonly now: () => number;
-  /** The ::after: the lens's shadow, or the surface fading out. */
+  /** The ::after: the surface fading out under Reduced Motion. */
   private readonly after: Animator;
 
   constructor(
@@ -665,9 +482,8 @@ export class SegmentedSelectionMotion {
     options: SegmentedSelectionMotionOptions = {},
   ) {
     // The chase plays the shared role `springs.fingerTracking`, and the
-    // slide, the lift and the pressed title play the segmented roles
-    // (`spec:AST-094` FR4): registered before the first animation
-    // (idempotent; nothing registers on import).
+    // slide the segmented role (`spec:AST-094` FR4): registered before the
+    // first animation (idempotent; nothing registers on import).
     registerSpringsTable();
     registerSegmentedTable();
     this.now = options.now ?? defaultNow;
@@ -790,50 +606,38 @@ export class SegmentedSelectionMotion {
       origin,
       carriesLens,
       faces,
-      under: origin,
-      isPressed: false,
     };
   }
 
   /**
-   * The segment under the finger changed (the tracker's highlight; null
-   * between or off the segments). A carried lens's selected face moves there
-   * at once; otherwise the pressed title's dim does, once the press is on.
+   * The finger moved to `clientX`. A drag from the selected segment carries
+   * the lens at its resting size; a touch elsewhere leaves it alone (that
+   * segment shows the system's pressed overlay).
    */
-  highlight(segment: HTMLElement | null): void {
+  drag(clientX: number): void {
     const touch = this.touch;
-    if (touch == null) {
+    if (touch == null || !touch.carriesLens) {
       return;
     }
-    touch.under = segment;
-    if (!touch.carriesLens && touch.isPressed) {
-      this.pressTitle(segment);
+    this.hold();
+    if (!this.isHeld) {
+      return;
     }
-    // A carried lens's selected face follows the lens, not the finger
-    // (followLens).
+    this.chase(clientX);
+    this.followLens();
   }
 
   /**
-   * The press is on: at touch-down, or once a scroller's content-touch
-   * delay has run out. Lifts the lens when the finger is on the selected
-   * segment, casting the theme's elevation shadow.
+   * The first move of a drag from the selected segment binds the lens there,
+   * at its resting size. Reduced Motion: nothing chases, so nothing is held
+   * (the lens stays parked until the release cross-fades).
    */
-  lift(): void {
+  private hold(): void {
     const touch = this.touch;
-    if (touch == null) {
-      return;
-    }
-    touch.isPressed = true;
-    if (!touch.carriesLens) {
-      // The lens stays on the selected segment; the pressed title dims.
-      this.pressTitle(touch.under);
-      return;
-    }
-    // Reduced Motion: a lift is a scale, which nothing may play (and which
-    // has no fade of its own): the lens stays where it is.
     if (
+      touch == null ||
       touch.origin == null ||
-      this.isLifted ||
+      this.isHeld ||
       this.animator.reducedMotion() !== 'off'
     ) {
       return;
@@ -842,45 +646,17 @@ export class SegmentedSelectionMotion {
     if (!isLaidOut(box)) {
       return;
     }
-    const at = this.carry(touch.origin, box, null, touch.origin);
-    this.isLifted = true;
-    const peak = lifted(box, liftGrowthOf(this.track));
-    this.springLens(peak, this.springFrom(peak, 'lift'), {at});
-    this.trackHandle(
-      this.after.animate(
-        {opacity: 1},
-        {spring: segmentedControl.liftSpring},
-        {at},
-      ),
-    );
-  }
-
-  /** The finger moved to `clientX`. Only a lens it carries follows. */
-  drag(clientX: number): void {
-    const touch = this.touch;
-    if (touch == null) {
-      return;
-    }
-    if (!touch.carriesLens) {
-      // The press is on as soon as the finger moves (a scroller's delay
-      // ends there); its dim follows the tracker's highlight.
-      this.lift();
-      return;
-    }
-    // A drag that starts before the press is on (a scroller's delay) lifts
-    // the lens as it takes the touch.
-    this.lift();
-    this.chase(clientX);
-    this.followLens();
+    this.carry(touch.origin, box, null, touch.origin);
+    this.isHeld = true;
   }
 
   /**
-   * The selected face follows the lifted lens: the segment the lens's
+   * The selected face follows the held lens: the segment the lens's
    * presented center is over, with hysteresis around each boundary (a
    * quarter of the segment's width, at least 8 px), so a finger resting on a
-   * boundary never flips it back and forth. It runs every frame while a
-   * lifted lens is carried, so the face keeps up as the lens settles under a
-   * still finger.
+   * boundary never flips it back and forth. It runs every frame while the
+   * lens is held, so the face keeps up as the lens settles under a still
+   * finger.
    */
   private followLens(): void {
     const touch = this.touch;
@@ -888,7 +664,7 @@ export class SegmentedSelectionMotion {
     if (
       touch == null ||
       !touch.carriesLens ||
-      !this.isLifted ||
+      !this.isHeld ||
       carried == null ||
       touch.origin == null
     ) {
@@ -932,7 +708,7 @@ export class SegmentedSelectionMotion {
     }
   }
 
-  /** The lifted lens's center chases the finger at `clientX`. */
+  /** The held lens's center chases the finger at `clientX`. */
   private chase(clientX: number): void {
     const touch = this.touch;
     const carried = this.carried;
@@ -945,7 +721,7 @@ export class SegmentedSelectionMotion {
       Math.max(touch.toTrackX(clientX), Math.min(...centers) - reach),
       Math.max(...centers) + reach,
     );
-    // The center chases the finger; the size stays lifted. Each chase starts
+    // The center chases the finger; the size stays at rest. Each chase starts
     // at the call (an explicit start): a call from rest waits for the
     // browser to start it, and on Android Chrome, whose touch moves arrive
     // once a frame, the next move came before that start was known, so every
@@ -981,41 +757,42 @@ export class SegmentedSelectionMotion {
     const destination =
       (target != null && isEnabledSegment(target) ? target : null) ?? selected;
     if (destination == null) {
-      this.releaseTitle();
       this.clearFaces();
-      this.unlift();
+      if (this.isHeld) {
+        this.isHeld = false;
+        this.settle();
+      }
       return null;
     }
     const box = touch.boxes.get(destination) as Box;
     const value =
       destination !== selected ? (destination.dataset.value ?? null) : null;
-    // The pressed title comes back on the lift's clock; a drag's borrowed
-    // face stays only if the lift commits (the commit takes it over).
-    this.releaseTitle();
+    // A drag's borrowed face stays only if the lift commits (the commit
+    // takes it over).
     if (value == null) {
       this.clearFaces();
     }
-    const isLifted = touch.carriesLens && this.isLifted;
+    const isHeld = touch.carriesLens && this.isHeld;
     this.committed = value;
     this.isAwaitingValue = false;
     if (value == null) {
-      if (isLifted) {
-        // The lifted lens settles back on the selection and comes down.
+      if (isHeld) {
+        // The held lens settles back on the selection.
         this.moveLensTo(destination, box, selected ?? destination);
       }
       return null;
     }
     // The commit follows at once, through the segment's click; the lens
-    // moves once it has run, on the box the destination has then. A lifted
+    // moves once it has run, on the box the destination has then. A held
     // lens settles there; a tap (or a drag that started elsewhere) slides
-    // there from the selected segment, lifted for the first part of the way.
-    if (isLifted || selected != null) {
+    // there from the selected segment.
+    if (isHeld || selected != null) {
       this.pending = {
         destination,
         box,
-        isLifted,
+        isHeld,
         from:
-          !isLifted && selected != null
+          !isHeld && selected != null
             ? (touch.boxes.get(selected) as Box)
             : null,
       };
@@ -1085,15 +862,14 @@ export class SegmentedSelectionMotion {
   cancel(): void {
     const touch = this.touch;
     this.touch = null;
-    this.pressTitle(null);
     this.clearFaces();
     if (
       touch == null ||
       !touch.carriesLens ||
       touch.origin == null ||
-      !this.isLifted
+      !this.isHeld
     ) {
-      // Nothing was lifted: nothing to put back.
+      // Nothing was held: nothing to put back.
       return;
     }
     const box = touch.boxes.get(touch.origin) as Box;
@@ -1103,7 +879,7 @@ export class SegmentedSelectionMotion {
   /** Hands the surface back to its segment now and hides the lens. */
   settle(): void {
     this.endLeaving();
-    this.isLifted = false;
+    this.isHeld = false;
     this.pending = null;
     const carried = this.carried;
     if (carried == null) {
@@ -1122,7 +898,7 @@ export class SegmentedSelectionMotion {
       clearLayer(this.track, 'lens');
       clearLayer(this.track, 'after');
     }
-    this.afterRole = null;
+    this.isLeavingShown = false;
   }
 
   /**
@@ -1165,14 +941,6 @@ export class SegmentedSelectionMotion {
     this.committed = null;
     this.isAwaitingValue = false;
     this.clearFaces();
-    this.pressedTitle?.removeAttribute(PRESSED_STATE);
-    this.pressedTitle = null;
-    for (const animations of this.titleDims.values()) {
-      for (const animation of animations) {
-        animation.cancel();
-      }
-    }
-    this.titleDims.clear();
     this.settle();
   }
 
@@ -1198,10 +966,10 @@ export class SegmentedSelectionMotion {
     }
     const to = box ?? pending.box;
     const surface = this.carried?.hidden ?? paint ?? pending.destination;
-    if (pending.isLifted) {
+    if (pending.isHeld) {
       this.moveLensTo(pending.destination, to, surface);
     } else if (pending.from != null) {
-      this.slideLifted(pending.destination, to, pending.from, surface);
+      this.slideTo(pending.destination, to, pending.from, surface);
     }
   }
 
@@ -1227,7 +995,7 @@ export class SegmentedSelectionMotion {
    * `paint`'s surface (the selected segment's), keeping what is on screen:
    * from `from` (a segment's resting box) when nothing was carried, else
    * from the presented geometry, re-based onto the new box with the
-   * velocities it had. The lens's shadow rides on it.
+   * velocities it had.
    */
   private carry(
     segment: HTMLElement,
@@ -1292,17 +1060,6 @@ export class SegmentedSelectionMotion {
     };
     // Opaque, whatever a Reduce Motion fade left.
     this.animator.set({...start, opacity: 1});
-    if (this.afterRole !== 'leaving') {
-      // The shadow is laid out with the lens and moves on its curves; it
-      // shows only while the lens is lifted (its opacity).
-      if (this.afterRole !== 'shadow') {
-        paintShadow(track);
-        this.afterRole = 'shadow';
-        this.after.set({opacity: 0});
-      }
-      placeLayer(track, 'after', box);
-      this.after.set(start);
-    }
     return at;
   }
 
@@ -1312,14 +1069,12 @@ export class SegmentedSelectionMotion {
   /** A spring transition that keeps the captured velocities of `values`. */
   private springFrom(
     values: MotionValues,
-    kind: 'selection' | 'lift' | 'tracking',
+    kind: 'selection' | 'tracking',
   ): SpringTransition {
     const spring =
       kind === 'selection'
         ? segmentedControl.selectionSpring
-        : kind === 'lift'
-          ? segmentedControl.liftSpring
-          : springs.fingerTracking;
+        : springs.fingerTracking;
     const velocity: Record<string, number> = {};
     for (const key of Object.keys(values) as (keyof typeof this.velocity)[]) {
       const v = this.velocity[key];
@@ -1334,16 +1089,13 @@ export class SegmentedSelectionMotion {
     return Object.keys(velocity).length > 0 ? {spring, velocity} : {spring};
   }
 
-  /** Springs the lens, and the shadow riding on it, toward `values`. */
+  /** Springs the lens toward `values`. */
   private springLens(
     values: MotionValues,
     transition: SpringTransition,
     options?: AnimateOptions,
   ): void {
     this.trackHandle(this.animator.animate(values, transition, options));
-    if (this.afterRole === 'shadow') {
-      this.after.animate(geometryOf(values), transition, options);
-    }
   }
 
   /** The lens's presented center and size, from the animator. */
@@ -1358,9 +1110,9 @@ export class SegmentedSelectionMotion {
     };
   }
 
-  /** The lens settles on `segment` and comes down. */
+  /** The lens settles on `segment`, at its resting size. */
   private moveLensTo(segment: HTMLElement, box: Box, paint: HTMLElement): void {
-    this.isLifted = false;
+    this.isHeld = false;
     if (!isLaidOut(box)) {
       this.settle();
       return;
@@ -1372,23 +1124,15 @@ export class SegmentedSelectionMotion {
       return;
     }
     const at = this.carry(segment, box, null, this.carried?.hidden ?? paint);
-    this.springLens({x: 0}, this.springFrom({x: 0}, 'selection'), {at});
     this.springLens(
-      {scaleX: 1, scaleY: 1},
-      this.springFrom({scaleX: 1, scaleY: 1}, 'lift'),
+      {x: 0, scaleX: 1, scaleY: 1},
+      this.springFrom({x: 0, scaleX: 1, scaleY: 1}, 'selection'),
       {at},
-    );
-    this.trackHandle(
-      this.after.animate(
-        {opacity: 0},
-        {spring: segmentedControl.liftSpring},
-        {at},
-      ),
     );
   }
 
-  /** A tap's slide: travels on the slide spring, lifted for a moment. */
-  private slideLifted(
+  /** A tap's slide: from `from` to `segment` on the slide spring. */
+  private slideTo(
     segment: HTMLElement,
     box: Box,
     from: Box,
@@ -1399,7 +1143,7 @@ export class SegmentedSelectionMotion {
       return;
     }
     if (this.animator.reducedMotion({touchRelease: true}) !== 'off') {
-      // A tap's release: no lift, no travel; it fades on any pointer.
+      // A tap's release: no travel; it fades on any pointer.
       this.crossFadeTo(
         segment,
         box,
@@ -1415,54 +1159,11 @@ export class SegmentedSelectionMotion {
       this.carried == null ? from : null,
       this.carried?.hidden ?? paint,
     );
-    this.springLens({x: 0}, this.springFrom({x: 0}, 'selection'), {at});
-    // Up on the lift spring and, after the hang, back down on it: one curve
-    // known in advance, so the compositor brings the lens down on time even
-    // while the main thread is busy. The lift's spring and hang are UIKit's
-    // measured values, read through their internal roles.
-    const peak = lifted(box, liftGrowthOf(this.track));
-    const liftSpring = segmentedControl.liftSpring;
-    const hang =
-      resolveMotion(this.track, segmentedControl, 'tapLiftHangMs') / 1000;
-    const velocityX = this.velocity.scaleX ?? 0;
-    const velocityY = this.velocity.scaleY ?? 0;
-    this.velocity = {};
-    const curves = {
-      scaleX: liftThenDown(
-        liftSpring,
-        this.animator.get('scaleX'),
-        peak.scaleX as number,
-        velocityX,
-        hang,
-      ),
-      scaleY: liftThenDown(
-        liftSpring,
-        this.animator.get('scaleY'),
-        peak.scaleY as number,
-        velocityY,
-        hang,
-      ),
-    };
-    this.trackHandle(this.animator.play(curves, {at}));
-    if (this.afterRole === 'shadow') {
-      // The shadow rises and falls with the lift, on the same clock.
-      this.trackHandle(
-        this.after.play(
-          {
-            ...curves,
-            opacity: liftThenDown(
-              liftSpring,
-              this.after.get('opacity'),
-              1,
-              this.after.getVelocity('opacity'),
-              hang,
-              0,
-            ),
-          },
-          {at},
-        ),
-      );
-    }
+    this.springLens(
+      {x: 0, scaleX: 1, scaleY: 1},
+      this.springFrom({x: 0, scaleX: 1, scaleY: 1}, 'selection'),
+      {at},
+    );
   }
 
   /**
@@ -1501,12 +1202,11 @@ export class SegmentedSelectionMotion {
     } else if (from != null) {
       leaving = from;
     }
-    this.isLifted = false;
+    this.isHeld = false;
     this.endLeaving();
-    // No lift, so no shadow: the ::after shows the surface fading out.
     this.after.stop();
     clearLayer(track, 'after');
-    this.afterRole = null;
+    this.isLeavingShown = false;
     const fades =
       leaving != null &&
       opacity > 0 &&
@@ -1546,7 +1246,7 @@ export class SegmentedSelectionMotion {
       paintLayer(track, 'after', paint);
     }
     placeLayer(track, 'after', {...from, y: box.y, height: box.height});
-    this.afterRole = 'leaving';
+    this.isLeavingShown = true;
     this.after.set({x: 0, scaleX: 1, scaleY: 1, opacity});
   }
 
@@ -1575,38 +1275,14 @@ export class SegmentedSelectionMotion {
   }
 
   private endLeaving(): void {
-    if (this.afterRole !== 'leaving') {
+    if (!this.isLeavingShown) {
       return;
     }
-    this.afterRole = null;
+    this.isLeavingShown = false;
     this.leaving++;
     this.after.stop();
     if (this.track != null) {
       clearLayer(this.track, 'after');
-    }
-  }
-
-  private unlift(): void {
-    this.isLifted = false;
-    if (this.carried == null) {
-      return;
-    }
-    if (this.animator.reducedMotion() !== 'off') {
-      // A scale has no fade of its own: it lands at once.
-      this.animator.set({scaleX: 1, scaleY: 1});
-      if (this.afterRole === 'shadow') {
-        this.after.set({scaleX: 1, scaleY: 1, opacity: 0});
-      }
-      return;
-    }
-    this.springLens(
-      {scaleX: 1, scaleY: 1},
-      this.springFrom({scaleX: 1, scaleY: 1}, 'lift'),
-    );
-    if (this.afterRole === 'shadow') {
-      this.trackHandle(
-        this.after.animate({opacity: 0}, {spring: segmentedControl.liftSpring}),
-      );
     }
   }
 
@@ -1619,7 +1295,7 @@ export class SegmentedSelectionMotion {
     this.running.add(handle);
     void handle.finished.then(() => {
       this.running.delete(handle);
-      if (this.running.size > 0 || this.isLifted || this.touch != null) {
+      if (this.running.size > 0 || this.isHeld || this.touch != null) {
         return;
       }
       const committed = this.committed;
@@ -1631,128 +1307,6 @@ export class SegmentedSelectionMotion {
         this.settle();
       }
     });
-  }
-
-  /**
-   * Moves the press's dim to `segment` (none for null): the title it leaves
-   * comes back, `segment`'s dims, each on the dim's clock from the opacity on
-   * screen. The selected segment and a disabled one never dim.
-   */
-  private pressTitle(segment: HTMLElement | null): void {
-    const next =
-      segment != null &&
-      segment.getAttribute('aria-checked') !== 'true' &&
-      isEnabledSegment(segment)
-        ? segment
-        : null;
-    if (next === this.pressedTitle) {
-      return;
-    }
-    if (this.pressedTitle != null) {
-      this.setPressed(this.pressedTitle, false, 'fade');
-    }
-    this.pressedTitle = next;
-    if (next != null) {
-      this.setPressed(next, true, 'fade');
-    }
-  }
-
-  /**
-   * Puts `segment` in or out of the `segmented-control-item` target's pressed
-   * state and fades it there from what it shows now: dimmed to the state's
-   * opacity (the theme's, UIKit's 0.2 by default), or back to 1.
-   */
-  private setPressed(
-    segment: HTMLElement,
-    isPressed: boolean,
-    clock: 'fade' | 'lift',
-  ): void {
-    const view = segment.ownerDocument.defaultView;
-    const shown =
-      view == null ? NaN : parseFloat(view.getComputedStyle(segment).opacity);
-    for (const animation of this.titleDims.get(segment) ?? []) {
-      animation.cancel();
-    }
-    this.titleDims.delete(segment);
-    if (isPressed) {
-      segment.setAttribute(PRESSED_STATE, 'pressed');
-    } else {
-      segment.removeAttribute(PRESSED_STATE);
-    }
-    const to = isPressed ? pressedOpacityOf(segment) : 1;
-    this.fadeTitle(segment, to, clock, Number.isFinite(shown) ? shown : 1);
-  }
-
-  /** The finger let go: the pressed title comes back on the lift's clock. */
-  private releaseTitle(): void {
-    const pressed = this.pressedTitle;
-    this.pressedTitle = null;
-    if (pressed != null) {
-      this.setPressed(pressed, false, 'lift');
-    }
-  }
-
-  /**
-   * Fades what a press dims on `segment` (its title and icon) to `to`, from
-   * the opacity on screen.
-   */
-  private fadeTitle(
-    segment: HTMLElement,
-    to: number,
-    clock: 'fade' | 'lift',
-    from: number,
-  ): void {
-    for (const animation of this.titleDims.get(segment) ?? []) {
-      animation.cancel();
-    }
-    this.titleDims.delete(segment);
-    // The pressed segment fades as a whole: it is an unselected one, which
-    // paints no surface of its own under a finger, so its content is all it
-    // shows.
-    const targets = [segment];
-    if (typeof segment.animate !== 'function') {
-      return;
-    }
-    // UIKit's measured clock and curve, read through their internal roles
-    // (`segmented.pressedTitle.*`); under Reduced Motion the animator's fade
-    // (design:reduced-motion DR4).
-    const {pressedTitle} = segmentedControl;
-    const timing = this.reducedFade(segment, clock === 'lift') ?? {
-      duration: resolveMotion(
-        segment,
-        pressedTitle,
-        clock === 'fade' ? 'fadeMs' : 'liftMs',
-      ),
-      easing: cssCubicBezier(
-        resolveMotion(
-          segment,
-          clock === 'fade' ? pressedTitle.fadeCurve : pressedTitle.liftCurve,
-        ),
-      ),
-    };
-    const animations = targets.map(target => {
-      return target.animate([{opacity: from}, {opacity: to}], {
-        ...timing,
-        fill: 'forwards',
-      });
-    });
-    this.titleDims.set(segment, animations);
-    if (to === 1) {
-      // Back at rest: the content's own style takes over again.
-      animations[0].finished.then(
-        () => {
-          if (this.titleDims.get(segment) === animations) {
-            this.titleDims.delete(segment);
-            for (const animation of animations) {
-              animation.cancel();
-            }
-          }
-        },
-        () => {
-          // Replaced by a newer fade, which owns the content now.
-        },
-      );
-    }
   }
 
   /**
@@ -1802,18 +1356,6 @@ export class SegmentedSelectionMotion {
     }
     this.faceOverrides.clear();
     this.facedSegment = null;
-  }
-
-  /**
-   * The Reduce Motion fade for a fade this controller plays itself (a dim),
-   * from the person's settings as the animator reads them: null when motion
-   * is not reduced, duration 0 when it changes at once.
-   */
-  private reducedFade(
-    element: HTMLElement,
-    touchRelease: boolean,
-  ): {duration: number; easing: string} | null {
-    return reducedMotionFade(element, {touchRelease});
   }
 }
 

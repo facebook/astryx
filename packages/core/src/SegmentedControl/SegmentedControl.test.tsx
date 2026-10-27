@@ -938,15 +938,19 @@ describe('selection motion', () => {
     }
   });
 
-  it('touch presentation: the segments paint no press of their own; the pressed title dims instead (UIKit)', () => {
+  it('touch presentation: the segments a press can change keep the shared press paint, and nothing dims (the record owner’s decision)', () => {
     const spy = mockCoarsePointer();
     try {
       renderControl();
       for (const name of ['List', 'Icon']) {
-        expect(screen.getByRole('radio', {name})).not.toHaveAttribute(
-          'data-astryx-pressable',
-        );
+        const segment = screen.getByRole('radio', {name});
+        expect(segment).toHaveAttribute('data-astryx-pressable');
+        expect(hasPressedArm(segment)).toBe(true);
       }
+      // The selected segment never paints a press.
+      expect(screen.getByRole('radio', {name: 'Grid'})).not.toHaveAttribute(
+        'data-astryx-pressable',
+      );
     } finally {
       spy.mockRestore();
     }

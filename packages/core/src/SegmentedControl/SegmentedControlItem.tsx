@@ -7,13 +7,13 @@
  * @input Uses React, StyleX, SegmentedControlContext
  * @output Exports SegmentedControlItem component and SegmentedControlItemProps type
  * @position Child item; renders as a radio button within the segmented control.
- *   In the touch presentation the segment drops its CSS transitions and its
- *   press paint: the touch layer (useSegmentedSelectionMotion.ts) animates the
- *   change and dims a pressed title instead; it finds the title and icon by
- *   their `data-segment-title` / `data-segment-icon` markers.
+ *   In the touch presentation the segment drops its CSS transitions (the
+ *   touch layer, useSegmentedSelectionMotion.ts, animates the change) and
+ *   keeps the shared press paint; the touch layer finds the title by its
+ *   `data-segment-title` marker.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts (title and icon markers)
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts (the title marker)
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
@@ -154,14 +154,6 @@ const styles = stylex.create({
   // same change.
   touchPresentation: {
     transitionProperty: 'none',
-    // The pressed dim: a finger on an unselected segment dims it to UIKit's
-    // measured 0.2. It is internal, not a theming state. The selection
-    // motion reads it and fades the segment there on the compositor
-    // (useSegmentedSelectionMotion.ts).
-    opacity: {
-      default: null,
-      ':is([data-pressed="pressed"])': 0.2,
-    },
   },
 });
 
@@ -218,11 +210,6 @@ export function SegmentedControlItem({
 
   const isSelected = ctx.value === value;
   const isItemDisabled = isDisabled || ctx.isDisabled;
-  // The shared press paint, on the segments a press can change. Under a
-  // finger the pressed segment dims its title instead, as UIKit's does (the
-  // touch layer draws it), and paints no press of its own.
-  const paintsPress =
-    !isSelected && !isItemDisabled && ctx.isTouchPresentation !== true;
   // When the whole group is disabled with a disabledMessage, keep the selected
   // segment focusable so the group's reason tooltip is keyboard-discoverable.
   // Per-item disabling (`isDisabled` on the item) always drops out of the tab
@@ -241,11 +228,7 @@ export function SegmentedControlItem({
   });
 
   const iconElement = icon ? (
-    <span
-      data-segment-icon=""
-      {...stylex.props(styles.icon, iconSizeStyles[size])}>
-      {icon}
-    </span>
+    <span {...stylex.props(styles.icon, iconSizeStyles[size])}>{icon}</span>
   ) : null;
 
   return (
@@ -258,7 +241,7 @@ export function SegmentedControlItem({
       aria-disabled={isItemDisabled || undefined}
       aria-label={isLabelHidden ? label : undefined}
       data-value={value}
-      {...(paintsPress ? pressable : undefined)}
+      {...(!isSelected && !isItemDisabled ? pressable : undefined)}
       // Disabled items (including when the whole group is disabled) are not tab
       // stops — otherwise the selected segment stays keyboard-focusable but is
       // silently dead (arrows and activation are no-ops) (navigation-13). The
@@ -282,7 +265,9 @@ export function SegmentedControlItem({
           isSelected && styles.selected,
           // The shared hover and pressed overlay, on the segments a press can
           // change: the selected segment keeps its raised surface as it is.
-          paintsPress && interactionOverlayStyles.backgroundColor,
+          !isSelected &&
+            !isItemDisabled &&
+            interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
           ctx.isTouchPresentation === true && styles.touchPresentation,
           xstyle,

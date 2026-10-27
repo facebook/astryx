@@ -8,7 +8,7 @@
  *   whether the touch presentation applies
  * @output Exports `useSegmentedTouchTracking`: a finger's touch on a
  *   SegmentedControl, from landing to letting go, reported to the selection
- *   motion (begin, lift, drag, highlight, release, cancel); and
+ *   motion (begin, drag, release, cancel); and
  *   `segmentTargetAt` / `measureSegments`, the segment a finger at x counts
  *   for. The segment the finger lets go on is committed through its own
  *   click, by the action-group tracker
@@ -22,8 +22,7 @@
  * delay, and a scroll that takes the touch cancels it.
  *
  * The gesture system's press tracker is that UIControl tracking: `touchDown`
- * when the finger lands, the highlight on at once or after the content-touch
- * delay inside a scroller (the lens lifts with it), `touchUpInside` /
+ * when the finger lands, `touchUpInside` /
  * `touchUpOutside` at the lift, `touchCancel` when the browser takes the
  * touch to scroll. It never claims the finger, so a vertical drag still
  * scrolls the page.
@@ -37,8 +36,10 @@
  * tracker's (hooks/actionGroupTracker.ts), the one tracker of a held finger
  * across a group of targets: the segment under the finger, else the nearest
  * (a gap splits at its middle; past the ends, the end one; nothing over a
- * disabled segment), resolved from rects read once when the finger lands. Its highlight moves the
- * pressed title's dim. A tap (the finger lifts on the segment it landed on,
+ * disabled segment), resolved from rects read once when the finger lands. The
+ * press itself paints as every pressable surface does under a finger: the
+ * segment keeps the shared press paint (SegmentedControlItem.tsx), so the
+ * tracker paints nothing of its own. A tap (the finger lifts on the segment it landed on,
  * with no drag) is committed by the browser's own click (`spec:AST-094`
  * FR11); the control waits for it and clicks the segment itself only if no
  * click comes. A drag, or a lift on another segment, gets no click from the
@@ -53,7 +54,7 @@
  *
  * While a finger is down, text selection and the touch callout are off on
  * the track: the drag recognizer brings the selection lock (`lockSelection`,
- * `spec:AST-094` FR41), so a hold lifts the lens and never starts a
+ * `spec:AST-094` FR41), so a held finger drags the lens and never starts a
  * selection; a mouse keeps desktop selection.
  *
  * SYNC: When modified, update:
@@ -262,8 +263,6 @@ export function useSegmentedTouchTracking(
   useIsomorphicLayoutEffect(() => {
     isEnabledRef.current = isEnabled;
   });
-  /** A finger is down on the track (its press has not ended). */
-  const isPressingRef = useRef(false);
   /** The horizontal pan began for this touch: it is a drag, not a tap. */
   const isDraggingRef = useRef(false);
   /** The segments as the finger found them (disabled ones too). */
@@ -273,15 +272,15 @@ export function useSegmentedTouchTracking(
     roots: () => [trackRef.current],
     itemSelector: SEGMENT_SELECTOR,
     highlightExpansion: 0,
-    // The highlight shows as the selected face or the pressed title's dim,
-    // not as press paint.
+    // The segments keep the shared press paint, which the press controller
+    // writes for the touched segment, as everywhere else under a finger: the
+    // tracker paints nothing of its own (a held lens shows the selected face).
     paintsHighlight: false,
     resolveTarget: (
       x: number,
       _y: number,
       _targets: ReadonlyArray<ActionGroupTarget>,
     ) => segmentTargetAt(x, segmentsRef.current),
-    onHighlightChange: next => motion.highlight(next),
     onActivated: (item, cancelled) => {
       const track = trackRef.current;
       const value = item.dataset.value;
@@ -306,7 +305,6 @@ export function useSegmentedTouchTracking(
       }
       switch (event) {
         case 'touchDown':
-          isPressingRef.current = true;
           isDraggingRef.current = false;
           segmentsRef.current = measureSegments(track);
           tracker.begin(touch.x, touch.y);
@@ -314,7 +312,6 @@ export function useSegmentedTouchTracking(
           break;
         case 'touchUpInside':
         case 'touchUpOutside': {
-          isPressingRef.current = false;
           // Where the finger lifts decides, wherever it landed.
           tracker.move(touch.x, touch.y);
           const lifted = tracker.highlighted;
@@ -340,7 +337,6 @@ export function useSegmentedTouchTracking(
           break;
         }
         case 'touchCancel':
-          isPressingRef.current = false;
           tracker.cancel();
           motion.cancel();
           break;
@@ -352,13 +348,6 @@ export function useSegmentedTouchTracking(
           break;
       }
     },
-    onHighlightChange: isHighlighted => {
-      // The press is on: at touch-down, or after a scroller's delay. A quick
-      // tap's highlight flash after the lift lifts nothing.
-      if (isHighlighted && isPressingRef.current) {
-        motion.lift();
-      }
-    },
   });
   useGestureRecognizer(
     attachRef,
@@ -368,9 +357,10 @@ export function useSegmentedTouchTracking(
         direction: 'horizontal',
         cancelsTouchesInView: false,
         // No title is selectable under a held finger, as in UIKit: a hold on
-        // the track does something (it lifts the lens), so this recognizer
-        // brings the lock, and the host turns text selection and the callout
-        // off on the track while a finger is down.
+        // the track does something (a drag carries the lens and commits where
+        // it lifts), so this recognizer brings the lock, and the host turns
+        // text selection and the callout off on the track while a finger is
+        // down.
         selectionLock: lockSelection,
       }),
     recognizer => {
