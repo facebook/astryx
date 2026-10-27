@@ -196,8 +196,8 @@ anchor is positioning infrastructure rather than consumer anatomy.
 - `architecture:interaction-modality` owns the shared right-click, keyboard,
   long-press, pointer, touch, and adaptive-presentation boundaries.
 - `architecture:layer-runtime` owns the current context-mode `useLayer` host and
-  cursor-anchor positioning. The factory closes the menu on an outside click
-  (FR10), and ContextMenu joins shared Escape ordering through
+  cursor-anchor positioning. The factory closes the menu on an outside press
+  (`spec:AST-107` FR8; FR10), and ContextMenu joins shared Escape ordering through
   `useLayerDismissal`; touch hosting delegates
   to BottomSheet.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering.

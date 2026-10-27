@@ -186,8 +186,9 @@ onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
   the menu, `isDisabled` keeps it from opening, and the shared options mean
   what `component:ContextMenu`'s props of the same names mean; its menu follows the
   WAI-ARIA menu pattern: focus starts on the first enabled row, Up and Down
-  move between rows, Home and End jump to the ends, Escape closes, and focus
-  returns to the element on close; `destroy` removes every listener it added. `useContextMenu(ref, options) →
+  move between rows, Home and End jump to the ends, Escape closes, a press
+  outside the menu closes it (skipping the compatibility mouse events a
+  finger's press sends), and focus returns to the element on close; `destroy` removes every listener it added. `useContextMenu(ref, options) →
 {open, close}` is its thin React wrapper (FR6): it takes custom content as
   `menuContent` JSX, as `component:ContextMenu` does, and hands the factory a
   `render` that portals it into the container, its only work, and `component:ContextMenu`
