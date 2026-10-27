@@ -5,8 +5,10 @@
  *
  * A finger on a stepper steps the value and leaves focus where it was, as
  * UIStepper (which never becomes first responder) does: focusing the field
- * would bring up the on-screen keyboard on a phone. A mouse click still moves
- * focus to the field, so the arrow keys and the wheel keep stepping. Touches
+ * would bring up the on-screen keyboard on a phone, and so does an activation
+ * with no pointer there. A mouse click still moves focus to the field, so the
+ * arrow keys and the wheel keep stepping, and so does an activation with no
+ * pointer where the primary pointer is fine (a desktop screen reader's). Touches
  * are real touch input (Chromium's touch emulation), not synthetic DOM events.
  */
 
@@ -91,6 +93,22 @@ test.describe('on a touch screen', () => {
     await expect(input).toHaveAttribute('aria-valuenow', '8');
     await expect(input).toBeFocused();
   });
+
+  test('an activation with no pointer steps the value and leaves the field unfocused', async ({
+    page,
+  }) => {
+    await open(page);
+    // A phone: the primary pointer is coarse.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(true);
+    const input = page.getByRole('spinbutton', {name: 'Quantity'});
+    await page
+      .getByRole('button', {name: 'Increment Quantity'})
+      .evaluate(button => (button as HTMLElement).click());
+    await expect(input).toHaveAttribute('aria-valuenow', '3');
+    expect(await focusedRole(page)).not.toBe('spinbutton');
+  });
 });
 
 test.describe('with a mouse', () => {
@@ -108,5 +126,19 @@ test.describe('with a mouse', () => {
     await expect(input).toBeFocused();
     await page.keyboard.press('ArrowUp');
     await expect(input).toHaveAttribute('aria-valuenow', '4');
+  });
+
+  test('an activation with no pointer steps the value and focuses the field', async ({
+    page,
+  }) => {
+    await open(page);
+    // A desktop screen reader activates with a click of detail 0 and no
+    // pointer press; the field takes focus, so the new value is read.
+    const input = page.getByRole('spinbutton', {name: 'Quantity'});
+    await page
+      .getByRole('button', {name: 'Increment Quantity'})
+      .evaluate(button => (button as HTMLElement).click());
+    await expect(input).toHaveAttribute('aria-valuenow', '3');
+    await expect(input).toBeFocused();
   });
 });

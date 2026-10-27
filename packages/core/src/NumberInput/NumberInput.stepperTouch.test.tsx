@@ -704,8 +704,10 @@ describe('NumberInput steppers under a finger', () => {
 });
 
 describe('NumberInput steppers under a pen and a mouse', () => {
-  it('a pen tap steps once, on its click, without focusing the field', () => {
-    // A fine pointer: this test's context has no coarse pointer.
+  it('a pen tap steps once, on its click, and focuses the field where the primary pointer is fine', () => {
+    // A fine pointer: this test's context has no coarse pointer. No
+    // on-screen keyboard comes up, so a pen focuses the field as a mouse
+    // does (`component:NumberInput` FR5).
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     const {onChange, input, increment} = setup();
     const pointer = {pointerType: 'pen', pointerId: 40, isPrimary: true};
@@ -717,7 +719,22 @@ describe('NumberInput steppers under a pen and a mouse', () => {
     expect(press(increment)).toBeNull();
     fireEvent.click(increment, {detail: 1});
     expect(committed(onChange)).toEqual([6]);
-    expect(input).not.toHaveFocus();
+    expect(input).toHaveFocus();
+  });
+
+  it('a pen press on the column itself (its border) steps once and focuses the field where the primary pointer is fine', () => {
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const {onChange, input, increment} = setup();
+    const column = increment.parentElement as HTMLElement;
+    const pointer = {pointerType: 'pen', pointerId: 41, isPrimary: true};
+    fireEvent.pointerDown(column, {...pointer, clientX: 200, clientY: 8});
+    wait(80);
+    fireEvent.pointerUp(column, {...pointer, clientX: 200, clientY: 8});
+    act(() => {
+      column.dispatchEvent(clickNaming('pen', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+    expect(input).toHaveFocus();
   });
 
   it('a mouse click steps once and focuses the field', () => {
@@ -758,6 +775,20 @@ describe('NumberInput steppers under a pen and a mouse', () => {
 describe('NumberInput steppers under a mouse where the primary pointer is coarse', () => {
   beforeEach(() => {
     coarsePrimaryPointer();
+  });
+
+  // A pen, too, takes the press tracker here, and focusing the field would
+  // bring up the on-screen keyboard (`component:NumberInput` FR5).
+  it('a pen tap steps once, on its click, without focusing the field', () => {
+    const {onChange, input, increment} = setup();
+    const pointer = {pointerType: 'pen', pointerId: 42, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
+    act(() => {
+      increment.dispatchEvent(clickNaming('pen', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+    expect(input).not.toHaveFocus();
   });
 
   // A touch device with a mouse or trackpad: the gesture host serves every
