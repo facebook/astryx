@@ -21,6 +21,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type RefCallback,
 } from 'react';
@@ -45,6 +46,7 @@ import {
   getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
+import {preserveAnimations} from './preserveAnimations';
 import {useLayerContext} from './LayerContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -443,6 +445,24 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/**
+ * Make the engine choose a shown layer's position option afresh: a browser
+ * keeps a laid-out layer on the option it last used until the layer stops
+ * being rendered, so the layer is taken out of rendering for one forced
+ * layout and restored, in the same task. No frame paints in between and the
+ * popover stays open, so no toggle event fires and focus and hover are
+ * untouched. Every CSS animation and transition of the layer and its content
+ * is put back in the state it was in (`preserveAnimations`).
+ */
+function placeAfresh(layer: HTMLElement): void {
+  preserveAnimations(layer, () => {
+    const display = layer.style.display;
+    layer.style.display = 'none';
+    layer.getBoundingClientRect();
+    layer.style.display = display;
+  });
+}
+
 const TRANSFORM_PROPERTIES = ['transform', 'translate', 'scale', 'rotate'];
 
 function hasTransform(style: CSSStyleDeclaration): boolean {
@@ -599,13 +619,26 @@ function failsAnchor(layer: HTMLElement, anchor: HTMLElement): boolean {
  * standard list has failed it. The runtime calls this in the same task as
  * every show and remount, and while the layer is open whenever its size, its
  * content's size, its anchor's size or the viewport changes; each of those
- * reads lands before the next frame paints (FR8). Once switched, a layer keeps
- * its anchor-clear list until it next opens, so it never jumps back over its
- * trigger while open.
+ * reads lands before the next frame paints. A same-size anchor that moves on
+ * screen, in layout or because something scrolled, is read after paint, from
+ * the anchor-move observer (FR8). Scroll events are not read: during one the
+ * anchor has moved but the layer anchored to it not yet, so the read would
+ * compare a moved anchor with a stale layer. Once switched, a layer keeps its
+ * anchor-clear list until it next opens, so it never jumps back over its
+ * trigger while open; it is placed afresh (`placeAfresh`) only when the switch
+ * does not take effect at once, or when a later read finds it failing again.
  */
 function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
   if (anchor && failsAnchor(layer, anchor)) {
+    const switching = !layer.hasAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
     layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+    // A switch usually takes effect at once. The engine may instead keep the
+    // option it last used, even one the new list does not contain or one a
+    // scroll has since made fail: then, and on any later read that finds the
+    // switched layer failing again, place it afresh.
+    if (!switching || failsAnchor(layer, anchor)) {
+      placeAfresh(layer);
+    }
   }
   // A layer that fits has no scroll range and stays a plain box, so a wheel
   // over it still scrolls the page.
@@ -616,13 +649,132 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
 }
 
 /**
+ * Call `onMove` when an element moves on screen without changing size: in
+ * layout (a sibling above it grows, a margin changes) or because something
+ * scrolled. ResizeObserver sees only size. The element is observed by an
+ * IntersectionObserver whose root is the viewport shrunk, through
+ * `rootMargin`, to the element's own rectangle (the layout-shift technique of
+ * `@floating-ui/dom`'s `observeMove`), so any move changes the intersection
+ * ratio and fires the callback, which calls `onMove` and re-arms on the new
+ * rectangle. Intersection callbacks run after the frame that moved the
+ * element has painted, so the caller corrects that move in the next frame.
+ *
+ * A fresh observer's first report can already differ from its threshold: the
+ * element is partly outside the viewport, or it kept moving between the
+ * rectangle read and the observer's first check, as it does every frame of a
+ * smooth scroll. Any such report calls `onMove` and re-arms, at the reported
+ * ratio, or at once on the element's new rectangle when the report is 0 and
+ * the element moved, so a move that spans many frames is followed frame by
+ * frame. A report of 0 for an element that has not moved means a scrolled
+ * container clips it wholly; re-arming then would report 0 again every frame.
+ * Instead a second IntersectionObserver, rooted at the viewport with a
+ * threshold of 0 (it counts every ancestor's overflow clip), waits for the
+ * element to come back into view, then calls `onMove` and re-arms. Nothing
+ * runs on a timer. Returns the function that stops observing.
+ */
+function observeMove(element: HTMLElement, onMove: () => void): () => void {
+  const doc = element.ownerDocument;
+  if (typeof IntersectionObserver === 'undefined') {
+    return () => {};
+  }
+  let observer: IntersectionObserver | null = null;
+  let visibility: IntersectionObserver | null = null;
+  const stop = () => {
+    observer?.disconnect();
+    observer = null;
+    visibility?.disconnect();
+    visibility = null;
+  };
+  const moved = (threshold: number) => {
+    onMove();
+    arm(threshold);
+  };
+  const arm = (threshold: number) => {
+    stop();
+    const root = doc.documentElement;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const top = Math.floor(rect.top);
+    const left = Math.floor(rect.left);
+    const right = Math.floor(root.clientWidth - rect.right);
+    const bottom = Math.floor(root.clientHeight - rect.bottom);
+    const hasMoved = () => {
+      const now = element.getBoundingClientRect();
+      return (
+        now.top !== rect.top ||
+        now.left !== rect.left ||
+        now.width !== rect.width ||
+        now.height !== rect.height
+      );
+    };
+    // Clipped by a scrolled container: wait, without a timer, for the
+    // element to come back into view. A first report that already finds it
+    // in view only counts if it has moved, so a clip the move observer and
+    // this one judge differently cannot re-arm every frame.
+    const awaitVisible = () => {
+      let isFirstVisible = true;
+      visibility = new IntersectionObserver(
+        entries => {
+          const visible = entries[entries.length - 1]?.isIntersecting ?? false;
+          const firstVisible = isFirstVisible;
+          isFirstVisible = false;
+          if (visible && (!firstVisible || hasMoved())) {
+            moved(1);
+          }
+        },
+        {root: doc, threshold: 0},
+      );
+      visibility.observe(element);
+    };
+    let isFirst = true;
+    observer = new IntersectionObserver(
+      entries => {
+        const ratio = entries[entries.length - 1]?.intersectionRatio ?? 0;
+        const first = isFirst;
+        isFirst = false;
+        if (ratio === threshold) {
+          // Still over its own rectangle, but a move smaller than the
+          // rounding of the root margin can leave the ratio at 1.
+          if (ratio === 1 && hasMoved()) {
+            moved(1);
+          }
+          return;
+        }
+        if (!first || ratio > 0) {
+          moved(first ? ratio : 1);
+          return;
+        }
+        if (hasMoved()) {
+          moved(1);
+          return;
+        }
+        if (visibility === null) {
+          awaitVisible();
+        }
+      },
+      {
+        root: doc,
+        rootMargin: `${-top}px ${-right}px ${-bottom}px ${-left}px`,
+        threshold,
+      },
+    );
+    observer.observe(element);
+  };
+  arm(1);
+  return stop;
+}
+
+/**
  * Watch an open layer that keeps its anchor clear, and its anchor, for every
  * change that can re-settle the layer over the anchor or give it a scroll
  * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
- * resizing (ResizeObserver) and the viewport resizing, all reported before
- * the frame paints. Each calls `keepAnchorClear` for this layer and anchor
- * while `isCurrent` says they are still the live pair. Returns the function
- * that removes every observer and listener it added.
+ * resizing (ResizeObserver, before paint), the viewport resizing (before
+ * paint), and the anchor moving on screen without resizing, in layout or by a
+ * scroll (`observeMove`, after paint). Each calls `keepAnchorClear` for this layer and anchor while
+ * `isCurrent` says they are still the live pair. Returns the function that
+ * removes every observer and listener it added.
  */
 function observeAnchorClearance(
   layer: HTMLElement,
@@ -647,9 +799,11 @@ function observeAnchorClearance(
     }
     observer.observe(anchor);
   }
+  const stopObservingMove = observeMove(anchor, reread);
   view.addEventListener('resize', reread);
   return () => {
     observer?.disconnect();
+    stopObservingMove();
     view.removeEventListener('resize', reread);
   };
 }
@@ -696,6 +850,81 @@ interface ContextLayerMount {
   portalTarget: HTMLElement | null;
   /** Logical writing context lost when moving outside an unsafe ancestor. */
   portalStyle: React.CSSProperties;
+}
+
+/**
+ * Where a context layer is hosted, published to the one component that
+ * renders it. The hook resolves the mount from the marker's parent once the
+ * marker is in the DOM, and the slot below subscribes to it, so the render
+ * that places the layer re-renders the slot alone: the hook's host (a
+ * Tooltip, a Popover, a menu) and everything under it render once on mount.
+ */
+interface ContextLayerMountStore {
+  readonly get: () => ContextLayerMount | null;
+  readonly set: (mount: ContextLayerMount | null) => void;
+  readonly subscribe: (onChange: () => void) => () => void;
+}
+
+function createContextLayerMountStore(): ContextLayerMountStore {
+  let mount: ContextLayerMount | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => mount,
+    set: next => {
+      if (next === mount) {
+        return;
+      }
+      mount = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+    subscribe: onChange => {
+      listeners.add(onChange);
+      return () => {
+        listeners.delete(onChange);
+      };
+    },
+  };
+}
+
+const readNoMount = (): ContextLayerMount | null => null;
+
+/**
+ * The marker and, once the hook has resolved where it goes, the layer. The
+ * server and the hydrating render carry the marker alone, so block content
+ * never enters server markup inside `<p>` and its kin; the mount arrives from
+ * the marker's ref callback, and only this component re-renders to place the
+ * layer.
+ */
+function ContextLayerSlot({
+  mountStore,
+  renderLayer,
+  sentinelRef,
+}: {
+  readonly mountStore: ContextLayerMountStore;
+  readonly renderLayer: (mount: ContextLayerMount) => ReactNode;
+  readonly sentinelRef: RefCallback<HTMLTemplateElement>;
+}) {
+  const mount = useSyncExternalStore(
+    mountStore.subscribe,
+    mountStore.get,
+    readNoMount,
+  );
+  // Keep the marker mounted after resolving the layer. Apart from giving
+  // us the real JSX parent on first show, this lets its ref report when a
+  // persistent hook's render call moves to a different host.
+  const sentinel = <template ref={sentinelRef} />;
+  if (mount === null) {
+    return <>{sentinel}</>;
+  }
+  const layer = renderLayer(mount);
+  return (
+    <>
+      {sentinel}
+      {mount.portalTarget ? createPortal(layer, mount.portalTarget) : layer}
+    </>
+  );
 }
 
 function readPortalWritingContext(
@@ -960,9 +1189,13 @@ function useLayerImplementation(
   // corrective portal, including after the render call moves.
   const sentinelRef = useRef<HTMLTemplateElement | null>(null);
   const contextMountRef = useRef<ContextLayerMount | null>(null);
-  const [contextMount, setContextMount] = useState<ContextLayerMount | null>(
-    null,
-  );
+  // The resolved mount reaches the slot through this store, never through
+  // state on this hook, so placing the layer renders the slot alone. The
+  // generation counts mounts that REPLACE a resolved one (a render call that
+  // moved to another host): the layer element is recreated then, and the
+  // effects below that bind to it re-run.
+  const [mountStore] = useState(createContextLayerMountStore);
+  const [mountGeneration, setMountGeneration] = useState(0);
   // A show() that cannot run yet is remembered here and replayed: one that
   // arrives before the final layer mounts runs when its popover ref attaches;
   // one that arrives while another popover is mid show/hide runs once that
@@ -1045,6 +1278,12 @@ function useLayerImplementation(
       return;
     }
 
+    // The slide options' `@position-try` rules (FR4) are installed in the
+    // layer's document before its first paint, here where the mount resolves:
+    // the marker's arrival is the one event every mount has, whether the
+    // render call mounts with its host or later. One sheet serves every layer.
+    ensureSlideRules(sentinel.ownerDocument);
+
     const portalTarget = resolveLayerPortalTarget(inlineParent);
     const mount: ContextLayerMount = {
       portalTarget,
@@ -1052,17 +1291,21 @@ function useLayerImplementation(
         ? readPortalWritingContext(sentinel, portalTarget)
         : {},
     };
+    const replaced = contextMountRef.current !== null;
     contextMountRef.current = mount;
-    setContextMount(mount);
-  }, [mode]);
+    mountStore.set(mount);
+    if (replaced) {
+      setMountGeneration(generation => generation + 1);
+    }
+  }, [mode, mountStore]);
 
   const clearContextMount = useCallback(() => {
     if (mode !== 'context' || !lazyMount) {
       return;
     }
     contextMountRef.current = null;
-    setContextMount(null);
-  }, [mode, lazyMount]);
+    mountStore.set(null);
+  }, [mode, lazyMount, mountStore]);
 
   const show = useCallback(() => {
     // Every caller lands here, so this is where the dismissing press is
@@ -1356,19 +1599,6 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
-  // The slide options' `@position-try` rules (FR4) are installed in the
-  // layer's document before its first paint; one sheet serves every layer.
-  useIsomorphicLayoutEffect(() => {
-    if (mode !== 'context') {
-      return;
-    }
-    const doc =
-      popoverRef.current?.ownerDocument ?? sentinelRef.current?.ownerDocument;
-    if (doc) {
-      ensureSlideRules(doc);
-    }
-  }, [mode, contextMount]);
-
   // Anchor visibility (FR5). The first frame must already be right (FR8), so
   // the opening read is synchronous — a layout effect runs before paint, and a
   // state change inside it re-renders before paint — against the visual
@@ -1409,13 +1639,14 @@ function useLayerImplementation(
   }, [isOpen, mode, updateAnchorInView]);
 
   // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
-  // is open: content that grows, an anchor that resizes or a viewport resize
-  // can each re-settle the standard list over the anchor or
+  // is open: content that grows, an anchor that resizes or moves (in layout or
+  // by a scroll) or a viewport resize can each re-settle the standard list over the anchor or
   // give the layer a scroll range (`observeAnchorClearance`). The external
   // systems are those browser observers and listeners; this effect binds them
   // while the layer is open and removes them when it closes, unmounts or is
-  // remounted by a moved render call (`contextMount`). A trigger replaced while
-  // open is rebound by the trigger callback ref, so no DOM node enters state.
+  // remounted by a moved render call (`mountGeneration`). A trigger replaced
+  // while open is rebound by the trigger callback ref, so no DOM node enters
+  // state.
   useIsomorphicLayoutEffect(() => {
     if (!keepsAnchorClear || !isOpen || mode !== 'context') {
       return;
@@ -1435,20 +1666,11 @@ function useLayerImplementation(
       clearObserversRef.current?.();
       clearObserversRef.current = null;
     };
-  }, [keepsAnchorClear, isOpen, mode, contextMount]);
+  }, [keepsAnchorClear, isOpen, mode, mountGeneration]);
 
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
-      // Keep the marker mounted after resolving the layer. Apart from giving
-      // us the real JSX parent on first show, this lets its ref report when a
-      // persistent hook's render call moves to a different host.
-      const sentinel = <template ref={sentinelRefCallback} />;
-
-      if (contextMount === null) {
-        return <>{sentinel}</>;
-      }
-
       const {
         placement = 'above',
         alignment = 'center',
@@ -1534,7 +1756,8 @@ function useLayerImplementation(
       // The marker gives us the actual JSX parent without mounting arbitrary
       // children there. Safe positions preserve the existing DOM order and
       // cascade; unsafe positions use the nearest corrective portal target.
-      const layer = (
+      // The slot renders the layer once the hook has resolved that mount.
+      const renderLayer = (mount: ContextLayerMount) => (
         <Container
           ref={popoverRefCallback}
           id={id}
@@ -1548,7 +1771,7 @@ function useLayerImplementation(
             ...clearanceProperty,
             ...clearFallbacksProperty,
             ...layerInsetProperties(declaredInset),
-            ...contextMount.portalStyle,
+            ...mount.portalStyle,
             ...extraStyle,
           }}
           onMouseEnter={onMouseEnter}
@@ -1558,22 +1781,21 @@ function useLayerImplementation(
       );
 
       return (
-        <>
-          {sentinel}
-          {contextMount.portalTarget
-            ? createPortal(layer, contextMount.portalTarget)
-            : layer}
-        </>
+        <ContextLayerSlot
+          mountStore={mountStore}
+          renderLayer={renderLayer}
+          sentinelRef={sentinelRefCallback}
+        />
       );
     },
     [
       anchorId,
-      contextMount,
       declaredInset,
       id,
       isAnchorInView,
       keepsAnchorClear,
       lightDismiss,
+      mountStore,
       popoverRefCallback,
       sentinelRefCallback,
     ],

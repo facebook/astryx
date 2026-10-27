@@ -71,7 +71,7 @@ const WORKFLOWS = {
     // other and so ride one lane of their own.
     lanes: ['test-ui', 'test-node', 'typecheck'],
     scopeConditional: false,
-    sharded: false,
+    sharded: true,
   },
 };
 
@@ -157,18 +157,6 @@ describe.each(Object.entries(WORKFLOWS))(
         expect(suite['continue-on-error']).not.toBe(true);
       }
 
-      if (!sharded) {
-        // One conditional step preserves the existing scope gate for both
-        // runs. Exact foreground commands also reject backgrounding or
-        // ignored exits.
-        expect(suites).toHaveLength(1);
-        expect(suites[0].run.trim().split('\n')).toEqual([
-          'pnpm test:ui',
-          'pnpm test:ui:isolated',
-        ]);
-        return;
-      }
-
       // Sharded: every leg runs its share without FR23, and exactly one leg
       // runs FR23 in a later step on the same runner, after its share exited.
       expect(suites).toHaveLength(2);
@@ -178,12 +166,18 @@ describe.each(Object.entries(WORKFLOWS))(
       expect(job.steps.indexOf(isolated)).toBeGreaterThan(
         job.steps.indexOf(share),
       );
-      expect(isolated.if).toBe(`matrix.shard == 1 && ${share.if}`);
+      expect(isolated.if).toBe(
+        share.if ? `matrix.shard == 1 && ${share.if}` : 'matrix.shard == 1',
+      );
     });
 
     if (sharded) {
       it('splits each Vitest lane across legs that together run every file', () => {
-        for (const lane of lanes) {
+        const vitestLanes = lanes.filter(lane =>
+          /--project \w+/.test(runLines(workflow.jobs[lane])),
+        );
+        expect(vitestLanes).toEqual(['test-ui', 'test-node']);
+        for (const lane of vitestLanes) {
           const job = workflow.jobs[lane];
           const legs = job.strategy?.matrix?.shard;
           expect(Array.isArray(legs), `${lane} has no shard matrix`).toBe(true);
@@ -432,7 +426,10 @@ describe('ci.yml RTL package sharding', () => {
       expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
     }
     expect(shard['runs-on']).toBe('4-core-ubuntu');
-    expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
+    // Pull requests get the 15-minute PR budget; the full release roster, 30.
+    expect(shard['timeout-minutes']).toBe(
+      "${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}",
+    );
     expect(shard['continue-on-error']).not.toBe(true);
     const scope = shard.steps.find(
       step => step.name === 'Resolve RTL shard scope',
@@ -641,19 +638,84 @@ describe('deploy.yml push gating', () => {
       'packages/cli',
       'apps/storybook',
       'internal/a11y-spec',
+      'internal/interaction-harness',
     ]) {
       const {typecheck} = JSON.parse(read(`${dir}/package.json`)).scripts;
       expect(typecheck, `${dir} lost its typecheck`).toBeTruthy();
     }
   });
 
-  it('checks out main on every push-gate lane', () => {
-    // A lane that checks out the default ref would gate the wrong commit.
+  it('checks out one run-wide main commit on every push-gate lane and leg', () => {
+    // A lane that checks out the default ref would gate the wrong commit, and
+    // legs that each resolve `main` can straddle a merge and shard different
+    // file lists, so one job resolves the commit and every leg checks it out.
+    const resolve = workflow.jobs['main-commit'];
+    expect(resolve.outputs.sha).toBe('${{ steps.resolve.outputs.sha }}');
+    const script = resolve.steps[0].with.script;
+    expect(script).toContain('context.sha');
+    expect(script).toContain("branch: 'main'");
     for (const lane of ['test-ui', 'test-node', 'typecheck']) {
+      expect(workflow.jobs[lane].needs).toEqual(['main-commit']);
       const checkout = workflow.jobs[lane].steps.find(step =>
         step.uses?.startsWith('actions/checkout'),
       );
-      expect(checkout?.with?.ref, `${lane} does not pin main`).toBe('main');
+      expect(checkout?.with?.ref, `${lane} does not pin the run's commit`).toBe(
+        '${{ needs.main-commit.outputs.sha }}',
+      );
     }
+  });
+});
+
+describe('ci.yml interaction proofs', () => {
+  const workflow = load('ci.yml');
+  const job = workflow.jobs['pr-interaction'];
+  const step = name => job.steps.find(candidate => candidate.name === name);
+
+  it('runs the interaction config in Chromium against the exact PR head', () => {
+    // Four cores when the proofs apply, a slim runner when it passes without work.
+    const labels = [...job['runs-on'].matchAll(/'([^']+)'/g)]
+      .map(match => match[1])
+      .filter(label => label !== 'true');
+    expect(labels).toEqual(['4-core-ubuntu', 'ubuntu-slim']);
+    for (const label of labels)
+      expect(KNOWN_RUNNERS.has(label), label).toBe(true);
+    expect(job.needs).toEqual(
+      expect.arrayContaining(['check-scope', 'build-storybook']),
+    );
+    const checkout = job.steps.find(candidate =>
+      candidate.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.pull_request.head.sha }}',
+    );
+    const run = step('Run interaction proofs').run;
+    expect(run).toContain('--config playwright.interaction.config.ts');
+    expect(run).toContain('--project chromium');
+    const packageJson = JSON.parse(read('package.json'));
+    expect(packageJson.scripts['test:interaction']).toBe(
+      'playwright test --config playwright.interaction.config.ts',
+    );
+  });
+
+  it('runs whenever the harness, its config, a component or a story changes', () => {
+    const scope = workflow.jobs['interaction-scope'].steps.find(
+      candidate =>
+        candidate.name === 'Decide whether the interaction proofs apply',
+    ).run;
+    expect(scope).toContain('.github/scripts/pr-scope-touches.sh');
+    for (const path of [
+      'internal/interaction-harness/',
+      'internal/a11y-spec/',
+      'playwright\\.interaction\\.config\\.ts',
+      'packages/[^/]+/src/',
+      'apps/storybook/',
+      '\\.github/workflows/ci\\.yml$',
+      'package\\.json$',
+      'pnpm-lock\\.yaml$',
+    ]) {
+      expect(scope).toContain(path);
+    }
+    // Unknown scope (exit 2) runs the proofs; only "out of scope" skips them.
+    expect(scope).toContain('if [ "$scope" = 1 ]; then');
   });
 });
