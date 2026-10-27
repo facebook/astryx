@@ -4,8 +4,7 @@
  * @file projection.ts
  * @input A release position and velocity, candidate rest points
  * @output Exports `projectDistance` / `project` (WWDC18's momentum
- *   projection) and `selectSnapPoint` (the release target UIKit-style;
- *   paging has its own measured rule in paging.ts)
+ *   projection) and `selectSnapPoint` (the release target UIKit-style)
  * @position Pure math; no DOM, no React
  *
  * WWDC18 "Designing Fluid Interfaces" (session 803): a thrown object goes to
@@ -58,7 +57,10 @@ export interface SnapSelection {
 
 /**
  * The rest point a release goes to: the one nearest the projected rest
- * position. `fromIndex` + `maxSteps` limit how many points away from the
+ * position. This is the math primitive (projection + nearest); the release
+ * policy on top of it (a flick advances at least one detent, a release moving
+ * back toward its start cancels) is `resolveSnapPoint` (resolveSnapPoint.ts), so a
+ * component's release rule calls that rather than adding its own. `fromIndex` + `maxSteps` limit how many points away from the
  * starting one a single release may travel (by index order; pass points
  * sorted along the axis). Ties go to the point in the direction of travel.
  *
