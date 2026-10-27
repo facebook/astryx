@@ -385,7 +385,12 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
    * of the stylesheet's entrance and exit. Set by the standalone sheet.
    */
   hasSpringPresentation?: boolean;
-  /** See useSheetGestures: true while the sheet presents under a finger. */
+  /**
+   * True while the sheet enters under a finger: on UIKit's present spring
+   * (useSheetGestures `present`), or, where the sheet does not spring (a
+   * switcher's step), on the stylesheet's entrance until its transition ends.
+   * The host holds pointer input meanwhile (`spec:AST-094` FR35).
+   */
   onPresentingChange?: (presenting: boolean) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
@@ -757,6 +762,51 @@ export function BottomSheetPanel({
       present();
     }
   }, [present, springsPresentation, state]);
+  // Under a finger a stylesheet entrance (a switcher's step) holds pointer
+  // input as the spring entrance does (`spec:AST-094` FR35): from the frame
+  // the sheet opens, or its swap starts, until its transition ends. Keyed on
+  // the state's kind, not its identity: a host renders a new state object on
+  // every render.
+  const onPresentingChangeRef = useRef(onPresentingChange);
+  useLayoutEffect(() => {
+    onPresentingChangeRef.current = onPresentingChange;
+  }, [onPresentingChange]);
+  const entranceHeldRef = useRef(false);
+  const holdEntrance = useCallback((isHeld: boolean) => {
+    if (entranceHeldRef.current !== isHeld) {
+      entranceHeldRef.current = isHeld;
+      onPresentingChangeRef.current?.(isHeld);
+    }
+  }, []);
+  const stateKind = state.kind;
+  const wasOpenRef = useRef(false);
+  useLayoutEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = stateKind === 'open';
+    if (!isTouch || springsPresentation) {
+      holdEntrance(false);
+      return;
+    }
+    if (stateKind !== 'open' || (!isEntering && wasOpen)) {
+      holdEntrance(false);
+      return;
+    }
+    holdEntrance(true);
+    // Under reduced motion on a coarse pointer the entrance is the opacity
+    // cross-fade (design:reduced-motion DR2) and its transform is instant.
+    return waitForTransition(
+      elementRef.current,
+      isCoarseCrossFade ? 'opacity' : 'transform',
+      () => holdEntrance(false),
+    );
+  }, [
+    holdEntrance,
+    isCoarseCrossFade,
+    isEntering,
+    isTouch,
+    springsPresentation,
+    stateKind,
+  ]);
   useEffect(() => {
     if (motion == null) {
       return;

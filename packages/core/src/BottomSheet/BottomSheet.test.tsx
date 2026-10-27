@@ -17,6 +17,7 @@ import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {resetBottomSheetStackForTests} from './bottomSheetStack';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {isInHeldLayer, isInputShield} from '../Layer/inputHold';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -1099,6 +1100,26 @@ describe('BottomSheet', () => {
   });
 
   describe('under a mouse', () => {
+    it('holds nothing when a mouse opens the sheet (FR35, DEC-16)', async () => {
+      expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const dialog = screen.getByRole('dialog');
+      expect(isInHeldLayer(dialog)).toBe(false);
+      expect([...dialog.children].some(isInputShield)).toBe(false);
+    });
+
     it('opens and closes on the stylesheet transitions, not the sheet spring', async () => {
       expect(matchMedia('(pointer: coarse)').matches).toBe(false);
       const played: Keyframe[][] = [];
@@ -1155,7 +1176,9 @@ describe('BottomSheet', () => {
       vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
-          matches: query.includes('pointer: coarse'),
+          matches:
+            query.includes('pointer: coarse') &&
+            !query.includes('prefers-reduced-motion'),
           media: query,
           onchange: null,
           addEventListener: vi.fn(),
@@ -1206,7 +1229,7 @@ describe('BottomSheet', () => {
       // The spring on the travel channel, and the input hold over the page,
       // as on iOS.
       expect(played.flat().some(frame => frame.translate != null)).toBe(true);
-      expect(document.querySelector('[data-astryx-sheet-hold]')).not.toBeNull();
+      expect(isInHeldLayer(getSheet())).toBe(true);
     });
 
     function recordAnimate() {
@@ -1232,7 +1255,7 @@ describe('BottomSheet', () => {
         .filter(frame => frame.translate != null)
         .map(frame => Number.parseFloat(String(frame.translate).split(' ')[1]));
 
-    it('holds input while the sheet presents: a hold covers the sheet and the scrim until it lands (F4 b59)', async () => {
+    it("holds pointer input while the sheet enters: the layer's input hold covers the sheet and the scrim until it lands (FR35; F4 b59)", async () => {
       recordAnimate();
       const {rerender} = render(
         <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
@@ -1251,24 +1274,61 @@ describe('BottomSheet', () => {
         await Promise.resolve();
       });
       const dialog = screen.getByRole('dialog');
-      const hold = () => dialog.querySelector('[data-astryx-sheet-hold]');
-      // At 60 and 150 ms a touch lands on the hold, not on the sheet or the
-      // scrim.
+      const shield = () => [...dialog.children].find(isInputShield) ?? null;
+      // At 60 and 150 ms the dialog is a held layer: a touch on the sheet or
+      // the scrim reaches no gesture, and the shield inside the dialog takes
+      // the hits.
       for (const ms of [60, 90]) {
         await act(async () => {
           await vi.advanceTimersByTimeAsync(ms);
         });
-        expect(hold()).not.toBeNull();
-        expect(hold()?.parentElement).toBe(dialog);
+        expect(isInHeldLayer(dialog)).toBe(true);
+        expect(isInHeldLayer(getSheet())).toBe(true);
+        expect(shield()).not.toBeNull();
       }
       // A tap on it is not a tap on the scrim: the sheet stays open.
-      fireEvent.click(hold() as Element);
+      fireEvent.click(shield() as Element);
       expect(dialog).toHaveAttribute('open');
-      // Landed: the hold is gone, so input works from the completion on.
+      // Landed: the hold is released, so input works from the completion on.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2000);
       });
-      expect(hold()).toBeNull();
+      expect(isInHeldLayer(getSheet())).toBe(false);
+      expect(shield()).toBeNull();
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
+    it('keeps keys and assistive technology live while the sheet enters (FR35)', async () => {
+      recordAnimate();
+      const onOpenChange = vi.fn();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={onOpenChange} label="Filters">
+          <button type="button">Inside</button>
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+          <button type="button">Inside</button>
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60);
+      });
+      const dialog = screen.getByRole('dialog');
+      expect(isInHeldLayer(dialog)).toBe(true);
+      // Held for pointers only: the content stays in the accessibility tree
+      // and keyboard focus can reach it.
+      expect(dialog).not.toHaveAttribute('inert');
+      expect(dialog).not.toHaveAttribute('aria-hidden');
+      const inside = screen.getByRole('button', {name: 'Inside'});
+      inside.focus();
+      expect(document.activeElement).toBe(inside);
       delete (Element.prototype as {animate?: unknown}).animate;
     });
 
@@ -1405,7 +1465,9 @@ describe('BottomSheet', () => {
       vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
-          matches: query.includes('pointer: coarse'),
+          matches:
+            query.includes('pointer: coarse') &&
+            !query.includes('prefers-reduced-motion'),
           media: query,
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),

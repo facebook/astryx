@@ -258,9 +258,21 @@ test('during the entrance a tap on the dim and a grab are ignored, and input ret
   // Neither reached it: the sheet presented to its detent and stayed.
   await expect(dialog).toHaveAttribute('open');
   expect(await sheetTop(sheet)).toBeLessThan(viewport.height * 0.15);
-  // Landed: the hold is gone and a tap on the dim closes the sheet.
-  await expect(dialog.locator('[data-astryx-sheet-hold]')).toHaveCount(0);
+  // Landed: the hold is released and a tap on the dim closes the sheet.
   await driver.tap({x: center, y: 30});
+  await expect(dialog).not.toHaveAttribute('open');
+});
+
+test('during the entrance keys stay live: Escape closes the sheet once it lands (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const {dialog, sheet, tapTrigger} = await story(page);
+  await tapTrigger();
+  await page.waitForTimeout(60);
+  // Only pointers are held: Escape during the entrance asks to close, and
+  // the close waits for the sheet to land, then dismisses (F4 b59).
+  await page.keyboard.press('Escape');
+  await waitForRest(sheet);
   await expect(dialog).not.toHaveAttribute('open');
 });
 
