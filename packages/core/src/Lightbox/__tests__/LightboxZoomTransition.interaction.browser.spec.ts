@@ -13,7 +13,10 @@
  *   its thumbnail; the viewer stays open until the photo has landed; no
  *   source opens plainly; the opening keeps moving through a blocked main
  *   thread; an Escape mid-opening brings the photo back and the thumbnail
- *   shows again and stays; Reduce Motion (design:reduced-motion) fades in
+ *   shows again and stays; a tap beside the photo, a double tap or a drag
+ *   down that lands while the viewer is still entering is held and the
+ *   viewer finishes opening and stays, while keys stay live (spec:AST-094
+ *   FR35); Reduce Motion (design:reduced-motion) fades in
  *   place in 200 ms or less on a touch screen, shows at once with a mouse,
  *   and never
  *   hides the thumbnail; a close during the opening turns it around from
@@ -47,6 +50,7 @@ import {
   withStorybook,
   writeEvidence,
   type TouchDriver,
+  type TouchScript,
 } from '@astryxdesign/interaction-harness';
 import {cadenceOutside} from './screenSignal';
 
@@ -361,6 +365,91 @@ test('the opening keeps advancing every frame while the main thread is blocked',
   );
   expect(proof.longestStallMs).toBeLessThan(cadence * 2.5);
   expect(proof.monotonic).toBe(true);
+});
+
+/** Two taps 160 ms apart, as a finger double-taps. */
+function doubleTap(at: {x: number; y: number}): TouchScript {
+  return [
+    {t: 0, fingers: [{id: 0, ...at}]},
+    {t: 60, fingers: []},
+    {t: 160, fingers: [{id: 0, ...at}]},
+    {t: 220, fingers: []},
+  ];
+}
+
+/**
+ * Opens photo 0 from its thumbnail and keeps its opening running (its
+ * animations held mid-flight), so input lands during the entrance.
+ */
+async function openHeldMidEntrance(page: Page) {
+  const s = await openStoryPage(page);
+  await tap(s.driver, s.thumbnail(0));
+  const dialog = page.getByRole('dialog');
+  const photo = dialog.locator('[data-current] img');
+  await waitForAnimation(photo);
+  await holdAnimations(page, photo);
+  const box = await photoBox(photo);
+  const centre = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+  return {s, dialog, photo, centre};
+}
+
+/** The entrance resumes and ends: the viewer stays open, the photo fitted. */
+async function expectEnteredAndOpen(
+  page: Page,
+  dialog: Locator,
+  photo: Locator,
+) {
+  // Past the double-tap wait, after which a tap beside the photo closes it.
+  await page.waitForTimeout(500);
+  await releaseAnimations(page);
+  await waitForRest(photo);
+  await expect(dialog).toBeVisible();
+  const fitted = await photo.evaluate(el => (el as HTMLElement).offsetWidth);
+  expect((await photoBox(photo)).width).toBeCloseTo(fitted, 0);
+}
+
+test('a tap beside the photo during the opening is held: it finishes opening and stays (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const {s, dialog, photo} = await openHeldMidEntrance(page);
+  const stage = await dialog.boundingBox();
+  if (stage == null) {
+    throw new Error('no dialog box');
+  }
+  // The dark area above the photo, where a tap closes an open viewer.
+  await s.driver.tap({x: stage.x + stage.width / 2, y: stage.y + 24});
+  // Keys stay live: Tab moves focus within the dialog. The content stays in
+  // the accessibility tree: neither the controls nor the photo showing sit
+  // in an inert subtree (pages off screen are inert in any gallery).
+  await page.keyboard.press('Tab');
+  expect(await dialog.evaluate(d => d.contains(document.activeElement))).toBe(
+    true,
+  );
+  expect(
+    await dialog
+      .getByRole('button', {name: 'Close'})
+      .evaluate(el => el.closest('[inert]') == null),
+  ).toBe(true);
+  expect(await photo.evaluate(el => el.closest('[inert]') == null)).toBe(true);
+  await expectEnteredAndOpen(page, dialog, photo);
+});
+
+test('a double tap during the opening is held: the photo enters at its fitted size, not zoomed', async ({
+  page,
+}) => {
+  const {s, dialog, photo, centre} = await openHeldMidEntrance(page);
+  await s.driver.play(doubleTap(centre));
+  await expectEnteredAndOpen(page, dialog, photo);
+});
+
+test('a drag down during the opening is held: nothing follows it and the viewer stays', async ({
+  page,
+}) => {
+  const {s, dialog, photo, centre} = await openHeldMidEntrance(page);
+  await s.driver.play(
+    drag(centre, {x: centre.x, y: centre.y + 220}, {durationMs: 300}),
+  );
+  await expectEnteredAndOpen(page, dialog, photo);
 });
 
 test('an Escape mid-opening returns the photo, and its thumbnail shows again and stays', async ({
