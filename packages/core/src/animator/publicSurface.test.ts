@@ -14,11 +14,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import * as hooks from '../hooks';
+import * as root from '../index';
 import * as entry from './index';
 
 const SRC = path.join(__dirname, '..');
 
-/** Names of the motion module beneath the public animator. */
+/** Names of the motion and gesture modules beneath the public layer. */
 const INTERNAL = [
   'createMotionAnimator',
   'createAttachableAnimator',
@@ -27,6 +28,13 @@ const INTERNAL = [
   'resolveMotion',
   'registerSpringsTable',
   'springs',
+  'solveSpring',
+  'toSpring',
+  'GestureArena',
+  'GestureHost',
+  'GestureRecognizer',
+  'PanGestureRecognizer',
+  'getGestureHost',
 ];
 
 describe('the public animator surface', () => {
@@ -41,10 +49,11 @@ describe('the public animator surface', () => {
     }
   });
 
-  it('the package root re-exports the animator entry and no motion or gesture module', () => {
-    const root = fs.readFileSync(path.join(SRC, 'index.ts'), 'utf8');
-    expect(root).toContain("export * from './animator';");
-    expect(root).not.toMatch(/from '\.\/(motion|gestures)(\/|')/);
+  it('the package root exports createAnimator and nothing of the motion or gesture modules', () => {
+    expect(typeof root.createAnimator).toBe('function');
+    for (const name of INTERNAL) {
+      expect(root).not.toHaveProperty(name);
+    }
   });
 
   it('no internal factory takes the public factory\u2019s name', () => {
