@@ -64,7 +64,7 @@ import {UIKIT_TAP} from '../motion/uikit/gestures';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../gestures/coarsePointer';
+import {isCoarsePointer} from '../utils/coarsePointer';
 /**
  * Media type for lightbox items.
  */
