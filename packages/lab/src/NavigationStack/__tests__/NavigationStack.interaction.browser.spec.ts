@@ -1149,6 +1149,18 @@ test('a push does no Layout or Paint per frame', async ({
   // A programmatic click: a finger's press would add the row's own press
   // fade, which is not the push.
   const row = page.getByRole('button', {name: 'General'}).first();
+  // The story's own first motion leaves its layers promoted for the
+  // animator's linger (half a second after it ends). Demoting one is a style
+  // pass and a Layout of its own: the root bar title's landed about 400 ms
+  // into a push started at once, at the window's edge. Start the push once
+  // none is left.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelectorAll('[style*="will-change"]').length,
+      ),
+    )
+    .toBe(0);
   let push = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await row.evaluate(element => (element as HTMLElement).click());
