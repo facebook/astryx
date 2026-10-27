@@ -49,6 +49,7 @@ import {
   merge,
   openStory,
   PARTIAL_LIFT_SKIP,
+  PEN_SKIP,
   releaseAnimations,
   sampleCurve,
   sampleRects,
@@ -61,6 +62,7 @@ import {
   trackMarker,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
   withFinger,
   withStorybook,
   writeEvidence,
@@ -1293,13 +1295,13 @@ test.describe('touch work costs nothing under a fine pointer', () => {
   test.describe('under a mouse', () => {
     test.use({hasTouch: false, isMobile: false});
 
-    test('a click chooses a tab, where the gesture host attaches nothing', async ({
+    test('a click chooses a tab through the browser’s own click', async ({
       page,
     }) => {
       await expectFinePointer(page);
       await openBar(page);
-      // `spec:AST-094` FR19/FR24: under a fine pointer no recognizer attaches,
-      // so the tab activates from the browser's own click.
+      // A click moves nothing of the lens's drag (`spec:AST-094` FR43): the
+      // tab activates from the browser's own click.
       await tab(page, 'Library').click();
       await expect(tab(page, 'Library')).toHaveAttribute(
         'aria-selected',
@@ -1372,6 +1374,168 @@ test.describe('touch work costs nothing under a fine pointer', () => {
       );
       await expectCssSlide(page);
     });
+  });
+});
+
+test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  /** Opens the default bar under the context's fine pointer. */
+  async function openFine(page: Page) {
+    await expectFinePointer(page);
+    await openStory(page, storybook(), 'lab-tabbar--default');
+    await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+  }
+
+  /**
+   * Presses the mouse on one tab's item and moves it to another's in twelve
+   * steps, leaving the button down; returns where it stopped.
+   */
+  async function mouseDragTo(page: Page, from: string, to: string) {
+    const start = await itemCenter(page, from);
+    const end = await itemCenter(page, to);
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 12; step++) {
+      await page.mouse.move(start.x + ((end.x - start.x) * step) / 12, start.y);
+    }
+    return end;
+  }
+
+  test('a mouse drag moves the lens in the mouse presentation, and the release chooses the tab under it', async ({
+    page,
+  }) => {
+    await openFine(page);
+    const browse = await mouseDragTo(page, 'Home', 'Browse');
+    // The lens follows the pointer on the theme's motion, with no lift and no
+    // copy of the items (those stay a finger's), and the selected look stays
+    // on Home until the release.
+    await expect
+      .poll(async () => Math.abs((await lensCenterX(page)) - browse.x))
+      .toBeLessThan(1);
+    await expect(lensCopy(page)).toHaveCount(0);
+    expect(await scaleOf(lensBody(page))).toEqual({x: 1, y: 1});
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    expect(await labelWeight(page, 'Home')).toBe('600');
+    await page.mouse.up();
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    expect(await labelWeight(page, 'Browse')).toBe('600');
+    await expect(lensCopy(page)).toHaveCount(0);
+    await expect
+      .poll(async () => Math.abs((await lensCenterX(page)) - browse.x))
+      .toBeLessThan(0.5);
+  });
+
+  test('a pen drag chooses the tab under its release', async ({page}) => {
+    await openFine(page);
+    const input = await webInputDriver(page);
+    test.skip(!input.pens, PEN_SKIP);
+    const start = await itemCenter(page, 'Home');
+    const end = await itemCenter(page, 'Profile');
+    await input.pen(
+      Array.from({length: 13}, (_, step) => ({
+        x: start.x + ((end.x - start.x) * step) / 12,
+        y: start.y,
+        t: step * 16,
+      })),
+    );
+    await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+    await expect(lensCopy(page)).toHaveCount(0);
+  });
+
+  test('a held mouse press starts no text selection on the bar', async ({
+    page,
+  }) => {
+    await openFine(page);
+    // The lens's hold takes the gesture host's selection lock for every
+    // pointer (spec:AST-094 FR41, FR43): it cancels selectstart on what the
+    // press holds, during the press and not after it.
+    const refusesSelection = () =>
+      tab(page, 'Library').evaluate(element => {
+        const event = new Event('selectstart', {
+          bubbles: true,
+          cancelable: true,
+        });
+        element.dispatchEvent(event);
+        return event.defaultPrevented;
+      });
+    const library = await itemCenter(page, 'Library');
+    await page.mouse.move(library.x, library.y);
+    await page.mouse.down();
+    const refusedWhileHeld = await refusesSelection();
+    await page.mouse.up();
+    expect(refusedWhileHeld).toBe(true);
+    await expect.poll(refusesSelection).toBe(false);
+  });
+
+  test('under a mouse the bar listens on its own element, and on the document only while a press is down', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'listener counts read CDP (Chromium)',
+    );
+    await openFine(page);
+    const cdp = await page.context().newCDPSession(page);
+    const listeners = async (expression: string) => {
+      const {result} = await cdp.send('Runtime.evaluate', {expression});
+      const {listeners: found} = await cdp.send(
+        'DOMDebugger.getEventListeners',
+        {
+          objectId: result.objectId ?? '',
+        },
+      );
+      return found.map(listener => listener.type).sort();
+    };
+    const pageLevel = async () => [
+      ...(await listeners('document')),
+      ...(await listeners('window')),
+    ];
+    const capsule = 'document.querySelector(\'[role="tablist"]\')';
+    // spec:AST-094 FR24, FR43: one passive pointerdown on the bar itself.
+    expect(await listeners(capsule)).toContain('pointerdown');
+    // The page's shared listeners (the click guard, the input stream) install
+    // once, at the first press, and stay; after it, a press adds document
+    // listeners only while it is down.
+    const press = async (name: string) => {
+      const {x, y} = await itemCenter(page, name);
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      const during = await pageLevel();
+      await page.mouse.up();
+      return during;
+    };
+    // What stays after a press, once the release's own cleanup has run.
+    const settled = async () => {
+      let last = await pageLevel();
+      for (;;) {
+        await page.waitForTimeout(50);
+        const next = await pageLevel();
+        if (JSON.stringify(next) === JSON.stringify(last)) {
+          return next;
+        }
+        last = next;
+      }
+    };
+    await press('Library');
+    const atRest = await settled();
+    const during = await press('Browse');
+    await expect.poll(pageLevel).toEqual(atRest);
+    expect(during.length).toBeGreaterThan(atRest.length);
+  });
+
+  test('with Reduce Motion a mouse drag moves the lens at once', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openFine(page);
+    const since = await timelineNow(page);
+    const browse = await mouseDragTo(page, 'Home', 'Browse');
+    expect(Math.abs((await lensCenterX(page)) - browse.x)).toBeLessThan(1);
+    await page.mouse.up();
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    await expectNoMotion(page, since);
   });
 });
 
