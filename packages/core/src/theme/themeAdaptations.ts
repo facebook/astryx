@@ -27,6 +27,7 @@
 import type {ComponentStyleMap, TokenName, TokenValue} from './defineTheme';
 import type {TypographyConfig, TypographyRole} from './types';
 import type {MotionScaleConfig} from './expandMotionScale';
+import type {ThemeMotionConfig, ThemeMotionKnobs} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -133,8 +134,11 @@ export interface ThemeAdaptationValue {
   color?: Partial<ColorScaleConfig>;
   /** Radius axis overrides, completed from root metadata. */
   radius?: Partial<RadiusScaleConfig>;
-  /** Motion axis overrides, completed from root metadata. */
-  motion?: Partial<MotionScaleConfig>;
+  /**
+   * Motion axis overrides, completed from root metadata: scale fields, or the
+   * `tempo` and `character` knobs (spec:AST-108 FR5).
+   */
+  motion?: Partial<MotionScaleConfig> & Omit<ThemeMotionKnobs, 'reducedMotion'>;
   /** Portable semantic-token writes. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /** Replacements for exact theme-local names enrolled by the root lineage. */
@@ -176,7 +180,7 @@ export interface ThemeGenerativeAxes {
   typography?: TypographyConfig;
   color?: ColorScaleConfig;
   radius?: RadiusScaleConfig;
-  motion?: MotionScaleConfig;
+  motion?: ThemeMotionConfig;
 }
 
 /** One rule lowered to concrete CSS writes. */
@@ -185,6 +189,14 @@ export interface ResolvedThemeAdaptationRule {
   when: ThemeAdaptationCondition;
   /** CSS media-query prelude without the `@media` keyword. */
   query: string;
+  /**
+   * For a rule keyed on `motion`: the prelude without the motion feature,
+   * empty when motion is the rule's only condition. Under the reduced-motion
+   * mark of `reducedMotion: 'always'` (on the theme's root or an ancestor's)
+   * a `'reduce'` rule applies whatever the person's setting, and a
+   * `'no-preference'` rule never does (`spec:AST-108` FR6).
+   */
+  markQuery?: string;
   /** Concrete portable token writes produced by this rule. */
   tokens: Record<string, string>;
   /** Concrete theme-local token writes produced by this rule. */
@@ -570,13 +582,40 @@ function completeRadius(
 }
 
 function completeMotion(
-  root: MotionScaleConfig | undefined,
-  rule: Partial<MotionScaleConfig>,
+  root: ThemeMotionConfig | undefined,
+  rule: Partial<MotionScaleConfig> & ThemeMotionKnobs,
   path: string,
-): MotionScaleConfig {
-  const fast = rule.fast ?? root?.fast;
-  const medium = rule.medium ?? root?.medium;
-  const ratio = rule.ratio ?? root?.ratio;
+): ThemeMotionConfig {
+  if (rule.reducedMotion !== undefined) {
+    throw new Error(
+      `${path}.reducedMotion is a theme-wide setting: set it on the theme's own ` +
+        `motion, not in an adaptation rule.`,
+    );
+  }
+  const tempo = rule.tempo ?? root?.tempo;
+  const character = rule.character ?? root?.character;
+  const knobs: ThemeMotionKnobs = {
+    ...(tempo !== undefined ? {tempo} : {}),
+    ...(character !== undefined ? {character} : {}),
+  };
+  if (knobs.tempo !== undefined) {
+    assertFiniteNumber(knobs.tempo, `${path}.tempo`);
+  }
+  const rootScale: Partial<MotionScaleConfig> =
+    root != null && 'fast' in root ? root : {};
+  const writesScale =
+    rule.fast !== undefined ||
+    rule.medium !== undefined ||
+    rule.ratio !== undefined ||
+    rule.slow !== undefined ||
+    rule.easing !== undefined;
+  if (!writesScale && 'fast' in rootScale === false) {
+    // Knobs only, over a root with no scale: the knobs generate the tokens.
+    return knobs;
+  }
+  const fast = rule.fast ?? rootScale.fast;
+  const medium = rule.medium ?? rootScale.medium;
+  const ratio = rule.ratio ?? rootScale.ratio;
   if (fast === undefined || medium === undefined || ratio === undefined) {
     throw new Error(
       `${path} must supply \`fast\`, \`medium\`, and \`ratio\` unless each missing field exists on the effective root motion axis.`,
@@ -585,17 +624,18 @@ function completeMotion(
   assertFiniteNumber(fast, `${path}.fast`);
   assertFiniteNumber(medium, `${path}.medium`);
   assertFiniteNumber(ratio, `${path}.ratio`);
-  const slow = rule.slow ?? root?.slow;
+  const slow = rule.slow ?? rootScale.slow;
   if (slow !== undefined) {
     assertFiniteNumber(slow, `${path}.slow`);
   }
-  const easing = rule.easing ?? root?.easing;
+  const easing = rule.easing ?? rootScale.easing;
   return {
     fast,
     medium,
     ratio,
     ...(slow !== undefined ? {slow} : {}),
     ...(easing !== undefined ? {easing} : {}),
+    ...knobs,
   };
 }
 
@@ -647,6 +687,7 @@ function mediaQueryForCondition(
   ruleIndex: number,
   condition: ThemeAdaptationCondition,
   points: WidthBreakpoints,
+  options: {withoutMotion?: boolean} = {},
 ): string {
   const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].when`;
   const parts: string[] = [];
@@ -676,11 +717,14 @@ function mediaQueryForCondition(
   if (condition.contrast !== undefined) {
     parts.push(`(prefers-contrast: ${condition.contrast})`);
   }
-  if (condition.motion !== undefined) {
+  if (condition.motion !== undefined && options.withoutMotion !== true) {
     parts.push(`(prefers-reduced-motion: ${condition.motion})`);
   }
 
   if (parts.length === 0) {
+    if (options.withoutMotion === true) {
+      return '';
+    }
     throw new Error(`${path} must contain at least one concrete condition.`);
   }
   return parts.join(' and ');
@@ -1031,6 +1075,17 @@ export function resolveThemeAdaptationRules(
         rule.when,
         adaptations.widthBreakpoints,
       ),
+      ...(rule.when.motion !== undefined
+        ? {
+            markQuery: mediaQueryForCondition(
+              themeName,
+              index,
+              rule.when,
+              adaptations.widthBreakpoints,
+              {withoutMotion: true},
+            ),
+          }
+        : {}),
       tokens: resolved.tokens,
       localTokens,
       components: input.typography?.scale

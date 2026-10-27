@@ -258,7 +258,7 @@ const groups = [
     exportName: 'durationDefaults',
     title: 'Duration Tokens',
     description:
-      'Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio.',
+      "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it.",
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },
@@ -267,7 +267,8 @@ const groups = [
     previewType: 'easing-curve',
     exportName: 'easeDefaults',
     title: 'Easing Tokens',
-    description: 'Easing curves for animations and transitions.',
+    description:
+      "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character.",
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },

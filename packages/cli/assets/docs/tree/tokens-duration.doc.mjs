@@ -17,14 +17,14 @@ export const docs = {
     "order": 100
   },
   "category": "foundations",
-  "description": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio.",
+  "description": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it.",
   "sections": [
     {
       "title": "Duration Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio."
+          "text": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it."
         },
         {
           "type": "table",

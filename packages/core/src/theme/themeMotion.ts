@@ -1,0 +1,182 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file themeMotion.ts
+ * @input A theme's motion configuration: the three knobs (`tempo`,
+ *   `character`, `reducedMotion`), the existing `MotionScaleConfig`, or both
+ * @output The resolved knobs, the motion tokens they generate, and
+ *   `resolveThemeMotion`, the internal resolver the animator and server code
+ *   read (`spec:AST-108` FR1, FR2, FR5, FR6)
+ * @position Theme utility; consumed by resolveThemeValues.ts. Pure: no DOM,
+ *   no import-time work, safe on the server.
+ *
+ * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
+ * picks the entrance and move curves (and, in the animator, offsets a spring
+ * role's bounce by its weight). `reducedMotion: 'always'` applies the Reduce
+ * Motion policy for everyone; `'system'` follows each person's setting. With
+ * the defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ *
+ * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
+ * win over `tempo` (FR5); explicit `tokens` win over both in
+ * resolveThemeValues.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/theme/themeMotion.test.ts
+ * - /packages/core/src/theme/resolveThemeValues.ts
+ * - /packages/core/src/theme/defineTheme.ts (the `motion` field's docs)
+ */
+
+import {expandMotionScale, type MotionScaleConfig} from './expandMotionScale';
+import {
+  resolveKnobs,
+  type MotionCharacter,
+  type ResolvedMotionKnobs,
+  type ThemeMotionKnobs,
+} from './motionKnobs';
+import {durationDefaults, easeDefaults} from './tokens.stylex';
+
+export {
+  TEMPO_RANGE,
+  type MotionCharacter,
+  type ResolvedMotionKnobs,
+  type ThemeMotionKnobs,
+  type ThemeReducedMotion,
+} from './motionKnobs';
+
+/**
+ * A theme's `motion`: the knobs, the existing `MotionScaleConfig`, or both.
+ * A `MotionScaleConfig`'s fields win over `tempo` for the durations they set.
+ */
+export type ThemeMotionConfig =
+  ThemeMotionKnobs | (MotionScaleConfig & ThemeMotionKnobs);
+
+/**
+ * The entrance and move curve at each character. `'standard'` is the theme's
+ * `--ease-standard`, so a theme that overrides that easing keeps its entrances
+ * on it.
+ */
+export const CHARACTER_EASE = {
+  crisp: 'cubic-bezier(0, 0, 0.2, 1)',
+  standard: null,
+  expressive: 'cubic-bezier(0.3, 1.2, 0.5, 1)',
+} as const satisfies Record<MotionCharacter, string | null>;
+
+/** The knobs of `config`, defaults filled in, `tempo` clamped. */
+export function resolveMotionKnobs(
+  config: ThemeMotionConfig | undefined,
+): ResolvedMotionKnobs {
+  return resolveKnobs(config);
+}
+
+function isScaleConfig(
+  config: ThemeMotionConfig,
+): config is MotionScaleConfig & ThemeMotionKnobs {
+  return 'fast' in config && 'medium' in config && 'ratio' in config;
+}
+
+/** A duration token's value in ms (`'175ms'` → 175). */
+function msOf(value: string): number {
+  return Number.parseFloat(value);
+}
+
+/** The duration tokens at `tempo`: today's values times it, to the ms. */
+export function durationTokensAt(tempo: number): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const [name, value] of Object.entries(durationDefaults)) {
+    tokens[name] = `${Math.round(msOf(value) * tempo)}ms`;
+  }
+  return tokens;
+}
+
+/**
+ * The custom property holding a duration token's value before `tempo`
+ * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
+ * (Spinner, Skeleton) read it, falling back to the token, so their timing
+ * follows a duration scale or an explicit token but never `tempo` (FR4).
+ */
+export function preTempoName(token: string): string {
+  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+}
+
+/**
+ * The motion tokens `config` generates (FR2, FR5): `--duration-*` times
+ * `tempo`, with a `MotionScaleConfig`'s own durations winning, and the
+ * job-named `--ease-entrance` and `--ease-move` at the theme's character.
+ * A knob the config leaves out writes nothing, so a theme extending another
+ * keeps the base's value for it; a knob it sets is written even at its
+ * default, so a child can set a base's tempo back to 1.
+ */
+export function expandThemeMotion(
+  config: ThemeMotionConfig,
+): Record<string, string> {
+  const knobs = resolveMotionKnobs(config);
+  const tokens: Record<string, string> = {};
+  if (knobs.tempoIsSet) {
+    Object.assign(tokens, durationTokensAt(knobs.tempo));
+    for (const [name, value] of Object.entries(durationDefaults)) {
+      tokens[preTempoName(name)] = value;
+    }
+  }
+  if (isScaleConfig(config)) {
+    const scale = expandMotionScale(config);
+    Object.assign(tokens, scale);
+    if (knobs.tempoIsSet) {
+      for (const [name, value] of Object.entries(scale)) {
+        if (name.startsWith('--duration-')) {
+          tokens[preTempoName(name)] = value;
+        }
+      }
+    }
+  }
+  const scaleEasing =
+    isScaleConfig(config) && config.easing != null ? config.easing : null;
+  const ease =
+    CHARACTER_EASE[knobs.character] ??
+    (config.character != null
+      ? (scaleEasing ?? easeDefaults['--ease-standard'])
+      : scaleEasing);
+  if (ease != null) {
+    tokens['--ease-entrance'] = ease;
+    tokens['--ease-move'] = ease;
+  }
+  return tokens;
+}
+
+/** What `resolveThemeMotion` returns for a theme. */
+export interface ThemeMotion {
+  /** The knobs, defaults filled in. */
+  readonly knobs: ResolvedMotionKnobs;
+  /** Every `--duration-*` token's value. */
+  readonly durations: Readonly<Record<string, string>>;
+  /** `--ease-standard`, `--ease-entrance` and `--ease-move`. */
+  readonly easings: Readonly<Record<string, string>>;
+}
+
+/**
+ * A theme's motion values, for the animator and for server code (FR6): the
+ * knobs, and the duration and easing tokens they resolve to with the theme's
+ * explicit tokens applied. Pure: it reads only `theme`.
+ */
+export function resolveThemeMotion(theme: {
+  readonly motion?: ThemeMotionConfig;
+  readonly tokens?: Readonly<Record<string, string | undefined>>;
+}): ThemeMotion {
+  const knobs = resolveMotionKnobs(theme.motion);
+  const generated = theme.motion ? expandThemeMotion(theme.motion) : {};
+  const value = (name: string, fallback: string): string =>
+    theme.tokens?.[name] ?? generated[name] ?? fallback;
+  const durations: Record<string, string> = {};
+  for (const [name, fallback] of Object.entries(durationDefaults)) {
+    durations[name] = value(name, fallback);
+  }
+  const standard = value('--ease-standard', easeDefaults['--ease-standard']);
+  return {
+    knobs,
+    durations,
+    easings: {
+      '--ease-standard': standard,
+      '--ease-entrance': value('--ease-entrance', standard),
+      '--ease-move': value('--ease-move', standard),
+    },
+  };
+}
