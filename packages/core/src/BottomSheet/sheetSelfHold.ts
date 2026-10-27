@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file sheetSelfHold.ts
  * @input React (useEffect) and the DOM's pointer, touch, mouse and click
