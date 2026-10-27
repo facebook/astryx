@@ -324,7 +324,7 @@ test.describe('with a mouse', () => {
         'click',
         event => {
           const action = (event.target as Element).closest(
-            '[data-astryx-alert-action]',
+            '[data-astryx-press-group-item]',
           );
           if (action != null) {
             (
@@ -397,10 +397,10 @@ test(
     const {driver, dialog, centers} = await openAlert(page);
     // CSS locators rather than roles: they still resolve once the alert has
     // closed, so Cancel's paint can be read after the lift.
-    const cancel = page.locator('[data-astryx-alert-action]', {
+    const cancel = page.locator('[data-astryx-press-group-item]', {
       hasText: 'Cancel',
     });
-    const del = page.locator('[data-astryx-alert-action]', {
+    const del = page.locator('[data-astryx-press-group-item]', {
       hasText: 'Delete',
     });
     const box = await dialog.boundingBox();

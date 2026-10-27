@@ -50,6 +50,8 @@ test.beforeAll(async () => {
       format: 'iife',
       platform: 'browser',
       target: 'es2022',
+      // A development build, as an app's bundler would make one.
+      define: {'process.env.NODE_ENV': '"development"'},
     });
     return result.outputFiles[0].text;
   };
@@ -365,9 +367,9 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
       .filter(entry => entry.type === 'touchmove' && entry.passive === false)
       .map(entry => entry.id),
   );
-  // Pans (the cards' and the switch's drag too), a long press, a pinch and
-  // the sheet's pan can take a moving touch; a tap-only element and a press
-  // consumer never wait.
+  // Pans (the cards', the switch's drag and a one-finger pan too), a long
+  // press, a pinch, the sheet's pan and a press that keeps its touch can take
+  // a moving touch; a tap-only element and a plain press consumer never wait.
   expect(new Set(blocking)).toEqual(
     new Set([
       'hpan',
@@ -377,7 +379,8 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
       'slider',
       'switchRow',
       'card',
-      'switchRow',
+      'onePan',
+      'kept',
     ]),
   );
 });
@@ -573,6 +576,114 @@ test('a drag that scrolls the feed natively is the browser’s: no tap', async (
   );
   expect(scrolled).toBeGreaterThan(20);
   expect(states(await log(page), 'feedTap')).not.toContain('ended');
+});
+
+test('a second finger before any claim fails a one-finger pan and leaves the pinch to the page', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#onePan').scrollIntoViewIfNeeded();
+  const at = await center(page, 'onePan');
+  await clearLog(page);
+  await logTouchMoves(page);
+  const pair = (spread: number) => [
+    {id: 1, x: at.x - spread, y: at.y},
+    {id: 2, x: at.x + spread, y: at.y},
+  ];
+  await driver.play([
+    {t: 0, down: [{id: 1, x: at.x - 10, y: at.y}]},
+    {t: 30, down: pair(10)},
+    {t: 60, down: pair(30)},
+    {t: 90, down: pair(50)},
+    {t: 120, down: pair(70)},
+    {t: 150, down: []},
+  ]);
+  const pan = states(await log(page), 'onePan');
+  expect(pan).toContain('failed');
+  expect(pan).not.toContain('began');
+  // No move of the pinch is cancelled: the page may zoom.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.some(Boolean)).toBe(false);
+});
+
+test('a page hold keeps the page still under a one-finger pan, and leaves a pinch alone', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#plainArea').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const own = window as unknown as {
+      __holdPage: () => () => void;
+      __releaseHold: () => void;
+    };
+    own.__releaseHold = own.__holdPage();
+  });
+  await logTouchMoves(page);
+  const start = await center(page, 'plainArea');
+  const before = await page.evaluate(() => window.scrollY);
+  await driver.play(drag(start, {x: start.x, y: start.y - 80}, 30));
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  // A second finger is a pinch: never cancelled.
+  await logTouchMoves(page);
+  await driver.play([
+    {
+      t: 0,
+      down: [
+        {id: 1, x: start.x - 10, y: start.y},
+        {id: 2, x: start.x + 10, y: start.y},
+      ],
+    },
+    {
+      t: 30,
+      down: [
+        {id: 1, x: start.x - 40, y: start.y},
+        {id: 2, x: start.x + 40, y: start.y},
+      ],
+    },
+    {t: 60, down: []},
+  ]);
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(false);
+  await page.evaluate(() =>
+    (window as unknown as {__releaseHold: () => void}).__releaseHold(),
+  );
+});
+
+test('a control that keeps its press through a drag holds the page still and stays pressed', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#kept').scrollIntoViewIfNeeded();
+  await clearLog(page);
+  const start = await center(page, 'kept');
+  const before = await page.evaluate(() => window.scrollY);
+  // The finger rests until the press is delivered: a control in a scroller
+  // waits before it highlights, and a drag that starts sooner is a scroll.
+  await driver.play([{t: 0, down: [{id: 1, ...start}]}]);
+  await page.waitForFunction(() =>
+    window.__gestures.some(
+      entry => entry.name === 'kept' && entry.state === 'highlight',
+    ),
+  );
+  await logTouchMoves(page);
+  await driver.play(drag(start, {x: start.x, y: start.y - 40}, 20, false));
+  let kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchDown');
+  expect(kept).not.toContain('touchCancel');
+  expect(kept).not.toContain('unhighlight');
+  // Its press was delivered, so every move is cancelled: the page stays.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.every(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await driver.play([{t: 0, down: []}]);
+  kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchUpInside');
+  expect(kept).not.toContain('touchCancel');
 });
 
 test('where the primary pointer is fine, the host writes no touch-action and registers no touch listener (spec:AST-094 FR19, FR24)', async ({
@@ -1015,4 +1126,44 @@ test('a long press begins at touch-down + 500 ms on the event clock, even when t
   expect((began?.beganAt ?? 0) - (began?.startedAt ?? 0)).toBeCloseTo(500, 6);
   expect(states(entries, 'press')).toEqual(['began', 'ended', 'possible']);
   expect(entries.some(entry => entry.name.startsWith('click:'))).toBe(false);
+});
+
+test.describe('where the primary pointer is fine', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('the host registers no touch listener and writes no style, though the page attaches recognizers (spec:AST-094 FR19)', async ({
+    page,
+  }) => {
+    const warnings: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'warning') {
+        warnings.push(message.text());
+      }
+    });
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bundle});
+    const seen = await page.evaluate(() => ({
+      isCoarse: matchMedia('(pointer: coarse)').matches,
+      page: window.__pageTouchListenersAtLoad,
+      elements: window.__listeners.map(entry => entry.id),
+      // What the host would write: none of it, in any engine's spelling.
+      styles: ['hpan', 'presser', 'slider', 'card'].map(id => {
+        const style = document.getElementById(id)?.style;
+        return ['touch-action', '-webkit-user-select', '-webkit-touch-callout']
+          .map(property => style?.getPropertyValue(property) ?? 'missing')
+          .join('|');
+      }),
+    }));
+    expect(seen.isCoarse).toBe(false);
+    expect(seen.page).toEqual([]);
+    expect(seen.elements).toEqual([]);
+    expect(seen.styles).toEqual(['||', '||', '||', '||']);
+    // The page's attaches are named once, in development.
+    expect(
+      warnings.filter(text => text.includes('primary pointer is fine')),
+    ).toHaveLength(1);
+  });
 });

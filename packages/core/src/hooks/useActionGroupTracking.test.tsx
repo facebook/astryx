@@ -22,7 +22,7 @@ import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
-import {lockSelection} from '../gestures/selectionLock';
+import {lockSelection} from '../utils/selectionLock';
 import {
   coarsePrimaryPointer,
   pointerQuery,
