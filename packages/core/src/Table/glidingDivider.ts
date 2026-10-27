@@ -6,7 +6,7 @@
  *   computed borders, StyleX
  * @output Exports `glidingDividerStyles` (a row's stand-in divider while it
  *   glides), `markGlidingRows` (marks the moving rows for that glide and
- *   carries each row's own border onto the stand-in) and `collapsedBottom`
+ *   carries each row's own border onto the stand-in) and `rowEdge`
  * @position Table internals. With collapsed borders the table paints every
  *   border at its cell's static place, so a row that moves leaves its divider
  *   behind. For the glide only, the moving row's cells are marked: their
@@ -21,6 +21,9 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {collapsedBottom, type BottomEdge} from './rowDivider';
+
+export type {BottomEdge} from './rowDivider';
 
 /** On a row while a glide moves it. */
 export const GLIDING_ATTRIBUTE = 'data-astryx-row-gliding';
@@ -102,120 +105,8 @@ export const glidingDividerStyles = stylex.create({
   },
 });
 
-/** Border styles by collapsed-border precedence, weakest first (CSS 2.1). */
-const STYLE_RANK = [
-  'inset',
-  'groove',
-  'outset',
-  'ridge',
-  'dotted',
-  'dashed',
-  'solid',
-  'double',
-];
-
-export interface BottomEdge {
-  width: number;
-  style: string;
-  color: string;
-}
-
-function edgeOf(element: Element | null, side: 'Bottom' | 'Top'): BottomEdge {
-  if (element == null) {
-    return {width: 0, style: 'none', color: ''};
-  }
-  const style = getComputedStyle(element);
-  return {
-    width:
-      parseFloat(
-        style.getPropertyValue(`border-${side.toLowerCase()}-width`),
-      ) || 0,
-    style: style.getPropertyValue(`border-${side.toLowerCase()}-style`),
-    color: style.getPropertyValue(`border-${side.toLowerCase()}-color`),
-  };
-}
-
-/**
- * The border the table paints under a cell, by the collapsing rules (CSS 2.1
- * 17.6.2.1): of the cell's own bottom, the cell's below it (top), its row's
- * bottom and the next row's top, `hidden` wins, then the wider, then the
- * stronger style; a tie goes to a cell over a row, and to the upper one.
- * `isOwn` says the cell's own border won. Shared with plugins/stickyColumns.
- */
-export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
-  isOwn: boolean;
-} {
-  const row = cell.parentElement;
-  const nextRow = row?.nextElementSibling ?? null;
-  const nextCell = nextRow?.children[cell.cellIndex] ?? null;
-  // In tie order.
-  const candidates = [
-    edgeOf(cell, 'Bottom'),
-    edgeOf(nextCell, 'Top'),
-    edgeOf(row, 'Bottom'),
-    edgeOf(nextRow, 'Top'),
-  ];
-  const own = candidates[0];
-  if (candidates.some(edge => edge.style === 'hidden')) {
-    return {
-      width: 0,
-      style: 'none',
-      color: own.color,
-      isOwn: own.style === 'hidden',
-    };
-  }
-  const strength = (edge: BottomEdge) =>
-    edge.style === 'none' || edge.width === 0
-      ? [-1, -1]
-      : [edge.width, STYLE_RANK.indexOf(edge.style)];
-  let winner = own;
-  for (const edge of candidates.slice(1)) {
-    const [width, rank] = strength(edge);
-    const [bestWidth, bestRank] = strength(winner);
-    if (width > bestWidth || (width === bestWidth && rank > bestRank)) {
-      winner = edge;
-    }
-  }
-  return {...winner, isOwn: winner === own};
-}
-
 /** The batch that marked a row last: only that batch unmarks it. */
 const markedBy = new WeakMap<Element, symbol>();
-
-/**
- * The divider a detail panel takes from its row: the color and style of the
- * row's cells (a theme's `table-cell` styling or an app's own, which never
- * reach the panel's cell), at the panel's own width unless the row's own
- * border wins the collapse (an app styling the `<tr>`), as custom property
- * values for the panel's cell. Every value is written, `initial` where the
- * panel keeps its own, so a panel nested in another never inherits that
- * one's. Read once per commit.
- */
-export function panelDividerFor(row: Element): {
-  width: string;
-  style: string;
-  color: string;
-} | null {
-  const rowCell = row.lastElementChild;
-  if (rowCell == null) {
-    return null;
-  }
-  const rowStyle = getComputedStyle(row);
-  const rowWidth = parseFloat(rowStyle.borderBottomWidth) || 0;
-  if (rowStyle.borderBottomStyle !== 'none' && rowWidth > 0) {
-    return {
-      width: `${rowWidth}px`,
-      style: rowStyle.borderBottomStyle,
-      color: rowStyle.borderBottomColor,
-    };
-  }
-  const cellStyle = getComputedStyle(rowCell);
-  return {
-    width: 'initial',
-    style: cellStyle.borderBottomStyle,
-    color: cellStyle.borderBottomColor,
-  };
-}
 
 /**
  * A row's own bottom border, for its stand-in while it moves; null for a row

@@ -35,6 +35,7 @@ import {
   easeVars,
 } from '../../../theme/tokens.stylex';
 import {tableRowMarker} from '../../table.stylex';
+import {panelDividerFor} from '../../rowDivider';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
@@ -66,7 +67,6 @@ import {
   GLIDING_ATTRIBUTE,
   glidingDividerStyles,
   markGlidingRows,
-  panelDividerFor,
   rowEdge,
   type BottomEdge,
 } from '../../glidingDivider';
@@ -250,7 +250,7 @@ const dividerStyles = stylex.create({
   },
   // The row's divider, carried down: its row's themed or app-set border
   // reaches the panel through `--_table-panel-divider-*` on the panel's cell
-  // (set after each commit), the tokens otherwise.
+  // (set after each commit, see ExpansionPanelCell), the tokens otherwise.
   panelCell: {
     // The width this divider draws, for its stand-in during a glide.
     '--_table-row-divider-width': {
@@ -393,8 +393,39 @@ function ExpansionPanelCell({
 }) {
   const ctx = useTableContext();
   const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
+  const cellRef = useRef<HTMLTableCellElement>(null);
+  // The panel carries its row's divider (a theme's `table-cell` border or an
+  // app's own never reach this cell, which is not one of the row's cells).
+  // Read after each commit; written only when it differs.
+  useLayoutEffect(() => {
+    const cell = cellRef.current;
+    const row = cell?.parentElement?.previousElementSibling;
+    // A row a glide is moving has transparent cells until it ends: the
+    // panel keeps what it carries.
+    if (
+      cell == null ||
+      row == null ||
+      !hasRowDividers ||
+      row.hasAttribute(GLIDING_ATTRIBUTE)
+    ) {
+      return;
+    }
+    const edge = panelDividerFor(row);
+    if (edge == null) {
+      return;
+    }
+    const set = (name: string, value: string) => {
+      if (cell.style.getPropertyValue(name) !== value) {
+        cell.style.setProperty(name, value);
+      }
+    };
+    set('--_table-panel-divider-width', edge.width);
+    set('--_table-panel-divider-style', edge.style);
+    set('--_table-panel-divider-color', edge.color);
+  });
   return (
     <td
+      ref={cellRef}
       colSpan={colSpan}
       {...stylex.props(
         expansionStyles.expandedCell,
@@ -524,50 +555,6 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     },
     [animatedLayout, expandedKeys, rowFor],
   );
-  // Each open panel carries its row's divider (a theme's `table-cell` border
-  // or an app's own never reach the panel's cell, which is not a table cell
-  // of the row). Every read before any write, and written only when it
-  // differs, so a commit that changes nothing writes nothing. A row a glide
-  // is moving has transparent cells until it ends: its panel keeps what it
-  // carries.
-  useLayoutEffect(() => {
-    const wrapper = scrollWrapperRef.current;
-    if (wrapper == null) {
-      return;
-    }
-    const carried: [
-      HTMLElement,
-      NonNullable<ReturnType<typeof panelDividerFor>>,
-    ][] = [];
-    for (const panel of wrapper.querySelectorAll<HTMLElement>(
-      'tr[data-expansion-panel]',
-    )) {
-      const row = panel.previousElementSibling;
-      const cell = panel.firstElementChild;
-      if (
-        row == null ||
-        !(cell instanceof HTMLElement) ||
-        row.hasAttribute(GLIDING_ATTRIBUTE)
-      ) {
-        continue;
-      }
-      const edge = panelDividerFor(row);
-      if (edge != null) {
-        carried.push([cell, edge]);
-      }
-    }
-    for (const [cell, edge] of carried) {
-      const set = (name: string, value: string) => {
-        if (cell.style.getPropertyValue(name) !== value) {
-          cell.style.setProperty(name, value);
-        }
-      };
-      set('--_table-panel-divider-width', edge.width);
-      set('--_table-panel-divider-style', edge.style);
-      set('--_table-panel-divider-color', edge.color);
-    }
-  });
-
   useLayoutEffect(() => {
     const pendings = pendingLayoutRef.current;
     pendingLayoutRef.current = [];

@@ -316,6 +316,39 @@ describe('useTableRowExpansion (detail panel)', () => {
       );
     });
 
+    it("carries the row's own divider onto the panel (Table FR14)", () => {
+      render(<Harness />);
+      const row = cellsOf('Ada')[0].parentElement as HTMLTableRowElement;
+      // An app's (or a theme's) border on the row's cells.
+      for (const cell of row.cells) {
+        cell.style.borderBottomColor = 'rgb(255, 0, 0)';
+        cell.style.borderBottomStyle = 'dashed';
+      }
+      fireEvent.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+      const cell = panelCell();
+      expect(cell.style.getPropertyValue('--_table-panel-divider-color')).toBe(
+        'rgb(255, 0, 0)',
+      );
+      expect(cell.style.getPropertyValue('--_table-panel-divider-style')).toBe(
+        'dashed',
+      );
+      // The panel keeps its own width (a value, never inherited from a panel
+      // around it) while the row's own border does not win.
+      expect(cell.style.getPropertyValue('--_table-panel-divider-width')).toBe(
+        'initial',
+      );
+      // An app's wider border on the row itself wins; the next commit
+      // (opening another row) reads it.
+      row.style.borderBottom = '3px solid rgb(0, 0, 255)';
+      fireEvent.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+      expect(cell.style.getPropertyValue('--_table-panel-divider-width')).toBe(
+        '3px',
+      );
+      expect(cell.style.getPropertyValue('--_table-panel-divider-color')).toBe(
+        'rgb(0, 0, 255)',
+      );
+    });
+
     it('draws the panel divider under grid dividers too', () => {
       render(<Harness initialExpanded={new Set(['a'])} dividers="grid" />);
       // The token width, unless the row hands down its own.

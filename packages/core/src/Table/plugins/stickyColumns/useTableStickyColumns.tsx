@@ -30,7 +30,8 @@ import type {
   ScrollWrapperRenderProps,
 } from '../../types';
 import {resolveColumnFloorWidths} from '../../columnUtils';
-import {collapsedBottom, GLIDING_ATTRIBUTE} from '../../glidingDivider';
+import {collapsedBottom} from '../../rowDivider';
+import {GLIDING_ATTRIBUTE} from '../../glidingDivider';
 
 // =============================================================================
 // Config
@@ -325,11 +326,20 @@ const shadowStyles = stylex.create({
  * Every read comes before any write, and a cell is written only when what it
  * carries changes.
  */
-function syncPinnedDividers(root: HTMLElement): void {
+function syncPinnedDividers(
+  root: HTMLElement,
+  rows?: ReadonlySet<Element>,
+): void {
   const changes: [HTMLTableCellElement, string[] | null][] = [];
-  for (const cell of root.querySelectorAll<HTMLTableCellElement>(
-    `[${PINNED_ATTRIBUTE}]`,
-  )) {
+  const cells =
+    rows == null
+      ? root.querySelectorAll<HTMLTableCellElement>(`[${PINNED_ATTRIBUTE}]`)
+      : [...rows].flatMap(row => [
+          ...row.querySelectorAll<HTMLTableCellElement>(
+            `:scope > [${PINNED_ATTRIBUTE}]`,
+          ),
+        ]);
+  for (const cell of cells) {
     // A row a glide is moving carries its own divider for the glide (its
     // cells' borders are transparent until it ends): leave it be.
     if (cell.parentElement?.hasAttribute(GLIDING_ATTRIBUTE) === true) {
@@ -448,6 +458,46 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       syncPinnedDividers(el);
     };
     el.addEventListener('scroll', update, {passive: true});
+    // A row border can change by CSS state alone (`tr:hover`,
+    // `:focus-within`): on pointer and focus changes, the rows they touch
+    // (and the row above each, whose divider a row's top border joins) are
+    // read again, once per frame.
+    const touched = new Set<Element>();
+    let frame = 0;
+    const onStateChange = (event: Event) => {
+      for (const target of [
+        event.target,
+        (event as PointerEvent | FocusEvent).relatedTarget,
+      ]) {
+        const row = target instanceof Element ? target.closest('tr') : null;
+        if (row == null || !el.contains(row)) {
+          continue;
+        }
+        touched.add(row);
+        const above =
+          row.previousElementSibling ??
+          row.parentElement?.previousElementSibling?.lastElementChild;
+        if (above != null) {
+          touched.add(above);
+        }
+      }
+      if (touched.size > 0 && frame === 0) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          syncPinnedDividers(el, new Set(touched));
+          touched.clear();
+        });
+      }
+    };
+    const stateEvents = [
+      'pointerover',
+      'pointerout',
+      'focusin',
+      'focusout',
+    ] as const;
+    for (const type of stateEvents) {
+      el.addEventListener(type, onStateChange, {passive: true});
+    }
     const resizeObserver =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
@@ -461,6 +511,10 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     refreshRef.current = resize;
     detachRef.current = () => {
       el.removeEventListener('scroll', update);
+      for (const type of stateEvents) {
+        el.removeEventListener(type, onStateChange);
+      }
+      cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
   }, []);
