@@ -30,10 +30,13 @@ import {
   castStoryboard,
   compareCurve,
   countBetween,
+  freezeTimers,
   holdAnimations,
+  installTimerGate,
   releaseAnimations,
   seekAnimations,
   startScreencast,
+  thawTimers,
   timeline,
   touchDriver,
   traceRendering,
@@ -278,19 +281,28 @@ test('a pop deselects the row on the in-transition curve, then its control has f
   page,
 }, testInfo) => {
   const {target} = await push(page);
+  // Gate the page's timers before the pop: the animator settles a motion on
+  // its own timer at the curve's end, by wall time, and that would end the
+  // hold while the deselect is seeked.
+  await installTimerGate(page);
   await page.getByRole('button', {name: 'Back', exact: true}).click();
+  await freezeTimers(page);
   const held = await holdAnimations(page, target);
   // The deselect on the row's layer. (The motion foundation keeps a
   // pseudo-element's animation in effect past the curve, holding its end
   // value until script runs: only the first POP_MS are the curve.)
   const deselect = held.find(a => a.target?.startsWith('li'));
   expect(deselect, JSON.stringify(held)).toBeDefined();
+  // More wall time than the pop passes while it is held, as a slow seek loop
+  // takes: the held deselect stays where it is seeked.
+  await page.waitForTimeout(POP_MS + 50);
   const samples: {t: number; value: number}[] = [];
   for (const t of timeline(POP_MS)) {
     await seekAnimations(page, t);
     samples.push({t, value: await layerOpacity(target)});
   }
   await releaseAnimations(page, {finish: true});
+  await thawTimers(page);
   const comparison = compareCurve(samples, expectedHighlight, 0.01);
   await writeEvidence(
     'curves/list-selection-hold-pop',
