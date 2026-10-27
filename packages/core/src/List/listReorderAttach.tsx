@@ -34,6 +34,7 @@ import {createRoot} from 'react-dom/client';
 import {getResolve} from '../i18n/resolve';
 import {devWarn} from '../utils/devWarning';
 import {HANDLE_ATTRIBUTE, type ListReorderOptions} from './listReorderContext';
+import {GHOST_ATTRIBUTE} from './useListUpdateMotion';
 import {
   ListReorderController,
   ListReorderModeHint,
@@ -105,12 +106,19 @@ export function attachReorder(
 ): {detach: () => void} {
   const doc = container.ownerDocument;
   const translate = getResolve('en', {});
+  // The app's items without the reorder's own copies: a query over the
+  // container also finds the drag's preview, a copy of an item, which holds
+  // no place in the order.
+  const ownItems = () =>
+    items().filter(
+      item => item.element.closest(`[${GHOST_ATTRIBUTE}]`) == null,
+    );
   attachedCount += 1;
   const hintId = `astryx-reorder-attached-${attachedCount}`;
   const controller = new ListReorderController(
     () => container,
     hintId,
-    () => items().map(item => item.element),
+    () => ownItems().map(item => item.element),
   );
   // Inside the modal dialog that encloses the container, where assistive
   // technology still reads (spec:AST-086 FR14); else the document's body.
@@ -257,7 +265,7 @@ export function attachReorder(
   // that left or stopped being reorderable.
   const wire = () => {
     const kept = new Set<HTMLElement>();
-    for (const {key, element, handle} of items()) {
+    for (const {key, element, handle} of ownItems()) {
       if (key == null || sessionOptions.isReorderable?.(key) === false) {
         continue;
       }
