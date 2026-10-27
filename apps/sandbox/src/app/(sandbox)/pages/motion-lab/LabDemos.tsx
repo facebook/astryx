@@ -996,10 +996,10 @@ export function TintRig({mode}: {mode: Mode | 'none'}) {
       </table>
       <Hint>
         {mode === 'before'
-          ? 'Hardcoded 150ms with the CSS default curve. A literal: no token, switch or Reduce Motion setting reaches it, so it fades the same everywhere.'
+          ? 'Hardcoded 150ms with the CSS default curve. A literal: no token, rail switch or device setting reaches it, so it fades the same everywhere.'
           : mode === 'after'
-            ? 'The state token with --ease-state. Under Reduce Motion the tint changes at once (design:reduced-motion DR3): the colour still says which row is under the pointer.'
-            : 'No transition at all: the tint is immediate, with or without Reduce Motion. Sweep the pointer down the table and compare it with the fades.'}
+            ? 'The state token with --ease-state. When the device asks for reduced motion, the tint changes at once on every rail setting (design:reduced-motion DR3): the colour still says which row is under the pointer.'
+            : "No transition at all: the tint is immediate, whatever the rail or the device's reduced-motion setting. Sweep the pointer down the table and compare it with the fades."}
       </Hint>
     </VStack>
   );

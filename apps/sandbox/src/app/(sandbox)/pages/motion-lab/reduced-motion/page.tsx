@@ -407,7 +407,10 @@ export default function ReducedMotionPage() {
             (This behaviour was itself a bug in the lab until the policy was
             moved out of the stylesheet: the store writes the duration aliases
             inline, and an inline custom property outranks any selector, so the
-            delete rule looked right and did nothing.)
+            delete rule looked right and did nothing.) With the device set to
+            reduce motion, the tokenised pane changes at once on every rail
+            setting (design:reduced-motion DR3); turn that setting off to see
+            the rail&apos;s policies on it.
           </Text>
         </DemoBody>
       </DemoCard>
