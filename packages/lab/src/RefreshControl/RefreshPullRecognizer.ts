@@ -25,9 +25,8 @@
  *   lift;
  * - one finger: a second finger is the browser's (pinch-zoom).
  *
- * A pen reads the same way as a finger (`spec:AST-094` FR43); a mouse drag
- * is not read: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row. `pointerType` records the first
+ * Every pointer reads the same way (`spec:AST-094` FR43): a pen's or a
+ * mouse's drag pulls as a finger's does. `pointerType` records the first
  * contact's pointer, and `onTouchDown` reports that first contact landing, so
  * a settle in flight can stop where it is (UIScrollView brakes on
  * touch-down).
@@ -49,7 +48,7 @@ import type {
 export class RefreshPullRecognizer extends PanGestureRecognizer {
   /** Called when the first contact of a gesture lands, with its timestamp. */
   onTouchDown: ((time: number) => void) | null = null;
-  /** The pointer of the gesture's first contact: a finger or a pen. */
+  /** The pointer of the gesture's first contact. */
   pointerType: PointerKind = 'touch';
 
   constructor(options: PanGestureRecognizerOptions = {}) {
@@ -57,7 +56,6 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
       name: 'RefreshPull',
       direction: 'vertical',
       maximumNumberOfTouches: 1,
-      allowedPointerTypes: ['touch', 'pen'],
       ...options,
     });
   }

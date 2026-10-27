@@ -148,7 +148,7 @@ export interface RefreshControlProps
  * the finger still down; letting go settles the content onto the refreshing
  * inset until the refresh ends.
  *
- * A finger or a pen drag pulls (spec:AST-094 FR43); a mouse drag, a
+ * A finger's, a pen's or a mouse's drag pulls (spec:AST-094 FR43); a
  * trackpad's scroll and a wheel's do not. Under a finger (a coarse primary
  * pointer, on iOS and Android alike) it replaces the browser's own pull to
  * refresh near the top of the page. Always give people another way to refresh (a button that
