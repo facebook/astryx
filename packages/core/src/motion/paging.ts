@@ -2,12 +2,13 @@
 
 /**
  * @file paging.ts
- * @input A pager's geometry (page stride, count), a release (position,
- *   velocity, the page the drag started on) and the UIKit paging constants
+ * @input A release velocity, a settle's start, end and velocity, and the
+ *   UIKit paging constants
  * @output Exports `pagingSettleVelocity` (the velocity a settle starts at),
- *   `selectPage` (the page a release settles on),
  *   `solvePaging` (UIKit's paging settle as a MotionCurve the animator plays)
- *   and `solveAnimatedPageScroll` (`setContentOffset(_:animated:)`)
+ *   and `solveAnimatedPageScroll` (`setContentOffset(_:animated:)`). The page
+ *   a release settles on is the pager's own rule, on the motion foundation's
+ *   release policy (resolveSnapPoint.ts)
  * @position Pure math; no DOM, no React. Read by hooks/usePager.ts
  *
  * Coordinates: `position` is the content offset along the paging axis in px,
@@ -37,81 +38,6 @@ import {paging} from './uikit/paging';
  */
 export function pagingSettleVelocity(velocity: number): number {
   return Math.abs(velocity) < paging.release.velocityFloor ? 0 : velocity;
-}
-
-export interface PageRelease {
-  /** Content offset at the lift, px (may be past either end). */
-  position: number;
-  /** Content velocity at the release, px/s (the shared release velocity). */
-  velocity: number;
-  /** Distance between consecutive pages: page width plus the gap, px. */
-  stride: number;
-  /** Number of pages (≥ 1). */
-  count: number;
-  /** The page the drag started on (its rest position when the finger landed). */
-  startIndex: number;
-  /** Wraps around: the target may leave [0, count − 1] (the owner wraps it). */
-  loop?: boolean;
-}
-
-/**
- * The page a release settles on, UIKit's rule: faster than
- * `paging.release.advanceSpeed`, the next page in the direction of the
- * velocity from wherever the content is; slower, the page nearest the
- * content (past `commitFraction` of a page, the next one). A release whose
- * velocity points back toward the page the drag started on settles there,
- * whatever the travel (`spec:AST-094` FR37; UIKit, slower than the advance
- * speed, takes the nearest page). Never more than `maxPagesFromStart` from
- * the start page; clamped to the pages unless looping.
- *
- * @example
- * ```
- * // Released at rest 60 % of the way from page 1 to page 2: page 2.
- * selectPage({position: 1.6 * 402, velocity: 0, stride: 402, count: 6, startIndex: 1});
- * // Flicked forward at 600 px/s from 6 % past page 1: page 2.
- * selectPage({position: 1.06 * 402, velocity: 600, stride: 402, count: 6, startIndex: 1});
- * ```
- */
-export function selectPage({
-  position,
-  velocity,
-  stride,
-  count,
-  startIndex,
-  loop = false,
-}: PageRelease): number {
-  if (!(stride > 0) || count < 1) {
-    return 0;
-  }
-  const page = position / stride;
-  // A hair of tolerance so a release exactly on a page boundary reads as on it.
-  const epsilon = 1e-6;
-  let target: number;
-  if (velocity >= paging.release.advanceSpeed) {
-    target = Math.floor(page + epsilon) + 1;
-  } else if (velocity <= -paging.release.advanceSpeed) {
-    target = Math.ceil(page - epsilon) - 1;
-  } else {
-    const base = Math.floor(page);
-    target = page - base >= paging.release.commitFraction ? base + 1 : base;
-  }
-  const reach = paging.release.maxPagesFromStart;
-  // A stale start page past either end (the count shrank, an overscrolled
-  // track) counts from the nearest real page, as selectSnapPoint does.
-  const from = loop ? startIndex : Math.min(Math.max(startIndex, 0), count - 1);
-  // Moving back cancels (FR37).
-  const travel = page - from;
-  if (
-    (travel > epsilon && velocity < 0) ||
-    (travel < -epsilon && velocity > 0)
-  ) {
-    target = from;
-  }
-  target = Math.max(from - reach, Math.min(from + reach, target));
-  if (!loop) {
-    target = Math.max(0, Math.min(count - 1, target));
-  }
-  return target;
 }
 
 /** A paging settle: the curve and where it ends. */
