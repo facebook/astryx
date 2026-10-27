@@ -714,6 +714,22 @@ describe('the release ends with its animation, not its clock', () => {
 });
 
 describe('two touches in a row', () => {
+  it('a second tap 70 ms after the first ends with no press: its lift is still heard', () => {
+    // Finishing the first tap's release left nothing live and no finger down
+    // yet, which took the listeners down just before the second touch's
+    // press was painted: its lift went unheard and its press stayed on.
+    const control = pressable('button');
+    document.body.appendChild(control);
+    for (let tapIndex = 0; tapIndex < 2; tapIndex += 1) {
+      press(control, 'pointerdown', 10, 10);
+      press(control, 'pointerup', 10, 10);
+      lift(control);
+      vi.advanceTimersByTime(70);
+    }
+    vi.advanceTimersByTime(PRESS_FLASH_MS + PRESS_FADE_MS * 4);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
   it('answers the second tap while the first is still fading', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
