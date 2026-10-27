@@ -10,5 +10,12 @@ export const doc = {
     'A playing card that follows a drag: a gentle release springs it back on its release velocity, and a quick flick throws it away with momentum before the next card is dealt. A Discard button does the same from the keyboard, and the discard is announced. Built only on the public useAnimator hook.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Card', 'Button', 'Layout', 'Text', 'VisuallyHidden'],
+  componentsUsed: [
+    'Card',
+    'Button',
+    'Layout',
+    'Text',
+    'VisuallyHidden',
+    'useAnimator',
+  ],
 };
