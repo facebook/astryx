@@ -913,8 +913,10 @@ const MEGA_MENU_OPEN_MS = 1200;
  * trigger. Before is core as it ships: the panel rises 4px and fades on open
  * and close, and does the same under Reduce Motion. After is the same
  * component with the missing branch as a sandbox prototype
- * (MotionLab.module.css `.megaMenuProposed`): under Reduce Motion, or the
- * lab's Degrade, the panel only fades, within 200 ms; under Delete it cuts.
+ * (MotionLab.module.css `.megaMenuProposed`): under Reduce Motion the panel
+ * fades within 200 ms on a touch screen and changes at once with a mouse
+ * (design:reduced-motion DR2, DR3); the lab's Degrade shows the fade, its
+ * Delete the cut.
  * The two panes open half a loop apart: opening one auto popover closes any
  * other, so in step they would close each other.
  */
@@ -926,8 +928,23 @@ export function TopNavExitRig({mode}: {mode: Mode}) {
     const trigger = rootRef.current?.querySelector<HTMLButtonElement>(
       'button[aria-expanded]',
     );
-    if (trigger != null && (trigger.ariaExpanded === 'true') !== isOpen) {
-      trigger.click();
+    if (trigger == null || (trigger.ariaExpanded === 'true') === isOpen) {
+      return;
+    }
+    // A pointer-style click (detail 1): `click()` sends detail 0, which the
+    // menu reads as Enter or Space and answers by moving focus into the
+    // panel. Focus stays wherever the person left it.
+    const focused = document.activeElement;
+    trigger.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        view: window,
+      }),
+    );
+    if (document.activeElement !== focused && focused instanceof HTMLElement) {
+      focused.focus({preventScroll: true});
     }
   }, []);
   useLoop(() => {
@@ -978,7 +995,7 @@ export function TopNavExitRig({mode}: {mode: Mode}) {
       <Hint>
         {mode === 'before'
           ? 'The only popover exit in core, and the proof the pattern works: the panel rises 4px and fades on open and close. Under Reduce Motion it does exactly the same.'
-          : 'The same exit with the missing branch: under Reduce Motion (or the lab\u2019s Degrade) the panel only fades, within 200 ms; under Delete it cuts. Turn either on to compare.'}
+          : 'The same exit with the missing branch: under Reduce Motion the panel fades within 200 ms on a touch screen and changes at once with a mouse; the lab\u2019s Degrade shows the fade, Delete the cut. Turn either on to compare.'}
       </Hint>
     </VStack>
   );

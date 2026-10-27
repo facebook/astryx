@@ -210,7 +210,7 @@ export default function PreviewsPage() {
             },
             {
               tone: 'after',
-              label: 'Proposed — Reduce Motion only fades',
+              label: 'Proposed — Reduce Motion never rises',
               content: <TopNavExitRig mode="after" />,
             },
           ]}
@@ -219,8 +219,8 @@ export default function PreviewsPage() {
           <Text type="supporting" color="secondary">
             Both panes are core&rsquo;s real <code>TopNav</code>. The right one
             carries the missing reduced-motion branch as a sandbox prototype in
-            CSS. Animator retargeting lands with <code>useAnimator</code>{' '}
-            (public, AST-107, #8600).
+            CSS. Animator retargeting would come with the proposed public{' '}
+            <code>useAnimator</code> (AST-107, spec PR #8600).
           </Text>
         </DemoBody>
       </DemoCard>
