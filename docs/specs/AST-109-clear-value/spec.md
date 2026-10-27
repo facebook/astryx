@@ -39,9 +39,9 @@ affects_consumer_docs:
 
 Clearing a selector returns it to its starting point, and the caller says what
 that point is. A filter whose starting point is "Everyone" clears to
-"Everyone", not to a blank field. The row that stands for the starting point
-stays in the list while a search narrows it, so a person can always get back
-from the list itself.
+"Everyone", not to a blank field. In `Selector` and `Typeahead`, the row that stands
+for the starting point stays in the list while a search narrows it, so a person
+can always get back from the list itself.
 
 ## Members
 
@@ -51,9 +51,9 @@ value is chosen from a presented list.
 | Member            | Value type       | Clear option (FR4)                         | Notes                                                                                                                  |
 | ----------------- | ---------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `Selector`        | `string`         | the option whose `value` is `clearValue`   | Delete and Backspace on the trigger clear as the clear button does.                                                    |
-| `MultiSelector`   | `string[]`       | none                                       | Clear restores the starting set. Equality ignores order.                                                               |
+| `MultiSelector`   | `string[]`       | none; clear button and keys only           | Clear restores the starting set. Equality ignores order.                                                               |
 | `Typeahead`       | `T`              | `clearValue` itself, as the first item     | Equality is the item's `id`. The input shows the item's label.                                                         |
-| `Tokenizer`       | `T[]`            | none                                       | Clear restores the starting tokens and reports them with the change descriptor its clear reports. Equality is by `id`. |
+| `Tokenizer`       | `T[]`            | none; clear button and keys only           | Clear restores the starting tokens and reports them with the change descriptor its clear reports. Equality is by `id`. |
 | `ComplexSelector` | its `Value` type | caller-rendered content; nothing is pinned | Has no clear today. When it offers `hasClear`, it takes `clearValue` under this rule.                                  |
 
 ## Non-goals
@@ -64,8 +64,10 @@ value is chosen from a presented list.
   has `defaultValue`.
 - Search matching and query normalization. `spec:AST-056` FR4 owns the matching
   floor.
-- Members outside the selector set, such as text, number, date, time, and file
-  inputs, and `PowerSearch` (OQ1).
+- Members outside the selector set: text, number, date, time, and file inputs,
+  and `PowerSearch`, whose value is a filter list rather than a selection.
+- A clear option for set-valued members. `MultiSelector` and `Tokenizer` clear
+  through the clear button and keys only.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
 - Internal modules, files, function names, algorithms, data structures, storage
@@ -146,7 +148,7 @@ value is chosen from a presented list.
   option, so Enter never chooses it by accident; arrow keys reach it. In
   `Selector` it keeps the caller's position among top-level entries. A
   `Selector` whose `clearValue` matches no option pins nothing and warns in
-  development. Set-valued members have no clear option (OQ2).
+  development. Set-valued members have no clear option.
 - **FR5 — Choosing the clear option is choosing a value.** It uses the option
   row's anatomy, size, press model, touch target, theme target, and
   presentations, and closed-trigger type-to-find matches its label. In
@@ -214,7 +216,7 @@ Known verification gap: none of these suites exist on `main`.
 ### DEC-1 — Going back is clear, to a value the caller names
 
 **Reference:** `spec:AST-109/DEC-1`
-**Decider:** pending
+**Decider:** `cixzhang`, `2026-10-26`
 
 Clear already means "go back to the starting point"; `clearValue` lets the
 caller say where that is (`architecture:public-component-api` INV21). It is a
@@ -237,17 +239,21 @@ state a second time beside the option that holds the value.
 ### DEC-3 — Types narrow only when `clearValue` is given
 
 **Reference:** `spec:AST-109/DEC-3`
-**Decider:** pending
+**Decider:** `cixzhang`, `2026-10-26`
 
 With `clearValue` a single-value member never reports `null`, so its types say
 so. Without it nothing changes, so the prop is additive.
 
+### DEC-4 — The family is the list selectors, and the clear option starts with single values
+
+**Reference:** `spec:AST-109/DEC-4`
+**Decider:** `cixzhang`, `2026-10-26`
+
+`clearValue` applies to the selectors in the Members table. `PowerSearch` is
+not a member. The clear option exists in `Selector` and `Typeahead`, where one
+option holds the clear value; set-valued members clear through the clear
+button and keys.
+
 ## Open questions
 
-- **OQ1 — Is `PowerSearch` a member?** (`human-api`) It offers `hasClear`, but
-  its value is `filters`, not `value`. Joining means `clearValue` restores a
-  starting filter list under a name that does not match its value prop;
-  staying out leaves its clear at an empty list.
-- **OQ2 — Do set-valued members get a clear option?** (`human-api`) Today they
-  clear through the clear button only. A row would need its own label, because
-  no single option holds a set.
+None.
