@@ -31,7 +31,7 @@ export const docs = {
       name: 'options.snapPoints',
       type: 'number[]',
       description:
-        "Offsets in px along `axis` from the element's resting position, in ascending order, such as `[0, 240, 480]`. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. Changing them restarts the drag with the element at rest.",
+        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. Changing them restarts the drag with the element at rest.",
       required: true,
     },
     {

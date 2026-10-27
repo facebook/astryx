@@ -61,7 +61,9 @@ export function useDragToSnapPoints(
     onSettleRef.current = options.onSettle;
   });
   const snapRef = useRef<DragToSnapPoints | null>(null);
-  const points = snapPoints.join(',');
+  // The snap points as a value, so a new array with the same points keeps
+  // the drag (an empty list stays empty).
+  const points = JSON.stringify(snapPoints);
   useEffect(() => {
     const element = ref.current;
     if (element == null) {
@@ -69,7 +71,7 @@ export function useDragToSnapPoints(
     }
     const created = createDragToSnapPoints(element, {
       axis,
-      snapPoints: points.split(',').map(Number),
+      snapPoints: JSON.parse(points) as number[],
       flickThreshold,
       onSettle: index => onSettleRef.current(index),
     });

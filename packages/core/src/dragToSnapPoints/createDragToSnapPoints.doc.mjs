@@ -37,7 +37,7 @@ export const docs = {
       name: 'options.snapPoints',
       type: 'number[]',
       description:
-        "Offsets in px along `axis` from the element's resting position, in ascending order, such as `[0, 240, 480]`. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport.",
+        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport.",
       required: true,
     },
     {
@@ -61,7 +61,7 @@ export const docs = {
       name: 'settleTo',
       type: '(index: number) => void',
       description:
-        'Settles the element on the snap point at `index` without a drag, then calls `onSettle`. Wire it to keys and buttons: it is the keyboard path. An index past either end is clamped.',
+        'Settles the element on the snap point at `index` without a drag, then calls `onSettle`. Wire it to keys and buttons: it is the keyboard path. An index outside the snap points does nothing and warns in development.',
     },
     {
       name: 'destroy',

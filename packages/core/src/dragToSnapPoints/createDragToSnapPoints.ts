@@ -36,6 +36,7 @@ import {
 } from '../gestures/createPanGesture';
 import {createMotionAnimator} from '../motion/animator';
 import {resolveSnapPoint} from '../motion/resolveSnapPoint';
+import {devWarn} from '../utils/devWarning';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 
 /**
@@ -49,9 +50,10 @@ export interface DragToSnapPointsOptions {
   /** The axis the element moves along. */
   axis: 'x' | 'y';
   /**
-   * Offsets in px along `axis` from the element's resting position, in
-   * ascending order. Not viewport fractions, unlike BottomSheet's
-   * `snapPoints`.
+   * Offsets in px along `axis` from the element's resting position, sorted
+   * before use (`onSettle` and `settleTo` count in that order). Not viewport
+   * fractions, unlike BottomSheet's `snapPoints`. An empty list makes the
+   * drag do nothing and warns in development.
    */
   snapPoints: ReadonlyArray<number>;
   /**
@@ -67,28 +69,24 @@ export interface DragToSnapPointsOptions {
 export interface DragToSnapPoints {
   /**
    * Settles the element on the snap point at `index` without a drag (the
-   * keyboard path), then calls `onSettle`. An index past either end is
-   * clamped.
+   * keyboard path), then calls `onSettle`. An index outside the snap points
+   * does nothing and warns in development.
    */
   settleTo(index: number): void;
   /** Removes every listener and stops the element where it is. */
   destroy(): void;
 }
 
-function checkSnapPoints(snapPoints: ReadonlyArray<number>) {
-  if (snapPoints.length === 0) {
-    throw new Error('createDragToSnapPoints: snapPoints needs at least one.');
+/** The usable snap points, ascending: `snapPoints` is sorted before use. */
+function sortedSnapPoints(snapPoints: ReadonlyArray<number>): number[] {
+  const usable = snapPoints.filter(point => Number.isFinite(point));
+  if (usable.length < snapPoints.length) {
+    devWarn(
+      'createDragToSnapPoints',
+      'snapPoints must be numbers; the others are ignored.',
+    );
   }
-  for (let i = 0; i < snapPoints.length; i++) {
-    if (!Number.isFinite(snapPoints[i])) {
-      throw new Error('createDragToSnapPoints: snapPoints must be numbers.');
-    }
-    if (i > 0 && snapPoints[i] <= snapPoints[i - 1]) {
-      throw new Error(
-        'createDragToSnapPoints: snapPoints must be in ascending order.',
-      );
-    }
-  }
+  return usable.sort((a, b) => a - b);
 }
 
 /**
@@ -111,17 +109,20 @@ export function createDragToSnapPoints(
   element: HTMLElement,
   options: DragToSnapPointsOptions,
 ): DragToSnapPoints {
-  const {
-    axis,
-    snapPoints,
-    flickThreshold = DEFAULT_FLICK_THRESHOLD,
-    onSettle,
-  } = options;
-  checkSnapPoints(snapPoints);
+  const {axis, flickThreshold = DEFAULT_FLICK_THRESHOLD, onSettle} = options;
+  const points = sortedSnapPoints(options.snapPoints);
+  if (points.length === 0) {
+    // Nothing to settle on: the drag does nothing (spec:AST-107 FR2).
+    devWarn(
+      'createDragToSnapPoints',
+      'snapPoints is empty, so the drag does nothing.',
+    );
+    return {settleTo() {}, destroy() {}};
+  }
   const animator = createMotionAnimator(element);
   // The snap point the element rests on, or is settling toward.
   let index = resolveSnapPoint({
-    points: snapPoints,
+    points,
     position: 0,
     velocity: 0,
     flickThreshold,
@@ -140,7 +141,7 @@ export function createDragToSnapPoints(
     index = target;
     const mine = ++turn;
     const handle = animator.animate(
-      {[axis]: snapPoints[target]},
+      {[axis]: points[target]},
       {
         spring: springs.settle,
         ...(velocity !== 0 ? {velocity: {[axis]: velocity}} : {}),
@@ -188,7 +189,7 @@ export function createDragToSnapPoints(
       // its direction past the flick speed, and back to where the drag
       // started when the release moves back toward it (spec:AST-094 FR37).
       const {index: target} = resolveSnapPoint({
-        points: snapPoints,
+        points,
         position: offset,
         velocity: release,
         flickThreshold,
@@ -203,12 +204,15 @@ export function createDragToSnapPoints(
       if (destroyed) {
         return;
       }
-      const clamped = Math.min(
-        snapPoints.length - 1,
-        Math.max(0, Math.round(target)),
-      );
+      if (!Number.isInteger(target) || target < 0 || target >= points.length) {
+        devWarn(
+          'createDragToSnapPoints',
+          `settleTo(${target}) is outside the ${points.length} snap points, so it does nothing.`,
+        );
+        return;
+      }
       drag = null;
-      settle(clamped, 0, false);
+      settle(target, 0, false);
     },
     destroy() {
       if (destroyed) {

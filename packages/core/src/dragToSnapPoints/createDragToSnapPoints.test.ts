@@ -217,9 +217,6 @@ describe('createDragToSnapPoints', () => {
     snap.settleTo(2);
     await vi.advanceTimersByTimeAsync(3000);
     expect(onSettle).toHaveBeenCalledWith(2);
-    snap.settleTo(9);
-    await vi.advanceTimersByTimeAsync(3000);
-    expect(onSettle).toHaveBeenLastCalledWith(2);
     snap.destroy();
   });
 
@@ -239,14 +236,56 @@ describe('createDragToSnapPoints', () => {
     snap.destroy();
   });
 
-  it('refuses snap points that are empty, not numbers or out of order', () => {
+  it('sorts the snap points before use', async () => {
     const element = sheet();
-    const onSettle = () => {};
-    for (const snapPoints of [[], [0, Number.NaN], [0, 240, 120]]) {
-      expect(() =>
-        createDragToSnapPoints(element, {axis: 'y', snapPoints, onSettle}),
-      ).toThrow(/snapPoints/);
-    }
+    const onSettle = vi.fn();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: [480, 0, 240],
+      onSettle,
+    });
+    // 300 px over about a second: slow, nearer 240, the second snap point.
+    dragY(element, 300, 20, 50);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(onSettle).toHaveBeenCalledWith(1);
+    snap.destroy();
+  });
+
+  it('an empty list does nothing and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const element = sheet();
+    const onSettle = vi.fn();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: [],
+      onSettle,
+    });
+    expect(warn).toHaveBeenCalledTimes(1);
+    dragY(element, 300, 20, 50);
+    snap.settleTo(0);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(onSettle).not.toHaveBeenCalled();
+    expect(element.style.translate).toBe('');
+    snap.destroy();
+    warn.mockRestore();
+  });
+
+  it('settleTo with an index outside the snap points does nothing and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const element = sheet();
+    const onSettle = vi.fn();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle,
+    });
+    snap.settleTo(9);
+    snap.settleTo(-1);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(onSettle).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(2);
+    snap.destroy();
+    warn.mockRestore();
   });
 
   it('after destroy no drag moves the element and nothing reports', async () => {

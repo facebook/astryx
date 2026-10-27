@@ -5,7 +5,8 @@
  * @input vitest (jsdom, fake clock), React Testing Library, the hook
  * @output Checks `spec:AST-107` FR2 and FR6 for the hook: `settleTo` from a
  *   key settles and calls the latest `onSettle`, `settleTo` is stable, an
- *   unmount stops reporting, and the hook module holds no behavior of its own
+ *   unmount stops reporting, an empty list stays empty, and the hook module
+ *   holds no behavior of its own
  * @position Testing; validates useDragToSnapPoints.ts
  */
 
@@ -52,17 +53,21 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+const POINTS = [0, 240, 480];
+
 function Drawer({
   onSettle,
   settlers,
+  snapPoints = POINTS,
 }: {
   onSettle: (index: number) => void;
   settlers: Set<(index: number) => void>;
+  snapPoints?: ReadonlyArray<number>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const {settleTo} = useDragToSnapPoints(ref, {
     axis: 'y',
-    snapPoints: [0, 240, 480],
+    snapPoints,
     onSettle,
   });
   settlers.add(settleTo);
@@ -98,6 +103,21 @@ describe('useDragToSnapPoints', () => {
     await vi.advanceTimersByTimeAsync(3000);
     expect(onSettle).not.toHaveBeenCalled();
     expect(() => settleTo(2)).not.toThrow();
+  });
+
+  it('an empty list stays empty: settleTo does nothing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const settlers = new Set<(index: number) => void>();
+    const onSettle = vi.fn();
+    render(<Drawer onSettle={onSettle} settlers={settlers} snapPoints={[]} />);
+    const [settleTo] = settlers;
+    act(() => settleTo(0));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('delegates entirely to the factory: the hook module holds no behavior of its own', () => {
