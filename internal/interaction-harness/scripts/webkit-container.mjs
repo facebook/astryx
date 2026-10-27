@@ -12,7 +12,10 @@
  * Storybook and the evidence directory are the host's own. The image tag
  * matches the installed playwright, so its browsers match the client.
  * Uses podman when present, else docker. `--network=host` lets the specs'
- * local Storybook server and the browser reach each other.
+ * local Storybook server and the browser reach each other. Under a rootful
+ * docker daemon the container runs as the invoking user (rootless podman and
+ * rootless docker already map it), so the `test-results/` it writes into the
+ * mounted checkout stay the host user's and the next host run can clear them.
  *
  * WebKit composites through Mesa's software GL in the image, which compiles
  * each shader variant the first time a page draws it: 450–700 ms for the
@@ -50,14 +53,16 @@ if (engine == null) {
 const args = process.argv.slice(2);
 // Where the container sees the host's shader cache (see the header).
 const containerShaderCache = '/astryx-shader-cache';
-const shaderCache =
-  process.env.ASTRYX_WEBKIT_SHADER_CACHE ??
-  path.join(
-    os.homedir(),
-    '.cache',
-    'astryx-webkit-shaders',
-    image.replace(/[^\w.-]+/g, '_'),
-  );
+// Resolved to an absolute path: a bare relative value would be mounted as a
+// named volume rather than a host directory. An empty value means the default.
+const shaderCache = process.env.ASTRYX_WEBKIT_SHADER_CACHE
+  ? path.resolve(process.env.ASTRYX_WEBKIT_SHADER_CACHE)
+  : path.join(
+      os.homedir(),
+      '.cache',
+      'astryx-webkit-shaders',
+      image.replace(/[^\w.-]+/g, '_'),
+    );
 fs.mkdirSync(shaderCache, {recursive: true});
 // The harness self-test reads this marker inside the container.
 fs.writeFileSync(path.join(shaderCache, 'ASTRYX-SHADER-CACHE'), `${image}\n`);
@@ -69,9 +74,31 @@ const env = [
 ]
   .filter(name => process.env[name] != null)
   .flatMap(name => ['-e', `${name}=${process.env[name]}`]);
+// A rootful Docker daemon runs the image as root unless told otherwise; the
+// files it writes into the bind mount would then be root's. Rootless Docker
+// maps the container's root to the invoking user (as podman does), and any
+// other container uid to a subordinate host uid that cannot write the
+// checkout, so it gets no `--user`.
+const rootlessDocker =
+  engine === 'docker' &&
+  /name=rootless/.test(
+    spawnSync('docker', ['info', '--format', '{{json .SecurityOptions}}'], {
+      encoding: 'utf8',
+    }).stdout ?? '',
+  );
+const user =
+  engine === 'docker' && !rootlessDocker && typeof process.getuid === 'function'
+    ? [
+        '--user',
+        `${process.getuid()}:${process.getgid?.() ?? process.getuid()}`,
+        '-e',
+        'HOME=/tmp',
+      ]
+    : [];
 const command = [
   'run',
   '--rm',
+  ...user,
   '--network=host',
   '--ipc=host',
   '-v',
