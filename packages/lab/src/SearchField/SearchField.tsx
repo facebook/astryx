@@ -121,7 +121,7 @@ import {
   type SearchFieldPlacement,
 } from './SearchFieldTouch';
 import {bottomEdges} from './searchFieldModel';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/internal/motion';
 
 const {bottom} = search;
 

@@ -36,7 +36,7 @@ import {
 import {
   TapGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
+} from '@astryxdesign/core/internal/touch';
 import {isRtlElement} from '../utils/isRtlElement';
 import {
   activationTiming,
@@ -58,10 +58,10 @@ import {
   type Animator,
   type MotionCurve,
   type MotionHandle,
-} from '@astryxdesign/core/motion/animator';
-import {search} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/motion';
+import {search} from '@astryxdesign/core/internal/motion';
+import {useAnimator} from '@astryxdesign/core/internal/motion';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {
   keyboardCoversPage,
   useKeyboardHeight,

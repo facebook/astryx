@@ -24,7 +24,7 @@ import {
   bottomLift,
   framesCurve,
 } from './searchFieldModel';
-import {timing} from '@astryxdesign/core/motion/uikit';
+import {timing} from '@astryxdesign/core/internal/motion';
 
 const IPHONE = {restWidth: 370, height: 44, lift: 99, isRtl: false};
 

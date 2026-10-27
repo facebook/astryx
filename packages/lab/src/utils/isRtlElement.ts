@@ -2,19 +2,22 @@
 
 /**
  * @file isRtlElement.ts
- * @input A DOM element, or null
- * @output isRtlElement: whether it renders right to left
- * @position Lab's own reading of the writing direction, for drag and
- *   layout maths. Core has the same one-liner behind its package-private
- *   path, which Lab does not import: a consumer installing Lab from the
- *   registry cannot resolve core's internal modules.
+ * @input A DOM element (nullable)
+ * @output isRtlElement: whether the element renders right to left, per its
+ *   computed `direction`
+ * @position Lab-internal, not exported from `@astryxdesign/lab`: lab's own
+ *   direction check, used by SearchField's touch layer. Core's helper of the
+ *   same name is not among core's published exports, so lab keeps its own
  *
- * SSR-safe: false with no element and no DOM. Call it on the event, not
- * during render, so `getComputedStyle` runs only where the answer matters.
+ * SYNC: When modified, update isRtlElement.test.ts.
  */
 
-/** Whether `element` renders right to left, per its computed `direction`. */
-export function isRtlElement(element: HTMLElement | null): boolean {
+/**
+ * Whether `element` renders right to left, per its computed `direction`.
+ * False without an element or without a DOM (a server render), so callers
+ * read it when they lay out, never while rendering.
+ */
+export function isRtlElement(element: Element | null | undefined): boolean {
   if (element == null || typeof window === 'undefined') {
     return false;
   }

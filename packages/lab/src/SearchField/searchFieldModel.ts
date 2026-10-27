@@ -31,9 +31,9 @@
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
-import {type MotionCurve} from '@astryxdesign/core/motion/animator';
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search, timing} from '@astryxdesign/core/motion/uikit';
+import {type MotionCurve} from '@astryxdesign/core/internal/motion';
+import {cubicBezier} from '@astryxdesign/core/internal/motion';
+import {search, timing} from '@astryxdesign/core/internal/motion';
 
 const {bottom} = search;
 
