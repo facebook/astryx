@@ -3963,4 +3963,31 @@ describe('SideNavItem collapsed-from-mount rail tooltip', () => {
     fireEvent.focusIn(link);
     expect(spy.mock.contexts).toContain(layer);
   });
+
+  it('keeps a tooltip that was open when the rail expanded shut on the next collapse', () => {
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    const rail = (isCollapsed: boolean) => (
+      <SideNav aria-label="Main" collapsible={{isCollapsed, hasButton: false}}>
+        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />
+      </SideNav>
+    );
+    const {rerender} = render(rail(true));
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    fireEvent.mouseEnter(link);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(railTooltipFor(link));
+
+    // Expanding (from a shortcut, say) removes the trigger without a leave.
+    rerender(rail(false));
+    spy.mockClear();
+    rerender(rail(true));
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

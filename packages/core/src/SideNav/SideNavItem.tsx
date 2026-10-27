@@ -533,10 +533,14 @@ export function SideNavItem({
 
   // Label tooltip for a collapsed leaf. It binds through a callback ref and
   // its id renders as an `aria-describedby` prop, so both follow the element
-  // they describe across re-renders.
+  // they describe across re-renders. The hook outlives the collapsed branch,
+  // so it is held shut whenever the item is not a collapsed leaf: a tooltip
+  // open when the rail expands must not come back on the next collapse.
+  const isRailLeaf = isCollapsed && !hasChildren;
   const railTooltip = useTooltip({
     placement: 'end',
-    isEnabled: isCollapsed && !hasChildren,
+    isEnabled: isRailLeaf,
+    isOpen: isRailLeaf ? undefined : false,
   });
   const railLeafRef = useMergedRefs(ref, railTooltip.ref);
 
