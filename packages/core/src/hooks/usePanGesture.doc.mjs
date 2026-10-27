@@ -41,7 +41,7 @@ export const docs = {
       name: 'options.onPan',
       type: '(event: PanGestureEvent) => void',
       description:
-        "Called with `{state, pointerType, translation, velocity}` as the drag begins, changes, ends at the release, or is cancelled. `state` is 'began', 'changed', 'ended' or 'cancelled'. `pointerType` is 'touch', 'mouse' or 'pen': what drove the drag. `translation` is the movement since the drag began, in pixels: the travel the drag needed to begin is not part of it, so an element that follows it does not jump. `velocity` is in pixels per second; at 'ended' it is the release velocity (0 when the finger rested before lifting), and at 'cancelled' it is 0. Read through a ref: a new function each render re-creates nothing.",
+        "Called with `{state, translation, velocity}` as the drag begins, changes, ends at the release, or is cancelled. `state` is 'began', 'changed', 'ended' or 'cancelled'. `translation` is the movement since the drag began, in pixels: the travel the drag needed to begin is not part of it, so an element that follows it does not jump. `velocity` is in pixels per second; at 'ended' it is the release velocity (0 when the finger rested before lifting), and at 'cancelled' it is 0. Read through a ref: a new function each render re-creates nothing.",
       required: true,
     },
   ],
@@ -55,7 +55,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Reports a drag on an element as values, for a surface the product moves itself: a card that follows the finger, a drawer pulled by its handle. The drag claims its touch at UIKit’s 10 pt, as `UIPanGestureRecognizer` does, so a tap or a scroll that starts on the element stays a tap or a scroll, and a press or a long press is never reported as a pan. The hook is a thin layer over `createPanGesture`, the same API for code without React. A drag has no keyboard or assistive-technology path of its own: whatever the drag does needs another way to do it, such as buttons or arrow keys (WCAG 2.5.7), and `useDragToSnapPoints` provides `settleTo` for that. The pan moves nothing itself, so Reduce Motion applies to the motion you drive from it: animate with `useAnimator`, which plans every animation for Reduce Motion. Where a component already offers the behavior, use its prop instead: BottomSheet’s `snapPoints`, Carousel’s `hasSnap`.',
+      'Reports a drag on an element as values, for a surface the product moves itself: a card that follows the finger, a drawer pulled by its handle. A finger, a mouse and a pen all drive it. The drag claims its touch at UIKit’s 10 pt, as `UIPanGestureRecognizer` does, so a tap or a scroll that starts on the element stays a tap or a scroll, and a press or a long press is never reported as a pan. The hook is a thin layer over `createPanGesture`, the same API for code without React. A drag has no keyboard or assistive-technology path of its own: whatever the drag does needs another way to do it, such as buttons or arrow keys (WCAG 2.5.7), and `useDragToSnapPoints` provides `settleTo` for that. The pan moves nothing itself, so Reduce Motion applies to the motion you drive from it: animate with `useAnimator`, which plans every animation for Reduce Motion. Where a component already offers the behavior, use its prop instead: BottomSheet’s `snapPoints`, Carousel’s `hasSnap`.',
     bestPractices: [
       {
         guidance: true,
@@ -98,14 +98,14 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Reports a drag as values ({state, pointerType, translation, velocity}) for a surface you move yourself. Claims at UIKit’s 10 pt; taps, scrolls, presses and long presses are never a pan. Thin layer over createPanGesture(element, options) → {destroy}. No keyboard path of its own: give the drag another way (WCAG 2.5.7). Reduce Motion: animate with useAnimator. Prefer BottomSheet snapPoints / Carousel hasSnap when they fit.',
+    'Reports a drag as values ({state, translation, velocity}) for a surface you move yourself; a finger, a mouse and a pen all drive it. Claims at UIKit’s 10 pt; taps, scrolls, presses and long presses are never a pan. Thin layer over createPanGesture(element, options) → {destroy}. No keyboard path of its own: give the drag another way (WCAG 2.5.7). Reduce Motion: animate with useAnimator. Prefer BottomSheet snapPoints / Carousel hasSnap when they fit.',
   paramDescriptions: {
     ref: 'element to drag; one pan per node, re-created when the ref moves, destroyed at unmount.',
     options: 'config object.',
     'options.axis':
       "'x' | 'y': limit to one axis; the other is never reported and reads 0.",
     'options.onPan':
-      "({state, pointerType, translation, velocity}): state 'began' | 'changed' | 'ended' | 'cancelled'; pointerType 'touch' | 'mouse' | 'pen'; translation px since the drag began (threshold travel excluded, no jump); velocity px/s, release velocity at 'ended', 0 at 'cancelled'. Read through a ref.",
+      "({state, translation, velocity}): state 'began' | 'changed' | 'ended' | 'cancelled'; translation px since the drag began (threshold travel excluded, no jump); velocity px/s, release velocity at 'ended', 0 at 'cancelled'. Read through a ref.",
   },
   returnDescriptions: {
     void: 'nothing (no recognizer). createPanGesture returns {destroy}: removes every listener, cancels a drag in progress.',
