@@ -744,6 +744,58 @@ describe('createReorderable attach', () => {
       detach();
     });
 
+    it('follows a resize that changes the column count', () => {
+      // Three columns, then, after a resize, two.
+      let slots = [
+        {x: 40, y: 20},
+        {x: 120, y: 20},
+        {x: 200, y: 20},
+        {x: 40, y: 80},
+      ];
+      const deckOf = deck(['A', 'B', 'C', 'D']);
+      const onReorder = vi.fn();
+      const {detach} = createReorderable({
+        onReorder,
+        positions: () => slots,
+      }).attach(deckOf.container, {items: deckOf.items});
+      const a = deckOf.cards[0].grip;
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      fireEvent.keyDown(a, {key: 'ArrowDown'});
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'a', to: 3});
+      slots = [
+        {x: 40, y: 20},
+        {x: 120, y: 20},
+        {x: 40, y: 80},
+        {x: 120, y: 80},
+      ];
+      fireEvent.keyDown(a, {key: 'ArrowDown'});
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'a', to: 2});
+      detach();
+    });
+
+    it('ignores a positions() array of another length: the measured layout decides', () => {
+      // Two slots for three items, side by side; the items are a column.
+      const deckOf = deck(['A', 'B', 'C']);
+      const onReorder = vi.fn();
+      const {detach} = createReorderable({
+        onReorder,
+        positions: () => [
+          {x: 40, y: 20},
+          {x: 120, y: 20},
+        ],
+      }).attach(deckOf.container, {items: deckOf.items});
+      const a = deckOf.cards[0].grip;
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      // A column (jsdom lays nothing out): Right does nothing, Down moves.
+      fireEvent.keyDown(a, {key: 'ArrowRight'});
+      expect(onReorder).not.toHaveBeenCalled();
+      fireEvent.keyDown(a, {key: 'ArrowDown'});
+      expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 1});
+      detach();
+    });
+
     it("moves Down to a shorter row's last position", () => {
       // Three, then two.
       const {onReorder, detach, grip} = laidOut(
