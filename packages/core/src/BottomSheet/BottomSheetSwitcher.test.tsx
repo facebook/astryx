@@ -90,10 +90,19 @@ function fireTimedPointer(
   if (pendingPress != null) {
     const landing = pendingPress;
     pendingPress = null;
-    mouse(target, 'pointerdown', landing.y, landing.time);
+    // Every pointer's pan begins past its threshold (spec:AST-094 FR17,
+    // FR19, FR43), a mouse's too: the press lands that far behind the first
+    // move, so the positions a test moves to are the drag's.
+    mouse(
+      target,
+      'pointerdown',
+      landing.y - Math.sign(y - landing.y) * PAN_THRESHOLD,
+      landing.time,
+    );
   }
   return mouse(target, type, y, time);
 }
+const PAN_THRESHOLD = 10;
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,

@@ -119,10 +119,9 @@ function touchEvent(
 }
 
 /**
- * A mouse's pointer event at an explicit time, on the handle or the body
- * (whichever `target` is in), through the props the component spreads there:
- * a mouse drags the sheet on the pointer path, not the gesture host's
- * recognizers (spec:AST-017 FR59, spec:AST-094 FR19).
+ * A mouse's pointer event at an explicit time, dispatched on `target` as the
+ * browser does: the gesture host's recognizers take it, as they take every
+ * pointer (spec:AST-094 FR19, FR43).
  */
 let currentHook: Hook | null = null;
 function mouseEvent(
@@ -132,39 +131,37 @@ function mouseEvent(
   time: number,
   button = 0,
   pointerType: 'mouse' | 'pen' | 'touch' = 'mouse',
-): React.PointerEvent {
+): Event {
   if (currentHook == null) {
     throw new Error('attach the sheet before a mouse event');
   }
-  const handle = target.closest<HTMLElement>('[data-part="handle"]');
-  const body = target.closest<HTMLElement>('[data-part="body"]');
-  const props =
-    handle != null || body == null
-      ? currentHook.result.current.handleProps
-      : currentHook.result.current.bodyProps;
-  const event = {
-    type,
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
     pointerId: 1,
     pointerType,
     isPrimary: true,
     button: type === 'pointermove' ? -1 : button,
+    buttons: type === 'pointerup' || type === 'pointercancel' ? 0 : 1,
     clientX: 50,
     clientY: y,
-    timeStamp: timeBase + time,
-    target,
-    currentTarget: handle ?? body ?? target,
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn(),
-  } as unknown as React.PointerEvent;
-  const handler = {
-    pointerdown: props.onPointerDown,
-    pointermove: props.onPointerMove,
-    pointerup: props.onPointerUp,
-    pointercancel: props.onPointerCancel,
-  }[type];
-  handler(event);
+  });
+  Object.defineProperty(event, 'timeStamp', {value: timeBase + time});
+  if (type === 'pointerdown') {
+    pressed = {target, y, pointerType};
+  } else if (type === 'pointerup' || type === 'pointercancel') {
+    pressed = null;
+  }
+  target.dispatchEvent(event);
   return event;
 }
+// The pointer a test left pressed, which the next test must not inherit.
+let pressed: {
+  target: HTMLElement;
+  y: number;
+  pointerType: 'mouse' | 'pen' | 'touch';
+} | null = null;
 
 /**
  * The sheet, in the document: the surface the hook measures and moves, its
@@ -282,6 +279,26 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // A test that ends mid-drag ends its contacts before its hook unmounts,
+  // so the gesture host goes idle and reads the next test's primary pointer:
+  // a pointer left pressed lifts where it is, and losing window focus
+  // cancels every touch in flight.
+  if (pressed != null && currentHook != null) {
+    const {target, y, pointerType} = pressed;
+    act(() => {
+      mouseEvent('pointerup', target, y, 100_000, 0, pointerType);
+    });
+  }
+  window.dispatchEvent(new Event('blur'));
+  // What the host defers to the next task or frame (a mouse drag's
+  // selection hold lifts one task after its press ends; touch-action reads
+  // batch into the next frame) runs on this test's clock, so the next test
+  // does not inherit it.
+  if (vi.isFakeTimers()) {
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+  }
   vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = '';
@@ -508,7 +525,9 @@ function landBehind(target: HTMLElement, toward: number) {
   if (!contact.landed) {
     contact.landed = true;
     const direction = Math.sign(toward - contact.y);
-    const behind = contact.kind === 'mouse' ? 0 : PAN_THRESHOLD;
+    // Every pointer's pan begins past its threshold (spec:AST-094 FR17,
+    // FR19, FR43), a mouse's too.
+    const behind = PAN_THRESHOLD;
     contactDown(target, contact.y - direction * behind, contact.t);
   }
   return contact;
@@ -778,36 +797,35 @@ describe('useSheetGestures', () => {
     });
   });
 
-  describe("release projection under a mouse (today's rule)", () => {
-    // Under a mouse, a release is judged where the
-    // sheet would coast to at the finger's speed (0.998 per ms), in the
-    // drag's direction, as today.
-    it('dismisses on a medium throw released short of the dismiss line', () => {
+  describe("a mouse's release follows UIKit's rule, as a finger's does (spec:AST-094 FR36, FR43)", () => {
+    // One decision at the release for every pointer: the offset projected
+    // 0.1 s ahead at the release velocity picks the stop (sheetRelease.ts);
+    // what plays the settle follows the presentation (FR13).
+    it('lands a medium throw short of halfway to gone on the shortest detent', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      // 150px in 150ms = 1px/ms. The finger stops at 150, well short of the
-      // 280px line; a surface moving at that speed coasts far past it.
+      // 150px in 150ms = 1000 px/s, under a flick: projected to 250, nearest
+      // the 200px detent (gone is at 400).
       move(hook, 50, 50, t);
       move(hook, 100, 100, t);
       move(hook, 150, 150, t);
       up(hook, 150, 152, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
     });
 
-    it('lands a gentle throw on the next detent, not back where it started', () => {
+    it('settles a gentle throw back where its projection is nearest', () => {
       const onSnap = vi.fn();
       const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      // 60px in 200ms = 0.3px/ms: too slow to be a flick, too short to reach
-      // the 200px detent by position. The coast carries it there.
+      // 60px in 200ms = 300 px/s: projected to 90, nearest the top.
       move(hook, 30, 100, t);
       move(hook, 60, 200, t);
       up(hook, 60, 202, t);
       expect(onDismiss).not.toHaveBeenCalled();
-      expect(hook.result.current.settledOffset).toBe(200);
-      expect(onSnap).toHaveBeenLastCalledWith(200);
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('reads the release speed over the last stretch, so one slow sample does not cancel a throw', () => {
@@ -817,6 +835,7 @@ describe('useSheetGestures', () => {
       move(hook, 60, 20, t); // 3px/ms
       move(hook, 62, 90, t); // the lift's own last, slow sample
       up(hook, 62, 92, t);
+      // Still a fast flick (about 2800 px/s): projected past halfway to gone.
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
@@ -829,7 +848,10 @@ describe('useSheetGestures', () => {
       move(hook, 40, 285, t);
       move(hook, 60, 300, t);
       up(hook, 60, 302, t);
-      expect(onDismiss).toHaveBeenCalledTimes(1);
+      // A flick at its own speed: on to the next detent. The average since
+      // the press (200 px/s) would project nothing and fall back to the top.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
     });
 
     it('reads a move after a hold through the release filter, as a finger\u2019s is read', () => {
@@ -1027,20 +1049,21 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledLayoutOffset).toBe(0);
   });
 
-  it('uses the visible shortest detent height for the dismiss overshoot', () => {
+  it("uses the visible shortest detent height for a mouse's halfway line too", () => {
     const {hook, onDismiss} = setup({
       snapHeights: () => [200],
       offscreenBlockEndInset: 48,
     });
     const t = makeTarget();
 
-    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
-    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    // Visible full height is 352px, so the 200px stop is offset 152 and gone
+    // is 352: halfway is 252. Let go still at 235, the sheet keeps its stop.
     down(hook, 0, 0, t);
     move(hook, 235, 1000, t);
     up(hook, 235, 2000, t);
 
-    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(152);
   });
 
   it('uses the visible shortest detent height for the halfway line under a finger', () => {
@@ -1137,6 +1160,7 @@ describe('useSheetGestures', () => {
     move(hook, 220, 600, t); // offset 220, halfway -> between 1 and 0.3 (~0.65)
     move(hook, 360, 1000, t); // offset 360, past the peek -> peek floor
     const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
+    up(hook, 360, 1002, t);
     expect(values[0]).toBe(1);
     expect(values[1]).toBeGreaterThan(0.55);
     expect(values[1]).toBeLessThan(0.75);
@@ -1203,15 +1227,18 @@ describe('useSheetGestures', () => {
     }
 
     it("keeps a finger on today's drag where the primary pointer is fine", () => {
-      // The handle's pointer events carry it there (the recognizers stay
-      // off, FR19).
+      // The recognizers take it (FR19): a touchscreen's finger sends its
+      // pointerdown before its touchstart; past the pan's 10 px, today's
+      // tracking.
       expect(matchMedia('(pointer: coarse)').matches).toBe(false);
       const {hook} = setup({snapHeights: () => [200, 300]});
       const t = makeTarget();
       attach(hook, t);
       act(() => {
         mouseEvent('pointerdown', handleOf(t), 0, 0, 0, 'touch');
-        mouseEvent('pointermove', handleOf(t), 90, 100, 0, 'touch');
+        touchEvent('touchstart', handleOf(t), [{id: 71, x: 50, y: 0}], 0);
+        mouseEvent('pointermove', handleOf(t), 100, 100, 0, 'touch');
+        touchEvent('touchmove', handleOf(t), [{id: 71, x: 50, y: 100}], 100);
       });
       const offset = liveOffset(hook);
       expect(offset).toBeGreaterThan(90);
@@ -1232,15 +1259,16 @@ describe('useSheetGestures', () => {
     });
   });
 
-  it('moves the sheet under a mouse from the first pixel, with no pan threshold (spec:AST-017 FR59)', () => {
+  it("starts a mouse's drag at the pan's 10 px, as a finger's (spec:AST-094 FR17, FR19, FR43)", () => {
     asMouse();
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     press(hook, 0, 0, t);
     move(hook, 3, 16, t);
+    expect(hook.result.current.isDragging).toBe(false);
+    // Clear of the detents' magnet: the pan's translation past its 10 px.
+    move(hook, 70, 32, t);
     expect(hook.result.current.isDragging).toBe(true);
-    // Clear of the detents' magnet, the sheet is where the pointer went.
-    move(hook, 60, 32, t);
     expect(liveOffset(hook)).toBe(60);
   });
 
@@ -1312,7 +1340,8 @@ describe('useSheetGestures', () => {
     act(() => {
       mouseEvent('pointerdown', handleOf(t), 200, 1000);
     });
-    mouseEvent('pointermove', handleOf(t), 150, 1016);
+    // 60 px up: 50 past the pan's 10 px.
+    mouseEvent('pointermove', handleOf(t), 140, 1016);
     expect(liveOffset(hook)).toBe(150);
     expect(travel(t)).toBe(150 - 200);
     // ... and the commit that restores the full height moves the travel
@@ -1609,10 +1638,10 @@ describe('useSheetGestures', () => {
         vi.advanceTimersByTime(150);
       });
       expect(hook.result.current.isDragging).toBe(false);
-      // A short pull: the release puts it back on its detent.
+      // The release decides as a drag's does (spec:AST-094 FR36): the pull,
+      // about 750 px/s, projects onto the 200 px detent.
       land();
-      expect(liveOffset(hook)).toBe(0);
-      expect(travel(sheetOf(body))).toBeCloseTo(0, 0);
+      expect(hook.result.current.settledOffset).toBe(200);
     });
 
     it("a mouse wheel's notches at the content top pull it too", () => {
@@ -1679,9 +1708,10 @@ describe('useSheetGestures', () => {
   });
 
   describe('body overscroll', () => {
-    // A mouse on the scrolling body (the pointer path, spec:AST-017 FR59): a
-    // pull down where nothing under the pointer can scroll up drags the sheet
-    // once it is past 8 px, anchored at the press.
+    // A mouse on the scrolling body, through the body's pans (spec:AST-094
+    // FR19): a pull down where nothing under the pointer can scroll up, or up
+    // where nothing can scroll down while a taller detent exists, drags the
+    // sheet past the pan's 10 px.
     function makeBody(scrollTop: number) {
       return makeScroller({scrollTop, clientHeight: 200, scrollHeight: 800});
     }
@@ -1701,10 +1731,11 @@ describe('useSheetGestures', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const body = makeBody(0); // at the top
       bodyDown(hook, 0, 0, body);
-      bodyMove(hook, 40, 100, body); // pull down while at the top
+      bodyMove(hook, 110, 100, body); // pull down while at the top
       expect(hook.result.current.isDragging).toBe(true);
-      // The whole pull from the press, as before the recognizers.
-      expect(liveOffset(hook)).toBe(40);
+      // The body's pan: its translation past its 10 px, clear of the
+      // detents' magnet.
+      expect(liveOffset(hook)).toBe(100);
     });
 
     /**
@@ -1748,6 +1779,43 @@ describe('useSheetGestures', () => {
       bodyMove(hook, 60, 100, body); // moving up = scrolling intent
       expect(hook.result.current.isDragging).toBe(false);
     });
+
+    it("pulls the sheet up from the content's end while a taller detent exists, and leaves the pull to the content at the tallest (spec:AST-094 FR14, FR19)", () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      // The content at its end: scrollTop + clientHeight === scrollHeight.
+      const body = makeBody(600);
+      const sheet = sheetOf(body);
+      attach(hook, sheet);
+      // At the tallest detent an upward pull is the content's.
+      act(() => {
+        mouseEvent('pointerdown', body, 300, 0);
+        mouseEvent('pointermove', body, 250, 100);
+        mouseEvent('pointerup', body, 250, 120);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.settledOffset).toBe(0);
+      // Settled on the lower detent, the same pull drags the sheet up by its
+      // travel past the pan's 10 px, and a slow release lands on the taller
+      // detent nearest where it is.
+      down(hook, 0, 1000, sheet);
+      move(hook, 180, 1700, sheet);
+      up(hook, 180, 2100, sheet);
+      expect(hook.result.current.settledOffset).toBe(200);
+      act(() => {
+        mouseEvent('pointerdown', body, 300, 3000);
+        mouseEvent('pointermove', body, 250, 3400);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(liveOffset(hook)).toBe(200 - (50 - PAN_THRESHOLD));
+      // Held still 400 ms before the lift: no release speed (spec:AST-100
+      // FR2), so where it is decides.
+      act(() => {
+        mouseEvent('pointermove', body, 150, 3900);
+        mouseEvent('pointerup', body, 150, 4300);
+      });
+      land();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
   });
 
   describe('body touch handoff', () => {
@@ -1779,10 +1847,9 @@ describe('useSheetGestures', () => {
 
     it('promotes a top pull-down from a finger where the primary pointer is fine (a touchscreen laptop), as on a phone', () => {
       // A touchscreen laptop: a mouse is the primary pointer, and a finger on
-      // the screen sends touches, which the browser would scroll the content
-      // with. The gesture host listens for no touches there, so the body's
-      // own touch listeners serve that finger: under a fine pointer a
-      // component may listen on its own element (spec:AST-094 FR24).
+      // the screen sends its pointer events and its touches, which the
+      // browser would scroll the content with. The body's scroll-edge pan
+      // takes that finger, as every pointer (spec:AST-094 FR19).
       vi.stubGlobal(
         'matchMedia',
         vi.fn((query: string) => ({
@@ -1799,15 +1866,26 @@ describe('useSheetGestures', () => {
         scrollHeight: 800,
       });
       attach(hook, sheetOf(el));
-      const touch = (type: string, y: number, time: number): Event => {
-        const event = new Event(type, {bubbles: true, cancelable: true});
-        const contact = {identifier: 7, clientX: 50, clientY: y, target: el};
-        Object.defineProperties(event, {
-          changedTouches: {value: [contact]},
-          touches: {value: type === 'touchend' ? [] : [contact]},
-          timeStamp: {value: time},
-        });
-        el.dispatchEvent(event);
+      // Its pointer event first, then its touch, as a touchscreen sends them.
+      const touch = (
+        type: 'touchstart' | 'touchmove' | 'touchend',
+        y: number,
+        time: number,
+      ): Event => {
+        const pointerType = (
+          {
+            touchstart: 'pointerdown',
+            touchmove: 'pointermove',
+            touchend: 'pointerup',
+          } as const
+        )[type];
+        if (type !== 'touchend') {
+          mouseEvent(pointerType, el, y, time, 0, 'touch');
+        }
+        const event = touchEvent(type, el, [{id: 7, x: 50, y}], time);
+        if (type === 'touchend') {
+          mouseEvent(pointerType, el, y, time, 0, 'touch');
+        }
         return event;
       };
       let move: Event | undefined;
@@ -2773,10 +2851,11 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(longPressSelects()).toBe(true);
   });
 
-  it('leaves text selection to the browser for a finger where the primary pointer is fine (spec:AST-094 FR19)', () => {
-    // A touchscreen laptop: a finger drags the handle through today's drag
-    // (its pointer events; the recognizers stay off), and selection and the
-    // callout stay the browser's.
+  it('leaves text selection to the browser for a finger where the primary pointer is fine (spec:AST-094 FR19, spec:AST-017 FR59)', () => {
+    // A touchscreen laptop: a finger drags the handle through the
+    // recognizers (its pointerdown first, then its touches), and selection
+    // and the callout stay the browser's, as the gesture host keeps them for
+    // every contact where the primary pointer is fine.
     stubPointer({coarse: false});
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
@@ -2789,14 +2868,21 @@ describe('useSheetGestures: the release on the compositor', () => {
     attach(hook, t);
     act(() => {
       mouseEvent('pointerdown', handleOf(t), 0, 0, 0, 'touch');
-      mouseEvent('pointermove', handleOf(t), 20, 33, 0, 'touch');
-      mouseEvent('pointermove', handleOf(t), 40, 66, 0, 'touch');
-      mouseEvent('pointermove', handleOf(t), 60, 100, 0, 'touch');
+      touchEvent('touchstart', handleOf(t), [{id: 72, x: 50, y: 0}], 0);
+      for (const [y, time] of [
+        [20, 33],
+        [40, 66],
+        [60, 100],
+      ]) {
+        mouseEvent('pointermove', handleOf(t), y, time, 0, 'touch');
+        touchEvent('touchmove', handleOf(t), [{id: 72, x: 50, y}], time);
+      }
     });
     expect(hook.result.current.isDragging).toBe(true);
     expect(t.style.getPropertyValue('user-select')).toBe('text');
     expect(longPressSelects()).toBe(true);
     act(() => {
+      touchEvent('touchend', handleOf(t), [{id: 72, x: 50, y: 60}], 102);
       mouseEvent('pointerup', handleOf(t), 60, 102, 0, 'touch');
     });
     expect(t.style.getPropertyValue('user-select')).toBe('text');
@@ -3029,7 +3115,8 @@ describe('useSheetGestures: the release on the compositor', () => {
       'cubic-bezier(0.24, 1, 0.4, 1), cubic-bezier(0.24, 1, 0.4, 1)';
     const played = recordAnimations(t);
     down(hook, 0, 0, t);
-    // 200 px/s: today's rule projects 60 + 0.2 × 499 = 160, onto 200.
+    // 200 px/s, under the slowest projected speed (250): the release keeps
+    // the stop nearest where it was let go, the top (spec:AST-094 FR36).
     stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
     lift(hook, 60, 302, t);
     expect(played).toHaveLength(1);
@@ -3038,7 +3125,7 @@ describe('useSheetGestures: the release on the compositor', () => {
       410,
       0,
     );
-    // The theme's easing from 60 to 200, whatever the finger's speed.
+    // The theme's easing from 60 to the top, whatever the pointer's speed.
     const ease = (p: number) => {
       // cubic-bezier(0.24, 1, 0.4, 1), by bisection on x.
       const bez = (a: number, b: number, u: number) =>
@@ -3056,7 +3143,7 @@ describe('useSheetGestures: the release on the compositor', () => {
       return bez(1, 1, (lo + hi) / 2);
     };
     for (const {t: ms, value} of keyframesUntil(played[0], translateYOf, 409)) {
-      expect(value).toBeCloseTo(60 + 140 * ease(ms / 410), 1);
+      expect(value).toBeCloseTo(60 - 60 * ease(ms / 410), 1);
     }
     // The inline style holds what is on screen while the curve runs, and the
     // end is written when it retires.
@@ -3064,7 +3151,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     act(() => {
       vi.advanceTimersByTime(2000);
     });
-    expect(travel(t)).toBe(200);
+    expect(travel(t)).toBe(0);
   });
 
   /** A finger on Android: coarse, in an engine without `-webkit-touch-callout`. One touch model: it gets what a finger on iOS gets. */
@@ -3147,7 +3234,8 @@ describe('useSheetGestures: the release on the compositor', () => {
     down(hook, 0, 0, t);
     stream(hook, t, {from: 0, to: 60, t0: 0, t1: 300});
     lift(hook, 60, 302, t);
-    expect(hook.result.current.settledOffset).toBe(200);
+    // 200 px/s: the stop nearest where it was let go (spec:AST-094 FR36).
+    expect(hook.result.current.settledOffset).toBe(0);
     // Nothing animates: every played value holds still.
     for (const animation of played) {
       expect(changedProperties(animation)).toEqual([]);
@@ -3165,8 +3253,8 @@ describe('useSheetGestures: the release on the compositor', () => {
     );
     const {hook} = setup({snapHeights: () => [200]});
     // A finger on a touchscreen whose primary pointer is fine: the
-    // recognizers stay off (spec:AST-094 FR19), and the handle's pointer
-    // path drags the sheet, as before them.
+    // recognizers take it (spec:AST-094 FR19), its pointerdown first, then
+    // its touches.
     const sheet = makeTarget();
     attach(hook, sheet);
     sheet.style.transitionProperty = 'transform';
@@ -3178,7 +3266,17 @@ describe('useSheetGestures: the release on the compositor', () => {
       y: number,
       time: number,
     ) => {
-      mouseEvent(type, handleOf(sheet), y, time, 0, 'touch');
+      const finger = [{id: 73, x: 50, y}];
+      if (type === 'pointerdown') {
+        mouseEvent(type, handleOf(sheet), y, time, 0, 'touch');
+        touchEvent('touchstart', handleOf(sheet), finger, time);
+      } else if (type === 'pointermove') {
+        mouseEvent(type, handleOf(sheet), y, time, 0, 'touch');
+        touchEvent('touchmove', handleOf(sheet), finger, time);
+      } else {
+        touchEvent('touchend', handleOf(sheet), finger, time);
+        mouseEvent(type, handleOf(sheet), y, time, 0, 'touch');
+      }
     };
     // 150 px down, then still before the lift (on the page clock): it
     // settles on the 200 px detent.
@@ -3566,7 +3664,7 @@ describe('useSheetGestures: the dim follows the sheet', () => {
   });
 
   it.each([['a mouse', {coarse: false}]])(
-    "keeps today's dim under %s: the host eases it, clear 40 %% below the shortest detent",
+    "maps the dim under %s as a finger's, clear only once gone (one release rule, spec:AST-094 FR36); the host eases it",
     (_, {coarse}) => {
       vi.stubGlobal(
         'matchMedia',
@@ -3587,9 +3685,12 @@ describe('useSheetGestures: the dim follows the sheet', () => {
       const {dialog, target} = inDialog();
       const played = recordAnimations(dialog);
       down(hook, 0, 0, target);
-      // 40 px below the 200 px detent: today's dim clears 80 px below it.
+      // 40 px below the 200 px detent, of the 200 px to gone: the dim is
+      // 80 % there, as a finger's, since a still release dismisses only past
+      // halfway (a dim cleared 40 % below the detent let the sheet spring
+      // back under a clear backdrop).
       move(hook, 240, 500, target);
-      expect(onScrimOpacity).toHaveBeenLastCalledWith(expect.closeTo(0.5, 9));
+      expect(onScrimOpacity).toHaveBeenLastCalledWith(expect.closeTo(0.8, 9));
       restAt(hook, 240, 600, target);
       up(hook, 240, 1000, target);
       // Never pinned, and no dim played on the backdrop: the host's own
@@ -4413,9 +4514,9 @@ describe("useSheetGestures: the handle's pan", () => {
     down(hook, 0, 0, t);
     stream(hook, t, {from: 0, to: 60, t0: 0, t1: 40}); // 1500 px/s ...
     lift(hook, 60, 70, t); // ... 30 ms still, then the release
-    // Today's rule under a mouse, on the pan's velocity: 60 px projected
-    // 1500 px/s × 0.499 s further, past the dismiss line (80 px).
-    expect(onDismiss).toHaveBeenCalledTimes(1);
+    // Still a 1500 px/s flick: on to the next detent.
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
   });
 
   it('throws nothing for a mouse held still for longer than 40 ms before the release (spec:AST-100 FR2)', () => {
