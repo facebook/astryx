@@ -1379,6 +1379,63 @@ describe('BottomSheet', () => {
       delete (Element.prototype as {animate?: unknown}).animate;
     });
 
+    it('a non-modal sheet holds only itself while it enters: the page beside it stays live, and a tap on the sheet does nothing until it lands (FR35)', async () => {
+      recordAnimate();
+      const onPage = vi.fn();
+      const onInside = vi.fn();
+      function Page({isOpen}: {isOpen: boolean}) {
+        return (
+          <>
+            <button type="button" onClick={onPage}>
+              Page
+            </button>
+            <BottomSheet
+              hasScrim={false}
+              isOpen={isOpen}
+              onOpenChange={vi.fn()}
+              label="Filters">
+              <button type="button" onClick={onInside}>
+                Inside
+              </button>
+            </BottomSheet>
+          </>
+        );
+      }
+      const {rerender} = render(<Page isOpen={false} />);
+      rerender(<Page isOpen />);
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60);
+      });
+      const dialog = getSheet().closest('dialog') as HTMLElement;
+      // The page beside it is live: no shield covers it, and its button
+      // takes the tap.
+      expect([...dialog.children].some(isInputShield)).toBe(false);
+      expect(isInHeldLayer(dialog)).toBe(false);
+      fireEvent.click(screen.getByRole('button', {name: 'Page'}));
+      expect(onPage).toHaveBeenCalledTimes(1);
+      // A tap on the entering sheet activates nothing.
+      const inside = screen.getByRole('button', {name: 'Inside', hidden: true});
+      fireEvent.pointerDown(inside, {pointerType: 'touch'});
+      fireEvent.pointerUp(inside, {pointerType: 'touch'});
+      fireEvent.click(inside);
+      expect(onInside).not.toHaveBeenCalled();
+      // Landed: the sheet takes taps again.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      fireEvent.pointerDown(inside, {pointerType: 'touch'});
+      fireEvent.pointerUp(inside, {pointerType: 'touch'});
+      fireEvent.click(inside);
+      expect(onInside).toHaveBeenCalledTimes(1);
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
     it('keeps keys and assistive technology live while the sheet enters (FR35)', async () => {
       recordAnimate();
       const onOpenChange = vi.fn();
