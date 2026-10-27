@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen, act} from '@testing-library/react';
+import {__resetMenuPressForTest} from '../hooks/useMenuPress';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
 import {TopNavRenderContext} from './TopNavRenderContext';
@@ -314,6 +315,45 @@ describe('TopNavHeading', () => {
         <div role="menuitem">Beta</div>
       </>
     );
+
+    it('acts on the product-menu item a press slid across it lifts on, once (family:action-groups FR1, FR2, FR5)', async () => {
+      __resetMenuPressForTest();
+      const user = userEvent.setup();
+      const onFirst = vi.fn();
+      const onSecond = vi.fn();
+      render(
+        <TopNavHeading
+          heading="My App"
+          menu={
+            <>
+              <div role="menuitem" tabIndex={-1} onClick={onFirst}>
+                Alpha
+              </div>
+              <div role="menuitem" tabIndex={-1} onClick={onSecond}>
+                Beta
+              </div>
+            </>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      const FIRST = 'Alpha';
+      const SECOND = 'Beta';
+      const item = (name: string) =>
+        screen.getByRole('menuitem', {name, hidden: true});
+      for (const pointer of [
+        {pointerType: 'touch', pointerId: 1},
+        {pointerType: 'mouse', pointerId: 2, button: 0},
+      ]) {
+        onFirst.mockClear();
+        onSecond.mockClear();
+        fireEvent.pointerDown(item(FIRST), pointer);
+        fireEvent.pointerMove(item(SECOND), pointer);
+        fireEvent.pointerUp(item(SECOND), pointer);
+        expect(onSecond).toHaveBeenCalledTimes(1);
+        expect(onFirst).not.toHaveBeenCalled();
+      }
+    });
 
     it('does not wrap the heading menu popup in a modal dialog', async () => {
       const user = userEvent.setup();

@@ -38,6 +38,7 @@ import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -361,6 +362,18 @@ export function TopNavHeading({
     showDelay: 0,
   });
 
+  // A press that slides across the product menu's items acts on the item it
+  // lifts on, the highlight following the pointer (`family:action-groups`
+  // FR1-FR3, FR5); a mouse released outside closes it. Only the role="menu"
+  // region is tracked, not the heading above it.
+  const productMenuRef = useRef<HTMLDivElement>(null);
+  const productMenuPress = useMenuPress({
+    menuRef: productMenuRef,
+    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    onDismiss: closeMenu,
+    isEnabled: !!menu,
+  });
+
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
   // setTriggerEl belongs on the chevron button, not this root: it is the
@@ -551,8 +564,10 @@ export function TopNavHeading({
                 heading button above stays a valid sibling, not an invalid
                 child of a role="menu" element. */}
             <div
+              ref={productMenuRef}
               role="menu"
-              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}
+              {...productMenuPress.menuProps}>
               <NavHeadingCloseContext value={closeMenuCtx}>
                 {menu}
               </NavHeadingCloseContext>
@@ -630,8 +645,10 @@ export function TopNavHeading({
                 heading button above stays a valid sibling, not an invalid
                 child of a role="menu" element. */}
             <div
+              ref={productMenuRef}
               role="menu"
-              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}
+              {...productMenuPress.menuProps}>
               <NavHeadingCloseContext value={closeMenuCtx}>
                 {menu}
               </NavHeadingCloseContext>
