@@ -29,6 +29,7 @@
 import {
   lazy,
   Suspense,
+  use,
   useCallback,
   useId,
   useRef,
@@ -45,6 +46,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
+import {ItemActivationContext} from './ItemActivationContext';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
@@ -595,6 +597,9 @@ export function Item({
   // shows none.
   useInteractionModalityTracking();
   const LinkComponent = useLinkComponent();
+  // The semantics the rendering component gives the row's activation
+  // (ItemActivationContext.ts): List's selection control makes it a checkbox.
+  const activation = use(ItemActivationContext);
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
   // control (e.g. a checkbox) that owns the keyboard access and action. The
@@ -809,6 +814,8 @@ export function Item({
       ) : onClick != null ? (
         <button
           type="button"
+          role={activation?.role}
+          aria-checked={activation == null ? undefined : activation.checked}
           onClick={onClick}
           disabled={isDisabled}
           {...stylex.props(
@@ -903,9 +910,13 @@ export function Item({
       // bare div, etc.). For those, convey selection via aria-current — valid
       // on any element — so the state still reaches AT. Written after
       // {...restProps} so it must defer to a consumer-provided aria-current.
+      // A row whose activation is a checkbox (ItemActivationContext.ts)
+      // conveys its selection by that checked state alone.
       aria-current={
         restProps['aria-current'] ??
-        (isSelected && !allowsAriaSelected ? true : undefined)
+        (isSelected && !allowsAriaSelected && activation == null
+          ? true
+          : undefined)
       }
       aria-disabled={isDisabled || undefined}
       {...(isInteractive ? {...pressable, ...cellPressableProps} : undefined)}
@@ -936,7 +947,9 @@ export function Item({
       onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        <ItemActivationContext value={null}>
+          {innerContent}
+        </ItemActivationContext>
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one

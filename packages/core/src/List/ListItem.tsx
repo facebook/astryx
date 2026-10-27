@@ -25,7 +25,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type CSSProperties, type ReactNode} from 'react';
+import {use, useMemo, useRef, type CSSProperties, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -46,6 +46,7 @@ import {useIndicator} from '../Indicator';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {ItemActivationContext} from '../Item/ItemActivationContext';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {listRowConsts} from './listRow.stylex';
@@ -547,53 +548,63 @@ export function ListItem({
     />
   ) : null;
 
+  // With the selection control, the row's activation is a checkbox whose
+  // checked state is the row's selection (`component:List` AR3).
+  const selects = isEditing && ctx?.editingControl === 'select';
+  const activation = useMemo(
+    () => (selects ? ({role: 'checkbox', checked: isSelected} as const) : null),
+    [selects, isSelected],
+  );
+
   return (
-    <Item
-      as="li"
-      ref={mergedRef}
-      // One fragment in both modes, so the marker keeps its slot, and its
-      // element, when the control comes and goes: it slides with the text
-      // instead of remounting at rest.
-      marker={
-        <>
-          {editingControl}
-          {marker}
-        </>
-      }
-      startContent={startContent}
-      label={label}
-      description={description}
-      endContent={showsTrailing ? endContent : undefined}
-      onClick={onClick}
-      interactiveRef={interactiveRef}
-      href={href}
-      target={target as '_blank' | '_self'}
-      rel={rel}
-      isDisabled={isDisabled}
-      isSelected={isSelected}
-      align={align}
-      density={density}
-      xstyle={
-        [
-          hasMarkers && styles.withCounter,
-          styles.travelling,
-          edge === 'bleed' ? editingStyles.rowBleed : editingStyles.row,
-          hasDividers && styles.withDivider,
-          hasDividers && embeddedStyles.noRadius,
-          isTouchTarget && touchHitAreaStyles.layer,
-          edge === 'flush' && styles.edgeFlush,
-          edge === 'outset' && styles.edgeOutset,
-          edge === 'bleed' && styles.edgeBleed,
-          xstyle,
-        ] as StyleXStyles
-      }
-      {...mergeProps(themeProps('list-item'), {
-        className,
-        style: isEditing ? {...style, ...editingRoom(edge)} : style,
-      })}
-      {...(isEditing ? {[EDITING_ATTRIBUTE]: ''} : undefined)}
-      {...restProps}
-    />
+    <ItemActivationContext value={activation}>
+      <Item
+        as="li"
+        ref={mergedRef}
+        // One fragment in both modes, so the marker keeps its slot, and its
+        // element, when the control comes and goes: it slides with the text
+        // instead of remounting at rest.
+        marker={
+          <>
+            {editingControl}
+            {marker}
+          </>
+        }
+        startContent={startContent}
+        label={label}
+        description={description}
+        endContent={showsTrailing ? endContent : undefined}
+        onClick={onClick}
+        interactiveRef={interactiveRef}
+        href={href}
+        target={target as '_blank' | '_self'}
+        rel={rel}
+        isDisabled={isDisabled}
+        isSelected={isSelected}
+        align={align}
+        density={density}
+        xstyle={
+          [
+            hasMarkers && styles.withCounter,
+            styles.travelling,
+            edge === 'bleed' ? editingStyles.rowBleed : editingStyles.row,
+            hasDividers && styles.withDivider,
+            hasDividers && embeddedStyles.noRadius,
+            isTouchTarget && touchHitAreaStyles.layer,
+            edge === 'flush' && styles.edgeFlush,
+            edge === 'outset' && styles.edgeOutset,
+            edge === 'bleed' && styles.edgeBleed,
+            xstyle,
+          ] as StyleXStyles
+        }
+        {...mergeProps(themeProps('list-item'), {
+          className,
+          style: isEditing ? {...style, ...editingRoom(edge)} : style,
+        })}
+        {...(isEditing ? {[EDITING_ATTRIBUTE]: ''} : undefined)}
+        {...restProps}
+      />
+    </ItemActivationContext>
   );
 }
 

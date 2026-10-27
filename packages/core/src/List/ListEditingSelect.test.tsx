@@ -122,13 +122,30 @@ describe('List edit mode, selection control', () => {
     expect(indicatorOf('Inbox')?.hasAttribute('data-checked')).toBe(false);
   });
 
-  it('is decorative: the row keeps its state and its one tab stop', () => {
+  it('is decorative: the row’s activation is a checkbox that carries the selection, and the row keeps its one tab stop', () => {
     stubPointer('mouse');
     render(<Rows isEditing />);
     const control = controlOf('Sent') as HTMLElement;
     expect(control.getAttribute('aria-hidden')).toBe('true');
     expect(control.querySelector('input, button, [tabindex]')).toBeNull();
-    // Item's own selected semantics carry the state for assistive technology.
+    // The row's activation is a checkbox whose checked state is the row's
+    // selection (`component:List` AR3); the row's aria-current gives way.
+    expect(screen.getByRole('checkbox', {name: 'Sent'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('checkbox', {name: 'Inbox'})).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(rowOf('Sent').hasAttribute('aria-current')).toBe(false);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+  });
+
+  it('outside edit mode, a row’s semantics are unchanged', () => {
+    stubPointer('mouse');
+    render(<Rows isEditing={false} />);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
     expect(rowOf('Sent').getAttribute('aria-current')).toBe('true');
     expect(rowOf('Inbox').hasAttribute('aria-current')).toBe(false);
   });

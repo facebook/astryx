@@ -3,9 +3,10 @@
 /**
  * @file List.exports.test.ts
  * @input vitest, core's package.json and the List entry point (index.ts)
- * @output Asserts the selection hold stays internal: `@astryxdesign/core/List`
- *   exports no `holdSelection`, and core's `exports` do not list
- *   selectionHold.ts (`architecture:public-component-api` INV12)
+ * @output Asserts `ListEditingControl` is exported, and the selection hold
+ *   stays internal: `@astryxdesign/core/List` exports no `holdSelection`, and
+ *   core's `exports` do not list selectionHold.ts
+ *   (`architecture:public-component-api` INV12)
  * @position Unit test beside List/index.ts
  */
 
@@ -13,6 +14,14 @@ import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {describe, expect, it} from 'vitest';
 import * as list from './index';
+import type {ListEditingControl} from './index';
+
+describe('List’s public types', () => {
+  it('exports ListEditingControl, the type of `editingControl`', () => {
+    const control: ListEditingControl = 'select';
+    expect(control).toBe('select');
+  });
+});
 
 describe('the selection hold stays internal', () => {
   it('is not exported from @astryxdesign/core/List', () => {

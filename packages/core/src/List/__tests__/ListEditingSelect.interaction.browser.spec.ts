@@ -35,6 +35,7 @@ const storybook = withStorybook(test);
 const STORY = 'core-list--editing-selection';
 const TRAVEL = list.metrics.editingControlTravel;
 const CENTER = list.metrics.editingControlCenter;
+const INDENT = list.metrics.editingIndent;
 const SPRING = toSpring(list.update.tableSpring);
 const progress = (t: number) =>
   solveSpring(SPRING, {from: 0, to: 1}).value(t / 1000);
@@ -77,6 +78,20 @@ async function toggle(page: Page) {
   await page.getByRole('button', {name: /^(Edit|Done)$/}).click();
 }
 
+/**
+ * A theme's row padding, set where a theme sets it: the theme's cascade layer,
+ * above every component class (`component:List` FR7).
+ */
+async function themeRowPadding(page: Page, padding: string): Promise<void> {
+  await page.addInitScript(value => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const style = document.createElement('style');
+      style.textContent = `@layer astryx-theme { .astryx-item { padding-inline: ${value}; --_item-inset-inline: ${value}; } }`;
+      document.head.append(style);
+    });
+  }, padding);
+}
+
 /** Enters edit mode and lets it settle on its own clock. */
 async function enter(page: Page) {
   await toggle(page);
@@ -96,6 +111,26 @@ test('the control centres UIKit’s distance past the row’s resting text start
   const box = await rect(row(page, 'Sent'));
   expect(Math.abs(at.centerX - (resting.left + CENTER))).toBeLessThan(0.75);
   expect(Math.abs(at.centerY - box.centerY)).toBeLessThan(1);
+});
+
+test('under a theme’s row padding, the control stays clear of the text: the text makes its room past the theme’s inset', async ({
+  page,
+}) => {
+  await themeRowPadding(page, '24px');
+  await open(page);
+  const resting = await rect(text(page, 'Sent'));
+  // The theme's inset applies at rest.
+  expect(
+    await row(page, 'Sent').evaluate(el =>
+      Number.parseFloat(getComputedStyle(el).paddingInlineStart),
+    ),
+  ).toBe(24);
+  await enter(page);
+  const at = await rect(mark(page, 'Sent'));
+  const label = await rect(text(page, 'Sent'));
+  expect(Math.abs(at.centerX - (resting.left + CENTER))).toBeLessThan(0.75);
+  expect(Math.abs(label.left - (resting.left + INDENT))).toBeLessThan(0.5);
+  expect(at.right).toBeLessThan(label.left);
 });
 
 test('entering slides the control in from UIKit’s travel and fades it in on the table spring, frame by frame', async ({

@@ -14,6 +14,12 @@
  */
 
 export {List} from './List';
-export type {ListProps, ListStyle, ListDensity, ListEdge} from './List';
+export type {
+  ListProps,
+  ListStyle,
+  ListDensity,
+  ListEdge,
+  ListEditingControl,
+} from './List';
 export {ListItem} from './ListItem';
 export type {ListItemProps} from './ListItem';

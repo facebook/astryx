@@ -40,6 +40,7 @@ import {useListEditingMotion} from './useListEditingMotion';
 export {
   type ListDensity,
   type ListEdge,
+  type ListEditingControl,
   type ListMarkerStyle as ListStyle,
 } from './ListContext';
 

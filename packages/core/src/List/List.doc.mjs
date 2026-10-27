@@ -41,7 +41,8 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: "Spacing density for items. Under a finger, an interactive row's hit target reaches 44px where its neighbors leave room, with no change to how rows look or lay out.",
+      description:
+        "Spacing density for items. Under a finger, an interactive row's hit target reaches 44px where its neighbors leave room, with no change to how rows look or lay out.",
       default: "'balanced'",
     },
     {
@@ -69,7 +70,7 @@ export const docs = {
       name: 'editingControl',
       type: "'select'",
       description:
-        "The control edit mode shows in each row's leading column. 'select': UIKit's multiple selection during editing, the theme's checkbox indicator (a theme can map it to a circle), checked when the row is isSelected. It is decorative: the row keeps its selected semantics and its one tab stop, and activating the row calls its onClick as before, for the app to toggle the row's selection. Under a finger it slides in with the rows and fades in, and slides out on leaving. Proposed public API, pending owner review.",
+        "The control edit mode shows in each row's leading column. 'select': UIKit's multiple selection during editing, the theme's checkbox indicator (a theme can map it to a circle), checked when the row is isSelected. The indicator itself is hidden from assistive technology: the row's activation is announced as a checkbox, checked while the row is selected, and stays the row's one tab stop; activating the row calls its onClick as before, for the app to toggle the row's selection. Under a finger it slides in with the rows and fades in, and slides out on leaving. Proposed public API, pending owner review.",
     },
     {
       name: 'edge',

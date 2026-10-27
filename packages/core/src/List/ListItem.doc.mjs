@@ -104,7 +104,8 @@ export const docs = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: 'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected).',
+      description:
+        'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected). In edit mode with the selection control, the row\'s activation carries it as a checked state instead.',
       default: 'false',
     },
     {
@@ -196,7 +197,8 @@ export const docsZh = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。',
+      description:
+        '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。在带选择控件的编辑模式中，改由行的激活元素以勾选状态表达。',
       default: 'false',
     },
     {
@@ -236,6 +238,7 @@ export const docsDense = {
       'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
     rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
     isDisabled: 'Disabled state; sets aria-disabled.',
-    isSelected: 'Selected state; sets aria-current="true".',
+    isSelected:
+      'Selected state; sets aria-current="true", or a checked activation in edit mode\'s selection control.',
   },
 };
