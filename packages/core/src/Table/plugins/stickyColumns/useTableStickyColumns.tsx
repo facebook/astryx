@@ -187,6 +187,9 @@ const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 const PINNED_PROPS: Record<string, string> = {[PINNED_ATTRIBUTE]: ''};
 const CARRY = 'carry';
 const CARRYING = '[data-astryx-table-pinned="carry"]';
+// The cell's own border wins at another width than its divider's: only the
+// width is carried, and style and colour keep inheriting from the cell.
+const CARRY_WIDTH = 'width';
 const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
 const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
 const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
@@ -314,11 +317,12 @@ const shadowStyles = stylex.create({
 // =============================================================================
 
 /**
- * Where another border than the cell's own wins the collapse (an app's border
- * on the row, the next row's top border, or a width on the cell past its
- * divider width), the pinned divider carries it; otherwise it draws the
- * cell's own border in CSS and carries nothing, so a later token or theme
- * change reaches it. Read after each commit and on resize, never on scroll.
+ * The pinned divider draws the border the table would paint under the cell.
+ * The cell's own border at its divider width: drawn in CSS, nothing carried.
+ * The cell's own border at another width (an app's 2 px `td` border): only
+ * the width is carried; style and colour inherit, so a restyle reaches it.
+ * A row's or a row group's border: nothing drawn, since the table paints it
+ * along the whole row. The next row's cell top: carried as values. Read after each commit and on resize, never on scroll.
  * Every read comes before any write, and a cell is written only when what it
  * carries changes.
  */
@@ -326,7 +330,7 @@ function syncPinnedDividers(
   root: HTMLElement,
   rows?: ReadonlySet<Element>,
 ): void {
-  const changes: [HTMLTableCellElement, string[] | null][] = [];
+  const changes: [HTMLTableCellElement, string, string[] | null][] = [];
   const cells =
     rows == null
       ? root.querySelectorAll<HTMLTableCellElement>(`[${PINNED_ATTRIBUTE}]`)
@@ -341,10 +345,22 @@ function syncPinnedDividers(
       parseFloat(
         getComputedStyle(cell).getPropertyValue('--_table-row-divider-width'),
       ) || 0;
-    const isCarrying = cell.getAttribute(PINNED_ATTRIBUTE) === CARRY;
+    const carried = cell.getAttribute(PINNED_ATTRIBUTE);
     if (edge.isOwn && edge.width === dividerWidth) {
-      if (isCarrying) {
-        changes.push([cell, null]);
+      if (carried !== '') {
+        changes.push([cell, '', null]);
+      }
+      continue;
+    }
+    // The cell's own border at another width: carry the width alone, so a
+    // restyle of its colour or style reaches the pinned divider in CSS.
+    if (edge.isOwn) {
+      const width = `${edge.width}px`;
+      if (
+        carried !== CARRY_WIDTH ||
+        cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH) !== width
+      ) {
+        changes.push([cell, CARRY_WIDTH, [width]]);
       }
       continue;
     }
@@ -356,26 +372,28 @@ function syncPinnedDividers(
       ? ['0px', 'none', 'transparent']
       : [`${edge.width}px`, edge.style, edge.color];
     const isSame =
-      isCarrying &&
+      carried === CARRY &&
       cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH) === value[0] &&
       cell.style.getPropertyValue(PINNED_DIVIDER_STYLE) === value[1] &&
       cell.style.getPropertyValue(PINNED_DIVIDER_COLOR) === value[2];
     if (!isSame) {
-      changes.push([cell, value]);
+      changes.push([cell, CARRY, value]);
     }
   }
-  for (const [cell, value] of changes) {
-    if (value == null) {
-      cell.setAttribute(PINNED_ATTRIBUTE, '');
-      cell.style.removeProperty(PINNED_DIVIDER_WIDTH);
-      cell.style.removeProperty(PINNED_DIVIDER_STYLE);
-      cell.style.removeProperty(PINNED_DIVIDER_COLOR);
-      continue;
+  for (const [cell, mode, value] of changes) {
+    cell.setAttribute(PINNED_ATTRIBUTE, mode);
+    const [width, style, color] = value ?? [];
+    for (const [name, next] of [
+      [PINNED_DIVIDER_WIDTH, width],
+      [PINNED_DIVIDER_STYLE, style],
+      [PINNED_DIVIDER_COLOR, color],
+    ] as const) {
+      if (next == null) {
+        cell.style.removeProperty(name);
+      } else {
+        cell.style.setProperty(name, next);
+      }
     }
-    cell.style.setProperty(PINNED_DIVIDER_WIDTH, value[0]);
-    cell.style.setProperty(PINNED_DIVIDER_STYLE, value[1]);
-    cell.style.setProperty(PINNED_DIVIDER_COLOR, value[2]);
-    cell.setAttribute(PINNED_ATTRIBUTE, CARRY);
   }
 }
 

@@ -341,6 +341,53 @@ function ExpansionChevron({
   );
 }
 
+const PANEL_CELL_ATTRIBUTE = 'data-astryx-table-panel-cell';
+
+/** Writes the row's divider onto a panel cell, only where it differs. */
+function carryPanelDivider(cell: HTMLTableCellElement): void {
+  const row = cell.parentElement?.previousElementSibling;
+  const edge = row == null ? null : panelDividerFor(row);
+  if (edge == null) {
+    return;
+  }
+  const set = (name: string, value: string) => {
+    if (cell.style.getPropertyValue(name) !== value) {
+      cell.style.setProperty(name, value);
+    }
+  };
+  set('--_table-panel-divider-width', edge.width);
+  set('--_table-panel-divider-style', edge.style);
+  set('--_table-panel-divider-color', edge.color);
+}
+
+/**
+ * One per table: when the colour mode changes (a Theme's mode, or the
+ * operating system's under `system`) the open panels' carried dividers are
+ * read again. Rendered right after the table's element (through
+ * `transformTableContext`), it finds that table from its marker.
+ */
+function PanelDividerModeWatch() {
+  const {mode} = useTheme();
+  const modeRef = useRef(mode);
+  const markerRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    if (modeRef.current === mode) {
+      return;
+    }
+    modeRef.current = mode;
+    // The marker follows the table's own element (its scroll wrapper, or
+    // the table), never a neighbour's.
+    const host = markerRef.current?.previousElementSibling;
+    const table = host?.matches('table') ? host : host?.querySelector('table');
+    for (const cell of table?.querySelectorAll<HTMLTableCellElement>(
+      `td[${PANEL_CELL_ATTRIBUTE}]`,
+    ) ?? []) {
+      carryPanelDivider(cell);
+    }
+  }, [mode]);
+  return <span ref={markerRef} hidden />;
+}
+
 /**
  * The detail panel's cell. A component rather than a bare `<td>` so it can
  * read the table's density and divider mode off the context — to indent itself
@@ -358,34 +405,19 @@ function ExpansionPanelCell({
   const ctx = useTableContext();
   const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
   const cellRef = useRef<HTMLTableCellElement>(null);
-  // Re-rendered when the colour mode changes (a Theme's mode, or the
-  // operating system's under `system`), so the carried colour is read again.
-  useTheme();
   // The panel carries its row's divider (a theme's `table-cell` border or an
   // app's own never reach this cell, which is not one of the row's cells).
-  // Read after each commit; written only when it differs.
+  // Read after each commit, and on a colour-mode change by the table's one
+  // PanelDividerModeWatch.
   useLayoutEffect(() => {
-    const cell = cellRef.current;
-    const row = cell?.parentElement?.previousElementSibling;
-    if (cell == null || row == null || !hasRowDividers) {
-      return;
+    if (hasRowDividers && cellRef.current != null) {
+      carryPanelDivider(cellRef.current);
     }
-    const edge = panelDividerFor(row);
-    if (edge == null) {
-      return;
-    }
-    const set = (name: string, value: string) => {
-      if (cell.style.getPropertyValue(name) !== value) {
-        cell.style.setProperty(name, value);
-      }
-    };
-    set('--_table-panel-divider-width', edge.width);
-    set('--_table-panel-divider-style', edge.style);
-    set('--_table-panel-divider-color', edge.color);
   });
   return (
     <td
       ref={cellRef}
+      {...{[PANEL_CELL_ATTRIBUTE]: hasRowDividers ? '' : undefined}}
       colSpan={colSpan}
       {...stylex.props(
         expansionStyles.expandedCell,
@@ -480,6 +512,15 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      // One colour-mode watch per table for the open panels' dividers.
+      transformTableContext(children: ReactNode): ReactNode {
+        return (
+          <>
+            {children}
+            <PanelDividerModeWatch />
+          </>
+        );
+      },
       transformColumns(columns: TableColumn<T>[]) {
         const withExpansion = [expansionColumn, ...columns];
         columnCountRef.current = withExpansion.length;
