@@ -391,6 +391,60 @@ describe('analyze-pr base and head sizes', () => {
     }
   });
 
+  it('adds the components of another package whose bundle reaches a changed Core module', () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-crossreach-'));
+    const write = (file, content) => {
+      fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive: true});
+      fs.writeFileSync(path.join(repo, file), content);
+    };
+    try {
+      write('package.json', '{}');
+      write('.gitignore', 'dist/\n*.json.out\nanalysis.json\n');
+      write('packages/core/package.json', '{"type": "module"}\n');
+      write('packages/core/src/index.ts', "export {Card} from './Card';\n");
+      write('packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write('packages/core/src/Card/Card.tsx', "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 1; }\n');
+      write('packages/lab/package.json', '{"type": "module"}\n');
+      write('packages/lab/src/index.ts', "export {Sketch} from './Sketch';\nexport {Plain} from './Plain';\n");
+      write('packages/lab/src/Sketch/index.ts', "export {Sketch} from './Sketch';\n");
+      write('packages/lab/src/Sketch/Sketch.tsx', "import {useHold} from '@astryxdesign/core';\nexport function Sketch() { return useHold(); }\n");
+      write('packages/lab/src/Sketch/Sketch.doc.mjs', "export const docs = {\n  name: 'Sketch',\n};\n");
+      write('packages/lab/src/Plain/index.ts', "export {Plain} from './Plain';\n");
+      write('packages/lab/src/Plain/Plain.tsx', 'export function Plain() {}\n');
+      write('packages/lab/src/Plain/Plain.doc.mjs', "export const docs = {\n  name: 'Plain',\n};\n");
+      git(repo, ['init', '-q', '-b', 'main']);
+      git(repo, ['config', 'user.email', 'test@test.co']);
+      git(repo, ['config', 'user.name', 'Test']);
+      git(repo, ['add', '-A']);
+      git(repo, ['commit', '-qm', 'base']);
+      git(repo, ['checkout', '-q', '-b', 'feature']);
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 2; }\n');
+      git(repo, ['commit', '-qam', 'touch the Core hook']);
+      write('packages/core/dist/Card/Card.js', "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/dist/hooks/useHold.js', 'export function useHold() { return 2; }\n');
+      write('packages/core/dist/index.js', "export {Card} from './Card/Card.js';\n");
+      // Lab's build imports Core's build, as the package does.
+      write('packages/lab/dist/Sketch/Sketch.js', "import {useHold} from '../../../core/dist/hooks/useHold.js';\nexport function Sketch() { return useHold(); }\n");
+      write('packages/lab/dist/Plain/Plain.js', 'export function Plain() { return 0; }\n');
+      write('packages/lab/dist/index.js', "export {Sketch} from './Sketch/Sketch.js';\nexport {Plain} from './Plain/Plain.js';\n");
+
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+      // RTL and visual follow the Core change into Lab, as the full audit the
+      // base ran did; Lab's untouched Plain stays out.
+      expect(analysis.dependentComponentOwners).toEqual(['core/Card', 'lab/Sketch']);
+      expect(analysis.forceFullComponentAudits).toBe(false);
+    } finally {
+      fs.rmSync(repo, {recursive: true, force: true});
+    }
+  });
+
   it('decides reach in the merge-base build when only the base is built', () => {
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-basereach-'));
     const baseRoot = path.join(repo, '.size-base');

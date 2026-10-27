@@ -394,6 +394,10 @@ describe('full-suite scope', () => {
       'packages/core/tsconfig.json',
       'packages/core/vite.config.ts',
       'packages/core/src/test-utils/render.tsx',
+      'packages/core/src/testing/fixtures.ts',
+      'packages/core/src/__mocks__/matchMedia.ts',
+      'packages/core/src/setupTests.ts',
+      'packages/lab/src/vitest.setup.ts',
       'apps/storybook/.storybook/preview.tsx',
       // Node tooling keeps its whole Node project (FR8), internal/ included.
       'internal/scripts/lib/a-future-strategy.mjs',

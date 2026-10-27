@@ -749,3 +749,52 @@ describe('ci.yml interaction proofs', () => {
     expect(scope).toContain('if [ "$scope" = 1 ]; then');
   });
 });
+
+describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
+  const workflow = load('ci.yml');
+  const stepNamed = name => {
+    for (const job of Object.values(workflow.jobs)) {
+      const step = (job.steps ?? []).find(candidate => candidate.name === name);
+      if (step != null) return step;
+    }
+    throw new Error(`no step named ${name}`);
+  };
+
+  it('asks component analysis for full audits unless check-scope reports a scoped suite', () => {
+    const analyze = stepNamed('Analyze components');
+    expect(analyze.env.FULL_SUITE).toBe(
+      '${{ needs.check-scope.outputs.full_suite }}',
+    );
+    expect(analyze.run).toContain(
+      'if [ "$FULL_SUITE" != false ]; then FORCE_FULL=(--force-full); fi',
+    );
+    expect(analyze.run).toContain('"${FORCE_FULL[@]}"');
+  });
+
+  it('hands the visual gate the reverse dependents and the changed families, and the whole plan when analysis asks for it', () => {
+    const visual = stepNamed('Run the visual gate for the touched components');
+    expect(visual.run).toContain(
+      '(.newComponents + .modifiedComponents + (.dependentComponents // []))',
+    );
+    expect(visual.run).toContain(
+      '[(.familyComponents // [])[] | select(.package == "@astryxdesign/core") | .name]',
+    );
+    expect(visual.run).toContain(
+      "FORCE_FULL_AUDITS=$(jq -r '.forceFullComponentAudits == true' analysis.json)",
+    );
+    expect(visual.run).toContain('[ "$FORCE_FULL_AUDITS" = \'true\' ]');
+  });
+
+  it('scopes the visual classification only on a pull request check-scope scoped', () => {
+    const check = stepNamed('Check for component changes');
+    expect(check.env.SCOPED).toBe(
+      "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
+    );
+    expect(check.run).toContain(
+      'if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi',
+    );
+    expect(check.run).toContain(
+      'visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"',
+    );
+  });
+});

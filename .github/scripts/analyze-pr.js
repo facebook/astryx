@@ -589,7 +589,10 @@ function packageTargets(pkg) {
 // bundles could be read: there, a module no bundle holds reaches nothing.
 function sizeTargets(changedFiles, reached = null) {
   const withoutExtension = (file) => file.replace(/\.(tsx?|jsx?|mjs)$/, '');
-  const targets = [];
+  // Each package's changed modules, and its built dist to find them in: a
+  // bundle in any package can reach them (Lab, Charts, Rich Text and Vega
+  // import Core).
+  const changed = [];
   for (const pkg of PACKAGES) {
     const prefix = pkgSrc(pkg) + '/';
     const changedModules = new Set(
@@ -598,27 +601,45 @@ function sizeTargets(changedFiles, reached = null) {
         .map((file) => withoutExtension(file.slice(prefix.length))),
     );
     if (changedModules.size === 0) continue;
-    const changedTops = new Set([...changedModules].map((file) => file.split('/')[0]));
     const dist = path.join(process.cwd(), pkgDist(pkg));
-    // esbuild reports inputs by real path.
-    const distReal = fs.existsSync(dist) ? fs.realpathSync(dist) : dist;
+    changed.push({
+      pkg,
+      prefix,
+      changedModules,
+      changedTops: new Set([...changedModules].map((file) => file.split('/')[0])),
+      // esbuild reports inputs by real path.
+      distReal: fs.existsSync(dist) ? fs.realpathSync(dist) : dist,
+    });
+  }
+  if (changed.length === 0) return [];
+  const targets = [];
+  for (const pkg of PACKAGES) {
+    const own = changed.find((entry) => entry.pkg === pkg) ?? null;
+    const dist = path.join(process.cwd(), pkgDist(pkg));
     const all = packageTargets(pkg);
     const reach = bundleInputsByEntry(all.map((target) => path.join(dist, target.distModule)));
     for (const target of all) {
       const top = withoutExtension(target.distModule.split('/')[0]);
       const inputs = reach?.get(path.join(dist, target.distModule)) ?? [];
-      const reachedModules = inputs.flatMap((input) => {
-        const relative = path.relative(distReal, input);
-        const module = withoutExtension(relative);
-        return !relative.startsWith('..') && changedModules.has(module) ? [module] : [];
-      });
-      if (changedTops.has(top) || reachedModules.length > 0) targets.push(target);
+      const reachedPaths = inputs.flatMap((input) =>
+        changed.flatMap((entry) => {
+          const relative = path.relative(entry.distReal, input);
+          const module = withoutExtension(relative);
+          return !relative.startsWith('..') && entry.changedModules.has(module)
+            ? [entry.prefix + module]
+            : [];
+        }),
+      );
+      const isOwnFolder = own != null && own.changedTops.has(top);
+      if (isOwnFolder || reachedPaths.length > 0) targets.push(target);
       if (reached != null) {
-        for (const module of reachedModules) reached.paths.add(prefix + module);
-        if (changedTops.has(top)) reached.paths.add(prefix + top);
+        for (const reachedPath of reachedPaths) reached.paths.add(reachedPath);
+        if (isOwnFolder) reached.paths.add(own.prefix + top);
       }
     }
-    if (reached != null && reach != null && reach.size > 0) reached.measured.add(prefix);
+    if (reached != null && own != null && reach != null && reach.size > 0) {
+      reached.measured.add(own.prefix);
+    }
   }
   return targets;
 }

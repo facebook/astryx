@@ -555,6 +555,8 @@ jobs:
 
       - name: Check for component changes
         id: check
+        env:
+          SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
         run: |
           if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
             printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\nhas_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
@@ -594,8 +596,12 @@ jobs:
           # One classifier owns the release-channel rule. It reads each
           # package's `astryx.canaryOnly` metadata rather than hard-coding
           # today's Lab/charts/richtext/vega list.
+          # A pull request that runs what it reaches audits a shared Core
+          # module through its reverse dependents (spec:AST-030 FR13).
+          VISUAL_ARGS=()
+          if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
           printf '%s\n' "$FILES" \
-            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT"
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
 
   # Tests run as two parallel lanes joined by `test` below.
   #
@@ -2129,7 +2135,10 @@ jobs:
           COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents + (.dependentComponents // []))[] | select($root.componentStats[.].package == "@astryxdesign/core")] + [(.familyComponents // [])[] | select(.package == "@astryxdesign/core") | .name] | unique | join(",")' analysis.json)
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
           COMMAND=check
-          if [ "$BROAD_STABLE_VISUAL" = 'true' ]; then
+          # Sources no build decided, or a full-suite change, audit the whole
+          # plan (spec:AST-030 FR13).
+          FORCE_FULL_AUDITS=$(jq -r '.forceFullComponentAudits == true' analysis.json)
+          if [ "$BROAD_STABLE_VISUAL" = 'true' ] || [ "$FORCE_FULL_AUDITS" = 'true' ]; then
             COMMAND=release
             SCOPE_ARGS=()
           elif [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then

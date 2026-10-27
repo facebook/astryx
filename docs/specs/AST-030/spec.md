@@ -215,8 +215,8 @@ they are separately named.
   module it imports; a computed `import()` or a child process counts as reading
   sources. The visual and RTL
   owners audit the changed components and their reverse dependents: the
-  components whose built bundle, `import()` targets included, reaches a changed
-  module. A changed module that no component bundle holds adds none, and without
+  components, in any package, whose built bundle, `import()` targets included,
+  reaches a changed module. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
   a readable build the audits run in full. PR accessibility stays scoped to
   changed components (FR12). Shared infrastructure runs the full suite: root
   dependency manifests and lockfile, root configuration, a package's manifest,
