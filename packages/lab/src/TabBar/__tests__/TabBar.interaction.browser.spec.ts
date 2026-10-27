@@ -363,6 +363,35 @@ test('with no tab selected, a finger chooses the tab under it', async ({
   await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
 });
 
+test('a held finger never starts text selection on the bar', async ({page}) => {
+  const {driver} = await openBar(page);
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  // The lens's hold opts into the gesture host's selection lock
+  // (spec:AST-094 FR41). Off iOS that lock writes no style: it cancels
+  // selectstart on what the finger holds, so the proof dispatches one there,
+  // during the hold and after the lift.
+  const refusesSelection = () =>
+    tab(page, 'Browse').evaluate(element => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+  let refusedWhileHeld: boolean | null = null;
+  await driver.play(tapScript(browse, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts.
+      await waitForAnimation(capsule);
+      refusedWhileHeld = await refusesSelection();
+    },
+  });
+  expect(refusedWhileHeld).toBe(true);
+  expect(await refusesSelection()).toBe(false);
+});
+
 test('a tap reports its choice once, and a mouse click chooses through the browser', async ({
   page,
 }) => {
