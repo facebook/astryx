@@ -45,7 +45,7 @@ a measured, sourced difference exists.
 - Pointer (desktop) presentations. Their timing and easing stay with the
   theme's duration and easing tokens (`architecture:theme-tokens`).
 - Platform-matched look and feel: glass versus material surfaces, glyphs and
-  chrome. This record governs behavior only.
+  chrome. This record governs behavior, and touch sizing only as FR42 states.
 - WebKit embedded in a native app and the native Swift package. This record
   governs the web components themselves.
 - Scroll physics. Scrolling stays native on every platform: on iOS an overflow
@@ -464,14 +464,18 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
 
-- **FR42 — The default look grows nothing for touch.** The default Astryx
-  look makes no size increase for phones or touch; a size may shrink to fit a
-  compact screen, such as an alert's phone width (`component:AlertDialog`).
-  Under a coarse pointer, touch targets meet 44 px through an invisible hit
-  area. A hit-area expansion never overlaps a neighboring interactive
-  element's own target: where neighbors are closer than 44 px, the expansion
-  is clamped to half the gap, or skipped, so each element stays reachable.
-  Mobile size increases belong to theme adaptations (DEC-20).
+- **FR42 — The default look grows no box for touch.** The default Astryx
+  look makes no box size increase for phones or touch: row heights, control
+  sizes and target sizes stay as they are; a box may shrink to fit a compact
+  screen, such as an alert's phone width. Type sizing is outside this rule:
+  the 16 px mobile reading base (`design:mobile-typography` DR1, DR3) and the
+  16 px text-entry floor (`family:input-fields` FR9) are unaffected. Under a
+  coarse pointer, touch targets meet 44 px through an invisible hit area. A
+  hit-area expansion never overlaps a neighboring interactive element's own
+  target: where neighbors are closer than 44 px, the expansion is clamped to
+  half the gap, or skipped, so each element stays reachable; an expansion a
+  component record sets on purpose, such as `component:Thumbnail` AR4's, is
+  unaffected. Mobile size increases belong to theme adaptations (DEC-20).
 
 ### Platform support
 
@@ -522,6 +526,9 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   and FR9 under a finger) are stated here (FR26–FR30); FR6's last sentence
   gives way to the cell press profile (FR11); its mouse rules (FR8 and the
   mouse halves of FR1–FR3) and its non-gesture rules stay in the module.
+- Every component under a coarse pointer: no box grows for touch, and a
+  touch target reaches 44 px only through an invisible hit area clamped by
+  its neighbors (FR42).
 - `component:DropdownMenu`, `component:ContextMenu` and `component:Popover`:
   under a finger they follow FR26–FR35 as each applies.
 - BottomSheet, Toast, Lightbox, NavigationStack and keyboard dismissal: a
@@ -560,7 +567,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                    | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a pinch blocked other than by the author's `touch-action`, or a changed mouse path fails                                                                                                                                                                                                                      |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                                                                                                                                                                                                                                                                                                                                                                          | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                                                                                                                                                                                                                                    |
 | FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a DropdownMenu trigger the caller renders, a row with a context menu, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                                                                                                                                                                                                                                                                                                                             | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                                                                                                                                                                     |
-| FR42            | Default-theme geometry tests under a coarse and a fine pointer, and hit-testing between adjacent targets                       | every component at phone width with a finger and with a mouse; a dense toolbar; a chip and its remove button; a Switch beside a label link                                                                                                                                                                                                                                                                                                                                                                                                                                    | a default-theme size that grows under touch or at phone width, a touch target under 44 px where neighbors allow it, or a hit area that overlaps a neighbor's target, fails                                                                                                                                                                                                                                                                                                         |
+| FR42            | Default-theme geometry tests under a coarse and a fine pointer, and hit-testing between adjacent targets                       | every component at phone width with a finger and with a mouse; a dense toolbar; a chip and its remove button; a Switch beside a label link                                                                                                                                                                                                                                                                                                                                                                                                                                    | a default-theme box that grows under touch or at phone width, a touch target under 44 px where neighbors allow it, or a hit area that overlaps a neighbor's target, fails                                                                                                                                                                                                                                                                                                          |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ## Decision log
