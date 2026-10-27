@@ -7,7 +7,7 @@
  * @input NumberInput's stepping state and its stepper buttons; the gesture
  *   system's PressTracker (usePressTracker) and its selection lock
  *   (gestures/selectionLock.ts), the coarse-pointer gate
- *   (gestures/coarsePointer.ts), stepperTracking.ts and the UIKit press and
+ *   (utils/coarsePointer.ts), stepperTracking.ts and the UIKit press and
  *   click constants (motion/uikit/gestures.ts)
  * @output The steppers' press layer: useStepperTouch, which tracks a press on
  *   the steppers (a held half repeats on one steady ramp, a slide carries it
@@ -53,7 +53,7 @@ import {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {COARSE_POINTER_QUERY} from '../gestures/coarsePointer';
+import {COARSE_POINTER_QUERY} from '../utils/coarsePointer';
 import {
   browserClock,
   usePressTracker,
