@@ -457,6 +457,22 @@ const backdropFilter = async (dialog: Locator) =>
     return style.backdropFilter || style.webkitBackdropFilter || 'none';
   });
 
+test("the thumbnail's copy is the shared lift module's: one inert element hidden from assistive technology while it flies, gone once the photo lands (architecture:layer-runtime INV15)", async ({
+  page,
+}) => {
+  const {dialog, photo} = await openHeldMidEntrance(page);
+  const copies = dialog.locator('[data-lightbox-portal]');
+  await expect(copies).toHaveCount(1);
+  expect(
+    await copies.first().evaluate(el => ({
+      inert: (el as HTMLElement).inert,
+      hidden: el.getAttribute('aria-hidden'),
+    })),
+  ).toEqual({inert: true, hidden: 'true'});
+  await expectEnteredAndOpen(page, dialog, photo);
+  await expect(copies).toHaveCount(0);
+});
+
 test('the backdrop fades in without its blur while the photo opens, and blurs once it lands', async ({
   page,
 }) => {
@@ -672,6 +688,70 @@ test('while a closing photo zooms back, an Escape does not reach the dialog behi
   await expect(viewer).toBeHidden();
   await page.waitForTimeout(300);
   await expect(page.getByRole('dialog')).toHaveCount(1);
+});
+
+test("a photo still decoding at the tap keeps the backdrop and the controls at the opening's first value until it zooms", async ({
+  page,
+}) => {
+  const {driver, thumbnail} = await openStoryPage(page);
+  // The viewer's photo is still decoding at the tap: its `decode()` settles
+  // 250 ms later, before the 300 ms wait runs out.
+  await page.evaluate(() => {
+    const proto = HTMLImageElement.prototype;
+    const complete = Object.getOwnPropertyDescriptor(proto, 'complete');
+    const decode = proto.decode;
+    if (complete?.get == null) {
+      throw new Error('no complete getter');
+    }
+    const getComplete = complete.get;
+    Object.defineProperty(proto, 'complete', {
+      configurable: true,
+      get(this: HTMLImageElement): boolean {
+        return (
+          this.closest('dialog') == null && (getComplete.call(this) as boolean)
+        );
+      },
+    });
+    proto.decode = async function (this: HTMLImageElement) {
+      if (this.closest('dialog') != null) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      return decode.call(this);
+    };
+    // The viewer's first six frames, all within the decode's 250 ms: the
+    // photo's inline opacity, the backdrop's and the controls'.
+    const w = window as unknown as {waiting: [string, number, number][]};
+    w.waiting = [];
+    const t0 = performance.now();
+    const tick = () => {
+      const dialog = document.querySelector('dialog[open]');
+      const img = dialog?.querySelector<HTMLImageElement>('[data-current] img');
+      const chrome = dialog?.querySelector('[data-lightbox-chrome]');
+      if (dialog != null && img != null && chrome != null) {
+        w.waiting.push([
+          img.style.opacity,
+          parseFloat(getComputedStyle(dialog, '::backdrop').opacity),
+          parseFloat(getComputedStyle(chrome).opacity),
+        ]);
+      }
+      if (w.waiting.length < 6 && performance.now() - t0 < 5000) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+  await tap(driver, thumbnail(1));
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.waitForTimeout(1500);
+  const waiting = await page.evaluate(
+    () => (window as unknown as {waiting: [string, number, number][]}).waiting,
+  );
+  // The photo still waited, hidden, and nothing showed at full meanwhile.
+  expect(waiting.map(([photo]) => photo)).toEqual(Array(6).fill('0'));
+  expect(Math.max(...waiting.map(([, backdrop]) => backdrop))).toBeLessThan(
+    0.05,
+  );
+  expect(Math.max(...waiting.map(([, , chrome]) => chrome))).toBeLessThan(0.05);
 });
 
 test('a viewer the page unmounts on close gives the thumbnail back after a drag down', async ({
