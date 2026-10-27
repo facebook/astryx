@@ -98,7 +98,8 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
-import {useDevWarning, useScrollLock} from '../hooks';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {useScrollLock} from '../hooks/useScrollLock';
 import {mergeProps} from '../utils';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
