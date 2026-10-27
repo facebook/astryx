@@ -244,9 +244,13 @@ const styles = stylex.create({
   },
   // Under a finger the standalone sheet opens and closes on UIKit's spring
   // (useSheetGestures `present` / `dismiss`), on the compositor: the
-  // stylesheet's entrance and exit transforms must not also run.
+  // stylesheet's entrance and exit transforms must not also run. Nor its
+  // reduced-motion cross-fade: the animator plays that one (DR2), and reads
+  // the sheet's opacity to fade it in, which a stylesheet fade from 0 would
+  // still be holding at 0.
   sheetSprung: {
     transitionProperty: 'opacity',
+    opacity: null,
   },
   sheetInactive: {
     pointerEvents: 'none',
