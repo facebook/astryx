@@ -7,9 +7,10 @@
  * @input The reorder's options, and List's reorder machinery
  *   (List/listReorderEngine.ts: the session, its handle and its touch layer)
  * @output `createReorderable`, which makes the object a collection's
- *   `reorderable` prop takes, whose one public method, `start(key)`, enters
- *   reorder mode from the app's own UI; and its types: `Reorderable`,
- *   `ReorderableOptions`, `ReorderMove`
+ *   `reorderable` prop takes, with `start(key)`, which enters reorder mode
+ *   from the app's own UI, and `attach(container, {items})`, which reorders
+ *   plain elements (List/listReorderAttach.tsx); and its types:
+ *   `Reorderable`, `ReorderableOptions`, `ReorderMove`, `ReorderableItem`
  * @position Public Core API (spec:AST-103), exported from the package root.
  *   The machinery ships here, on the object: a collection imports only the
  *   object's type, so one without `reorderable` loads no reorder code (FR2)

@@ -35,13 +35,19 @@ export const docs = {
       description:
         'Whether the item with this key can move. An item it rejects shows no handle and cannot be picked up; one at either end of the collection also bounds the others, so nothing drops beyond it and a keyboard move into it is refused. Every item moves without it.',
     },
+    {
+      name: 'positions',
+      type: '() => ReadonlyArray<{x: number; y: number}>',
+      description:
+        "For a layout such as a grid or a fanned hand: one `{x, y}` per item, in item order, the centre of that item's slot in pixels from the top-left of the container's padding box (where an absolutely placed item is measured from). A drag drops the item on the slot within its range whose centre is nearest its own, and the item settles on that slot's centre; the arrow keys follow the layout's rows and columns. An array of another length is ignored, and the measured layout decides.",
+    },
   ],
   returns: [
     {
       name: 'reorderable',
       type: 'Reorderable',
       description:
-        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its one method, `start(key)`, enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last.",
+        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its one method, `start(key)`, enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last. Its `attach(container, {items})` reorders plain elements with no collection component: `items()` returns one `{key, element, handle}` per item in order, each handle becomes reorder mode's toggle named after its item, and it returns `{detach}`, which removes everything it added.",
     },
   ],
   usage: {
@@ -64,6 +70,11 @@ export const docs = {
           "Offer reorder mode from your own UI too, such as a row's context menu, with `reorderable.start(item.id)`.",
       },
       {
+        guidance: true,
+        description:
+          'For plain elements, call `reorderable.attach(container, {items})` once the elements exist, give `positions` for a grid or a fan, and call `detach` when they go.',
+      },
+      {
         guidance: false,
         description:
           "Use React's `key` as the reorder key, or index-based keys: a move changes every index after it.",
@@ -84,10 +95,12 @@ export const docsDense = {
       '({key, to}) once per committed move; to is the index after the move.',
     isReorderable:
       '(key) => boolean; a rejected row has no handle, and at an end bounds the drop.',
+    positions:
+      '() => one {x, y} slot centre per item (grid, fan): drops on the nearest slot.',
   },
   returnDescriptions: {
     reorderable:
-      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI.",
+      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI; attach(container, {items}) reorders plain elements.",
   },
   usage: {
     description:
