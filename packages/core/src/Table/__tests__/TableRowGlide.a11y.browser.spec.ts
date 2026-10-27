@@ -30,11 +30,13 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-async function mount(page: Page, story: string, args = '') {
+async function mount(page: Page, story: string, args = '', timeout = 5000) {
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-tablerowexpansion--${story}&viewMode=story${args}`,
   );
-  await expect(page.locator('[data-expansion-toggle]').first()).toBeVisible();
+  await expect(page.locator('[data-expansion-toggle]').first()).toBeVisible({
+    timeout,
+  });
 }
 
 /**
@@ -131,7 +133,8 @@ const columnWidths = async (page: Page) =>
   );
 
 test('without a handle the rows change at once', async ({page}) => {
-  await mount(page, 'gliding-rows-long-table', '&args=glide:!false');
+  // 2,000 rows: a slow runner takes more than the default 5 s to render it.
+  await mount(page, 'gliding-rows-long-table', '&args=glide:!false', 30_000);
   expect(await toggleAndHold(page, 1, 90)).toBe(0);
 });
 
