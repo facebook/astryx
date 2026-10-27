@@ -39,7 +39,7 @@ system_specs: []
 | Behavior                | A TabList entry that groups several tab values behind a menu button. Its label shows the selected option, else `label`; choosing an option selects that value and closes the menu. |
 | End-user impact         | Users reach overflow tab values from one entry and see which one is selected; keyboard users get APG menu-button behavior with a single tab stop inside the menu.                  |
 | Builder impact          | None.                                                                                                                                                                              |
-| Compatibility/readiness | Records shipped behavior; no public change. Five implementation gaps (see Current-state impact).                                                                                   |
+| Compatibility/readiness | Records shipped behavior; no public change. Six implementation gaps (see Current-state impact).                                                                                    |
 | Review checks           | Reject options without `menuitemradio` and `aria-checked`, more than one tab stop in the open menu, or a closed menu that leaves focus stranded.                                   |
 | Governing rules         | `component:TabList` (strip edge geometry); `family:overlay-dismissal`; `architecture:interaction-modality`.                                                                        |
 
@@ -83,6 +83,11 @@ Consumer migration instructions belong in consumer docs and release notes.
   takes selected styling and a checked option takes medium weight, but neither
   target reflects a state. `architecture:component-theming-surface` INV6 has a
   state that changes paint reflected on the owning target.
+- **Selection mounts extra elements.** The trigger mounts its `tab-indicator`
+  only while an option is selected, and an option mounts its check mark only
+  while checked. `architecture:component-style-authoring` INV7 has states
+  expressed through attributes, classes, and styles on existing elements, never
+  through extra elements.
 
 ## Ownership boundary
 
@@ -119,11 +124,11 @@ No component-local concept beyond the consumer props.
 
 ### Representative states
 
-| State              | Required invariant                                                              | Allowed variation |
-| ------------------ | ------------------------------------------------------------------------------- | ----------------- |
-| No option selected | Trigger shows `label`; whether it starts as the stop is uncontracted (Tab FR3). | —                 |
-| Option selected    | Trigger shows that option's label and indicator.                                | —                 |
-| Open               | Named menu; first option focused; one tab stop.                                 | —                 |
+| State              | Required invariant                                                                                                                                                                                  | Allowed variation |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| No option selected | Trigger shows `label`; while another enabled entry is selected it is not the starting stop (Tab FR3); with nothing selected, or the selected entry disabled, where the stop starts is uncontracted. | —                 |
+| Option selected    | Trigger shows that option's label and indicator.                                                                                                                                                    | —                 |
+| Open               | Named menu; first option focused; one tab stop.                                                                                                                                                     | —                 |
 
 ### Transformation and precedence order
 
