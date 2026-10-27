@@ -126,22 +126,28 @@ async function sampleBoxes(
       const style = getComputedStyle(element);
       return {
         t,
+        translate: style.translate,
         scale: style.scale,
         origin: style.transformOrigin,
         opacity: Number(style.opacity),
       };
     });
   }, times);
-  return raw.map(({t, scale, origin, opacity}) => {
+  return raw.map(({t, translate, scale, origin, opacity}) => {
+    const [tx, ty = 0] =
+      translate === 'none'
+        ? [0, 0]
+        : translate.split(' ').map(value => parseFloat(value));
     const [sx, sy = sx] =
       scale === 'none' ? [1, 1] : scale.split(' ').map(Number);
     const [ox, oy] = origin.split(' ').map(value => parseFloat(value));
+    // translate, then scale about the origin.
     return {
       t,
       opacity,
       box: {
-        x: layout.x + ox * (1 - sx),
-        y: layout.y + oy * (1 - sy),
+        x: layout.x + tx + ox * (1 - sx),
+        y: layout.y + ty + oy * (1 - sy),
         width: layout.width * sx,
         height: layout.height * sy,
       },

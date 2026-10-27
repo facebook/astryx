@@ -53,6 +53,73 @@ const scaleOf = (frame: Keyframe) =>
   String(frame.scale)
     .split(' ')
     .map(value => Number(value));
+const translateOf = (frame: Keyframe) =>
+  String(frame.translate)
+    .split(' ')
+    .map(value => Number.parseFloat(value));
+
+/** A channel's keyframes read at `t` ms, as the engine interpolates them. */
+function channelAt(
+  animation: {keyframes: Keyframe[]; options: KeyframeAnimationOptions},
+  t: number,
+  read: (frame: Keyframe) => number[],
+): number[] {
+  const duration = Number(animation.options.duration);
+  const {keyframes} = animation;
+  for (let i = 1; i < keyframes.length; i += 1) {
+    const end = (keyframes[i].offset as number) * duration;
+    if (end >= t) {
+      const start = (keyframes[i - 1].offset as number) * duration;
+      const k = end > start ? (t - start) / (end - start) : 1;
+      const a = read(keyframes[i - 1]);
+      const b = read(keyframes[i]);
+      return a.map((value, j) => value + (b[j] - value) * k);
+    }
+  }
+  return read(keyframes.at(-1)!);
+}
+
+/** The surface's rect on screen at `t` ms: translate, then scale about 0 0. */
+function shownAt(
+  translate: {keyframes: Keyframe[]; options: KeyframeAnimationOptions},
+  scale: {keyframes: Keyframe[]; options: KeyframeAnimationOptions},
+  t: number,
+) {
+  const [tx, ty] = channelAt(translate, t, translateOf);
+  const [sx, sy] = channelAt(scale, t, scaleOf);
+  const {left, top, width, height} = GEOMETRY.surface;
+  return {
+    left: left + tx,
+    top: top + ty,
+    width: width * sx,
+    height: height * sy,
+  };
+}
+
+/** UIKit's frame at progress `p`, scaled about the point it grows out of. */
+function modelAt(p: number) {
+  const state = popoverCollapsedState(GEOMETRY);
+  const {scaleX, scaleY} = popoverFrame(state, p);
+  const {left, top, width, height} = GEOMETRY.surface;
+  return {
+    left: left + state.originX * (1 - scaleX),
+    top: top + state.originY * (1 - scaleY),
+    width: width * scaleX,
+    height: height * scaleY,
+  };
+}
+
+function expectNear(
+  actual: {left: number; top: number; width: number; height: number},
+  expected: {left: number; top: number; width: number; height: number},
+  tolerance: number,
+) {
+  for (const key of ['left', 'top', 'width', 'height'] as const) {
+    expect(Math.abs(actual[key] - expected[key]), key).toBeLessThanOrEqual(
+      tolerance,
+    );
+  }
+}
 
 /**
  * The person's settings, through `matchMedia` as the animator reads them: no
@@ -263,38 +330,41 @@ describe('createPopoverSurfaceMotion', () => {
 
   it('grows the popover out of its source on UIKit\u2019s present spring, without the layer\u2019s CSS entrance', () => {
     const {element, motion} = create();
-    // The read happens with the CSS entrance already off and no scale left.
+    // The read happens with the CSS entrance already off and no transform left.
     const measure = vi.fn(() => {
       expect(element.style.getPropertyValue('animation-name')).toBe('none');
+      expect(element.style.getPropertyValue('scale')).toBe('');
       return GEOMETRY;
     });
     motion.enter(measure);
     expect(measure).toHaveBeenCalledTimes(1);
     const state = popoverCollapsedState(GEOMETRY);
     expect(element.style.getPropertyValue('animation-name')).toBe('none');
-    expect(element.style.getPropertyValue('transform-origin')).toBe(
-      `${state.originX}px ${state.originY}px`,
-    );
+    // The rect morph's encoding: translate and scale about the top-left corner.
+    expect(element.style.getPropertyValue('transform-origin')).toBe('0px 0px');
+    const [translateAnimation] = live('translate');
     const [scaleAnimation] = live('scale');
     const first = scaleOf(scaleAnimation.keyframes[0]);
     expect(first[0]).toBeCloseTo(state.scale, 4);
     expect(first[1]).toBeCloseTo(state.scale * state.length, 4);
     expect(scaleOf(scaleAnimation.keyframes.at(-1)!)).toEqual([1, 1]);
-    // Every keyframe is the measured path at the present spring's progress:
-    // the width with the scale, the height with the scale and the length.
+    // Every frame is the measured path at the present spring's progress: the
+    // width with the scale, the height with the scale and the length, the
+    // edge on the source.
     const duration = Number(scaleAnimation.options.duration);
     const progress = solveSpring(toSpring(springs.popoverPresent), {
       from: 0,
       to: 1,
     });
+    const settle = progress.settleTime(0.001) * 1000;
     let peak = 0;
-    for (const frame of scaleAnimation.keyframes) {
-      const t = ((frame.offset as number) * duration) / 1000;
-      const expected = popoverFrame(state, progress.value(t));
-      const [sx, sy] = scaleOf(frame);
-      expect(sx).toBeCloseTo(expected.scaleX, 2);
-      expect(sy).toBeCloseTo(expected.scaleY, 2);
-      peak = Math.max(peak, sx);
+    for (let t = 0; t <= Math.min(duration, settle); t += 1000 / 120) {
+      expectNear(
+        shownAt(translateAnimation, scaleAnimation, t),
+        modelAt(progress.value(t / 1000)),
+        0.5,
+      );
+      peak = Math.max(peak, channelAt(scaleAnimation, t, scaleOf)[0]);
     }
     // UIKit's popover view peaks at 1.015 (bounce 0.2).
     expect(peak).toBeCloseTo(1.015, 2);
@@ -307,7 +377,7 @@ describe('createPopoverSurfaceMotion', () => {
     const {element, motion} = create();
     motion.enter(() => GEOMETRY);
     clock += 1000;
-    vi.advanceTimersByTime(1000);
+    await vi.advanceTimersByTimeAsync(1000);
     motion.exit();
     const copy = copyOf(element);
     expect(copy).not.toBeNull();
@@ -320,11 +390,10 @@ describe('createPopoverSurfaceMotion', () => {
     expect(copy!.querySelectorAll('[id]')).toHaveLength(0);
     expect(copy!.style.getPropertyValue('left')).toBe('41px');
     expect(copy!.style.getPropertyValue('top')).toBe('204px');
-    const state = popoverCollapsedState(GEOMETRY);
-    expect(copy!.style.getPropertyValue('transform-origin')).toBe(
-      `${state.originX}px ${state.originY}px`,
-    );
+    expect(copy!.style.getPropertyValue('transform-origin')).toBe('0px 0px');
     // The copy shrinks into the point on the dismiss spring and fades.
+    const state = popoverCollapsedState(GEOMETRY);
+    const [translateAnimation] = live('translate', copy!);
     const [scaleAnimation] = live('scale', copy!);
     const last = scaleOf(scaleAnimation.keyframes.at(-1)!);
     expect(last[0]).toBeCloseTo(state.scale, 4);
@@ -334,26 +403,30 @@ describe('createPopoverSurfaceMotion', () => {
       from: 0,
       to: 1,
     });
-    for (const frame of scaleAnimation.keyframes) {
-      const t = ((frame.offset as number) * duration) / 1000;
-      const expected = popoverFrame(state, 1 - progress.value(t));
-      const [sx, sy] = scaleOf(frame);
-      expect(sx).toBeCloseTo(expected.scaleX, 2);
-      expect(sy).toBeCloseTo(expected.scaleY, 2);
+    const settle = progress.settleTime(0.001) * 1000;
+    for (let t = 0; t <= Math.min(duration, settle); t += 1000 / 120) {
+      expectNear(
+        shownAt(translateAnimation, scaleAnimation, t),
+        modelAt(1 - progress.value(t / 1000)),
+        0.5,
+      );
     }
     const [opacityAnimation] = live('opacity', copy!);
     expect(Number(opacityAnimation.keyframes[0].opacity)).toBe(1);
     expect(Number(opacityAnimation.keyframes.at(-1)!.opacity)).toBe(0);
-    // The layer itself is left at rest for its next presentation (an
-    // identity at rest leaves no inline value).
-    expect(element.style.getPropertyValue('scale')).toMatch(/^(1( 1)?)?$/);
-    expect(element.style.getPropertyValue('opacity')).toMatch(/^(1)?$/);
+    // The layer itself is left as laid out for its next presentation.
+    for (const property of [
+      'translate',
+      'scale',
+      'transform-origin',
+      'opacity',
+    ]) {
+      expect(element.style.getPropertyValue(property), property).toBe('');
+    }
     // Gone once the spring settles.
     clock += 2000;
-    vi.advanceTimersByTime(2000);
-    return Promise.resolve().then(() => {
-      expect(copyOf(element)).toBeNull();
-    });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(copyOf(element)).toBeNull();
   });
 
   it('presented again during the dismissal, grows back from the frame on screen about the same point', () => {
@@ -362,13 +435,12 @@ describe('createPopoverSurfaceMotion', () => {
     clock += 1000;
     vi.advanceTimersByTime(1000);
     motion.exit();
-    const origin = element.style.getPropertyValue('transform-origin');
     clock += 80;
     const measure = vi.fn(() => GEOMETRY);
     motion.enter(measure);
-    // No new measurement and no new pivot; the copy is gone.
+    // No new measurement; the copy is gone.
     expect(measure).not.toHaveBeenCalled();
-    expect(element.style.getPropertyValue('transform-origin')).toBe(origin);
+    expect(element.style.getPropertyValue('transform-origin')).toBe('0px 0px');
     expect(copyOf(element)).toBeNull();
     const first = scaleOf(live('scale', element).at(-1)!.keyframes[0]);
     const state = popoverCollapsedState(GEOMETRY);

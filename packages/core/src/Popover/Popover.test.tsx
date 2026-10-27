@@ -1408,13 +1408,15 @@ describe('Popover touch presentation', () => {
     isCoarse = true;
     const layer = open();
     expect(layer.style.getPropertyValue('animation-name')).toBe('none');
-    expect(layer.style.getPropertyValue('transform-origin')).not.toBe('');
-    const scale = recorded.find(
+    // The rect morph runs it (jsdom has no layout, so the box is empty and
+    // only the fade shows here; the growth is in popoverSurfaceMotion.test).
+    expect(layer.style.getPropertyValue('transform-origin')).toBe('0px 0px');
+    const fade = recorded.find(
       animation =>
-        animation.target === layer && 'scale' in animation.keyframes[0],
+        animation.target === layer && 'opacity' in animation.keyframes[0],
     );
-    expect(scale).toBeDefined();
-    expect(String(scale!.keyframes[0].scale).split(' ')[0]).toBe('0.01');
+    expect(fade).toBeDefined();
+    expect(Number(fade!.keyframes[0].opacity)).toBe(0);
   });
 
   it('under a finger, shrinks back into its trigger on a copy that outlives the close', () => {

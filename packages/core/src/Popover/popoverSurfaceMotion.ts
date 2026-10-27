@@ -9,9 +9,9 @@
  *   layer runtime's exit copy and input hold
  * @output Exports `popoverCollapsedState` (where the popover meets its source
  *   and the shape it grows from), `popoverFrame` (the transform and opacity
- *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE` and
- *   `createPopoverSurfaceMotion` (the touch presentation's present and
- *   dismiss)
+ *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE`,
+ *   `createPopoverSurfaceMotion` (the touch
+ *   presentation's present and dismiss)
  * @position Internal to Popover: under a finger the popover is presented
  *   and dismissed the way UIPopoverPresentationController does it
  *
@@ -23,14 +23,13 @@
  * place. The dismissal runs the same path back into that point on
  * `POPOVER_DISMISS_SPRING`.
  *
- * Here the layer element is scaled about that point. Across the source's
- * edge its scale is s = s₀ + (1 − s₀)·p; along the axis away from the source
- * it is s·f with f = f₀ + (1 − f₀)·p, the length's share of the full length,
- * which is UIKit's box growing while it scales. Both are products of the
- * spring's progress p, so they are played as curves (`Animator.play`) on the
- * compositor (law M1), and a dismissal during the presentation (or a
- * presentation during the dismissal) continues from the frame on screen with
- * its velocity (M2, M3).
+ * That is the rect morph's `edgeGrowPath` (motion/rectMorph.ts): across the
+ * source's edge the scale is s = s₀ + (1 − s₀)·p; along the axis away from
+ * the source it is s·f with f = f₀ + (1 − f₀)·p, the length's share of the
+ * full length, which is UIKit's box growing while it scales. The morph plays
+ * it on the compositor (law M1), and a dismissal during the presentation (or
+ * a presentation during the dismissal) continues from the frame on screen,
+ * in the same scale and length, with its velocity (M2, M3).
  *
  * Measured for a popover below its source; one above or beside it runs the
  * same motion turned toward its source (M-PO1 confirms it). The point it
@@ -63,19 +62,12 @@
  * - /packages/core/src/Popover/Popover.tsx
  */
 
+import type {AnimatorOptions, MotionHandle} from '../motion/animator';
 import {
-  createAnimator,
-  type Animator,
-  type AnimatorOptions,
-  type MotionCurve,
-  type MotionHandle,
-} from '../motion/animator';
-import {
-  SETTLING_EPSILON,
-  solveSpring,
-  toSpring,
-  type SpringDescription,
-} from '../motion/spring';
+  createRectMorph,
+  edgeGrowPath,
+  type MorphPath,
+} from '../motion/rectMorph';
 import {
   POPOVER_DISMISS_SPRING,
   POPOVER_PRESENT_SPRING,
@@ -83,13 +75,10 @@ import {
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
 import {holdInput} from '../Layer/inputHold';
 import {
-  frameOf,
   popoverCollapsedState,
-  PRESENTED,
   type PopoverCollapsedState,
-  type PopoverFrame,
   type PopoverSurfaceGeometry,
-  type SurfaceState,
+  type PopoverSurfaceRect,
 } from './popoverSurfaceFrame';
 
 export {popoverCollapsedState, popoverFrame} from './popoverSurfaceFrame';
@@ -103,89 +92,23 @@ export type {
 /** Marks the static copy the dismissal plays on. */
 export const POPOVER_EXIT_COPY_ATTRIBUTE = 'data-astryx-popover-exit';
 
-/**
- * The curves from `from` to `to` on `spring`, its progress starting with
- * `velocity` (progress per second): each channel follows UIKit's path, the
- * scale along the axis as the product of scale and length.
- */
-function surfaceCurves(
-  from: SurfaceState,
-  to: SurfaceState,
-  axis: 'x' | 'y',
-  spring: SpringDescription,
-  velocity: number,
-): Record<'scaleX' | 'scaleY' | 'opacity', MotionCurve> {
-  const progress = solveSpring(toSpring(spring), {from: 0, to: 1, velocity});
-  const duration = progress.settleTime(SETTLING_EPSILON);
-  const end = {across: to.scale, along: to.scale * to.length};
-  const state = (p: number): SurfaceState => ({
-    scale: from.scale + (to.scale - from.scale) * p,
-    length: from.length + (to.length - from.length) * p,
-    opacity: from.opacity + (to.opacity - from.opacity) * p,
-  });
-  const scaleCurve = (along: boolean): MotionCurve => ({
-    duration,
-    at(t) {
-      if (t >= duration) {
-        return along ? end.along : end.across;
-      }
-      const s = state(progress.value(t));
-      return along ? s.scale * s.length : s.scale;
+/** The presentation's path: UIKit's edge growth on the surface's box. */
+function pathOf(
+  surface: PopoverSurfaceRect,
+  state: PopoverCollapsedState,
+): MorphPath {
+  return edgeGrowPath({
+    box: {
+      x: surface.left,
+      y: surface.top,
+      width: surface.width,
+      height: surface.height,
     },
-    velocity(t) {
-      if (t >= duration) {
-        return 0;
-      }
-      const s = state(progress.value(t));
-      const dp = progress.velocity(t);
-      const dScale = (to.scale - from.scale) * dp;
-      if (!along) {
-        return dScale;
-      }
-      return dScale * s.length + s.scale * (to.length - from.length) * dp;
-    },
+    origin: {x: state.originX, y: state.originY},
+    axis: state.axis,
+    collapsedScale: state.scale,
+    collapsedLength: state.length,
   });
-  const opacity: MotionCurve = {
-    duration,
-    at: t => (t >= duration ? to.opacity : state(progress.value(t)).opacity),
-    velocity: t =>
-      t >= duration ? 0 : (to.opacity - from.opacity) * progress.velocity(t),
-  };
-  const across = scaleCurve(false);
-  const along = scaleCurve(true);
-  return {
-    scaleX: axis === 'x' ? along : across,
-    scaleY: axis === 'y' ? along : across,
-    opacity,
-  };
-}
-
-/** What `animator` shows now, split back into scale and length. */
-function readState(animator: Animator, axis: 'x' | 'y'): SurfaceState {
-  const across = animator.get(axis === 'x' ? 'scaleY' : 'scaleX');
-  const along = animator.get(axis === 'x' ? 'scaleX' : 'scaleY');
-  return {
-    scale: across,
-    length: across > 0 ? along / across : 1,
-    opacity: animator.get('opacity'),
-  };
-}
-
-/**
- * The progress velocity that continues `animator`'s motion toward a scale of
- * `target`: the scale's own velocity over the distance left.
- */
-function progressVelocity(
-  animator: Animator,
-  axis: 'x' | 'y',
-  from: SurfaceState,
-  target: number,
-): number {
-  const distance = target - from.scale;
-  if (Math.abs(distance) < 1e-6) {
-    return 0;
-  }
-  return animator.getVelocity(axis === 'x' ? 'scaleY' : 'scaleX') / distance;
 }
 
 export interface PopoverSurfaceMotion {
@@ -211,13 +134,6 @@ export interface PopoverSurfaceMotion {
   dispose(): void;
 }
 
-const MOTION_STYLE_PROPERTIES = [
-  'scale',
-  'opacity',
-  'transform-origin',
-  'animation-name',
-] as const;
-
 export function createPopoverSurfaceMotion(
   element: HTMLElement,
   options: Pick<AnimatorOptions, 'now'> = {},
@@ -225,16 +141,14 @@ export function createPopoverSurfaceMotion(
   // The popover's two springs are this component's measured values, not
   // motion roles (touch motion stays internal, spec:AST-094 DEC-11): they
   // play as given, so no table is registered and no other row is bundled.
-  const animator = createAnimator(element, options);
-  // The presentation in progress or last played; null while the popover is
-  // in a presentation this motion does not drive.
+  const morph = createRectMorph(element, options);
+  // The presentation in progress or last played, and the geometry it
+  // measured; null while the popover is in a presentation this motion does
+  // not drive.
   let collapsed: PopoverCollapsedState | null = null;
-  // The geometry the presentation measured, and whether its spring is still
-  // running (the element's box then includes a scale only the curve knows).
   let measured: PopoverSurfaceGeometry | null = null;
   let presentHandle: MotionHandle | null = null;
-  // The dismissal in progress: its copy and the copy's animator.
-  let exiting: {copy: HTMLElement; animator: Animator} | null = null;
+  let dismissHandle: MotionHandle | null = null;
   // Releases the hold that takes every touch while the presentation runs.
   let holdRelease: (() => void) | null = null;
 
@@ -243,71 +157,41 @@ export function createPopoverSurfaceMotion(
     holdRelease = null;
   };
 
-  const endExit = () => {
-    if (exiting == null) {
-      return;
-    }
-    exiting.animator.dispose();
-    exiting.copy.remove();
-    exiting = null;
-  };
-
   const reset = () => {
     collapsed = null;
     measured = null;
     presentHandle = null;
+    dismissHandle = null;
     releaseHold();
-    endExit();
-    animator.set({scaleX: 1, scaleY: 1, opacity: 1});
-    for (const property of MOTION_STYLE_PROPERTIES) {
-      element.style.removeProperty(property);
-    }
+    morph.reset();
+    element.style.removeProperty('animation-name');
   };
 
   const enter = (measure: () => PopoverSurfaceGeometry) => {
-    let from: SurfaceState | null = null;
-    let velocity = 0;
-    if (exiting != null && collapsed != null) {
-      // Presented again during the dismissal: continue from the frame on
-      // screen, about the same point.
-      from = readState(exiting.animator, collapsed.axis);
-      velocity = progressVelocity(exiting.animator, collapsed.axis, from, 1);
-    }
-    endExit();
-    if (from == null) {
-      // Full size and invisible for the read: the element's box must not
-      // include a scale left over from the last dismissal, nor the first
-      // keyframe of the layer's CSS entrance (which belongs to the pointer
-      // presentation). Nothing paints before the curves below replace these.
+    // Presented again during the dismissal: the morph continues from the
+    // copy's frame on screen, about the same point.
+    const resumed = dismissHandle != null && collapsed != null;
+    if (!resumed || measured == null) {
+      // At full size for the read: no transform left from the last
+      // dismissal, nor the first keyframe of the layer's CSS entrance (which
+      // belongs to the pointer presentation). Nothing paints before the
+      // present below replaces it.
       element.style.setProperty('animation-name', 'none');
-      animator.set({scaleX: 1, scaleY: 1, opacity: 0});
+      if (!resumed) {
+        morph.reset();
+      }
+      measured = measure();
+      collapsed = popoverCollapsedState(measured);
     }
-    const geometry = from != null && measured != null ? measured : measure();
-    const next =
-      from != null && collapsed != null
-        ? collapsed
-        : popoverCollapsedState(geometry);
-    collapsed = next;
-    measured = geometry;
     // The layer's own CSS entrance belongs to the pointer presentation.
     element.style.setProperty('animation-name', 'none');
-    element.style.setProperty(
-      'transform-origin',
-      `${next.originX}px ${next.originY}px`,
-    );
     // Under Reduce Motion the animator lands the growth at once and fades
     // the opacity in (design:reduced-motion).
-    const start = from ?? {scale: next.scale, length: next.length, opacity: 0};
-    animator.set(frameOf(start, next.axis));
-    const handle = animator.play(
-      surfaceCurves(
-        start,
-        PRESENTED,
-        next.axis,
-        POPOVER_PRESENT_SPRING,
-        velocity,
-      ),
+    const handle = morph.present(
+      pathOf(measured.surface, collapsed!),
+      POPOVER_PRESENT_SPRING,
     );
+    dismissHandle = null;
     presentHandle = handle;
     // No touch reaches the page, or dismisses the popover, until it is in.
     releaseHold();
@@ -322,48 +206,42 @@ export function createPopoverSurfaceMotion(
 
   const exit = () => {
     releaseHold();
-    const target = collapsed;
-    if (target == null || exiting != null) {
+    const state = collapsed;
+    if (state == null || measured == null || dismissHandle != null) {
       return;
     }
-    const from = readState(animator, target.axis);
-    const velocity = progressVelocity(
-      animator,
-      target.axis,
-      from,
-      target.scale,
-    );
+    // The surface at full size where it stands: the presentation's own
+    // measurement while it runs, the element's box once it has settled.
+    let box: PopoverSurfaceRect = measured.surface;
+    if (presentHandle == null) {
+      // Settled: the element stands as laid out, maybe moved since.
+      morph.reset();
+      const rect = element.getBoundingClientRect();
+      box = {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
     presentHandle = null;
-    // The copy stands where the surface is drawn, the presentation's frame
-    // included (the layer runtime's shared exit copy, INV14).
+    // The copy stands where the surface is drawn, the morph's frame included
+    // (the layer runtime's shared exit copy, INV14).
     const copy = placeLayerExitCopy(element, POPOVER_EXIT_COPY_ATTRIBUTE);
     if (copy == null) {
       // No top layer for a copy: the close is immediate.
-      animator.set({scaleX: 1, scaleY: 1, opacity: 1});
+      morph.reset();
       return;
     }
-    copy.style.setProperty(
-      'transform-origin',
-      `${target.originX}px ${target.originY}px`,
-    );
-    const closing = createAnimator(copy, options);
     // Under Reduce Motion the copy fades out where it stands, then lands.
-    closing.set(frameOf(from, target.axis));
-    const handle = closing.play(
-      surfaceCurves(
-        from,
-        {scale: target.scale, length: target.length, opacity: 0},
-        target.axis,
-        POPOVER_DISMISS_SPRING,
-        velocity,
-      ),
-    );
-    exiting = {copy, animator: closing};
-    // The element itself is hidden by the browser now; leave it at rest.
-    animator.set({scaleX: 1, scaleY: 1, opacity: 1});
-    void handle.finished.then(finished => {
-      if (finished && exiting?.copy === copy) {
-        endExit();
+    // The morph takes the copy away when its motion ends.
+    const handle = morph.dismiss(pathOf(box, state), POPOVER_DISMISS_SPRING, {
+      target: copy,
+    });
+    dismissHandle = handle;
+    void handle.finished.then(() => {
+      if (dismissHandle === handle) {
+        dismissHandle = null;
       }
     });
   };
@@ -374,7 +252,7 @@ export function createPopoverSurfaceMotion(
     reset,
     dispose() {
       reset();
-      animator.dispose();
+      morph.dispose();
     },
   };
 }
