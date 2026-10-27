@@ -322,7 +322,7 @@ let holders = 0;
  */
 let fling: Node | null = null;
 /*
- * Where an engine has no `scrollend` (Safari 17 and 18), a fling ends once its
+ * Where an engine has no `scrollend`, a fling ends once its
  * scroll events stop for PRESS_SCROLL_BRAKE_MS, UIKit's measured brake window
  * (a touch on a scroller that moved this recently brakes it): a decelerating
  * scroller fires a scroll every frame, so that long without one means it has
@@ -339,6 +339,20 @@ function clearFling(): void {
 /** Whether a finger is on the glass, and where the last one landed. */
 let touching = false;
 let lastTouchTarget: Node | null = null;
+/**
+ * Whether a pen is down. A pen raises pointer events but no touch events, so
+ * no `touchend` clears it: its `pointerup` does, or, when the browser takes
+ * it to scroll (`pointercancel`), the brake window after that, by when the
+ * scroll it drives has recorded its fling.
+ */
+let penDown = false;
+let penCancelTimer: ReturnType<typeof setTimeout> | undefined;
+
+function clearPen(): void {
+  penDown = false;
+  clearTimeout(penCancelTimer);
+  penCancelTimer = undefined;
+}
 
 /** The machine's clocks; `fade` runs the surface's profile's instead. */
 const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
@@ -755,7 +769,12 @@ function onPointerDown(event: PointerEvent): void {
   // question the brake asks is whether a PREVIOUS finger's fling is still
   // running here.
   const braking = element != null && scrollerIsBraking(element);
-  touching = true;
+  if (event.pointerType === 'pen') {
+    clearPen();
+    penDown = true;
+  } else {
+    touching = true;
+  }
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
     settle();
@@ -814,11 +833,16 @@ function onPointerUp(event: PointerEvent): void {
   if (event.target instanceof Node) {
     lastTouchTarget = event.target;
   }
+  if (event.pointerType === 'pen') {
+    // A pen's lift: no touchend follows.
+    clearPen();
+  }
   const live = finger.live;
   if (
     live == null ||
     (live.pointerId != null && event.pointerId !== live.pointerId)
   ) {
+    settle();
     return;
   }
   apply(finger, pressGestureStep(live.gesture, {kind: 'up'}));
@@ -841,6 +865,16 @@ function onCancel(event?: Event): void {
       cancelButton();
     }
     return;
+  }
+  if (pointer?.pointerType === 'pen' && penDown) {
+    // The browser took the pen to scroll: its scroll still drives the
+    // scroller until that scroll records its fling, within the brake window.
+    clearTimeout(penCancelTimer);
+    penCancelTimer = setTimeout(() => {
+      penDown = false;
+      penCancelTimer = undefined;
+      settle();
+    }, PRESS_SCROLL_BRAKE_MS);
   }
   const live = finger.live;
   if (live == null) {
@@ -872,7 +906,7 @@ function onScroll(event: Event): void {
   // ends at its `scrollend`, or where there is none, once its scroll events
   // stop for the brake window (PRESS_SCROLL_BRAKE_MS).
   const driven =
-    (touching || fling === scroller) &&
+    (touching || penDown || fling === scroller) &&
     lastTouchTarget != null &&
     scroller.contains(lastTouchTarget);
   if (driven) {
@@ -984,6 +1018,7 @@ function onVisibilityChange(): void {
     // A hidden page hears no lift and no `scrollend`: nothing is down or
     // flinging when it comes back.
     touching = false;
+    clearPen();
     clearFling();
     finish(finger);
     finish(button);
@@ -1080,7 +1115,13 @@ function untrack(): void {
  * (its `scrollend` calls this again).
  */
 function settle(): void {
-  if (finger.live != null || button.live != null || touching || fling != null) {
+  if (
+    finger.live != null ||
+    button.live != null ||
+    touching ||
+    penDown ||
+    fling != null
+  ) {
     return;
   }
   untrack();
@@ -1122,6 +1163,7 @@ export function installPressFeedback(): () => void {
     finish(button);
     untrack();
     touching = false;
+    clearPen();
     clearFling();
     lastTouchTarget = null;
   };
