@@ -28,25 +28,21 @@ import {
   animationStoryboard,
   blockMainThread,
   busyWindowProof,
-  compareCurve,
-  cubicBezier,
-  curveOf,
   freezeTimers,
-  holdAnimations,
   installTimerGate,
   markElement,
   openStory,
   releaseAnimations,
-  seekAnimations,
-  sampleCurve,
   startScreencast,
   thawTimers,
   timeline,
   touchDriver,
   waitForAnimation,
   waitForRest,
+  watchAnimations,
   withStorybook,
   writeEvidence,
+  type ActiveAnimation,
   type CastFrame,
   type TrackedFrame,
 } from '@astryxdesign/interaction-harness';
@@ -57,7 +53,57 @@ import {timing} from '../../motion/uikit/timing';
 const storybook = withStorybook(test);
 
 const TOGGLE_MS = datePicker.calendar.monthYearToggle.fadeMs;
-const ease = cubicBezier(...timing.curves.move);
+
+/** CSS's named cubic-bézier easings, which a browser may report by name. */
+const NAMED_EASINGS: Record<string, ReadonlyArray<number>> = {
+  ease: [0.25, 0.1, 0.25, 1],
+  'ease-in': [0.42, 0, 1, 1],
+  'ease-out': [0, 0, 0.58, 1],
+  'ease-in-out': [0.42, 0, 0.58, 1],
+  linear: [0, 0, 1, 1],
+};
+
+/**
+ * A reported easing's cubic-bézier control points: Chromium reports
+ * `cubic-bezier(0.42, 0, 0.58, 1)` where WebKit names it `ease-in-out`.
+ */
+function bezierOf(easing: string): ReadonlyArray<number> {
+  const named = NAMED_EASINGS[easing.trim()];
+  if (named != null) {
+    return named;
+  }
+  const match = /^cubic-bezier\(([^)]+)\)$/.exec(easing.trim());
+  if (match == null) {
+    throw new Error(`not a cubic-bézier easing: ${easing}`);
+  }
+  return match[1].split(',').map(Number);
+}
+
+/**
+ * The toggle's run of `property` as the page plays it: UIKit's 0.25 s
+ * ease-in-ease-out from one end value to the other. It is read from the
+ * watched transition itself (its duration, easing and end values fix every
+ * frame it presents), not sampled under a hold: a hold taken once the tap has
+ * returned can reach the 0.25 s fade after it ended on a loaded runner.
+ */
+function expectToggleRun(
+  runs: ReadonlyArray<ActiveAnimation>,
+  property: string,
+  [from, to]: readonly [string, string],
+) {
+  const run = runs.find(candidate => candidate.name === property);
+  if (run == null) {
+    throw new Error(`no ${property} run among ${JSON.stringify(runs)}`);
+  }
+  expect(run.durationMs).toBe(TOGGLE_MS);
+  const points = bezierOf(run.easing);
+  timing.curves.move.forEach((point, index) =>
+    expect(points[index], run.easing).toBeCloseTo(point, 3),
+  );
+  const frames = run.keyframes;
+  expect(String(frames[0][property])).toBe(from);
+  expect(String(frames[frames.length - 1][property])).toBe(to);
+}
 
 const STORY = 'core-dateinput--bottom-sheet-calendar';
 const DTI_STORY = 'core-datetimeinput--bottom-sheet-with-time-increment';
@@ -157,24 +203,17 @@ test('the wheels fade in and the chevron turns on UIKit’s 0.25 s ease-in-ease-
   page,
 }) => {
   const {driver, wheels, titleAt} = await openCalendar(page);
-  await driver.tap(titleAt);
-  await waitForAnimation(wheels);
-  await holdAnimations(page);
-  const times = timeline(TOGGLE_MS, 1000 / 60);
-  const fade = curveOf(await sampleCurve(wheels, times), 'opacity');
-  const fit = compareCurve(fade, t => ease(Math.min(1, t / TOGGLE_MS)), 0.02);
   const chevron = page
     .locator('[data-title="month-year"] .astryx-icon')
     .first();
-  const turn = curveOf(await sampleCurve(chevron, times), 'rotate');
-  const turnFit = compareCurve(
-    turn,
-    t => -90 + 90 * ease(Math.min(1, t / TOGGLE_MS)),
-    2,
-  );
-  await releaseAnimations(page, {finish: true});
-  expect(fit.pass, JSON.stringify(fit.worst)).toBe(true);
-  expect(turnFit.pass, JSON.stringify(turnFit.worst)).toBe(true);
+  const fade = await watchAnimations(wheels);
+  const turn = await watchAnimations(chevron);
+  await driver.tap(titleAt);
+  expectToggleRun(await fade.started(), 'opacity', ['0', '1']);
+  expectToggleRun(await turn.started(), 'transform', [
+    'rotate(-90deg)',
+    'rotate(0deg)',
+  ]);
 });
 
 test('DateTimeInput: the calendar and the wheels cross-fade on UIKit’s 0.25 s ease-in-ease-out, the chevron turning with them', async ({
@@ -195,24 +234,17 @@ test('DateTimeInput: the calendar and the wheels cross-fade on UIKit’s 0.25 s 
   await waitForRest(
     page.getByRole('dialog').locator('.astryx-bottom-sheet').first(),
   );
-  await tapCenter('button[aria-label$="Choose month and year"]');
-  await waitForAnimation(wheels);
-  await holdAnimations(page);
-  const times = timeline(TOGGLE_MS, 1000 / 60);
-  const fade = curveOf(await sampleCurve(wheels, times), 'opacity');
-  const fit = compareCurve(fade, t => ease(Math.min(1, t / TOGGLE_MS)), 0.02);
   const chevron = page
     .locator('button[aria-label$="Choose month and year"] .astryx-icon')
     .first();
-  const turn = curveOf(await sampleCurve(chevron, times), 'rotate');
-  const turnFit = compareCurve(
-    turn,
-    t => -90 + 90 * ease(Math.min(1, t / TOGGLE_MS)),
-    2,
-  );
-  await releaseAnimations(page, {finish: true});
-  expect(fit.pass, JSON.stringify(fit.worst)).toBe(true);
-  expect(turnFit.pass, JSON.stringify(turnFit.worst)).toBe(true);
+  const fade = await watchAnimations(wheels);
+  const turn = await watchAnimations(chevron);
+  await tapCenter('button[aria-label$="Choose month and year"]');
+  expectToggleRun(await fade.started(), 'opacity', ['0', '1']);
+  expectToggleRun(await turn.started(), 'transform', [
+    'rotate(-90deg)',
+    'rotate(0deg)',
+  ]);
 });
 
 test('a second tap mid-fade turns the fade around from where it is', async ({
@@ -559,6 +591,8 @@ for (const [name, story, selector] of [
 
 type CommitLog = {
   frame: number;
+  /** The document timeline's time, ms. */
+  time: number;
   panel: string;
   attribute: string | null;
   present: boolean;
@@ -641,6 +675,7 @@ for (const [name, story, titleSelector, panelSelector, panelKey] of [
             );
             state.log.push({
               frame: state.frames,
+              time: Number(document.timeline.currentTime),
               panel: target.dataset[key] ?? '',
               attribute: record.attributeName,
               present:
@@ -700,7 +735,16 @@ for (const [name, story, titleSelector, panelSelector, panelKey] of [
         !entry.present,
     );
     expect(live, JSON.stringify(log)).toBeDefined();
-    expect(live!.frame).toBeGreaterThan(commitFrame! + 2);
+    // Both waits are counted on the document timeline, not in frames: a
+    // loaded runner presents fewer, longer frames, and the swap still waits
+    // for the fade's end, the wheels fully faded in.
+    const commitTime =
+      log.find(entry => entry.attribute === 'class')?.time ?? Number.NaN;
+    expect(
+      (live?.time ?? Number.NaN) - commitTime,
+      JSON.stringify(log),
+    ).toBeGreaterThanOrEqual(TOGGLE_MS);
+    expect(live?.wheelsOpacity, JSON.stringify(log)).toBe(1);
     // The outgoing calendar turns inert once the cross-fade has ended: faded
     // to 0 or hidden, or (the layer beneath, which stays visible under a
     // finger) fully covered by the wheels at opacity 1; never part way.
@@ -717,7 +761,10 @@ for (const [name, story, titleSelector, panelSelector, panelKey] of [
         inert!.wheelsOpacity === 1,
       JSON.stringify(inert),
     ).toBe(true);
-    expect(inert!.frame).toBeGreaterThan(commitFrame! + 2);
+    expect(
+      (inert?.time ?? Number.NaN) - commitTime,
+      JSON.stringify(log),
+    ).toBeGreaterThanOrEqual(TOGGLE_MS);
   });
 }
 
