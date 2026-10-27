@@ -31,6 +31,13 @@ members:
     component:Toolbar,
     component:Banner,
     component:Toast,
+    component:TopNavMenu,
+    component:SideNavHeading,
+    component:TopNavHeading,
+    component:TabMenu,
+    component:DateRangeInput,
+    component:NavHeadingMenu,
+    component:BreadcrumbItem,
   ]
 architecture: [architecture:interaction-modality]
 contributing: []
@@ -64,11 +71,16 @@ A component is a member when it renders a set of two or more sibling
 momentary, toggle, or option actions that a person chooses one of. Members
 today:
 
-- menus: DropdownMenu, ContextMenu, and their sub-menus;
+- menus: DropdownMenu, ContextMenu, and their sub-menus, the navigation
+  menus of TopNav (TopNavMenu), SideNavHeading, TopNavHeading, and
+  NavHeadingMenu; and
+  BreadcrumbItem's `menu`, which renders DropdownMenu items;
+- TabMenu's menu of tab options;
 - option lists: Selector's and MultiSelector's options, and the wheels of
   DateInput, DateTimeInput, and TimeInput;
 - AlertDialog's actions;
 - ButtonGroup and ToggleButtonGroup;
+- DateRangeInput's presets, one labeled group of preset buttons;
 - Toolbar's buttons; a field inside a toolbar is skipped;
 - the action rows of Banner and Toast when a row has two or more sibling
   actions.
@@ -83,13 +95,26 @@ SegmentedControl is a named exception: this family's rule does not bind it.
 
 These are not members:
 
-- text inputs and InputGroup's input, which keep the caret and selection;
+- text inputs and InputGroup as a whole, whose input keeps the caret and
+  selection and whose addons belong to that input rather than forming a group;
 - TabList, whose scrollable rows need a drag to scroll and whose tabs switch
   views;
-- Pagination and Stepper, whose items are navigation destinations;
+- Pagination and Stepper, inline page controls in the page flow rather than a
+  menu;
+- TopNavMegaMenu's panel, a browsing grid of links in a `role="group"`, not a
+  menu (`component:TopNavMegaMenu` FR5);
+- SideNavItem's collapsed-rail flyout, a popover of the item's navigation rows,
+  not a menu;
+- Popover itself, a surface whose content owns its role; a menu inside it
+  follows its own component;
+- Calendar's day grid, a two-dimensional date grid with its own keyboard and
+  range-selection model, which a slide to commit would break;
 - RadioList, CheckboxList, and SelectableCard, whose rows and cards sit in
   scrolling lists;
 - Token chips, which are removable and have no group control.
+- the suggestion lists of Typeahead (also Tokenizer's), CommandPalette, and the
+  chat composer's trigger menu, whose focus stays in the text input, as a text
+  input's does.
 
 ## Shared owner
 
@@ -152,13 +177,19 @@ Selector's and MultiSelector's options FR1–FR5
 
 ## Adoption and exceptions
 
-| Components or surface                            | Required adoption                                                     |
-| ------------------------------------------------ | --------------------------------------------------------------------- |
-| Menus and Selector's and MultiSelector's options | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
-| Date and time wheels                             | Follow FR1–FR5 through the shared implementation.                     |
-| AlertDialog's actions                            | Track the actions only.                                               |
-| ButtonGroup, ToggleButtonGroup, Toolbar          | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
-| Banner and Toast action rows                     | Track only a row with two or more sibling actions.                    |
+| Components or surface                                                                                | Required adoption                                                     |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Menus and Selector's and MultiSelector's options                                                     | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
+| TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's, BreadcrumbItem's, and TabMenu's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
+| Date and time wheels                                                                                 | Follow FR1–FR5 through the shared implementation.                     |
+| AlertDialog's actions                                                                                | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar                                                              | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| DateRangeInput's presets                                                                             | Track the preset buttons only.                                        |
+| Banner and Toast action rows                                                                         | Track only a row with two or more sibling actions.                    |
+
+TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's, BreadcrumbItem's, and TabMenu's menus act on
+the browser's click today and track no held pointer across their rows; their
+adoption of the menu press model is an implementation gap.
 
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;
