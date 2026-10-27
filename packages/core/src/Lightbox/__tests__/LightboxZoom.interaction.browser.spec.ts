@@ -111,8 +111,11 @@ interface OpenViewer {
 }
 
 // A plain evaluate (no auto-wait): it must work mid-animation.
-async function readState(photo: Locator): Promise<PhotoState> {
-  return photo.evaluate(element => {
+async function readState(
+  photo: Locator,
+  options: {touches?: boolean} = {},
+): Promise<PhotoState & {touches?: {x: number; y: number}[]}> {
+  return photo.evaluate((element, withTouches) => {
     const img = element as HTMLImageElement;
     const stage = img.parentElement as HTMLElement;
     const rect = stage.getBoundingClientRect();
@@ -136,8 +139,17 @@ async function readState(photo: Locator): Promise<PhotoState> {
       x: parseFloat(tx),
       y: parseFloat(ty),
       scale,
+      // The touches the page last received (a capture listener the proof
+      // installs), read with the photo in the same evaluate.
+      ...(withTouches
+        ? {
+            touches:
+              (window as unknown as {__touches?: {x: number; y: number}[]})
+                .__touches ?? [],
+          }
+        : {}),
     };
-  });
+  }, options.touches === true);
 }
 
 /** The fitted-photo point shown under the page point `at`. */
@@ -219,7 +231,7 @@ test('the stage fills the phone screen and fits the photo', async ({page}) => {
 test('a pinch keeps the photo point under the fingers, and the page does not zoom', async ({
   page,
 }) => {
-  const {driver, state} = await openViewer(page);
+  const {driver, state, photo} = await openViewer(page);
   const before = await state();
   const centre = {x: 150, y: before.stage.y + before.stage.height / 2 + 30};
   // The photo point under the centroid when the pinch begins (past its 8 px
@@ -267,12 +279,14 @@ test('a pinch keeps the photo point under the fingers, and the page does not zoo
         return;
       }
       moves++;
-      const s = await state();
-      const received = await page.evaluate(
-        () =>
-          (window as unknown as {__touches?: {x: number; y: number}[]})
-            .__touches ?? [],
-      );
+      // The photo and the touches the page received, in one evaluate. The
+      // page takes a touch with its frame, after the dispatch returns, so two
+      // reads could straddle one on a busy page: the photo from one move and
+      // the fingers from the next, and an anchor taken from such a pair stays
+      // off by that move for the whole pinch.
+      const {touches: received = [], ...s} = await readState(photo, {
+        touches: true,
+      });
       const centroid =
         received.length === 2
           ? {
