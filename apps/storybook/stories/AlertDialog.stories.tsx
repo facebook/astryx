@@ -52,6 +52,35 @@ export const Delete: Story = {
 };
 
 /**
+ * The delete confirmation with `presentation="dialog"`: under a finger it
+ * keeps the dialog a mouse gets, with the theme's motion and Dialog's 400
+ * width; its actions are tracked as one group, as under every presentation.
+ */
+export const DialogPresentation: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button
+          label="Delete item"
+          variant="destructive"
+          onClick={() => setIsOpen(true)}
+        />
+        <AlertDialog
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          presentation="dialog"
+          title="Delete item?"
+          description="This action cannot be undone. The item and all its data will be permanently removed."
+          actionLabel="Delete"
+          onAction={() => setIsOpen(false)}
+        />
+      </>
+    );
+  },
+};
+
+/**
  * Async action with loading state.
  */
 export const Async: Story = {
