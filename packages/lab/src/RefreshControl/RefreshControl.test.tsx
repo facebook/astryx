@@ -29,7 +29,7 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
-import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
+import {refreshControl} from '@astryxdesign/core/internal/motion';
 import {RefreshControl} from './RefreshControl';
 
 const COARSE = /\(\s*pointer\s*:\s*coarse\s*\)/;

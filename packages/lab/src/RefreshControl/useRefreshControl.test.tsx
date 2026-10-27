@@ -20,10 +20,10 @@
 import {useState, type ReactNode} from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {useScrollLock} from '@astryxdesign/core/hooks';
-import {SETTLE_THRESHOLD} from '@astryxdesign/core/motion/animator';
-import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
-import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
-import {timing} from '@astryxdesign/core/motion/uikit/timing';
+import {SETTLE_THRESHOLD} from '@astryxdesign/core/internal/motion';
+import {solveSpring, toSpring} from '@astryxdesign/core/internal/motion';
+import {refreshControl} from '@astryxdesign/core/internal/motion';
+import {timing} from '@astryxdesign/core/internal/motion';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useRefreshControl,
