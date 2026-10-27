@@ -52,7 +52,12 @@ import {Text} from '../Text/Text';
 import {useTranslator} from '../i18n';
 import {warnOnce} from '../utils/devWarning';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {colorVars, radiusVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 
 /**
  * Sentinel prefix for the create row's synthetic item. Kept identical to the
@@ -82,11 +87,23 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-2'],
   },
   // PanelSearchInput sizes its field to the 32px option rows of a dropdown
-  // panel. The sheet's rows are 44px thumb targets, so the field grows to
-  // match them and the query reads as the first row of the list.
+  // panel and draws it borderless, because a dropdown panel is already a
+  // bordered box. The sheet is a full-width surface, not a box: here the
+  // field reads as a form input, so it takes the input box — 1px emphasized
+  // border, accent on focus, the surface background, element radius — and
+  // the 44px height of the sheet's thumb-target rows (FR18).
   searchField: {
     minHeight: 44,
     paddingBlock: spacingVars['--spacing-2'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    transitionProperty: 'border-color, box-shadow',
   },
   list: {
     display: 'flex',
