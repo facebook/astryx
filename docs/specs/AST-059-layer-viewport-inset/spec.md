@@ -258,7 +258,7 @@ the app reaches every layer instead of the components that happen to read it.
   declaration. The inset is app state, not a theme value (DEC-4).
 - **FR7 — Consumers inherit; a consumer's own size rule cannot defeat the
   cap.** Every component that renders through `useLayer` in anchor mode or
-  through `usePopover` receives FR1–FR6 and FR8 with no record change and no
+  through `usePopover` receives FR1–FR6 and FR8–FR10 with no record change and no
   option to pass. A component that sets its own minimum size — trigger
   matching, a `menuWidth` applied as a minimum — clamps that minimum with the
   runtime's cap expression, because a CSS minimum otherwise wins over a
@@ -268,8 +268,8 @@ the app reaches every layer instead of the components that happen to read it.
   this record — the gutter, the caps, the declared inset, the fallback order —
   is resolved by the browser's style and layout in the same frame as the
   render that produced it; apart from the one case below, the runtime
-  measures nothing after paint to apply them. The runtime makes two
-  observations. Whether the anchor is in view
+  measures nothing after paint to apply them. The runtime makes three
+  observations: the two below and the software keyboard's cap (FR9, FR10). Whether the anchor is in view
   (FR5) is read before the layer's first paint and thereafter only when the
   anchor's visibility changes, so a layer opened while its anchor is already
   out of view holds from its first frame. For a layer that keeps its anchor
@@ -294,8 +294,9 @@ the app reaches every layer instead of the components that happen to read it.
   change in the same frame.
   Latency between an app measuring its own bar and declaring the result is the
   app's; the runtime renders what is declared, when it is declared. Apart from
-  that one-frame correction, a paint-then-shift is a failure of this
-  contract, not a quality concern. The
+  that one-frame correction and FR10's change of the keyboard cap, which waits
+  for the keyboard to arrive or a press to finish, a paint-then-shift is a
+  failure of this contract, not a quality concern. The
   software keyboard's cap (FR9) is read from the layer's own box: before the first paint when a layer opens with a keyboard up, when the
   keyboard moves (FR10), once more when an entrance in progress at that read
   ends (a box measured mid-entrance is only close), and in the commit that
@@ -310,7 +311,8 @@ the app reaches every layer instead of the components that happen to read it.
   stays in view. A layer the keyboard does not reach, and a layer whose
   block-end edge the fallback order holds (placed above its trigger), stay as
   they are. The keyboard's height is the keyboard module's one height
-  (`packages/core/src/keyboard`); no layer measures the keyboard on its own.
+  (`architecture:react-component-runtime` INV11); no layer measures the
+  keyboard on its own.
   The cap folds into the block-size cap (FR3), so the layer box and every
   surface inside it capped by that definition shrink together. Each layer
   carries its own cap on its own element: a layer opened inside a capped
@@ -366,8 +368,15 @@ When this ships:
   then applied; the first painted frame is the settled frame. The one
   exception is FR8's one-frame correction for a layer that keeps its anchor
   clear when a same-size anchor moves on screen, in layout or by a scroll.
-- Owning code: add the module that holds the gutter and cap expressions, and
-  `LayerProvider` as the owner of the declared inset.
+- INV11 and INV12 add the software keyboard's cap (FR9) and FR10's timing:
+  the cap is read from the layer's own box when the keyboard moves and once
+  more when an entrance in progress at that read ends, and it changes once per
+  keyboard movement.
+- Owning code: add the module that holds the gutter and cap expressions,
+  `LayerProvider` as the owner of the declared inset, and the module that
+  owns the software keyboard's cap on an open anchor-mode layer.
+- Change coupling: a keyboard-cap change verifies the cap's timing, a layer
+  opened with the keyboard up, and the layers it leaves alone.
 - Change coupling: the positioning row already names viewport-edge fallbacks;
   add explicit-size, content-size, neither-side-fits, and off-screen-anchor
   states, and the app-declared inset.
@@ -569,8 +578,7 @@ runtime, for every anchor-mode layer at once, from the keyboard module's one
 height: the keyboard narrows the viewport the way the gutter does, and a rule
 that one component applies leaves every other layer under the keyboard. The
 capped layer keeps its block-start edge and ends 10 px above the keyboard, as
-a UIKit popover does on iOS 26.2 (533 pt tall, it keeps its top and shrinks to
-325 pt).
+a UIKit popover does.
 
 Rejected: the keyboard as a declared block-end inset (FR6), because the
 fallback order applies a block inset to both block edges (FR4).
