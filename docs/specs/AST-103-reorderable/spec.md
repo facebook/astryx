@@ -149,7 +149,8 @@ const {detach} = reorderable.attach(listElement, {
   assistive-technology paths, and the behavior is the same in every one:
   - a drag starts from a row's handle (`design:ordered-collection-reordering`
     DR1); under a finger, a hold on the handle picks the row up at
-    `spec:AST-094`'s values, and a flick still scrolls;
+    `spec:AST-094`'s values, and a flick still scrolls; with a mouse or a pen, a drag from the handle
+    starts it without a hold;
   - a drag commits once, at the drop (DR4), and `onReorder` is called once
     for it; a cancelled drag calls nothing;
   - under Reduce Motion the dragged row still follows the finger or pointer,
@@ -211,8 +212,13 @@ const {detach} = reorderable.attach(listElement, {
   `{key, element, handle}` per item in order, and it returns `{detach}`. An
   attached container gets FR3's drag, FR4's reorder mode on each handle, and
   their announcements, with no collection component; `positions` and
-  `isReorderable` apply as they do for a collection. `detach` removes every
-  listener `attach` added, and creating or importing the object does no DOM
+  `isReorderable` apply as they do for a collection. `attach` gives each `handle` FR4's
+  role and toggle state and names it with "Reorder" and the item element's
+  accessible name, and it renders FR4's hint as an element it owns. A move
+  commits when `items()` reports the new order after `onReorder`: `attach`
+  announces it and plays the drop then, and a move whose order has not changed
+  by the end of that task is refused and announced, as in FR4. `detach` removes every
+  listener, observer, and element `attach` added, and creating or importing the object does no DOM
   work, so it is safe on the server.
 - **FR5 — Reordering adds at most one element to a row.** The one added
   element is the handle, the interactive drag target, with its role. Its grip
