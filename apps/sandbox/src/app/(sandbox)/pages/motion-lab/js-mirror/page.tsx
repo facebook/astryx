@@ -430,7 +430,7 @@ export default function MotionJsMirrorPage() {
                   <ChartPane mode="after" />
                   <Text type="supporting" color="secondary">
                     <code>scaledMs(&apos;--duration-reveal&apos;)</code> and{' '}
-                    <code>
+                    <code style={{overflowWrap: 'anywhere'}}>
                       bezierAt(parseBezier(rawToken(&apos;--ease-move&apos;)),
                       k)
                     </code>{' '}
