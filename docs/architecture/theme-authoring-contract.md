@@ -48,6 +48,10 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
     spec:AST-017/DEC-1,
+    spec:AST-087/DEC-2,
+    spec:AST-087/DEC-7,
+    spec:AST-087/DEC-9,
+    spec:AST-087/DEC-10,
   ]
 ---
 
@@ -59,7 +63,16 @@ deciding_specs:
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV1", "INV3", "INV8", "INV9", "INV11", "INV12"]
+    "theming": [
+      "INV1",
+      "INV3",
+      "INV8",
+      "INV9",
+      "INV11",
+      "INV12",
+      "INV13",
+      "INV14"
+    ]
   }
 }
 ```
@@ -82,7 +95,8 @@ source configuration independently.
 - explicit semantic token overrides;
 - optional theme-family-local token declarations;
 - component target/style-key overrides;
-- icon and indicator registries;
+- icon and indicator registries, the `componentIcons` slot map, and the
+  `iconVariants` list;
 - syntax tokens;
 - `onDark` / `onLight` surface overrides; and
 - ordered environmental `adaptations` with a fixed named width map.
@@ -100,10 +114,28 @@ Normalization follows one precedence order:
 5. inherited and explicit media-surface overrides;
 6. inherited and explicit theme-local declarations, validated against the
    resolved token, component, and media surfaces; and
-7. inherited and explicit icon/indicator registry entries.
+7. inherited and explicit icon/indicator registry entries, `componentIcons`
+   entries, and the `iconVariants` list.
 
 Explicit values win within their surface. Component maps merge by component,
 style key, and CSS property rather than replacing the entire inherited target.
+An explicit icon, indicator, or `componentIcons` entry replaces the inherited
+entry for the same key whole. An explicit `iconVariants` list replaces the
+inherited list; an omitted list is inherited. An inherited function entry keeps
+the list of the theme that defined it, so it receives a requested variant only
+when both that list and the active theme's list contain it, and `undefined`
+otherwise.
+
+An `icons` entry is a React node or a pure synchronous function of
+`{size, variant}`, and a stateful `componentIcons` entry may be a pure
+synchronous function of the slot's state. The normalized theme keeps those
+functions for Astryx resolution. Its public reads stay plain:
+`DefinedTheme['icons']` is node-valued, with each function read at
+`{size: 'md'}`; `DefinedTheme['componentIcons']` is a static view of names,
+`null`, and static requests, with resolver slots omitted; and
+`DefinedTheme['iconVariants']` is the theme's list. Inside `defineTheme`, entry
+functions receive `variant`, and static slot requests and slot functions return
+it, typed as that theme's listed names.
 
 ## Boundaries and invariants
 
@@ -115,7 +147,8 @@ style key, and CSS property rather than replacing the entire inherited target.
 - **INV3 — Extension is semantically flattened.** `extends` accepts a real
   `DefinedTheme` and carries forward its resolved tokens, local-token owner and
   lineage metadata, component rules, media surfaces, adaptations and axes, icons,
-  and indicators. The normalized child is complete.
+  indicators, `componentIcons`, and `iconVariants`. The normalized child is
+  complete.
 - **INV4 — Invalid bases fail loudly.** An undefined, namespace, or plain object
   passed to `extends` cannot produce a plausible partial theme.
 - **INV5 — Explicit tokens override generated scales.** Generated values provide
@@ -150,6 +183,15 @@ style key, and CSS property rather than replacing the entire inherited target.
   derive, or normalize input into a durable typed theme value used by a current
   supported consumer; validating and returning the exact input unchanged is
   insufficient.
+- **INV13 — Theme functions stay behind resolution.** Function icon entries and
+  slot functions are pure and synchronous. Astryx icon resolution and build
+  tooling that enumerates a theme's icon requests (`architecture:theme-compilation`
+  INV15) call icon entries; only slot resolution calls slot functions. Public
+  theme reads return nodes, static slot values, and the variant list, never a
+  function.
+- **INV14 — The variant list is theme-level.** `iconVariants` lists the variant
+  names the whole theme supports. It is never per icon and never combined with
+  another theme's list.
 
 This record does not own:
 
@@ -231,7 +273,9 @@ Its 2026-09-12 amendment makes key validity and ownership prefix-independent whi
 retaining exact owner metadata, lineage, collisions, cycles, and legacy unenrolled
 behavior. AST-012 decisions 1–4 establish the fixed width map, named closed conditions,
 ordered rule cascade, and source/built adaptation metadata parity. AST-017 decision 1
-owns released compatibility classification and migration.
+owns released compatibility classification and migration. AST-087 decisions 2, 7, 9,
+and 10 establish function icon entries, node-valued public reads, the theme-level
+`iconVariants` list, and the static public view of `componentIcons`.
 
 ## Known conformance and verification gaps
 
@@ -253,5 +297,6 @@ owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped
 | INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
 | INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
 | INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
+| INV13, INV14             | `defineTheme.test.ts` type and normalization tests for function entries, slot functions, and the list   | A public read returns a function, a child merges variant lists, or an entry sees another theme's names                    |
 | Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
 | Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                                                     |

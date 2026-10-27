@@ -37,7 +37,7 @@ describe('ShadCN registry CI contract', () => {
     expect(job.needs).toEqual(['check-scope']);
     expect(job.if).toContain('always()');
     expect(job['runs-on']).toBe('4-core-ubuntu');
-    expect(job['timeout-minutes']).toBe(30);
+    expect(job['timeout-minutes']).toBe(15);
     expect(step('Require successful scope classification').run).toContain(
       'refusing to skip required work',
     );
@@ -118,6 +118,26 @@ describe('ShadCN registry CI contract', () => {
     expect(read('packages/cli/api/upgrade/upgrade.doc.mjs')).not.toMatch(
       /shadcn/i,
     );
+  });
+
+  it('verifies the preview and hidden production registries in separate legs', () => {
+    expect(job.strategy.matrix).toEqual({leg: ['preview', 'production']});
+    expect(job.strategy['fail-fast']).toBe(false);
+    const legOf = {
+      'Verify hidden production registry contract': 'production',
+      'Generate and validate the complete preview registry': 'preview',
+      'Install and build every preview registry item': 'preview',
+      'Generate the hidden production registry': 'production',
+      'Verify hidden production discovery surfaces': 'production',
+      'Install and build every hidden production registry item': 'production',
+    };
+    for (const [name, leg] of Object.entries(legOf)) {
+      expect(step(name).if, name).toBe(
+        `matrix.leg == '${leg}' && ${SPEC_FALSE}`,
+      );
+    }
+    // Every leg builds the packages it exercises.
+    expect(step('Build registry package exports').if).toBe(SPEC_FALSE);
   });
 
   it('builds every workspace package before exercising local package exports', () => {

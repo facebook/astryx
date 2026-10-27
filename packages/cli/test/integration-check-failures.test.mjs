@@ -192,6 +192,15 @@ beforeAll(async () => {
     'templates/acme-page.tsx',
     'export default function Fixture() { return null; }\n',
   );
+  // The button's example, so the fixture draws no note.
+  write(
+    'templates/acme-button-showcase.doc.mjs',
+    "export default {type: 'block', name: 'acme-button-showcase', displayName: 'Acme Button showcase', description: 'A button in use.', category: 'Acme - Actions', exampleFor: 'AcmeButton', isShowcase: true};\n",
+  );
+  write(
+    'templates/acme-button-showcase.tsx',
+    "import {AcmeButton} from '@acme/widgets';\nexport default function Showcase() { return <AcmeButton />; }\n",
+  );
   write(
     'docs/acme-guide.doc.mjs',
     "export default {type: 'generic', name: 'acme-guide', title: 'Acme guide', description: 'A guide.', sections: [{title: 'One', content: [{type: 'prose', text: 'One.'}]}]};\n",

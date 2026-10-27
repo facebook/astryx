@@ -22,6 +22,7 @@ import {progressLine} from './handoff.mjs';
 import {isJsonMode} from '../response/json.mjs';
 import {cachedRelease, ensureRelease, userCacheDir} from './cache.mjs';
 import {readJson, findReadCore, CORE_PACKAGE_NAME} from './project.mjs';
+import {hostedRun} from '../runtime/package-root.mjs';
 
 /** The running CLI package's folder. */
 const CLI_ROOT = path.resolve(
@@ -104,6 +105,19 @@ export function carriedCore(options = {}) {
   const besidePkg = readJson(path.join(beside, 'package.json'));
   if (besidePkg?.name === CORE_PACKAGE_NAME && besidePkg.version === version) {
     return {dir: beside, unavailable: null};
+  }
+  // A hosted run resolves from its package set alone and installs nothing
+  // (architecture:cli-surface INV30): the Core beside the CLI, or none.
+  if (hostedRun()) {
+    if (!fetch) return {dir: null, unavailable: null};
+    const reason =
+      "a hosted run installs nothing, and the host's package set holds no Core beside its CLI";
+    return {
+      dir: null,
+      unavailable: `Core ${version} could not be found: ${reason}`,
+      version,
+      reason,
+    };
   }
   const cached = cachedRelease(version, cacheDir);
   if (cached) return {dir: cached.coreDir, unavailable: null};

@@ -4,7 +4,7 @@
 
 export const docs = {
   name: 'browser-support',
-  title: 'Browser Support',
+  title: 'Browser support',
   category: 'guide',
   description:
     'What browsers Astryx targets, which modern platform features it depends on, and how to support older browsers for your own audience.',

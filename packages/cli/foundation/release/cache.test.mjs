@@ -802,8 +802,28 @@ describe('stopped and damaged installs heal', () => {
   });
 });
 
+/** @param {number} pid */
+const alive = pid => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** @param {() => boolean} done @param {number} ms */
+const waitFor = async (done, ms) => {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (done()) return true;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return done();
+};
+
 describe('runNpm time limit', () => {
-  it('ends a package manager that ignores SIGTERM, leaving no process behind', () => {
+  it('ends a package manager that ignores SIGTERM, leaving no process behind', async () => {
     const marker = tempDir('npm-pid');
     const pidFile = path.join(marker, 'pid');
     const result = runNpm([], {
@@ -819,30 +839,13 @@ describe('runNpm time limit', () => {
     });
     expect(/** @type {any} */ (result.error)?.code).toBe('ETIMEDOUT');
     const pid = Number(fs.readFileSync(pidFile, 'utf-8'));
-    expect(() => process.kill(pid, 0)).toThrow();
+    // The guard sends SIGKILL and exits at once; the killed process can still
+    // exist for a moment (the signal in flight, or awaiting reaping).
+    expect(await waitFor(() => !alive(pid), 5_000)).toBe(true);
   });
 });
 
 describe('no install outlives its run', () => {
-  /** @param {number} pid */
-  const alive = pid => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-  /** @param {() => boolean} done @param {number} ms */
-  const waitFor = async (done, ms) => {
-    const end = Date.now() + ms;
-    while (Date.now() < end) {
-      if (done()) return true;
-      await new Promise(r => setTimeout(r, 100));
-    }
-    return done();
-  };
-
   it('ends npm when the run that started it is killed outright, and removes its process-id record', async () => {
     const dir = tempDir('orphan');
     const pidFile = path.join(dir, 'npm-pid');

@@ -172,6 +172,35 @@ describe('response-types EnumDoc names every field', () => {
     expectNamed('theme.targets', fieldsOf(res.data));
   });
 
+  it('theme.palette.generate, including receipt provenance', async () => {
+    const cwd = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-response-types-palette-'),
+    );
+    fs.writeFileSync(
+      path.join(cwd, 'palette.config.json'),
+      JSON.stringify({
+        modeStrategy: 'light-only',
+        stops: [20, 50, 80],
+        families: [{id: 'blue', seed: '#0074e2'}],
+      }),
+    );
+    const res = await data(
+      ['theme', 'palette', 'generate', 'palette.config.json'],
+      cwd,
+    );
+    expect(res.type).toBe('theme.palette.generate');
+    expectNamed('theme.palette.generate', [
+      ...Object.keys(res.data),
+      ...Object.keys(res.data.generationReceipt),
+    ]);
+    expect(describedAs('theme.palette.generate')).toMatch(
+      /generatorVersion.*palette-generator-v1/,
+    );
+    expect(describedAs('theme.palette.generate')).toMatch(
+      /candidateFormatVersion.*palette-typescript-v1.*palette-json-v1/,
+    );
+  });
+
   it('gap-report.file, including each delivery', async () => {
     const res = await data([
       'gap-report',

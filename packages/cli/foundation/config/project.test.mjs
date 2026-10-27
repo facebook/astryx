@@ -291,6 +291,32 @@ describe('Project.load', () => {
   });
 });
 
+describe('Project.issues and a near-miss manifest key', () => {
+  it.each([
+    [
+      'alone, while the loaded integration fills providerId from the package name',
+      {providerID: '@acme/widgets'},
+      'Fix: rename "providerID" to "providerId" in astryx.integration.mjs.',
+    ],
+    [
+      'beside the key it suggests',
+      {providerID: '@acme/widgets', providerId: '@acme/widgets'},
+      'Fix: remove "providerID" from astryx.integration.mjs; it already sets "providerId".',
+    ],
+  ])(
+    'reads the keys the manifest declares: providerID %s',
+    async (_label, unknownKeys, fix) => {
+      scaffold({unknownKeys});
+      const project = await Project.load(tmpDir);
+      const keys = (await project.issues()).filter(
+        issue => issue.code === 'unknown_manifest_key',
+      );
+      expect(keys).toHaveLength(1);
+      expect(keys[0].message).toContain(fix);
+    },
+  );
+});
+
 describe('Project.load and the cliCommand an integration declares', () => {
   it('records it, so the picker prints commands with it', async () => {
     scaffold({cliCommand: 'acme astryx'});
@@ -826,6 +852,36 @@ describe('Project loads each integration in isolation', () => {
     ]);
     expect(await project.issues()).not.toContainEqual(
       expect.objectContaining({package: '@acme/local', code: 'integration_error'}),
+    );
+  });
+});
+
+describe('Project finds configured integrations a workspace hoists', () => {
+  // npm, Yarn and Bun workspaces install a member's dependencies at the
+  // workspace root, so the member's own node_modules does not hold them.
+  it('loads an integration named in a member config from the workspace root', async () => {
+    scaffold();
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'root', private: true, workspaces: ['apps/*']}),
+    );
+    fs.rmSync(path.join(tmpDir, 'astryx.config.mjs'));
+    const member = path.join(tmpDir, 'apps', 'web');
+    fs.mkdirSync(member, {recursive: true});
+    fs.writeFileSync(path.join(member, 'package.json'), JSON.stringify({name: 'web'}));
+    fs.writeFileSync(
+      path.join(member, 'astryx.config.mjs'),
+      `export default ${JSON.stringify({integrations: ['@acme/widgets']})};\n`,
+    );
+
+    const project = await Project.load(member);
+
+    const widgets = (await project.components()).filter(
+      component => component.package === '@acme/widgets',
+    );
+    expect(widgets.map(component => component.name)).toEqual(['Widget']);
+    expect(await project.issues()).not.toContainEqual(
+      expect.objectContaining({package: '@acme/widgets', code: 'integration_error'}),
     );
   });
 });

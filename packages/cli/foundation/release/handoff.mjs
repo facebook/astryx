@@ -19,9 +19,26 @@
  * (notices.mjs); a global copy also starts the daily update check, which
  * installs nothing (global-state.mjs).
  *
- * @input  the running copy, argv, the working folder
- * @output returns when this copy answers; otherwise never returns
- * @position foundation/release — called once by clients/cli/bin/astryx.mjs.
+ * A programmatic host that found the project's own CLI and did not run it
+ * passes the reason (spec AST-081 FR1, FR2). That run is never handed to the
+ * project's CLI: this copy answers in its place when it is that CLI's release,
+ * saying so in a line of its own; a package set of the host's whose CLI is
+ * that release answers through its own host entry; and otherwise this copy
+ * answers as for a release that cannot be obtained, with the warning naming
+ * the reason.
+ *
+ * A hosted run installs nothing (architecture:cli-surface INV30): a release
+ * other than this copy comes only from the first of the host's package sets
+ * that qualifies. When that CLI ships a host entry, the entry runs in this
+ * process with the same inputs, discover sources included, and the host's
+ * call settles with its result; otherwise its bin takes the run. With no such
+ * set, this copy answers, announced.
+ *
+ * @input  the running copy, argv, the working folder, and a host's
+ *   declined-project-CLI reason
+ * @output returns when this copy answers, or with another release's result
+ *   when its host entry answered; never returns after a hand-off to a bin
+ * @position foundation/release — called once per run by clients/cli/run.mjs.
  */
 
 import {spawn} from 'node:child_process';
@@ -32,8 +49,10 @@ import {
   isGlobalCopy,
   namesWhoAnswered,
   packageRootOf,
+  projectRootOf,
   runningCopy,
 } from './choose.mjs';
+import {readReleaseFacts} from './project.mjs';
 import {ensureRelease, userCacheDir} from './cache.mjs';
 import {
   maybeFetchCore,
@@ -43,6 +62,8 @@ import {
 import {recordRunChoice} from './run-context.mjs';
 import {noticeLines} from './notices.mjs';
 import {cliDoor, runWithCliDoor} from '../env/cli-command.mjs';
+import {hostedRun} from '../runtime/package-root.mjs';
+import {qualifyingRoot} from '../runtime/package-set.mjs';
 
 /** Where each release's notes are published. */
 
@@ -61,6 +82,17 @@ export function whoAnsweredLine(choice, computer = false) {
   return choice.copy === 'matched'
     ? `astryx: answered by CLI ${choice.version} with Core ${core}, the release that matches this project's Core`
     : `astryx: answered by CLI ${choice.version} with Core ${core}, outside a project`;
+}
+
+/**
+ * The line for a run this copy answers in place of the project's own CLI,
+ * which a host declined, when this copy is that CLI's release (FR2).
+ * @param {string} version
+ * @param {string} reason the reason, as {@link declinedReasonText} words it
+ * @returns {string}
+ */
+export function inPlaceOfProjectLine(version, reason) {
+  return `astryx: answered by CLI ${version}, the release of this project's CLI, in its place (${reason})`;
 }
 
 /**
@@ -132,15 +164,31 @@ function failUnavailable(message, json) {
 }
 
 /**
- * Choose who answers and hand off when it is not this copy.
- * @param {{cliRoot: string, argv: string[]}} input argv after `node astryx`
- * @returns {Promise<void>} resolves when this copy answers
+ * The fallback warning's reason for a project CLI a host declined.
+ * @param {string} reason the host's own words
+ * @returns {string}
  */
-export async function startRun({cliRoot, argv}) {
+export function declinedReasonText(reason) {
+  return `project CLI skipped: ${reason}`;
+}
+
+/**
+ * Choose who answers and hand off when it is not this copy.
+ * @param {{cliRoot: string, argv: string[], declinedProjectCli?: string}} input
+ *   argv after `node astryx`; the reason a programmatic host declined the
+ *   project's own CLI, when it did
+ * @returns {Promise<import('../../host/index.js').HostedCliResult | undefined>}
+ *   resolves with nothing when this copy answers, and with that release's
+ *   result when another package set's host entry answered a hosted run
+ */
+export async function startRun({cliRoot, argv, declinedProjectCli}) {
   const json = argv.includes('--json');
   const self = runningCopy(cliRoot);
   const cacheDir = userCacheDir();
-  const global = isGlobalCopy(cliRoot, cacheDir);
+  // A host carries its own CLI and keeps it current itself: a hosted copy
+  // runs none of the global copy's background work, and installs nothing.
+  const hosted = hostedRun();
+  const global = !hosted && isGlobalCopy(cliRoot, cacheDir);
   if (global) {
     try {
       maybeStartCheck();
@@ -189,7 +237,46 @@ export async function startRun({cliRoot, argv}) {
     };
   }
 
-  if (choice.unavailable && choice.copy === 'project') {
+  // A host declined the project's own CLI (FR2): the run is never handed to
+  // it. The release equal to that CLI's version answers in its place when
+  // this copy is that release, or when a package set of the host's holds it
+  // with a host entry; otherwise this copy answers, announced as for a release
+  // that cannot be obtained, naming the reason.
+  let declined = null;
+  /** Set when this copy answers in place of the declined CLI, its release. */
+  let inPlace = null;
+  if (
+    declinedProjectCli &&
+    choice.copy === 'project' &&
+    choice.answer !== 'self'
+  ) {
+    if (choice.version === self.version) {
+      // Still the project CLI's release (`copy` stays `project`), never the
+      // release matched to the project's Core, which can be another.
+      choice = {...choice, answer: 'self', bin: null, unavailable: null};
+      inPlace = declinedReasonText(declinedProjectCli);
+    } else {
+      const served = hosted
+        ? qualifyingRoot({
+            release: choice.version,
+            projectDir: projectDirOf(process.cwd()),
+            roots: hosted.roots,
+            needsHostEntry: true,
+          })
+        : null;
+      if (served && 'root' in served && served.hostEntry) {
+        const answered = await answerInPackageSet(
+          served.hostEntry,
+          served.root,
+          {argv, declinedProjectCli},
+        );
+        if (answered) return answered;
+      }
+      declined = declinedReasonText(declinedProjectCli);
+    }
+  }
+
+  if (!declined && choice.unavailable && choice.copy === 'project') {
     failUnavailable(
       `This project's CLI ${choice.version} could not be started: ${choice.unavailable}. Reinstall the project's dependencies.`,
       json,
@@ -245,6 +332,11 @@ export async function startRun({cliRoot, argv}) {
     });
   };
 
+  if (declined) {
+    await fallBack(declined);
+    return;
+  }
+
   if (choice.unavailable) {
     await fallBack(choice.unavailable);
     return;
@@ -256,6 +348,8 @@ export async function startRun({cliRoot, argv}) {
     // line; a hint after the command, once a day, says how to match it.
     if (!json && (choice.copy === 'matched' || choice.copy === 'carried'))
       console.error(whoAnsweredLine(choice, computer));
+    else if (!json && inPlace)
+      console.error(inPlaceOfProjectLine(choice.version, inPlace));
     process.once('exit', code => {
       if (code === 0) notify();
     });
@@ -263,6 +357,32 @@ export async function startRun({cliRoot, argv}) {
   }
 
   let bin = choice.bin;
+  if (!bin && hosted) {
+    const served = qualifyingRoot({
+      release: choice.version,
+      projectDir: projectDirOf(process.cwd()),
+      roots: hosted.roots,
+    });
+    if (!('root' in served)) {
+      await fallBack(served.reason);
+      return;
+    }
+    if (served.hostEntry) {
+      const answered = await answerInPackageSet(served.hostEntry, served.root, {
+        argv,
+      });
+      if (answered) return answered;
+    }
+    // A hosted run installs nothing (INV30): a set whose CLI starts through
+    // neither its host entry nor a bin leaves this copy to answer.
+    if (!served.bin) {
+      await fallBack(
+        `the CLI ${choice.version} in the package set at ${served.root} could not be started`,
+      );
+      return;
+    }
+    bin = served.bin;
+  }
   if (!bin) {
     const release = ensureRelease(choice.version, {
       cacheDir,
@@ -294,6 +414,53 @@ export async function startRun({cliRoot, argv}) {
  * alone (an agent's `kill('SIGINT')`) stops the run once it is passed on.
  */
 export const INTERRUPT_GRACE_MS = 5000;
+
+/**
+ * The project folder a run in `cwd` belongs to, or null outside a project.
+ * @param {string} cwd
+ * @returns {string | null}
+ */
+function projectDirOf(cwd) {
+  try {
+    return projectRootOf(readReleaseFacts(cwd));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Hand a hosted run over to the CLI of one of the host's package sets,
+ * through that CLI's own host entry, in this process, with the inputs this run
+ * got: the arguments, the folder, the command name, the approved integrations,
+ * the discover sources, and the reason the host declined the project's CLI.
+ * Its roots are that package set alone. That CLI prints its own who-answered
+ * line and notices, and the host's call settles with its result.
+ * @param {string} hostEntry the package set's `host/index.mjs`
+ * @param {string} root the package set
+ * @param {{argv: string[], declinedProjectCli?: string}} run
+ * @returns {Promise<import('../../host/index.js').HostedCliResult | null>} null
+ *   when the entry cannot be loaded, before anything ran
+ */
+async function answerInPackageSet(hostEntry, root, {argv, declinedProjectCli}) {
+  const hosted = hostedRun();
+  if (!hosted?.loadHostEntry) return null;
+  let answer;
+  try {
+    answer = await hosted.loadHostEntry(hostEntry);
+  } catch {
+    return null;
+  }
+  const door = cliDoor();
+  return answer({
+    argv,
+    cwd: process.cwd(),
+    roots: [root],
+    integrations: [...hosted.integrations],
+    discoverSources: [...hosted.discoverSources],
+    ...(door ? {cliCommand: door} : {}),
+    ...(declinedProjectCli ? {declinedProjectCli} : {}),
+  });
+}
 
 /**
  * Run `bin` as this run and end with its exit status.

@@ -135,6 +135,21 @@ describe('component list — components whose docs live in a family folder', () 
     });
   }, SLOW);
 
+  it('answers a Core-scoped lookup of a member with that member, as the unscoped lookup does', async () => {
+    for (const name of ['HStack', 'VStack']) {
+      const unscoped = await component(name, {cwd});
+      const scoped = await component(name, {
+        cwd,
+        package: '@astryxdesign/core',
+      });
+      expect(scoped.data.name).toBe(name);
+      expect(scoped.data.parentDoc).toBe('Stack');
+      expect(scoped.data.import).toBe(`@astryxdesign/core/${name}`);
+      expect(scoped.data.props).toEqual(unscoped.data.props);
+      expect(scoped.data.props.length).toBeGreaterThan(0);
+    }
+  }, SLOW);
+
   it('prints each one\'s own import path in the list, the detail, and search', async () => {
     // The path `component <Name>` prints is the one docs and examples teach:
     // the component's own entry point, never its family's (/Stack, /Text) or
@@ -480,6 +495,37 @@ describe('component dispatcher — detail levels on single component (text only)
       expect(Object.keys(compactData.data).sort()).toEqual(
         Object.keys(fullData.data).sort(),
       );
+    },
+    SLOW,
+  );
+});
+
+describe('component not-found suggestions', () => {
+  const suggested = async (/** @type {string} */ name) => {
+    const error = await component(name, {cwd}).catch(e => e);
+    expect(error).toBeInstanceOf(AstryxError);
+    expect(error.code).toBe('ERR_UNKNOWN_COMPONENT');
+    return error.suggestions.map((/** @type {{name: string}} */ s) => s.name);
+  };
+
+  it(
+    'leaves out a weaker match after a strong first suggestion',
+    async () => {
+      // FieldLabel is another name for it; past the second suggestion, the
+      // matches on one word of the name ("input", "label") are weaker and add
+      // only noise.
+      const names = await suggested('InputLabel');
+      expect(names[0]).toBe('FieldLabel');
+      expect(names).toHaveLength(2);
+    },
+    SLOW,
+  );
+
+  it(
+    'keeps a close spelling of the whole name after a stronger first match',
+    async () => {
+      expect(await suggested('Blockqoute')).toContain('Blockquote');
+      expect(await suggested('TextrAea')).toContain('TextArea');
     },
     SLOW,
   );

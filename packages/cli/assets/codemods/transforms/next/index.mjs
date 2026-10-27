@@ -7,14 +7,14 @@
  * this file into the resolved version folder.
  */
 
-import migrateListEdgeCompensationToEdge, {
-  meta as migrateListEdgeCompensationToEdgeMeta,
-} from './migrate-list-edge-compensation-to-edge.mjs';
+import migrateCodeBlockTokenizerToLanguage, {
+  meta as migrateCodeBlockTokenizerToLanguageMeta,
+} from './migrate-codeblock-tokenizer-to-language.mjs';
 
 export default [
   {
-    name: 'migrate-list-edge-compensation-to-edge',
-    transform: migrateListEdgeCompensationToEdge,
-    meta: migrateListEdgeCompensationToEdgeMeta,
+    name: 'migrate-codeblock-tokenizer-to-language',
+    transform: migrateCodeBlockTokenizerToLanguage,
+    meta: migrateCodeBlockTokenizerToLanguageMeta,
   },
 ];

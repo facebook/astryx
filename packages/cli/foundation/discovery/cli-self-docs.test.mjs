@@ -146,8 +146,8 @@ describe('auditCliSelfDocs', () => {
     });
     const result = await audit(root, ['y/y.doc.mjs', 'z/z.doc.mjs']);
     expect(result.misfiled.map(entry => entry.message)).toEqual([
-      `authoring/x/x.doc.mjs has namespace "authoring", but \`${formatCliCommand('docs authoring')}\` does not list it`,
-      `authoring/y/y.doc.mjs is read in \`${formatCliCommand('docs authoring')}\`, but its namespace is "cli/api"`,
+      `authoring/x/x.doc.mjs has namespace "authoring", but \`${formatCliCommand('docs authoring/field-reference')}\` does not list it`,
+      `authoring/y/y.doc.mjs is read in \`${formatCliCommand('docs authoring/field-reference')}\`, but its namespace is "cli/api"`,
     ]);
     expect(result.authoring).toBe(1);
     expect(result.tree).toBe(0);

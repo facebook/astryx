@@ -47,6 +47,7 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useTooltip} from '../Tooltip';
@@ -179,7 +180,12 @@ const styles = stylex.create({
   dropzoneDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   compact: {
     boxSizing: 'border-box',
@@ -221,7 +227,12 @@ const styles = stylex.create({
   compactDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   hiddenInput: {
     position: 'absolute',
@@ -284,13 +295,13 @@ const styles = stylex.create({
 
 const statusBorderStyles = stylex.create({
   warning: {
-    borderColor: colorVars['--color-warning'],
+    borderColor: colorVars['--color-border-warning'],
   },
   error: {
-    borderColor: colorVars['--color-error'],
+    borderColor: colorVars['--color-border-error'],
   },
   success: {
-    borderColor: colorVars['--color-success'],
+    borderColor: colorVars['--color-border-success'],
   },
 });
 
@@ -480,6 +491,20 @@ export function FileInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // A pick is one user action, already announced as "file selected"; a busy
+  // period it starts (changeAction, or a caller setting isLoading from
+  // onChange) adds no second message (spec:AST-086 FR6). The mark lasts until
+  // the field is idle again. Other busy starts announce; the Spinner stays
+  // decorative (FR8).
+  const [isPickAnnounced, setIsPickAnnounced] = useState(false);
+  if (isPickAnnounced && !isBusy) {
+    setIsPickAnnounced(false);
+  }
+  useBusyAnnouncement(
+    isBusy && !isPickAnnounced,
+    t('@astryx.spinner.loading'),
+    containerRef,
+  );
 
   // Announce successful file selection to screen readers via a persistent
   // live region (forms-17). Validation errors are announced (assertively) by
@@ -570,6 +595,7 @@ export function FileInput({
       // status mounts, so only announce the attach here (do not
       // double-announce errors).
       if (errors.length === 0) {
+        setIsPickAnnounced(true);
         announce(
           valid.length === 1
             ? t('@astryx.fileInput.fileSelected', {fileName: valid[0].name})
@@ -731,7 +757,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isBusy) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" aria-hidden="true" />;
     }
     if (hasFiles) {
       return (
@@ -762,7 +788,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" aria-hidden="true" />
         </>
       );
     }
@@ -857,14 +883,9 @@ export function FileInput({
         <VisuallyHidden>
           <button
             type="button"
-            // With a disabledMessage the trigger keeps focusability via
-            // aria-disabled so the reason is focus-discoverable; opening the
-            // picker is still blocked by the isDisabled guards in the handlers.
-            // Otherwise the native disabled attribute removes it from the tab
-            // order.
-            disabled={isDisabled && !showsDisabledMessage}
-            tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            // A disabled trigger keeps its Tab stop (spec:AST-085 FR1).
+            tabIndex={0}
+            aria-disabled={isDisabled ? 'true' : undefined}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             // aria-label suppresses child content from the accessible name, so
@@ -888,7 +909,12 @@ export function FileInput({
           type="file"
           accept={accept}
           multiple={isMultiple}
-          disabled={isDisabled}
+          // Detached from its form while disabled, so selected files are not
+          // submitted and `required` does not block submission (FR3).
+          form={isDisabled ? '' : undefined}
+          // A label or description click activates this input directly; cancel
+          // it so a disabled input never opens the picker (FR2).
+          onClick={isDisabled ? event => event.preventDefault() : rest.onClick}
           onChange={handleInputChange}
           // The visually-hidden native input is never focused (tabIndex={-1});
           // its describedby/required/invalid live on the trigger button.

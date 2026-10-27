@@ -10,8 +10,8 @@
  * @typedef {object} InitRunData
  * @property {'default' | 'features'} mode `default` (no flags) or `features` (--features/--all).
  * @property {string[]} features Features that were run, in order.
- * @property {string[]} docsWritten Agent-doc files written (empty if agents weren't run or install failed).
- * @property {{kind: 'path-safety' | 'install-failed', message?: string} | null} docsError Soft agent-docs failure, if any. `path-safety` also implies a non-zero exit.
+ * @property {string[]} docsWritten Agent-doc files written, relative to the directory init ran in (empty if agents weren't run or install failed). Without --agent-docs-path they sit at the project root: the nearest folder at or above it whose package.json declares an Astryx package, else the nearest with any package.json, within its repository and never the home folder; with none, the directory init ran in.
+ * @property {{kind: 'path-safety' | 'install-failed', message?: string} | null} docsError Soft agent-docs failure, if any. `path-safety` also implies a non-zero exit. `install-failed` carries a message when init wrote no agent docs (the home folder, or a settings folder in it outside a project) or skipped a file that resolves outside the project; docsWritten then lists what was written.
  * @property {boolean} theme Whether the theme feature ran.
  * @property {'created' | 'skipped' | 'failed' | null} themeTemplate Outcome of writing the annotated theme template (`skipped` = a file was already there).
  * @property {string | null} themeTemplatePath Relative output path when `themeTemplate === 'created'`.
@@ -70,7 +70,7 @@
  * @typedef {object} InitOptions
  * @property {string} [features] Comma-separated features to install (agents, theme, template).
  * @property {boolean} [all] Install all features.
- * @property {boolean} [removeAgents] Remove the managed agent-docs block instead of installing; with `user`, remove the computer-level agent text.
+ * @property {boolean} [removeAgents] Remove the managed agent-docs block, at the project root and in the folder init runs in, instead of installing; with `user`, remove the computer-level agent text.
  * @property {boolean} [user] Write the computer-level agent text (`~/.agents/skills/astryx/SKILL.md`, linked into `~/.claude/skills` and the skill folders of other installed tools, with a copy for Continue) instead of setting up the folder.
  * @property {string} [agent] Agent preset: claude, cursor, codex, hermes, muse, all. Refused with `user`.
  * @property {string | string[]} [agentDocsPath] Explicit agent-docs file path(s).

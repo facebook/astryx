@@ -668,18 +668,27 @@ describe('SideNavHeading headerEndContent', () => {
     expect(screen.getByTestId('end-badge')).toBeInTheDocument();
   });
 
-  it('renders headerEndContent inside the link in isWholeHeadingLink path', () => {
+  it('renders headerEndContent beside the link, not inside it, in isWholeHeadingLink path', () => {
+    const onPress = vi.fn();
     render(
       <SideNavHeading
         heading="My App"
         headingHref="/home"
-        headerEndContent={<span data-testid="end-badge">3</span>}
+        headerEndContent={
+          <button type="button" onClick={onPress}>
+            Create
+          </button>
+        }
       />,
     );
-    const badge = screen.getByTestId('end-badge');
-    expect(badge).toBeInTheDocument();
-    // Badge renders inside the link
-    expect(badge.closest('a')).not.toBeNull();
+    const link = screen.getByRole('link', {name: 'My App'});
+    expect(link).toHaveAttribute('href', '/home');
+    // A control inside a link is invalid and its press would follow the link.
+    const button = screen.getByRole('button', {name: 'Create'});
+    expect(button.closest('a')).toBeNull();
+    expect(link.parentElement).toBe(button.parentElement?.parentElement);
+    fireEvent.click(button);
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
   it('renders headerEndContent in isWholeHeadingTrigger path', () => {
@@ -2390,7 +2399,37 @@ describe('SideNav keyboard operation', () => {
 // Focus management (audit §6 V7)
 // =============================================================================
 
+/**
+ * Holds requestAnimationFrame callbacks until `flush`, so a test decides when
+ * a popover's auto-focus frame runs instead of racing a timer.
+ */
+function holdAnimationFrames() {
+  const frames = new Map<number, FrameRequestCallback>();
+  let nextFrame = 0;
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    nextFrame += 1;
+    frames.set(nextFrame, callback);
+    return nextFrame;
+  });
+  vi.stubGlobal('cancelAnimationFrame', (frame: number) => {
+    frames.delete(frame);
+  });
+  return {
+    flush() {
+      act(() => {
+        const due = [...frames.values()];
+        frames.clear();
+        due.forEach(callback => callback(performance.now()));
+      });
+    },
+  };
+}
+
 describe('SideNav focus management', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('keeps focus on the toggle when a group collapses', async () => {
     const user = userEvent.setup();
     render(
@@ -2428,6 +2467,7 @@ describe('SideNav focus management', () => {
   });
 
   it('returns focus to the trigger when the collapsed submenu closes', async () => {
+    const frames = holdAnimationFrames();
     const user = userEvent.setup();
     renderCollapsed(
       <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
@@ -2438,10 +2478,33 @@ describe('SideNav focus management', () => {
     const trigger = screen.getByTestId('parent');
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The submenu focuses its first link in the frame after it opens.
+    frames.flush();
+    expect(screen.getByText('General').closest('a')).toHaveFocus();
 
+    // Closing restores focus as part of the close itself.
     await user.keyboard('{Escape}');
-    // The layer restores focus asynchronously after it closes.
-    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(trigger).toHaveFocus();
+  });
+
+  it('keeps focus on the trigger when the submenu closes before its first frame', async () => {
+    const frames = holdAnimationFrames();
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // The open's auto-focus frame, late on a busy runner, must not land
+    // focus in the closed submenu.
+    frames.flush();
+    expect(trigger).toHaveFocus();
   });
 });
 
@@ -3689,5 +3752,242 @@ describe('SideNav collapse conflict warning', () => {
       </SideNav>,
     );
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// SideNavItem — collapsed-from-mount rail tooltip
+// =============================================================================
+
+// Two interchangeable link components: switching between them remounts the
+// rendered link element.
+function RailLinkA({ref, ...props}: React.ComponentPropsWithRef<'a'>) {
+  return <a ref={ref} {...props} />;
+}
+
+function RailLinkB({ref, ...props}: React.ComponentPropsWithRef<'a'>) {
+  return <a ref={ref} {...props} />;
+}
+
+describe('SideNavItem collapsed-from-mount rail tooltip', () => {
+  // #7435 / #7692: a childless item that mounts inside an already-collapsed
+  // SideNav (the persisted-collapse case) must attach its tooltip on the first
+  // render, and the tooltip must describe the control that takes focus — the
+  // link or button — not the row around it.
+  function railTooltipFor(trigger: HTMLElement) {
+    const id = trigger.getAttribute('aria-describedby');
+    return id == null ? null : document.getElementById(id);
+  }
+
+  function renderRail(item: ReactNode) {
+    return render(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item}
+      </SideNav>,
+    );
+  }
+
+  let showPopover: ReturnType<typeof vi.spyOn> | undefined;
+
+  afterEach(() => {
+    showPopover?.mockRestore();
+    showPopover = undefined;
+    vi.useRealTimers();
+  });
+
+  it('describes the rail link by its tooltip when the nav is collapsed at mount', () => {
+    renderRail(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+
+    const layer = railTooltipFor(link);
+    expect(layer).not.toBeNull();
+    expect(layer).toHaveAttribute('role', 'tooltip');
+    expect(layer).toHaveTextContent('Dashboard');
+  });
+
+  it('shows a disabled item its label when the pointer rests on its row', async () => {
+    // The disabled control is `pointer-events: none`, so in a browser the
+    // pointer lands on the row; the tooltip has to listen there.
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    renderRail(
+      <SideNavItem
+        label="Analytics (Coming Soon)"
+        icon={StubIcon}
+        href="/analytics"
+        isDisabled
+      />,
+    );
+    // Let the row's tooltip attach after the commit.
+    await act(async () => {});
+    const button = screen.getByRole('button', {
+      name: 'Analytics (Coming Soon)',
+    });
+    const row = button.parentElement as HTMLElement;
+    const layer = screen.getByRole('tooltip', {hidden: true});
+    expect(layer).toHaveTextContent('Analytics (Coming Soon)');
+
+    fireEvent.mouseEnter(row);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(layer);
+  });
+
+  it('describes the link once a disabled item is enabled in the rail', () => {
+    const item = (isDisabled: boolean) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = renderRail(item(true));
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item(false)}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(railTooltipFor(link)).toHaveTextContent('Dashboard');
+  });
+
+  it('describes the new control when a rail item gains an href', () => {
+    const item = (href?: string) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href={href}
+        onClick={() => {}}
+      />
+    );
+    const {rerender} = renderRail(item());
+    const button = screen.getByRole('button', {name: 'Dashboard'});
+    expect(railTooltipFor(button)).toHaveTextContent('Dashboard');
+
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item('/dashboard')}
+      </SideNav>,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(railTooltipFor(link)).toHaveTextContent('Dashboard');
+  });
+
+  it('binds the replacement when a rail link element is replaced', () => {
+    // Switching the link component remounts the element; the tooltip must
+    // follow the new element.
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    const item = (as: typeof RailLinkA) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        as={as}
+      />
+    );
+    const {rerender} = renderRail(item(RailLinkA));
+    const first = screen.getByRole('link', {name: 'Dashboard'});
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item(RailLinkB)}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(link).not.toBe(first);
+    const layer = railTooltipFor(link);
+    expect(layer).toHaveTextContent('Dashboard');
+    fireEvent.mouseEnter(link);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(layer);
+  });
+
+  it("keeps the tooltip beside a caller's changing aria-describedby", () => {
+    const item = (hint: string) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        aria-describedby={hint}
+      />
+    );
+    const {rerender} = renderRail(item('hint-a'));
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item('hint-b')}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    const ids = (link.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(ids).toContain('hint-b');
+    expect(ids).toContain(tooltip.id);
+    expect(ids).not.toContain('hint-a');
+  });
+
+  it('shows the label when keyboard focus reaches a rail link', () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    renderRail(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const layer = railTooltipFor(link);
+    // jsdom does not model `:focus-visible`; stand in for a keyboard focus.
+    const realMatches = link.matches.bind(link);
+    vi.spyOn(link, 'matches').mockImplementation((selector: string) =>
+      selector === ':focus-visible' ? true : realMatches(selector),
+    );
+
+    fireEvent.focusIn(link);
+    expect(spy.mock.contexts).toContain(layer);
+  });
+
+  it('keeps a tooltip that was open when the rail expanded shut on the next collapse', () => {
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    const rail = (isCollapsed: boolean) => (
+      <SideNav aria-label="Main" collapsible={{isCollapsed, hasButton: false}}>
+        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />
+      </SideNav>
+    );
+    const {rerender} = render(rail(true));
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    fireEvent.mouseEnter(link);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(railTooltipFor(link));
+
+    // Expanding (from a shortcut, say) removes the trigger without a leave.
+    rerender(rail(false));
+    spy.mockClear();
+    rerender(rail(true));
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(spy).not.toHaveBeenCalled();
   });
 });

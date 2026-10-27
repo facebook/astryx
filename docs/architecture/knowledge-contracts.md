@@ -9,17 +9,11 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-08-30
 owners: [cixzhang]
-applies_to:
-  [
-    AGENTS.md,
-    .github/PULL_REQUEST_TEMPLATE/,
-    docs/,
-    packages/core/src/,
-    packages/lab/src/,
-  ]
+applies_to: [AGENTS.md, .github/PULL_REQUEST_TEMPLATE/, docs/, packages/]
 verified_by:
   [
     scripts/check-knowledge.test.mjs,
+    scripts/specs-for-file.test.mjs,
     .github/scripts/change-scope.test.mjs,
     .github/scripts/component-design-decisions.test.mjs,
     .github/scripts/lib/classify-visual.test.mjs,
@@ -47,8 +41,13 @@ deciding_specs: []
       "INV18",
       "INV20",
       "INV21",
+      "INV25",
+      "INV26",
       "DEC-9",
-      "DEC-10"
+      "INV27",
+      "DEC-10",
+      "DEC-12",
+      "DEC-13"
     ]
   }
 }
@@ -98,6 +97,19 @@ changed code or theme source
   → architecture or system decision only when referenced
   → mapped tests and audit evidence
 ```
+
+A lookup can also start from any repository path. `pnpm specs:for <path>`
+lists every current record linked to that path, the system specs that decided
+those records, and the global claims the path's component triggers route. It
+follows only links that records and files declare:
+
+- placement: the record itself, the component, module, or theme record whose
+  canonical location contains the path;
+- path fields: `applies_to`, `verified_by`, and `path-applicability:v1` patterns;
+- names: family `members`, design `components`, and `affects_consumer_docs` ids
+  naming the path's component or consumer-doc topic;
+- citations: a system-spec number such as `AST-030` written in the file;
+- inheritance: the references a linked record relies on.
 
 A current record may cite a previous human decision. When the new case is within
 that decision's stated scope, the reviewer applies it without asking again.
@@ -282,6 +294,59 @@ Every record is either:
   eligibility report. [AST-030](../specs/AST-030/spec.md) FR12 owns shared
   visual-regression execution and baseline adoption. This placement rule does
   not add a capture owner or require permanent archiving of every CI run.
+
+### Path discovery
+
+- **INV25 — Every current record is reachable from a path.** Each current record
+  is linked from at least one repository path that is not itself a knowledge
+  record, through placement, a path field, a name, a citation, inheritance, or
+  a deciding link. A path-first lookup reports a path with no linked record as
+  unrouted. It never infers a link from a file name, extension, or directory
+  name.
+- **INV26 — Path applicability locates a record; claims still decide.** A record
+  whose rules apply to paths that no other link reaches declares them in one
+  `path-applicability:v1` block. A matching path lists the record. The match
+  does not widen any claim beyond its stated scope (INV14), does not make the
+  record outrank a narrower owner (INV9), and does not require behavior to live
+  in the named files (INV18). Every pattern matches at least one tracked file.
+
+### Record coverage
+
+- **INV27 — Every specification in the repository is a knowledge record.** A
+  specification, a file that states what any part of the system must do as
+  opposed to consumer docs, guides, and READMEs that explain how to use it, is
+  a record of a kind this record names, in any package that exists today or is
+  added later. It carries
+  that kind's frontmatter, follows that kind's template in
+  `docs/templates/knowledge/`, and sits at that kind's canonical location
+  (Owning code). No package defines its own spec format, template, or location.
+  Discovery treats every tracked Markdown file named `*.spec.md`, and every
+  tracked Markdown file under a directory named `specs`, as a record candidate,
+  and a candidate that is not a valid record fails `pnpm check:knowledge`.
+  `README.md` index files, `plan.md` implementation plans, and the paths
+  discovery already ignores are not candidates.
+
+## Path applicability
+
+Use this optional block when a record governs paths that its placement, path
+fields, names, and inherited links do not reach. A record that is already
+reached from every path it governs stays unmarked.
+
+<!-- path-applicability-example:v1 -->
+
+```json
+{
+  "paths": ["apps/docsite/**", "packages/**/*.doc.mjs"]
+}
+```
+
+In an opted-in record, replace the example marker with `path-applicability:v1`.
+Patterns are repository-relative and case-sensitive. `**` is a whole segment
+that spans any number of segments, `*` matches within one segment, and `?`
+matches one character within a segment. Patterns use only letters, digits,
+`_ . @ - /`, and those wildcards. A bare `**` is rejected. The checked-in
+validator rejects malformed blocks, unsafe or repeated patterns, and patterns
+that match no tracked file.
 
 ## Global review applicability
 
@@ -602,9 +667,20 @@ this flow passes the historical review benchmark and is enforced on pull request
 ## Owning code
 
 - `AGENTS.md` points reviewers to the narrowest relevant record.
-- `docs/templates/knowledge/` contains authoring forms.
-- Component records are direct `<PublicName>.spec.md` children of a Core or Lab
-  component root. The public name normally matches the root; a parent/member
+- `docs/templates/knowledge/` contains the only authoring forms; a package keeps
+  no template of its own (INV27).
+- Component records are direct `<PublicName>.spec.md` children of a component
+  root. Component roots are the component directories of Core
+  (`packages/core/src/`) and Lab (`packages/lab/src/`), the source roots of the
+  flat component packages `scripts/component-packages.cjs` registers (Charts,
+  RichText, and Vega keep their records directly in `src/`), and the component
+  directories of every platform implementation package, such as
+  `packages/native/apple/Sources/Astryx/` for Swift. A platform implementation's record has the id
+  `component:<language>/<PublicName>` (for example `component:swift/Button`),
+  names its core component in `platform_of` (`component:<PublicName>`), and
+  states only what that platform adds or must do differently; the core record
+  keeps the shared contract (INV2). Until the core component has its own
+  record, its public source and documentation stand in as that contract. The public name normally matches the root; a parent/member
   exception requires an exact top-level or full inline consumer-doc entry in
   that root. Public semantic module records are nested at least one directory
   beneath the same root as `<PublicName>.spec.md`; the parent component's
@@ -615,11 +691,22 @@ this flow passes the historical review benchmark and is enforced on pull request
 - Wiki `component-scores.json` is the current operational audit datastore. The
   historical `<PublicName>.audit.json` reservation never received a schema or active
   records and is retired by INV12.
+- A record governing one package's cross-component rules lives under that
+  package's `specs/` directory as `<slug>.spec.md`, with kind `architecture`
+  and an id of `architecture:` followed by the package name, each directory
+  between `specs/` and the file, and the slug, joined by hyphens. For example,
+  `packages/native/specs/swift/accessibility.spec.md` is
+  `architecture:native-swift-accessibility`. Repository-wide architecture
+  stays in `docs/architecture/`.
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
 - `scripts/check-knowledge.mjs` validates templates, records, approval metadata,
-  and optional component/module design-decision tables.
+  optional component/module design-decision tables, `path-applicability:v1`
+  blocks, and INV25 reachability.
+- `scripts/specs-for-file.mjs` (`pnpm specs:for`) resolves the records linked to
+  a path. `--unrouted` lists tracked paths with no linked current record;
+  `--unreached` lists current records no path reaches.
 - `.github/scripts/component-design-decisions.cjs` classifies current
   component/module changes as no DD change, DD-only, or mixed from trusted base
   and head bytes. DD-only requires unchanged path, kind, authority, and every byte
@@ -863,6 +950,40 @@ Rejected: counting any app approval on the pull request, because an approval of
 an earlier head or one followed by a request for changes would keep the gate
 clear.
 
+### DEC-12 — Records declare the paths they govern in an optional overlay
+
+**Reference:** `architecture:knowledge-contracts/DEC-12`
+**Decider:** `cixzhang`, `2026-10-21`
+
+A record that governs paths no other link reaches declares glob patterns in an
+optional `path-applicability:v1` block, beside `review-applicability:v1`. The
+overlay is independently versioned, so opting in does not change a record
+kind's required shape or migrate other records. A path-first lookup lists a
+matched record; claim scope, precedence, and implementation freedom are
+unchanged.
+
+Rejected: a required `applies_to` field on every kind, because it would migrate
+every active record to declare paths most already reach through placement or
+inheritance. Rejected: regular expressions, because a reviewer cannot read
+their reach at a glance and they over-match silently.
+
+### DEC-13 — Every spec is a knowledge record, wherever it lives
+
+**Reference:** `architecture:knowledge-contracts/DEC-13`
+**Decider:** `cixzhang`, `2026-10-23`
+
+Specification records in any package, including packages added later, use the
+record kinds, frontmatter, templates, and placement this record defines, and
+discovery fails a spec-shaped file that is not a valid record. A platform
+implementation's component record is a `component` record with a
+language-qualified id that names its core component, so the core record keeps
+the shared contract and the platform record holds only the platform's part.
+Until the core component has its own record, its public source and
+documentation stand in as that contract.
+
+Rejected: package-local spec formats, because their records skip structure
+checks, the owner gate, and path routing.
+
 ## Verification
 
 | Invariant                         | Evidence                                                                                                                                                                                                     | Failure signal                                                                                                                                                                                                                                                |
@@ -881,13 +1002,22 @@ clear.
 | INV21, DEC-10                     | `.github/scripts/component-design-decisions.test.mjs`, `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/spec-owner-decision.test.mjs`, and `.github/scripts/lib/classify-visual.test.mjs` | A malformed/local DD escapes validation, stale approval clears a new head, owner routing loses mixed-change gates, or executable/API/unknown runtime code is misclassified as appearance-only                                                                 |
 | DEC-11                            | `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/review-clear-workflow.test.mjs`, and `.github/scripts/review-signal-workflow.test.mjs`                                                   | An app approval clears a read-only or fork author or an earlier head; a later app request for changes or dismissal leaves the gate clear; an app approval overrides an ENGOWNER request for changes; or an unset app or unreadable permission clears the gate |
 
-| Invariant   | Evidence                                                                                                                                 | Failure signal                                                                                                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV22–INV24 | Contributor/reviewer evidence inventory; public-link and byte verification; retained remote refs; unchanged fixture/baseline/media paths | Disposable captures enter the source tree, cleanup loses a referenced image, a temporary branch is called durable, or storage changes overwrite an owner's proof or retention contract |
+| Invariant            | Evidence                                                                                                                                 | Failure signal                                                                                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV22–INV24          | Contributor/reviewer evidence inventory; public-link and byte verification; retained remote refs; unchanged fixture/baseline/media paths | Disposable captures enter the source tree, cleanup loses a referenced image, a temporary branch is called durable, or storage changes overwrite an owner's proof or retention contract                           |
+| INV25, INV26, DEC-12 | `scripts/specs-for-file.test.mjs`, `scripts/check-knowledge.test.mjs`, and `pnpm check:knowledge`                                        | A current record is reached by no tracked non-record path, a lookup infers a link from a name, a pattern matches nothing or the whole repository, or a pattern match widens a claim or outranks a narrower owner |
+| INV27, DEC-13        | `scripts/check-knowledge.test.mjs` and `pnpm check:knowledge`                                                                            | A `*.spec.md` file or a Markdown file under a `specs` directory without valid record frontmatter, outside its kind's location, or following a package-local template passes                                      |
 
 Evidence placement is enforced by contributors and reviewers. The local
 `docs/pr-assets/` ignore prevents accidental staging; it is not a blocking CI
 check and does not prevent force-added evidence elsewhere.
+
+Current enforcement gap: discovery does not yet read record candidates outside
+registered component packages, themes, and `docs/`; component records have no
+`platform_of` field until the next schema version; and the component id
+pattern does not yet accept a language-qualified id such as
+`component:swift/Button`. Until all three land, records under
+`packages/native/` are checked only by review.
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,

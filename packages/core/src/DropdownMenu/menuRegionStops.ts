@@ -8,8 +8,8 @@
  * @output `tabbablesIn`, `focusRegionControl`, `moveRegionsTab`: the Tab stops
  *   of a header or footer region and the walk through a menu with regions,
  *   with a named radio group as one stop
- * @position Internal; DropdownMenu's walk through its header and footer, in a
- *   module of its own so another menu level with regions can share it.
+ * @position Internal; used by DropdownMenu (the root menu's header and footer)
+ *   and DropdownMenuSubMenu (a sub-menu's header and footer).
  *
  * A menu with a header or footer is a dialog: Tab and Shift+Tab walk the
  * header's controls, the menu as one stop, then the footer's controls, and

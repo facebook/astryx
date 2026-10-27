@@ -288,8 +288,9 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes[0]).toBeDisabled();
-    expect(checkboxes[1]).toBeDisabled();
+    expect(checkboxes[0]).toHaveAttribute('aria-disabled', 'true');
+    expect(checkboxes[1]).toHaveAttribute('aria-disabled', 'true');
+    expect(checkboxes[0]).not.toHaveAttribute('disabled');
   });
 
   it('does not call onChange when group is disabled', () => {
@@ -317,8 +318,9 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes[0]).not.toBeDisabled();
-    expect(checkboxes[1]).toBeDisabled();
+    expect(checkboxes[0]).not.toHaveAttribute('aria-disabled');
+    expect(checkboxes[1]).toHaveAttribute('aria-disabled', 'true');
+    expect(checkboxes[1]).not.toHaveAttribute('disabled');
   });
 
   it('throws when item has no value prop inside collection-mode CheckboxList', () => {
@@ -1137,7 +1139,7 @@ describe('CheckboxListItem ARIA props', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('keeps checkboxes natively disabled when disabled without a reason', () => {
+    it('keeps checkboxes focusable via aria-disabled when disabled without a reason', () => {
       render(
         <CheckboxList
           label="Notifications"
@@ -1149,7 +1151,8 @@ describe('CheckboxListItem ARIA props', () => {
         </CheckboxList>,
       );
       for (const checkbox of screen.getAllByRole('checkbox', h)) {
-        expect(checkbox).toBeDisabled();
+        expect(checkbox).not.toHaveAttribute('disabled');
+        expect(checkbox).toHaveAttribute('aria-disabled', 'true');
       }
     });
   });

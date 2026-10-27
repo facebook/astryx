@@ -189,6 +189,17 @@ const styles = stylex.create({
     // today. The 28px min box still wins over Icon's width/height.
     fontSize: 'inherit',
   },
+  // The link part of a whole-heading link row that also has end content.
+  linkBesideEndContent: {
+    display: 'flex',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    gap: spacingVars['--spacing-2'],
+    flexGrow: 1,
+    minWidth: 0,
+    textDecoration: 'none',
+    color: 'inherit',
+  },
   headerEndContent: {
     flexShrink: 0,
     display: 'flex',
@@ -639,6 +650,36 @@ export function SideNavHeading({
       )}
     </button>
   );
+
+  // Whole heading is a link (no menu, single headingHref). End content may
+  // be a control, which must not sit inside the link (no interactive content
+  // in an <a>), so with end content the row is a div holding the link and the
+  // end content side by side, as the mixed mode does.
+  if (isWholeHeadingLink && headingHref && headerEndContentElement) {
+    return (
+      <div
+        ref={ref}
+        data-testid={testId}
+        {...mergeProps(
+          themeProps('side-nav-heading'),
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}>
+        <LinkComponent
+          href={headingHref}
+          {...focusOutlineProps.focusVisible(
+            styles.linkBesideEndContent,
+            styles.menuTrigger,
+          )}
+          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+          {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+          {renderTextContent()}
+        </LinkComponent>
+        {headerEndContentElement}
+      </div>
+    );
+  }
 
   // Whole heading is a link (no menu, single headingHref)
   if (isWholeHeadingLink && headingHref) {

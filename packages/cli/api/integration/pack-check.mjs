@@ -25,13 +25,22 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {npmCommand} from '../../foundation/release/cache.mjs';
+import {commandTokensIn} from '../../foundation/doc-compiler/doc-syntax.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
+import {
+  literalThemeName,
+  rootProblem,
+  symlinkedFolder,
+} from '../../foundation/integrations/validate-contributions.mjs';
 import {
   componentReplacesCliProblem,
   docsTreeCliProblem,
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
+  docTokensCliProblem,
+  sectionPositionCliProblem,
   themesCliProblem,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {
@@ -225,7 +234,12 @@ export function parseNpmPackOutput(output) {
     throw new Error('npm pack returned a result without a files array.');
   }
   return {
-    filename: info.filename,
+    // npm 8 names a scoped package's tarball `@scope/name-1.0.0.tgz` in its
+    // JSON but writes `scope-name-1.0.0.tgz`, as every later npm reports.
+    filename:
+      typeof info.filename === 'string' && /^@[^/]+\//.test(info.filename)
+        ? info.filename.slice(1).replace('/', '-')
+        : info.filename,
     fileCount: info.entryCount,
     size: info.size,
     unpackedSize: info.unpackedSize,
@@ -252,17 +266,22 @@ function npmPackErrorDetail(output) {
 /**
  * Run `npm pack --json` with output directed to `destDir` so no preexisting
  * tgz is overwritten. This intentionally runs the package lifecycle, matching
- * the artifact `npm publish` would produce. Uses spawnSync with an args array —
- * no shell — so paths with metacharacters cannot inject.
+ * the artifact `npm publish` would produce. npm starts the way the CLI starts
+ * it everywhere else (`npmCommand`): npm's own entry file run with this Node
+ * when one is found, so an `npm` earlier on the PATH that is not npm itself
+ * cannot answer for it. Uses spawnSync with an args array — no shell — so
+ * paths with metacharacters cannot inject.
  *
  * @param {string} packageDir
  * @param {string} destDir
  * @returns {{filename: string, fileCount: number, size: number, unpackedSize: number, packedPaths: Set<string>}}
  */
 function runNpmPack(packageDir, destDir) {
+  const npm = npmCommand();
   const result = spawnSync(
-    'npm',
+    npm.command,
     [
+      ...npm.prefix,
       'pack',
       '--json',
       '--silent',
@@ -271,7 +290,7 @@ function runNpmPack(packageDir, destDir) {
       '--foreground-scripts=false',
       `--pack-destination=${destDir}`,
     ],
-    {cwd: packageDir, encoding: 'utf-8', timeout: 60_000},
+    {cwd: packageDir, encoding: 'utf-8', shell: false, timeout: 60_000},
   );
   if (result.error) {
     throw new Error(`Could not start npm pack: ${result.error.message}`);
@@ -313,18 +332,49 @@ function extractTarball(tgzPath, extractDir) {
 }
 
 /**
+ * Whether any of these doc files writes a doc token (`{@command …}`, `{@pm …}`
+ * or `{@pm-only …}`; an escaped `{@@…}` is not one).
+ * @param {unknown[]} files
+ * @returns {boolean}
+ */
+function writesDocTokens(files) {
+  return files.some(file => {
+    if (typeof file !== 'string') return false;
+    try {
+      return commandTokensIn(fs.readFileSync(file, 'utf8')).length > 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
  * Whether any of these doc files has a section that sets `id`.
  * @param {string[]} files
  * @returns {Promise<boolean>}
  */
 async function setsSectionIds(files) {
+  return setsSectionField(files, ['id']);
+}
+
+/**
+ * Whether any of these doc files has a section that sets one of `fields`.
+ * @param {string[]} files
+ * @param {string[]} fields
+ * @returns {Promise<boolean>}
+ */
+async function setsSectionField(files, fields) {
   for (const file of files) {
     if (typeof file !== 'string') continue;
     const doc = /** @type {any} */ (
       await loadTopicModule(file).catch(() => null)
     );
     const sections = Array.isArray(doc?.sections) ? doc.sections : [];
-    if (sections.some((/** @type {any} */ section) => section?.id != null)) {
+    if (
+      sections.some((/** @type {any} */ section) =>
+        fields.some(field => section?.[field] != null),
+      )
+    ) {
       return true;
     }
   }
@@ -953,6 +1003,10 @@ async function validatePackedThemeExports(
       );
     }
 
+    // The name the source gives defineTheme, when the file says it: the
+    // build names its files after it.
+    const builtName = literalThemeName(source, localTheme.exportName);
+
     const declaredOutputs = declaredThemeBuildOutputs(
       localIntegration,
       localTheme,
@@ -1097,7 +1151,15 @@ async function validatePackedThemeExports(
                 ? `Theme "${localTheme.slug}" module is not the module \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` writes and does not only wrap it: ${localWrapper.reason}. A module that wraps the built module may only import the theme's own stylesheet and font stylesheet for their side effects and re-export from the built module either everything or only its theme, as ${localTheme.exportName}.`
                 : localWrapper && !localWrapper.ok
                   ? `Theme "${localTheme.slug}" module re-exports ${localWrapper.reason}, which does not match ${sourceRelative}. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`
-                  : `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`,
+                  : (renamedOutputMessage(
+                      localTheme,
+                      output.kind,
+                      output.local,
+                      source,
+                      builtName,
+                      localIntegration.__packageDir,
+                    ) ??
+                    `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`),
             ),
           );
         }
@@ -1265,7 +1327,17 @@ export async function integrationPackCheck(options = {}) {
   // ── Phase 1: structure validation ──
   const localResult = await validateLocalIntegration(cwd);
   /** @type {Issue[]} */
-  const issues = [...localResult.issues];
+  const issues = [
+    ...localResult.issues,
+    // Validate lists these layout findings without counting them. A
+    // package.json npm cannot pack is what fails the pack here, as it did
+    // before they were named; the rest stay warnings, which fail nothing.
+    ...(localResult.found ? (localResult.listed ?? []) : []).map(issue =>
+      issue.code === 'invalid_package_json'
+        ? {...issue, severity: /** @type {const} */ ('error')}
+        : issue,
+    ),
+  ];
 
   if (!localResult.found || !localResult.integration) {
     return emptyReceipt(pkgName, [
@@ -1314,6 +1386,8 @@ export async function integrationPackCheck(options = {}) {
     );
   }
   for (const root of fileInv.roots) {
+    // A root that is not a readable folder has its own issue.
+    if (rootProblem(/** @type {string} */ (loaded[root.kind]))) continue;
     if (root.files.length === 0) {
       issues.push(
         error(
@@ -1347,6 +1421,36 @@ export async function integrationPackCheck(options = {}) {
       const idProblem = sectionIdsCliProblem(pkg);
       if (idProblem != null) {
         issues.push(error('section_ids_need_cli', idProblem));
+      }
+    }
+    // `before` and `after` need a newer CLI than any field above. Added in a
+    // patch release, it warns and never fails the check (INV35).
+    if (
+      await setsSectionField(
+        [
+          ...records.map(record => record.path),
+          ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+        ],
+        ['before', 'after'],
+      )
+    ) {
+      const positionProblem = sectionPositionCliProblem(pkg);
+      if (positionProblem != null) {
+        issues.push(warning('section_position_needs_cli', positionProblem));
+      }
+    }
+    // A doc token shows as written on a CLI before the one that renders
+    // them. Added in a patch release, it warns and never fails (INV35).
+    if (
+      problem == null &&
+      writesDocTokens([
+        ...records.map(record => record.path),
+        ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+      ])
+    ) {
+      const tokenProblem = docTokensCliProblem(pkg);
+      if (tokenProblem != null) {
+        issues.push(warning('doc_tokens_need_cli', tokenProblem));
       }
     }
   }
@@ -1403,6 +1507,9 @@ export async function integrationPackCheck(options = {}) {
   );
   /** @type {string|null} */
   let scratchBase = null;
+  /** @type {string|undefined} the packed copy of the package */
+  let extractDir;
+  const issuesBeforePack = issues.length;
 
   try {
     // npm pack
@@ -1451,11 +1558,16 @@ export async function integrationPackCheck(options = {}) {
     for (const root of fileInv.roots) {
       const missing = root.files.filter(f => !packResult.packedPaths.has(f));
       if (missing.length === root.files.length && root.files.length > 0) {
+        const absolute = /** @type {string} */ (loaded[root.kind]);
+        const link = symlinkedFolder(absolute, packageDir);
         issues.push(
           error(
             'root_not_packed',
             `Declared ${root.kind} root "${root.path}" has 0 of ${root.files.length} expected ` +
-              `files in the pack list. Add "${root.path.replace(/^\.\//, '')}" to "files" in package.json.`,
+              `files in the pack list. ` +
+              (link
+                ? `It is reached through the symlink "${path.relative(packageDir, link.path).split(path.sep).join('/')}", and npm pack does not follow a symlinked folder. Fix: replace the link with the folder itself, or point "${root.kind}" at the folder it links to.`
+                : `Add "${root.path.replace(/^\.\//, '')}" to "files" in package.json.`),
           ),
         );
       } else {
@@ -1494,7 +1606,6 @@ export async function integrationPackCheck(options = {}) {
     }
 
     // ── Phase 3: extract + identity comparison ──
-    let extractDir;
     try {
       extractDir = resolvePackageDir(pkgName, scratchBase);
     } catch (err) {
@@ -1530,9 +1641,12 @@ export async function integrationPackCheck(options = {}) {
     }
 
     // Validate the extracted tree as an installed integration
+    // The packed tree is the package being authored: its icon sets are
+    // checked whatever the scratch folder's config says.
     const packedResult = await validateInstalledIntegration(
       pkgName,
       scratchBase,
+      {iconSets: true},
     );
 
     for (const issue of packedResult.issues) {
@@ -1616,8 +1730,91 @@ export async function integrationPackCheck(options = {}) {
       issues,
     );
   } finally {
+    // The packed copy lives in a scratch folder that is gone once this
+    // returns: name its files the way the package does.
+    if (extractDir && scratchBase) {
+      packageRelative(issues.slice(issuesBeforePack), extractDir, scratchBase);
+    }
     removeTreeBestEffort(tgzTmpDir, 'temporary tarball directory', issues);
     removeTreeBestEffort(scratchBase, 'scratch consumer', issues);
+  }
+}
+
+/**
+ * When a theme's source names it something other than the file the package
+ * exports for it, a rebuild writes new files under that name and leaves the
+ * exported one stale forever: say so, with both ways out. Null otherwise.
+ * @param {{slug: string}} theme
+ * @param {string} kind 'module' or 'stylesheet'
+ * @param {string} exported the file the package exports for it
+ * @param {string} source the theme's source
+ * @param {string | null} builtName the literal defineTheme name, if any
+ * @param {string} packageDir
+ * @returns {string | null}
+ */
+function renamedOutputMessage(
+  theme,
+  kind,
+  exported,
+  source,
+  builtName,
+  packageDir,
+) {
+  if (builtName == null || builtName === theme.slug) return null;
+  const extension = kind === 'module' ? '.js' : '.css';
+  if (path.basename(exported) === `${builtName}${extension}`) return null;
+  const rel = (/** @type {string} */ file) =>
+    path.relative(packageDir, file).split(path.sep).join('/');
+  const built = rel(
+    path.join(path.dirname(source), `${builtName}${extension}`),
+  );
+  return `Theme "${theme.slug}" ${kind} is ${rel(exported)}, but ${path.basename(source)} calls defineTheme with name: '${builtName}', so \`${formatCliCommand(`theme build ${rel(source)}`, packageDir)}\` writes ${built} instead and rebuilding never updates ${path.basename(exported)}. Fix: point the package export that serves it at ${built} after building, or set name: '${theme.slug}' in ${path.basename(source)} and rebuild.`;
+}
+
+/**
+ * Rewrite the scratch copy's absolute paths in each issue's message: a file
+ * of the packed package as its path in the package, and any other path in the
+ * scratch consumer (such as the module that resolved an import) as that
+ * consumer. Both folders are gone once verify returns.
+ * @param {Issue[]} issues
+ * @param {string} packedDir the packed package inside the scratch consumer
+ * @param {string} consumerDir the scratch consumer
+ */
+function packageRelative(issues, packedDir, consumerDir) {
+  /** @param {string} dir */
+  const spellings = dir => {
+    const out = [dir];
+    try {
+      const real = fs.realpathSync(dir);
+      if (real !== dir) out.push(real);
+    } catch {
+      // Already removed: the plain path is all there is.
+    }
+    return out;
+  };
+  /** @param {string} text */
+  const escape = text => text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const packed = spellings(packedDir);
+  const consumer = spellings(consumerDir);
+  for (const issue of issues) {
+    if (typeof issue.message !== 'string') continue;
+    let message = issue.message;
+    for (const prefix of packed) {
+      message = message
+        .split(`${prefix}${path.sep}`)
+        .join('')
+        .replace(
+          new RegExp(`${escape(prefix)}(?![\\w-]|\\.\\w)`, 'gu'),
+          'the package root',
+        );
+    }
+    for (const prefix of consumer) {
+      message = message.replace(
+        new RegExp(`${escape(prefix)}[^\\s"'\`]*`, 'gu'),
+        'a consumer project',
+      );
+    }
+    issue.message = message;
   }
 }
 

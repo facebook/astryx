@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes/document-the-theme`:
+ * @file `astryx docs authoring/building-blocks/themes/document-the-theme`:
  * document a theme by extending the core theme topic, not in agent guidance.
  */
 

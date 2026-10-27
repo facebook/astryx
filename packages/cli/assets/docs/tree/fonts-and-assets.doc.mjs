@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes/fonts-and-assets`:
+ * @file `astryx docs authoring/building-blocks/themes/fonts-and-assets`:
  * ship a theme's optional font loader beside its built module and CSS.
  */
 

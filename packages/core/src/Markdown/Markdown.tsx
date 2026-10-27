@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef, useState} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -28,6 +28,8 @@ import {
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
 import {parseFenceLanguage} from '../CodeBlock/tokenizer';
+import {listedLanguage, sameCodeLanguageList} from '../CodeBlock/grammar';
+import type {CodeLanguage} from '../CodeBlock/grammar';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
@@ -41,6 +43,7 @@ import {TableHeaderCell} from '../Table/TableHeaderCell';
 import {TableHeader} from '../Table/TableHeader';
 import {TableBody} from '../Table/TableBody';
 import {mergeProps} from '../utils';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useStreamingText} from '../hooks/useStreamingText';
 import {computeBoundaries, computeSegments} from './streaming';
 import type {BaseProps} from '../BaseProps';
@@ -318,6 +321,15 @@ export interface MarkdownProps<
    * literal text.
    */
   autolink?: 'gfm';
+  /**
+   * CodeBlock language values a fence may name: each one imported on its
+   * own, such as `graphql` from `@astryxdesign/core/CodeBlock/languages/graphql`,
+   * or made with `createCodeLanguage`. A fence whose language word is one of
+   * a listed value's identifiers renders with that value, ahead of a built-in
+   * with the same identifier; a later entry wins. Without it, fences render
+   * as they do today.
+   */
+  codeLanguages?: ReadonlyArray<CodeLanguage>;
 }
 
 // ---------------------------------------------------------------------------
@@ -1325,6 +1337,8 @@ function renderBlock(
   components: Partial<MarkdownComponents> | undefined,
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
+  // Language values fences may name (component:Markdown FR30).
+  codeLanguages: ReadonlyArray<CodeLanguage> | undefined,
   headingProjection?: MarkdownHeadingProjection,
   // How many lists enclose this block (spec:AST-061 DEC-6).
   listDepth = 0,
@@ -1499,7 +1513,10 @@ function renderBlock(
       const diffLanguage = isDiff
         ? fence.language.match(/^\w*/)?.[0] || 'plaintext'
         : undefined;
-      const language = diffLanguage ?? legacyLanguage;
+      const fenceWord = diffLanguage ?? legacyLanguage;
+      // A listed language value claims its identifiers ahead of a built-in
+      // with the same identifier (component:Markdown FR30).
+      const language = listedLanguage(codeLanguages, fenceWord) ?? fenceWord;
       // A semantic-fence proposal claims its fence before the host's code
       // renderer (spec:AST-036 FR17). The host renderer, or the default Code
       // block without one, draws every unclaimed fence and is the fallback
@@ -1616,6 +1633,7 @@ function renderBlock(
             components,
             preparedPlugins,
             t,
+            codeLanguages,
             headingProjection,
             listDepth,
           ),
@@ -1659,6 +1677,7 @@ function renderBlock(
               components,
               preparedPlugins,
               t,
+              codeLanguages,
               headingProjection,
               listDepth,
             ),
@@ -1738,6 +1757,7 @@ function renderBlock(
                         components,
                         preparedPlugins,
                         t,
+                        codeLanguages,
                         headingProjection,
                         listDepth + 1,
                       ),
@@ -1827,6 +1847,7 @@ function renderBlock(
                       components,
                       preparedPlugins,
                       t,
+                      codeLanguages,
                       headingProjection,
                       listDepth + 1,
                     ),
@@ -2113,6 +2134,7 @@ export function Markdown<
   plugins,
   inlinePlugins,
   autolink,
+  codeLanguages: codeLanguagesProp,
   xstyle,
   className,
   style,
@@ -2121,7 +2143,29 @@ export function Markdown<
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
   const t = useTranslator();
+  // Keep one list while it names the same values, so an inline
+  // `codeLanguages={[…]}` does not re-render every block on each parent
+  // render (adjusting state during render, not in an Effect).
+  const [codeLanguages, setCodeLanguages] = useState(codeLanguagesProp);
+  if (!sameCodeLanguageList(codeLanguages, codeLanguagesProp)) {
+    setCodeLanguages(codeLanguagesProp);
+  }
   const LinkComponent = useLinkComponent();
+  // Links read the caller's handler when clicked, so a handler recreated on
+  // every caller render does not invalidate the memoized document below.
+  // Only whether a handler exists changes the rendered links.
+  const onLinkClickRef = useRef(onLinkClick);
+  useIsomorphicLayoutEffect(() => {
+    onLinkClickRef.current = onLinkClick;
+  });
+  const hasLinkClick = onLinkClick != null;
+  const stableOnLinkClick = useMemo<MarkdownProps['onLinkClick']>(
+    () =>
+      hasLinkClick
+        ? (href, event) => onLinkClickRef.current?.(href, event)
+        : undefined,
+    [hasLinkClick],
+  );
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
   const sourceIds = useMemo(
     () => (sources ? new Set(Object.keys(sources)) : undefined),
@@ -2327,19 +2371,82 @@ export function Markdown<
     return next;
   }, [display, smoothedLen, maxSpans]);
 
-  const cursor: StreamingCursor = {
-    offset: 0,
-    boundaries,
-    active: isStreaming,
-  };
-
-  // Build citation context — numbers are assigned in encounter order during rendering.
-  // This is recreated each render so numbering stays consistent with the AST.
-  const citationCtx: CitationContext | null = sources
-    ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+  const contentWidthValue = contentWidth
+    ? typeof contentWidth === 'number'
+      ? `${contentWidth}px`
+      : contentWidth
     : null;
 
+  // The block document is the expensive part of a long Markdown render. It
+  // depends only on these inputs, so a caller re-render that changes none of
+  // them returns the same elements and React skips the whole subtree. The
+  // cursor and citation numbering are rebuilt inside, from the start of the
+  // document, exactly as a full render builds them.
+  const renderedBlocks = useMemo(() => {
+    if (display === 'inline') {
+      return null;
+    }
+    const blockCursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const blockCitationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
+    return blocks.map((block, i) =>
+      renderBlock(
+        block,
+        i,
+        blocks.length,
+        density,
+        headingLevelStart,
+        stableOnLinkClick,
+        blockCursor,
+        blockCitationCtx,
+        contentWidthValue,
+        contentAlign,
+        LinkComponent,
+        inlinePlugins,
+        components,
+        preparedPlugins,
+        t,
+        codeLanguages,
+        headingProjection,
+      ),
+    );
+  }, [
+    display,
+    blocks,
+    boundaries,
+    isStreaming,
+    sources,
+    citationStyle,
+    density,
+    headingLevelStart,
+    stableOnLinkClick,
+    contentWidthValue,
+    contentAlign,
+    LinkComponent,
+    inlinePlugins,
+    components,
+    preparedPlugins,
+    t,
+    headingProjection,
+    codeLanguages,
+  ]);
+
   if (display === 'inline') {
+    const cursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const citationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
     const renderedInline = (
       <span
         ref={ref}
@@ -2357,7 +2464,7 @@ export function Markdown<
           renderInline(
             node,
             i,
-            onLinkClick,
+            stableOnLinkClick,
             cursor,
             citationCtx,
             LinkComponent,
@@ -2391,30 +2498,7 @@ export function Markdown<
         className,
         style,
       )}>
-      {blocks.map((block, i) =>
-        renderBlock(
-          block,
-          i,
-          blocks.length,
-          density,
-          headingLevelStart,
-          onLinkClick,
-          cursor,
-          citationCtx,
-          contentWidth
-            ? typeof contentWidth === 'number'
-              ? `${contentWidth}px`
-              : contentWidth
-            : null,
-          contentAlign,
-          LinkComponent,
-          inlinePlugins,
-          components,
-          preparedPlugins,
-          t,
-          headingProjection,
-        ),
-      )}
+      {renderedBlocks}
     </div>
   );
 

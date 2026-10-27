@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:cli-conventions]
-affects_consumer_docs: [cli/integrations]
+affects_consumer_docs: [authoring]
 ---
 
 # Evidence-based consumer file modification system spec
@@ -116,7 +116,8 @@ CLI too old to finish the migration.
 - **FR8 — Every modification path follows this contract.** Core, integration,
   and configuration codemods, and any other operation that modifies existing
   consumer files, MUST apply FR1–FR7 identically. A new modification path cannot
-  opt out, consistent with `spec:AST-017` FR16.
+  opt out, consistent with `spec:AST-017` FR16. The managed agent-docs block is
+  governed by `architecture:cli-surface` INV31.
 - **FR9 — An upgrade works on its project.** `astryx upgrade` MUST operate on
   the project of the folder it runs in: the nearest folder at or above that
   folder whose `package.json` declares an Astryx package, or that its workspace
@@ -192,7 +193,7 @@ permission to edit matching literals anywhere in that file. Both behaviors are
 non-conforming with FR1–FR3; this record does not choose their implementation.
 
 Post-codemod hooks already exist and serve as the declared regeneration for FR5.
-The `cli/integrations` guide and the codemod authoring guidance must
+The `authoring` guides and the codemod authoring guidance must
 explain protection, how to mark generated files, and how transforms prove scope.
 
 This specification-only change alters no runtime behavior or published package

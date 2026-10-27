@@ -112,6 +112,8 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string[]} [alsoExampleFor]
  * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
+ * @property {Record<string, string>} [icons] the icon definition each
+ *   imported icon draws, by its imported name
  * @property {boolean} [isShowcase]
  * @property {string} filePath
  * @property {string} docPath
@@ -665,6 +667,7 @@ async function discoverPages() {
       keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: path.join(dirPath, 'page.tsx'),
       docPath,
     });
@@ -695,7 +698,11 @@ async function discoverBlocks() {
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       isShowcase: doc?.isShowcase ?? false,
+      ...(typeof doc?.exampleFor === 'string'
+        ? {exampleFor: doc.exampleFor}
+        : {}),
       filePath: tsxPath,
       docPath,
       category: relPath,
@@ -737,7 +744,11 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
+        ...(doc?.icons ? {icons: doc.icons} : {}),
         isShowcase: doc?.isShowcase ?? false,
+        ...(typeof doc?.exampleFor === 'string'
+          ? {exampleFor: doc.exampleFor}
+          : {}),
         filePath: tsxPath,
         docPath,
         category: relPath,
@@ -1193,6 +1204,23 @@ function reportSamePackageReplacements(pkg, autolinked, templates, errors) {
 }
 
 /**
+ * The fix for a template doc with no same-stem `.tsx`: rename a same-stem
+ * source written in another extension, or add the `.tsx`.
+ * @param {string} docPath
+ * @param {string} sourcePath the `.tsx` it needs
+ */
+function missingTemplateSourceFix(docPath, sourcePath) {
+  const source = path.basename(sourcePath);
+  const stem = source.slice(0, -'.tsx'.length);
+  const other = ['.jsx', '.js', '.ts', '.mjs']
+    .map(extension => `${stem}${extension}`)
+    .find(file => fs.existsSync(path.join(path.dirname(sourcePath), file)));
+  return other
+    ? `Found ${other}, but a template source must be a .tsx file. Fix: rename ${other} to ${source}.`
+    : `Fix: add ${source} beside ${path.basename(docPath)}, with the template as its default export.`;
+}
+
+/**
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
@@ -1225,7 +1253,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       errors.push({
         package: pkgLabel,
         template: id,
-        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}.`,
+        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}. ${missingTemplateSourceFix(docPath, sourcePath)}`,
       });
       // A replacement this unusable template declares still counts, so its
       // target fails closed instead of going to a sibling.
@@ -1318,6 +1346,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       // so read it off the envelope shape here.
       componentsUsed:
         /** @type {{componentsUsed?: string[]}} */ (doc).componentsUsed ?? [],
+      ...(doc?.icons ? {icons: doc.icons} : {}),
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
@@ -1409,6 +1438,11 @@ export async function findShowcase(componentName, cwd, options) {
     filePath: b.filePath,
     docPath: b.docPath,
   });
+
+  // Priority 0: the showcase that names the component (`exampleFor`), the
+  // way packages declare it; a category no longer has to carry the name.
+  const named = showcases.find(b => (b.exampleFor ?? '').toLowerCase() === lc);
+  if (named) return toResult(named);
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {
