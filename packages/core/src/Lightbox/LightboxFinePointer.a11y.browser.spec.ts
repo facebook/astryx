@@ -217,9 +217,10 @@ for (const via of ['the Next button', 'the arrow key'] as const) {
     const {dialog} = await openGallery(page);
     // The track's place every frame from the press on: under a finger the
     // pager slides; with a mouse or the keyboard the new photo shows at once,
-    // as it always has.
-    const sampling = page.evaluate(
-      async () =>
+    // as it always has. The sampler is in place before the press (an awaited
+    // install): one the page gets first would leave it waiting.
+    await page.evaluate(() => {
+      (window as unknown as {__places: Promise<number[]>}).__places =
         new Promise<number[]>(resolve => {
           const track = document.querySelector(
             'dialog [data-lightbox-page]',
@@ -245,14 +246,16 @@ for (const via of ['the Next button', 'the arrow key'] as const) {
             }
           };
           requestAnimationFrame(tick);
-        }),
-    );
+        });
+    });
     if (via === 'the Next button') {
       await dialog.getByRole('button', {name: 'Next'}).click();
     } else {
       await page.keyboard.press('ArrowRight');
     }
-    const places = await sampling;
+    const places = await page.evaluate(
+      () => (window as unknown as {__places: Promise<number[]>}).__places,
+    );
     await expect(dialog).toContainText('2 / 4');
     expect(places.length).toBeGreaterThan(10);
     // One place from the first frame after the press: no frame in between.
@@ -320,9 +323,11 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
   page,
 }) => {
   const {fitted, stageBox} = await openViewer(page);
-  // Samples the photo's width every frame from the double-click on.
-  const sampling = page.evaluate(
-    async () =>
+  // Samples the photo's width every frame from the double-click on. The
+  // sampler is in place before the double-click (an awaited install): one the
+  // page gets first would leave it waiting for a press that already came.
+  await page.evaluate(() => {
+    (window as unknown as {__samples: Promise<[number, number][]>}).__samples =
       new Promise<[number, number][]>(resolve => {
         const img = document.querySelector('dialog img');
         const samples: [number, number][] = [];
@@ -345,10 +350,13 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
           }
         };
         requestAnimationFrame(tick);
-      }),
-  );
+      });
+  });
   await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
-  const samples = await sampling;
+  const samples = await page.evaluate(
+    () =>
+      (window as unknown as {__samples: Promise<[number, number][]>}).__samples,
+  );
   const to = fitted.width * 2;
   const progress = (width: number) =>
     (width - fitted.width) / (to - fitted.width);
