@@ -56,6 +56,13 @@ describe('clampedHitInsets', () => {
     ).toEqual({top: 10, right: 4, bottom: 10, left: 10});
   });
 
+  it('stops at half the gap to a neighbour that does not grow itself (a long link)', () => {
+    // A 32 × 20 switch 8 px from a link wider and taller than 44 px.
+    expect(
+      clampedHitInsets(rect(100, 100, 32, 20), [rect(140, 88, 120, 44)]).right,
+    ).toBe(4);
+  });
+
   it('does not grow toward a neighbour it touches', () => {
     expect(
       clampedHitInsets(rect(100, 100, 24, 24), [rect(124, 100, 24, 24)]).right,
@@ -86,6 +93,17 @@ describe('clampedHitInsets', () => {
     expect(a.bottom + insetsA.bottom).toBeLessThanOrEqual(b.top - insetsB.top);
   });
 
+  it('cuts the same side as a diagonal neighbour of another size, so the two areas never overlap', () => {
+    const small = rect(100, 100, 16, 16);
+    // 12 px across and 14 px down.
+    const wide = rect(128, 130, 32, 20);
+    const a = clampedHitInsets(small, [wide]);
+    const b = clampedHitInsets(wide, [small]);
+    expect(small.bottom + a.bottom).toBeLessThanOrEqual(wide.top - b.top);
+    expect(a.bottom).toBe(7);
+    expect(b.top).toBe(7);
+  });
+
   it('ignores a neighbour that overlaps the target (an ancestor or an overlay)', () => {
     expect(
       clampedHitInsets(rect(100, 100, 24, 24), [rect(90, 90, 200, 60)]),
@@ -105,6 +123,12 @@ describe('resolveHitTarget', () => {
   it('extends each button toward 44 px where nothing is near', () => {
     expect(resolveHitTarget(-7, 14, toolbar)).toBe(0);
     expect(resolveHitTarget(14, 35, toolbar)).toBe(0);
+  });
+
+  it('gives a corner touch to the nearer of two diagonal targets', () => {
+    const pair: HitRect[] = [rect(100, 100, 24, 24), rect(128, 130, 24, 24)];
+    // 9.2 px from the first, 4 px from the second.
+    expect(resolveHitTarget(133, 126, pair)).toBe(1);
   });
 
   it('answers -1 beyond every hit area', () => {
@@ -295,14 +319,93 @@ describe('watchHitArea', () => {
     flush();
     expect(heard).toEqual([]);
     expect(log).toEqual([]);
-    // The pointer turns coarse, then fine again.
+    // The pointer turns coarse (the observers start, and the visibility
+    // observer's first notice comes), then fine again.
     coarse = true;
     pointerListeners.forEach(listener => listener());
+    show(control);
     flush();
     expect(heard).toEqual([{top: 10, right: 10, bottom: 10, left: 10}]);
     coarse = false;
     pointerListeners.forEach(listener => listener());
     expect(heard.at(-1)).toEqual(NO_HIT_INSETS);
+    stop();
+  });
+
+  it('re-measures once its parent’s text settles after a change that moves a neighbour without resizing the control', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    const control = byId('switch');
+    const link = byId('link');
+    place(control, rect(100, 100, 24, 24));
+    place(link, rect(400, 100, 60, 24));
+    const heard: HitInsets[] = [];
+    const stop = watchHitArea(control, insets => heard.push(insets));
+    show(control);
+    flush();
+    expect(heard.at(-1)?.right).toBe(10);
+    // The label beside the switch shortens, and the link moves to 8 px away.
+    place(link, rect(132, 100, 60, 24));
+    (control.parentElement as HTMLElement).lastChild!.textContent = ' Wi';
+    await Promise.resolve();
+    vi.advanceTimersByTime(100);
+    flush();
+    expect(heard.at(-1)?.right).toBe(4);
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('swallows the click of a touch that a fresh measurement puts nearer a neighbour, and only that one', () => {
+    const control = byId('switch');
+    const link = byId('link');
+    place(control, rect(100, 100, 24, 24));
+    place(link, rect(400, 100, 60, 24));
+    const stop = watchHitArea(control, () => {});
+    show(control);
+    flush();
+    // The link moved to 8 px away with nothing re-measuring yet.
+    place(link, rect(132, 100, 60, 24));
+    const touch = (x: number) => {
+      const press = new Event('pointerdown', {bubbles: true});
+      Object.assign(press, {pointerType: 'touch', clientX: x, clientY: 112});
+      control.dispatchEvent(press);
+    };
+    const click = () => {
+      const event = new MouseEvent('click', {bubbles: true, cancelable: true});
+      control.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    // 6 px right of the switch: inside the old area, 2 px from the link.
+    touch(130);
+    expect(click()).toBe(true);
+    // One-shot: the next click is the control's.
+    expect(click()).toBe(false);
+    // A touch with no click leaves nothing behind for the next touch.
+    touch(130);
+    touch(110);
+    expect(click()).toBe(false);
+    stop();
+  });
+
+  it('runs no observer or window listener for hit areas while the primary pointer is fine', () => {
+    coarse = false;
+    const constructed = vi.fn();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor() {
+          constructed();
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const onWindow = vi.spyOn(window, 'addEventListener');
+    const onElement = vi.spyOn(byId('switch'), 'addEventListener');
+    const stop = watchHitArea(byId('switch'), () => {});
+    expect(constructed).not.toHaveBeenCalled();
+    expect(onWindow).not.toHaveBeenCalled();
+    expect(onElement).not.toHaveBeenCalled();
     stop();
   });
 
