@@ -433,6 +433,10 @@ describe('watchHitArea', () => {
     touch(130);
     control.dispatchEvent(new Event('pointercancel', {bubbles: true}));
     expect(click()).toBe(false);
+    // A press elsewhere (the control's label) ends it before its click.
+    touch(130);
+    link.dispatchEvent(new Event('pointerdown', {bubbles: true}));
+    expect(click()).toBe(false);
     stop();
   });
 

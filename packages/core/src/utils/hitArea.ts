@@ -453,16 +453,22 @@ function onPress(event: Event): void {
       click.preventDefault();
       click.stopPropagation();
     };
+    const doc = element.ownerDocument;
     const disarm = () => {
       element.removeEventListener('click', swallow, true);
       element.removeEventListener('pointercancel', disarm, true);
+      doc.removeEventListener('pointerdown', onNextPress, PASSIVE_CAPTURE);
       if (entry.disarm === disarm) {
         entry.disarm = null;
       }
     };
+    // Any next press, here or elsewhere (the control's own label), ends it.
+    const onNextPress = () => disarm();
     element.addEventListener('click', swallow, true);
     // A touch the browser takes (a scroll) sends no click.
     element.addEventListener('pointercancel', disarm, true);
+    // Registered after this press's own dispatch has passed the document.
+    doc.addEventListener('pointerdown', onNextPress, PASSIVE_CAPTURE);
     entry.disarm = disarm;
   }
 }
