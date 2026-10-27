@@ -1751,7 +1751,7 @@ export function generateOnMediaCSS(
     }
     if (roleParts.length > 0) {
       adaptationMediaRoleBlocks.push(
-        generateAdaptationMediaBlock(rule.query, roleParts, scopeSelector),
+        adaptationBlocks(rule, roleParts, scopeSelector),
       );
     }
   }
@@ -1820,6 +1820,40 @@ function generateAdaptationMediaBlock(
     .join('\n\n')}\n  }\n}`;
 }
 
+/** The mark of `reducedMotion: 'always'` on a theme's root (spec:AST-108 FR6). */
+const REDUCED_MOTION_MARK = `[data-${dataAttrNamespace}-reduced-motion]`;
+
+/**
+ * An adaptation rule's blocks. A rule keyed on motion also honours the
+ * reduced-motion mark, on the theme's root or an ancestor's (spec:AST-108
+ * FR6): a `'reduce'` rule gets a second block without the motion feature,
+ * scoped to a marked theme, so it applies whatever the person's setting, and
+ * a `'no-preference'` rule's scope leaves marked themes out.
+ */
+function adaptationBlocks(
+  rule: Pick<ResolvedThemeAdaptationRule, 'when' | 'query' | 'markQuery'>,
+  parts: string[],
+  scopeSelector: string,
+): string {
+  if (rule.when.motion === 'no-preference') {
+    return generateAdaptationMediaBlock(
+      rule.query,
+      parts,
+      `${scopeSelector}:not(${REDUCED_MOTION_MARK}):not(${REDUCED_MOTION_MARK} *)`,
+    );
+  }
+  const block = generateAdaptationMediaBlock(rule.query, parts, scopeSelector);
+  if (rule.when.motion !== 'reduce' || rule.markQuery === undefined) {
+    return block;
+  }
+  const markedScope = `${scopeSelector}${REDUCED_MOTION_MARK}, ${REDUCED_MOTION_MARK} ${scopeSelector}`;
+  const marked =
+    rule.markQuery === ''
+      ? `@scope (${markedScope}) to (${THEME_SCOPE_TO}) {\n${parts.join('\n\n')}\n}`
+      : generateAdaptationMediaBlock(rule.markQuery, parts, markedScope);
+  return `${block}\n\n${marked}`;
+}
+
 /**
  * Generate CSS for a theme's ordered adaptation rules.
  *
@@ -1866,7 +1900,7 @@ export function generateAdaptationCSS(
     if (parts.length === 0) {
       continue;
     }
-    blocks.push(generateAdaptationMediaBlock(rule.query, parts, scopeSelector));
+    blocks.push(adaptationBlocks(rule, parts, scopeSelector));
   }
 
   // Replay explicit role writes after every generated source alias. This keeps
@@ -1885,9 +1919,7 @@ export function generateAdaptationCSS(
       roleEntries,
     );
     if (roleRule !== null) {
-      blocks.push(
-        generateAdaptationMediaBlock(rule.query, [roleRule], scopeSelector),
-      );
+      blocks.push(adaptationBlocks(rule, [roleRule], scopeSelector));
     }
   }
 
@@ -1916,13 +1948,7 @@ export function generateAdaptationCSS(
         {authoredOnly: true},
       );
       if (authoredWeightParts.length > 0) {
-        blocks.push(
-          generateAdaptationMediaBlock(
-            rule.query,
-            authoredWeightParts,
-            scopeSelector,
-          ),
-        );
+        blocks.push(adaptationBlocks(rule, authoredWeightParts, scopeSelector));
       }
     }
   }

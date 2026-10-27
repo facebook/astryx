@@ -189,6 +189,14 @@ export interface ResolvedThemeAdaptationRule {
   when: ThemeAdaptationCondition;
   /** CSS media-query prelude without the `@media` keyword. */
   query: string;
+  /**
+   * For a rule keyed on `motion`: the prelude without the motion feature,
+   * empty when motion is the rule's only condition. Under the reduced-motion
+   * mark of `reducedMotion: 'always'` (on the theme's root or an ancestor's)
+   * a `'reduce'` rule applies whatever the person's setting, and a
+   * `'no-preference'` rule never does (`spec:AST-108` FR6).
+   */
+  markQuery?: string;
   /** Concrete portable token writes produced by this rule. */
   tokens: Record<string, string>;
   /** Concrete theme-local token writes produced by this rule. */
@@ -679,6 +687,7 @@ function mediaQueryForCondition(
   ruleIndex: number,
   condition: ThemeAdaptationCondition,
   points: WidthBreakpoints,
+  options: {withoutMotion?: boolean} = {},
 ): string {
   const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].when`;
   const parts: string[] = [];
@@ -708,11 +717,14 @@ function mediaQueryForCondition(
   if (condition.contrast !== undefined) {
     parts.push(`(prefers-contrast: ${condition.contrast})`);
   }
-  if (condition.motion !== undefined) {
+  if (condition.motion !== undefined && options.withoutMotion !== true) {
     parts.push(`(prefers-reduced-motion: ${condition.motion})`);
   }
 
   if (parts.length === 0) {
+    if (options.withoutMotion === true) {
+      return '';
+    }
     throw new Error(`${path} must contain at least one concrete condition.`);
   }
   return parts.join(' and ');
@@ -1063,6 +1075,17 @@ export function resolveThemeAdaptationRules(
         rule.when,
         adaptations.widthBreakpoints,
       ),
+      ...(rule.when.motion !== undefined
+        ? {
+            markQuery: mediaQueryForCondition(
+              themeName,
+              index,
+              rule.when,
+              adaptations.widthBreakpoints,
+              {withoutMotion: true},
+            ),
+          }
+        : {}),
       tokens: resolved.tokens,
       localTokens,
       components: input.typography?.scale
