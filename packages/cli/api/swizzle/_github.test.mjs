@@ -98,12 +98,25 @@ describe('checkGhCli', () => {
     ).toBe(false);
   });
 
-  it('throws a stat error that does not mean no gh there', () => {
+  it('finds a working gh after a PATH entry on a stale or disconnected mount', () => {
+    const stale = dirWith({});
+    const tools = dirWith({gh: 0o755});
+    vi.mocked(fs.statSync).mockImplementationOnce(() => {
+      throw Object.assign(new Error('ESTALE: stale file handle, stat'), {
+        code: 'ESTALE',
+      });
+    });
+    expect(
+      checkGhCli({PATH: [stale, tools].join(path.delimiter)}, 'linux'),
+    ).toBe(true);
+  });
+
+  it('throws an error that is not the system answering about a candidate', () => {
     const tools = dirWith({});
     vi.mocked(fs.statSync).mockImplementationOnce(() => {
-      throw Object.assign(new Error('EIO: i/o error, stat'), {code: 'EIO'});
+      throw new TypeError('not a path');
     });
-    expect(() => checkGhCli({PATH: tools}, 'linux')).toThrow(/EIO/);
+    expect(() => checkGhCli({PATH: tools}, 'linux')).toThrow(TypeError);
   });
 
   it('on Windows, finds gh with a PATHEXT extension', () => {

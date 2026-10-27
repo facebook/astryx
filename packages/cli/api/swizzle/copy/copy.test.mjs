@@ -21,7 +21,7 @@ vi.mock('../_adapter.mjs', async importOriginal => {
     ...actual,
     checkGhCli: (...args) => {
       if (ghLookupFails) {
-        throw Object.assign(new Error('EIO: i/o error, stat'), {code: 'EIO'});
+        throw new TypeError('the gh lookup failed');
       }
       return actual.checkGhCli(...args);
     },
@@ -109,7 +109,7 @@ describe('swizzle.copy — the gh feedback line', () => {
       ghLookupFails = true;
       await expect(
         swizzle('Button', {cwd: REPO, output: './' + OUT}),
-      ).rejects.toThrow(/EIO/);
+      ).rejects.toThrow(/the gh lookup failed/);
       expect(fs.existsSync(path.join(REPO, OUT))).toBe(false);
     },
     SLOW,
