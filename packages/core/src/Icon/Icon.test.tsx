@@ -17,7 +17,12 @@ import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {Icon} from './Icon';
-import {registerIcons, resetIcons} from './globalIconRegistry';
+import {IconDefaultSizeProvider} from './IconDefaultSizeContext';
+import {
+  registerIcons,
+  resetIcons,
+  type IconRequest,
+} from './globalIconRegistry';
 
 describe('Icon', () => {
   it('renders the icon component', () => {
@@ -196,6 +201,143 @@ describe('Icon', () => {
 
     expect(screen.getByTestId('outer')).toHaveTextContent('outer-check');
     expect(screen.getByTestId('inner')).toHaveTextContent('inner-check');
+  });
+
+  // spec:AST-087 FR1, FR6, FR9 — a function registry entry receives the size
+  // resolved by component:Icon ORD1, and its result is final.
+  describe('function registry entries', () => {
+    const sized = (label: string) => (request: IconRequest) =>
+      `${label}-${request.size}`;
+
+    it('passes each explicit size to a theme function entry', () => {
+      resetIcons();
+      resetThemes();
+      const info = vi.fn(sized('theme-info'));
+      const theme = defineTheme({name: 'fn-sizes', icons: {info}});
+
+      render(
+        <Theme theme={theme}>
+          {(['xsm', 'sm', 'md', 'lg'] as const).map(size => (
+            <Icon key={size} icon="info" size={size} data-testid={size} />
+          ))}
+        </Theme>,
+      );
+
+      for (const size of ['xsm', 'sm', 'md', 'lg'] as const) {
+        const icon = screen.getByTestId(size);
+        expect(icon).toHaveTextContent(`theme-info-${size}`);
+        expect(icon).toHaveAttribute('data-size', size);
+        expect(info).toHaveBeenCalledWith({size});
+      }
+    });
+
+    it('passes the standalone md fallback when no size is set', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'fn-standalone',
+        icons: {info: sized('theme-info')},
+      });
+
+      render(
+        <Theme theme={theme}>
+          <Icon icon="info" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('theme-info-md');
+    });
+
+    it('passes the owning component default, and an explicit size over it', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'fn-contextual',
+        icons: {info: sized('theme-info')},
+      });
+
+      render(
+        <Theme theme={theme}>
+          <IconDefaultSizeProvider value="sm">
+            <Icon icon="info" data-testid="contextual" />
+            <Icon icon="info" size="lg" data-testid="explicit" />
+          </IconDefaultSizeProvider>
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('contextual')).toHaveTextContent(
+        'theme-info-sm',
+      );
+      expect(screen.getByTestId('explicit')).toHaveTextContent('theme-info-lg');
+    });
+
+    it('passes the resolved size to a process-wide function entry', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({info: sized('global-info')});
+
+      render(<Icon icon="info" size="xsm" data-testid="icon" />);
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('global-info-xsm');
+    });
+
+    it('resolves function entries from the nearest Theme', () => {
+      resetIcons();
+      resetThemes();
+      const outer = defineTheme({
+        name: 'fn-outer',
+        icons: {info: sized('outer-info')},
+      });
+      const inner = defineTheme({
+        name: 'fn-inner',
+        icons: {info: sized('inner-info')},
+      });
+
+      render(
+        <Theme theme={outer}>
+          <Icon icon="info" size="sm" data-testid="outer" />
+          <Theme theme={inner}>
+            <Icon icon="info" size="lg" data-testid="inner" />
+          </Theme>
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('outer')).toHaveTextContent('outer-info-sm');
+      expect(screen.getByTestId('inner')).toHaveTextContent('inner-info-lg');
+    });
+
+    it('renders no glyph when the selected function returns null', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({info: 'global-info'});
+      const theme = defineTheme({name: 'fn-null', icons: {info: () => null}});
+
+      const {container} = render(
+        <Theme theme={theme}>
+          <Icon icon="info" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
+      expect(container.querySelector('.astryx-icon')).toBeNull();
+    });
+
+    it('renders a supplied icon component as given', () => {
+      resetIcons();
+      resetThemes();
+      const info = vi.fn(sized('theme-info'));
+      const theme = defineTheme({name: 'fn-direct', icons: {info}});
+      info.mockClear();
+
+      render(
+        <Theme theme={theme}>
+          <Icon icon={TestIcon} size="sm" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('icon').tagName.toLowerCase()).toBe('svg');
+      expect(info).not.toHaveBeenCalled();
+    });
   });
 
   describe('namespaced extension keys', () => {

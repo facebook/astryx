@@ -13,6 +13,7 @@
  *   directly with and spread SVG props.
  * - String mode: Pass a semantic name (e.g. 'close', 'chevronDown') — resolved from the
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
+ *   A function registry entry receives `{size}`, the size resolved by ORD1.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/Icon.doc.mjs (props table, features, implementation notes)
@@ -27,7 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {useThemeName} from '../theme/useTheme';
-import {getIcon} from './globalIconRegistry';
+import {resolveIcon} from './globalIconRegistry';
 import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -315,8 +316,8 @@ Icon.displayName = 'Icon';
  * Internal component that resolves a semantic icon name from the registry
  * and renders it in a styled span with proper sizing.
  *
- * Extracted as a separate component so getIcon is only called
- * when the icon prop is a string.
+ * Extracted as a separate component so the registry is only read when the
+ * icon prop is a string. A function entry receives the resolved size.
  */
 function IconFromRegistry({
   name,
@@ -338,7 +339,7 @@ function IconFromRegistry({
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const themeName = useThemeName();
-  const resolvedIcon = getIcon(name, themeName);
+  const resolvedIcon = resolveIcon(name, themeName, {size});
 
   if (resolvedIcon == null) {
     return null;
