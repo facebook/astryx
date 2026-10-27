@@ -216,8 +216,8 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     drag(element, 40, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
     for (const event of events) {
+      // Exactly the record's values (spec:AST-107 FR1): no pointer kind.
       expect(Object.keys(event).sort()).toEqual([
-        'pointerType',
         'state',
         'translation',
         'velocity',
@@ -232,22 +232,16 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(events.at(-1)?.velocity.x).toBeGreaterThan(0);
   });
 
-  it('says which pointer drove the drag: a finger, a mouse or a pen', () => {
+  it('is driven by a finger, a mouse and a pen alike (spec:AST-107 FR1, AST-094 FR43)', () => {
     const element = surface();
     const events: PanGestureEvent[] = [];
     pan(element, {axis: 'x', onPan: event => events.push(event)});
     drag(element, 60, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
-    expect(new Set(events.map(event => event.pointerType))).toEqual(
-      new Set(['touch']),
-    );
     for (const pointerType of ['mouse', 'pen'] as const) {
       events.length = 0;
       pointerDrag(element, pointerType, 60);
       expect(phases(events)).toEqual(['began', 'changed', 'ended']);
-      expect(new Set(events.map(event => event.pointerType))).toEqual(
-        new Set([pointerType]),
-      );
     }
   });
 
