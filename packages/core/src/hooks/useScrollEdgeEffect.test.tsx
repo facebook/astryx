@@ -16,10 +16,11 @@
  *   AppShell/__tests__/AppShellScrollEdge.interaction.browser.spec.ts
  */
 
-import {act, render, screen} from '@testing-library/react';
+import {act, cleanup, render, screen} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
+import {getGestureHost} from '../gestures/GestureHost';
 import {bars, registerBarsTable} from '../motion/uikit/bars';
 import {useScrollEdgeEffect} from './useScrollEdgeEffect';
 
@@ -114,6 +115,27 @@ function touch(type: 'touchstart' | 'touchend', target: Element) {
   act(() => {
     target.dispatchEvent(event);
   });
+}
+
+/**
+ * Takes `onscrollend` off the window, as in a browser that sends no
+ * `scrollend`; returns the restore.
+ */
+function withoutScrollEnd(): () => void {
+  const own = Object.getOwnPropertyDescriptor(window, 'onscrollend');
+  const proto = Object.getPrototypeOf(window) as object;
+  const inherited = Object.getOwnPropertyDescriptor(proto, 'onscrollend');
+  Reflect.deleteProperty(window, 'onscrollend');
+  Reflect.deleteProperty(proto, 'onscrollend');
+  expect('onscrollend' in window).toBe(false);
+  return () => {
+    if (inherited != null) {
+      Object.defineProperty(proto, 'onscrollend', inherited);
+    }
+    if (own != null) {
+      Object.defineProperty(window, 'onscrollend', own);
+    }
+  };
 }
 
 beforeEach(() => {
@@ -330,6 +352,71 @@ describe('useScrollEdgeEffect', () => {
       document.dispatchEvent(new Event('scrollend'));
       await Promise.resolve();
       expect(promotion()).toBe('');
+    });
+
+    // Where the browser sends no `scrollend`, the finger-scroll watch ends a
+    // finger's scroll 150 ms after its last scroll event; the hook checks the
+    // promotion again past that spell, so a fling never leaves the layer
+    // composited (the WebKit workaround in the hook's header).
+    it('drops the layer a quiet spell after the finger’s last scroll where the browser sends no scrollend', () => {
+      vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+      const restoreScrollEnd = withoutScrollEnd();
+      try {
+        const {getByTestId} = render(<Bar enabled inContainer />);
+        const container = getByTestId('container');
+        const layer = getByTestId('layer');
+        animator.element = layer;
+        const promotion = () =>
+          layer.style.getPropertyValue('--_scroll-edge-will-change');
+        touch('touchstart', getByTestId('sentinel'));
+        container.dispatchEvent(new Event('scroll'));
+        // Lifted mid-fling: its momentum still scrolls.
+        touch('touchend', getByTestId('sentinel'));
+        act(() => {
+          vi.advanceTimersByTime(100);
+        });
+        container.dispatchEvent(new Event('scroll'));
+        act(() => {
+          vi.advanceTimersByTime(150);
+        });
+        expect(promotion()).toBe('opacity');
+        // The watch's spell has passed since the last scroll: it has ended.
+        host.isFinger = false;
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(promotion()).toBe('');
+      } finally {
+        restoreScrollEnd();
+        vi.useRealTimers();
+      }
+    });
+
+    it('listens on the document once: for scrollend, or for scroll where the browser sends none', () => {
+      // The gesture host's own document listeners start with its first
+      // retain; take it first so that only the hook's are counted.
+      const releaseHost = getGestureHost(document).retain();
+      const added = vi.spyOn(document, 'addEventListener');
+      const types = () =>
+        added.mock.calls
+          .map(([type]) => type)
+          .filter(type => type === 'scroll' || type === 'scrollend');
+      try {
+        render(<Bar enabled inContainer />);
+        expect(types()).toEqual(['scrollend']);
+        cleanup();
+        added.mockClear();
+        const restoreScrollEnd = withoutScrollEnd();
+        try {
+          render(<Bar enabled inContainer />);
+          expect(types()).toEqual(['scroll']);
+        } finally {
+          restoreScrollEnd();
+        }
+      } finally {
+        added.mockRestore();
+        releaseHost();
+      }
     });
   });
 
