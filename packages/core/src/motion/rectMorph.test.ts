@@ -662,6 +662,42 @@ describe('createRectMorph', () => {
     expect(live(element, 'scale')).toHaveLength(0);
   });
 
+  it('plays a running motion it carries on top of its path, so the element keeps that motion', async () => {
+    const {morph} = setup();
+    // A glide caught mid-move: 30 px below its place, closing at 100 px/s.
+    const rest = {duration: 0.3, at: () => 0, velocity: () => 0};
+    const closing = {
+      duration: 0.3,
+      at: (t: number) => 30 * (1 - t / 0.3),
+      velocity: () => -100,
+    };
+    morph.present(lerpPath({...BOX, x: BOX.x + 40}, BOX), SPRING, {
+      at: clock,
+      carry: {x: rest, y: closing},
+    });
+    await playFrame();
+    expect(morph.presentedRect()!.y).toBeCloseTo(BOX.y + 30, 3);
+    expect(morph.presentedRect()!.x).toBeCloseTo(BOX.x + 40, 3);
+    clock += 30;
+    // The path moves only sideways; the carried motion keeps closing.
+    expect(morph.presentedRect()!.y).toBeCloseTo(BOX.y + 27, 1);
+  });
+
+  it('keeps an element’s own inline transform-origin: a path that keeps its size writes none, and a scaled path gives it back', async () => {
+    const {element, morph} = setup();
+    element.style.setProperty('transform-origin', '10% 20%');
+    morph.present(lerpPath({...BOX, x: BOX.x + 40}, BOX), SPRING);
+    await playFrame();
+    expect(element.style.getPropertyValue('transform-origin')).toBe('10% 20%');
+    morph.reset();
+    expect(element.style.getPropertyValue('transform-origin')).toBe('10% 20%');
+    morph.present(lerpPath(SQUARE, BOX), SPRING);
+    await playFrame();
+    expect(element.style.getPropertyValue('transform-origin')).toBe('0px 0px');
+    await settle(progressCurve(SPRING).duration * 1000 + 50);
+    expect(element.style.getPropertyValue('transform-origin')).toBe('10% 20%');
+  });
+
   it('starts on the time it is handed, so several morphs share one clock', async () => {
     const {morph} = setup();
     const path = lerpPath(SQUARE, BOX);

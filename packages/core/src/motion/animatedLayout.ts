@@ -32,10 +32,10 @@
  *   one, played through the shared rect morph (`createRectMorph`;
  *   `architecture:react-component-runtime` INV12) on `springs.settle`, on a
  *   path that keeps the element's size, corrected for a scaled ancestor. An
- *   element already gliding starts its new glide from where it shows, with
- *   the velocity it had along the new move. The glides of one change and the
- *   changed element's own entrance start on the document timeline's time.
- *   Nothing animates height, and nothing scrolls the area.
+ *   element already gliding keeps that motion: the rest of its glide plays
+ *   on top of the new move, velocity and direction included. The glides of
+ *   one change and the changed element's own entrance start on the document
+ *   timeline's time. Nothing animates height, and nothing scrolls the area.
  * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
  *   the same frame (`playLayoutChange`), or its exit: kept where it is while
@@ -47,7 +47,12 @@
  *   (`spec:AST-105` FR2).
  */
 
-import {createAnimator, type Animator, type MotionHandle} from './animator';
+import {
+  createAnimator,
+  type Animator,
+  type MotionCurve,
+  type MotionHandle,
+} from './animator';
 import {createRectMorph, lerpPath, type RectMorph} from './rectMorph';
 import {motionRole} from './roles';
 import {isSpring} from './roleValue';
@@ -244,6 +249,59 @@ interface Glider {
 }
 
 const gliders = new WeakMap<Element, Glider>();
+
+/** How finely a running glide is read to carry it on, ms (60 Hz). */
+const CARRY_STEP_MS = 1000 / 60;
+/** The longest running glide carried, ms; one settles well inside it. */
+const CARRY_MAX_MS = 3000;
+/** Under this offset (px) and speed (px/s) a running glide has landed. */
+const CARRY_REST_PX = 0.01;
+const CARRY_REST_PX_S = 1;
+
+/**
+ * The rest of a running glide, own px from its place, from `at` on: read off
+ * its animator before the glide stops, so the next glide plays on top of it
+ * and the element keeps its whole running motion, in any direction
+ * (`spec:AST-105` Coverage, "Elements already moving").
+ */
+function remainingMotion(
+  animator: Animator,
+  at: number,
+): {readonly x: MotionCurve; readonly y: MotionCurve} {
+  const samples: {x: number; y: number; vx: number; vy: number}[] = [];
+  for (let t = 0; t <= CARRY_MAX_MS; t += CARRY_STEP_MS) {
+    const sample = {
+      x: animator.get('x', at + t),
+      y: animator.get('y', at + t),
+      vx: animator.getVelocity('x', at + t),
+      vy: animator.getVelocity('y', at + t),
+    };
+    samples.push(sample);
+    if (
+      Math.abs(sample.x) < CARRY_REST_PX &&
+      Math.abs(sample.y) < CARRY_REST_PX &&
+      Math.abs(sample.vx) < CARRY_REST_PX_S &&
+      Math.abs(sample.vy) < CARRY_REST_PX_S
+    ) {
+      break;
+    }
+  }
+  // It ends exactly at its place, so the morph leaves nothing inline.
+  samples.push({x: 0, y: 0, vx: 0, vy: 0});
+  const duration = ((samples.length - 1) * CARRY_STEP_MS) / 1000;
+  const read = (t: number, key: 'x' | 'y' | 'vx' | 'vy') => {
+    const index = Math.max(0, (t * 1000) / CARRY_STEP_MS);
+    const k = Math.min(samples.length - 1, Math.floor(index));
+    const next = Math.min(samples.length - 1, k + 1);
+    return (
+      samples[k][key] + (samples[next][key] - samples[k][key]) * (index - k)
+    );
+  };
+  return {
+    x: {duration, at: t => read(t, 'x'), velocity: t => read(t, 'vx')},
+    y: {duration, at: t => read(t, 'y'), velocity: t => read(t, 'vy')},
+  };
+}
 
 function gliderOf(element: HTMLElement): Glider {
   let glider = gliders.get(element);
@@ -474,11 +532,14 @@ function flush(batch: Batch): void {
   const visible = visibleRect(batch.area);
   // Every running glide stops first and every new place is read before any
   // glide starts, so no reading includes another's new motion.
+  // One clock for the change: the glides start on the timeline's time, as
+  // the changed element's own entrance does (playLayoutChange).
+  const start = timelineNow(batch.area);
   const entries: {
     readonly element: Element;
     readonly before: DOMRect;
-    /** The running glide's velocity, own px per second. */
-    readonly velocity: {readonly x: number; readonly y: number};
+    /** The rest of its running glide, own px, from `start` on. */
+    readonly carry: ReturnType<typeof remainingMotion> | null;
     after?: DOMRect;
     rawX?: number;
     rawY?: number;
@@ -492,21 +553,16 @@ function flush(batch: Batch): void {
       continue;
     }
     // An element already gliding keeps that motion and adds the new move: the
-    // running glide stops (so its rectangle is its new layout place) and the
-    // rest of its curve carries into the one new glide, velocity included,
-    // summed with the new move.
+    // rest of its glide is read, the glide stops (so its rectangle is its new
+    // layout place), and the new glide plays on top of that rest.
     const glider = gliders.get(element);
-    let velocity = {x: 0, y: 0};
+    let carry: ReturnType<typeof remainingMotion> | null = null;
     if (glider?.playing != null) {
-      const at = performance.now();
-      velocity = {
-        x: glider.animator.getVelocity('x', at),
-        y: glider.animator.getVelocity('y', at),
-      };
+      carry = remainingMotion(glider.animator, start);
       glider.playing = null;
       glider.morph.reset();
     }
-    entries.push({element, before, velocity});
+    entries.push({element, before, carry});
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
   for (const entry of entries) {
@@ -515,9 +571,6 @@ function flush(batch: Batch): void {
     entry.rawY = entry.before.top - entry.after.top;
     byElement.set(entry.element, entry);
   }
-  // One clock for the change: the glides start on the timeline's time, as
-  // the changed element's own entrance does (playLayoutChange).
-  const start = timelineNow(batch.area);
   for (const entry of entries) {
     const {element, before} = entry;
     const after = entry.after as DOMRect;
@@ -559,25 +612,22 @@ function flush(batch: Batch): void {
     // From where it shows now (its old place, a running glide included) to
     // its new one, in its own px: a translate played through the shared rect
     // morph (INV12), which keeps the box's size, so it moves and never
-    // scales. A running glide's velocity carries on along the new move.
+    // scales. A running glide's rest plays on top of the new move, so the
+    // element keeps its motion, speed and direction both.
     const scale = scaleOf(element, after);
-    const fromX = dx / scale.x;
-    const fromY = dy / scale.y;
+    const {carry} = entry;
+    const fromX = dx / scale.x - (carry?.x.at(0) ?? 0);
+    const fromY = dy / scale.y - (carry?.y.at(0) ?? 0);
     const width = after.width / scale.x;
     const height = after.height / scale.y;
     const path = lerpPath(
       {x: fromX, y: fromY, width, height},
       {x: 0, y: 0, width, height},
     );
-    const travel = fromX * fromX + fromY * fromY;
-    const velocity =
-      travel > 0
-        ? -(entry.velocity.x * fromX + entry.velocity.y * fromY) / travel
-        : 0;
     const glider = gliderOf(element as HTMLElement);
     const handle = glider.morph.present(path, settleSpring(), {
       at: start,
-      velocity,
+      ...(carry != null ? {carry} : null),
     });
     glider.playing = handle;
     void handle.finished.then(() => {

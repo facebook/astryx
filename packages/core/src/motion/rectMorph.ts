@@ -340,16 +340,39 @@ function channelsOf(path: MorphPath): ProgressChannel[] {
   ];
 }
 
-function startValues(path: MorphPath, opacity?: number): MotionValues {
+function startValues(
+  path: MorphPath,
+  opacity?: number,
+  carry?: RectMorphPlayOptions['carry'],
+): MotionValues {
   const values: MotionValues = {...travelAt(path, 0)};
+  if (carry != null) {
+    values.x = (values.x ?? 0) + carry.x.at(0);
+    values.y = (values.y ?? 0) + carry.y.at(0);
+  }
   if (path.opacityAt != null) {
     values.opacity = opacity ?? path.opacityAt(0);
   }
   return values;
 }
 
-/** The morph's own inline properties, left on an element only while it moves. */
-const INLINE_PROPERTIES = ['translate', 'scale', 'transform-origin'] as const;
+/**
+ * The morph's own inline properties, left on an element only while it moves.
+ * Its `transform-origin` is written only for a path that scales, and gives
+ * the element's own back (createRectMorph).
+ */
+const INLINE_PROPERTIES = ['translate', 'scale'] as const;
+
+/** `a` and `b` added: a path's move and a running motion it carries. */
+function sumCurves(a: MotionCurve, b: MotionCurve): MotionCurve {
+  return {
+    duration: Math.max(a.duration, b.duration),
+    at: t => a.at(Math.min(t, a.duration)) + b.at(Math.min(t, b.duration)),
+    velocity: t =>
+      (t < a.duration ? a.velocity(t) : 0) +
+      (t < b.duration ? b.velocity(t) : 0),
+  };
+}
 
 /**
  * How a present or a dismissal plays.
@@ -386,6 +409,14 @@ export interface RectMorphPlayOptions {
    * handed to several morphs and animations puts them on one clock.
    */
   at?: AnimateOptions['at'];
+  /**
+   * A running motion to play on top of the path, own px from the box over
+   * time (a layout glide caught mid-move by a new one): added to the path's
+   * translate until it ends, so the element keeps that motion, velocity
+   * included, in any direction. For a morph at rest: one that is presenting
+   * restarts from what it shows instead.
+   */
+  carry?: {readonly x: MotionCurve; readonly y: MotionCurve};
 }
 
 /**
@@ -480,10 +511,38 @@ export function createRectMorph(
     release: (target: HTMLElement) => void;
   } | null = null;
 
+  // The element's own inline `transform-origin` while the morph's `0 0`
+  // stands in for it; undefined while the morph has written none. Only a
+  // path that scales needs it: a move alone leaves the element's own.
+  let ownOrigin: string | undefined;
+  const takeOrigin = () => {
+    ownOrigin ??= element.style.getPropertyValue('transform-origin');
+    element.style.setProperty('transform-origin', '0px 0px');
+  };
+  const giveOrigin = () => {
+    if (ownOrigin === undefined) {
+      return;
+    }
+    if (ownOrigin === '') {
+      element.style.removeProperty('transform-origin');
+    } else {
+      element.style.setProperty('transform-origin', ownOrigin);
+    }
+    ownOrigin = undefined;
+  };
+  const holdOrigin = (path: MorphPath) => {
+    if (keepsSize(path)) {
+      giveOrigin();
+    } else {
+      takeOrigin();
+    }
+  };
+
   const clearInline = () => {
     for (const property of INLINE_PROPERTIES) {
       element.style.removeProperty(property);
     }
+    giveOrigin();
   };
 
   // Leaves the element as laid out: identity, and none of the morph's inline
@@ -572,7 +631,13 @@ export function createRectMorph(
       play.fadeSpring != null
         ? progressCurve(resolveMotion(on, play.fadeSpring), {velocity})
         : progress;
-    return morphCurves(path, progress, fade);
+    const curves = morphCurves(path, progress, fade);
+    const {carry} = play;
+    if (carry != null && curves.x != null && curves.y != null) {
+      curves.x = sumCurves(curves.x, carry.x);
+      curves.y = sumCurves(curves.y, carry.y);
+    }
+    return curves;
   };
 
   const present: RectMorph['present'] = (path, spring, play = {}) => {
@@ -582,7 +647,11 @@ export function createRectMorph(
     let start = path;
     let velocity = play.velocity ?? 0;
     let opacity: number | undefined;
+    // A running motion is carried by a morph at rest; one that is presenting
+    // restarts from what it shows, which already holds it.
+    let carried = play;
     if (from != null) {
+      carried = {...play, carry: undefined};
       opacity = from.animator.get('opacity', at);
       start = restart(
         path,
@@ -599,10 +668,10 @@ export function createRectMorph(
     ownsOpacity ||= start.opacityAt != null;
     // A dismissal on a copy let the element go (dismiss, below).
     animator.attach(element);
-    element.style.setProperty('transform-origin', '0px 0px');
-    animator.set(startValues(start, opacity));
+    holdOrigin(start);
+    animator.set(startValues(start, opacity, carried.carry));
     const handle = animator.play(
-      curvesFor(element, start, spring, play, velocity),
+      curvesFor(element, start, spring, carried, velocity),
       playOptions(play, start),
     );
     presenting = handle;
@@ -658,7 +727,11 @@ export function createRectMorph(
     const closing = onElement
       ? animator
       : (continuing?.animator ?? createAnimator(target, options));
-    target.style.setProperty('transform-origin', '0px 0px');
+    if (onElement) {
+      holdOrigin(back);
+    } else {
+      target.style.setProperty('transform-origin', '0px 0px');
+    }
     // The copy starts as the element shows now, whatever its clone kept.
     closing.set(startValues(back, opacity));
     const handle = closing.play(
