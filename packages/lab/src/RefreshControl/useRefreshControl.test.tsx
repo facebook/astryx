@@ -23,6 +23,7 @@
 import {useState, type ReactNode} from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {useScrollLock} from '@astryxdesign/core/hooks';
+import {GestureRecognizer} from '@astryxdesign/core/internal/touch';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useRefreshControl,
@@ -546,6 +547,40 @@ describe('useRefreshControl', () => {
     expect(content()).toHaveAttribute('aria-busy', 'true');
     drag.lift();
     await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
+  });
+
+  it('takes a scroll only through a pan that claims it: the touch pull is a watcher and takes none, and the content’s only blocking listener is the scroll pull’s `wheel` (spec:AST-094 FR20)', () => {
+    useTouchScreen(false);
+    const enabled = vi.spyOn(GestureRecognizer.prototype, 'setEnabled');
+    const added = vi.spyOn(HTMLElement.prototype, 'addEventListener');
+    try {
+      render(
+        <Refreshable data-testid="refresh" onRefresh={() => {}}>
+          <p>Inbox</p>
+        </Refreshable>,
+      );
+      const pans = [...new Set(enabled.mock.contexts as GestureRecognizer[])];
+      expect(pans).toHaveLength(2);
+      for (const pan of pans) {
+        // A watcher registers only passive listeners (FR20), and a pan that
+        // takes scrolling gets a blocking `wheel` listener: only a claimer
+        // may take scrolling.
+        expect(pan.allowedScrollTypes.size > 0).toBe(pan.claimsTouches);
+      }
+      const blocking = added.mock.calls
+        .filter(
+          (call, index) =>
+            added.mock.contexts[index] === content() &&
+            typeof call[2] === 'object' &&
+            call[2] != null &&
+            call[2].passive === false,
+        )
+        .map(call => call[0]);
+      expect(blocking).toEqual(['wheel']);
+    } finally {
+      enabled.mockRestore();
+      added.mockRestore();
+    }
   });
 
   it('pulls under a trackpad’s two-finger scroll at the top as under a finger: the same mapping, a trigger, the settle onto the inset once the scroll ends (spec:AST-094 FR43)', async () => {
