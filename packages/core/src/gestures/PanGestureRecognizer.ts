@@ -45,7 +45,7 @@ import {
   type NativeTouchBehavior,
 } from './GestureRecognizer';
 import type {GestureEventContext, GestureTouch, Point} from './types';
-import {VelocityTracker} from './VelocityTracker';
+import {createVelocityTracker, type VelocityTracker} from './VelocityTracker';
 
 export type PanDirection =
   'any' | 'horizontal' | 'vertical' | 'left' | 'right' | 'up' | 'down';
@@ -120,7 +120,7 @@ export class PanGestureRecognizer extends GestureRecognizer {
     this.axisRatio = options.axisRatio ?? 1;
     this.lockAxis = options.lockAxis ?? false;
     this.scrollEdge = options.scrollEdge ?? false;
-    this.tracker = new VelocityTracker();
+    this.tracker = createVelocityTracker();
   }
 
   /**

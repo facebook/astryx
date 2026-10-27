@@ -28,7 +28,7 @@ import {
   type NativeTouchBehavior,
 } from './GestureRecognizer';
 import type {GestureEventContext, GestureTouch, Point} from './types';
-import {VelocityTracker} from './VelocityTracker';
+import {createVelocityTracker} from './VelocityTracker';
 
 export interface PinchGestureRecognizerOptions extends GestureRecognizerOptions<PinchGestureRecognizer> {
   hysteresis?: number;
@@ -38,7 +38,7 @@ export class PinchGestureRecognizer extends GestureRecognizer {
   hysteresis: number;
   private initialSpan = 0;
   private scaleValue = 1;
-  private readonly tracker = new VelocityTracker();
+  private readonly tracker = createVelocityTracker();
   private lastTime = 0;
 
   constructor(options: PinchGestureRecognizerOptions = {}) {

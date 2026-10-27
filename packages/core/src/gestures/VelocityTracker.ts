@@ -3,8 +3,8 @@
 /**
  * @file VelocityTracker.ts
  * @input Timestamped positions of a moving contact, and the release time
- * @output Exports VelocityTracker, the one velocity tracker every continuous
- *   recognizer uses (architecture:interaction-modality INV10,
+ * @output Exports createVelocityTracker and the VelocityTracker it returns:
+ *   the one velocity tracker every continuous recognizer uses (architecture:interaction-modality INV10,
  *   spec:AST-100 FR1, FR2)
  * @position Pure math under packages/core/src/gestures; no DOM
  *
@@ -56,34 +56,10 @@ function blend(weight: number, current: Point, previous: Point): Point {
   };
 }
 
-export class VelocityTracker {
-  private readonly stillness: number;
-  /** The newest sample added, moved or not. */
-  private newest: TouchSample | null = null;
-  /**
-   * The newest moved samples, oldest first (the touch-down counts as the
-   * first); the filter reads the last three.
-   */
-  private moved: TouchSample[] = [];
-  /** Moved samples since the touch-down. */
-  private moves = 0;
-  /** The newest pan value, and the one before it. */
-  private pan: Point = ZERO;
-  private previousPan: Point = ZERO;
-
-  constructor(options: VelocityTrackerOptions = {}) {
-    this.stillness = options.stillness ?? UIKIT_VELOCITY.stillness.value;
-  }
-
+/** The one velocity tracker every continuous recognizer feeds. */
+export interface VelocityTracker {
   /** Forget every sample (a new gesture). */
-  reset(): void {
-    this.newest = null;
-    this.moved = [];
-    this.moves = 0;
-    this.pan = ZERO;
-    this.previousPan = ZERO;
-  }
-
+  reset(): void;
   /**
    * Record a position. Timestamps must not go backwards (an older sample is
    * ignored), and a moved sample at the newest moved sample's timestamp
@@ -92,79 +68,107 @@ export class VelocityTracker {
    * or a rotation's value holding while both fingers move, which reads as
    * zero velocity for that interval).
    */
-  add(
-    x: number,
-    y: number,
-    time: number,
-    {isMotion = false}: {isMotion?: boolean} = {},
-  ): void {
-    if (this.newest != null && time < this.newest.time) {
-      return;
-    }
-    this.newest = {x, y, time};
-    const last = this.moved[this.moved.length - 1];
-    if (last != null && x === last.x && y === last.y && !isMotion) {
-      return;
-    }
-    if (last != null && time === last.time) {
-      this.moved[this.moved.length - 1] = {x, y, time};
-    } else {
-      this.moved.push({x, y, time});
-      if (this.moved.length > 3) {
-        this.moved.shift();
-      }
-      if (last != null) {
-        this.moves += 1;
-        this.previousPan = this.pan;
-      }
-    }
-    this.pan = panVelocity(this.moved);
-  }
-
+  add(x: number, y: number, time: number, options?: {isMotion?: boolean}): void;
   /** Record every sample in order. */
-  addSamples(samples: ReadonlyArray<TouchSample>): void {
-    for (const sample of samples) {
-      this.add(sample.x, sample.y, sample.time);
-    }
-  }
-
+  addSamples(samples: ReadonlyArray<TouchSample>): void;
   /** The newest sample, if any. */
-  get lastSample(): TouchSample | null {
-    return this.newest;
-  }
-
+  readonly lastSample: TouchSample | null;
   /**
    * The pan's velocity in px/s. Pass the release's event time to read the
    * release velocity of a dragged surface: 0 after a rest longer than the
    * stillness interval, or with fewer than two moved samples (AST-100 FR2).
    */
-  velocity(releaseTime?: number): Point {
-    if (releaseTime != null && !this.releases(releaseTime)) {
-      return ZERO;
-    }
-    return this.pan;
-  }
-
+  velocity(releaseTime?: number): Point;
   /**
    * A scrolling surface's release velocity in px/s (paging, a wheel): 0.25
    * times the newest pan value plus 0.75 times the previous one, with the
    * same stillness and two-moved-sample rules (AST-100 FR2).
    */
-  scrollVelocity(releaseTime: number): Point {
-    if (!this.releases(releaseTime)) {
-      return ZERO;
-    }
-    return blend(SCROLL_CURRENT_WEIGHT, this.pan, this.previousPan);
-  }
+  scrollVelocity(releaseTime: number): Point;
+}
 
-  private releases(releaseTime: number): boolean {
-    const last = this.moved[this.moved.length - 1];
-    return (
-      this.moves >= 2 &&
-      last != null &&
-      releaseTime - last.time <= this.stillness
-    );
-  }
+/** Creates a velocity tracker (`spec:AST-100`). */
+export function createVelocityTracker(
+  options: VelocityTrackerOptions = {},
+): VelocityTracker {
+  const stillness = options.stillness ?? UIKIT_VELOCITY.stillness.value;
+  /** The newest sample added, moved or not. */
+  let newest: TouchSample | null = null;
+  /**
+   * The newest moved samples, oldest first (the touch-down counts as the
+   * first); the filter reads the last three.
+   */
+  let moved: TouchSample[] = [];
+  /** Moved samples since the touch-down. */
+  let moves = 0;
+  /** The newest pan value, and the one before it. */
+  let pan: Point = ZERO;
+  let previousPan: Point = ZERO;
+
+  const releases = (releaseTime: number): boolean => {
+    const last = moved[moved.length - 1];
+    return moves >= 2 && last != null && releaseTime - last.time <= stillness;
+  };
+
+  const add = (
+    x: number,
+    y: number,
+    time: number,
+    {isMotion = false}: {isMotion?: boolean} = {},
+  ): void => {
+    if (newest != null && time < newest.time) {
+      return;
+    }
+    newest = {x, y, time};
+    const last = moved[moved.length - 1];
+    if (last != null && x === last.x && y === last.y && !isMotion) {
+      return;
+    }
+    if (last != null && time === last.time) {
+      moved[moved.length - 1] = {x, y, time};
+    } else {
+      moved.push({x, y, time});
+      if (moved.length > 3) {
+        moved.shift();
+      }
+      if (last != null) {
+        moves += 1;
+        previousPan = pan;
+      }
+    }
+    pan = panVelocity(moved);
+  };
+
+  return {
+    reset() {
+      newest = null;
+      moved = [];
+      moves = 0;
+      pan = ZERO;
+      previousPan = ZERO;
+    },
+    add,
+    addSamples(samples) {
+      for (const sample of samples) {
+        add(sample.x, sample.y, sample.time);
+      }
+    },
+    get lastSample() {
+      return newest;
+    },
+    velocity(releaseTime) {
+      if (releaseTime != null && !releases(releaseTime)) {
+        return ZERO;
+      }
+      return pan;
+    },
+    scrollVelocity(releaseTime) {
+      if (!releases(releaseTime)) {
+        return ZERO;
+      }
+      return blend(SCROLL_CURRENT_WEIGHT, pan, previousPan);
+    },
+  };
 }
 
 /**

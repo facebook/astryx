@@ -11,7 +11,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {VelocityTracker} from '../VelocityTracker';
+import {createVelocityTracker, type VelocityTracker} from '../VelocityTracker';
 
 /** Feed `position(t)` sampled every `step` ms over [0, end]. */
 function trace(
@@ -80,7 +80,7 @@ describe('VelocityTracker', () => {
   it.each(Object.entries(UIKIT_STREAMS))(
     'uikit reproduces every velocity UIKit reported on the %s stream',
     (_, {samples, velocities}) => {
-      const tracker = new VelocityTracker();
+      const tracker = createVelocityTracker();
       const errors: number[] = [];
       samples.forEach(([time, y], index) => {
         tracker.add(0, y, time);
@@ -96,14 +96,14 @@ describe('VelocityTracker', () => {
   );
 
   it('keeps the last moving value through a rest while the finger is down', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     trace(tracker, t => t * 2, 160);
     // No event arrives while the finger rests: nothing changes the estimate.
     expect(tracker.velocity().x).toBeCloseTo(2000, 6);
   });
 
   it('releases at 0 after a rest longer than the stillness interval (AST-100 FR2)', () => {
-    const tracker = new VelocityTracker({stillness: 40});
+    const tracker = createVelocityTracker({stillness: 40});
     trace(tracker, t => t * 2, 160);
     expect(tracker.velocity(168).x).toBeCloseTo(2000, 6);
     expect(tracker.velocity(200).x).toBeCloseTo(2000, 6);
@@ -112,7 +112,7 @@ describe('VelocityTracker', () => {
   });
 
   it('releases at 0 with fewer than two moved samples (AST-100)', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     tracker.add(0, 0, 0);
     tracker.add(10, 0, 8);
     // One moved sample: the live value is that interval, the release is 0.
@@ -124,7 +124,7 @@ describe('VelocityTracker', () => {
   });
 
   it('updates only on moved samples (INV10)', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     tracker.add(0, 0, 0);
     tracker.add(10, 0, 10);
     tracker.add(20, 0, 20);
@@ -139,7 +139,7 @@ describe('VelocityTracker', () => {
   });
 
   it('blends a scrolling surface\u2019s release from the last two pan values (INV10)', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     tracker.add(0, 0, 0);
     tracker.add(10, 0, 10);
     tracker.add(20, 0, 20);
@@ -206,7 +206,7 @@ describe('VelocityTracker', () => {
   ] as const)(
     "reproduces UIKit's scroll release on a recorded UIPickerView swipe, %s (INV10)",
     (_, stream, release) => {
-      const tracker = new VelocityTracker();
+      const tracker = createVelocityTracker();
       for (const [time, y] of stream) {
         tracker.add(0, y, time);
       }
@@ -219,7 +219,7 @@ describe('VelocityTracker', () => {
   );
 
   it('reads a steady 1000 px/s exactly', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     trace(tracker, t => t, 200);
     expect(tracker.velocity().x).toBeCloseTo(1000, 6);
     expect(tracker.scrollVelocity(200).x).toBeCloseTo(1000, 6);
@@ -229,13 +229,13 @@ describe('VelocityTracker', () => {
     // x = 0.02 t^2 (px, ms). UIKit's filter is 0.8 on the previous interval
     // (its middle, 188 ms: 7520 px/s) and 0.2 on the newest (196 ms:
     // 7840 px/s).
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     trace(tracker, t => 0.02 * t * t, 200);
     expect(tracker.velocity().x).toBeCloseTo(0.8 * 7520 + 0.2 * 7840, 3);
   });
 
   it('handles one and two samples, and repeated timestamps', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     expect(tracker.velocity()).toEqual({x: 0, y: 0});
     tracker.add(0, 0, 0);
     expect(tracker.velocity()).toEqual({x: 0, y: 0});
@@ -251,7 +251,7 @@ describe('VelocityTracker', () => {
   });
 
   it('forgets everything on reset', () => {
-    const tracker = new VelocityTracker();
+    const tracker = createVelocityTracker();
     trace(tracker, t => t, 80);
     tracker.reset();
     expect(tracker.lastSample).toBeNull();

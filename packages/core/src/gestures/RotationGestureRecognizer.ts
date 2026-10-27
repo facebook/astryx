@@ -22,7 +22,7 @@ import {
   type NativeTouchBehavior,
 } from './GestureRecognizer';
 import type {GestureEventContext, GestureTouch, Point} from './types';
-import {VelocityTracker} from './VelocityTracker';
+import {createVelocityTracker} from './VelocityTracker';
 
 export interface RotationGestureRecognizerOptions extends GestureRecognizerOptions<RotationGestureRecognizer> {
   hysteresis?: number;
@@ -33,7 +33,7 @@ export class RotationGestureRecognizer extends GestureRecognizer {
   private initialAngle = 0;
   private lastAngle = 0;
   private rotationValue = 0;
-  private readonly tracker = new VelocityTracker();
+  private readonly tracker = createVelocityTracker();
 
   constructor(options: RotationGestureRecognizerOptions = {}) {
     super(options);
