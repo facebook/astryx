@@ -25,7 +25,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/core/src/Slider/Slider.test.tsx,
   ]
-deciding_specs: [spec:AST-100/DEC-1]
+deciding_specs: [spec:AST-100/DEC-1, spec:AST-094/DEC-17]
 ---
 
 # Interaction modality architecture
@@ -178,8 +178,9 @@ work.
 - **INV13 — Press tracking across a group has one owner.** In
   `@astryxdesign/core`, one internal module, `actionGroupTracker`, tracks a
   held pointer across a group's actions for every `family:action-groups`
-  member other than menus, whose tracking and public `menuPressStep` stay
-  with `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
+  member other than menus and Selector's and MultiSelector's options, whose
+  tracking and public `menuPressStep` stay with
+  `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
   of the tracking. Moving menus onto the shared tracker is planned (OQ1). It is not exported (`spec:AST-017`
   FR21).
 
