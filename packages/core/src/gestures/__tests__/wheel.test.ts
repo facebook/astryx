@@ -16,6 +16,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../GestureHost';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
 import {PinchGestureRecognizer} from '../PinchGestureRecognizer';
+import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {ManualClock} from './harness';
 
 let clock: ManualClock;
@@ -106,6 +107,65 @@ afterEach(() => {
 });
 
 describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
+  it('reads a right-to-left scroller under the pointer by its own range: at its start a scroll toward it is the pan’s, a scroll away from it the scroller’s', () => {
+    const {strip, scroller, item} = mount(
+      '<div id="strip"><div id="scroller" dir="rtl"><div id="item"></div></div></div>',
+    );
+    const pan = new PanGestureRecognizer({
+      direction: 'horizontal',
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pan);
+    detachers.push(host.attach(strip, pan));
+    // Right to left, scrollLeft runs from 0 at the start to minus the
+    // overflow: at 0 the scroller cannot scroll right any further.
+    scrollableX(scroller, {scrollLeft: 0, scrollWidth: 300, clientWidth: 200});
+    expect(wheel(item, {dx: -20, time: 0}).defaultPrevented).toBe(false);
+    expect(states).toEqual([]);
+    expect(wheel(item, {dx: 20, time: 200}).defaultPrevented).toBe(true);
+    expect(wheel(item, {dx: 20, time: 216}).defaultPrevented).toBe(true);
+    expect(states).toEqual(['began', 'changed']);
+  });
+
+  it('reads a right-to-left scroller a pixel short of its end, where Chromium stops it, as at its end: a scroll on toward the end is the pan’s', () => {
+    const {strip, scroller, item} = mount(
+      '<div id="strip"><div id="scroller" dir="rtl"><div id="item"></div></div></div>',
+    );
+    const pan = new PanGestureRecognizer({
+      direction: 'horizontal',
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pan);
+    detachers.push(host.attach(strip, pan));
+    // The end is minus the overflow (-100); Chromium stops at -99.
+    scrollableX(scroller, {
+      scrollLeft: -99,
+      scrollWidth: 300,
+      clientWidth: 200,
+    });
+    expect(wheel(item, {dx: -20, time: 0}).defaultPrevented).toBe(true);
+    expect(wheel(item, {dx: -20, time: 16}).defaultPrevented).toBe(true);
+    expect(states).toEqual(['began', 'changed']);
+  });
+
+  it('finds a scroller inside a shadow tree between the pointer and the pan, from what the wheel landed on', () => {
+    const {outer} = mount('<div id="outer"></div>');
+    const shadow = outer.attachShadow({mode: 'open'});
+    shadow.innerHTML = '<div id="scroller"><div id="item"></div></div>';
+    const scroller = shadow.getElementById('scroller') as HTMLElement;
+    const item = shadow.getElementById('item') as HTMLElement;
+    const pan = new PanGestureRecognizer({
+      direction: 'horizontal',
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pan);
+    detachers.push(host.attach(outer, pan));
+    scrollableX(scroller, {scrollLeft: 50, scrollWidth: 300, clientWidth: 200});
+    expect(wheel(item, {dx: 20, time: 0}).defaultPrevented).toBe(false);
+    expect(wheel(item, {dx: 20, time: 16}).defaultPrevented).toBe(false);
+    expect(states).toEqual([]);
+  });
+
   it("takes a wheel on a scroll-edge pan only while no scroller under the pointer could scroll for it, its own scroll owner above it included, as a finger's (FR19)", () => {
     const {owner, content} = mount(
       '<div id="owner"><div id="content"></div></div>',
@@ -238,6 +298,16 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
       }
     }
     expect(states).toEqual([]);
+  });
+
+  it('listens for the wheel only where a recognizer a wheel can drive allows it: a tap that allows scroll input adds no wheel listener', () => {
+    const {box} = mount('<div id="box"></div>');
+    const added = vi.spyOn(box, 'addEventListener');
+    const tap = new TapGestureRecognizer({allowedScrollTypes: ['continuous']});
+    detachers.push(host.attach(box, tap));
+    expect(
+      (added.mock.calls as unknown[][]).filter(call => call[0] === 'wheel'),
+    ).toEqual([]);
   });
 
   it("takes no wheel for a pan that allows no scroll type, UIKit's default: its element gets no wheel listener, and the page scrolls", () => {
