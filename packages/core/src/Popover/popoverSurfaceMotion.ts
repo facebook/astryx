@@ -246,6 +246,8 @@ export function createPopoverSurfaceMotion(
   };
 
   const enter = (measure: () => PopoverSurfaceGeometry) => {
+    // A dismissal let the element go (exit, below).
+    animator.attach(element);
     let from: SurfaceState | null = null;
     let velocity = 0;
     if (exiting != null && collapsed != null) {
@@ -335,8 +337,14 @@ export function createPopoverSurfaceMotion(
       ),
     );
     exiting = {copy, animator: closing};
-    // The element itself is hidden by the browser now; leave it at rest.
-    animator.set({scaleX: 1, scaleY: 1, opacity: 1});
+    // The element itself is hidden by the browser now: leave it at rest with
+    // no layer, and let go of the layer its presentation promoted in this
+    // task. Kept, the promotion would end PROMOTION_LINGER_MS (500 ms) after
+    // the element's last motion, a style write on an element that no longer
+    // paints landing inside the dismissal (a Layout in its frames). The next
+    // presentation attaches the element again.
+    animator.set({scaleX: 1, scaleY: 1, opacity: 1}, {promote: false});
+    animator.attach(null);
     void handle.finished.then(finished => {
       if (finished && exiting?.copy === copy) {
         endExit();

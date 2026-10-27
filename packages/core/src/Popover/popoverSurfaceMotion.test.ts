@@ -355,6 +355,39 @@ describe('createPopoverSurfaceMotion', () => {
     });
   });
 
+  it('lets the hidden layer go of its compositing layer as the dismissal starts, so no style write reaches it during the dismissal', async () => {
+    const {element, motion} = create();
+    motion.enter(() => GEOMETRY);
+    // Dismissed about 100 ms after the presentation's curve ended, while the
+    // animator still keeps the element promoted (its PROMOTION_LINGER_MS).
+    clock += 600;
+    vi.advanceTimersByTime(600);
+    motion.exit();
+    // The exit's own task.
+    await Promise.resolve();
+    const writes: string[] = [];
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        writes.push(record.oldValue ?? '');
+      }
+    });
+    observer.observe(element, {
+      attributes: true,
+      attributeFilter: ['style'],
+      attributeOldValue: true,
+    });
+    // The dismissal's whole run, and any linger past it.
+    for (let ms = 0; ms < 1200; ms += 50) {
+      clock += 50;
+      vi.advanceTimersByTime(50);
+      await Promise.resolve();
+    }
+    writes.push(...observer.takeRecords().map(record => record.oldValue ?? ''));
+    observer.disconnect();
+    expect(writes).toEqual([]);
+    expect(element.style.getPropertyValue('will-change')).toBe('');
+  });
+
   it('presented again during the dismissal, grows back from the frame on screen about the same point', () => {
     const {element, motion} = create();
     motion.enter(() => GEOMETRY);
