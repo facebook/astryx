@@ -17,37 +17,31 @@
  *
  * UIKit's reference (iOS 26.2, a UICollectionView list with outline
  * disclosure): on expand, the children slide down out from under the parent
- * as one block, inside a clip that grows with them; the rows below move down
- * with them; the disclosure chevron turns 90°; all on one critically damped
- * spring (`list.update.outlineSpring`, an internal constant), with no fade.
- * Collapse runs the same motion back: the children slide up under the parent
- * and leave when it ends.
+ * as one block; the disclosure chevron turns 90°; both on one critically
+ * damped spring (`list.update.outlineSpring`, an internal constant), with no
+ * fade. Collapse runs the same motion back: the children slide up under the
+ * parent and leave when it ends.
  *
  * HOW IT RUNS, compositor only. The group keeps its final layout; it clips its
  * own box for the length of the motion, so its top edge (the parent row's
  * bottom) is the clip's edge, and its children translate as one block from
- * the group's height above it. Every row after the group in the tree
- * translates by how far the group's layout moves it (read once with the
- * group laid out and once without, utils/rowMotion.ts `layoutShifts`), the
- * group's height for rows in the tree's flow, so the rows below always meet
- * the block's bottom edge: the clip never has to move. Each element releases
- * its inline `translate` when its own spring arrives. The chevron turns by an additive
- * `rotate` over its final CSS transform. All of it is `translate` and
- * `rotate` played by the animator on the compositor, retargeted from the
- * value on screen when the row is toggled again mid-motion. A collapse keeps
- * the children rendered until the block has slid away; the commit that
- * removes them shifts the rows below back by the same amounts, so nothing
- * jumps. Page content after the tree is not the tree's to move: the tree's
- * height changes by layout at the commit that inserts or removes a group
- * (`spec:AST-094` FR5 forbids animating layout), so content after it takes
- * its new place at once, with no transient translate on it; only the tree's
- * own rows animate, inside its box. An unmount mid-motion leaves nothing
- * moved.
+ * the group's height above it. The chevron turns by an additive `rotate`
+ * over its final CSS transform. Both are played by the animator on the
+ * compositor, retargeted from the value on screen when the row is toggled
+ * again mid-motion, and each releases its inline value when its own spring
+ * arrives. A collapse keeps the children rendered until the block has slid
+ * away, then the commit removes them.
+ *
+ * Nothing outside the group moves: with no animated layout handle, the rows
+ * after the group and the content after the tree take their new places at
+ * once, by layout, at the commit that inserts or removes the group
+ * (`spec:AST-105` FR2; `spec:AST-094` FR5 forbids animating layout). An
+ * unmount mid-motion leaves nothing moved.
  *
  * Under reduced motion nothing travels (`design:reduced-motion`): every part
  * takes the animator's own Reduced Motion handling, so the children fade in
- * where they land and fade out where they are, and the rows below and
- * the chevron cross-fade into place.
+ * where they land and fade out where they are, and the chevron cross-fades
+ * into place.
  *
  * One touch model: an Android finger gets the same motion as an iOS one.
  * With a mouse (the theme's presentation) nothing moves: the children appear
@@ -64,38 +58,16 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {list} from '../motion/uikit/list';
 import {
-  layoutShifts,
   motionNow,
   releaseMotion,
   springHome,
   springTo,
-  stopRow,
 } from '../utils/rowMotion';
 import {useTouchPresentation} from '../utils/touchPresentation';
 
 const SPRING = list.update.outlineSpring;
 /** The chevron turns a quarter turn between collapsed and expanded. */
 const QUARTER_TURN = 90;
-
-/** Every row after `group` in its tree, at each level up to the tree. */
-function rowsAfter(group: HTMLElement): HTMLElement[] {
-  const rows: HTMLElement[] = [];
-  const tree = group.closest('[role="tree"]');
-  let item = group.parentElement?.closest('li') ?? null;
-  while (item != null && tree?.contains(item) === true) {
-    for (
-      let next = item.nextElementSibling;
-      next != null;
-      next = next.nextElementSibling
-    ) {
-      if (next instanceof HTMLElement) {
-        rows.push(next);
-      }
-    }
-    item = item.parentElement?.closest('li') ?? null;
-  }
-  return rows;
-}
 
 export interface TreeExpansionMotion {
   /** Render the children: expanded, or still sliding away. */
@@ -129,31 +101,15 @@ export function useTreeExpansionMotion(
   const previousRef = useRef({isExpanded, shown});
   /** The motion in flight; a newer one makes an older one's ending moot. */
   const generationRef = useRef(0);
-  /** A motion is running: a toggle now retargets it instead of restarting. */
-  const inFlightRef = useRef(false);
-  /**
-   * What the motion moves outside the group (the rows after it in the
-   * tree), each with how far the group's layout moves it.
-   */
-  const movedRef = useRef<Map<HTMLElement, number>>(new Map());
-
   // External system (`architecture:react-component-runtime` INV3): the shared
-  // motion animators (utils/rowMotion.ts) of the group's rows and of the rows
-  // after it in the tree. A toggle starts them, a toggle mid-motion retargets
-  // them, and the commit that removes the children stops them at rest; the
-  // unmount cleanup below releases any still moving.
+  // motion animators (utils/rowMotion.ts) of the group's rows and of the
+  // chevron. A toggle starts them and a toggle mid-motion retargets them;
+  // the commit that removes the children takes the group's rows with it.
   useIsomorphicLayoutEffect(() => {
     const before = previousRef.current;
     previousRef.current = {isExpanded, shown};
 
-    // The commit that removed the children moved each element below up by
-    // its shift, where the collapse had already put it: it is at rest.
     if (before.shown && !shown) {
-      for (const moved of movedRef.current.keys()) {
-        stopRow(moved, 'translate');
-      }
-      movedRef.current = new Map();
-      inFlightRef.current = false;
       return;
     }
     if (before.isExpanded === isExpanded || !animates) {
@@ -170,16 +126,6 @@ export function useTreeExpansionMotion(
       (child): child is HTMLElement => child instanceof HTMLElement,
     );
     const justMounted = !before.shown;
-    // The rows after the group in the tree, each by how far the group's
-    // layout moves it. Content after the tree is not the tree's to move: it
-    // takes its new place by layout. Kept as they are while a motion runs,
-    // so a toggle mid-motion retargets the same rows.
-    const moved =
-      justMounted || !inFlightRef.current
-        ? layoutShifts(element, rowsAfter(element))
-        : movedRef.current;
-    movedRef.current = moved;
-    inFlightRef.current = true;
     // The clip: the group's own box, whose top edge is the parent row's
     // bottom, for the length of the motion.
     element.style.overflow = 'clip';
@@ -210,8 +156,7 @@ export function useTreeExpansionMotion(
       }
     };
     if (isExpanded) {
-      // Out from under the parent: the block starts its own height up, each
-      // element below starts where it was before the children took space.
+      // Out from under the parent: the block starts its own height up.
       // Under reduced motion the children fade in where they land.
       const block = children.map(async child => {
         const arrived = await (justMounted
@@ -220,32 +165,20 @@ export function useTreeExpansionMotion(
         releaseOnArrival(child)(arrived);
         return arrived;
       });
-      for (const [target, shift] of moved) {
-        void (
-          justMounted
-            ? springHome(target, 'y', -shift, SPRING, at)
-            : springTo(target, 0, SPRING, at)
-        ).then(releaseOnArrival(target));
-      }
       void Promise.all(block).then(results => {
         if (generationRef.current !== mine || results.some(done => !done)) {
           return;
         }
         element.style.removeProperty('overflow');
-        inFlightRef.current = false;
       });
       return;
     }
 
-    // Back under the parent; each element below goes where the group's
-    // removal will put it, following the block's bottom edge.
-    // Under reduced motion the children fade out where they are.
+    // Back under the parent. Under reduced motion the children fade out
+    // where they are.
     const block = children.map(async child =>
       springTo(child, -height, SPRING, at, 'exit'),
     );
-    for (const [target, shift] of moved) {
-      void springTo(target, -shift, SPRING, at);
-    }
     void Promise.all(block).then(results => {
       if (generationRef.current !== mine || results.some(done => !done)) {
         return;
@@ -257,18 +190,12 @@ export function useTreeExpansionMotion(
     });
   }, [isExpanded, shown, animates]);
 
-  // External system (`architecture:react-component-runtime` INV3): the shared
-  // motion animators of elements outside this row's render, the rows after
-  // its group, which the effect above moves and releases. An unmount
-  // mid-motion must leave none of them moved: stop them at rest, clear their
-  // translate and the group's clip, and make any pending arrival moot.
+  // External system (`architecture:react-component-runtime` INV3): the
+  // group's clip, which the effect above sets on an element this row renders.
+  // An unmount mid-motion clears it and makes any pending arrival moot.
   useIsomorphicLayoutEffect(
     () => () => {
       generationRef.current += 1;
-      for (const moved of movedRef.current.keys()) {
-        stopRow(moved, 'translate');
-      }
-      movedRef.current = new Map();
       groupElementRef.current?.style.removeProperty('overflow');
     },
     [],
