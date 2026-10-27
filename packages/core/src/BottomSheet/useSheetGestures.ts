@@ -1896,7 +1896,11 @@ export function useSheetGestures({
   // A drag begins when a pan does (past its threshold, UIKit's translation
   // from there on), or on a settling sheet at the touch itself (the catch).
   const beginDrag = useCallback(
-    (pointerType: string, sheetHeight: number): boolean => {
+    (
+      pointerType: string,
+      sheetHeight: number,
+      target: EventTarget | null,
+    ): boolean => {
       // A closing sheet is not grabbed: its exit owns the surface.
       if (!isOpenRef.current) {
         return false;
@@ -1935,8 +1939,11 @@ export function useSheetGestures({
       // Selection and the callout go off with UIKit's presentation, the same
       // answer as the tracking and the release: a finger where the primary
       // pointer is fine keeps the browser's (spec:AST-094 FR19).
+      // The touch's target joins the lock: WebKit makes every input
+      // selectable, out of reach of the sheet's lock, and the content's pans
+      // bring the gesture host no lock of their own (spec:AST-094 FR41).
       if (releaseMotionRef.current.kind === 'uikit') {
-        lockSelection(null);
+        lockSelection(target);
       }
       dragStateRef.current = {
         pan: null,
@@ -2108,6 +2115,10 @@ export function useSheetGestures({
   const [pointerKinds] = useState(
     () => new WeakMap<GestureRecognizer, PointerKind>(),
   );
+  // And the touch's target, for the drag's selection lock (see `beginDrag`).
+  const [touchTargets] = useState(
+    () => new WeakMap<GestureRecognizer, EventTarget | null>(),
+  );
   const notePointer = useCallback(
     (recognizer: GestureRecognizer, touch: GestureTouch): boolean => {
       // Wheel and trackpad scrolling drive the sheet's pans on every primary
@@ -2130,9 +2141,13 @@ export function useSheetGestures({
         return false;
       }
       pointerKinds.set(recognizer, touch.pointerType);
+      touchTargets.set(
+        recognizer,
+        touch.target instanceof EventTarget ? touch.target : null,
+      );
       return true;
     },
-    [pointerKinds],
+    [pointerKinds, touchTargets],
   );
   // Neither a closing sheet nor one still presenting starts a drag: the exit
   // owns the surface, and the entrance holds input (see `present`).
@@ -2164,7 +2179,11 @@ export function useSheetGestures({
           // watcher below); otherwise the drag starts here.
           if (
             dragStateRef.current == null &&
-            !beginDrag(pointerKinds.get(pan) ?? 'touch', measureHeight())
+            !beginDrag(
+              pointerKinds.get(pan) ?? 'touch',
+              measureHeight(),
+              touchTargets.get(pan) ?? null,
+            )
           ) {
             return;
           }
@@ -2200,7 +2219,15 @@ export function useSheetGestures({
           return;
       }
     },
-    [beginDrag, cancelDrag, endDrag, measureHeight, moveDrag, pointerKinds],
+    [
+      beginDrag,
+      cancelDrag,
+      endDrag,
+      measureHeight,
+      moveDrag,
+      pointerKinds,
+      touchTargets,
+    ],
   );
 
   // The handle: a vertical pan, for a finger or a pen where the primary
@@ -2289,7 +2316,11 @@ export function useSheetGestures({
             dragStateRef.current == null &&
             canDrag()
           ) {
-            beginDrag(pointerKinds.get(press) ?? 'touch', measureHeight());
+            beginDrag(
+              pointerKinds.get(press) ?? 'touch',
+              measureHeight(),
+              touchTargets.get(press) ?? null,
+            );
           }
           return;
         case 'ended':
@@ -2337,7 +2368,7 @@ export function useSheetGestures({
       if (!canDrag() || dragStateRef.current != null) {
         return false;
       }
-      if (!beginDrag(event.pointerType, measureHeight())) {
+      if (!beginDrag(event.pointerType, measureHeight(), event.target)) {
         return false;
       }
       const tracker = new VelocityTracker();
