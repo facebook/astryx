@@ -252,6 +252,41 @@ describe('watchHitArea', () => {
     stop();
   });
 
+  it('counts a pressable row root as a neighbour: two rows 2 px apart each take 1 px of the gap, and their areas never overlap', () => {
+    // A list's rows: the row root is the target (Item's pressable root), and
+    // its own control is only the label column, inside the row's padding.
+    document.body.innerHTML =
+      '<ul>' +
+      '<li id="first" data-astryx-pressable=""><button id="first-label">Inbox</button></li>' +
+      '<li id="second" data-astryx-pressable=""><button id="second-label">Sent</button></li>' +
+      '</ul>';
+    const first = byId('first');
+    const second = byId('second');
+    place(first, rect(0, 100, 300, 36));
+    place(byId('first-label'), rect(40, 108, 220, 20));
+    place(second, rect(0, 138, 300, 36));
+    place(byId('second-label'), rect(40, 146, 220, 20));
+    const firstHeard: HitInsets[] = [];
+    const secondHeard: HitInsets[] = [];
+    const stops = [
+      watchHitArea(first, insets => firstHeard.push(insets)),
+      watchHitArea(second, insets => secondHeard.push(insets)),
+    ];
+    try {
+      show(first, second);
+      flush();
+      // Each 36 px row grows toward 44 px, but toward the other only by half
+      // the 2 px gap between the rows.
+      expect(firstHeard).toEqual([{top: 4, right: 0, bottom: 1, left: 0}]);
+      expect(secondHeard).toEqual([{top: 1, right: 0, bottom: 4, left: 0}]);
+      expect(136 + firstHeard[0].bottom).toBeLessThanOrEqual(
+        138 - secondHeard[0].top,
+      );
+    } finally {
+      stops.forEach(stop => stop());
+    }
+  });
+
   it('measures nothing off screen', () => {
     const control = byId('switch');
     place(control, rect(100, 100, 24, 24));
