@@ -195,6 +195,11 @@ interface Interaction {
   coast: Coast | null;
   /** The pan ended or was cancelled (the release is under way or done). */
   released: boolean;
+  /**
+   * A mouse holds the thumb: it pans as a finger does (`spec:AST-094` FR43),
+   * with no lift and no coast, as a mouse drag behaved before.
+   */
+  readonly isMouse: boolean;
 }
 
 /**
@@ -263,15 +268,21 @@ export class SliderTouchController {
     this.model = model;
   }
 
-  /** Attaches the recognizers to the touch targets in the DOM now. */
+  /**
+   * Attaches the recognizers for every pointer (`spec:AST-094` FR43): to the
+   * thumbs' touch targets where they render (a coarse primary pointer), and
+   * to the thumbs themselves elsewhere.
+   */
   attach(): () => void {
     const parts = this.getParts();
-    if (parts == null || parts.hits.length === 0) {
+    const targets =
+      parts == null ? [] : parts.hits.length > 0 ? parts.hits : parts.thumbs;
+    if (parts == null || targets.length === 0) {
       return () => {};
     }
     const host = getGestureHost(parts.control.ownerDocument);
     const detachers: (() => void)[] = [];
-    parts.hits.forEach((hit, owner) => {
+    targets.forEach((hit, owner) => {
       const tracker = new PressTracker({
         getBounds: () =>
           this.getParts()?.control.getBoundingClientRect() ?? null,
@@ -290,7 +301,9 @@ export class SliderTouchController {
         direction: this.model.isHorizontal ? 'horizontal' : 'vertical',
         maximumNumberOfTouches: 1,
         cancelsTouchesInView: false,
-        allowedPointerTypes: ['touch', 'pen'],
+        // A mouse drag on a thumb is a pan too, claimed after the same
+        // hysteresis (`spec:AST-094` FR43, FR19).
+        allowedPointerTypes: ['touch', 'pen', 'mouse'],
         // A held thumb does something, so a held finger never starts a text
         // selection or the callout on it: the gesture host takes this lock
         // for each held press and releases it on the lift (spec:AST-094
@@ -416,22 +429,15 @@ export class SliderTouchController {
     pointerType: PointerKind,
   ): void {
     if (event === 'touchDown') {
-      if (pointerType === 'mouse') {
+      // A mouse press holds the thumb too (FR43); its highlight never lifts
+      // the thumb (handleHighlight).
+      const isMouse = pointerType === 'mouse';
+      if (isMouse) {
         this.mouseOwners.add(owner);
-        return;
-      }
-      this.mouseOwners.delete(owner);
-      this.begin(owner);
-      return;
-    }
-    if (this.mouseOwners.has(owner)) {
-      if (
-        event === 'touchUpInside' ||
-        event === 'touchUpOutside' ||
-        event === 'touchCancel'
-      ) {
+      } else {
         this.mouseOwners.delete(owner);
       }
+      this.begin(owner, isMouse);
       return;
     }
     const interaction = this.interactions.get(owner);
@@ -490,7 +496,9 @@ export class SliderTouchController {
         interaction.startValue = interaction.value;
         interaction.beganSign =
           pan.totalTranslation()[interaction.geometry.axis] < 0 ? -1 : 1;
-        this.lift(interaction.index);
+        if (!interaction.isMouse) {
+          this.lift(interaction.index);
+        }
         this.track(interaction, pan);
         return;
       case 'changed':
@@ -535,7 +543,7 @@ export class SliderTouchController {
 
   // -- the interaction -------------------------------------------------------
 
-  private begin(owner: number): void {
+  private begin(owner: number, isMouse = false): void {
     const parts = this.getParts();
     if (parts == null || this.model.isDisabled) {
       return;
@@ -561,6 +569,7 @@ export class SliderTouchController {
       changed: false,
       coast: null,
       released: false,
+      isMouse,
     });
     this.model.press(owner);
   }
@@ -588,7 +597,9 @@ export class SliderTouchController {
         if (index !== interaction.index) {
           this.drop(interaction.index);
           interaction.index = index;
-          this.lift(index);
+          if (!interaction.isMouse) {
+            this.lift(index);
+          }
           this.model.press(index);
         }
       }
@@ -627,6 +638,12 @@ export class SliderTouchController {
   }
 
   private release(interaction: Interaction, pan: PanGestureRecognizer): void {
+    // A mouse lets go where it is: no coast follows a mouse drag.
+    if (interaction.isMouse) {
+      this.model.press(null);
+      this.finish(interaction, true);
+      return;
+    }
     const {geometry, index} = interaction;
     const {min, max} = this.model;
     const range = max - min;
@@ -688,6 +705,7 @@ export class SliderTouchController {
       changed: false,
       coast: null,
       released: true,
+      isMouse: false,
     };
     this.interactions.set(index, interaction);
     this.coastTo(interaction, target, 0, false);

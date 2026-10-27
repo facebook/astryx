@@ -1638,10 +1638,16 @@ describe('pressed state', () => {
       toJSON: () => {},
     });
 
+    // A mouse press on a thumb is the thumb's pan (spec:AST-094 FR43), so it
+    // is a real mouse press: the gesture host takes only a known pointer.
     fireEvent.pointerDown(end, {
       clientX: 100,
       clientY: 10,
       pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
     });
     expect(declaresPressedOverlay(end)).toBe(true);
     expect(declaresPressedOverlay(start)).toBe(false);

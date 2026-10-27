@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, useTooltip, VisuallyHidden; the touch presentation resolver and useSliderTouch (UISlider's touch tracking)
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value; under a finger (a coarse primary pointer, on every touch device) only the thumbs' touch targets take a drag, tracked as UISlider does, and a tap on the track sets the value on its lift, while a mouse or a trackpad keeps the pointer handlers
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value; a drag on a thumb is a pan for every pointer, tracked as UISlider does (spec:AST-094 FR43); under a finger (a coarse primary pointer, on every touch device) the thumbs take it through touch targets, and a tap on the track sets the value on its lift, while a mouse press on the track keeps the pointer handlers
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -744,14 +744,15 @@ export function Slider({ref, ...props}: SliderProps) {
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
-  // Under a finger the thumbs track touches as UISlider does
-  // (useSliderTouch): one touch model on every touch device, a coarse
-  // primary pointer whatever the platform (spec:AST-094 FR13). A mouse or a
-  // trackpad keeps the pointer handlers below.
+  // The thumbs track as UISlider's for every pointer (useSliderTouch,
+  // spec:AST-094 FR43): a drag on a thumb is a pan. Their touch targets
+  // render only under a coarse primary pointer (FR13), the one touch model
+  // on every touch device. A mouse press on the track keeps the pointer
+  // handlers below.
   const isTouchPresentation = useTouchPresentation().isTouch;
   const hasTouchTargets = isTouchPresentation && !isDisabled;
-  // Whether the touch presentation takes touches (useSliderTouch): the
-  // pointer handlers then leave a finger or a pen to it.
+  // Whether the slider's gestures are attached (useSliderTouch): the pointer
+  // handlers then leave a finger, a pen and a mouse press on a thumb to them.
   const touchLiveRef = useRef(false);
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
@@ -981,11 +982,22 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      // A finger or a pen under the touch presentation belongs to the
-      // touch presentation: the thumbs' touch targets take a drag, and a tap
-      // on the track sets the value when it lifts (useSliderTouch).
-      if (touchLiveRef.current && e.pointerType !== 'mouse') {
-        return;
+      // A finger or a pen belongs to the slider's gestures: a thumb takes a
+      // drag, and a tap on the track sets the value when it lifts
+      // (useSliderTouch). So does a mouse press on a thumb, which pans
+      // (spec:AST-094 FR43); the thumb still takes focus from it, as it did.
+      if (touchLiveRef.current) {
+        if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+          return;
+        }
+        const thumb = (e.target as Element).closest<HTMLElement>(
+          '[role="slider"]',
+        );
+        if (thumb != null) {
+          thumb.focus();
+          setKeyboardFocusThumb(null);
+          return;
+        }
       }
       e.preventDefault();
       if (draggingThumbRef.current !== null) {
@@ -1135,7 +1147,8 @@ export function Slider({ref, ...props}: SliderProps) {
     thumbFor: value => getClosestThumb(value),
   };
   const isTouchLive = useSliderTouch({
-    isEnabled: hasTouchTargets,
+    isEnabled: !isDisabled,
+    hasTouchTargets,
     model: touchModel,
     thumbCount: values.length,
     getParts: (): SliderTouchParts | null => {

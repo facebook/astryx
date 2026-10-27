@@ -33,24 +33,30 @@ export type {SliderTouchModel, SliderTouchParts} from './sliderTouchController';
 export const SLIDER_HIT_ATTRIBUTE = 'data-slider-hit';
 
 export interface UseSliderTouchOptions {
-  /** The touch presentation applies and the slider is enabled. */
+  /** The slider is enabled: its gestures attach for every pointer (`spec:AST-094` FR43). */
   readonly isEnabled: boolean;
   readonly model: SliderTouchModel;
   readonly getParts: () => SliderTouchParts | null;
   /** Re-attaches when the thumbs or the orientation change. */
   readonly thumbCount: number;
+  /**
+   * Whether the thumbs' touch targets render (a coarse primary pointer):
+   * the recognizers re-attach to them when they render or go.
+   */
+  readonly hasTouchTargets: boolean;
 }
 
 /**
- * Wires UISlider's touch tracking to a rendered Slider. Returns whether the
- * touch presentation takes touches (it applies and the slider is enabled);
- * Slider's own pointer handlers take every other pointer.
+ * Wires UISlider's tracking to a rendered Slider for every pointer. Returns
+ * whether its gestures are attached (the slider is enabled); Slider's own
+ * pointer handlers then take only a mouse press on the track.
  */
 export function useSliderTouch({
   isEnabled,
   model,
   getParts,
   thumbCount,
+  hasTouchTargets,
 }: UseSliderTouchOptions): boolean {
   const getPartsRef = useRef(getParts);
   useIsomorphicLayoutEffect(() => {
@@ -63,16 +69,17 @@ export function useSliderTouch({
     controller.setModel(model);
   });
   const {isHorizontal} = model;
-  // Synchronizes the thumbs' touch targets with the document's gesture host:
-  // their PressTrackers and pans attach while the touch presentation is on,
-  // and detach (ending any interaction silently) when it goes off or the
-  // touch targets change.
+  // Synchronizes the thumbs with the document's gesture host: their
+  // PressTrackers and pans attach (to the touch targets where they render)
+  // while the slider is enabled, and detach (ending any interaction
+  // silently) when it is disabled or the thumbs or their touch targets
+  // change.
   useEffect(() => {
     if (!isEnabled) {
       return undefined;
     }
     return controller.attach();
-  }, [controller, isEnabled, thumbCount, isHorizontal]);
+  }, [controller, isEnabled, hasTouchTargets, thumbCount, isHorizontal]);
   useEffect(() => () => controller.dispose(), [controller]);
   return isEnabled;
 }
