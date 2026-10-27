@@ -9,7 +9,7 @@
  * @position Unit tests for reorderable/createReorderable.ts's attach
  */
 
-import {act, fireEvent, waitFor} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createReorderable} from '../createReorderable';
 
@@ -474,6 +474,32 @@ describe('createReorderable attach', () => {
       );
       fireEvent.keyDown(a, {key: 'ArrowRight'});
       expect(onReorder).toHaveBeenLastCalledWith({key: 'a', to: 4});
+      detach();
+    });
+
+    it("shows the row's moves in the hint, each doing what its key does", async () => {
+      const {onReorder, detach, grip} = laidOut(
+        ['A', 'B', 'C'],
+        [
+          {x: 40, y: 20},
+          {x: 120, y: 20},
+          {x: 200, y: 20},
+        ],
+      );
+      const a = grip('A');
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      // jsdom opens no popover: the hint's layer stays hidden.
+      const button = (name: string) =>
+        screen.queryByRole('button', {name, hidden: true});
+      await waitFor(() => expect(button('Move right')).not.toBeNull());
+      expect(button('Move left')).not.toBeNull();
+      expect(button('Move up')).toBeNull();
+      expect(button('Move down')).toBeNull();
+      fireEvent.click(button('Move right')!);
+      expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 1});
+      // Once the move commits, the focus is on the handle.
+      await waitFor(() => expect(document.activeElement).toBe(a));
       detach();
     });
 

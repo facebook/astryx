@@ -511,6 +511,14 @@
     "defaultMessage": "Move down",
     "description": "Accessible label of the down-arrow button in the hint a List row's reorder mode shows: it moves the row one place down, as the Down arrow key does."
   },
+  "@astryx.list.reorderMoveLeft": {
+    "defaultMessage": "Move left",
+    "description": "Label of the button in reorder mode's hint that moves an item one place left in a horizontal or two-dimensional reorderable layout, as the Left arrow key does."
+  },
+  "@astryx.list.reorderMoveRight": {
+    "defaultMessage": "Move right",
+    "description": "Label of the button in reorder mode's hint that moves an item one place right in a horizontal or two-dimensional reorderable layout, as the Right arrow key does."
+  },
   "@astryx.list.reorderDone": {
     "defaultMessage": "Done",
     "description": "Button in the hint a List row's reorder mode shows: it ends the mode and keeps the moves, as Escape does."

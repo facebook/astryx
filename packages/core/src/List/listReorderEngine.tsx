@@ -126,6 +126,7 @@ import {
   dropPosition,
   gridOf,
   nearestSlot,
+  type ReorderArrow,
   type ReorderGeometry,
   type ReorderSlot,
   slotsOf,
@@ -1827,29 +1828,11 @@ export class ListReorderController implements ListReorderSession {
       case 'ArrowUp':
       case 'ArrowDown':
       case 'ArrowLeft':
-      case 'ArrowRight': {
-        // Along the layout's axis: a list's column, an attached row, or
-        // both axes in a grid (spec:AST-103 FR4).
-        const list = this.getList();
-        const row = this.rowOf(handle);
-        if (list == null || row == null) {
-          return;
+      case 'ArrowRight':
+        if (this.moveByArrow(handle, event.key)) {
+          event.preventDefault();
         }
-        const rows = this.rowsIn(list);
-        const index = rows.indexOf(row);
-        const target = arrowTarget(
-          this.keyGrid(list, rows),
-          index,
-          event.key,
-          this.isRtl(list),
-        );
-        if (target == null) {
-          return;
-        }
-        event.preventDefault();
-        this.step(handle, target - index);
         return;
-      }
       default:
         return;
     }
@@ -1924,6 +1907,49 @@ export class ListReorderController implements ListReorderSession {
       }, 0);
     }
     options.onReorder({key, to});
+  }
+
+  /**
+   * Reorder mode's move for `arrow`, along the layout's axis: a list's
+   * column, an attached row, or both axes in a grid (spec:AST-103 FR4).
+   * Returns whether the arrow moves along the layout.
+   */
+  moveByArrow(handle: HTMLElement | null, arrow: ReorderArrow): boolean {
+    const list = this.getList();
+    const row = this.rowOf(handle);
+    if (list == null || row == null) {
+      return false;
+    }
+    const rows = this.rowsIn(list);
+    const index = rows.indexOf(row);
+    const target = arrowTarget(
+      this.keyGrid(list, rows),
+      index,
+      arrow,
+      this.isRtl(list),
+    );
+    if (target == null) {
+      return false;
+    }
+    this.step(handle, target - index);
+    return true;
+  }
+
+  /** The arrows that move along the layout's axis, for reorder mode's hint. */
+  arrowsFor(handle: HTMLElement | null): ReorderArrow[] {
+    const list = this.getList();
+    if (list == null || handle == null) {
+      return ['ArrowUp', 'ArrowDown'];
+    }
+    const grid = this.keyGrid(list, this.rowsIn(list));
+    const isColumn = grid.every(gridRow => gridRow.length <= 1);
+    const isRow = grid.length === 1 && grid[0].length > 1;
+    if (isColumn) {
+      return ['ArrowUp', 'ArrowDown'];
+    }
+    return isRow
+      ? ['ArrowLeft', 'ArrowRight']
+      : ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
   }
 
   /**
@@ -2252,6 +2278,14 @@ function HintButton({
  * mode as Escape does, so a pointer or a finger can reorder by tapping the
  * handle, the moves, then Done.
  */
+/** Each hint move: its label and its key's glyph (the key it does). */
+const HINT_MOVES = {
+  ArrowUp: {label: '@astryx.list.reorderMoveUp', keys: 'up'},
+  ArrowDown: {label: '@astryx.list.reorderMoveDown', keys: 'down'},
+  ArrowLeft: {label: '@astryx.list.reorderMoveLeft', keys: 'left'},
+  ArrowRight: {label: '@astryx.list.reorderMoveRight', keys: 'right'},
+} as const;
+
 export function ListReorderModeHint({
   controller,
 }: {
@@ -2304,16 +2338,14 @@ export function ListReorderModeHint({
           controller.setHintElement(element);
         }}
         {...stylex.props(anchoredHintStyles.keys)}>
-        <HintButton
-          label={t('@astryx.list.reorderMoveUp')}
-          onPress={() => controller.step(target, -1)}>
-          <Kbd keys="up" aria-hidden />
-        </HintButton>
-        <HintButton
-          label={t('@astryx.list.reorderMoveDown')}
-          onPress={() => controller.step(target, 1)}>
-          <Kbd keys="down" aria-hidden />
-        </HintButton>
+        {controller.arrowsFor(target).map(arrow => (
+          <HintButton
+            key={arrow}
+            label={t(HINT_MOVES[arrow].label)}
+            onPress={() => controller.moveByArrow(target, arrow)}>
+            <Kbd keys={HINT_MOVES[arrow].keys} aria-hidden />
+          </HintButton>
+        ))}
         <HintButton isText onPress={() => controller.endMode()}>
           {t('@astryx.list.reorderDone')}
         </HintButton>
