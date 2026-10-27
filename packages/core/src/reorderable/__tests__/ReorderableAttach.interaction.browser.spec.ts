@@ -26,6 +26,7 @@ const storybook = withStorybook(test);
 
 const STORY = 'core-createreorderable--attached-cards-in-a-row';
 const FAN_STORY = 'core-createreorderable--attached-cards-in-a-fan';
+const ANEW_STORY = 'core-createreorderable--attached-cards-rendered-anew';
 /** The fan's slot centres, as its story's positions() gives them. */
 const FAN = [-24, -12, 0, 12, 24].map(angle => {
   const radians = (angle * Math.PI) / 180;
@@ -143,6 +144,45 @@ test.describe('with a mouse or a pen', () => {
     const centre = await centreOf(page, 'A');
     expect(Math.abs((centre?.x ?? Number.NaN) - FAN[3].x)).toBeLessThan(0.5);
     expect(Math.abs((centre?.y ?? Number.NaN) - FAN[3].y)).toBeLessThan(0.5);
+  });
+
+  test("when the app renders the cards anew, reorder mode and the focus stay on the moved card's new grip", async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), ANEW_STORY);
+    const grip = () => table(page).locator('[data-card="A"] [data-grip]');
+    const marked = await grip().evaluate(element => {
+      element.dataset.first = '';
+      return true;
+    });
+    expect(marked).toBe(true);
+    await grip().focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'A', 'Q', 'J', '10']);
+    // A new element: the app rendered it anew.
+    await expect(grip()).not.toHaveAttribute('data-first');
+    await expect(grip()).toBeFocused();
+    await expect(grip()).toHaveAttribute('aria-pressed', 'true');
+    // Its arrows go on moving the card.
+    await page.keyboard.press('ArrowRight');
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'Q', 'A', 'J', '10']);
+    await expect(grip()).toBeFocused();
+    // A mouse drop leaves the focus on the dropped card's new grip.
+    await page.keyboard.press('Escape');
+    const from = await gripOf(page, 'A');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x - 2 * 88 - 10, from.y, {steps: 12});
+    await page.mouse.up();
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['A', 'K', 'Q', 'J', '10']);
+    await expect(grip()).toBeFocused();
   });
 
   test('a pen drags a grip at once, with no hold (spec:AST-103 FR3)', async ({

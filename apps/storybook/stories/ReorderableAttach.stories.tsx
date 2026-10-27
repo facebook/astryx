@@ -106,8 +106,11 @@ const styles = stylex.create({
  */
 function AttachedCards({
   slots,
+  rendersAnew = false,
 }: {
   slots: ReadonlyArray<{x: number; y: number; angle: number}>;
+  /** Each move renders every card anew: new elements, the same keys. */
+  rendersAnew?: boolean;
 }) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [cards, setCards] = useState(['A', 'K', 'Q', 'J', '10']);
@@ -150,7 +153,7 @@ function AttachedCards({
       {...stylex.props(styles.table, slots === FAN && styles.fanTable)}>
       {cards.map((card, index) => (
         <div
-          key={card}
+          key={rendersAnew ? `${card}:${moves}` : card}
           data-card={card}
           aria-label={`Card ${card}`}
           {...stylex.props(
@@ -191,6 +194,20 @@ export const AttachedCardsInAFan: Story = {
         story:
           'A fanned hand: `positions()` gives each card a slot on an arc, and ' +
           'a dragged card drops on the slot whose centre is nearest its own.',
+      },
+    },
+  },
+};
+
+export const AttachedCardsRenderedAnew: Story = {
+  render: () => <AttachedCards slots={ROW} rendersAnew />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'An app that renders every card anew on each move (new elements, ' +
+          'the same keys): reorder mode and the focus stay on the moved ' +
+          'card’s grip.',
       },
     },
   },
