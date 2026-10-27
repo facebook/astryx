@@ -1254,12 +1254,11 @@ export function useSwipeAction({
       new PanGestureRecognizer({
         // Recognizers attach for every pointer (`spec:AST-094` FR43); a
         // finger or a pen drags the row, and a mouse never starts the swipe
-        // (`spec:AST-057` FR4, FR6, AR2).
+        // (`spec:AST-057` FR4, FR6, AR2). A trackpad's horizontal scroll and
+        // a mouse wheel's horizontal notches swipe it as a finger does
+        // (DEC-7) through the pan's default scroll input (FR43): the same
+        // contact, moving with the content.
         allowedPointerTypes: ['touch', 'pen'],
-        // A trackpad's horizontal scroll swipes the row as a finger does, and
-        // a mouse wheel's horizontal notches the same way (`spec:AST-057`
-        // DEC-7): the same contact, moving with the content.
-        allowedScrollTypes: ['continuous', 'discrete'],
         direction: 'horizontal',
         hysteresis: SWIPE.claim,
         maximumNumberOfTouches: 1,
