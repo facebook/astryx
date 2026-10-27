@@ -42,7 +42,7 @@ import {DEFAULT_ENVIRONMENT} from './types';
 /**
  * Turns text selection and the touch callout off on `elements` (and on a
  * non-text input `target` inside one) for one held press; returns the undo.
- * gestures/selectionLock.ts's `lockSelection` is the one implementation.
+ * utils/selectionLock.ts's `lockSelection` is the one implementation.
  */
 export type SelectionLock = (
   elements: Iterable<Element>,
@@ -66,7 +66,7 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
    * For a hold that does something (a slider's thumb, a switch's or a
    * segmented control's drag): the lock that turns text selection and the
    * touch callout off on this recognizer's element for each held press
-   * (`spec:AST-094` FR41). Pass `lockSelection` from gestures/selectionLock.ts;
+   * (`spec:AST-094` FR41). Pass `lockSelection` from utils/selectionLock.ts;
    * the host calls it and never imports it, so a component without such a
    * hold does not bundle it. Content under a sheet's or a pager's pan stays
    * selectable, so there is none by default; a mouse keeps desktop selection
@@ -83,6 +83,17 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
   allowedPointerTypes?: ReadonlyArray<PointerKind>;
   /** Ignore a touch of a different kind than the ones already tracked. @default true */
   requiresExclusiveTouchType?: boolean;
+  /**
+   * Whether this recognizer takes its touches from the browser when it
+   * recognizes. `false` makes a watcher (a tab bar that minimizes while the
+   * page scrolls): it never claims, so it gets only passive listeners and
+   * never delays a scroll; it prevents no other recognizer and none prevents
+   * it (`spec:AST-094` FR15); it cancels no press or click under it; and it
+   * keeps tracking a touch the browser takes for a scroll,
+   * reporting through the native scroll and ending at the lift.
+   * @default true
+   */
+  claimsTouches?: boolean;
   /** gestureRecognizerShouldBegin: return false to fail instead of beginning. */
   shouldBegin?: (recognizer: R) => boolean;
   /** gestureRecognizer(_:shouldReceive:): return false to never see this touch. */
@@ -240,7 +251,7 @@ export abstract class GestureRecognizer {
    * it. Every touch recognizer claims; hover has no touches to claim.
    */
   get claimsTouches(): boolean {
-    return true;
+    return this.options.claimsTouches ?? true;
   }
 
   get state(): GestureState {
@@ -424,6 +435,10 @@ export abstract class GestureRecognizer {
     touches: ReadonlyArray<GestureTouch>,
     event: GestureEventContext,
   ): boolean {
+    if (!this.claimsTouches) {
+      // A watcher follows the browser's scroll to the lift.
+      return true;
+    }
     this.touchesCancelled(touches, event);
     return false;
   }

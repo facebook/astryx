@@ -5,18 +5,20 @@
 /**
  * @file AlertDialog.tsx
  * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button, the touch
- *   presentation resolver, its touch layer (AlertDialogTouch) and the alert
+ *   presentation resolver, the action-group tracking
+ *   (hooks/useActionGroupTracking), the group item marker
+ *   (utils/pressFeedback), its touch layer (AlertDialogTouch) and the alert
  *   entries of the UIKit constants table
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
- * Under a finger or a pen the two actions are tracked as one group, as UIKit tracks an
- * alert's actions: the action under the finger highlights at once, the
- * highlight follows the finger from one action to the other, and lifting runs
- * the action under the finger (none when it is off both). Tracking spans the
- * whole surface, so a touch that lands on the message can still slide onto an
- * action. A mouse, the keyboard and assistive technology keep the buttons'
- * own click.
+ * The two actions are tracked as one group under every pointer, a finger, a
+ * pen or a mouse (`family:action-groups`), as UIKit tracks an alert's
+ * actions: the action under the pointer highlights at once, the highlight
+ * follows it from one action to the other, and the release runs the action
+ * under it (none when it is off both). Only the actions are tracked: a press
+ * on the title or the message is not part of the group. The keyboard and
+ * assistive technology keep the buttons' own click.
  *
  * Under a finger (a coarse primary pointer: useTouchPresentation) it also
  * appears and leaves the way UIKit's alert does (useAlertMotion): it scales
@@ -28,7 +30,6 @@
  * once, as before.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/AlertDialog/AlertDialogTouch.ts (the touch layer)
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs (props table, features, examples)
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
@@ -56,13 +57,14 @@ import {useMediaQuery} from '../hooks';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
+import {
+  PRESS_GROUP_ITEM_ATTRIBUTE,
+  pressGroupItemProps,
+} from '../utils/pressFeedback';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
-
-/** Marks the actions the group tracking hit-tests. */
-const ACTION_ATTRIBUTE = 'data-astryx-alert-action';
 
 const styles = stylex.create({
   // The group tracking claims a press on the actions the moment it lands, as
@@ -263,15 +265,18 @@ export function AlertDialog({
   // follows it from one action to the other, and the lift runs the action
   // under it, through its own click (none off both). Only the actions are
   // tracked: a press on the title or the message is not part of the group,
-  // so their text stays selectable. Each action opts out of its own press
-  // tracking while the group owns it. The inline preview is not tracked.
+  // so their text stays selectable. Each tracked action carries the group
+  // item marker from its first render: the document press controller leaves
+  // a pointer's press there to the tracker, the one painter, and still
+  // records the touch for the scroll brake. The inline preview is not
+  // tracked, and its actions keep the controller's press.
   // Tracked while presented, leaving included: a press during either
   // transition is taken and dropped (`isInert`) rather than reaching the
   // button under it.
   const actionsRef = useRef<HTMLElement>(null);
   const isTracking = motion.isPresented && isInline !== true;
   useActionGroupTracking(actionsRef, {
-    itemSelector: `[${ACTION_ATTRIBUTE}]`,
+    itemSelector: `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`,
     highlightOnsetMs: alertController.actions.highlightOnsetMs,
     highlightExpansion: alertController.actions.highlightExpansion,
     isInert: () => !motion.acceptsTouches(),
@@ -306,12 +311,7 @@ export function AlertDialog({
     [isLeaving, onOpenChange],
   );
   const mergedRef = useMergedRefs(ref, motion.ref);
-  const actionTrackingProps = {
-    [ACTION_ATTRIBUTE]: '',
-    // Overrides Button's own marker for the document press controller, which
-    // would otherwise paint (and un-paint) the same attribute on its own clock.
-    'data-astryx-pressable': isTracking ? undefined : '',
-  };
+  const actionTrackingProps = isTracking ? pressGroupItemProps : undefined;
 
   const buttonActionStyle = [
     styles.action,

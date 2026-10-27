@@ -44,7 +44,7 @@
 import {useEffect, useRef, useState, type RefObject} from 'react';
 import {isActive} from '../gestures/GestureRecognizer';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
-import {lockSelection} from '../gestures/selectionLock';
+import {lockSelection} from '../utils/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_PRESS} from '../motion/uikit/gestures';
