@@ -22,6 +22,7 @@
 import type {ReactNode} from 'react';
 import {defaultIcons} from './defaultIcons';
 import type {IconSize} from './IconSize.stylex';
+import type {IconVariant} from './index';
 import type {DefinedTheme} from '../theme/defineTheme';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
@@ -100,13 +101,15 @@ export type IconRegistry = Record<IconName, ReactNode>;
 
 /**
  * What `Icon` asks a function icon entry for: the final Icon size, resolved
- * explicit `size` → owning component's default → `'md'`.
+ * explicit `size` → owning component's default → `'md'`, and a variant name
+ * or `undefined`.
  *
- * `variant` is always `undefined` here.
+ * Inside `defineTheme`, `Variant` is the theme's listed `iconVariants`; a
+ * process-wide registration receives {@link IconVariant}.
  */
-export type IconRequest = Readonly<{
+export type IconRequest<Variant extends string = IconVariant> = Readonly<{
   size: IconSize;
-  variant?: undefined;
+  variant?: Variant;
 }>;
 
 /**
@@ -128,18 +131,25 @@ export type IconRequest = Readonly<{
  * });
  * ```
  */
-export type IconEntry = ReactNode | ((request: IconRequest) => ReactNode);
+export type IconEntry<Variant extends string = IconVariant> =
+  ReactNode | ((request: IconRequest<Variant>) => ReactNode);
+
+/**
+ * How resolution holds any entry: an entry typed for some variant names
+ * accepts a request with none of them.
+ */
+type StoredIconEntry = IconEntry<never>;
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 /** The request every public, one-argument read uses. */
-const PUBLIC_READ_REQUEST: IconRequest = {size: 'md'};
+const PUBLIC_READ_REQUEST: IconRequest<never> = {size: 'md'};
 
 // =============================================================================
 // Global Registry
 // =============================================================================
 
-let globalRegistry: Record<string, IconEntry> = {};
+let globalRegistry: Record<string, StoredIconEntry> = {};
 
 /**
  * A key is namespaced when it carries a `<namespace>:` prefix — the runtime
@@ -158,7 +168,7 @@ function isNamespacedKey(name: string): boolean {
  */
 function getThemeIconEntries(
   source: IconRegistrySource,
-): Readonly<Record<string, IconEntry>> | null {
+): Readonly<Record<string, StoredIconEntry>> | null {
   const theme =
     typeof source === 'string' ? getRegisteredTheme(source) : source;
   if (theme == null) {
@@ -177,7 +187,7 @@ function selectIconEntry(
   name: string,
   source: IconRegistrySource,
   fallback?: ReactNode,
-): IconEntry {
+): StoredIconEntry {
   return (
     getThemeIconEntries(source)?.[name] ??
     globalRegistry[name] ??
@@ -187,7 +197,10 @@ function selectIconEntry(
 }
 
 /** Read an entry for a request: call a function, return a node as-is. */
-function readIconEntry(entry: IconEntry, request: IconRequest): ReactNode {
+function readIconEntry(
+  entry: StoredIconEntry,
+  request: IconRequest<never>,
+): ReactNode {
   return typeof entry === 'function' ? entry(request) : entry;
 }
 
@@ -199,7 +212,7 @@ function readIconEntry(entry: IconEntry, request: IconRequest): ReactNode {
 export function resolveIcon(
   name: ExtendedIconName,
   source: IconRegistrySource,
-  request: IconRequest,
+  request: IconRequest<never>,
 ): ReactNode {
   return readIconEntry(selectIconEntry(name, source), request);
 }

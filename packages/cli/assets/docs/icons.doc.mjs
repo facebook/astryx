@@ -127,6 +127,53 @@ export const brandTheme = defineTheme({
       ],
     },
     {
+      title: 'Icon Variants',
+  category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: "A theme lists the icon variant names it supports once, with `iconVariants` in `defineTheme()`. The list belongs to the whole theme, never to one icon, and Astryx defines no names of its own. Inside `defineTheme`, an entry function receives `variant` typed as the listed names, or `undefined`, so a misspelled name is a type error. An entry that receives `undefined` draws its normal artwork.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Listing variants and mapping them to artwork',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {InfoFilledIcon, InfoIcon} from './brand-icons';
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  iconVariants: ['outline', 'filled'],
+  icons: {
+    info: ({size, variant}) =>
+      variant === 'filled' ? <InfoFilledIcon /> : <InfoIcon bold={size === 'sm'} />,
+  },
+});
+
+brandTheme.iconVariants; // ['outline', 'filled']`,
+        },
+        {
+          type: 'prose',
+          text: 'A theme that `extends` another inherits its list unless it sets its own; a list it sets replaces the inherited one instead of merging with it.',
+        },
+        {
+          type: 'prose',
+          text: 'An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'Declaring the variant names an application uses',
+          code: `declare module '@astryxdesign/core/Icon' {
+  interface IconVariantMap {
+    outline: true;
+    filled: true;
+  }
+}`,
+        },
+      ],
+    },
+    {
       title: 'Component and Library Icons',
       category: 'foundations',
       content: [

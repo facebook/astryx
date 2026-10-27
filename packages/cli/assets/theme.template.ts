@@ -322,6 +322,15 @@ export const myTheme = defineTheme({
   // icons: {check: <MyCheck />, info: ({size}) => <MyInfo bold={size === 'sm'} />},
 
   /**
+   * The icon variant names this theme supports, listed once for the whole
+   * theme. An icon entry function receives `variant` typed as these names.
+   * A theme that sets the list replaces the one it would inherit; omit it to
+   * inherit the base's list.
+   * Reference: `astryx docs icons`.
+   */
+  // iconVariants: ['outline', 'filled'],
+
+  /**
    * Replace the small components that DRAW control state — the checkbox box,
    * the radio dot, the mark on a chosen option — by indicator name rather than
    * per call site. Replacing `check` re-skins every single-selection mark in

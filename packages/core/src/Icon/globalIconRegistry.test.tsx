@@ -29,7 +29,17 @@ import {
 } from './globalIconRegistry';
 import {Icon} from './Icon';
 import type {IconSize} from './IconSize.stylex';
+import type {IconVariant, IconVariantMap} from './index';
 import {useIcon} from './useIcon';
+
+// An application augments the public map with the variant names it requests
+// (spec:AST-087 FR3).
+declare module './index' {
+  interface IconVariantMap {
+    outline: true;
+    filled: true;
+  }
+}
 
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
@@ -464,7 +474,7 @@ describe('iconRegistry (global, RSC-compatible)', () => {
           NonNullable<DefinedTheme['icons']>['info']
         >().toEqualTypeOf<ReactNode>();
         expectTypeOf<IconRequest>().toEqualTypeOf<
-          Readonly<{size: IconSize; variant?: undefined}>
+          Readonly<{size: IconSize; variant?: IconVariant}>
         >();
         expectTypeOf<IconEntry>().toEqualTypeOf<
           ReactNode | ((request: IconRequest) => ReactNode)
@@ -487,6 +497,47 @@ describe('iconRegistry (global, RSC-compatible)', () => {
           // @ts-expect-error — the request has no `name`.
           close: ({name}) => String(name),
         });
+      });
+    });
+
+    describe('variant names', () => {
+      it('types a process-wide entry by the augmentable IconVariantMap', () => {
+        expectTypeOf<IconVariant>().toEqualTypeOf<
+          keyof IconVariantMap & string
+        >();
+        expectTypeOf<IconVariant>().toEqualTypeOf<'outline' | 'filled'>();
+
+        registerIcons({
+          info: ({variant}) => {
+            expectTypeOf(variant).toEqualTypeOf<
+              'outline' | 'filled' | undefined
+            >();
+            return variant === 'filled' ? 'global-info-filled' : 'global-info';
+          },
+          close: ({variant}) =>
+            // @ts-expect-error — 'bold' is not an augmented variant name.
+            variant === 'bold' ? 'bold-close' : 'close',
+        });
+      });
+
+      it('passes no variant to an entry, so it draws its normal artwork', () => {
+        const info = vi.fn(({variant}: IconRequest) =>
+          variant === 'filled' ? 'filled-info' : 'normal-info',
+        );
+        registerIcons({info});
+        const theme = defineTheme({
+          name: 'fn-listed',
+          iconVariants: ['outline', 'filled'],
+          icons: {close: info},
+        });
+
+        expect(resolveIcon('info', theme, {size: 'sm'})).toBe('normal-info');
+        expect(resolveIcon('close', theme, {size: 'sm'})).toBe('normal-info');
+        expect(getIcon('close', theme)).toBe('normal-info');
+        expect(info).toHaveBeenCalled();
+        for (const [request] of info.mock.calls) {
+          expect(request.variant).toBeUndefined();
+        }
       });
     });
   });
