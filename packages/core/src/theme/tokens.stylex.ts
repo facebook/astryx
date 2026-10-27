@@ -211,10 +211,15 @@ export const sizeDefaults = {
   '--size-element-sm': '28px',
   '--size-element-md': '32px',
   '--size-element-lg': '36px',
-  // The smallest target a control keeps under a coarse primary pointer: a
-  // labelled checkbox's row and target, a radio option's row. The platform's
-  // control size by default: Apple's Human Interface Guidelines give iOS
-  // controls a hit target of at least 44 × 44 pt. A dense theme can lower it.
+  // How far a control's hit area grows under a coarse primary pointer
+  // (`spec:AST-094` FR42): a labelled checkbox and a radio option reach it
+  // through an invisible hit area that stops at half the gap to each
+  // neighbour, so a target between close neighbours stays smaller (a middle
+  // RadioList option reaches 32 px at the default 8 px gap). Rows and
+  // controls keep their drawn size. 44 px, the platform's control size:
+  // Apple's Human Interface Guidelines give iOS controls a hit target of at
+  // least 44 × 44 pt. A larger value raises the reach; a smaller one never
+  // lowers it.
   '--size-touch-target': '44px',
 } as const;
 

@@ -210,7 +210,7 @@ const groups = [
     exportName: 'sizeDefaults',
     title: 'Size Tokens',
     description:
-      'Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: the smallest target a control keeps under a coarse primary pointer.',
+      'Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: how far a hit area grows under a coarse primary pointer before it stops at half the gap to a neighbour.',
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },

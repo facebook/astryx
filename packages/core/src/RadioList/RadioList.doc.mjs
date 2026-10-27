@@ -33,7 +33,7 @@ export const docs = {
     ],
   },
   description:
-    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option’s target reaches the theme’s touch target (`--size-touch-target`, 44 px by default) through an invisible hit area that stops at half the gap to each neighbour; rows keep their size and spacing.',
+    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option’s target reaches the touch target (`--size-touch-target`, 44 px) through an invisible hit area that stops at half the gap to each neighbour, so a middle option reaches 32 px at the default gap; rows keep their size and spacing. That hit area is the row’s `::after`: decorate a row with a child rather than its `::after`.',
   props: [
     {
       name: 'label',
