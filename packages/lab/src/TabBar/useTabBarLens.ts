@@ -191,8 +191,8 @@ export function useTabBarLens({
   isMinimized,
   onLift,
 }: UseTabBarLensOptions): TabBarLensRefs {
-  // The table's springs become motion roles (a theme may retune them)
-  // before this hook's first animation.
+  // The table's springs become motion roles before this hook's first
+  // animation.
   if (isTouch) {
     registerTabBarTable();
   }
