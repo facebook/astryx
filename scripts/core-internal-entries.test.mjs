@@ -76,6 +76,7 @@ const COVERED = [
   'motion/uikit/scroll',
   'motion/uikit/springs',
   'motion/uikit/timing',
+  'motion/uikit/refresh',
 ];
 
 /** Every file under `dir` whose name matches `pattern`. */

@@ -91,6 +91,7 @@ export {
   NAVIGATION_POP_SPRING,
   NAVIGATION_PUSH_SPRING,
   QUICK_CHANGE_SPRING,
+  refreshControl,
   registerNavigationTable,
   registerScrollTable,
   registerSpringsTable,
