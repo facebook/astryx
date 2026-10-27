@@ -116,7 +116,11 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   swap ends (`architecture:component-style-authoring` INV7); AppShell's
   content area does this during a side nav collapse or expand
   (`component:AppShell` FR17), and the SideNav rail holds its old state during a collapse or expand
-  (`component:SideNav` FR6). The swap is internal; the hook's public contract is unchanged.
+  (`component:SideNav` FR6). Beside the swap, the module may play caller-supplied frames on elements
+  the page already renders, on FR4's one motion, with no copy, and releases
+  them when the motion ends; AppShell's content surface uses this to cover an
+  expand's gap when its old wrap is not copied (`component:AppShell` FR17).
+  The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
 
