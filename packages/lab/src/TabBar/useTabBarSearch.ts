@@ -23,8 +23,7 @@
  * field's glass moves and widens to span the screen but for the cancel
  * button (`searchActive`, `searchMorph`, squashing as it starts:
  * `searchSquashVelocity`), its box changed in CSS and its start carried
- * over; how high it sits is the keyboard's (the field inside rides it on
- * the host this context hands it). Deactivating plays it back; leaving the
+ * over, in the bar's row. Deactivating plays it back; leaving the
  * search tab fades the field out and the circle back in. These moves run on
  * UIKit's springs, under a finger only: under a mouse the search tab selects
  * in place and the field shows at once (TabBar.tsx).
@@ -46,7 +45,7 @@ export interface UseTabBarSearchOptions {
   readonly capsuleRef: RefObject<HTMLDivElement | null>;
   /** The search tab is selected. */
   readonly isSearching: boolean;
-  /** The search field is active (above the keyboard). */
+  /** The search field is active (widened to span the screen). */
   readonly isActive: boolean;
   /**
    * A finger drives the bar: only then does the field move (on UIKit's

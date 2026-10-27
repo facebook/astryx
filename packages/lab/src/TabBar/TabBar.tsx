@@ -76,8 +76,8 @@
  * The field stays mounted (inert while hidden) so that the tap choosing the
  * tab can, in the same commit, activate the field and focus it, which is
  * what raises the keyboard on iOS. Active, its glass widens to span the
- * screen but for the field's cancel button; the field inside rides the
- * keyboard on the host element TabBarSearchContext hands it.
+ * screen but for the field's cancel button, in the bar's row, where a
+ * phone's keyboard can cover it.
  *
  * Accessibility: a `tablist` of `tab` buttons (`aria-selected`), one tab stop
  * with the arrow keys, Home and End moving between tabs and Enter or Space
@@ -216,7 +216,7 @@ export interface TabBarSearchTabProps {
    * stays mounted (hidden and inert otherwise), so a tap can focus it.
    */
   children?: ReactNode;
-  /** Whether the field is active: raised above the keyboard. */
+  /** Whether the field is active: widened to span the screen. */
   isActive?: boolean;
   /**
    * Called with `true` when the search tab's tap activates the field, and
@@ -406,8 +406,7 @@ const styles = stylex.create({
   searchSelected: {
     color: colorVars['--color-accent'],
   },
-  // The search field's host, inline in the bar's row; the field rides the
-  // keyboard on it while active.
+  // The search field's host, inline in the bar's row.
   accessoryAside: {
     pointerEvents: 'none',
   },
