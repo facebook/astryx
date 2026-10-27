@@ -41,6 +41,7 @@ import {
   type TouchDriver,
   type TouchScript,
 } from '@astryxdesign/interaction-harness';
+import {presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -400,7 +401,9 @@ test('the page settle keeps advancing every frame while the main thread is block
   });
   await film.write(testInfo, {block, settle});
   expect(proof.medianFrameMs).toBeLessThan(20);
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.frames).toBeGreaterThanOrEqual(
+    presentedFramesExpected(proof) - 2,
+  );
   expect(proof.longestStallMs).toBeLessThan(proof.cadenceMs * 2.5);
   expect(proof.monotonic).toBe(true);
 });
