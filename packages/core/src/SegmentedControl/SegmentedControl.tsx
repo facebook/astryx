@@ -333,9 +333,10 @@ export function SegmentedControl({
   // Under a mouse, the theme's transitions.
   const isTouchPresentation = useTouchPresentation().isTouch;
   const trackRef = useRef<HTMLDivElement | null>(null);
-  // Under a finger the control also tracks the touch itself (the touch layer
-  // wires it) and commits the segment nearest the finger at the lift.
-  useSegmentedSelectionMotion(
+  // Every pointer's press is tracked (spec:AST-094 FR43): a drag from the
+  // selected segment carries the lens, and the lift commits the segment
+  // nearest the pointer.
+  const selection = useSegmentedSelectionMotion(
     trackRef,
     value,
     isTouchPresentation,
@@ -412,6 +413,13 @@ export function SegmentedControl({
       if (!e.currentTarget.contains(e.relatedTarget)) {
         return;
       }
+      // A mouse's or a pen's press moves focus at its pointerdown (a
+      // finger's only at its tap's end): the press tracking commits the
+      // segment it lifts on (spec:AST-094 FR43), so this focus move selects
+      // nothing.
+      if (selection.isPressing()) {
+        return;
+      }
       const focused = (e.target as HTMLElement | null)?.closest<HTMLElement>(
         '[role="radio"][data-value]',
       );
@@ -423,7 +431,7 @@ export function SegmentedControl({
         onChange(nextValue);
       }
     },
-    [onFocusProp, hint, handleFocus, isDisabled, onChange, value],
+    [onFocusProp, hint, handleFocus, isDisabled, onChange, selection, value],
   );
 
   const contextValue = useMemo(
@@ -467,7 +475,7 @@ export function SegmentedControl({
             styles.container,
             sizeStyles[size],
             layout === 'fill' && styles.fill,
-            isTouchPresentation && styles.lens,
+            (isTouchPresentation || !isDisabled) && styles.lens,
             isDisabled &&
               (showsDisabledMessage
                 ? styles.disabledWithMessage

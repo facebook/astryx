@@ -27,7 +27,14 @@
  * UISegmentedControl on the iOS 26.2 simulator.
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 // @ts-expect-error -- pngjs ships no declarations; runtime support is pinned.
 import {PNG} from 'pngjs';
 import {
@@ -56,8 +63,10 @@ import {
   touchStoryboard,
   toTouchEvents,
   waitForAnimation,
+  webInputDriver,
   withStorybook,
   writeEvidence,
+  PEN_SKIP,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 
@@ -1020,7 +1029,7 @@ async function holdLensAnimationsAtBirth(page: Page): Promise<void> {
   });
 }
 
-test('with a mouse nothing changes: no lens, the theme’s color transition, and a click selects (touch work costs nothing under a fine pointer)', async ({
+test('with a mouse a click selects with the theme’s color transition and shows no lens', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -1041,13 +1050,18 @@ test('with a mouse nothing changes: no lens, the theme’s color transition, and
       exact: true,
     });
     await expect(group).toBeVisible();
-    // No lens style on the radiogroup, no custom property written on it.
+    // The lens shows nothing (no pseudo-element, or a hidden one) and no
+    // custom property is written on the radiogroup.
     const noLens = async () =>
-      group.evaluate(
-        element =>
-          getComputedStyle(element, '::before').content !== '""' &&
-          !element.getAttribute('style')?.includes('--_segmented'),
-      );
+      group.evaluate(element => {
+        const lens = getComputedStyle(element, '::before');
+        return (
+          (lens.content === 'none' ||
+            lens.content === 'normal' ||
+            lens.visibility === 'hidden') &&
+          !element.getAttribute('style')?.includes('--_segmented')
+        );
+      });
     expect(await noLens()).toBe(true);
     await expect(group.locator('[data-value="list"]')).toHaveCSS(
       'transition-property',
@@ -2036,57 +2050,144 @@ test('a drag commits through the destination item’s click too: its onClick run
   await expectLensHidden(control);
 });
 
-test('with a mouse there is no lift and no drag-to-select: a drag selects nothing and a click selects (touch work costs nothing under a fine pointer)', async ({
-  browser,
-}) => {
+/** A desktop context: a mouse, no touch, a fine primary pointer. */
+async function openWithMouse(browser: Browser): Promise<{
+  context: BrowserContext;
+  page: Page;
+  group: Locator;
+  centerOf: (value: string) => Promise<{x: number; y: number}>;
+  lensShown: () => Promise<boolean>;
+}> {
   const context = await browser.newContext({
     hasTouch: false,
     isMobile: false,
     viewport: {width: 1024, height: 768},
   });
+  const page = await context.newPage();
+  await openStory(page, storybook(), 'core-segmentedcontrol--default');
+  // This context's pointer is fine (a context without touch can still match
+  // a coarse one).
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  const group = page.getByRole('radiogroup', {name: 'View mode', exact: true});
+  await expect(group).toBeVisible();
+  const centerOf = async (value: string) => {
+    const rect = await group.locator(`[data-value="${value}"]`).boundingBox();
+    if (rect == null) {
+      throw new Error(`no segment ${value}`);
+    }
+    return {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
+  };
+  // The motion shows the lens through the radiogroup's own custom property.
+  const lensShown = async () =>
+    group.evaluate(
+      element =>
+        element.style.getPropertyValue('--_segmented-lens-visibility') ===
+        'visible',
+    );
+  return {context, page, group, centerOf, lensShown};
+}
+
+test('with a mouse a drag from the selected segment carries the selection and commits where it lifts, as every pointer does (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, group, centerOf, lensShown} =
+    await openWithMouse(browser);
   try {
-    const page = await context.newPage();
-    await openStory(page, storybook(), 'core-segmentedcontrol--default');
-    // This context's pointer is fine (a context without touch can still
-    // match a coarse one).
-    expect(
-      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
-    ).toBe(false);
-    const group = page.getByRole('radiogroup', {
-      name: 'View mode',
-      exact: true,
-    });
-    await expect(group).toBeVisible();
-    // The track claims no drag.
-    await expect(group).not.toHaveCSS('touch-action', 'pan-y pinch-zoom');
     const selections = await recordSelections(group);
-    const box = async (value: string) => {
-      const rect = await group.locator(`[data-value="${value}"]`).boundingBox();
-      if (rect == null) {
-        throw new Error(`no segment ${value}`);
-      }
-      return {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
-    };
-    const from = await box('grid');
-    const to = await box('table');
+    const from = await centerOf('grid');
+    const to = await centerOf('table');
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await page.mouse.move(to.x, to.y, {steps: 12});
+    // Held: the lens is on the pointer, and nothing is committed before the
+    // lift.
+    expect(await lensShown()).toBe(true);
+    await expect(group.locator('[data-value="grid"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
     await page.mouse.up();
-    // A press that ends on another segment selects nothing (no click there).
-    expect(await selections()).toEqual([]);
-    expect(
-      await group.evaluate(
-        element =>
-          getComputedStyle(element, '::before').content !== '""' &&
-          !element.getAttribute('style')?.includes('--_segmented'),
-      ),
-    ).toBe(true);
+    await expect(group.locator('[data-value="table"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect((await selections()).map(change => change.value)).toEqual(['table']);
+    // The drag selected no text, and the lens hands back once it settles.
+    expect(await page.evaluate(() => getSelection()?.toString() ?? '')).toBe(
+      '',
+    );
+    await expect.poll(lensShown, {timeout: 3000}).toBe(false);
+    await expect(group.locator('[data-value="list"]')).toHaveCSS(
+      'transition-property',
+      'color, background-color, box-shadow',
+    );
+    // A click still selects.
     await group.locator('[data-value="list"]').click();
     await expect(group.locator('[data-value="list"]')).toHaveAttribute(
       'aria-checked',
       'true',
     );
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a mouse a drag that starts on another segment commits only where it lifts, focus already in the group or not, and carries no lens', async ({
+  browser,
+}) => {
+  const {context, page, group, centerOf, lensShown} =
+    await openWithMouse(browser);
+  try {
+    // A click on the selected segment first: focus is in the group, so the
+    // press below moves focus within it, which must select nothing.
+    await group.locator('[data-value="grid"]').click();
+    const selections = await recordSelections(group);
+    const from = await centerOf('list');
+    const to = await centerOf('table');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, {steps: 12});
+    expect(await lensShown()).toBe(false);
+    // Nothing is committed before the lift.
+    await expect(group.locator('[data-value="grid"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await page.mouse.up();
+    await expect(group.locator('[data-value="table"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect((await selections()).map(change => change.value)).toEqual(['table']);
+    expect(await lensShown()).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a pen a drag from the selected segment carries the selection and commits where it lifts (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, group, centerOf} = await openWithMouse(browser);
+  try {
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    const selections = await recordSelections(group);
+    const from = await centerOf('grid');
+    const to = await centerOf('table');
+    const points = Array.from({length: 13}, (_, i) => ({
+      x: from.x + ((to.x - from.x) * i) / 12,
+      y: from.y,
+      t: i * 25,
+    }));
+    await driver.pen(points);
+    await expect(group.locator('[data-value="table"]')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect((await selections()).map(change => change.value)).toEqual(['table']);
   } finally {
     await context.close();
   }

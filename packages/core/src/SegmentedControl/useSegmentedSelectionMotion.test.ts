@@ -965,6 +965,135 @@ describe('under a finger', () => {
   });
 });
 
+describe('under a mouse or a pen (spec:AST-094 FR43)', () => {
+  /**
+   * A fine primary pointer: the touch presentation is off (a change keeps the
+   * theme's transition), and press tracking is on, as for every pointer.
+   */
+  function setupFine(selected: string) {
+    const ctx = setup(selected, {coarse: false});
+    ctx.motion.present(false);
+    return ctx;
+  }
+
+  it('a change from a click, a key or a new value moves no lens: the theme’s transition shows it', () => {
+    const ctx = setupFine('grid');
+    select(ctx, 'grid', 'table');
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+    expectNoOverride(ctx.segments.grid);
+    expectNoOverride(ctx.segments.table);
+  });
+
+  it('a press that lifts on another segment with no drag moves no lens: its click selects through the theme’s transition', async () => {
+    const ctx = setupFine('grid');
+    press(ctx, clientCenterOf('table'));
+    expect(release(ctx, clientCenterOf('table'))).toBe('table');
+    ctx.motion.clicked(ctx.track, 'table', false);
+    await Promise.resolve();
+    select(ctx, 'grid', 'table');
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+    expectNoOverride(ctx.segments.table);
+  });
+
+  it('a drag from the selected segment carries the lens on the pointer itself, written at each move, at its resting size and no further than 11 pt past the end segments', () => {
+    const ctx = setupFine('grid');
+    press(ctx, clientCenterOf('grid'));
+    drag(ctx, clientCenterOf('list'));
+    expect(ctx.motion.isSliding).toBe(true);
+    // Where the pointer is, at once: a pointer that holds the lens times it.
+    expect(ctx.animator.get('x')).toBeCloseTo(
+      centerOf('list') - centerOf('grid'),
+      6,
+    );
+    expect(ctx.animator.get('scaleX')).toBeCloseTo(1, 6);
+    expect(ctx.animator.get('scaleY')).toBeCloseTo(1, 6);
+    drag(ctx, 500);
+    expect(ctx.animator.get('x')).toBeCloseTo(
+      centerOf('table') + segmentedControl.dragOvershoot - centerOf('grid'),
+      6,
+    );
+  });
+
+  it('the lift commits the segment nearest the pointer; the lens settles there on the theme’s state-change spring and hands back', async () => {
+    const ctx = setupFine('grid');
+    press(ctx, clientCenterOf('grid'));
+    drag(ctx, clientCenterOf('table') - 5);
+    expect(release(ctx, clientCenterOf('table') - 5)).toBe('table');
+    ctx.motion.clicked(ctx.track, 'table', false);
+    await Promise.resolve();
+    select(ctx, 'grid', 'table');
+    const settle = solveSpring(toSpring(springs.stateChange), {
+      from: -5,
+      to: 0,
+      velocity: 0,
+    });
+    expect(ctx.animator.get('x', 1100)).toBeCloseTo(settle.value(0.1), 4);
+    await advance(3000);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.table);
+  });
+
+  it('a drag that starts on another segment carries nothing; the lift commits there through the theme’s transition', async () => {
+    const ctx = setupFine('grid');
+    press(ctx, clientCenterOf('list'));
+    drag(ctx, clientCenterOf('table'));
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(release(ctx, clientCenterOf('table'))).toBe('table');
+    ctx.motion.clicked(ctx.track, 'table', false);
+    await Promise.resolve();
+    select(ctx, 'grid', 'table');
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+  });
+
+  it('while the lens is carried the segments’ own transitions are off, so the surface it borrows neither fades out nor back in; they come back once it has handed back', async () => {
+    const ctx = setupFine('grid');
+    ctx.segments.list.style.setProperty('transition-property', 'color');
+    press(ctx, clientCenterOf('grid'));
+    drag(ctx, clientCenterOf('list'));
+    for (const segment of Object.values(ctx.segments)) {
+      expect(segment.style.getPropertyValue('transition-property')).toBe(
+        'none',
+      );
+    }
+    expect(release(ctx, clientCenterOf('grid'))).toBeNull();
+    await advance(3000);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.grid);
+    // Each segment's own inline value is back.
+    expect(
+      ctx.segments.grid.style.getPropertyValue('transition-property'),
+    ).toBe('');
+    expect(
+      ctx.segments.list.style.getPropertyValue('transition-property'),
+    ).toBe('color');
+  });
+
+  it('Reduced Motion: a drag holds nothing; the lift commits through the theme’s transition', async () => {
+    reduceMotion = true;
+    const ctx = setupFine('grid');
+    press(ctx, clientCenterOf('grid'));
+    drag(ctx, clientCenterOf('table'));
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(release(ctx, clientCenterOf('table'))).toBe('table');
+    ctx.motion.clicked(ctx.track, 'table', false);
+    await Promise.resolve();
+    select(ctx, 'grid', 'table');
+    expect(ctx.motion.isSliding).toBe(false);
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+    expect(ctx.layer('after', 'visibility')).toBe('');
+  });
+
+  it('back under a finger (a touchscreen laptop flips its primary pointer), changes slide again', () => {
+    const ctx = setupFine('grid');
+    ctx.motion.present(true);
+    select(ctx, 'grid', 'table');
+    expect(ctx.motion.isSliding).toBe(true);
+  });
+});
+
 describe('the titles under a finger', () => {
   interface Recorded {
     element: HTMLElement;

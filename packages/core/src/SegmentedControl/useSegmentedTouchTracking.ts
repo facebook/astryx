@@ -5,14 +5,15 @@
 /**
  * @file useSegmentedTouchTracking.ts
  * @input The radiogroup element, the selection motion controller and
- *   whether the touch presentation applies
- * @output Exports `useSegmentedTouchTracking`: a finger's touch on a
- *   SegmentedControl, from landing to letting go, reported to the selection
+ *   whether a press is tracked (every pointer's, `spec:AST-094` FR43)
+ * @output Exports `useSegmentedTouchTracking`: a press on a
+ *   SegmentedControl (a finger, a mouse or a pen), from landing to letting
+ *   go, reported to the selection
  *   motion (begin, drag, release, cancel); and
  *   `segmentTargetAt` / `measureSegments`, the segment a finger at x counts
  *   for. The segment the finger lets go on is committed through its own
  *   click, by the action-group tracker
- * @position Internal to SegmentedControl's touch presentation; the motion it
+ * @position Internal to SegmentedControl's press tracking; the motion it
  *   drives is useSegmentedSelectionMotion.ts
  *
  * UISegmentedControl tracks a touch itself, the way a UIControl does: it
@@ -50,12 +51,15 @@
  * lens back at once; otherwise the motion waits for the value to come back
  * (a controlled parent may adopt it later) and sends the lens back only if
  * the slide settles without it.
- * Mouse, keyboard and assistive technology keep the click.
+ * A mouse and a pen are tracked the same way (`spec:AST-094` FR43): a click
+ * is the browser's click, and a drag commits where it lifts. Keyboard and
+ * assistive technology keep the click.
  *
  * While a finger is down, text selection and the touch callout are off on
  * the track: the drag recognizer brings the selection lock (`lockSelection`,
  * `spec:AST-094` FR41), so a held finger drags the lens and never starts a
- * selection; a mouse keeps desktop selection.
+ * selection; the gesture host brings the same lock for a mouse or a pen
+ * that drags (FR43).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
@@ -292,15 +296,14 @@ export function useSegmentedTouchTracking(
   })));
   useIsomorphicLayoutEffect(() => () => tracker.dispose(), [tracker]);
 
-  // Outside the touch presentation (a fine pointer) nothing is attached: the
-  // track keeps today's touch-action and click.
+  // Every pointer's press is tracked while the control is enabled
+  // (`spec:AST-094` FR43); a disabled control attaches nothing.
   const attachRef = isEnabled ? trackRef : DETACHED;
   usePressTracker(attachRef, {
     isEnabled: () => isEnabledRef.current,
     onControlEvent: (event, touch) => {
       const track = trackRef.current;
-      // A mouse keeps the click path.
-      if (track == null || touch.pointerType === 'mouse') {
+      if (track == null) {
         return;
       }
       switch (event) {

@@ -368,7 +368,8 @@ const PERIODS = [
 /**
  * On a touch screen the selection slides from one segment to the next on
  * UIKit's spring, whether a finger, a key or the app changed the value. With a
- * mouse the selection changes in place, as before.
+ * mouse or a pen a click changes the selection in place, as before, and a drag
+ * carries it as a finger does.
  */
 export const SelectionMotion: Story = {
   name: 'Selection motion',
@@ -376,7 +377,7 @@ export const SelectionMotion: Story = {
     docs: {
       description: {
         story:
-          'Under a finger the selection slides between segments on UIKit’s spring, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Drag the selected segment to another one and let go: the segment nearest the finger is chosen. Under Reduce Motion nothing travels: the old selection fades out as the new one fades in; with a mouse the color fade stays.',
+          'Under a finger the selection slides between segments on UIKit’s spring, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Drag the selected segment to another one and let go: the segment nearest the finger is chosen. Under Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse or a pen a click keeps the color fade, and a drag carries the selection as a finger does.',
       },
     },
   },
