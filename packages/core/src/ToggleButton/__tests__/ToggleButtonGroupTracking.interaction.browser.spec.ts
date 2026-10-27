@@ -137,6 +137,14 @@ test.describe('with a mouse', () => {
     );
     expect(looks[0]).toEqual({press: null, image: 'none'});
     expect(looks[2].press).toBe('on');
+    // Only the lit toggle takes the press scale: Bold, where the press began
+    // and which keeps `:active` while the button is held, stays at rest.
+    const scaleOf = async (toggle: Locator) =>
+      toggle.evaluate(el => getComputedStyle(el).transform);
+    await expect
+      .poll(async () => scaleOf(underline))
+      .toBe('matrix(0.98, 0, 0, 0.98, 0, 0)');
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(await scaleOf(bold));
     await page.mouse.up();
     await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
   });

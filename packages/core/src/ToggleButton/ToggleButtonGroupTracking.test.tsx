@@ -283,6 +283,47 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 
+  it('a finger on the edge of a disabled toggle that has a tooltip toggles nothing, not its enabled neighbour', () => {
+    const onChange = vi.fn();
+    const view = render(
+      <ToggleButtonGroup
+        type="multiple"
+        label="Formatting"
+        value={[]}
+        onChange={onChange}
+        data-testid="group">
+        <ToggleButton label="Bold" value="bold" data-testid="a" />
+        <ToggleButton
+          label="Italic"
+          value="italic"
+          isDisabled
+          tooltip="Italic is not available here"
+          data-testid="b"
+        />
+        <ToggleButton label="Underline" value="underline" data-testid="c" />
+      </ToggleButtonGroup>,
+    );
+    const italic = view.getByTestId('b');
+    // Three touching 28 px toggles: Bold's target grows 8 px past its edge,
+    // over the disabled Italic.
+    place(view.getByTestId('group'), {
+      left: 0,
+      top: 100,
+      width: 84,
+      height: 28,
+    });
+    place(view.getByTestId('a'), {left: 0, top: 100, width: 28, height: 28});
+    place(italic, {left: 28, top: 100, width: 28, height: 28});
+    place(view.getByTestId('c'), {left: 56, top: 100, width: 28, height: 28});
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const f = finger();
+    f.down(italic, {x: 30, y: 114});
+    f.up(italic, {x: 30, y: 114});
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('a finger just past a small toggle, inside its 44 px target, toggles it (FR5)', () => {
     const {group, onChange} = mount();
     const f = finger();
