@@ -68,7 +68,7 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   keeps its behavior: the changed element shows its change as its own record
   says, and content after it takes its place at once. AppShell's content area
   holds its own handle for a side nav collapse or expand (`component:AppShell`
-  FR17), and the SideNav rail holds its own for a collapse
+  FR17), and the SideNav rail holds its own for a collapse or expand
   (`component:SideNav` FR6).
 - **FR3 — The content after a change glides within the area.** For any change
   a component holding the handle reports, such as a disclosure opening,
@@ -115,8 +115,8 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   assistive technology, while the new content enters, and removes it when the
   swap ends (`architecture:component-style-authoring` INV7); AppShell's
   content area does this during a side nav collapse or expand
-  (`component:AppShell` FR17), and the SideNav rail holds its old expanded state while a collapse's
-  clip closes (`component:SideNav` FR6). The swap is internal; the hook's public contract is unchanged.
+  (`component:AppShell` FR17), and the SideNav rail holds its old state during a collapse or expand
+  (`component:SideNav` FR6). The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
 
