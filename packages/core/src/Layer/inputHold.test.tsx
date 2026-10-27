@@ -16,13 +16,20 @@ import {
  * a hold registers its gate once per document, at the first hold.
  */
 const touchGates: ((target: Node) => boolean)[] = [];
+/** The gates registered and not yet released. */
+const liveTouchGates = new Set<(target: Node) => boolean>();
 const addTouchGate = GestureHost.prototype.addTouchGate;
 GestureHost.prototype.addTouchGate = function (
   this: GestureHost,
   gate: (target: Node) => boolean,
 ) {
   touchGates.push(gate);
-  return addTouchGate.call(this, gate);
+  liveTouchGates.add(gate);
+  const release = addTouchGate.call(this, gate);
+  return () => {
+    liveTouchGates.delete(gate);
+    release();
+  };
 };
 
 function deferred() {
@@ -379,42 +386,46 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     expect(shield.style.pointerEvents).toBe('auto');
   });
 
-  it("starts a presentation's shield letting a mouse through when a mouse is the page's latest pointer, so its press before any movement passes", () => {
+  it("remembers no pointer while nothing is held: a mouse that moved before a layer opened leaves its presentation's shield taking hits (spec:AST-094 FR24)", () => {
     const {layer, child} = mountLayer();
-    const {button, reached} = recorder(layer);
-    // The mouse moved last, before the layer opened.
+    // The mouse moved last, while nothing was held.
     pointer(document.body, 'pointermove', 'mouse');
     hold(layer);
     const shield = layer.lastElementChild as HTMLElement;
-    expect(shield.style.pointerEvents).toBe('none');
+    expect(shield.style.pointerEvents).toBe('auto');
     const isGated = (target: Node) => touchGates.some(gate => gate(target));
+    expect(isGated(child)).toBe(true);
+    // Once it moves during the hold, it passes.
+    pointer(document.body, 'pointermove', 'mouse');
+    expect(shield.style.pointerEvents).toBe('none');
     expect(isGated(child)).toBe(false);
-    pointer(button, 'pointerdown', 'mouse');
-    mouse(button, 'mousedown');
-    pointer(button, 'pointerup', 'mouse');
-    mouse(button, 'mouseup');
-    click(button, 'mouse');
-    expect(reached).toEqual([
-      'pointerdown',
-      'mousedown',
-      'pointerup',
-      'mouseup',
-      'click',
-    ]);
   });
 
-  it("starts a presentation's shield taking hits when a finger is the page's latest pointer, and a dismissal's whatever the pointer", () => {
+  it('adds its window listeners only while a layer is held, once per document however many layers are held, and removes every one after the last hold ends (spec:AST-094 FR24)', () => {
+    const added = vi.spyOn(window, 'addEventListener');
+    const removed = vi.spyOn(window, 'removeEventListener');
+    const listening = () => added.mock.calls.length - removed.mock.calls.length;
+    const first = mountLayer().layer;
+    const second = mountLayer().layer;
+    const releaseFirst = hold(first);
+    const once = listening();
+    expect(once).toBeGreaterThan(0);
+    const releaseSecond = hold(second, 'layer');
+    expect(listening()).toBe(once);
+    releaseFirst();
+    expect(listening()).toBe(once);
+    releaseSecond();
+    expect(listening()).toBe(0);
+  });
+
+  it("registers the gesture host's gate only while a layer is held, and releases it after the last hold ends (spec:AST-094 FR24)", () => {
     const {layer} = mountLayer();
-    hold(layer);
-    expect((layer.lastElementChild as HTMLElement).style.pointerEvents).toBe(
-      'auto',
-    );
-    const other = mountLayer().layer;
-    pointer(document.body, 'pointermove', 'mouse');
-    hold(other, 'layer');
-    expect((other.lastElementChild as HTMLElement).style.pointerEvents).toBe(
-      'auto',
-    );
+    const release = hold(layer);
+    expect(liveTouchGates.size).toBe(1);
+    hold(mountLayer().layer)();
+    expect(liveTouchGates.size).toBe(1);
+    release();
+    expect(liveTouchGates.size).toBe(0);
   });
 
   it("lets the gesture host's gate pass a mouse during a presentation and hold it during a dismissal", () => {
