@@ -25,9 +25,11 @@
  * only a missing Core: rebuilding a stale one mid-run would delete dist under
  * suites still reading it. Each checkout has its own lock, so one worktree's
  * rebuild never holds up another's suites. Each node run also holds a lease in
- * the checkout while it runs, and a stale rebuild waits until every run that
+ * the checkout while it runs (ended by its teardown or its exit), and a stale
+ * rebuild waits, on a timer and for at most two minutes, until every run that
  * started before it has ended, so a second run never rebuilds Core under a run
- * already in progress.
+ * already in progress; past the limit it tests the build it has, with a
+ * warning naming the live run.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -326,10 +328,7 @@ export function ensureBuiltOnce({
 /**
  * Build Core when `entry` is missing, or also when it is older than
  * `roots` with `rebuildStale`, in one process at a time.
- * A stale build is rebuilt only once every run that started before this one
- * (`runLeaseDir`) has ended: one may still be reading it. A missing build has
- * no reader.
- * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, rebuildStale?: boolean, runLeaseDir?: string, isAlive?: (pid: number) => boolean, staleLockMs?: number, pollMs?: number}} options
+ * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, rebuildStale?: boolean, staleLockMs?: number, pollMs?: number}} options
  */
 export function ensureCoreBuiltAt({
   entry,
@@ -338,27 +337,9 @@ export function ensureCoreBuiltAt({
   build,
   lockDir,
   rebuildStale = false,
-  runLeaseDir,
-  isAlive,
   staleLockMs,
   pollMs = POLL_MS,
 }) {
-  if (rebuildStale && runLeaseDir) {
-    let announced = false;
-    while (
-      fs.existsSync(entry) &&
-      coreBuildIsStale(entry, roots, generated) &&
-      earlierLiveRuns(runLeaseDir, {isAlive}).length > 0
-    ) {
-      if (!announced) {
-        console.warn(
-          '[ensure-core-built] Core changed; waiting for the test run already running in this checkout to end before rebuilding it.',
-        );
-        announced = true;
-      }
-      sleepSync(pollMs);
-    }
-  }
   ensureBuiltOnce({
     isBuilt: rebuildStale
       ? () => !coreBuildIsStale(entry, roots, generated)
@@ -374,9 +355,9 @@ export function ensureCoreBuiltAt({
  * Ensure packages/core/dist is built exactly once, even when called
  * concurrently from parallel Vitest workers. A build-theme suite's beforeAll
  * calls it with no options and builds only a missing Core; the node global
- * setup passes `rebuildStale`, so a build older than Core's sources is rebuilt
- * there, before any worker forks, and once every run that started before it
- * has ended, so never under a running suite.
+ * setup rebuilds a build older than Core's sources (`ensureCoreBuiltForRun`),
+ * before any worker forks, and once every run that started before it has
+ * ended, so never under a running suite.
  * @param {{rebuildStale?: boolean}} [options]
  */
 export function ensureCoreBuilt({rebuildStale = false} = {}) {
@@ -387,6 +368,107 @@ export function ensureCoreBuilt({rebuildStale = false} = {}) {
     build: buildCore,
     lockDir: LOCK_DIR,
     rebuildStale,
-    runLeaseDir: RUN_LEASE_DIR,
+  });
+}
+
+/** How long a run waits for the runs that started before it, ms. */
+export const EARLIER_RUN_WAIT_MS = 120_000;
+
+/**
+ * Waits while the build is stale and a run that started before this one is
+ * still live (`leaseDir`), on a timer, so the event loop stays free and Ctrl-C
+ * still stops the run. Gives up after `limitMs`. Resolves to the runs still
+ * live when it gave up, or to none.
+ * @param {{entry: string, roots: readonly string[], generated?: readonly string[], leaseDir: string, isAlive?: (pid: number) => boolean, pid?: number, pollMs?: number, limitMs?: number}} options
+ * @returns {Promise<number[]>}
+ */
+export async function waitForEarlierRuns({
+  entry,
+  roots,
+  generated = [],
+  leaseDir,
+  isAlive,
+  pid,
+  pollMs = POLL_MS,
+  limitMs = EARLIER_RUN_WAIT_MS,
+}) {
+  const deadline = Date.now() + limitMs;
+  let announced = false;
+  for (;;) {
+    if (!fs.existsSync(entry) || !coreBuildIsStale(entry, roots, generated)) {
+      return [];
+    }
+    const earlier = earlierLiveRuns(leaseDir, {pid, isAlive});
+    if (earlier.length === 0 || Date.now() >= deadline) {
+      return earlier;
+    }
+    if (!announced) {
+      console.warn(
+        `[ensure-core-built] Core changed; waiting up to ${Math.round(limitMs / 1000)} s for the test run already running in this checkout (pid ${earlier.join(', ')}) to end before rebuilding it.`,
+      );
+      announced = true;
+    }
+    await new Promise(resolve => setTimeout(resolve, pollMs));
+  }
+}
+
+/**
+ * The node global setup's Core step: once the runs that started earlier have
+ * ended, a stale build is rebuilt. If one is still live at the limit, the
+ * stale build stays (rebuilding it would delete dist under that run), and a
+ * warning names the run: this run tests the build it has.
+ * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, leaseDir: string, isAlive?: (pid: number) => boolean, pid?: number, pollMs?: number, limitMs?: number}} options
+ */
+export async function ensureCoreBuiltForRunAt({
+  entry,
+  roots,
+  generated = [],
+  build,
+  lockDir,
+  leaseDir,
+  isAlive,
+  pid,
+  pollMs,
+  limitMs,
+}) {
+  const stillLive = await waitForEarlierRuns({
+    entry,
+    roots,
+    generated,
+    leaseDir,
+    isAlive,
+    pid,
+    pollMs,
+    limitMs,
+  });
+  if (stillLive.length > 0) {
+    console.warn(
+      `[ensure-core-built] Gave up waiting for test run ${stillLive.join(', ')}: this run tests the Core build already in packages/core/dist, which is older than Core's sources. Run again once that run has ended.`,
+    );
+  }
+  ensureCoreBuiltAt({
+    entry,
+    roots,
+    generated,
+    build,
+    lockDir,
+    rebuildStale: stillLive.length === 0,
+    pollMs,
+  });
+}
+
+/**
+ * `ensureCoreBuiltForRunAt` for this checkout: the node global setup's step.
+ * @param {{limitMs?: number}} [options]
+ */
+export function ensureCoreBuiltForRun({limitMs} = {}) {
+  return ensureCoreBuiltForRunAt({
+    entry: CORE_BUILD_MARKER,
+    roots: CORE_SOURCES,
+    generated: CORE_GENERATED,
+    build: buildCore,
+    lockDir: LOCK_DIR,
+    leaseDir: RUN_LEASE_DIR,
+    limitMs,
   });
 }

@@ -19,27 +19,35 @@
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {
-  ensureCoreBuilt,
+  ensureCoreBuiltForRun,
   registerTestRun,
 } from './packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
-export default function setup() {
+export default async function setup() {
   // This run holds a lease for its whole length, so a later run's setup does
-  // not rebuild Core under it; the returned teardown ends the lease.
+  // not rebuild Core under it. The returned teardown ends it, and so does the
+  // process's exit: a run stopped with Ctrl-C calls no teardown.
   const endRun = registerTestRun();
-  // A stale Core is rebuilt only here, before the workers: a suite that
-  // rebuilt it mid-run would delete dist under suites still reading it.
-  ensureCoreBuilt({rebuildStale: true});
-  // The ignored registry and ~700 physical page wrappers are build outputs,
-  // not fixtures to check in. The route-manifest test must see the same inputs
-  // as `pnpm -F @astryxdesign/sandbox build` on a clean CI checkout.
-  execFileSync(
-    process.execPath,
-    [fileURLToPath(new URL('./scripts/sync-templates.js', import.meta.url))],
-    {
-      cwd: fileURLToPath(new URL('.', import.meta.url)),
-      maxBuffer: 32 * 1024 * 1024,
-    },
-  );
+  process.once('exit', endRun);
+  try {
+    // A stale Core is rebuilt only here, before the workers: a suite that
+    // rebuilt it mid-run would delete dist under suites still reading it. The
+    // wait for an earlier run is a timer, so Ctrl-C still stops this one.
+    await ensureCoreBuiltForRun();
+    // The ignored registry and ~700 physical page wrappers are build outputs,
+    // not fixtures to check in. The route-manifest test must see the same
+    // inputs as `pnpm -F @astryxdesign/sandbox build` on a clean CI checkout.
+    execFileSync(
+      process.execPath,
+      [fileURLToPath(new URL('./scripts/sync-templates.js', import.meta.url))],
+      {
+        cwd: fileURLToPath(new URL('.', import.meta.url)),
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    );
+  } catch (error) {
+    endRun();
+    throw error;
+  }
   return endRun;
 }

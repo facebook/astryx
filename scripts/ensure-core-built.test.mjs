@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   CORE_BUILD_MARKER,
   CORE_GENERATED,
@@ -32,6 +32,7 @@ import {
   earlierLiveRuns,
   ensureBuiltOnce,
   ensureCoreBuiltAt,
+  ensureCoreBuiltForRunAt,
   registerTestRun,
 } from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
@@ -265,7 +266,7 @@ describe('ensureCoreBuiltAt', () => {
       path.join(REPO_ROOT, 'vitest.global-setup.node.mjs'),
       'utf8',
     );
-    expect(setup).toContain('ensureCoreBuilt({rebuildStale: true})');
+    expect(setup).toContain('await ensureCoreBuiltForRun();');
     const suites = [];
     const walk = current => {
       for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
@@ -274,7 +275,7 @@ describe('ensureCoreBuiltAt', () => {
           if (entry.name !== 'node_modules') walk(full);
         } else if (
           entry.name.endsWith('.test.mjs') &&
-          /ensureCoreBuilt\([^)]*rebuildStale/.test(
+          /ensureCoreBuiltForRun\(|ensureCoreBuilt\([^)]*rebuildStale/.test(
             fs.readFileSync(full, 'utf8'),
           )
         ) {
@@ -448,48 +449,85 @@ describe('run leases', () => {
     return {...built, leaseDir: path.join(dir, 'runs')};
   }
 
-  it('make a stale rebuild wait until a run that started before it has ended', () => {
-    const {entry, roots, leaseDir} = staleTree();
-    registerTestRun({leaseDir, pid: 101, now: 1});
-    registerTestRun({leaseDir, pid: process.pid, now: 2});
-    const ends = Date.now() + 300;
-    let builtAt = 0;
-    ensureCoreBuiltAt({
-      entry,
-      roots,
-      build: () => {
-        builtAt = Date.now();
-      },
+  /** The node global setup's Core step over a made-up checkout. */
+  function forRun(built, options) {
+    const builds = [];
+    const done = ensureCoreBuiltForRunAt({
+      entry: built.entry,
+      roots: built.roots,
+      build: () => builds.push(Date.now()),
       lockDir: path.join(dir, 'lock'),
-      rebuildStale: true,
-      runLeaseDir: leaseDir,
-      isAlive: pid => pid === 101 && Date.now() < ends,
+      leaseDir: built.leaseDir,
       pollMs: 20,
+      ...options,
     });
-    expect(builtAt).toBeGreaterThanOrEqual(ends);
+    return {builds, done};
+  }
+
+  it('make a stale rebuild wait until a run that started before it has ended', async () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: 101, now: 1});
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
+    const ends = Date.now() + 300;
+    const {builds, done} = forRun(built, {
+      isAlive: pid => pid === 101 && Date.now() < ends,
+    });
+    await done;
+    expect(builds).toHaveLength(1);
+    expect(builds[0]).toBeGreaterThanOrEqual(ends);
   });
 
-  it('let a run that started later wait instead, so two runs never wait for each other', () => {
-    const {entry, roots, leaseDir} = staleTree();
-    registerTestRun({leaseDir, pid: process.pid, now: 1});
-    registerTestRun({leaseDir, pid: 202, now: 2});
-    expect(earlierLiveRuns(leaseDir, {isAlive: () => true})).toEqual([]);
-    expect(earlierLiveRuns(leaseDir, {pid: 202, isAlive: () => true})).toEqual([
-      process.pid,
-    ]);
-    let builds = 0;
-    ensureCoreBuiltAt({
-      entry,
-      roots,
-      build: () => {
-        builds++;
-      },
-      lockDir: path.join(dir, 'lock'),
-      rebuildStale: true,
-      runLeaseDir: leaseDir,
-      isAlive: () => true,
+  it('wait on a timer, so the run stays stoppable: its timers and signal handlers run meanwhile', async () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: 101, now: 1});
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
+    const ends = Date.now() + 300;
+    let timerAt = 0;
+    setTimeout(() => {
+      timerAt = Date.now();
+    }, 50);
+    const {builds, done} = forRun(built, {
+      isAlive: pid => pid === 101 && Date.now() < ends,
     });
-    expect(builds).toBe(1);
+    await done;
+    expect(timerAt).toBeGreaterThan(0);
+    expect(timerAt).toBeLessThan(builds[0]);
+  });
+
+  it('give up after the limit: the run tests the build it has, with a warning naming the live run', async () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: 101, now: 1});
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const startedAt = Date.now();
+      const {builds, done} = forRun(built, {
+        isAlive: pid => pid === 101,
+        limitMs: 150,
+      });
+      await done;
+      expect(Date.now() - startedAt).toBeLessThan(2000);
+      expect(builds).toEqual([]);
+      expect(coreBuildIsStale(built.entry, built.roots)).toBe(true);
+      expect(warn.mock.calls.at(-1)?.[0]).toMatch(
+        /Gave up waiting for test run 101/,
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('let a run that started later wait instead, so two runs never wait for each other', async () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 1});
+    registerTestRun({leaseDir: built.leaseDir, pid: 202, now: 2});
+    expect(earlierLiveRuns(built.leaseDir, {isAlive: () => true})).toEqual([]);
+    expect(
+      earlierLiveRuns(built.leaseDir, {pid: 202, isAlive: () => true}),
+    ).toEqual([process.pid]);
+    const {builds, done} = forRun(built, {isAlive: () => true});
+    await done;
+    expect(builds).toHaveLength(1);
   });
 
   it('drop the lease of a run whose process is gone', () => {
@@ -498,6 +536,38 @@ describe('run leases', () => {
     registerTestRun({leaseDir, pid: process.pid, now: 2});
     expect(earlierLiveRuns(leaseDir, {isAlive: () => false})).toEqual([]);
     expect(fs.readdirSync(leaseDir)).toEqual([String(process.pid)]);
+  });
+
+  it('end with the process too: a run stopped with Ctrl-C, which calls no teardown, leaves no lease', async () => {
+    const {leaseDir} = staleTree();
+    const helper = path.join(
+      REPO_ROOT,
+      'packages/cli/clients/cli/commands/ensure-core-built.mjs',
+    );
+    // The node global setup's pattern: a lease ended on exit, in a process
+    // that exits on SIGINT as Vitest does.
+    const child = spawn(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        [
+          `import {registerTestRun} from ${JSON.stringify(helper)};`,
+          `const endRun = registerTestRun({leaseDir: ${JSON.stringify(leaseDir)}});`,
+          "process.once('exit', endRun);",
+          "process.on('SIGINT', () => process.exit(130));",
+          "console.log('ready');",
+          'setInterval(() => {}, 1000);',
+        ].join('\n'),
+      ],
+      {stdio: ['ignore', 'pipe', 'inherit']},
+    );
+    await new Promise(resolve => child.stdout.once('data', resolve));
+    expect(fs.readdirSync(leaseDir)).toEqual([String(child.pid)]);
+    const exited = new Promise(resolve => child.once('exit', resolve));
+    child.kill('SIGINT');
+    expect(await exited).toBe(130);
+    expect(fs.readdirSync(leaseDir)).toEqual([]);
   });
 
   it("end with the run: the teardown removes this run's lease", () => {
@@ -514,7 +584,7 @@ describe('run leases', () => {
       'utf8',
     );
     expect(setup).toMatch(
-      /const endRun = registerTestRun\(\);[\s\S]*ensureCoreBuilt\(\{rebuildStale: true\}\)[\s\S]*return endRun;/,
+      /export default async function setup\(\) \{[\s\S]*const endRun = registerTestRun\(\);\s*process\.once\('exit', endRun\);\s*try \{[\s\S]*await ensureCoreBuiltForRun\(\);[\s\S]*\} catch \(error\) \{\s*endRun\(\);\s*throw error;\s*\}\s*return endRun;/,
     );
     expect(path.dirname(coreRunLeaseDir(REPO_ROOT))).toBe(
       path.dirname(coreBuildLockDir(REPO_ROOT)),
