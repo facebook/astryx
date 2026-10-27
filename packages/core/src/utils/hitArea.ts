@@ -22,7 +22,8 @@
  * tap always goes to the nearer target. CSS cannot see where the neighbours
  * are, so a live control measures: only where the primary pointer is coarse,
  * only while on screen, and every control pending a measurement in one read
- * pass per frame (all reads, then all writes). Until the first pass the
+ * pass per frame (all reads, then all writes), up to a 4 ms budget, the rest
+ * carried to the next frame. Until the first pass the
  * insets are 0, so first paint and server rendering never overlap anything.
  */
 
@@ -221,6 +222,17 @@ const INTERACTIVE = [
 
 const TOUCH_QUERY = '(pointer: coarse)';
 
+/**
+ * How long one frame's pass may spend on controls, ms, after its one read of
+ * the page: a page appearing with hundreds of controls spreads over a few
+ * frames instead of one long task.
+ */
+const FRAME_BUDGET_MS = 4;
+
+function now(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
 interface Watch {
   readonly element: Element;
   readonly minSize: number;
@@ -292,7 +304,16 @@ function measure(): void {
     element,
     rect: plainRect(element),
   }));
-  const results = due.map(watch => {
+  // The budget is for the controls: the page read above is once a frame.
+  const started = now();
+  const results: {watch: Watch; insets: HitInsets}[] = [];
+  for (const watch of due) {
+    // At least one control a frame; past the budget the rest wait for the
+    // next frame, their insets still 0 (safe) until measured.
+    if (results.length > 0 && now() - started > FRAME_BUDGET_MS) {
+      pending.add(watch);
+      continue;
+    }
     const target = plainRect(watch.element);
     const reach = Math.max(0, watch.minSize / 2);
     const band = grown(target, {
@@ -310,11 +331,17 @@ function measure(): void {
           !isOwn(watch, element),
       )
       .map(({rect}) => rect);
-    return {watch, insets: clampedHitInsets(target, neighbours, watch.minSize)};
-  });
+    results.push({
+      watch,
+      insets: clampedHitInsets(target, neighbours, watch.minSize),
+    });
+  }
   // Writes.
   for (const {watch, insets} of results) {
     deliver(watch, insets);
+  }
+  if (pending.size > 0 && typeof requestAnimationFrame === 'function') {
+    frame = requestAnimationFrame(measure);
   }
 }
 

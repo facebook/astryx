@@ -263,6 +263,28 @@ describe('watchHitArea', () => {
     stops.forEach(stop => stop());
   });
 
+  it('carries controls past the frame budget to the next frame, measuring at least one a frame', () => {
+    const controls = ['switch', 'other'].map(byId);
+    place(controls[0], rect(100, 100, 24, 24));
+    place(controls[1], rect(400, 400, 24, 24));
+    // Every clock read is 5 ms later: each frame's budget is spent after one
+    // control.
+    let clock = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => (clock += 5));
+    const heard: string[] = [];
+    const stops = controls.map(element =>
+      watchHitArea(element, () => heard.push(element.id)),
+    );
+    show(...controls);
+    flush();
+    expect(heard).toEqual(['switch']);
+    expect(frames).toHaveLength(1);
+    flush();
+    expect(heard).toEqual(['switch', 'other']);
+    expect(frames).toHaveLength(0);
+    stops.forEach(stop => stop());
+  });
+
   it('measures nothing where the primary pointer is fine, and returns to 0 when it turns fine', () => {
     coarse = false;
     const control = byId('switch');
