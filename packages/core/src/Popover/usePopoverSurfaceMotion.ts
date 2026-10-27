@@ -25,7 +25,8 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  */
 
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {createPresentationHold} from '../Layer/presentationHold';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {
   createPopoverSurfaceMotion,
@@ -56,35 +57,42 @@ export function usePopoverSurfaceMotion(): (
     motion: PopoverSurfaceMotion;
     detach: () => void;
   } | null>(null);
-  // Whether the presentation in progress is the touch one.
-  const isTouchPresentationRef = useRef(false);
+  // Whether the presentation in progress is the touch one, held from the
+  // open until its close begins (Layer/presentationHold).
+  const [touchHold] = useState(() => createPresentationHold<boolean>());
 
-  const motionFor = useCallback((element: HTMLElement) => {
-    const current = motionRef.current;
-    if (current?.element === element) {
-      return current.motion;
-    }
-    current?.detach();
-    const motion = createPopoverSurfaceMotion(element);
-    const handleBeforeToggle = (event: Event) => {
-      if (
-        (event as ToggleEvent).newState === 'closed' &&
-        isTouchPresentationRef.current
-      ) {
-        motion.exit();
+  const motionFor = useCallback(
+    (element: HTMLElement) => {
+      const current = motionRef.current;
+      if (current?.element === element) {
+        return current.motion;
       }
-    };
-    element.addEventListener('beforetoggle', handleBeforeToggle);
-    motionRef.current = {
-      element,
-      motion,
-      detach: () => {
-        element.removeEventListener('beforetoggle', handleBeforeToggle);
-        motion.dispose();
-      },
-    };
-    return motion;
-  }, []);
+      current?.detach();
+      const motion = createPopoverSurfaceMotion(element);
+      const handleBeforeToggle = (event: Event) => {
+        if (
+          (event as ToggleEvent).newState === 'closed' &&
+          touchHold.current() === true
+        ) {
+          motion.exit();
+        }
+        if ((event as ToggleEvent).newState === 'closed') {
+          touchHold.release();
+        }
+      };
+      element.addEventListener('beforetoggle', handleBeforeToggle);
+      motionRef.current = {
+        element,
+        motion,
+        detach: () => {
+          element.removeEventListener('beforetoggle', handleBeforeToggle);
+          motion.dispose();
+        },
+      };
+      return motion;
+    },
+    [touchHold],
+  );
 
   // Releases what the motion holds on the popover element when the
   // component unmounts: its `beforetoggle` listener, its compositor
@@ -107,7 +115,7 @@ export function usePopoverSurfaceMotion(): (
         source != null &&
         typeof view?.matchMedia === 'function' &&
         view.matchMedia(TOUCH_QUERY).matches;
-      isTouchPresentationRef.current = isTouch;
+      touchHold.take(isTouch);
       if (!isTouch || source == null) {
         // A fine pointer animates nothing here, so nothing is created for
         // it: no `beforetoggle` listener that outlives the open, and no
@@ -123,6 +131,6 @@ export function usePopoverSurfaceMotion(): (
         source: boxOf(source),
       }));
     },
-    [motionFor],
+    [motionFor, touchHold],
   );
 }

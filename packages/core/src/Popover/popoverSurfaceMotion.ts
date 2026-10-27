@@ -6,7 +6,7 @@
  * @file popoverSurfaceMotion.ts
  * @input A Popover's layer element, the source it hangs off, the motion
  *   foundation (compositor animator, spring math), the UIKit table and the
- *   layer runtime's exit copy
+ *   layer runtime's exit copy and input hold
  * @output Exports `popoverCollapsedState` (where the popover meets its source
  *   and the shape it grows from), `popoverFrame` (the transform and opacity
  *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE` and
@@ -53,6 +53,16 @@
  * UIKit itself fades a popover on its presentation springs, about half a
  * second; the current record caps a touch cross-fade at 200 ms.
  *
+ * UIKit ignores every touch while the popover is presented: a tap outside
+ * 60 ms in neither dismisses it nor reaches what is under it, and the
+ * presentation finishes. The browser's light dismiss cannot be cancelled from
+ * an event, so the presentation runs under the layer runtime's own hold
+ * (`holdInput`, scope `viewport`), the one the Layer module places for
+ * every component whose layer presents under a finger: its shield covers the
+ * viewport from inside the layer until the present spring settles, so a tap
+ * on it is a tap inside the popover, which the browser leaves open, and a
+ * pinch on it still zooms the page.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/Popover/popoverSurfaceFrame.ts
  * - /packages/core/src/Popover/popoverSurfaceMotion.test.ts
@@ -77,6 +87,7 @@ import {
   POPOVER_PRESENT_SPRING,
 } from '../motion/uikit/springs';
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
+import {holdInput} from '../Layer/inputHold';
 import {
   frameOf,
   popoverCollapsedState,
@@ -263,6 +274,13 @@ export function createPopoverSurfaceMotion(
   let presentHandle: MotionHandle | null = null;
   // The dismissal in progress: its copy and the copy's animator.
   let exiting: {copy: HTMLElement; animator: Animator} | null = null;
+  // Releases the hold that takes every touch while the presentation runs.
+  let holdRelease: (() => void) | null = null;
+
+  const releaseHold = () => {
+    holdRelease?.();
+    holdRelease = null;
+  };
 
   const endExit = () => {
     if (exiting == null) {
@@ -278,6 +296,7 @@ export function createPopoverSurfaceMotion(
     collapsed = null;
     measured = null;
     presentHandle = null;
+    releaseHold();
     endExit();
     animator.set({scaleX: 1, scaleY: 1, opacity: 1});
     for (const property of MOTION_STYLE_PROPERTIES) {
@@ -350,14 +369,19 @@ export function createPopoverSurfaceMotion(
       ),
     );
     presentHandle = handle;
+    // No touch reaches the page, or dismisses the popover, until it is in.
+    releaseHold();
+    holdRelease = holdInput(element, {until: handle, scope: 'viewport'});
     void handle.finished.then(() => {
       if (presentHandle === handle) {
         presentHandle = null;
+        releaseHold();
       }
     });
   };
 
   const exit = () => {
+    releaseHold();
     if (pendingFrame != null) {
       // Closed before the frame that would have presented it: nothing is on
       // screen to dismiss.

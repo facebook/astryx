@@ -12,8 +12,9 @@
  *   spring, on screen through the light dismiss; the presentation keeps
  *   advancing through a blocked main thread; neither does Layout or Paint
  *   per frame; Reduce Motion cross-fades, opacity only, in 200 ms or less;
- *   a mouse keeps the layer's own entrance;
- *   storyboards of both
+ *   a mouse keeps the layer's own entrance; a tap or a pan outside during
+ *   the presentation starts nothing, and a pinch zooms the page; storyboards
+ *   of both
  * @position Evidence for Popover's touch presentation; the model itself is
  *   unit-tested in popoverSurfaceMotion.test.ts
  */
@@ -26,12 +27,14 @@ import {
   castStoryboard,
   compareCurve,
   countBetween,
+  drag,
   freezeTimers,
   holdAnimations,
   installLongTaskLog,
   installTimerGate,
   markElement,
   openStory,
+  pinch,
   readLongTasks,
   releaseAnimations,
   startScreencast,
@@ -53,6 +56,11 @@ import {cubicBezier} from '../../motion/bezier';
 import {popoverCollapsedState, popoverFrame} from '../popoverSurfaceFrame';
 
 const storybook = withStorybook(test);
+
+// The layer runtime's input hold puts its shield inside the layer: a
+// manual popover, hidden from assistive technology, that is not the exit
+// copy (`holdInput`, Layer/inputHold.ts).
+const SHIELD = '[popover][aria-hidden="true"]:not([data-astryx-popover-exit])';
 
 interface Box {
   x: number;
@@ -187,6 +195,64 @@ async function openWithTap(story: OpenStory) {
   await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
 }
 
+/** Page-side log of the touches and the popover: performance.now() times. */
+async function installTouchLog(page: Page) {
+  await page.evaluate(() => {
+    const log = {
+      down: [] as number[],
+      up: [] as number[],
+      cancel: [] as number[],
+      closed: [] as number[],
+      // Per touch after the first: whether it landed on the hold.
+      held: [] as boolean[],
+    };
+    (window as unknown as {__touchLog: typeof log}).__touchLog = log;
+    const push = (list: number[]) => () => list.push(performance.now());
+    document.addEventListener('pointerdown', push(log.down), true);
+    document.addEventListener(
+      'pointerdown',
+      event => {
+        if (log.down.length > 1) {
+          log.held.push(
+            event.target instanceof Element &&
+              event.target.closest(
+                '[popover][aria-hidden="true"]:not([data-astryx-popover-exit])',
+              ) != null,
+          );
+        }
+      },
+      true,
+    );
+    document.addEventListener('pointerup', push(log.up), true);
+    document.addEventListener('pointercancel', push(log.cancel), true);
+    document.addEventListener(
+      'toggle',
+      event => {
+        if (event.newState === 'closed') {
+          log.closed.push(performance.now());
+        }
+      },
+      true,
+    );
+  });
+}
+
+const readTouchLog = async (page: Page) =>
+  page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __touchLog: {
+            down: number[];
+            up: number[];
+            cancel: number[];
+            closed: number[];
+            held: boolean[];
+          };
+        }
+      ).__touchLog,
+  );
+
 test.describe('with a mouse (a fine primary pointer)', () => {
   test.use({hasTouch: false, isMobile: false});
 
@@ -233,6 +299,211 @@ test.describe('with a mouse (a fine primary pointer)', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(exitCopyOf(page)).toHaveCount(0);
   });
+});
+
+test('a tap outside during the presentation is ignored: the presentation finishes and the popover stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  await installTouchLog(page);
+  // A button outside that counts the taps that reach it.
+  await page.evaluate(() => {
+    const probe = document.createElement('button');
+    probe.textContent = 'Outside';
+    Object.assign(probe.style, {
+      position: 'fixed',
+      right: '20px',
+      bottom: '20px',
+      width: '120px',
+      height: '44px',
+    });
+    const counter = window as unknown as {__outsideClicks: number};
+    counter.__outsideClicks = 0;
+    probe.addEventListener('click', () => {
+      counter.__outsideClicks += 1;
+    });
+    document.body.append(probe);
+  });
+  const outsideClicks = async () =>
+    page.evaluate(
+      () => (window as unknown as {__outsideClicks: number}).__outsideClicks,
+    );
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const outside = {x: viewport.width - 80, y: viewport.height - 42};
+  const focused = async () =>
+    page.evaluate(() => document.activeElement?.outerHTML.slice(0, 120));
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, where UIKit ignored the tap.
+  await page.waitForTimeout(60);
+  const focusedAtOpen = await focused();
+  await story.driver.tap(outside);
+  await waitForRest(story.layer);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  const log = await readTouchLog(page);
+  expect(log.closed).toEqual([]);
+  expect(await outsideClicks()).toBe(0);
+  // Without a trace: the control the popover focused keeps focus.
+  expect(focusedAtOpen).toContain('role="switch"');
+  expect(await focused()).toBe(focusedAtOpen);
+  // It was the hold that took the tap, inside the popover's own subtree.
+  expect(log.held).toEqual([true]);
+  // Once it is in, the hold is gone and a tap outside dismisses it.
+  await expect(page.locator(SHIELD)).toHaveCount(0);
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a pan outside during the presentation starts nothing: no scroll, and the popover stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start native pans in this engine (iOS evidence: the simulator run)',
+  );
+  await installTouchLog(page);
+  // Room to scroll, so a pan the browser took would scroll the page.
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.style.height = '2000px';
+    document.body.append(spacer);
+  });
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const focused = async () =>
+    page.evaluate(() => document.activeElement?.outerHTML.slice(0, 120));
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, a finger drags up from outside.
+  await page.waitForTimeout(60);
+  const focusedAtOpen = await focused();
+  const from = {x: viewport.width - 40, y: viewport.height - 120};
+  await story.driver.play(
+    drag(from, {x: from.x, y: from.y - 100}, {durationMs: 200, hz: 60}),
+  );
+  await waitForRest(story.layer);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  const log = await readTouchLog(page);
+  // The hold took the touch: the browser started no pan, so nothing
+  // scrolled and the pan-outside dismissal never fired.
+  expect(log.held).toEqual([true]);
+  expect(log.cancel).toEqual([]);
+  expect(log.closed).toEqual([]);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  // Without a trace: the control the popover focused keeps focus.
+  expect(focusedAtOpen).toContain('role="switch"');
+  expect(await focused()).toBe(focusedAtOpen);
+});
+
+test('a pinch during the presentation zooms the page, and the presentation finishes and stays', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start a native pinch-zoom in this engine (iOS evidence: the simulator run)',
+  );
+  await installTouchLog(page);
+  const scale = async () =>
+    page.evaluate(() => window.visualViewport?.scale ?? 1);
+  expect(await scale()).toBe(1);
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  await story.driver.tap(story.center);
+  // 60 ms into the presentation, two fingers spread apart below the popover.
+  await page.waitForTimeout(60);
+  await story.driver.play(
+    pinch({
+      center: {x: viewport.width / 2, y: viewport.height - 160},
+      fromDistance: 60,
+      toDistance: 240,
+      durationMs: 250,
+      hz: 60,
+    }),
+  );
+  await waitForRest(story.layer);
+  const log = await readTouchLog(page);
+  // Both fingers landed on the hold, which leaves a pinch to the browser
+  // (spec:AST-094 FR35, FR10): the page zoomed.
+  expect(log.held).toEqual([true, true]);
+  await expect.poll(scale).toBeGreaterThan(1.1);
+  // The presentation finished, and the popover stayed open.
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(log.closed).toEqual([]);
+});
+
+test('a tap or a drag that lands while it grows closes nothing, moves no focus and scrolls nothing (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  // A page that can scroll, so a drag that reached it would.
+  await page.addStyleTag({content: 'body { min-height: 300vh; }'});
+  const viewport = page.viewportSize();
+  if (viewport == null) {
+    throw new Error('no viewport');
+  }
+  const outside = {x: 20, y: viewport.height - 40};
+  const isOpen = async () =>
+    story.layer.evaluate(el => el.matches(':popover-open'));
+  const focusIsInside = async () =>
+    story.layer.evaluate(el => el.contains(document.activeElement));
+
+  // A tap outside, landing while it grows: no light dismiss, and focus stays
+  // in the popover, where its opening put it. It opens through the engine's
+  // tap (Playwright's WebKit synthesises no click from a raw touch sequence,
+  // so a scripted press there would never open it), and the page records, at
+  // each press, whether the hold's shield was up: the trigger's press found
+  // none, and the tap outside landed while the popover presented.
+  await page.evaluate(selector => {
+    const w = window as unknown as {pressesHeld?: boolean[]};
+    w.pressesHeld = [];
+    document.addEventListener(
+      'pointerdown',
+      () => {
+        const shield = document.querySelector(selector);
+        w.pressesHeld?.push(shield?.matches(':popover-open') === true);
+      },
+      true,
+    );
+  }, SHIELD);
+  await openWithTap(story);
+  await story.driver.tap(outside);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {pressesHeld: boolean[]}).pressesHeld,
+    ),
+  ).toEqual([false, true]);
+  await waitForRest(story.layer);
+  expect(await isOpen()).toBe(true);
+  expect(await focusIsInside()).toBe(true);
+
+  // Once it has grown, the same tap is the browser's light dismiss again.
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+
+  // A tap on the trigger, landing while it grows, does not close it.
+  await waitForRest(page.locator('body'));
+  await openWithTap(story);
+  await story.driver.tap(story.center);
+  await waitForRest(story.layer);
+  expect(await isOpen()).toBe(true);
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+
+  // A one-finger drag, landing while it grows, scrolls nothing.
+  await openWithTap(story);
+  await story.driver.play(
+    drag(outside, {x: outside.x, y: outside.y - 300}, {durationMs: 150}),
+  );
+  await waitForRest(story.layer);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect(await isOpen()).toBe(true);
 });
 
 test('the presentation grows out of the trigger on UIKit\u2019s present spring', async ({

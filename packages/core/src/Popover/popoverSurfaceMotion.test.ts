@@ -17,6 +17,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cubicBezier} from '../motion/bezier';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {popover, springs, timing} from '../motion/uikit';
+import {isInputShield} from '../Layer/inputHold';
 import {
   createPopoverSurfaceMotion,
   POPOVER_EXIT_COPY_ATTRIBUTE,
@@ -562,5 +563,148 @@ describe('createPopoverSurfaceMotion', () => {
         }
       }
     }
+  });
+  describe('the hold while it is presented', () => {
+    const shown = new Set<Element>();
+    const original = {
+      show: Object.getOwnPropertyDescriptor(
+        HTMLElement.prototype,
+        'showPopover',
+      ),
+      hide: Object.getOwnPropertyDescriptor(
+        HTMLElement.prototype,
+        'hidePopover',
+      ),
+    };
+    const restore = (
+      name: 'showPopover' | 'hidePopover',
+      descriptor?: PropertyDescriptor,
+    ) => {
+      if (descriptor == null) {
+        Reflect.deleteProperty(HTMLElement.prototype, name);
+      } else {
+        Object.defineProperty(HTMLElement.prototype, name, descriptor);
+      }
+    };
+    beforeEach(() => {
+      shown.clear();
+      Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+        configurable: true,
+        writable: true,
+        value(this: HTMLElement) {
+          shown.add(this);
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+        configurable: true,
+        writable: true,
+        value(this: HTMLElement) {
+          shown.delete(this);
+        },
+      });
+    });
+    afterEach(() => {
+      restore('showPopover', original.show);
+      restore('hidePopover', original.hide);
+    });
+
+    // The layer runtime's own hold: its shield, inside the layer.
+    const holdOf = (element: HTMLElement) =>
+      [...element.children].find((node): node is HTMLElement =>
+        isInputShield(node),
+      ) ?? null;
+
+    it('takes every touch until the present spring settles, as UIKit ignores touches during the presentation', async () => {
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      const hold = holdOf(element);
+      expect(hold).not.toBeNull();
+      // A manual popover inside the layer: above everything in the top layer,
+      // and a tap on it is a tap inside the popover.
+      expect(hold!.parentElement).toBe(element);
+      expect(hold!.getAttribute('popover')).toBe('manual');
+      expect(hold!.getAttribute('aria-hidden')).toBe('true');
+      expect(shown.has(hold!)).toBe(true);
+      expect(hold!.style.position).toBe('fixed');
+      expect(hold!.style.background).toBe('transparent');
+      // No pan starts on it; a pinch still zooms the page.
+      expect(hold!.style.touchAction).toBe('pinch-zoom');
+      // Still there well into the presentation (UIKit ignored a tap 60 ms
+      // in), gone once the spring has settled.
+      clock += 300;
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      expect(holdOf(element)).toBe(hold);
+      const [presenting] = live('scale', element);
+      const duration = Number(presenting.options.duration);
+      clock += duration;
+      vi.advanceTimersByTime(duration);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(holdOf(element)).toBeNull();
+      // Out of the document, so out of the top layer with it.
+      expect(hold!.isConnected).toBe(false);
+    });
+
+    it('ignores a tap without a trace: it moves no focus and fires no click', () => {
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      const hold = holdOf(element)!;
+      // The compatibility mousedown moves focus and the touch's end makes
+      // the click: both are cancelled, so the focused control keeps focus.
+      const mousedown = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+      });
+      hold.dispatchEvent(mousedown);
+      expect(mousedown.defaultPrevented).toBe(true);
+      const touchend = new Event('touchend', {bubbles: true, cancelable: true});
+      hold.dispatchEvent(touchend);
+      expect(touchend.defaultPrevented).toBe(true);
+    });
+
+    it('lets go at once when the popover is dismissed or reset during the presentation', () => {
+      const dismissed = create();
+      dismissed.motion.enter(() => GEOMETRY);
+      expect(holdOf(dismissed.element)).not.toBeNull();
+      dismissed.motion.exit();
+      expect(holdOf(dismissed.element)).toBeNull();
+
+      const reset = create();
+      reset.motion.enter(() => GEOMETRY);
+      reset.motion.reset();
+      expect(holdOf(reset.element)).toBeNull();
+      // No hold is left in the top layer (the dismissal's copy is, by design).
+      expect([...shown].filter(node => isInputShield(node))).toEqual([]);
+    });
+
+    it('holds under Reduce Motion too, for the length of the cross-fade', async () => {
+      const {element, motion} = create(true);
+      motion.enter(() => GEOMETRY);
+      const hold = holdOf(element);
+      expect(hold).not.toBeNull();
+      clock += timing.reducedMotionCrossFadeMs / 2;
+      vi.advanceTimersByTime(timing.reducedMotionCrossFadeMs / 2);
+      await Promise.resolve();
+      expect(holdOf(element)).toBe(hold);
+      clock += timing.reducedMotionCrossFadeMs;
+      vi.advanceTimersByTime(timing.reducedMotionCrossFadeMs);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(holdOf(element)).toBeNull();
+    });
+
+    it('holds where the browser has no popovers too, outside the top layer', () => {
+      Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      const hold = holdOf(element);
+      // Not in the top layer, so it covers only what a fixed element can:
+      // the tap it does take is still a tap inside the popover.
+      expect(hold).not.toBeNull();
+      expect(shown.has(hold!)).toBe(false);
+      motion.reset();
+      expect(holdOf(element)).toBeNull();
+    });
   });
 });
