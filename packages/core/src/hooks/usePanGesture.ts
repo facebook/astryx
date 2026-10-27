@@ -28,6 +28,20 @@ interface Attached {
   readonly element: Element;
   readonly axis: PanGestureOptions['axis'];
   readonly gesture: PanGesture;
+  /** Cleared before an effect destroys the pan, so its cancel reaches no one. */
+  isForwarding: boolean;
+}
+
+/**
+ * Destroy a pan from an effect without telling the caller: an effect never
+ * calls `onPan` (`architecture:react-component-runtime` INV2), so a drag in
+ * progress at unmount, or when the node or the axis changes, ends silently.
+ */
+function detach(attached: Attached | null): void {
+  if (attached != null) {
+    attached.isForwarding = false;
+    attached.gesture.destroy();
+  }
 }
 
 /**
@@ -63,23 +77,30 @@ export function usePanGesture(
     if (attached?.element === element && attached?.axis === axis) {
       return;
     }
-    attached?.gesture.destroy();
-    attachedRef.current =
-      element == null
-        ? null
-        : {
-            element,
-            axis,
-            gesture: createPanGesture(element, {
-              axis,
-              onPan: event => onPanRef.current(event),
-            }),
-          };
+    detach(attached);
+    if (element == null) {
+      attachedRef.current = null;
+      return;
+    }
+    const next: Attached = {
+      element,
+      axis,
+      isForwarding: true,
+      gesture: createPanGesture(element, {
+        axis,
+        onPan: event => {
+          if (next.isForwarding) {
+            onPanRef.current(event);
+          }
+        },
+      }),
+    };
+    attachedRef.current = next;
   });
   // Destroyed at unmount.
   useIsomorphicLayoutEffect(
     () => () => {
-      attachedRef.current?.gesture.destroy();
+      detach(attachedRef.current);
       attachedRef.current = null;
     },
     [],
