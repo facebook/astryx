@@ -18,7 +18,7 @@
  *   context (./touchStory.ts)
  */
 
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type CDPSession, type Page} from '@playwright/test';
 import {
   flick,
   holdThenDrag,
@@ -26,15 +26,23 @@ import {
   touchDriver,
   withStorybook,
 } from '@astryxdesign/interaction-harness';
+import {solveSpring, toSpring} from '../../motion/spring';
 import {reorder} from '../../motion/uikit/reorder';
+import {springs} from '../../motion/uikit/springs';
 import {openStory} from './touchStory';
 
 const storybook = withStorybook(test);
 
 /** Past the claim delay: the hold claims the drag. */
 const HOLD_MS = reorder.claim.delayMs + 150;
-/** Long enough for any drop's spring to settle. */
-const SETTLE_MS = reorder.settle.maxDuration * 1000 + 300;
+/**
+ * Long enough for a drop's glide to settle: it plays the shared settle role,
+ * springs.settle (spec:AST-105 FR4).
+ */
+const SETTLE_MS =
+  solveSpring(toSpring(springs.settle), {from: 0, to: 1}).settleTime(0.001) *
+    1000 +
+  300;
 
 const isTouch = async (page: Page) =>
   page.evaluate(() => matchMedia('(pointer: coarse)').matches);
@@ -61,6 +69,42 @@ async function handleOf(page: Page, label: string) {
     at: {x: box.x + box.width / 2, y: box.y + box.height / 2},
     rowHeight: row,
   };
+}
+
+/**
+ * A hold on `at` then a drag to `to`, all but the lift, sent through
+ * Chromium's CDP on the script's own clock: the harness's player takes only
+ * scripts that end with every finger lifted. Resolves when the lift would
+ * have come, with the session that ends the touch.
+ */
+async function holdAndDragWithoutLift(
+  page: Page,
+  at: {x: number; y: number},
+  to: {x: number; y: number},
+): Promise<CDPSession> {
+  const events = toTouchEvents(
+    holdThenDrag(at, to, {holdMs: HOLD_MS, durationMs: 400, restMs: 120}),
+  );
+  const lift = events[events.length - 1];
+  const cdp = await page.context().newCDPSession(page);
+  let now = 0;
+  for (const step of events.slice(0, -1)) {
+    await page.waitForTimeout(step.t - now);
+    now = step.t;
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: step.type,
+      touchPoints: step.fingers.map(f => ({
+        x: f.x,
+        y: f.y,
+        id: f.id,
+        radiusX: 1,
+        radiusY: 1,
+        force: 1,
+      })),
+    });
+  }
+  await page.waitForTimeout(lift.t - now);
+  return cdp;
 }
 
 /** The layout top of each row, by label, once nothing animates. */
@@ -135,13 +179,10 @@ test.describe('under a finger', () => {
     );
     const before = await settledTops(page);
     const {at, rowHeight} = await handleOf(page, 'Inbox');
-    const driver = await touchDriver(page);
-    const script = holdThenDrag(
-      at,
-      {x: at.x, y: at.y + rowHeight * 2},
-      {holdMs: HOLD_MS, durationMs: 400, restMs: 120},
-    );
-    await driver.play(script.slice(0, -1));
+    const cdp = await holdAndDragWithoutLift(page, at, {
+      x: at.x,
+      y: at.y + rowHeight * 2,
+    });
     expect(await settledTops(page)).toEqual(before);
     const state = await page.evaluate(() => {
       const source = document.querySelector<HTMLElement>(
@@ -167,7 +208,6 @@ test.describe('under a finger', () => {
     expect(
       Math.abs((state.lineTop ?? Number.NaN) - (before.Drafts + rowHeight)),
     ).toBeLessThan(4);
-    const cdp = await page.context().newCDPSession(page);
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
@@ -201,35 +241,11 @@ test.describe('under a finger', () => {
     );
     const before = await settledTops(page);
     const {at, rowHeight} = await handleOf(page, 'Inbox');
-    // The drag without its lift, sent through CDP on the script's own clock:
-    // the harness's player takes only scripts that end with every finger
-    // lifted. The cancel comes when the lift would have.
-    const events = toTouchEvents(
-      holdThenDrag(
-        at,
-        {x: at.x, y: at.y + rowHeight * 2},
-        {holdMs: HOLD_MS, durationMs: 400, restMs: 120},
-      ),
-    );
-    const lift = events[events.length - 1];
-    const cdp = await page.context().newCDPSession(page);
-    let now = 0;
-    for (const step of events.slice(0, -1)) {
-      await page.waitForTimeout(step.t - now);
-      now = step.t;
-      await cdp.send('Input.dispatchTouchEvent', {
-        type: step.type,
-        touchPoints: step.fingers.map(f => ({
-          x: f.x,
-          y: f.y,
-          id: f.id,
-          radiusX: 1,
-          radiusY: 1,
-          force: 1,
-        })),
-      });
-    }
-    await page.waitForTimeout(lift.t - now);
+    // The cancel comes when the lift would have.
+    const cdp = await holdAndDragWithoutLift(page, at, {
+      x: at.x,
+      y: at.y + rowHeight * 2,
+    });
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchCancel',
       touchPoints: [],
@@ -276,6 +292,9 @@ test.describe('under a finger', () => {
       'Trash',
     ]);
     expect((await settledTops(page)).Inbox).toBe(before.Drafts);
+    // Nothing travels. A running animation may only fade: the rows the drop
+    // passed take Reduce Motion's opacity dip in their new places
+    // (design:reduced-motion), and none moves.
     expect(
       await page
         .locator('#storybook-root li')
@@ -283,10 +302,104 @@ test.describe('under a finger', () => {
           rows.some(row =>
             row
               .getAnimations({subtree: true})
-              .some(animation => animation.playState === 'running'),
+              .some(
+                animation =>
+                  animation.playState === 'running' &&
+                  animation.effect instanceof KeyframeEffect &&
+                  animation.effect
+                    .getKeyframes()
+                    .some(frame =>
+                      ['translate', 'transform', 'top', 'insetBlockStart'].some(
+                        property => frame[property] != null,
+                      ),
+                    ),
+              ),
           ),
         ),
     ).toBe(false);
+  });
+});
+
+test.describe('a row that reorders and has a menu', () => {
+  test.beforeEach(async ({page, browserName}) => {
+    await openStory(page, storybook(), 'core-list--reorder-from-your-ui');
+    test.skip(
+      !(await isTouch(page)),
+      'this engine reports a fine primary pointer; the touch hold applies under (pointer: coarse)',
+    );
+    test.skip(
+      browserName !== 'chromium',
+      'the held finger lifts through Chromium CDP',
+    );
+  });
+
+  /** A finger held still at `at` for `ms`, read while it is down, then lifted. */
+  async function holdStill(
+    page: Page,
+    at: {x: number; y: number},
+    ms: number,
+  ): Promise<{picked: boolean; menu: boolean}> {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        {x: at.x, y: at.y, id: 0, radiusX: 1, radiusY: 1, force: 1},
+      ],
+    });
+    await page.waitForTimeout(ms);
+    const held = await page.evaluate(() => ({
+      picked: document.querySelector('[data-astryx-reorder-preview]') != null,
+      menu: Array.from(document.querySelectorAll('[role="menu"]')).some(
+        element => element.getBoundingClientRect().height > 0,
+      ),
+    }));
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    return held;
+  }
+
+  const menuShown = async (page: Page) =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll('[role="menu"]')).some(
+        element => element.getBoundingClientRect().height > 0,
+      ),
+    );
+
+  test('a hold on the reorder handle picks the row up and opens no menu', async ({
+    page,
+  }) => {
+    const order = await labels(page);
+    const {at} = await handleOf(page, 'Inbox');
+    // Held still past the row menu's long press (500 ms).
+    const held = await holdStill(page, at, 800);
+    expect(held.picked).toBe(true);
+    expect(held.menu).toBe(false);
+    await page.waitForTimeout(SETTLE_MS);
+    expect(await menuShown(page)).toBe(false);
+    expect(await labels(page)).toEqual(order);
+  });
+
+  test('a hold anywhere else on the row opens its menu and picks nothing up', async ({
+    page,
+  }) => {
+    const row = page
+      .locator('#storybook-root li:not([data-astryx-leaving])')
+      .filter({hasText: 'Inbox'})
+      .first();
+    const box = await row.boundingBox();
+    if (box == null) {
+      throw new Error('no row');
+    }
+    const held = await holdStill(
+      page,
+      {x: box.x + 40, y: box.y + box.height / 2},
+      800,
+    );
+    expect(held.picked).toBe(false);
+    expect(held.menu).toBe(true);
+    await page.keyboard.press('Escape');
   });
 });
 

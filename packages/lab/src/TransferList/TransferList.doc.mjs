@@ -418,7 +418,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Commit add, remove, and bulk changes immediately. A drag reorders the way an iOS table does: the row follows the finger or pointer, the rows it passes move out of its way, and the reorderable object's onReorder runs once on release.",
+          "Commit add, remove, and bulk changes immediately. A drag leaves the rows still: the row dims in place, a copy of it follows the finger or pointer, and an insertion line marks where it would land; the reorderable object's onReorder runs once on release.",
       },
       {
         guidance: false,
