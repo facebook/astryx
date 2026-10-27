@@ -99,6 +99,28 @@ describe('rewriteImports', () => {
       `import { focusOutlineProps } from '@astryxdesign/core/utils/focusOutline.stylex';`,
     );
   });
+
+  it('keeps imports that stay inside the component for a nested file', () => {
+    // From `Table/plugins/sortable/x.ts` (depth 2): `../../types` is
+    // `Table/types`, copied alongside, so it must stay relative; only the
+    // third `../` leaves the component.
+    const input = [
+      `import type { Row } from '../../types';`,
+      `import { grammar } from '../grammar';`,
+      `import { tokens } from '../../../theme/tokens.stylex';`,
+      `import { Icon } from '../../../Icon';`,
+      `const T = lazy(() => import('../../../Tooltip/Tooltip'));`,
+    ].join('\n');
+    expect(rewriteImports(input, undefined, 2)).toBe(
+      [
+        `import type { Row } from '../../types';`,
+        `import { grammar } from '../grammar';`,
+        `import { tokens } from '@astryxdesign/core/theme/tokens.stylex';`,
+        `import { Icon } from '@astryxdesign/core/Icon';`,
+        `const T = lazy(() => import('@astryxdesign/core/Tooltip'));`,
+      ].join('\n'),
+    );
+  });
 });
 
 describe('swizzle() API', () => {
@@ -141,15 +163,29 @@ describe('swizzle rewriteImports compiles for components with .stylex imports', 
       .map(e => e.name);
     expect(componentDirs.length).toBeGreaterThan(50);
 
+    // Subdirectories are copied too, with their depth deciding which `../`
+    // imports leave the component.
+    /** @param {string} dir @param {string} rel @returns {string[]} */
+    const walk = (dir, rel = '') =>
+      fs.readdirSync(dir, {withFileTypes: true}).flatMap(e => {
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          return e.name.startsWith('__') ? [] : walk(path.join(dir, e.name), r);
+        }
+        return (e.name.endsWith('.ts') || e.name.endsWith('.tsx')) &&
+          !e.name.includes('.test.') &&
+          !e.name.includes('.doc.')
+          ? [r]
+          : [];
+      });
+
     const unresolved = [];
     for (const dirName of componentDirs) {
       const dir = path.join(srcDir, dirName);
-      const files = fs.readdirSync(dir).filter(
-        f => (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('.test.') && !f.includes('.doc.'),
-      );
-      for (const file of files) {
+      for (const file of walk(dir)) {
         const content = fs.readFileSync(path.join(dir, file), 'utf-8');
-        const rewritten = rewriteImports(content);
+        const depth = file.split('/').length - 1;
+        const rewritten = rewriteImports(content, undefined, depth);
 
         // Extract all rewritten @astryxdesign/core/* imports. A specifier
         // already present verbatim in the source (a usage example in a doc
