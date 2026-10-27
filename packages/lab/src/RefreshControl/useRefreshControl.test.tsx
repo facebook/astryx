@@ -1022,7 +1022,10 @@ describe('useRefreshControl', () => {
     }
   });
 
-  it('under Reduce Motion fades the copy in the shared 200 ms fade, the spokes stepping from the trigger', async () => {
+  it('under Reduce Motion applies the gradient at once at the trigger, with no copy of the spokes', async () => {
+    // design:reduced-motion DR2, DEC-3: the spokes' gradient is an in-place
+    // value change, so under reduced motion it applies at once on any
+    // pointer, with no added element and no cross-fade.
     window.matchMedia = (query: string) =>
       ({
         matches: COARSE.test(query) || /prefers-reduced-motion/.test(query),
@@ -1044,16 +1047,12 @@ describe('useRefreshControl', () => {
     pull(content(), [30, 30, 30, 30]);
     expect(indicator()).toHaveAttribute('data-refresh-spinning');
     await flush();
-    expect(seen.added).toHaveLength(1);
-    const fade = played.find(p => p.element === seen.added[0]);
-    expect(fade?.keyframes).toEqual([{opacity: 1}, {opacity: 0}]);
-    expect(fade?.options.duration).toBe(timing.reducedMotionCrossFadeMs);
-    expect(fade?.options.easing).toMatch(/^cubic-bezier\(/);
-    act(() => {
-      fade?.animation.onfinish?.();
-    });
-    await flush();
-    expect(seen.removed).toEqual(seen.added);
+    expect(seen.added).toHaveLength(0);
+    expect(
+      played.filter(
+        p => p.options.duration === timing.reducedMotionCrossFadeMs,
+      ),
+    ).toEqual([]);
   });
 
   it('cancels the spin and the cross-fade when the control unmounts mid-refresh', async () => {

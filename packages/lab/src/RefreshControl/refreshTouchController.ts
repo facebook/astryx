@@ -72,7 +72,6 @@ import {
   SETTLE_THRESHOLD,
   type MotionCurve,
 } from '@astryxdesign/core/motion/animator';
-import {reducedMotionFade} from '@astryxdesign/core/motion/reducedMotion';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
@@ -226,22 +225,14 @@ function spinKeyframes(spoke: number, turnMs: number): Keyframe[] {
 /**
  * The trigger's cross-fade as Web Animation keyframes on the copy's opacity:
  * 1 − w, w the table's gradient spring, until it settles where the animator's
- * opacity springs do; or, under Reduce Motion, the shared opacity fade
- * (reducedMotionFade).
+ * opacity springs do. Under Reduce Motion there is no cross-fade (see
+ * startSpinning).
  */
-function crossFadeKeyframes(element: Element): {
+function crossFadeKeyframes(): {
   frames: Keyframe[];
   durationMs: number;
   easing: string;
 } {
-  const fade = reducedMotionFade(element);
-  if (fade != null) {
-    return {
-      frames: [{opacity: 1}, {opacity: 0}],
-      durationMs: fade.duration,
-      easing: fade.easing,
-    };
-  }
   const curve = solveSpring(toSpring(refreshControl.triggerGradientSpring), {
     from: 0,
     to: 1,
@@ -494,7 +485,7 @@ export function useRefreshTouchController({
       removeCrossFadeCopy();
       return;
     }
-    const keyframes = crossFadeKeyframes(glyph);
+    const keyframes = crossFadeKeyframes();
     const animation = copy.animate(keyframes.frames, {
       duration: keyframes.durationMs,
       easing: keyframes.easing,
@@ -549,8 +540,11 @@ export function useRefreshTouchController({
           );
         }
         // UIKit springs the refreshing gradient in at the trigger, started
-        // with the turn so they share a frame.
-        if (!isStepping) {
+        // with the turn so they share a frame. Under Reduce Motion the
+        // gradient is an in-place value change, so it applies at once on any
+        // pointer, with no copy of the spokes (design:reduced-motion DR2,
+        // DEC-3).
+        if (!isStepping && turn.animator.reducedMotion() === 'off') {
           playCrossFade();
         }
       }

@@ -1938,32 +1938,43 @@ test('the cross-fade keeps moving while the main thread is blocked right after t
   expect(longestStill).toBeLessThanOrEqual(3 * cadenceMs);
 });
 
-test('under Reduce Motion the gradient cross-fades in on a touch screen: opacity only, within 200 ms', async ({
+test('under Reduce Motion the gradient applies at once at the trigger on a touch screen, with no copy of the spokes', async ({
   page,
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'Chromium proof');
-  // design:reduced-motion DR2: the trigger's cross-fade from the revealed
-  // spokes to the stepping ones is the shared fade, opacity only, in 200 ms
-  // or less on a touch screen.
+  // design:reduced-motion DR2, DEC-3: the spokes' gradient is an in-place
+  // value change, so under reduced motion it applies at once on any pointer:
+  // no copy of the spokes joins the spinner and nothing cross-fades.
   await page.emulateMedia({reducedMotion: 'reduce'});
   await primaryPointer(page, 'coarse');
   const {driver, content, start} = await openRefresh(page, undefined, {
     refreshMs: '8000',
+  });
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  await glyph.evaluate(element => {
+    const state = {added: 0};
+    (window as unknown as {__added: typeof state}).__added = state;
+    new MutationObserver(records => {
+      for (const record of records) {
+        state.added += record.addedNodes.length;
+      }
+    }).observe(element, {childList: true});
   });
   await recordAnimations(page);
   await driver.play(slowPull(start, 300, 200));
   await expect.poll(() => isBusy(content)).toBe(true);
   await page.waitForTimeout(400);
   const log = await recordedAnimations(page);
-  // The transient copy of the spokes inside the spinner fades out over them.
-  const fades = log.filter(a => a.part === 'other' && !a.endless);
-  expect(fades.length, JSON.stringify(log)).toBeGreaterThanOrEqual(1);
-  for (const fade of fades) {
-    expect(fade.properties, JSON.stringify(fade)).toEqual(['opacity']);
-    expect(fade.travels).toBe(false);
-    expect(fade.movingMs).toBeLessThanOrEqual(200);
-  }
+  const added = await page.evaluate(
+    () => (window as unknown as {__added: {added: number}}).__added.added,
+  );
+  expect(added).toBe(0);
+  expect(await glyph.evaluate(element => element.children.length)).toBe(8);
+  expect(
+    log.filter(a => a.part === 'other' && !a.endless),
+    JSON.stringify(log),
+  ).toEqual([]);
   expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
 });
 
