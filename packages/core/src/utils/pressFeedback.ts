@@ -413,24 +413,15 @@ const PAINTS: ReadonlySet<string> = new Set(['on', 'held', 'fading']);
 /** Cancels a `fading` paint's own release, per element (paintPress). */
 const fadeTimers = new WeakMap<Element, () => void>();
 
-/** The document timeline's time now, in ms; `null` where the engine has none. */
-function timelineNow(): number | null {
-  const time =
-    typeof document === 'undefined' ? null : document.timeline?.currentTime;
-  return typeof time === 'number' ? time : null;
-}
-
 /**
- * The release animations a `fading` write at `writtenAt` started on
- * `element`: its own CSS animations (on it, or its `::before` or `::after`,
- * never a descendant's), finite, and started at or after the write or still
- * waiting for their first frame. Empty where the engine has no Web
+ * The release animations running on `element`: its own CSS animations (on
+ * it, or its `::before` or `::after`, never a descendant's), finite, and not
+ * yet finished. Nothing at the write reads the document timeline: WebKit
+ * starts an animation created after such a read at the time read, so a busy
+ * first frame would skip into the release. Empty where the engine has no Web
  * Animations.
  */
-function releaseAnimationsOf(
-  element: Element,
-  writtenAt: number | null,
-): Animation[] {
+function releaseAnimationsOf(element: Element): Animation[] {
   if (typeof element.getAnimations !== 'function') {
     return [];
   }
@@ -444,8 +435,7 @@ function releaseAnimationsOf(
     if (!Number.isFinite(Number(effect.getComputedTiming().endTime))) {
       return false;
     }
-    const start = animation.startTime;
-    return start == null || (writtenAt != null && Number(start) >= writtenAt);
+    return animation.playState !== 'finished';
   });
 }
 
@@ -455,9 +445,9 @@ function releaseAnimationsOf(
  * out. A busy main thread delays the animation's first frame, and with it
  * its end, so a clock started at the write would remove `fading` mid-fade
  * and cut the release short. The clock only looks: `clockMs` after the
- * write, a release animation still running, or still waiting for its first
- * frame, is waited for until it finishes or is cancelled (the surface was
- * unmounted or restyled); with none (reduced motion's instant release, a
+ * write, a release animation still running on the surface, or still waiting
+ * for its first frame, is waited for until it finishes or is cancelled (the
+ * surface was unmounted or restyled); with none (reduced motion's instant release, a
  * surface without a press layer, an engine without Web Animations) the
  * release ends there. Returns a cancel.
  */
@@ -466,10 +456,9 @@ function endAfterRelease(
   clockMs: number,
   end: () => void,
 ): () => void {
-  const writtenAt = timelineNow();
   let waiting = true;
   const timer = setTimeout(() => {
-    const running = releaseAnimationsOf(element, writtenAt);
+    const running = releaseAnimationsOf(element);
     if (running.length === 0) {
       end();
       return;
