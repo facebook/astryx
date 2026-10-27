@@ -34,6 +34,7 @@ verified_by:
     packages/core/src/Layer/useLayerDismissal.test.tsx,
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Layer/layerExitCopy.test.ts,
+    packages/core/src/Layer/presentationHold.test.tsx,
     packages/core/src/Layer/__tests__/layerExitCopy.interaction.browser.spec.ts,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
@@ -562,12 +563,12 @@ migration, verification, and completion criteria for these gaps. This record mus
 be updated only as that work ships.
 
 INV14 and INV15 are not met yet, and `spec:AST-003` does not cover them. The
-runtime owns the shared exit copy (INV13, `placeLayerExitCopy`); no shared
-presentation hold, runtime backdrop tint or lift module exists, Dialog, Drawer,
-BottomSheet, Lightbox, MobileNav, ToastViewport, and Selector each build their
-own top-layer mounting, exit, or backdrop, Popover builds its own
-presentation hold for its sheet presentation, and Popover latches its chosen
-anchored presentation until the close settles.
+runtime owns the shared exit copy (INV13, `placeLayerExitCopy`) and the shared
+presentation hold (`Layer/presentationHold.ts`), which Popover uses for its
+sheet and anchored presentations; no runtime backdrop tint or lift module
+exists, and Dialog, Drawer, BottomSheet, Lightbox, MobileNav, ToastViewport,
+and Selector each build their own top-layer mounting, exit, backdrop, or
+presentation hold.
 BottomSheet's own includes its sheet stack's mounting — the re-show that
 keeps a document's sheets in open order, a step dialog's modal present, and
 the non-modal sheet's popover host — alongside its scrim; the ordering rules
@@ -627,6 +628,8 @@ above are the stack's, the mounting under them is this gap's.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerExitCopy.ts` owns the exit copy a touch presentation's close plays
   on.
+- `Layer/presentationHold.ts` owns the presentation hold: a layer's chosen
+  presentation, held from the open until its close settles (INV14).
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and
   Escape/platform routing.
