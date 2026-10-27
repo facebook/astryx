@@ -108,6 +108,11 @@ interface Registration {
   readonly hovers: HoverGestureRecognizer[];
   consumer: TouchConsumer | null;
   touchMoveListener: EventListener | null;
+  /**
+   * Under `inputMode: 'pointer-events'`, the element's blocking `touchend`
+   * listener: it cancels a claimed finger's lift (`spec:AST-094` FR21).
+   */
+  touchEndListener: EventListener | null;
   /** Inline values the host replaced, to restore on detach. */
   readonly savedStyle: Map<string, string>;
   manageStyle: boolean;
@@ -281,6 +286,11 @@ export class GestureHost {
   private readonly fingerPointers = new Map<number, number>();
   /** Finger pointerdowns still waiting for their touchstart. */
   private readonly pendingPointers = new Map<number, PlacedContact>();
+  /**
+   * Under `inputMode: 'pointer-events'`, where claimed fingers lifted: the
+   * `touchend` that follows their `pointerup` is cancelled (FR21).
+   */
+  private readonly claimedLifts: PlacedContact[] = [];
   /** Fingers still waiting for their pointerdown, by arena id. */
   private readonly unpairedTouches = new Map<number, PlacedContact>();
   /** The last position fed per contact, so one channel's echo is dropped. */
@@ -474,6 +484,7 @@ export class GestureHost {
         hovers: [],
         consumer: null,
         touchMoveListener: null,
+        touchEndListener: null,
         savedStyle: new Map(),
         manageStyle: true,
         actionGroup: false,
@@ -499,6 +510,21 @@ export class GestureHost {
     } else if (!needsListener && registration.touchMoveListener != null) {
       element.removeEventListener('touchmove', registration.touchMoveListener);
       registration.touchMoveListener = null;
+    }
+    // Pointer Events only: a claimed finger's touchend is not the host's
+    // own document listener's to cancel, so the element cancels it.
+    const needsEndListener =
+      this.inputMode === 'pointer-events' &&
+      this.isPrimaryPointerCoarse() &&
+      registration.recognizers.some(r => r.isEnabled && r.acceptsTouchInput);
+    if (needsEndListener && registration.touchEndListener == null) {
+      const listener: EventListener = event =>
+        this.cancelClaimedLift(event as TouchEvent);
+      registration.touchEndListener = listener;
+      element.addEventListener('touchend', listener, {passive: false});
+    } else if (!needsEndListener && registration.touchEndListener != null) {
+      element.removeEventListener('touchend', registration.touchEndListener);
+      registration.touchEndListener = null;
     }
     // An action group under a fine pointer: its one idle listener.
     const needsGroupListener =
@@ -564,6 +590,10 @@ export class GestureHost {
     }
     if (registration.touchMoveListener != null) {
       element.removeEventListener('touchmove', registration.touchMoveListener);
+    }
+    if (registration.touchEndListener != null) {
+      element.removeEventListener('touchend', registration.touchEndListener);
+      registration.touchEndListener = null;
     }
     if (registration.groupDownListener != null) {
       element.removeEventListener(
@@ -881,11 +911,6 @@ export class GestureHost {
   };
 
   /**
-   * Cancel a `touchmove` while a recognizer owns one of its fingers. A touch
-   * no recognizer owns keeps its moves (`spec:AST-094` FR19): nothing is
-   * cancelled before a recognizer begins, or for a touch it does not track.
-   */
-  /**
    * Under `inputMode: 'pointer-events'` a finger comes from its pointer
    * events, so its touches carry no id of ours: the live finger it is, the
    * nearest pointer-fed finger on the same target. Its touchmoves can then
@@ -918,6 +943,36 @@ export class GestureHost {
     return best?.id;
   }
 
+  /**
+   * Cancel the `touchend` of a finger a recognizer owned when it lifted
+   * (`inputMode: 'pointer-events'`): its `pointerup` came first, at the same
+   * place on the same target (`spec:AST-094` FR21).
+   */
+  private cancelClaimedLift(event: TouchEvent): void {
+    if (!event.cancelable || event.defaultPrevented) {
+      return;
+    }
+    for (const touch of touchesOf(event.changedTouches)) {
+      const index = this.claimedLifts.findIndex(lift =>
+        isSamePlace(lift, {
+          x: touch.clientX,
+          y: touch.clientY,
+          target: touch.target,
+        }),
+      );
+      if (index >= 0) {
+        this.claimedLifts.splice(index, 1);
+        event.preventDefault();
+        return;
+      }
+    }
+  }
+
+  /**
+   * Cancel a `touchmove` while a recognizer owns one of its fingers. A touch
+   * no recognizer owns keeps its moves (`spec:AST-094` FR19): nothing is
+   * cancelled before a recognizer begins, or for a touch it does not track.
+   */
   private cancelIfClaimed(event: TouchEvent): void {
     if (!event.cancelable || event.defaultPrevented) {
       return;
@@ -1530,6 +1585,16 @@ export class GestureHost {
     }
     this.pointerIds.delete(event.pointerId);
     this.releaseSelection(id);
+    if (event.pointerType === 'touch' && this.arena.isClaimed(id)) {
+      this.claimedLifts.push({
+        x: event.clientX,
+        y: event.clientY,
+        target: event.target,
+      });
+      if (this.claimedLifts.length > 8) {
+        this.claimedLifts.shift();
+      }
+    }
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
