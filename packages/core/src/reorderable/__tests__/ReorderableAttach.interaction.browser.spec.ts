@@ -25,6 +25,15 @@ import {reorder} from '../../motion/uikit/reorder';
 const storybook = withStorybook(test);
 
 const STORY = 'core-createreorderable--attached-cards-in-a-row';
+const FAN_STORY = 'core-createreorderable--attached-cards-in-a-fan';
+/** The fan's slot centres, as its story's positions() gives them. */
+const FAN = [-24, -12, 0, 12, 24].map(angle => {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: Math.round(220 + 160 * Math.sin(radians)),
+    y: Math.round(230 - 160 * Math.cos(radians)),
+  };
+});
 /** The cards' slot centres, as the story's positions() gives them. */
 const SLOTS = [0, 1, 2, 3, 4].map(index => ({x: 44 + index * 88, y: 56}));
 const HOLD_MS = reorder.claim.delayMs + 80;
@@ -109,6 +118,31 @@ test.describe('with a mouse or a pen', () => {
     const centre = await centreOf(page, 'A');
     expect(Math.abs((centre?.x ?? Number.NaN) - SLOTS[2].x)).toBeLessThan(0.5);
     expect(Math.abs((centre?.y ?? Number.NaN) - SLOTS[2].y)).toBeLessThan(0.5);
+  });
+
+  test('in a fanned hand, a dragged card drops on the slot nearest its centre and settles on it', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), FAN_STORY);
+    const before = await moves(page);
+    const from = await gripOf(page, 'A');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    // Toward the fourth slot's centre, from the first's.
+    await page.mouse.move(
+      from.x + (FAN[3].x - FAN[0].x),
+      from.y + (FAN[3].y - FAN[0].y),
+      {steps: 12},
+    );
+    await page.mouse.up();
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'Q', 'J', 'A', '10']);
+    expect(await moves(page)).toBe(before + 1);
+    await waitForRest(page);
+    const centre = await centreOf(page, 'A');
+    expect(Math.abs((centre?.x ?? Number.NaN) - FAN[3].x)).toBeLessThan(0.5);
+    expect(Math.abs((centre?.y ?? Number.NaN) - FAN[3].y)).toBeLessThan(0.5);
   });
 
   test('a pen drags a grip at once, with no hold (spec:AST-103 FR3)', async ({
@@ -212,4 +246,62 @@ test('a finger holds a grip, then drags: one report, and the card glides into it
   const centre = await centreOf(page, 'A');
   expect(Math.abs((centre?.x ?? Number.NaN) - SLOTS[1].x)).toBeLessThan(0.5);
   expect(Math.abs((centre?.y ?? Number.NaN) - SLOTS[1].y)).toBeLessThan(0.5);
+});
+
+test('a pen on a touch screen holds a grip before it drags, as a finger does (spec:AST-103 FR3)', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), STORY);
+  test.skip(
+    !(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)),
+    'the hold runs on a touch screen',
+  );
+  const input = await webInputDriver(page);
+  test.skip(!input.pens, 'this engine has no pen input');
+  const from = await gripOf(page, 'A');
+  const stroke = (holdMs: number) => [
+    {x: from.x, y: from.y, t: 0},
+    {x: from.x, y: from.y, t: holdMs},
+    ...Array.from({length: 12}, (_, index) => ({
+      x: from.x + ((88 + 12) * (index + 1)) / 12,
+      y: from.y,
+      t: holdMs + (index + 1) * 16,
+    })),
+  ];
+  // Moving at once: the page keeps the stroke, and no card moves.
+  await input.pen(stroke(0));
+  await page.waitForTimeout(300);
+  expect(await order(page)).toEqual(['A', 'K', 'Q', 'J', '10']);
+  // Held still first: the card is picked up and moves.
+  await input.pen(stroke(HOLD_MS));
+  await expect
+    .poll(async () => order(page))
+    .toEqual(['K', 'A', 'Q', 'J', '10']);
+});
+
+test('a cancelled drag puts the card back and reports nothing', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'the cancel is a touchcancel through Chromium CDP',
+  );
+  await openStory(page, storybook(), STORY);
+  const before = await moves(page);
+  const from = await gripOf(page, 'A');
+  const driver = await touchDriver(page);
+  await driver.play(
+    drag(
+      from,
+      {x: from.x + 88 + 12, y: from.y},
+      {holdMs: HOLD_MS, durationMs: 200, cancel: true},
+    ),
+  );
+  await waitForRest(page);
+  expect(await order(page)).toEqual(['A', 'K', 'Q', 'J', '10']);
+  expect(await moves(page)).toBe(before);
+  await expect(page.locator('[data-astryx-reorder-preview]')).toHaveCount(0);
+  const centre = await centreOf(page, 'A');
+  expect(Math.abs((centre?.x ?? Number.NaN) - SLOTS[0].x)).toBeLessThan(0.5);
 });
