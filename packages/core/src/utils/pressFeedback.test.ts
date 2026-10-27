@@ -1128,6 +1128,41 @@ describe('a control is tracked like UIControl', () => {
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
   });
 
+  it('a menu row in a menu that cannot scroll highlights at once (FR11, DEC-14)', () => {
+    // A menu whose rows fit: overflow set, but nothing to scroll.
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    menu.style.overflowY = 'auto';
+    Object.defineProperty(menu, 'clientHeight', {
+      configurable: true,
+      value: 200,
+    });
+    Object.defineProperty(menu, 'scrollHeight', {
+      configurable: true,
+      value: 200,
+    });
+    const row = pressable('div', 'cell');
+    row.setAttribute('role', 'menuitem');
+    menu.appendChild(row);
+    document.body.appendChild(menu);
+    press(row, 'pointerdown', 10, 10);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('a menu row in a menu that can scroll waits the content-touch delay (FR11, DEC-14)', () => {
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    makeScroller(menu);
+    const row = pressable('div', 'cell');
+    row.setAttribute('role', 'menuitem');
+    menu.appendChild(row);
+    document.body.appendChild(menu);
+    press(row, 'pointerdown', 10, 10);
+    expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
   it('marks a control with an empty marker and a cell with `cell`', () => {
     expect(pressableProps[PRESSABLE_ATTRIBUTE]).toBe('');
     expect(cellPressableProps[PRESSABLE_ATTRIBUTE]).toBe('cell');
