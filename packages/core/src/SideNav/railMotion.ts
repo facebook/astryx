@@ -18,8 +18,8 @@
  *   real collapsed one and clips the copy down to the new width; the copy's
  *   text fades over the first 40% and the copy over the last 30%, so the real
  *   rail, icons only, is all that remains. An expand clips the real rail open
- *   from the old width, under a copy of the old, collapsed rail that fades
- *   over the last 60%.
+ *   from the old width under a copy of it, clipped the same, whose text fades
+ *   in over the last 60%, so no label shows at the collapsed width.
  * - The content column slides from its old place to its new one (the rail's
  *   sibling, as the glide moves siblings), carrying an in-place swap
  *   (`spec:AST-105` FR8): a copy of the old wrap at the old width fades out
@@ -93,13 +93,15 @@ export function snapshotRail(
     content != null &&
     content.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS
   ) {
+    // The old wrap at the old width, scrolled as it was, inside a holder the
+    // size of the content's visible part, so it adds no scrollable overflow.
     const style = getComputedStyle(content);
-    wrapCopy = copyOf(content);
-    wrapCopy.removeAttribute('role');
-    wrapCopy.removeAttribute('tabindex');
-    Object.assign(wrapCopy.style, {
+    const copy = copyOf(content);
+    copy.removeAttribute('role');
+    copy.removeAttribute('tabindex');
+    Object.assign(copy.style, {
       position: 'absolute',
-      insetBlockStart: '0px',
+      insetBlockStart: `${-content.scrollTop}px`,
       insetInlineStart: '0px',
       boxSizing: 'border-box',
       width: `${content.clientWidth}px`,
@@ -108,6 +110,16 @@ export function snapshotRail(
       overflow: 'visible',
       translate: 'none',
     });
+    wrapCopy = content.ownerDocument.createElement('div');
+    wrapCopy.setAttribute('aria-hidden', 'true');
+    wrapCopy.setAttribute('inert', '');
+    Object.assign(wrapCopy.style, {
+      position: 'absolute',
+      insetInlineStart: '0px',
+      overflow: 'hidden',
+      pointerEvents: 'none',
+    });
+    wrapCopy.appendChild(copy);
   }
   return {
     rail,
@@ -166,44 +178,34 @@ export function playRail(
   const added: HTMLElement[] = [];
   const restore: (() => void)[] = [];
 
-  // The rail: a copy of the old one over the real new one.
+  // The rail. A copy over the real rail carries what the real one cannot: a
+  // collapse covers a copy of the old, expanded rail; an expand reveals a
+  // copy of the new one, whose text fades in. Under a fade, the old rail's
+  // copy fades out over the real new one.
+  const expands = delta > 0;
+  const copy = travels && expands ? copyOf(rail) : railCopy;
+  const copyRect = copy === railCopy ? railRect : next;
   const parent = rail.parentElement ?? rail.ownerDocument.body;
   const parentRect = parent.getBoundingClientRect();
-  Object.assign(railCopy.style, {
+  Object.assign(copy.style, {
     position: 'absolute',
     zIndex: '1',
     margin: '0px',
-    insetBlockStart: `${railRect.top - parentRect.top + parent.scrollTop}px`,
-    insetInlineStart: `${rtl ? parentRect.right - railRect.right : railRect.left - parentRect.left}px`,
-    width: `${railRect.width}px`,
-    height: `${railRect.height}px`,
+    insetBlockStart: `${copyRect.top - parentRect.top + parent.scrollTop}px`,
+    insetInlineStart: `${rtl ? parentRect.right - copyRect.right : copyRect.left - parentRect.left}px`,
+    width: `${copyRect.width}px`,
+    height: `${copyRect.height}px`,
   });
   if (getComputedStyle(parent).position === 'static') {
     const previous = parent.style.position;
     parent.style.position = 'relative';
     restore.push(() => (parent.style.position = previous));
   }
-  parent.appendChild(railCopy);
-  added.push(railCopy);
-  if (!travels) {
-    play(
-      railCopy,
-      frames(p => ({opacity: 1 - p})),
-    );
-    play(
-      rail,
-      frames(p => ({opacity: p})),
-    );
-  } else if (delta < 0) {
-    play(
-      railCopy,
-      frames(p => ({
-        clipPath: inset(-delta * p),
-        opacity: 1 - clamp((p - 0.7) / 0.3),
-      })),
-    );
-    // The copy's text fades first, so no label shows in the collapsed width.
-    const walker = railCopy.ownerDocument.createTreeWalker(railCopy, 4);
+  parent.appendChild(copy);
+  added.push(copy);
+  // The copy's text, so no label shows in the collapsed width.
+  const fadeText = (opacity: (p: number) => number) => {
+    const walker = copy.ownerDocument.createTreeWalker(copy, 4);
     const texts: Text[] = [];
     while (walker.nextNode()) {
       if (walker.currentNode.textContent?.trim()) {
@@ -211,23 +213,43 @@ export function playRail(
       }
     }
     for (const text of texts) {
-      const span = railCopy.ownerDocument.createElement('span');
+      const span = copy.ownerDocument.createElement('span');
       text.replaceWith(span);
       span.appendChild(text);
       play(
         span,
-        frames(p => ({opacity: 1 - clamp(p / 0.4)})),
+        frames(p => ({opacity: opacity(p)})),
       );
     }
+  };
+  if (!travels) {
+    play(
+      copy,
+      frames(p => ({opacity: 1 - p})),
+    );
+    play(
+      rail,
+      frames(p => ({opacity: p})),
+    );
+  } else if (!expands) {
+    play(
+      copy,
+      frames(p => ({
+        clipPath: inset(-delta * p),
+        opacity: 1 - clamp((p - 0.7) / 0.3),
+      })),
+    );
+    fadeText(p => 1 - clamp(p / 0.4));
   } else {
     play(
       rail,
       frames(p => ({clipPath: inset(delta * (1 - p))})),
     );
     play(
-      railCopy,
-      frames(p => ({opacity: 1 - clamp((p - 0.4) / 0.6)})),
+      copy,
+      frames(p => ({clipPath: inset(delta * (1 - p))})),
     );
+    fadeText(p => clamp((p - 0.4) / 0.6));
   }
 
   // The content: the column slides, carrying the old wrap's copy out.
@@ -265,6 +287,11 @@ export function playRail(
           content.style.position = 'relative';
           restore.push(() => (content.style.position = previous));
         }
+        Object.assign(wrapCopy.style, {
+          insetBlockStart: `${content.scrollTop}px`,
+          width: `${content.clientWidth}px`,
+          height: `${content.clientHeight}px`,
+        });
         content.appendChild(wrapCopy);
         added.push(wrapCopy);
         play(
