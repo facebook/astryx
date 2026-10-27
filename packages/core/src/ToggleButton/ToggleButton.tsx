@@ -28,6 +28,7 @@ import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 import {Button, type ButtonSize} from '../Button';
 import type {Elevation} from '../utils/types';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
+import {pressGroupItemProps} from '../utils/pressFeedback';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {mergeProps} from '../utils/mergeProps';
@@ -366,6 +367,9 @@ export function ToggleButton({
       style={style}
       onClick={handleClick}
       clickAction={clickAction}
+      // A toggle its group tracks carries the group item marker: the group's
+      // tracker paints its press and runs its click (family:action-groups).
+      {...(group?.tracksPress === true ? pressGroupItemProps : undefined)}
       {...props}>
       {labelContent}
     </Button>
