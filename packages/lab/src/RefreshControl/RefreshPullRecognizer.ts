@@ -25,8 +25,12 @@
  *   lift;
  * - one finger: a second finger is the browser's (pinch-zoom).
  *
- * `onTouchDown` reports a first finger landing, so a settle in flight can
- * stop where it is (UIScrollView brakes on touch-down).
+ * A pen reads the same way as a finger (`spec:AST-094` FR43); a mouse drag
+ * is not read: its text selection and native drag stay the browser's, as
+ * `spec:AST-057` AR2 keeps a mouse off a row. `pointerType` records the first
+ * contact's pointer, and `onTouchDown` reports that first contact landing, so
+ * a settle in flight can stop where it is (UIScrollView brakes on
+ * touch-down).
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/RefreshControl/useRefreshControl.ts
@@ -39,17 +43,21 @@ import {
 import type {
   GestureEventContext,
   GestureTouch,
+  PointerKind,
 } from '@astryxdesign/core/internal/touch';
 
 export class RefreshPullRecognizer extends PanGestureRecognizer {
-  /** Called when the first finger of a gesture lands, with its timestamp. */
+  /** Called when the first contact of a gesture lands, with its timestamp. */
   onTouchDown: ((time: number) => void) | null = null;
+  /** The pointer of the gesture's first contact: a finger or a pen. */
+  pointerType: PointerKind = 'touch';
 
   constructor(options: PanGestureRecognizerOptions = {}) {
     super({
       name: 'RefreshPull',
       direction: 'vertical',
       maximumNumberOfTouches: 1,
+      allowedPointerTypes: ['touch', 'pen'],
       ...options,
     });
   }
@@ -64,6 +72,7 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
     event: GestureEventContext,
   ): void {
     if (this.numberOfTouches === touches.length) {
+      this.pointerType = touches[0]?.pointerType ?? 'touch';
       this.onTouchDown?.(event.time);
     }
     super.touchesBegan(touches, event);

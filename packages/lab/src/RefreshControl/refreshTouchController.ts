@@ -12,9 +12,8 @@
  *   pull, the inset, the indicator and every motion) and the refs that attach
  *   it
  * @position Internal to RefreshControl. useRefreshControl.ts is its one import
- *   site: everything that runs only under a finger lives here, so a build for
- *   fine pointers can swap this module for one that does nothing
- *   (`architecture:component-style-authoring` INV6).
+ *   site: everything a pull drives lives here, in one module a page loads
+ *   only with the control (`architecture:component-style-authoring` INV6).
  *
  * The pull (UIKit's refresh pull, measured; see refreshPull.ts):
  * - RefreshPullRecognizer reads a downward pull at the top without taking the
@@ -34,12 +33,17 @@
  * - A programmatic begin (controlled `isRefreshing`, or `refresh()`) adds the
  *   inset with no visible motion, as `beginRefreshing()` does.
  *
- * Under a finger only: the pull, the inset and the indicator follow the touch
- * presentation (`useTouchPresentation`: a coarse primary pointer, one touch
- * model on iOS and Android alike). On the page, the pull replaces the
- * browser's own pull to refresh near the top (Safari's and Chrome's reload).
- * With a mouse or a trackpad nothing pulls, and a programmatic refresh only
- * reports busy and announces itself: no inset, no indicator.
+ * A finger or a pen pulls, under any primary pointer (`spec:AST-094` FR43):
+ * a drag at the top, with the same mapping, trigger, settle and drawing; a
+ * pen pull clears the text selection its drag started. A mouse drag does
+ * not pull: its text selection and native drag stay the browser's, as
+ * `spec:AST-057` AR2 keeps a mouse off a row; nor does a trackpad's or a
+ * wheel's scroll. The top edge follows the touch presentation
+ * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
+ * and Android alike): only there does the pull take the page's overscroll
+ * near the top and replace the browser's own pull to refresh (Safari's and
+ * Chrome's reload). Under a fine pointer a programmatic refresh only reports
+ * busy and announces itself: no inset, no indicator.
  *
  * The settle and the trigger turn hand their table springs to the animator.
  * The end's curve is `timing.curves.move`, one of spec:AST-094 FR4's internal
@@ -67,6 +71,7 @@ import {
   type RefCallback,
 } from 'react';
 import {claimRootScrollStyle} from '@astryxdesign/core/internal/touch';
+import type {PointerKind} from '@astryxdesign/core/internal/touch';
 import {useGestureRecognizer} from '@astryxdesign/core/internal/touch';
 import type {MotionCurve} from '@astryxdesign/core/internal/motion';
 import {cubicBezier} from '@astryxdesign/core/internal/motion';
@@ -123,8 +128,13 @@ function spinKeyframes(spokes: number): Keyframe[] {
 const TURN_DEGREES = (refreshControl.turnRad * 180) / Math.PI;
 
 export interface RefreshTouchControllerOptions {
-  /** The pull applies: a finger, not disabled, no scroll lock. */
+  /** The pull applies: not disabled, no scroll lock (a finger or a pen, FR43). */
   readonly isPullEnabled: boolean;
+  /**
+   * The pull takes the top edge (the touch presentation): near the top the
+   * scroll owner's overscroll is the pull's, not the browser's.
+   */
+  readonly isEdgeClaimed: boolean;
   /** The state machine's state, shared with the wiring. */
   readonly model: {readonly current: RefreshState};
   /** The wiring's dispatch: the pull's events go to the state machine. */
@@ -217,6 +227,7 @@ function derivative(
  */
 export function useRefreshTouchController({
   isPullEnabled,
+  isEdgeClaimed,
   model,
   dispatchRef,
 }: RefreshTouchControllerOptions): RefreshTouchController {
@@ -278,11 +289,32 @@ export function useRefreshTouchController({
   }, []);
 
   /**
-   * No text selection while a finger pulls: iOS Safari otherwise reads a slow
+   * No text selection while a pull runs: iOS Safari otherwise reads a slow
    * pull over text as a press-and-drag selection (the content does not
-   * scroll under it, so nothing claims the touch).
+   * scroll under it, so nothing claims the touch), and a pen drag may select
+   * text from its first move.
    */
   const selection = useRef<string | null>(null);
+  /**
+   * The text a pen drag selected in the content before its pull began
+   * (spec:AST-094 FR43): the pull takes the drag, so the selection goes.
+   */
+  const clearDragSelection = useCallback(() => {
+    const element = contentElement.current;
+    const current = element?.ownerDocument.getSelection();
+    if (element == null || current == null || current.isCollapsed) {
+      return;
+    }
+    const anchor = current.anchorNode;
+    if (anchor != null && element.contains(anchor)) {
+      current.removeAllRanges();
+    }
+  }, []);
+  /**
+   * The pointer of the latest pull: only a finger's release cross-fades under
+   * Reduce Motion; a pen's lands at once (design:reduced-motion DR2, DR3).
+   */
+  const pullPointer = useRef<PointerKind>('touch');
   const holdSelection = useCallback(() => {
     const element = contentElement.current;
     if (element == null || selection.current != null) {
@@ -415,12 +447,15 @@ export function useRefreshTouchController({
 
   const isPullEnabledRef = useRef(isPullEnabled);
   isPullEnabledRef.current = isPullEnabled;
+  const isEdgeClaimedRef = useRef(isEdgeClaimed);
+  isEdgeClaimedRef.current = isEdgeClaimed;
 
   /** Near the top, the browser draws no overscroll: the pull does. */
   const applyEdge = useCallback(() => {
     const current = owner.current;
     const near =
       isPullEnabledRef.current &&
+      isEdgeClaimedRef.current &&
       scrollTopOf(current) < Math.max(heightOf(current), REFRESH_HEIGHT);
     const state = edge.current;
     if (!near || state.element !== current) {
@@ -464,13 +499,14 @@ export function useRefreshTouchController({
   }, [releaseEdge]);
 
   useEffect(() => {
-    // The owner and its top edge are watched only while a finger can pull:
-    // with the pull off, no listener is held (react-component-runtime INV5).
+    // The owner and its top edge are watched only while the pull can take the
+    // edge (a finger can pull): otherwise no listener is held
+    // (react-component-runtime INV5); a contact re-resolves the owner.
     // The edge is claimed before a touch lands (the gesture host's listeners
     // are passive, so a claim made at touch-down could come after the
     // browser has started its own overscroll); a touch-down re-resolves the
     // owner, so no resize listener is needed.
-    if (!isPullEnabled) {
+    if (!isPullEnabled || !isEdgeClaimed) {
       releaseEdge();
       return undefined;
     }
@@ -508,7 +544,7 @@ export function useRefreshTouchController({
       document.removeEventListener('scroll', onScroll, {capture: true});
       releaseEdge();
     };
-  }, [applyEdge, isPullEnabled, releaseEdge, resolveOwner]);
+  }, [applyEdge, isEdgeClaimed, isPullEnabled, releaseEdge, resolveOwner]);
 
   // -- Motion of the state machine's effects ----------------------------------
 
@@ -517,18 +553,20 @@ export function useRefreshTouchController({
       const target = releaseTarget(to === 'inset');
       const from = content.animator.get('y');
       // No start time: from rest, the animator starts the settle when the
-      // compositor does, so its first frame is the start of the curve. A touch
-      // release starts it, so under Reduce Motion the animator cross-fades it
-      // on any pointer instead of moving it (design:reduced-motion DR3).
+      // compositor does, so its first frame is the start of the curve. A
+      // finger's release starts it, so under Reduce Motion the animator
+      // cross-fades it instead of moving it (design:reduced-motion DR2); a
+      // pen's release lands at once (DR3, spec:AST-094 FR43).
+      const touchRelease = pullPointer.current === 'touch';
       content.animator.animate(
         {y: target},
         {spring: scroll.bounce, velocity: {y: 0}},
-        {touchRelease: true},
+        {touchRelease},
       );
       indicator.animator.animate(
         {y: REFRESH_HEIGHT - target},
         {spring: scroll.bounce, velocity: {y: 0}},
-        {touchRelease: true},
+        {touchRelease},
       );
       if (to === 'top' && !model.current.isRefreshing && from > 0) {
         // The spokes retract with the content: started in the same task, the
@@ -548,7 +586,7 @@ export function useRefreshTouchController({
                 velocity: derivative(opacity, duration),
               },
             },
-            {touchRelease: true},
+            {touchRelease},
           )
           .finished.then(done => {
             if (done && !model.current.isRefreshing) {
@@ -736,6 +774,10 @@ export function useRefreshTouchController({
           // hysteresis, as UIKit's does); past a scroll it starts where the
           // content ran out.
           anchor.current = pan.state === 'began' ? 0 : translation;
+          pullPointer.current = pan.pointerType;
+          if (pan.pointerType !== 'touch') {
+            clearDragSelection();
+          }
           holdSelection();
           const shown = content.animator.get('y');
           stopPlacing();
@@ -793,7 +835,7 @@ export function useRefreshTouchController({
       dispatch({type: pan.state === 'ended' ? 'pullEnd' : 'pullCancel'});
     },
   );
-  // Syncs whether the pull applies (a finger, not disabled, no scroll lock)
+  // Syncs whether the pull applies (not disabled, no scroll lock)
   // with the recognizer, an object outside React. Turned off mid-pull, it
   // reports `cancelled` to the listener above, which settles the content back
   // and ends the pull (the hook's own `isEnabled` would end it silently).
