@@ -118,6 +118,9 @@ export function MotionLabShell({children}: {children: ReactNode}) {
   const {registerScope, reducedMotion} = useMotionLab();
   const ref = useRef<HTMLDivElement | null>(null);
   const isNarrow = useMediaQuery(NARROW_QUERY);
+  // The shell outlives a page change; keying the folded list by page closes
+  // it after a pick, so the chosen page starts on screen.
+  const pathname = usePathname();
 
   useEffect(() => {
     registerScope(ref.current);
@@ -144,7 +147,10 @@ export function MotionLabShell({children}: {children: ReactNode}) {
             <VStack gap={0}>
               {isNarrow && (
                 <div {...stylex.props(sx.narrowNav)}>
-                  <Collapsible trigger="Motion Lab pages" defaultIsOpen={false}>
+                  <Collapsible
+                    key={pathname}
+                    trigger="Motion Lab pages"
+                    defaultIsOpen={false}>
                     <LabNav />
                   </Collapsible>
                 </div>
