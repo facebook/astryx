@@ -18,9 +18,11 @@
  *   TreeList/__tests__/TreeListExpand.interaction.browser.spec.ts
  */
 
+import {useRef} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TreeList} from './TreeList';
+import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import type {TreeListItemData} from './TreeListTypes';
 import {motionOf} from '../utils/rowMotion';
 
@@ -153,6 +155,29 @@ describe('TreeList expansion presence', () => {
     await new Promise(resolve => setTimeout(resolve, 800));
     expect(group()).toBe(before);
     expect(screen.getByText('Card.tsx')).toBeInTheDocument();
+  });
+});
+
+describe('with an animated-layout handle', () => {
+  function WithHandle() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const animatedLayout = useAnimatedLayout({containerRef});
+    return (
+      <div ref={containerRef}>
+        <TreeList items={items} animatedLayout={animatedLayout} />
+      </div>
+    );
+  }
+
+  it('under a finger, the row plays no slide of its own: the handle plays the group under every pointer', async () => {
+    stubPointer('touch');
+    render(<WithHandle />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
+    expect(row('components')).toHaveAttribute('aria-expanded', 'false');
+    // jsdom has no layout, so the handle holds no exit: the group goes at
+    // once instead of staying for the row's own slide.
+    expect(group()).toBeNull();
   });
 });
 
