@@ -427,6 +427,74 @@ test('the public pan reports a finger\u2019s drag along its axis as values (spec
   ).toBeCloseTo(120 - 10, 0);
 });
 
+test('the public pan is driven by a mouse drag and a pen drag where the primary pointer is fine (spec:AST-107 FR1, AST-094 FR43)', async ({
+  browser,
+  browserName,
+}) => {
+  // A desktop context: a fine primary pointer and no touch.
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 800, height: 900},
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bundle});
+    await page.evaluate(() => {
+      document.getElementById('publicPan')?.scrollIntoView({block: 'center'});
+    });
+    const start = await center(page, 'publicPan');
+    const publicPan = async () =>
+      (await log(page))
+        .filter(entry => entry.name === 'publicPan')
+        .map(entry => entry.state);
+    // A mouse drag.
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 8; step++) {
+      await page.mouse.move(start.x + step * 15, start.y + 2);
+    }
+    await page.mouse.up();
+    const byMouse = await publicPan();
+    expect(byMouse[0]).toBe('began');
+    expect(byMouse.at(-1)).toBe('ended');
+    await clearLog(page);
+    // A pen drag, where the engine can make one (Chromium's input domain).
+    if (browserName === 'chromium') {
+      const cdp = await context.newCDPSession(page);
+      const pen = async (
+        type: 'mousePressed' | 'mouseMoved' | 'mouseReleased',
+        x: number,
+        buttons: number,
+      ): Promise<void> => {
+        await cdp.send('Input.dispatchMouseEvent', {
+          type,
+          x,
+          y: start.y,
+          button: 'left',
+          buttons,
+          clickCount: 1,
+          pointerType: 'pen',
+        });
+      };
+      await pen('mousePressed', start.x, 1);
+      for (let step = 1; step <= 8; step++) {
+        await pen('mouseMoved', start.x + step * 15, 1);
+      }
+      await pen('mouseReleased', start.x + 120, 0);
+      const byPen = await publicPan();
+      expect(byPen[0]).toBe('began');
+      expect(byPen.at(-1)).toBe('ended');
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 test('a tap, a long press and a drag across its axis on the public pan report nothing (spec:AST-107 FR1)', async ({
   page,
   browserName,
