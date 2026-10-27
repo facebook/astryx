@@ -36,8 +36,8 @@
  *
  * Under a finger (a coarse primary pointer, iOS and Android alike: the
  * touch presentation), the lens slides on UIKit's spring
- * (`tabBar.lensTravel`, response 0.4 s, damping ratio 0.85, a motion role
- * a theme may retune) through core's animator, starting from where and how
+ * (`tabBar.lensTravel`, response 0.4 s, damping ratio 0.85, an internal
+ * motion role) through core's animator, starting from where and how
  * fast it is moving, so a change during a slide turns it around without a
  * jump; that motion is TabBar's touch layer (TabBarTouch.ts), its one
  * import site. Under a mouse (a fine pointer) the lens slides on the theme's
