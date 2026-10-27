@@ -1535,9 +1535,18 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // It turned around mid-travel, short of the on end...
     expect(farthest).toBeGreaterThan(1);
     expect(farthest).toBeLessThan(TRAVEL_PX - 1);
-    // ...from where it was: no frame moves it more than a few px.
-    const steps = xs.slice(1).map((x, i) => Math.abs(x - xs[i]));
-    expect(Math.max(...steps)).toBeLessThan(4);
+    // ...from where it was: no frame moves it more than a few px. Each step
+    // is measured against the time its frames span, so a frame read late
+    // (two or more vsyncs of compositor motion in one sample) is not a jump.
+    const FRAME_MS = 1000 / 60;
+    const perFrame = samples
+      .slice(1)
+      .map(
+        ([time, x], i) =>
+          (Math.abs(x - samples[i][1]) * FRAME_MS) /
+          Math.max(time - samples[i][0], FRAME_MS),
+      );
+    expect(Math.max(...perFrame)).toBeLessThan(4);
   }
 
   test('P14 · a second tap mid-travel catches the thumb where it is and sends it back, without a jump', async ({
