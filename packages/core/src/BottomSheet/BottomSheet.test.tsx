@@ -1199,6 +1199,87 @@ describe('BottomSheet', () => {
       vi.stubGlobal('innerHeight', 800);
     });
 
+    it('a sheet opened over another presents and leaves on the spring with no dim of its own: one scrim per stack', async () => {
+      // jsdom has no Web Animations: record which dialogs' ::backdrop play.
+      const backdrops: Element[] = [];
+      Object.defineProperty(Element.prototype, 'animate', {
+        configurable: true,
+        writable: true,
+        value: function (
+          this: Element,
+          _keyframes: Keyframe[],
+          options?: KeyframeAnimationOptions & {pseudoElement?: string},
+        ) {
+          if (options?.pseudoElement === '::backdrop') {
+            backdrops.push(this);
+          }
+          return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+        },
+      });
+      function Two({
+        isOrdersOpen,
+        isOrderOpen,
+      }: {
+        isOrdersOpen: boolean;
+        isOrderOpen: boolean;
+      }) {
+        return (
+          <>
+            <BottomSheet
+              isOpen={isOrdersOpen}
+              onOpenChange={vi.fn()}
+              label="Orders">
+              List
+            </BottomSheet>
+            <BottomSheet
+              isOpen={isOrderOpen}
+              onOpenChange={vi.fn()}
+              label="Order">
+              Detail
+            </BottomSheet>
+          </>
+        );
+      }
+      const dialogOf = (label: string) =>
+        screen.getByRole('dialog', {name: label, hidden: true});
+      const measure = (label: string) =>
+        vi
+          .spyOn(
+            dialogOf(label).querySelector(
+              '.astryx-bottom-sheet',
+            ) as HTMLElement,
+            'getBoundingClientRect',
+          )
+          .mockReturnValue(rect({top: 300, bottom: 848}));
+      const settle = async () => {
+        await act(async () => {
+          await Promise.resolve();
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(2000);
+        });
+      };
+      const {rerender} = render(
+        <Two isOrdersOpen={false} isOrderOpen={false} />,
+      );
+      // On its own a sheet's spring brings the dim in on its backdrop.
+      rerender(<Two isOrdersOpen isOrderOpen={false} />);
+      measure('Orders');
+      await settle();
+      expect(backdrops).toContain(dialogOf('Orders'));
+      backdrops.length = 0;
+      // Pushed over it, a sheet keeps the transparent backdrop of a stack's
+      // upper sheet: its spring moves only the sheet, in and out.
+      rerender(<Two isOrdersOpen isOrderOpen />);
+      measure('Order');
+      await settle();
+      expect(backdrops).toEqual([]);
+      rerender(<Two isOrdersOpen isOrderOpen={false} />);
+      await settle();
+      expect(backdrops).toEqual([]);
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
     it('opens on the spring on Android too, holding input (one touch model)', async () => {
       stubFinger({ios: false});
       const played: Keyframe[][] = [];
