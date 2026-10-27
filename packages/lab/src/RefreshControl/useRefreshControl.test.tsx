@@ -3,15 +3,18 @@
 /**
  * @file useRefreshControl.test.tsx
  * @input vitest (jsdom), useRefreshControl on a minimal structure (content,
- *   indicator, spinner), touch events dispatched on its content, stand-ins
- *   for a touch screen (matchMedia) and for a WebKit that is not iOS's
- *   (CSS.supports)
+ *   indicator, spinner), touch and pointer events dispatched on its content,
+ *   stand-ins for a touch screen (matchMedia) and for a WebKit that is not
+ *   iOS's (CSS.supports)
  * @output Covers the pull (UIKit's mapping, trigger with the finger down,
  *   release onto the inset or back to the top), the end, controlled and
- *   programmatic refreshes, the announcement, the touch gate (a mouse or a
- *   trackpad leaves the pull and the top edge to the browser; any touch
- *   screen, Android's included, pulls), the disabled state, the scroll-lock stand-down and the
- *   top-edge overscroll policy on the page and on a scroll container
+ *   programmatic refreshes, the announcement, every pointer (spec:AST-094
+ *   FR43: a pen pulls as a finger does and clears the selection its drag
+ *   started, a mouse drag stays the browser's, and under a fine pointer the
+ *   top edge stays the browser's; any touch screen, Android's included,
+ *   pulls), the disabled
+ *   state, the scroll-lock stand-down and the top-edge overscroll policy on
+ *   the page and on a scroll container
  * @position Testing; colocated with useRefreshControl.ts. Motion itself is
  *   checked in a real browser (the RefreshControl interaction spec and its
  *   storyboards)
@@ -107,6 +110,43 @@ function pull(target: EventTarget, steps: number[], lift = true): void {
   if (lift) {
     touch('touchend', target, y, true);
   }
+}
+
+/**
+ * A drag with a mouse or a pen from y 100 (spec:AST-094 FR43): `move` goes down
+ * by a step with the button held, `lift` releases it.
+ */
+function pointerDrag(target: EventTarget, pointerType: 'mouse' | 'pen') {
+  let y = 100;
+  const send = (type: string, buttons: number) => {
+    clock += 16;
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 7,
+      pointerType,
+      isPrimary: true,
+      clientX: 100,
+      clientY: y,
+      button: 0,
+      buttons,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: clock});
+    act(() => {
+      target.dispatchEvent(event);
+    });
+  };
+  send('pointerdown', 1);
+  return {
+    move(step: number) {
+      y += step;
+      send('pointermove', 1);
+    },
+    lift() {
+      send('pointerup', 0);
+    },
+  };
 }
 
 function translateY(element: HTMLElement): number {
@@ -433,20 +473,73 @@ describe('useRefreshControl', () => {
     await waitFor(() => expect(content()).not.toHaveAttribute('aria-busy'));
   });
 
-  it('does not pull under a mouse or trackpad', () => {
+  it('pulls under a pen as under a finger: the same mapping, a trigger with the pen down, the settle onto the inset (spec:AST-094 FR43)', async () => {
     useTouchScreen(false);
     // The premise: the primary pointer is not coarse.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const onRefresh = vi.fn(() => new Promise<void>(() => {}));
+    render(
+      <Refreshable data-testid="refresh" onRefresh={onRefresh}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    const drag = pointerDrag(content(), 'pen');
+    for (const step of [12, 8, 20]) {
+      drag.move(step);
+    }
+    // 40 px of travel, 10 of them the pan's hysteresis, as under a finger.
+    expect(translateY(content())).toBeCloseTo(30, 5);
+    for (const step of [20, 20, 25]) {
+      drag.move(step);
+    }
+    // 105 px of travel: past the trigger (73 px of overscroll), with the pen
+    // still down.
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(content()).toHaveAttribute('aria-busy', 'true');
+    drag.lift();
+    await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
+  });
+
+  it('does not pull under a mouse drag: its text selection and native drag stay the browser’s (spec:AST-094 FR43, as spec:AST-057 AR2 keeps a mouse off a row)', () => {
+    useTouchScreen(false);
     const onRefresh = vi.fn();
     render(
       <Refreshable data-testid="refresh" onRefresh={onRefresh}>
         <p>Inbox</p>
       </Refreshable>,
     );
-    pull(content(), [30, 30, 30, 30]);
+    const drag = pointerDrag(content(), 'mouse');
+    for (const step of [30, 30, 30, 30]) {
+      drag.move(step);
+    }
+    drag.lift();
     expect(onRefresh).not.toHaveBeenCalled();
     expect(translateY(content())).toBe(0);
-    expect(document.documentElement.style.overscrollBehaviorY).toBe('');
+  });
+
+  it('with a pen, a pull clears the selection its drag started and holds selection off until it ends (spec:AST-094 FR43)', async () => {
+    useTouchScreen(false);
+    render(
+      <Refreshable data-testid="refresh" onRefresh={() => {}}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    const drag = pointerDrag(content(), 'pen');
+    drag.move(4);
+    // The browser may select text as the pen moves, before the pan begins.
+    act(() => {
+      document.getSelection()?.selectAllChildren(content());
+    });
+    expect(document.getSelection()?.isCollapsed).toBe(false);
+    for (const step of [8, 20]) {
+      drag.move(step);
+    }
+    expect(translateY(content())).toBeGreaterThan(0);
+    expect(document.getSelection()?.isCollapsed ?? true).toBe(true);
+    expect(content().style.getPropertyValue('user-select')).toBe('none');
+    drag.lift();
+    await waitFor(() => expect(translateY(content())).toBe(0));
+    expect(content().style.getPropertyValue('user-select')).toBe('');
   });
 
   it('pulls on any touch screen, an Android phone’s included: one touch model, no iOS check', async () => {
@@ -468,7 +561,7 @@ describe('useRefreshControl', () => {
     render(<p data-testid="refresh">Gone</p>);
   });
 
-  it('with a mouse or trackpad leaves the pull and the top edge to the browser, and a refresh shows nothing', async () => {
+  it('under a fine pointer leaves the top edge to the browser, and a refresh the app starts shows nothing', async () => {
     useTouchScreen(false);
     // The premise: the primary pointer is not coarse.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
@@ -483,9 +576,6 @@ describe('useRefreshControl', () => {
       </Refreshable>,
     );
     expect(document.documentElement.style.overscrollBehaviorY).toBe('auto');
-    pull(content(), [30, 30, 30, 30]);
-    expect(onRefresh).not.toHaveBeenCalled();
-    expect(translateY(content())).toBe(0);
     // A refresh the app starts reports busy and is announced, with no inset
     // and no indicator.
     rerender(

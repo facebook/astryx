@@ -16,8 +16,11 @@
  *   inset; a finger catching the settle resumes it without a jump; under
  *   Reduce Motion (design:reduced-motion) a release and the end only fade,
  *   within 200 ms, whatever a `--motion-…` variable says, and the trigger
- *   does not turn the spinner; with a mouse or trackpad the pull and the top
- *   edge stay the browser's; storyboards of the pull, the settle and the end.
+ *   does not turn the spinner; under a fine pointer a pen drag pulls and
+ *   refreshes as a finger does, a mouse drag pulls nothing, and the top edge
+ *   stays the browser's (spec:AST-094 FR43), and under Reduce Motion a pen
+ *   release lands at once (DR3); storyboards of the pull, the settle and the
+ *   end.
  *
  * The control follows the touch presentation (a coarse primary pointer, one
  * touch model on iOS and Android alike). The harness's touch contexts report
@@ -36,7 +39,13 @@
  * cubic-bezier(0.42, 0, 0.58, 1).
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -67,6 +76,8 @@ import {
   withStorybook,
   writeEvidence,
   type TouchDriver,
+  PEN_SKIP,
+  webInputDriver,
 } from '@astryxdesign/interaction-harness';
 
 const storybook = withStorybook(test);
@@ -1147,47 +1158,125 @@ test('under Reduce Motion the trigger does not turn the spinner', async ({
   expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
 });
 
-test('with a mouse or trackpad the pull and the top edge stay the browser’s', async ({
-  browser,
-}) => {
-  // A context with no touch screen: CSS and script both read a fine primary
-  // pointer (the phone contexts report a coarse one).
+/** A desktop context: no touch screen, so CSS and script read a fine pointer. */
+async function desktopPage(
+  browser: Browser,
+  options: {reducedMotion?: 'reduce'} = {},
+) {
   const context = await browser.newContext({
     viewport: {width: 402, height: 714},
     hasTouch: false,
     isMobile: false,
+    ...options,
   });
+  const page = await context.newPage();
+  await openStory(page, storybook(), 'lab-refreshcontrol--on-the-page', {
+    refreshMs: '6000',
+  });
+  const pointer = await page.evaluate(() => ({
+    coarse: matchMedia('(pointer: coarse)').matches,
+    fine: matchMedia('(pointer: fine)').matches,
+  }));
+  expect(pointer).toEqual({coarse: false, fine: true});
+  const content = page.locator('.astryx-refresh-control').first();
+  await expect(content).toBeVisible();
+  return {context, page, content};
+}
+
+/** A mouse drag down from the top of the page, 15 px a step. */
+async function mousePull(page: Page, content: Locator, steps: number) {
+  await page.mouse.move(200, 160);
+  await page.mouse.down();
+  const shown: number[] = [];
+  for (let step = 1; step <= steps; step++) {
+    await page.mouse.move(200, 160 + step * 15);
+    shown.push(await shownPull(content));
+  }
+  await page.mouse.up();
+  return shown;
+}
+
+/** A pen stroke down from the top of the page: 300 px, 15 px every 16 ms. */
+async function penPull(page: Page) {
+  const driver = await webInputDriver(page);
+  await driver.pen(
+    Array.from({length: 21}, (_, step) => ({
+      x: 200,
+      y: 160 + step * 15,
+      t: step * 16,
+    })),
+  );
+}
+
+const rootOverscroll = (page: Page) =>
+  page.evaluate(
+    () => getComputedStyle(document.documentElement).overscrollBehaviorY,
+  );
+
+test('with a mouse, a drag at the top pulls nothing and the top edge stays the browser’s (spec:AST-094 FR43, as spec:AST-057 AR2 keeps a mouse off a row)', async ({
+  browser,
+}) => {
+  const {context, page, content} = await desktopPage(browser);
   try {
-    const page = await context.newPage();
-    await openStory(page, storybook(), 'lab-refreshcontrol--on-the-page', {
-      refreshMs: '6000',
-    });
-    const pointer = await page.evaluate(() => ({
-      coarse: matchMedia('(pointer: coarse)').matches,
-      fine: matchMedia('(pointer: fine)').matches,
-    }));
-    expect(pointer).toEqual({coarse: false, fine: true});
-    const content = page.locator('.astryx-refresh-control').first();
-    await expect(content).toBeVisible();
-    const rootOverscroll = () =>
-      page.evaluate(
-        () => getComputedStyle(document.documentElement).overscrollBehaviorY,
-      );
-    expect(await rootOverscroll()).toBe('auto');
-    // A mouse dragged down from the top of the page pulls nothing.
-    await page.mouse.move(200, 160);
-    await page.mouse.down();
-    const shown: number[] = [];
-    for (let step = 1; step <= 20; step++) {
-      await page.mouse.move(200, 160 + step * 15);
-      shown.push(await shownPull(content));
-    }
-    await page.mouse.up();
+    expect(await rootOverscroll(page)).toBe('auto');
+    // The drag's text selection and native drag stay the browser's.
+    const shown = await mousePull(page, content, 20);
     await page.waitForTimeout(300);
     expect(Math.max(...shown.map(Math.abs))).toBe(0);
     expect(await isBusy(content)).toBe(false);
     expect(await shownPull(content)).toBe(0);
-    expect(await rootOverscroll()).toBe('auto');
+    expect(await rootOverscroll(page)).toBe('auto');
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a pen, a drag at the top pulls and refreshes as a finger does, and the top edge stays the browser’s (spec:AST-094 FR43)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    expect(await rootOverscroll(page)).toBe('auto');
+    // 300 px of travel: past the trigger, with the pen down.
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+    // Under a fine pointer the browser keeps its own overscroll at the page's
+    // top: only the touch presentation takes the edge.
+    expect(await rootOverscroll(page)).toBe('auto');
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion a release from a pen lands at once: no travel and no fade (design:reduced-motion DR3)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const {context, page, content} = await desktopPage(browser, {
+    reducedMotion: 'reduce',
+  });
+  try {
+    await recordAnimations(page);
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 1);
+    const log = await recordedAnimations(page);
+    // Nothing moves or fades: every transition but the spin lands at once.
+    expect(
+      log.filter(
+        a =>
+          (a.part === 'content' || a.part === 'band') &&
+          !a.endless &&
+          a.movingMs > 0,
+      ),
+      JSON.stringify(log),
+    ).toEqual([]);
   } finally {
     await context.close();
   }
