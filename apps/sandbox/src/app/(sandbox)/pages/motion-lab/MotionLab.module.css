@@ -765,7 +765,7 @@
 }
 
 .tintRow:hover {
-  background: var(--color-background-hover, var(--color-background-elevated));
+  background-color: var(--color-overlay-hover);
 }
 
 /* A `transitionProperty` with no duration: the rule reads like motion in
