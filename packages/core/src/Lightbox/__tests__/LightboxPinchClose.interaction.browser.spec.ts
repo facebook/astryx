@@ -350,6 +350,40 @@ test('released at 0.966 it springs back on the 0.238 s critically damped spring'
   expect(await v.backdropAlpha()).toBeCloseTo(1, 2);
 });
 
+test('released still pinching, it springs back carrying the pinch velocity (FR6, FR38)', async ({
+  page,
+}) => {
+  const v = await openViewer(page);
+  // 300 → 277 px over 120 ms, lifted moving: about 0.95 past the pinch's
+  // start, above the 0.9347 close point, still shrinking.
+  await v.driver.play(
+    pinch({
+      center: v.centre,
+      fromDistance: 300,
+      toDistance: 277,
+      durationMs: 120,
+      restMs: 0,
+    }),
+  );
+  await waitForAnimation(v.photo);
+  const held = await holdAnimations(page, v.photo);
+  const duration = Math.max(...held.map(a => a.curveEndMs));
+  const samples = curveOf(
+    await sampleCurve(v.photo, timeline(duration)),
+    'scaleX',
+  );
+  await releaseAnimations(page);
+  const from = samples[0].value;
+  const lowest = Math.min(...samples.map(s => s.value));
+  // The spring starts at the fingers' velocity: the photo keeps shrinking a
+  // moment before it returns, where a critically damped start from rest
+  // only rises.
+  expect(lowest).toBeLessThan(from - 0.0005);
+  await waitForRest(v.photo);
+  await expect(v.dialog).toBeVisible();
+  expect(await v.scale()).toBe(1);
+});
+
 test('reopened by 0.1 it springs back; reopened by 0.02, it still closes', async ({
   page,
 }) => {

@@ -487,7 +487,7 @@ export function useZoomStage(
       // (Reopened past the fitted size, it is a zoom like any other.)
       if (session.closable && session.smallest < 1 && pinch.scale < 1) {
         // Photos' pinch to close: the release closes into the thumbnail, or
-        // springs back to the fitted size from rest.
+        // springs back to the fitted size from the fingers' velocity.
         const dismiss = optionsRef.current.dismiss;
         const closes =
           pinch.state === 'ended' &&
@@ -509,9 +509,22 @@ export function useZoomStage(
         }
         setTarget(IDENTITY);
         setZoomed(false);
+        // The return continues the fingers (spec:AST-094 FR6, FR38): the
+        // pinch's scale velocity and a moving pan's. (Photos starts it from
+        // rest: zoomMedia.pinchClose.returnSpring.)
+        const pan = recognizers.pan;
+        const moving = pan.state === 'began' || pan.state === 'changed';
+        const panVelocity = moving ? pan.velocity() : {x: 0, y: 0};
         animator.animate(
           {x: 0, y: 0, scale: 1},
-          {spring: zoomMedia.pinchClose.returnSpring},
+          {
+            spring: zoomMedia.pinchClose.returnSpring,
+            velocity: {
+              x: panVelocity.x,
+              y: panVelocity.y,
+              scale: pinch.velocity * session.start.scale,
+            },
+          },
           {touchRelease: true},
         );
         return;
