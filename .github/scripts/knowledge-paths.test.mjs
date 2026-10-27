@@ -6,7 +6,10 @@ import {describe, expect, it} from 'vitest';
 const require = createRequire(import.meta.url);
 const {
   classifyComponentKnowledgePath,
+  classifyPackageArchitecturePath,
+  classifyPlatformComponentKnowledgePath,
   isComponentSpecRecordPath,
+  isKnowledgeRecordCandidatePath,
 } = require('./knowledge-paths.cjs');
 
 describe('component knowledge paths', () => {
@@ -72,5 +75,87 @@ describe('component knowledge paths', () => {
     'packages/cli/src/Prompt.spec.md',
   ])('rejects non-record path %s', filePath => {
     expect(classifyComponentKnowledgePath(filePath)).toBeNull();
+  });
+});
+
+describe('platform component knowledge paths', () => {
+  it('classifies a Swift component record beside its code', () => {
+    const filePath =
+      'packages/native/apple/Sources/Astryx/Button/Button.spec.md';
+    expect(classifyPlatformComponentKnowledgePath(filePath)).toMatchObject({
+      componentRoot: 'Button',
+      componentTree: 'packages/native/apple/Sources/Astryx',
+      kind: 'component',
+      language: 'swift',
+      publicName: 'Button',
+    });
+    expect(isComponentSpecRecordPath(filePath)).toBe(true);
+  });
+
+  it.each([
+    'packages/native/apple/Sources/Astryx/Button/plugins/Thing.spec.md',
+    'packages/native/apple/Sources/Astryx/Button.spec.md',
+    'packages/native/apple/Sources/AstryxNative/Button/Button.spec.md',
+    'packages/native/apple/Sources/Astryx/__fixtures__/Button.spec.md',
+    'packages/native/apple/Sources/Astryx/Button/button.spec.md',
+    'packages/native/swift-ios-1/core/Button/Button.spec.md',
+  ])('rejects %s', filePath => {
+    expect(classifyPlatformComponentKnowledgePath(filePath)).toBeNull();
+  });
+});
+
+describe('package record paths', () => {
+  it.each([
+    [
+      'packages/native/specs/swift/accessibility.spec.md',
+      'architecture:native-swift-accessibility',
+    ],
+    [
+      'packages/native/specs/swift/library/theme-generator.spec.md',
+      'architecture:native-swift-library-theme-generator',
+    ],
+    [
+      'packages/native/specs/boundaries.spec.md',
+      'architecture:native-boundaries',
+    ],
+  ])('derives the id of %s', (filePath, id) => {
+    expect(classifyPackageArchitecturePath(filePath)).toEqual({
+      id,
+      kind: 'architecture',
+      packageName: 'native',
+    });
+  });
+
+  it.each([
+    'packages/native/specs/swift/accessibility.md',
+    'packages/native/specs/swift/Accessibility.spec.md',
+    'packages/native/docs/swift/accessibility.spec.md',
+  ])('rejects %s', filePath => {
+    expect(classifyPackageArchitecturePath(filePath)).toBeNull();
+  });
+});
+
+describe('knowledge record candidates (INV27)', () => {
+  it.each([
+    'packages/native/specs/TEMPLATE.md',
+    'packages/native/specs/swift/library/accessibility.md',
+    'packages/widgets/docs/Widget.spec.md',
+    'docs/specs/AST-082-native-first-surfaces/spec.md',
+    'packages/core/src/Button/Button.spec.md',
+  ])('treats %s as a candidate', filePath => {
+    expect(isKnowledgeRecordCandidatePath(filePath)).toBe(true);
+  });
+
+  it.each([
+    'packages/native/specs/README.md',
+    'docs/specs/AST-082-native-first-surfaces/plan.md',
+    'packages/native/specs/__fixtures__/fixture.md',
+    'packages/core/src/Button/node_modules/dep/Dep.spec.md',
+    'packages/core/src/Button/.Hidden.spec.md',
+    'packages/core/src/Button/Thing.generated.spec.md',
+    'packages/native/specs/swift/notes.txt',
+    'docs/contributing/spec-writing.md',
+  ])('does not treat %s as a candidate', filePath => {
+    expect(isKnowledgeRecordCandidatePath(filePath)).toBe(false);
   });
 });

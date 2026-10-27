@@ -31,6 +31,7 @@ const require = createRequire(import.meta.url);
 const {componentPackage} = require('./component-packages.cjs');
 const {
   classifyComponentKnowledgePath,
+  classifyPlatformComponentKnowledgePath,
 } = require('../.github/scripts/knowledge-paths.cjs');
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,8 @@ const INHERITED_REFERENCE_FIELDS = [
   'system_specs',
   'references',
   'parent_component',
+  // A platform component record implements its core record's shared contract.
+  'platform_of',
 ];
 
 /**
@@ -144,6 +147,7 @@ export function loadKnowledgeIndex(root = DEFAULT_ROOT) {
       authority: frontmatter.get('authority'),
       frontmatter,
       classified: classifyComponentKnowledgePath(filePath),
+      platform: classifyPlatformComponentKnowledgePath(filePath),
       pathPatterns: asList(
         parsePathApplicabilityBlock(content, filePath).config?.paths,
       ).filter(pattern => typeof pattern === 'string'),
@@ -231,7 +235,8 @@ function fileStem(filePath) {
 
 /**
  * Records whose own canonical location places `filePath` inside their scope:
- * the record itself; a theme record over its package; the component record
+ * the record itself; a theme record over its package; a platform component
+ * record over its folder, or a member's over its same-stem files there; the component record
  * named after its root over the whole root; any other component or module
  * record over its same-stem files anywhere under its component root; a module
  * record also beside a same-stem `verified_by` file, or over a directory it is
@@ -253,6 +258,28 @@ function placementMatches(index, filePath, location) {
           record,
           via: 'placement',
           detail: `theme record for packages/themes/${theme[1]}/`,
+        });
+      }
+      continue;
+    }
+    if (record.platform) {
+      const {componentTree, componentRoot, publicName} = record.platform;
+      const platformRoot = `${componentTree}/${componentRoot}/`;
+      if (!filePath.startsWith(platformRoot)) continue;
+      // The component named after its folder owns the whole folder; a member
+      // kept in another component's folder owns only its same-stem files, as
+      // core routes a member record.
+      if (publicName === componentRoot) {
+        matches.push({
+          record,
+          via: 'placement',
+          detail: `platform component record for ${platformRoot}`,
+        });
+      } else if (stem === publicName) {
+        matches.push({
+          record,
+          via: 'placement',
+          detail: `platform component record for ${publicName} in ${platformRoot}`,
         });
       }
       continue;

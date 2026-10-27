@@ -1012,13 +1012,6 @@ Evidence placement is enforced by contributors and reviewers. The local
 `docs/pr-assets/` ignore prevents accidental staging; it is not a blocking CI
 check and does not prevent force-added evidence elsewhere.
 
-Current enforcement gap: discovery does not yet read record candidates outside
-registered component packages, themes, and `docs/`; component records have no
-`platform_of` field until the next schema version; and the component id
-pattern does not yet accept a language-qualified id such as
-`component:swift/Button`. Until all three land, records under
-`packages/native/` are checked only by review.
-
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,
 canonical owner/path, and overlapping open work inspected.
