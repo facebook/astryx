@@ -171,12 +171,18 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 // whichever scrolled cell's border passes beneath it, and missing where that
 // cell has none. The cell's ::before (already the row overlay's layer) extends
 // over the cell's border area, covers whatever the table painted there with
-// the pinned base, and draws the divider with the cell's own border tokens
-// (TableCell.tsx); a border an app or a theme sets on the cell or row directly
-// is read after each commit and on resize (syncPinnedDividers).
+// the pinned base, and draws the divider in the cell's own border color and
+// style (inherited, so a theme, a token switch or an app's rule on the cell,
+// `:hover` included, carries over in CSS) at the cell's divider width
+// (TableCell.tsx). Where another border wins the collapse instead (an app's
+// border on the row, or the next row's top border), it is read after each
+// commit and on resize and carried as the cell's `carry` state
+// (syncPinnedDividers).
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 /** Spread into a pinned cell's props: the attribute the divider sync finds. */
 const PINNED_PROPS: Record<string, string> = {[PINNED_ATTRIBUTE]: ''};
+const CARRY = 'carry';
+const CARRYING = '[data-astryx-table-pinned="carry"]';
 const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
 const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
 const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
@@ -205,8 +211,14 @@ const stickyStyles = stylex.create({
       // scrolled cell's border), then the divider over it.
       marginBottom: `calc(-1 * ${DIVIDER_WIDTH})`,
       borderBottomWidth: DIVIDER_WIDTH,
-      borderBottomStyle: `var(${PINNED_DIVIDER_STYLE}, solid)`,
-      borderBottomColor: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+      borderBottomStyle: {
+        default: 'inherit',
+        [CARRYING]: `var(${PINNED_DIVIDER_STYLE}, solid)`,
+      },
+      borderBottomColor: {
+        default: 'inherit',
+        [CARRYING]: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+      },
       backgroundImage: `linear-gradient(${PINNED_BASE}, ${PINNED_BASE})`,
       backgroundSize: `100% ${DIVIDER_WIDTH}`,
       backgroundPosition: 'bottom',
@@ -315,87 +327,113 @@ interface BottomEdge {
   color: string;
 }
 
-function bottomEdge(element: Element): BottomEdge {
+function edgeOf(element: Element | null, side: 'Bottom' | 'Top'): BottomEdge {
+  if (element == null) {
+    return {width: 0, style: 'none', color: ''};
+  }
   const style = getComputedStyle(element);
   return {
-    width: parseFloat(style.borderBottomWidth) || 0,
-    style: style.borderBottomStyle,
-    color: style.borderBottomColor,
+    width:
+      parseFloat(
+        style.getPropertyValue(`border-${side.toLowerCase()}-width`),
+      ) || 0,
+    style: style.getPropertyValue(`border-${side.toLowerCase()}-style`),
+    color: style.getPropertyValue(`border-${side.toLowerCase()}-color`),
   };
 }
 
 /**
- * The bottom border the table paints for a cell: the cell's own, or its row's
- * where an app styles the row and the row's wins the collapse (wider, then
- * the stronger style; the cell wins a tie).
+ * The border the table paints under a cell, by the collapsing rules (CSS 2.1
+ * 17.6.2.1): of the cell's own bottom, the cell's below it (top), its row's
+ * bottom and the next row's top, `hidden` wins, then the wider, then the
+ * stronger style; a tie goes to a cell over a row, and to the upper one.
+ * `isOwn` says the cell's own border won.
  */
-function collapsedBottom(cell: Element): BottomEdge {
-  const own = bottomEdge(cell);
+function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
+  isOwn: boolean;
+} {
   const row = cell.parentElement;
-  if (row == null) {
-    return own;
+  const nextRow = row?.nextElementSibling ?? null;
+  const nextCell = nextRow?.children[cell.cellIndex] ?? null;
+  // In tie order.
+  const candidates = [
+    edgeOf(cell, 'Bottom'),
+    edgeOf(nextCell, 'Top'),
+    edgeOf(row, 'Bottom'),
+    edgeOf(nextRow, 'Top'),
+  ];
+  const own = candidates[0];
+  if (candidates.some(edge => edge.style === 'hidden')) {
+    return {
+      width: 0,
+      style: 'none',
+      color: own.color,
+      isOwn: own.style === 'hidden',
+    };
   }
-  const other = bottomEdge(row);
-  if (own.style === 'hidden' || other.style === 'hidden') {
-    return {width: 0, style: 'none', color: own.color};
+  const strength = (edge: BottomEdge) =>
+    edge.style === 'none' || edge.width === 0
+      ? [-1, -1]
+      : [edge.width, STYLE_RANK.indexOf(edge.style)];
+  let winner = own;
+  for (const edge of candidates.slice(1)) {
+    const [width, rank] = strength(edge);
+    const [bestWidth, bestRank] = strength(winner);
+    if (width > bestWidth || (width === bestWidth && rank > bestRank)) {
+      winner = edge;
+    }
   }
-  const drawn = (edge: BottomEdge) => edge.style !== 'none' && edge.width > 0;
-  if (!drawn(other)) {
-    return own;
-  }
-  if (!drawn(own) || other.width > own.width) {
-    return other;
-  }
-  if (other.width < own.width) {
-    return own;
-  }
-  return STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style)
-    ? other
-    : own;
+  return {...winner, isOwn: winner === own};
 }
 
 /**
- * Where an app styles a cell's or row's `border-bottom` directly, past the
- * custom properties, the pinned divider takes the border the table paints.
- * Read after each commit and on resize, never on scroll. Every read comes
- * before any write, so the style is computed once for all pinned cells, and a
- * cell is written only when what it carries changes.
+ * Where another border than the cell's own wins the collapse (an app's border
+ * on the row, the next row's top border, or a width on the cell past its
+ * divider width), the pinned divider carries it; otherwise it draws the
+ * cell's own border in CSS and carries nothing, so a later token or theme
+ * change reaches it. Read after each commit and on resize, never on scroll.
+ * Every read comes before any write, and a cell is written only when what it
+ * carries changes.
  */
 function syncPinnedDividers(root: HTMLElement): void {
-  const changes: [HTMLElement, string[]][] = [];
-  for (const cell of root.querySelectorAll<HTMLElement>(
+  const changes: [HTMLTableCellElement, string[] | null][] = [];
+  for (const cell of root.querySelectorAll<HTMLTableCellElement>(
     `[${PINNED_ATTRIBUTE}]`,
   )) {
-    const want = collapsedBottom(cell);
-    const value = [`${want.width}px`, want.style, want.color];
-    const carried = cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH);
-    if (carried !== '') {
-      // It carries a border already: keep it while it is still the one.
-      const same =
-        carried === value[0] &&
-        cell.style.getPropertyValue(PINNED_DIVIDER_STYLE) === value[1] &&
-        cell.style.getPropertyValue(PINNED_DIVIDER_COLOR) === value[2];
-      if (!same) {
-        changes.push([cell, value]);
+    const edge = collapsedBottom(cell);
+    const dividerWidth =
+      parseFloat(
+        getComputedStyle(cell).getPropertyValue('--_table-row-divider-width'),
+      ) || 0;
+    const isCarrying = cell.getAttribute(PINNED_ATTRIBUTE) === CARRY;
+    if (edge.isOwn && edge.width === dividerWidth) {
+      if (isCarrying) {
+        changes.push([cell, null]);
       }
       continue;
     }
-    // It draws its tokens: carry the border only where the table paints
-    // another.
-    const drawn = getComputedStyle(cell, '::before');
-    const matches =
-      want.width === (parseFloat(drawn.borderBottomWidth) || 0) &&
-      (want.width === 0 ||
-        (want.style === drawn.borderBottomStyle &&
-          want.color === drawn.borderBottomColor));
-    if (!matches) {
+    const value = [`${edge.width}px`, edge.style, edge.color];
+    const isSame =
+      isCarrying &&
+      cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH) === value[0] &&
+      cell.style.getPropertyValue(PINNED_DIVIDER_STYLE) === value[1] &&
+      cell.style.getPropertyValue(PINNED_DIVIDER_COLOR) === value[2];
+    if (!isSame) {
       changes.push([cell, value]);
     }
   }
-  for (const [cell, [width, style, color]] of changes) {
-    cell.style.setProperty(PINNED_DIVIDER_WIDTH, width);
-    cell.style.setProperty(PINNED_DIVIDER_STYLE, style);
-    cell.style.setProperty(PINNED_DIVIDER_COLOR, color);
+  for (const [cell, value] of changes) {
+    if (value == null) {
+      cell.setAttribute(PINNED_ATTRIBUTE, '');
+      cell.style.removeProperty(PINNED_DIVIDER_WIDTH);
+      cell.style.removeProperty(PINNED_DIVIDER_STYLE);
+      cell.style.removeProperty(PINNED_DIVIDER_COLOR);
+      continue;
+    }
+    cell.style.setProperty(PINNED_DIVIDER_WIDTH, value[0]);
+    cell.style.setProperty(PINNED_DIVIDER_STYLE, value[1]);
+    cell.style.setProperty(PINNED_DIVIDER_COLOR, value[2]);
+    cell.setAttribute(PINNED_ATTRIBUTE, CARRY);
   }
 }
 

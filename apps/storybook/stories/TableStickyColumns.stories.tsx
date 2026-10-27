@@ -175,9 +175,11 @@ export const PinnedDividers: Story = {
 
 /**
  * A border that changes after mount reaches the pinned cells, and the edge
- * shadows follow columns added without a resize. "Highlight" sets the third
- * row's border through React state; "Add columns" widens the table inside the
- * same wrapper.
+ * shadows follow columns added without a resize. Hovering a row turns its
+ * line purple (an app's `:hover` rule on the cells); "Highlight" sets the
+ * third row's border through React state; "Thick top" gives the fourth row a
+ * 3 px top border, which wins the collapse over the third row's bottom; "Add
+ * columns" widens the table inside the same wrapper.
  */
 export const PinnedDividersLive: Story = {
   render: () => {
@@ -187,17 +189,25 @@ export const PinnedDividersLive: Story = {
     });
     const [isHighlighted, setIsHighlighted] = useState(false);
     const [hasMoreColumns, setHasMoreColumns] = useState(false);
+    const [hasThickTop, setHasThickTop] = useState(false);
     const shown = hasMoreColumns
       ? columns
       : columns.filter(column => ['name', 'status'].includes(column.key));
     return (
       <div data-testid="pinned-dividers-live" style={{maxWidth: 720}}>
+        <style>{`[data-testid="pinned-dividers-live"] tbody tr:hover td { border-bottom-color: rgb(147, 51, 234); }`}</style>
         {isHighlighted && (
           <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(3) td { border-bottom: 2px solid rgb(22, 163, 74); }`}</style>
+        )}
+        {hasThickTop && (
+          <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(4) td { border-top: 3px solid rgb(234, 88, 12); }`}</style>
         )}
         <p style={note}>
           <button type="button" onClick={() => setIsHighlighted(on => !on)}>
             Highlight
+          </button>{' '}
+          <button type="button" onClick={() => setHasThickTop(on => !on)}>
+            Thick top
           </button>{' '}
           <button type="button" onClick={() => setHasMoreColumns(on => !on)}>
             Add columns
