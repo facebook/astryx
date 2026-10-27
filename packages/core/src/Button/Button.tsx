@@ -139,6 +139,18 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  /**
+   * A button an action group tracks (`family:action-groups`): the group
+   * paints `data-astryx-press="on"` on the action under the pointer, and
+   * that paint alone scales it. `:active` stays on the button a press began
+   * on while the pointer slides to another, so it scales nothing here.
+   */
+  pressableTracked: {
+    transform: {
+      default: 'scale(1)',
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
   inactive: {
     cursor: 'default',
     backgroundImage: 'none',
@@ -790,7 +802,8 @@ export function Button({
     isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
-    !buttonGroup && styles.pressable,
+    !buttonGroup &&
+      (isGroupTracked ? styles.pressableTracked : styles.pressable),
     buttonGroup &&
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.horizontal
