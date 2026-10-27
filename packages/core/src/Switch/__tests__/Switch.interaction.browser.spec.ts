@@ -1473,29 +1473,45 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     }
   });
 
-  test('P14 · a second tap mid-travel catches the thumb where it is and sends it back, without a jump', async ({
-    page,
-  }) => {
-    const {driver, input, thumb, center} = await openSwitch(page);
-    // The thumb's on-screen center, every frame.
-    await page.evaluate(() => {
+  /**
+   * Records the thumb's on-screen center on animation frames, from the next
+   * frame on, with the frame's timestamp: `[ms, px]`. `everyNthFrame` reads
+   * only one frame in that many, as a loaded machine reads frames late or
+   * misses them while the compositor keeps the thumb moving.
+   */
+  async function recordThumbCenters(
+    page: Page,
+    {everyNthFrame = 1}: {everyNthFrame?: number} = {},
+  ): Promise<void> {
+    await page.evaluate(nth => {
       const box = document.querySelector<HTMLElement>(
         '#storybook-root .astryx-switch-thumb',
       )!;
-      const record = window as unknown as {__thumbXs: number[]};
+      const record = window as unknown as {__thumbXs: [number, number][]};
       record.__thumbXs = [];
-      const loop = () => {
-        const rect = box.getBoundingClientRect();
-        record.__thumbXs.push(rect.left + rect.width / 2);
+      let frame = 0;
+      const loop = (time: number) => {
+        if (frame++ % nth === 0) {
+          const rect = box.getBoundingClientRect();
+          record.__thumbXs.push([time, rect.left + rect.width / 2]);
+        }
         if (record.__thumbXs.length < 240) {
           requestAnimationFrame(loop);
         }
       };
       requestAnimationFrame(loop);
-    });
+    }, everyNthFrame);
+  }
+
+  /** P14's two taps: the second lands 70 ms into the first one's travel. */
+  async function secondTapMidTravel(
+    page: Page,
+    driver: TouchDriver,
+    center: {x: number; y: number},
+  ): Promise<void> {
     const finger = {id: 0, ...center};
-    // The second tap lands 70 ms into the first one's travel; each is the
-    // browser's click (WebKit's comes only from its own tap path).
+    // Each tap is the browser's click (WebKit's comes only from its own tap
+    // path).
     if (driver.engine === 'webkit') {
       await driver.tap(center);
       await page.waitForTimeout(70);
@@ -1508,12 +1524,13 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
         {t: 140, fingers: []},
       ]);
     }
-    await waitForSwitchRest(page, thumb);
-    await expect(input).not.toBeChecked();
-    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
-    const xs = await page.evaluate(
-      () => (window as unknown as {__thumbXs: number[]}).__thumbXs,
+  }
+
+  async function expectCaughtWithoutAJump(page: Page): Promise<void> {
+    const samples = await page.evaluate(
+      () => (window as unknown as {__thumbXs: [number, number][]}).__thumbXs,
     );
+    const xs = samples.map(([, x]) => x);
     const farthest = Math.max(...xs) - xs[0];
     // It turned around mid-travel, short of the on end...
     expect(farthest).toBeGreaterThan(1);
@@ -1521,6 +1538,30 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // ...from where it was: no frame moves it more than a few px.
     const steps = xs.slice(1).map((x, i) => Math.abs(x - xs[i]));
     expect(Math.max(...steps)).toBeLessThan(4);
+  }
+
+  test('P14 · a second tap mid-travel catches the thumb where it is and sends it back, without a jump', async ({
+    page,
+  }) => {
+    const {driver, input, thumb, center} = await openSwitch(page);
+    await recordThumbCenters(page);
+    await secondTapMidTravel(page, driver, center);
+    await waitForSwitchRest(page, thumb);
+    await expect(input).not.toBeChecked();
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
+    await expectCaughtWithoutAJump(page);
+  });
+
+  test('P14 · with frames read late (one frame in three) the catch still shows no jump', async ({
+    page,
+  }) => {
+    const {driver, input, thumb, center} = await openSwitch(page);
+    await recordThumbCenters(page, {everyNthFrame: 3});
+    await secondTapMidTravel(page, driver, center);
+    await waitForSwitchRest(page, thumb);
+    await expect(input).not.toBeChecked();
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
+    await expectCaughtWithoutAJump(page);
   });
 
   test('a disabled or busy switch stays inert under a finger', async ({
