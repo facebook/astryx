@@ -287,7 +287,7 @@ of scale momentum and of a two-finger-tap action, the content point under the
 centroid staying put, Photos' aspect-fill double tap and its maximum zoom
 (M-ZM2), the 40 pt gap between Photos' pages, and its drag-to-dismiss (the
 shrink and fades by travel, the release rule and the springs; the cancel
-distance is M-ZM3). A zoomed pan flicked into an edge coasts and bounces like
+distance is M-ZM3 and the release's projection M-ZM5). A zoomed pan flicked into an edge coasts and bounces like
 any scroll view (`scroll.*`).
 
 During a `.zoom` push's interactive dismissal (UIKit lab, iOS 26.2, Oct 24 2026) the detail follows the finger through a 0.85 / 0.08 tracking spring,
@@ -301,3 +301,4 @@ none of it.
 | M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes                        | the zoom it settles on against the photo's pixel size and the fitted size                                    | B, C   |
 | M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving            | the largest N that still cancels                                                                             | B, C   |
 | M-ZM4 | Pinch close with no cell     | Photos: page to a photo whose grid cell is scrolled off screen, pinch in past 0.93 and lift | whether the grid scrolls to the cell first, else where the photo goes: scale, position and opacity per frame | B, C   |
+| M-ZM5 | Dismiss flick projection     | Photos: flick a photo down from rest, lifting after 6–19 pt at a range of speeds            | the shortest travel that still dismisses at each speed: the projection's rate                                | B, C   |

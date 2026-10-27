@@ -219,7 +219,10 @@ for (const i of [1, 2]) {
     // It lands at its fitted size in the middle of the viewport, showing the
     // photo of the thumbnail it opened from.
     const rest = await photoBox(photo);
-    const viewport = page.viewportSize()!;
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
     expect(Math.abs(centre(rest).x - viewport.width / 2)).toBeLessThan(2);
     const idOf = (src: string | null) => /\/id\/(\d+)\//.exec(src ?? '')?.[1];
     expect(idOf(await photo.getAttribute('src'))).toBe(
@@ -444,6 +447,43 @@ async function expectEnteredAndOpen(
   const fitted = await photo.evaluate(el => (el as HTMLElement).offsetWidth);
   expect((await photoBox(photo)).width).toBeCloseTo(fitted, 0);
 }
+
+/** The backdrop's computed `backdrop-filter`. */
+const backdropFilter = async (dialog: Locator) =>
+  dialog.evaluate(el => {
+    const style = getComputedStyle(el, '::backdrop') as CSSStyleDeclaration & {
+      webkitBackdropFilter?: string;
+    };
+    return style.backdropFilter || style.webkitBackdropFilter || 'none';
+  });
+
+test('the backdrop fades in without its blur while the photo opens, and blurs once it lands', async ({
+  page,
+}) => {
+  // On a 2-core limit a full-viewport blur repainted every frame of a fade
+  // drops frames, so the opening fades the backdrop without it.
+  const {dialog, photo} = await openHeldMidEntrance(page);
+  expect(await backdropFilter(dialog)).toBe('none');
+  await expectEnteredAndOpen(page, dialog, photo);
+  await expect.poll(async () => backdropFilter(dialog)).toBe('blur(2px)');
+});
+
+test('the backdrop fades out without its blur while the photo zooms back', async ({
+  page,
+}) => {
+  const s = await openStoryPage(page);
+  await tap(s.driver, s.thumbnail(0));
+  const dialog = page.getByRole('dialog');
+  const photo = dialog.locator('[data-current] img');
+  await waitForAnimation(photo);
+  await waitForRest(photo);
+  await expect.poll(async () => backdropFilter(dialog)).toBe('blur(2px)');
+  await tap(s.driver, dialog.getByRole('button', {name: 'Close'}));
+  await waitForAnimation(photo);
+  await holdAnimations(page, photo);
+  expect(await backdropFilter(dialog)).toBe('none');
+  await releaseAnimations(page);
+});
 
 test('a tap beside the photo during the opening is held: it finishes opening and stays (spec:AST-094 FR35)', async ({
   page,
@@ -677,7 +717,7 @@ test('a photo opened from a plain image zooms out of it', async ({page}) => {
   await openStory(page, storybook(), 'core-lightbox--gallery');
   const driver = await touchDriver(page);
   // The Gallery story opens from <img> elements with a click handler and no
-  // sourceFor: a plain image is never the focused element.
+  // experimental.sourceFor: a plain image is never the focused element.
   const thumbnail = page.locator('#storybook-root img[style*="cover"]').nth(1);
   await expect
     .poll(async () =>
