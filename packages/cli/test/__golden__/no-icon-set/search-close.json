@@ -18,6 +18,17 @@
       },
       {
         "domain": "component",
+        "name": "BottomSheet",
+        "package": "@astryxdesign/core",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "import": "@astryxdesign/core/BottomSheet",
+        "command": "astryx component BottomSheet",
+        "mentions": []
+      },
+      {
+        "domain": "component",
         "name": "BottomSheetSwitcher",
         "package": "@astryxdesign/core",
         "score": "<text>",
@@ -216,19 +227,6 @@
         "title": "<text>",
         "command": "astryx docs migration/component-migration move-the-app-frame-first",
         "parent": "astryx docs migration/component-migration --index",
-        "mentions": []
-      },
-      {
-        "domain": "doc",
-        "name": "motion",
-        "package": "@astryxdesign/cli",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "section": "<text>",
-        "title": "<text>",
-        "command": "astryx docs motion touch-motion",
-        "parent": "astryx docs motion --index",
         "mentions": []
       },
       {
