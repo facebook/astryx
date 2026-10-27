@@ -518,6 +518,85 @@ test('the presentation and the dismissal do no Layout or Paint per frame', async
   );
 });
 
+/**
+ * The layouts inside the task that opens the story's popover from the
+ * keyboard, and that task's length. It runs from the key's dispatch to the end
+ * of the click the key activates: a listener on the document runs after
+ * React's, on its root, has opened the popover. A layout inside it is one its
+ * script forced by reading geometry the page had not laid out yet.
+ */
+async function openingTaskLayouts(page: Page) {
+  const trigger = page.getByRole('button', {name: 'Settings'});
+  await trigger.focus();
+  await page.evaluate(() => {
+    const at = () => performance.timeOrigin + performance.now();
+    const marks = {from: 0, to: 0};
+    (window as unknown as {__opening: typeof marks}).__opening = marks;
+    document.addEventListener(
+      'keydown',
+      () => {
+        marks.from = at();
+      },
+      {capture: true, once: true},
+    );
+    document.addEventListener(
+      'click',
+      () => {
+        marks.to = at();
+      },
+      {once: true},
+    );
+  });
+  const trace = await traceRendering(page, async () => {
+    await page.keyboard.press('Enter');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await page.waitForTimeout(100);
+  });
+  const opening = await page.evaluate(
+    () =>
+      (window as unknown as {__opening: {from: number; to: number}}).__opening,
+  );
+  expect(opening.to).toBeGreaterThan(opening.from);
+  return {
+    layouts: countBetween(trace, opening.from, opening.to).Layout ?? 0,
+    openingMs: Math.round(opening.to - opening.from),
+    events: trace.events
+      .filter(e => e.t >= opening.from && e.t <= opening.to)
+      .map(e => `${e.name}@${Math.round(e.t - opening.from)}`),
+  };
+}
+
+test('the task that opens it lays out no more than a mouse opening does: the presentation reads its geometry in the next frame', async ({
+  page,
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  await openDefault(page);
+  const touch = await openingTaskLayouts(page);
+  // The same story under a mouse, which presents nothing of its own: what
+  // the opening lays out there (the popover's own measurements) is the
+  // opening's, and the touch presentation adds nothing to it.
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: page.viewportSize(),
+  });
+  try {
+    const mousePage = await context.newPage();
+    await openStory(mousePage, storybook(), 'core-popover--default');
+    expect(
+      await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const mouse = await openingTaskLayouts(mousePage);
+    expect(touch.layouts, JSON.stringify({touch, mouse})).toBeLessThanOrEqual(
+      mouse.layouts,
+    );
+  } finally {
+    await context.close();
+  }
+});
+
 test('Reduce Motion: the popover cross-fades in at its size and out where it stands, in 200 ms or less with no spring', async ({
   page,
 }) => {

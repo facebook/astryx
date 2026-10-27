@@ -36,6 +36,12 @@
  * same motion turned toward its source (M-PO1 confirms it). The point it
  * grows out of is the source's centre on that edge, kept on the popover.
  *
+ * A presentation writes and reads nothing until the next animation frame,
+ * which runs before that frame paints: as the popover opens, the element's
+ * style and the boxes would lay the page out inside the task that opened it.
+ * The layer's own CSS entrance, started meanwhile, is turned off in that
+ * frame, before anything paints.
+ *
  * The dismissal outlives the popover: the browser hides a popover as it
  * closes, so it plays on the layer runtime's exit copy (`placeLayerExitCopy`),
  * removed when its motion ends.
@@ -180,9 +186,11 @@ function progressVelocity(
 export interface PopoverSurfaceMotion {
   /**
    * The popover has just been shown in its touch presentation: grow it out
-   * of its source. `measure` reads the geometry; it runs with the element at
-   * its full size. During a dismissal, the popover grows back from where the
-   * dismissal has it, about the same point.
+   * of its source, from the next animation frame, before it paints:
+   * `measure` reads the geometry there, with the element invisible at its
+   * full size.
+   * During a dismissal, the popover grows back from where the dismissal has
+   * it, about the same point, at once (it reads nothing).
    */
   enter(measure: () => PopoverSurfaceGeometry): void;
   /**
@@ -209,12 +217,43 @@ const MOTION_STYLE_PROPERTIES = [
 
 export function createPopoverSurfaceMotion(
   element: HTMLElement,
-  options: Pick<AnimatorOptions, 'now'> = {},
+  {
+    requestFrame,
+    cancelFrame,
+    ...animatorOptions
+  }: Pick<AnimatorOptions, 'now'> & {
+    /** Schedules the presentation's read (default: the element's window's animation frame). */
+    requestFrame?: (callback: () => void) => number;
+    /** Cancels a read `requestFrame` scheduled. */
+    cancelFrame?: (handle: number) => void;
+  } = {},
 ): PopoverSurfaceMotion {
   // The popover's two springs are this component's measured values, not
   // motion roles (touch motion stays internal, spec:AST-094 DEC-11): they
   // play as given, so no table is registered and no other row is bundled.
-  const animator = createAnimator(element, options);
+  const animator = createAnimator(element, animatorOptions);
+  const view = element.ownerDocument.defaultView;
+  const scheduleFrame =
+    requestFrame ??
+    ((callback: () => void) =>
+      typeof view?.requestAnimationFrame === 'function'
+        ? view.requestAnimationFrame(() => callback())
+        : (callback(), 0));
+  const unscheduleFrame =
+    cancelFrame ??
+    ((handle: number) => {
+      if (typeof view?.cancelAnimationFrame === 'function') {
+        view.cancelAnimationFrame(handle);
+      }
+    });
+  // The frame the presentation waits for to read its geometry.
+  let pendingFrame: number | null = null;
+  const cancelPending = () => {
+    if (pendingFrame != null) {
+      unscheduleFrame(pendingFrame);
+      pendingFrame = null;
+    }
+  };
   // The presentation in progress or last played; null while the popover is
   // in a presentation this motion does not drive.
   let collapsed: PopoverCollapsedState | null = null;
@@ -235,6 +274,7 @@ export function createPopoverSurfaceMotion(
   };
 
   const reset = () => {
+    cancelPending();
     collapsed = null;
     measured = null;
     presentHandle = null;
@@ -246,6 +286,7 @@ export function createPopoverSurfaceMotion(
   };
 
   const enter = (measure: () => PopoverSurfaceGeometry) => {
+    cancelPending();
     // A dismissal let the element go (exit, below).
     animator.attach(element);
     let from: SurfaceState | null = null;
@@ -257,15 +298,32 @@ export function createPopoverSurfaceMotion(
       velocity = progressVelocity(exiting.animator, collapsed.axis, from, 1);
     }
     endExit();
-    if (from == null) {
+    if (from != null && measured != null) {
+      present(from, velocity, measured);
+      return;
+    }
+    // A fresh presentation writes and reads nothing until the next frame,
+    // which runs before that frame paints: here, the element's style and
+    // the boxes would lay the page out inside the task that opened the
+    // popover. The layer's own CSS entrance, started meanwhile, is turned
+    // off before anything paints.
+    pendingFrame = scheduleFrame(() => {
+      pendingFrame = null;
       // Full size and invisible for the read: the element's box must not
       // include a scale left over from the last dismissal, nor the first
       // keyframe of the layer's CSS entrance (which belongs to the pointer
       // presentation). Nothing paints before the curves below replace these.
       element.style.setProperty('animation-name', 'none');
       animator.set({scaleX: 1, scaleY: 1, opacity: 0});
-    }
-    const geometry = from != null && measured != null ? measured : measure();
+      present(null, 0, measure());
+    });
+  };
+
+  const present = (
+    from: SurfaceState | null,
+    velocity: number,
+    geometry: PopoverSurfaceGeometry,
+  ) => {
     const next =
       from != null && collapsed != null
         ? collapsed
@@ -300,6 +358,12 @@ export function createPopoverSurfaceMotion(
   };
 
   const exit = () => {
+    if (pendingFrame != null) {
+      // Closed before the frame that would have presented it: nothing is on
+      // screen to dismiss.
+      reset();
+      return;
+    }
     const target = collapsed;
     if (target == null || exiting != null) {
       return;
@@ -324,7 +388,7 @@ export function createPopoverSurfaceMotion(
       'transform-origin',
       `${target.originX}px ${target.originY}px`,
     );
-    const closing = createAnimator(copy, options);
+    const closing = createAnimator(copy, animatorOptions);
     // Under Reduce Motion the copy fades out where it stands, then lands.
     closing.set(frameOf(from, target.axis));
     const handle = closing.play(
