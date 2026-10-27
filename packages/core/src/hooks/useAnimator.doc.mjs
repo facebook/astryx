@@ -30,7 +30,7 @@ export const docs = {
       name: 'animator',
       type: 'AnimatorHandle',
       description:
-        "The element's animator, the same object on every render: `animate(target, {velocity?})` springs channels to a target on the theme's state-change motion, `decay({x?, y?})` coasts them from a release velocity, `set(values)` jumps them, `get()` and `getVelocity()` read them, and `stop()` halts them. The channels are `x` and `y` (px), `scale` (1 at the element's size), `rotate` (degrees) and `opacity` (0 to 1). `animate` and `decay` return a promise that resolves when the motion ends. Calling it never re-renders the component, and it works before the ref attaches: the element shows its values when it mounts.",
+        "The element's animator, the same object on every render: `animate(target, {velocity?})` springs channels to a target on the theme's state-change motion, at its tempo and character, `decay(velocity)` coasts them from a release velocity, `set(values)` jumps them, `get()` and `getVelocity()` read them, and `stop()` halts them. The channels are `x` and `y` (px), `scale` (1 at the element's size), `rotate` (degrees) and `opacity` (0 to 1). `animate` and `decay` return a promise that resolves when the motion ends. Calling it never re-renders the component, and it works before the ref attaches: the element shows its values when it mounts.",
     },
   ],
   usage: {
@@ -70,7 +70,7 @@ export const docs = {
         category: 'Content',
         criterion: '2.3.3 Animation from Interactions',
         description:
-          'When the person asks for reduced motion, every call is planned for them. On a touch screen a move or a scale becomes a short opacity cross-fade: the element fades out where it was and fades back in where it lands. With a mouse it lands at once. A decay keeps its momentum, as it continues the throw the person made. No option turns this off.',
+          'When the person asks for reduced motion, every call is planned for them. On a touch screen a move or a scale becomes a short opacity cross-fade: the element fades out where it was and fades back in where it lands. With a mouse it lands at once. A decay of `x` and `y` keeps its momentum, as it continues the throw the person made; a decay of `scale`, `rotate` or `opacity` is planned like a move. No option turns this off.',
       },
     ],
   },
@@ -86,7 +86,7 @@ export const docsDense = {
   returnDescriptions: {
     ref: 'Callback ref for the element; stable.',
     animator:
-      'animate(target, {velocity?}), decay({x?, y?}), set, get, getVelocity, stop; stable, never re-renders.',
+      'animate(target, {velocity?}), decay(velocity), set, get, getVelocity, stop; stable, never re-renders.',
   },
   usage: {
     description:
