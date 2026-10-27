@@ -298,13 +298,13 @@ export default function PreviewsPage() {
 
         <DemoCard
           title="NavItem hover tint"
-          question="Hover a row, then try it on a touch screen (or DevTools device mode). The fade is cheap; the gate is the point: a tap must not leave a false hover behind."
+          question="Hover a row in each pane. Today the tint snaps on; the proposal fades it on the state token, and narrows the hover gate to a fine pointer that hovers."
           badges={<Badge variant="error" label="ADD" />}>
           <ComparePanes
             panes={[
               {
                 tone: 'before',
-                label: 'Today — snaps, any pointer',
+                label: 'Today — snaps on hover',
                 content: <NavTintRig mode="before" />,
               },
               {

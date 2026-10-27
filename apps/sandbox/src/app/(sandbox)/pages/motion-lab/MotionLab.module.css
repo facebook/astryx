@@ -779,9 +779,9 @@
   background: var(--color-background-hover, var(--color-background-elevated));
 }
 
-/* NavItem's hover tint (NavTintRig). Before: any hover tints, a tap's false
-   hover on a touch screen included. After: only a device that hovers with a
-   fine pointer tints, on the duration and curve the rig passes in. */
+/* NavItem's hover tint (NavTintRig). Before: as shipped, it snaps on where
+   the device hovers. After: it fades on the duration and curve the rig passes
+   in, and only where the device hovers with a fine pointer. */
 .navTint,
 .navTintFine {
   padding: var(--space-2, 6px) var(--space-3, 10px);
@@ -789,8 +789,11 @@
   transition: background-color var(--tint-duration, 0ms) var(--tint-ease, ease);
 }
 
-.navTint:hover {
-  background: var(--color-overlay-hover, var(--color-background-elevated));
+/* Today, as shipped nav items paint it: on any device that hovers. */
+@media (hover: hover) {
+  .navTint:hover {
+    background: var(--color-overlay-hover, var(--color-background-elevated));
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
