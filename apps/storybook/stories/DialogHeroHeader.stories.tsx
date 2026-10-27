@@ -9,7 +9,13 @@
  *   story's play function is required CI via story-play-guard.js
  */
 
-import {useId, useState, type ComponentProps, type CSSProperties} from 'react';
+import {
+  useEffect,
+  useId,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DialogHeroHeader} from '@astryxdesign/lab';
 import {Dialog} from '@astryxdesign/core/Dialog';
@@ -514,5 +520,109 @@ export const MediaBleedGeometry: Story = {
       insets.get('rtl-padding-8') ?? Number.NaN,
       large,
     );
+  },
+};
+
+const CUSTOM_HEADING_RERENDERS = 3;
+
+async function waitForCondition(
+  isMet: () => boolean,
+  description: string,
+): Promise<void> {
+  const deadline = performance.now() + 5000;
+  while (!isMet()) {
+    if (performance.now() > deadline) {
+      throw new Error(`timed out waiting until ${description}`);
+    }
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  }
+}
+
+function describeElement(element: Element | null): string {
+  if (element == null) {
+    return 'null';
+  }
+  const id = element.id === '' ? '' : `#${element.id}`;
+  return `<${element.tagName.toLowerCase()}${id}>`;
+}
+
+/**
+ * Regression fixture for a caller-provided heading in an open modal. The
+ * story re-renders the header after the modal opens, and every render passes
+ * a new `title` element. Focus must stay on the heading: Chromium blurs a
+ * focused element whose tabindex is removed, so a handshake that removes and
+ * adds its attributes on each render moves focus to the page body. The
+ * heading must also keep naming the dialog. Kept off the docs page because
+ * the modal opens on load.
+ */
+export const CustomHeadingFocusAfterRerender: Story = {
+  tags: ['!autodocs'],
+  render: function CustomHeadingFocusAfterRerenderExample() {
+    const [renderCount, setRenderCount] = useState(0);
+    useEffect(() => {
+      if (renderCount >= CUSTOM_HEADING_RERENDERS) {
+        return;
+      }
+      const timer = setTimeout(() => setRenderCount(count => count + 1), 50);
+      return () => clearTimeout(timer);
+    }, [renderCount]);
+    return (
+      <Dialog isOpen onOpenChange={() => {}}>
+        <Layout
+          header={
+            <DialogHeroHeader
+              title={
+                <Heading level={1} type="display-3">
+                  Big moment
+                </Heading>
+              }
+              media={<HeroMedia mode="dark" />}
+              mediaMode="dark"
+              onOpenChange={() => {}}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                <span data-rerender-count={renderCount}>
+                  Re-renders after opening: {renderCount}
+                </span>
+              </Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const doc = canvasElement.ownerDocument;
+    await waitForCondition(
+      () =>
+        doc.querySelector(
+          `[data-rerender-count="${CUSTOM_HEADING_RERENDERS}"]`,
+        ) != null,
+      `the header re-rendered ${CUSTOM_HEADING_RERENDERS} times after opening`,
+    );
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    const heading = doc.querySelector<HTMLElement>('dialog[open] h1');
+    if (heading == null) {
+      throw new Error('the open modal did not render the custom h1 heading');
+    }
+    if (doc.activeElement !== heading) {
+      throw new Error(
+        `focus left the custom heading after a re-render: ${describeElement(doc.activeElement)}`,
+      );
+    }
+    const dialog = heading.closest('dialog');
+    if (
+      heading.id === '' ||
+      dialog?.getAttribute('aria-labelledby') !== heading.id
+    ) {
+      throw new Error(
+        `the custom heading no longer names the dialog: heading id "${heading.id}", aria-labelledby "${dialog?.getAttribute('aria-labelledby')}"`,
+      );
+    }
   },
 };

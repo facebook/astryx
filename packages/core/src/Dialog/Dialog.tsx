@@ -497,11 +497,6 @@ export function Dialog({
   // would cost at the dialog level.
   const titleId = useId();
 
-  const dialogContextValue = useMemo(
-    () => ({isInline, titleId}),
-    [isInline, titleId],
-  );
-
   // Consumer-provided labels always win over the DialogHeader default.
   const hasConsumerName =
     props['aria-label'] != null || props['aria-labelledby'] != null;
@@ -526,6 +521,19 @@ export function Dialog({
       }
     },
     [titleId, hasConsumerName],
+  );
+
+  // A composed header whose title renders after the dialog mounted asks the
+  // dialog to look for the title again.
+  const syncDefaultName = useCallback(() => {
+    if (dialogRef.current != null) {
+      attachDialog(dialogRef.current);
+    }
+  }, [attachDialog]);
+
+  const dialogContextValue = useMemo(
+    () => ({isInline, titleId, syncDefaultName}),
+    [isInline, titleId, syncDefaultName],
   );
 
   const mergedDialogRef = useMergedRefs(ref, attachDialog);

@@ -22,6 +22,12 @@ export interface DialogContextValue {
    * when the title actually rendered — never pointing at a nonexistent id.
    */
   titleId?: string;
+  /**
+   * Checks the default aria-labelledby again. The dialog looks for its title
+   * when it mounts; a composed header whose title element appears, changes,
+   * or leaves after that calls this so the dialog's name follows it.
+   */
+  syncDefaultName?: () => void;
 }
 
 export const DialogContext = createContext<DialogContextValue | null>(null);

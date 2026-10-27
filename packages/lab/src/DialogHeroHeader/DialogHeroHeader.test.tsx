@@ -10,8 +10,9 @@
  * SYNC: When DialogHeroHeader.tsx changes, update tests to match new behavior
  */
 
+import {useEffect, useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -347,6 +348,78 @@ describe('DialogHeroHeader', () => {
       expect(second).toHaveAttribute('tabindex', '-1');
       expect(second).toHaveAttribute('data-autofocus', 'dialog-title');
       expect(screen.getByRole('dialog')).toHaveAccessibleName('Second');
+    });
+
+    it('leaves the custom heading handshake in place when the header re-renders', () => {
+      const renderHeader = (caption: string) => (
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<Heading level={1}>Custom</Heading>}
+            media={<div>{caption}</div>}
+          />
+        </Dialog>
+      );
+      const {rerender} = render(renderHeader('first'));
+      const heading = screen.getByRole('heading', {level: 1, name: 'Custom'});
+      expect(heading).toHaveFocus();
+      // Chromium blurs a focused element whose tabindex is removed, so a
+      // re-render with a new title element must not remove and add the
+      // handshake attributes again.
+      const observer = new MutationObserver(() => {});
+      observer.observe(heading, {attributes: true});
+      rerender(renderHeader('second'));
+      const changed = observer
+        .takeRecords()
+        .map(record => record.attributeName);
+      observer.disconnect();
+      expect(changed).toEqual([]);
+      expect(heading).toHaveFocus();
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Custom');
+    });
+
+    it('names the dialog by a custom heading that renders after the header mounts', async () => {
+      function LateHeading() {
+        const [isReady, setIsReady] = useState(false);
+        useEffect(() => {
+          setIsReady(true);
+        }, []);
+        return isReady ? <Heading level={2}>Late</Heading> : null;
+      }
+      render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader title={<LateHeading />} media={<div>media</div>} />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      await waitFor(() => expect(dialog).toHaveAccessibleName('Late'));
+      const heading = screen.getByRole('heading', {name: 'Late'});
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(heading.parentElement).not.toHaveAttribute('id');
+    });
+
+    it('moves the handshake when a custom heading replaces its own element', async () => {
+      function SwappingHeading() {
+        const [level, setLevel] = useState<2 | 3>(2);
+        useEffect(() => {
+          setLevel(3);
+        }, []);
+        return <Heading level={level}>Swapped</Heading>;
+      }
+      render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<SwappingHeading />}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      await waitFor(() =>
+        expect(screen.getByRole('heading', {level: 3})).toHaveAttribute('id'),
+      );
+      const heading = screen.getByRole('heading', {level: 3, name: 'Swapped'});
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(dialog).toHaveAccessibleName('Swapped');
     });
 
     it('honors an explicit descendant focus request before the default title', () => {

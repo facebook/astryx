@@ -32,7 +32,9 @@
  * focus requests taking priority. Hidden, inline, and standalone headers do
  * not request focus. A caller-provided heading receives the same handshake on
  * its own rendered element (never on a wrapper, so the focus target keeps its
- * heading role); attributes the caller already set are left untouched.
+ * heading role); attributes the caller already set are left untouched. The
+ * handshake follows the rendered heading node, so a re-render keeps focus on
+ * it, and a heading that renders later or is replaced still names the dialog.
  * MediaTheme stays mounted across media-mode changes so the close button
  * retains DOM identity and keyboard focus.
  *
@@ -44,6 +46,7 @@
  */
 
 import {
+  useCallback,
   useLayoutEffect,
   useRef,
   type ReactElement,
@@ -115,46 +118,96 @@ const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6, [role="heading"]';
  * caller-provided heading without cloning or inspecting it. Only attributes
  * the element does not already carry are added, and cleanup removes only
  * values that are still ours, so a caller-owned id or tabIndex always wins.
- * Runs as a layout effect so the id and focus marker exist before Dialog
- * resolves its default name and initial focus in the same commit.
+ *
+ * The handshake follows the heading node, not the `title` prop. A re-render
+ * that keeps the same heading changes nothing: removing tabindex from the
+ * focused heading would blur it. A heading that renders later, or that the
+ * caller's component replaces with another element, receives the handshake
+ * when it appears, and Dialog then checks its default name again.
+ *
+ * Returns the callback ref for the slot around the heading. The ref attaches
+ * in the same commit as the slot, so the id and focus marker exist before
+ * Dialog resolves its default name and initial focus.
  */
 function useCustomTitleHandshake(
-  slotRef: React.RefObject<HTMLDivElement | null>,
-  title: string | ReactElement,
   titleId: string | undefined,
   shouldAutoFocus: boolean,
+  syncDefaultName: (() => void) | undefined,
 ) {
-  useLayoutEffect(() => {
-    const slot = slotRef.current;
-    const heading =
-      slot?.querySelector<HTMLElement>(HEADING_SELECTOR) ??
-      (slot?.firstElementChild as HTMLElement | null | undefined);
-    if (!heading) {
-      return;
-    }
-    const added: Array<[name: string, value: string]> = [];
-    const addIfAbsent = (name: string, value: string) => {
-      if (!heading.hasAttribute(name)) {
-        heading.setAttribute(name, value);
-        added.push([name, value]);
+  const syncRef = useRef<(() => boolean) | null>(null);
+
+  const attachSlot = useCallback(
+    (slot: HTMLDivElement | null) => {
+      if (slot == null) {
+        return;
       }
-    };
-    if (titleId != null) {
-      addIfAbsent('id', titleId);
-    }
-    if (shouldAutoFocus) {
-      addIfAbsent('tabindex', '-1');
-      // Private coordination with Dialog, which owns modal focus timing.
-      addIfAbsent('data-autofocus', 'dialog-title');
-    }
-    return () => {
-      for (const [name, value] of added) {
-        if (heading.getAttribute(name) === value) {
-          heading.removeAttribute(name);
+      let heading: HTMLElement | null = null;
+      let added: Array<[name: string, value: string]> = [];
+      const release = () => {
+        for (const [name, value] of added) {
+          if (heading?.getAttribute(name) === value) {
+            heading.removeAttribute(name);
+          }
         }
-      }
-    };
-  }, [slotRef, title, titleId, shouldAutoFocus]);
+        added = [];
+      };
+      // Returns whether the slot now holds a different heading element.
+      const sync = () => {
+        const next =
+          slot.querySelector<HTMLElement>(HEADING_SELECTOR) ??
+          (slot.firstElementChild as HTMLElement | null);
+        if (next === heading) {
+          return false;
+        }
+        release();
+        heading = next;
+        if (next != null) {
+          const addIfAbsent = (name: string, value: string) => {
+            if (!next.hasAttribute(name)) {
+              next.setAttribute(name, value);
+              added.push([name, value]);
+            }
+          };
+          if (titleId != null) {
+            addIfAbsent('id', titleId);
+          }
+          if (shouldAutoFocus) {
+            addIfAbsent('tabindex', '-1');
+            // Private coordination with Dialog, which owns modal focus timing.
+            addIfAbsent('data-autofocus', 'dialog-title');
+          }
+        }
+        return true;
+      };
+      sync();
+      syncRef.current = sync;
+      // The caller's own component can render its heading later or replace
+      // it without re-rendering this header.
+      const observer = new MutationObserver(() => {
+        if (sync()) {
+          syncDefaultName?.();
+        }
+      });
+      observer.observe(slot, {childList: true, subtree: true});
+      return () => {
+        observer.disconnect();
+        syncRef.current = null;
+        release();
+        heading = null;
+      };
+    },
+    [titleId, shouldAutoFocus, syncDefaultName],
+  );
+
+  // A re-render of this header can replace the heading in the same commit;
+  // check again before Dialog reads its title. The same heading is a no-op.
+  useLayoutEffect(() => {
+    if (syncRef.current?.()) {
+      syncDefaultName?.();
+    }
+  });
+
+  return attachSlot;
 }
 
 /**
@@ -278,8 +331,11 @@ export function DialogHeroHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline === false && !isTitleHidden;
   const titleId = dialogContext?.titleId;
-  const customTitleSlotRef = useRef<HTMLDivElement>(null);
-  useCustomTitleHandshake(customTitleSlotRef, title, titleId, shouldAutoFocus);
+  const attachCustomTitleSlot = useCustomTitleHandshake(
+    titleId,
+    shouldAutoFocus,
+    dialogContext?.syncDefaultName,
+  );
 
   const closeButton = onOpenChange != null && (
     <Button
@@ -315,7 +371,9 @@ export function DialogHeroHeader({
           {title}
         </Heading>
       ) : (
-        <div ref={customTitleSlotRef} {...stylex.props(styles.customTitleSlot)}>
+        <div
+          ref={attachCustomTitleSlot}
+          {...stylex.props(styles.customTitleSlot)}>
           {title}
         </div>
       )}

@@ -355,6 +355,13 @@ const TARGETS = [
       'theme override, and RTL while the title keeps the cancelled inset',
   },
   {
+    component: 'DialogHeroHeader',
+    story: 'lab-dialogheroheader--custom-heading-focus-after-rerender',
+    guards:
+      'a custom heading keeps focus and keeps naming the open modal while ' +
+      'the header re-renders with a new title element',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
