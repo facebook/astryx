@@ -607,10 +607,10 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
       viewport.dispatchEvent(new Event('resize'));
     });
     // The composer rests at the keyboard's top edge, so the drag dismisses
-    // where the finger reaches the keyboard.
-    screen.getByRole('group', {
-      name: 'Message composer',
-    }).getBoundingClientRect = () =>
+    // where the finger reaches the keyboard. Under a fine pointer the
+    // composer region is a plain container: the composer's box's parent.
+    const region = message.parentElement?.parentElement as HTMLElement;
+    region.getBoundingClientRect = () =>
       new DOMRect(0, window.innerHeight - 300, 400, 60);
     act(() => message.focus());
     const transcript = screen.getByText('Hello');
