@@ -17,6 +17,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   createAnimatedLayout,
   holdLayoutSwap,
+  playLayoutFrames,
   playLayoutSwap,
   reportLayoutChange,
 } from './animatedLayout';
@@ -445,7 +446,9 @@ describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
     playLayoutSwap(swap!, {
       host: area,
       copy: p => ({opacity: 1 - p}),
-      rideWith: {element: column, travel: {x: 212, y: 0}},
+      // The travel stands only for a missing glide: the copy rides the
+      // glide from where it was laid, whatever the travel says.
+      rideWith: {element: column, travel: {x: 150, y: 0}},
       incoming: [],
     });
     await Promise.resolve();
@@ -533,5 +536,70 @@ describe('the glide in a right-to-left document', () => {
     // Its right edge moved from 740 to 952: it starts 212 px back.
     expect(glide?.keyframes[0].translate).toBe('-212px 0px');
     expect(glide?.keyframes.at(-1)?.translate).toBe('0px 0px');
+  });
+});
+
+describe('more swap layout cases', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('lays a fractional-size copy on its old place: the layout size rounds', () => {
+    const {handle, content, host} = setup();
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return Math.round(parseFloat(this.style.width) || 0);
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return Math.round(parseFloat(this.style.height) || 0);
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === content) {
+          return DOMRect.fromRect({x: 0, y: 687, width: 420, height: 20.4});
+        }
+        if (this.hasAttribute('inert')) {
+          // Unscaled: drawn at the requested size.
+          return DOMRect.fromRect({
+            x: 0,
+            y: 0,
+            width: parseFloat(this.style.width),
+            height: parseFloat(this.style.height),
+          });
+        }
+        return DOMRect.fromRect({x: 0, y: 0, width: 0, height: 0});
+      },
+    );
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    expect(swap!.copy.style.top).toBe('687px');
+    expect(swap!.copy.style.height).toBe('20.4px');
+  });
+
+  it('plays frames on the same motion with no copy, opacity-only under DR2', () => {
+    const {handle} = setup();
+    const title = document.getElementById('title') as HTMLElement;
+    playLayoutFrames(handle, [
+      {
+        element: title,
+        frames: p => ({boxShadow: `${100 * (1 - p)}px 0px 0px 0px red`}),
+      },
+    ]);
+    const spring = played.find(entry => entry.element === title);
+    expect(spring?.keyframes[0].boxShadow).toBe('100px 0px 0px 0px red');
+    expect(spring?.keyframes.at(-1)?.boxShadow).toBe('0px 0px 0px 0px red');
+    expect(spring?.startTime).toBe(500);
+    played = [];
+    media['(prefers-reduced-motion: reduce)'] = true;
+    media['(pointer: coarse)'] = true;
+    playLayoutFrames(handle, [{element: title, frames: () => ({scale: '2'})}]);
+    expect(played[0].keyframes).toEqual([{opacity: 0}, {opacity: 1}]);
+    played = [];
+    media['(pointer: coarse)'] = false;
+    playLayoutFrames(handle, [{element: title, frames: () => ({scale: '2'})}]);
+    expect(played).toEqual([]);
   });
 });

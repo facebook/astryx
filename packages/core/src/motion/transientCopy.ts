@@ -153,15 +153,21 @@ export function placeOver(
   // copy's styles in the host's own.
   // The rendered size over the layout size, as the glide's `scaleOf` reads
   // it, so a size the copy's own CSS imposes is not taken for a scale.
+  // The layout size rounds to whole pixels: within a pixel of the requested
+  // size, the requested size is the layout size.
   const origin = element.getBoundingClientRect();
+  const layoutWidth =
+    Math.abs(element.offsetWidth - rect.width) < 1
+      ? rect.width
+      : element.offsetWidth;
+  const layoutHeight =
+    Math.abs(element.offsetHeight - rect.height) < 1
+      ? rect.height
+      : element.offsetHeight;
   const scaleX =
-    origin.width > 0 && element.offsetWidth > 0
-      ? origin.width / element.offsetWidth
-      : 1;
+    origin.width > 0 && layoutWidth > 0 ? origin.width / layoutWidth : 1;
   const scaleY =
-    origin.height > 0 && element.offsetHeight > 0
-      ? origin.height / element.offsetHeight
-      : 1;
+    origin.height > 0 && layoutHeight > 0 ? origin.height / layoutHeight : 1;
   element.style.width = `${rect.width / scaleX}px`;
   element.style.height = `${rect.height / scaleY}px`;
   element.style.left = `${(rect.left - origin.left) / scaleX}px`;

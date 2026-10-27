@@ -1031,6 +1031,7 @@ export interface LayoutSwapMotion {
    */
   readonly rideWith?: {
     readonly element: Element;
+    /** Its old place less its new, for when it does not glide. */
     readonly travel: {readonly x: number; readonly y: number};
   };
   /** Elements the page already renders, entering with the swap. */
@@ -1130,9 +1131,13 @@ export function playLayoutSwap(
       const animation = safeAnimate(
         copy,
         sampleOver(durationMs, t => {
+          // Where the element shows against where it showed at the start,
+          // which is where the copy was laid (a running glide's offset
+          // included); without a glide it lands at once, by `travel`.
           const offset = glide?.offsetAt(t) ?? AT_REST(t);
-          const x = offset.x - rideWith.travel.x;
-          const y = offset.y - rideWith.travel.y;
+          const start = glide?.offsetAt(0) ?? rideWith.travel;
+          const x = offset.x - start.x;
+          const y = offset.y - start.y;
           return {
             ...how.copy(1 - motion.progress.remaining(t)),
             translate: `${x}px ${y}px`,
@@ -1164,6 +1169,46 @@ export function playLayoutSwap(
     animations[0]?.addEventListener?.('finish', end);
   }
   return end;
+}
+
+/**
+ * After a change commits, before paint: elements the page already renders
+ * play frames over the change's progress on FR4's one motion, with no copy,
+ * such as a surface reaching over a gap a glide opens. Under Reduce Motion
+ * with a coarse pointer, only opacity changes; under an immediate change,
+ * nothing plays. Returns what ends them at once.
+ */
+export function playLayoutFrames(
+  handle: AnimatedLayout | null | undefined,
+  parts: LayoutSwapMotion['incoming'],
+): () => void {
+  const area = handle?.[AREA]() ?? null;
+  const motion = area == null ? null : layoutMotion(area);
+  if (motion == null || motion.kind === 'instant') {
+    return () => {};
+  }
+  const animations: Animation[] = [];
+  for (const {element, frames: shape} of parts) {
+    const animation =
+      motion.kind === 'spring'
+        ? safeAnimate(
+            element,
+            sampleKeyframes(motion.progress, remaining => shape(1 - remaining)),
+            {
+              duration: motion.progress.durationMs,
+              easing: 'linear',
+              fill: 'both',
+            },
+          )
+        : safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
+            duration: motion.durationMs,
+            easing: motion.easing,
+          });
+    if (animation != null) {
+      animations.push(animation);
+    }
+  }
+  return () => animations.forEach(animation => animation.cancel());
 }
 
 /**
