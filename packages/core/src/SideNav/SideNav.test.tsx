@@ -3759,6 +3759,16 @@ describe('SideNav collapse conflict warning', () => {
 // SideNavItem — collapsed-from-mount rail tooltip
 // =============================================================================
 
+// Two interchangeable link components: switching between them remounts the
+// rendered link element.
+function RailLinkA({ref, ...props}: React.ComponentPropsWithRef<'a'>) {
+  return <a ref={ref} {...props} />;
+}
+
+function RailLinkB({ref, ...props}: React.ComponentPropsWithRef<'a'>) {
+  return <a ref={ref} {...props} />;
+}
+
 describe('SideNavItem collapsed-from-mount rail tooltip', () => {
   // #7435 / #7692: a childless item that mounts inside an already-collapsed
   // SideNav (the persisted-collapse case) must attach its tooltip on the first
@@ -3873,5 +3883,84 @@ describe('SideNavItem collapsed-from-mount rail tooltip', () => {
     );
     const link = screen.getByRole('link', {name: 'Dashboard'});
     expect(railTooltipFor(link)).toHaveTextContent('Dashboard');
+  });
+
+  it('binds the replacement when a rail link element is replaced', () => {
+    // Switching the link component remounts the element; the tooltip must
+    // follow the new element.
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    const item = (as: typeof RailLinkA) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        as={as}
+      />
+    );
+    const {rerender} = renderRail(item(RailLinkA));
+    const first = screen.getByRole('link', {name: 'Dashboard'});
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item(RailLinkB)}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(link).not.toBe(first);
+    const layer = railTooltipFor(link);
+    expect(layer).toHaveTextContent('Dashboard');
+    fireEvent.mouseEnter(link);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(layer);
+  });
+
+  it("keeps the tooltip beside a caller's changing aria-describedby", () => {
+    const item = (hint: string) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        aria-describedby={hint}
+      />
+    );
+    const {rerender} = renderRail(item('hint-a'));
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item('hint-b')}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    const ids = (link.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(ids).toContain('hint-b');
+    expect(ids).toContain(tooltip.id);
+    expect(ids).not.toContain('hint-a');
+  });
+
+  it('shows the label when keyboard focus reaches a rail link', () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    renderRail(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const layer = railTooltipFor(link);
+    // jsdom does not model `:focus-visible`; stand in for a keyboard focus.
+    const realMatches = link.matches.bind(link);
+    vi.spyOn(link, 'matches').mockImplementation((selector: string) =>
+      selector === ':focus-visible' ? true : realMatches(selector),
+    );
+
+    fireEvent.focusIn(link);
+    expect(spy.mock.contexts).toContain(layer);
   });
 });
