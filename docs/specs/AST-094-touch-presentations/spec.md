@@ -115,7 +115,9 @@ a measured, sourced difference exists.
   the keyboard's own motion (`spec:AST-099` FR8,
   `architecture:react-component-runtime` INV11). Gesture thresholds, the timings that decide who gets a touch (the
   content-touch delay, the scroll brake, momentum memory) and haptics are not
-  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). When the public set is decided, its roles join the motion configuration of
+  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3),
+  except the `flickThreshold` a product passes to `spec:AST-107`'s snap-point
+  drag. When the public set is decided, its roles join the motion configuration of
   `architecture:theme-authoring-contract` and `architecture:theme-tokens`,
   whose rules are unchanged until then. It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a

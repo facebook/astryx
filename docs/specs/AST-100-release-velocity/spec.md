@@ -74,7 +74,8 @@ means for them.
 - **FR3 — Thresholds sit on top of the one velocity.** A component's flick,
   fling, or commit threshold compares the FR2 velocity, possibly with travel
   or projection the component owns. Thresholds are per-component tuning that
-  stays internal (`spec:AST-002` FR3); a component never derives a second
+  stays internal (`spec:AST-002` FR3), except the public `flickThreshold` a
+  product passes to `spec:AST-107`'s snap-point drag; a component never derives a second
   velocity to compare against.
 - **FR4 — Event time for every pointer.** The velocity follows the input
   events' own timestamps, so a handler that runs late does not change it, and

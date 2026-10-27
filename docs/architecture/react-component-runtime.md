@@ -183,7 +183,18 @@ those contracts.
   host) is the one place these modules use classes, and it uses no
   inheritance checks: a recognizer is told apart by its `kind` field, never by
   `instanceof`. Every other module, and every public layer, is built from
-  `create…` factories. Components import them statically, and the bundler
+  `create…` factories, and no internal factory shares a public factory's name
+  (`spec:AST-107` FR6). Core and Lab components use `spec:AST-107`'s public
+  layer wherever it covers their job and reach these modules directly only for
+  these known public-API gaps: press feedback timing; the Reduce Motion
+  cross-fade constants; press tracking across a group of actions; the
+  selection lock during a gesture; the presentation hold; the input hold;
+  lift-from-trigger and the rectangle morph; custom recognizer relationships;
+  the gesture host, velocity tracking, rubber band, and haptics; long press,
+  which has no public factory yet; the spring and curve helpers and UIKit's
+  measured tables; the touch presentation query; layout-change reporting
+  (`spec:AST-105` FR1); and the touch hit-area expansion. Components import
+  them statically, and the bundler
   keeps one copy per page however many components use them. There is no
   install call, no public entry, and no public installed check; tests reset
   the modules through an internal hook only. A component's own touch logic is
