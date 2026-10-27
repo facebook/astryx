@@ -260,6 +260,72 @@ describe('ButtonGroup tracks a held pointer across its buttons (family:action-gr
     expect(c.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(false);
   });
 
+  it('leaves a menu trigger its own click: the group does not take a press that lands on it (spec:AST-094 FR29)', () => {
+    const {c, onC} = mount({isCMenuTrigger: true});
+    const f = finger();
+    f.down(c, centerOf(C));
+    f.up(c, centerOf(C));
+    // The browser's own click for that tap reaches the trigger.
+    c.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+    );
+    expect(onC).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a menu trigger a mouse's click too", () => {
+    finePrimaryPointer();
+    const {c, onC} = mount({isCMenuTrigger: true});
+    pointer('mouse', 'pointerdown', c, centerOf(C));
+    pointer('mouse', 'pointerup', c, centerOf(C));
+    c.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+    );
+    expect(onC).toHaveBeenCalledTimes(1);
+  });
+
+  describe('touching buttons take no area from each other (FR5)', () => {
+    // 28 px buttons side by side at x = 0, 80 and 160: a finger's target
+    // grows 8 px above and below each, and none grows into a neighbour.
+    const TALL = 28;
+    function mountTouching() {
+      const view = mount();
+      place(view.group, {left: 0, top: 100, width: 240, height: TALL});
+      place(view.a, {left: 0, top: 100, width: 80, height: TALL});
+      place(view.b, {left: 80, top: 100, width: 80, height: TALL});
+      place(view.c, {left: 160, top: 100, width: 80, height: TALL});
+      return view;
+    }
+    const tapAt = (target: Element, point: Point) => {
+      const f = finger();
+      f.down(target, point);
+      f.up(target, point);
+    };
+
+    it('a finger at x = 82 runs only the middle button, and at x = 78 only the first', () => {
+      const {group, onA, onB, onC} = mountTouching();
+      tapAt(group, {x: 82, y: 114});
+      expect([onA, onB, onC].map(fn => fn.mock.calls.length)).toEqual([
+        0, 1, 0,
+      ]);
+      tapAt(group, {x: 78, y: 114});
+      expect([onA, onB, onC].map(fn => fn.mock.calls.length)).toEqual([
+        1, 1, 0,
+      ]);
+    });
+
+    it('a finger 8 px below a button still counts for that button, and 9 px below for none', () => {
+      const {group, onA, onB, onC} = mountTouching();
+      tapAt(group, {x: 120, y: 100 + TALL + 8});
+      expect([onA, onB, onC].map(fn => fn.mock.calls.length)).toEqual([
+        0, 1, 0,
+      ]);
+      tapAt(group, {x: 120, y: 100 + TALL + 9});
+      expect([onA, onB, onC].map(fn => fn.mock.calls.length)).toEqual([
+        0, 1, 0,
+      ]);
+    });
+  });
+
   describe('the 44 px touch target (FR5)', () => {
     // 4 px below Cut: outside its 32 px box, inside the 44 px it grows to.
     const BELOW_A = {x: 40, y: 136};
