@@ -16,17 +16,12 @@
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
-  curveOf,
   drag,
   frames,
-  holdAnimations,
   openStory,
-  releaseAnimations,
-  sampleCurve,
-  timeline,
   touchDriver,
-  waitForAnimation,
   waitForRest,
+  watchAnimations,
   withStorybook,
   type TouchDriver,
   type TouchScript,
@@ -172,17 +167,58 @@ function slowDrag(from: {x: number; y: number}, dx: number): TouchScript {
   );
 }
 
-/** The track's positions over its held animation, and that animation's length. */
-async function trackCurve(page: Page, track: Locator) {
-  await waitForAnimation(track);
-  const held = await holdAnimations(page, track);
-  const duration = Math.max(...held.map(a => a.curveEndMs));
-  const xs = curveOf(
-    await sampleCurve(track, timeline(duration)),
-    'translateX',
-  ).map(s => s.value);
-  await releaseAnimations(page);
-  return {duration, xs};
+/**
+ * What an action starts on the track under Reduce Motion: the animations it
+ * starts, caught by a watch taken before it (a 200 ms fade can end before the
+ * test looks), their longest length, whether any of them moves the track, and
+ * the track's place every frame from the action's end to rest.
+ */
+async function trackMotion(
+  page: Page,
+  track: Locator,
+  act: () => Promise<unknown>,
+) {
+  const watch = await watchAnimations(track);
+  await act();
+  // Installed before anything is awaited further (an awaited evaluate): the
+  // landing comes while the track is faded out, after this.
+  await track.evaluate(el => {
+    const places: number[] = [];
+    let running = true;
+    const tick = () => {
+      const value = getComputedStyle(el).translate;
+      places.push(value === 'none' ? 0 : parseFloat(value));
+      if (running) {
+        requestAnimationFrame(tick);
+      }
+    };
+    tick();
+    (
+      window as unknown as {__trackPlaces: {places: number[]; stop(): void}}
+    ).__trackPlaces = {
+      places,
+      stop: () => {
+        running = false;
+      },
+    };
+  });
+  const started = await watch.started();
+  await waitForRest(track);
+  const xs = await page.evaluate(() => {
+    const record = (
+      window as unknown as {__trackPlaces: {places: number[]; stop(): void}}
+    ).__trackPlaces;
+    record.stop();
+    return record.places;
+  });
+  return {
+    // Each curve's own length: a held end value is not part of it.
+    duration: Math.max(...started.map(a => a.to - a.from)),
+    travels: started.some(a =>
+      a.keyframes.some(k => 'translate' in k || 'transform' in k),
+    ),
+    xs,
+  };
 }
 
 test('under Reduce Motion a swipe pages by a fade of 200 ms or less: the track never slides', async ({
@@ -193,17 +229,20 @@ test('under Reduce Motion a swipe pages by a fade of 200 ms or less: the track n
   await page.emulateMedia({reducedMotion: 'reduce'});
   const g = await openGallery(page);
   const mid = {x: g.box.x + g.box.width * 0.8, y: g.box.y + g.box.height / 2};
-  await g.driver.play(slowDrag(mid, -g.box.width * 0.6));
-  const {duration, xs} = await trackCurve(page, g.track);
+  const {duration, travels, xs} = await trackMotion(page, g.track, async () => {
+    await g.driver.play(slowDrag(mid, -g.box.width * 0.6));
+  });
   const page2 = -(g.box.width + GAP);
   expect(duration).toBeLessThanOrEqual(205);
-  // Only where the finger left it and the next page: nothing between.
+  // The track lands with a style write while it is faded out: no animation
+  // moves it, and every frame shows where the finger left it or the next
+  // page, nothing between.
+  expect(travels).toBe(false);
   for (const x of xs) {
     expect(Math.min(Math.abs(x - xs[0]), Math.abs(x - page2))).toBeLessThan(
       0.5,
     );
   }
-  await waitForRest(g.track);
   expect(await g.counter()).toBe('2 / 4');
   expect(await g.trackX()).toBeCloseTo(page2, 0);
 });
@@ -217,10 +256,15 @@ test('under Reduce Motion the Next button pages by a fade on a touch screen, nev
   if (next == null) {
     throw new Error('no Next');
   }
-  await g.driver.tap({x: next.x + next.width / 2, y: next.y + next.height / 2});
-  const {duration, xs} = await trackCurve(page, g.track);
+  const {duration, travels, xs} = await trackMotion(page, g.track, async () => {
+    await g.driver.tap({
+      x: next.x + next.width / 2,
+      y: next.y + next.height / 2,
+    });
+  });
   const page2 = -(g.box.width + GAP);
   expect(duration).toBeLessThanOrEqual(205);
+  expect(travels).toBe(false);
   for (const x of xs) {
     expect(Math.min(Math.abs(x), Math.abs(x - page2))).toBeLessThan(0.5);
   }
