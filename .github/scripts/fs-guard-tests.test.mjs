@@ -1,6 +1,10 @@
 import {describe, expect, it} from 'vitest';
 
-import {fsGuardTests} from './fs-guard-tests.mjs';
+import {execFileSync} from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import {fsGuardTests, scopedExtraTests} from './fs-guard-tests.mjs';
 
 const sources = {
   'packages/core/src/Button/Button.test.tsx':
@@ -94,5 +98,73 @@ describe('fsGuardTests', () => {
 
   it('lists only tests', () => {
     expect(guards().every(file => /\.test\./.test(file))).toBe(true);
+  });
+});
+
+describe('scopedExtraTests: tests that reach a changed package through its build', () => {
+  const tree = {
+    'packages/core/package.json': '{"name": "@astryxdesign/core"}',
+    'packages/core/src/utils/color.ts': 'export const mix = () => 1;',
+    'packages/core/src/utils/color.test.ts': "import {mix} from './color';",
+    'packages/themes/neutral/package.json':
+      '{"name": "@astryxdesign/theme-neutral"}',
+    'packages/themes/neutral/src/neutralTheme.ts':
+      "import {mix} from '@astryxdesign/core/theme';\nexport const theme = mix();",
+    'packages/themes/neutral/src/neutralTheme.test.ts':
+      "import {theme} from './neutralTheme';",
+    'scripts/check-contrast.test.mjs':
+      "import {mix} from '@astryxdesign/core';",
+    'scripts/from-dist.test.mjs':
+      "import {mix} from '../packages/core/dist/utils/color.js';",
+    'scripts/unrelated.test.mjs':
+      "import {theme} from '@astryxdesign/theme-neutral';",
+  };
+  const run = changed =>
+    scopedExtraTests(Object.keys(tree), file => tree[file], changed);
+
+  it('lists the tests whose imports reach a changed package by name or through its dist/', () => {
+    expect(run(['packages/core/src/utils/color.ts'])).toEqual([
+      'packages/themes/neutral/src/neutralTheme.test.ts',
+      'scripts/check-contrast.test.mjs',
+      'scripts/from-dist.test.mjs',
+    ]);
+  });
+
+  it('lists none for a change to a package nothing reaches through its build, or to a test only', () => {
+    expect(run(['packages/core/src/utils/color.test.ts'])).toEqual([]);
+    expect(run(['docs/notes.md'])).toEqual([]);
+  });
+
+  it('follows the package that changed: a theme change lists its own importers', () => {
+    expect(run(['packages/themes/neutral/src/neutralTheme.ts'])).toEqual([
+      'scripts/unrelated.test.mjs',
+    ]);
+  });
+});
+
+describe('scopedExtraTests on this repository (contract)', () => {
+  const root = path.resolve(import.meta.dirname, '../..');
+  const files = execFileSync('git', ['ls-files', '-z'], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split('\0')
+    .filter(Boolean);
+  const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+
+  it("a Core color utility change runs the theme packages' suites and the contrast checks that load Core's build", () => {
+    const tests = scopedExtraTests(files, read, [
+      'packages/core/src/utils/color.ts',
+    ]);
+    for (const expected of [
+      'packages/themes/neutral/src/neutralTheme.test.ts',
+      'packages/themes/stone/src/stoneTheme.test.ts',
+      '.github/scripts/visual-gate/lib/probe-theme.test.mjs',
+      'scripts/check-badge-contrast.test.mjs',
+      'scripts/check-status-text-contrast.test.mjs',
+    ]) {
+      expect(tests).toContain(expected);
+    }
   });
 });

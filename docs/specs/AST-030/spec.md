@@ -214,7 +214,8 @@ they are separately named.
   that reads repository sources through the file system, directly or through a
   module it imports; a computed `import()`, a child process, or a library that
   reads sources for it (the TypeScript compiler, a bundler) counts as reading
-  sources. The visual and RTL
+  sources; and every test that loads a changed workspace package from its build,
+  by the package's name or a path into its `dist/`. The visual and RTL
   owners audit one affected set of component folders: the changed components
   and their reverse dependents, the folders of the components, in any package,
   whose built bundle, `import()` targets included, reaches a changed module.
