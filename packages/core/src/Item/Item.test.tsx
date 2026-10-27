@@ -2159,6 +2159,45 @@ describe('swipeActions', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('closes another open row when a control opens its own with no pointer: one row rests open at a time (spec:AST-057 FR7)', async () => {
+      const entry = () => [
+        {label: 'Delete', onActivate: vi.fn(), variant: 'destructive' as const},
+      ];
+      render(
+        <>
+          <Item
+            label="First"
+            data-testid="first"
+            marker={<DeleteControl />}
+            swipeActions={{trailing: entry()}}
+          />
+          <Item
+            label="Second"
+            data-testid="second"
+            marker={<DeleteControl />}
+            swipeActions={{trailing: entry()}}
+          />
+        </>,
+      );
+      const first = screen.getByTestId('first');
+      const second = screen.getByTestId('second');
+      layOut(first);
+      layOut(second);
+      const [firstControl, secondControl] = screen.getAllByRole('button', {
+        name: 'Delete control',
+      });
+      // A key or assistive technology activates each control: no pointer
+      // lands outside the first row when the second opens.
+      fireEvent.click(firstControl);
+      await settled();
+      expect(xOf(first)).toBe(-72);
+      fireEvent.click(secondControl);
+      await settled();
+      expect(xOf(second)).toBe(-72);
+      expect(xOf(first)).toBe(0);
+      expect(panelOf(first, 'trailing')).toHaveAttribute('inert');
+    });
+
     it('closes from the control again when it is activated with no touch (a key, assistive technology)', async () => {
       const {row, control} = renderEditRow();
       fireEvent.click(control);

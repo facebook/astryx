@@ -318,6 +318,13 @@ const IDLE_STATE: SwipeState = {isArmed: false, phase: 'idle', side: 'leading'};
 /** Below this the row is at rest, closed. */
 const AT_REST_PX = 0.5;
 
+/**
+ * Sent from a row's root when a control opens the row with no pointer (a key,
+ * assistive technology): every other open row closes on it, as it does on a
+ * pointer landing outside it, so one row rests open at a time.
+ */
+const ROW_OPENED = 'astryxswiperowopened';
+
 interface SideAnimators {
   panel: Animator;
   track: Animator;
@@ -951,6 +958,7 @@ export function useSwipeAction({
       const open = () => {
         placeEntries(layout);
         settle(layout, layout.openWidth, 'resting');
+        root.dispatchEvent(new Event(ROW_OPENED, {bubbles: true}));
       };
       // A row open or moving on the other side closes first.
       const current = layoutRef.current;
@@ -990,8 +998,9 @@ export function useSwipeAction({
   );
 
   // An open row closes on a pointer landing anywhere outside it, which is
-  // also how a drag on a neighbour closes it: one row rests open at a time
-  // with no shared state. It also closes when anything scrolling it moves
+  // also how a drag on a neighbour closes it, and when a control opens
+  // another row with no pointer: one row rests open at a time with no shared
+  // state. It also closes when anything scrolling it moves
   // (the list, the page), as a UIKit row closes when its table scrolls: a
   // scroll that starts on the row itself lands no pointer outside it.
   useEffect(() => {
@@ -1022,7 +1031,18 @@ export function useSwipeAction({
         close();
       }
     };
+    const onRowOpened = (event: Event) => {
+      const root = rootRef.current;
+      if (
+        root != null &&
+        event.target instanceof Node &&
+        !root.contains(event.target)
+      ) {
+        close();
+      }
+    };
     document.addEventListener('pointerdown', onOutside, true);
+    document.addEventListener(ROW_OPENED, onRowOpened, true);
     // A scroll closes the row, as UIKit's table does.
     document.addEventListener('scroll', onScroll, {
       capture: true,
@@ -1030,6 +1050,7 @@ export function useSwipeAction({
     });
     return () => {
       document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener(ROW_OPENED, onRowOpened, true);
       document.removeEventListener('scroll', onScroll, true);
     };
   }, [close, isOpen, rootRef, state.phase]);
