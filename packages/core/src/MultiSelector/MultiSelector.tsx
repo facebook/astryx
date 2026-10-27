@@ -18,6 +18,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -99,8 +100,9 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
 import inputMessages from '../i18n/generated-locales/en/input.generated';
@@ -1099,7 +1101,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   options,
@@ -1148,6 +1150,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: MultiSelectorProps<T>) {
+  const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('MultiSelector', restProps, {
     containerXstyle,
     containerClassName,
@@ -1199,7 +1204,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const triggerButtonRef = useMergedRefs<HTMLElement>(triggerRef, ref);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
-  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   // A typed query shows the search row's clear (✕) button, which becomes
@@ -2565,6 +2569,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         }}
         onClick={handleControlBoxClick}
         {...pressable}
+        {...(inputGroup ? inputGroupItemProps : undefined)}
         {...mergeProps(
           themeProps('multi-selector', {
             variant,

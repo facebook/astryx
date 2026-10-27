@@ -20,6 +20,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -93,8 +94,9 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
 import inputMessages from '../i18n/generated-locales/en/input.generated';
@@ -963,7 +965,7 @@ export function Selector<T extends SelectorOptionType>(
     description,
     isOptional = false,
     isRequired = false,
-    isDisabled = false,
+    isDisabled: isDisabledProp = false,
     isReadOnly = false,
     disabledMessage,
     options,
@@ -1004,6 +1006,9 @@ export function Selector<T extends SelectorOptionType>(
     id,
     ...restProps
   } = props as SelectorPropsClearable<T>;
+  const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('Selector', restProps, {
     containerXstyle,
     containerClassName,
@@ -1047,7 +1052,6 @@ export function Selector<T extends SelectorOptionType>(
     ref,
   );
   const searchRef = useRef<HTMLInputElement>(null);
-  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   // Mirrors searchQuery for the seed path, which runs before focus reaches the
@@ -1962,6 +1966,7 @@ export function Selector<T extends SelectorOptionType>(
         }}
         onClick={onTriggerClick}
         {...pressable}
+        {...(inputGroup ? inputGroupItemProps : undefined)}
         {...mergeProps(
           themeProps('selector', {
             variant,

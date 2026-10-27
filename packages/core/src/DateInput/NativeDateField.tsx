@@ -59,7 +59,7 @@ import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {useInputGroup} from '../InputGroup';
 import {useFieldInputStyling} from '../Field/fieldParts';
 import {joinAriaIDs} from '../utils/inputAria';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
 import {
@@ -594,6 +594,7 @@ export function NativeDateField({
       ref={el => {
         disabledMessageTooltip.ref(el);
       }}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('date-input', {
           size,
