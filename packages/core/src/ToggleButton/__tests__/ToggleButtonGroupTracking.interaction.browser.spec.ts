@@ -52,7 +52,7 @@ async function open(page: Page) {
 }
 
 /** Which toggles are pressed, in order. */
-const pressed = (group: Locator) =>
+const pressed = async (group: Locator) =>
   group
     .getByRole('button')
     .evaluateAll(toggles =>
@@ -65,7 +65,7 @@ test('a finger slid from Bold across Italic to Underline toggles only Underline 
   const {group, bold, underline} = await open(page);
   const driver = await touchDriver(page);
   await driver.play(slide(await centerOf(bold), await centerOf(underline)));
-  await expect.poll(() => pressed(group)).toEqual([false, false, true]);
+  await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
 });
 
 test('a finger lifted outside the group toggles nothing (family:action-groups FR3)', async ({
@@ -101,7 +101,7 @@ test("under a finger a toggle's target reaches 44 px: the point just below it la
     y: box.y + box.height + (44 - box.height) / 2 - 1,
   };
   await expect
-    .poll(() =>
+    .poll(async () =>
       page.evaluate(
         ({x, y}) =>
           document
@@ -114,7 +114,7 @@ test("under a finger a toggle's target reaches 44 px: the point just below it la
     .toBe('Text formatting');
   const driver = await touchDriver(page);
   await driver.play(tap(below));
-  await expect.poll(() => pressed(group)).toEqual([true, false, false]);
+  await expect.poll(async () => pressed(group)).toEqual([true, false, false]);
 });
 
 test.describe('with a mouse', () => {
@@ -138,7 +138,7 @@ test.describe('with a mouse', () => {
     expect(looks[0]).toEqual({press: null, image: 'none'});
     expect(looks[2].press).toBe('on');
     await page.mouse.up();
-    await expect.poll(() => pressed(group)).toEqual([false, false, true]);
+    await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
   });
 
   test('the keyboard is unchanged: Space on a focused toggle toggles it once', async ({
@@ -147,8 +147,10 @@ test.describe('with a mouse', () => {
     const {group, bold} = await open(page);
     await bold.focus();
     await page.keyboard.press('Space');
-    await expect.poll(() => pressed(group)).toEqual([true, false, false]);
+    await expect.poll(async () => pressed(group)).toEqual([true, false, false]);
     await page.keyboard.press('Space');
-    await expect.poll(() => pressed(group)).toEqual([false, false, false]);
+    await expect
+      .poll(async () => pressed(group))
+      .toEqual([false, false, false]);
   });
 });
