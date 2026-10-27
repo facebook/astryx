@@ -11,6 +11,7 @@
 export {
   createReorderable,
   type Reorderable,
+  type ReorderableItem,
   type ReorderableOptions,
   type ReorderMove,
 } from './createReorderable';

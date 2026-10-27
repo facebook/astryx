@@ -151,7 +151,7 @@ const sessionsByOptions = new WeakMap<
 >();
 
 /** Records `controller` as mounted with `options`; returns the removal. */
-function mountSession(
+export function mountSession(
   options: ListReorderOptions,
   controller: ListReorderController,
 ): () => void {
@@ -504,7 +504,7 @@ interface ReorderMessages {
   cancelled: (position: number, total: number) => string;
 }
 
-function messagesFrom(t: TranslatorFn): ReorderMessages {
+export function messagesFrom(t: TranslatorFn): ReorderMessages {
   return {
     place: (label, position, total, previous, next) =>
       previous == null
@@ -630,7 +630,17 @@ export class ListReorderController implements ListReorderSession {
   constructor(
     private readonly getList: () => HTMLElement | null,
     readonly hintId: string,
+    /**
+     * The items' elements in order, where they are not the list's own
+     * children (attach's `items()`, spec:AST-103 FR4b).
+     */
+    private readonly itemElements?: () => HTMLElement[],
   ) {}
+
+  /** The rows of `list` in order: its children, or the attached items. */
+  private rowsIn(list: HTMLElement): HTMLElement[] {
+    return this.itemElements?.() ?? rowsOf(list);
+  }
 
   /** The List's latest options, announcer, strings and presentation. */
   configure(options: {
@@ -770,7 +780,7 @@ export class ListReorderController implements ListReorderSession {
     if (list == null || row == null) {
       return;
     }
-    const rows = rowsOf(list);
+    const rows = this.rowsIn(list);
     const index = rows.indexOf(row);
     this.announce(
       this.messages?.modeDone(
@@ -1057,7 +1067,7 @@ export class ListReorderController implements ListReorderSession {
     }
     // A drop still waiting for its commit is settled where it is.
     this.flushPending();
-    const rows = rowsOf(list);
+    const rows = this.rowsIn(list);
     const dragged = rows.indexOf(row);
     const movable = rows.map(element => this.handleIn(element) != null);
     if (dragged < 0 || !movable[dragged]) {
@@ -1398,7 +1408,7 @@ export class ListReorderController implements ListReorderSession {
     if (pending == null) {
       return;
     }
-    const current = rowsOf(pending.list);
+    const current = this.rowsIn(pending.list);
     if (!sameOrder(current, pending.rows)) {
       // The commit came but its layout effect has not run yet.
       return;
@@ -1468,12 +1478,12 @@ export class ListReorderController implements ListReorderSession {
       );
     }
     const session = this.session;
-    if (session != null && !sameOrder(rowsOf(list), session.rows)) {
+    if (session != null && !sameOrder(this.rowsIn(list), session.rows)) {
       // The rows changed under the drag.
       this.cancel();
     }
     const pending = this.pending;
-    if (pending != null && !sameOrder(rowsOf(list), pending.rows)) {
+    if (pending != null && !sameOrder(this.rowsIn(list), pending.rows)) {
       this.pending = null;
       if (this.fallback != null) {
         clearTimeout(this.fallback);
@@ -1484,7 +1494,7 @@ export class ListReorderController implements ListReorderSession {
     const announcement = this.announcement;
     if (
       announcement != null &&
-      rowsOf(list).indexOf(announcement.row) === announcement.to
+      this.rowsIn(list).indexOf(announcement.row) === announcement.to
     ) {
       this.announcement = null;
       if (this.announcementFallback != null) {
@@ -1494,7 +1504,7 @@ export class ListReorderController implements ListReorderSession {
       this.announce(announcement.landed, announcement.politeness);
     }
     const move = this.committedMove;
-    if (move != null && !sameOrder(rowsOf(list), move.rows)) {
+    if (move != null && !sameOrder(this.rowsIn(list), move.rows)) {
       this.committedMove = null;
       if (this.moveFallback != null) {
         clearTimeout(this.moveFallback);
@@ -1587,7 +1597,7 @@ export class ListReorderController implements ListReorderSession {
       this.clearModeLine();
       return;
     }
-    const rows = rowsOf(list);
+    const rows = this.rowsIn(list);
     const index = rows.indexOf(row);
     const top = layoutTop(row, list);
     const bottom = top + row.offsetHeight;
@@ -1640,7 +1650,9 @@ export class ListReorderController implements ListReorderSession {
   positionOf(element: Element | null): number | null {
     const list = this.getList();
     const row = this.rowOf(element);
-    return list == null || row == null ? null : rowsOf(list).indexOf(row) + 1;
+    return list == null || row == null
+      ? null
+      : this.rowsIn(list).indexOf(row) + 1;
   }
 
   // --- Keys ------------------------------------------------------------
@@ -1650,7 +1662,18 @@ export class ListReorderController implements ListReorderSession {
    * row a place at once, and Escape ends the mode, keeping the moves. Space
    * and Enter toggle the mode through the handle's click.
    */
-  keyDown(handle: HTMLElement | null, event: KeyboardEvent): void {
+  keyDown(
+    handle: HTMLElement | null,
+    event: Pick<
+      KeyboardEvent,
+      | 'key'
+      | 'altKey'
+      | 'ctrlKey'
+      | 'metaKey'
+      | 'preventDefault'
+      | 'stopPropagation'
+    >,
+  ): void {
     // A modified key is a browser or assistive-technology shortcut.
     if (
       handle == null ||
@@ -1700,7 +1723,7 @@ export class ListReorderController implements ListReorderSession {
     ) {
       return;
     }
-    const rows = rowsOf(list);
+    const rows = this.rowsIn(list);
     const index = rows.indexOf(row);
     const to = index + delta;
     if (to < 0 || to >= rows.length) {
@@ -2007,7 +2030,7 @@ function HintButton({
  * mode as Escape does, so a pointer or a finger can reorder by tapping the
  * handle, the moves, then Done.
  */
-function ListReorderModeHint({
+export function ListReorderModeHint({
   controller,
 }: {
   controller: ListReorderController;
