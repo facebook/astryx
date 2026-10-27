@@ -11,7 +11,12 @@
  *   sentinel props (the veil sized by `edge`, in the given colour or the
  *   body's), puts the first
  *   report in place without a fade, fades in on UIKit's appear spring and out
- *   on its disappear spring when a finger drives the scroll, switches at once
+ *   on its disappear spring when a finger drives the scroll, and the same
+ *   when a wheel or trackpad does (a scroll within 100 ms of a wheel over
+ *   the scroller, until its scrollend or a quiet spell; never a ctrl-wheel,
+ *   a wheel outside the container, or a wheel that scrolls nothing; the
+ *   layer composited only through it; a passive listener only while the
+ *   effect runs), switches at once
  *   for a scroll the program drives (the WebKit workaround), measures a
  *   scroll container's root once and observes from its padding edge in every
  *   engine, watches finger
@@ -538,29 +543,46 @@ describe('useScrollEdgeEffect', () => {
       }
     });
 
-    it('listens on the document once: for scrollend, or for scroll where the browser sends none', () => {
-      // The gesture host's own document listeners start with its first
-      // retain; take it first so that only the hook's are counted.
+    it('listens through the shared input stream: no document listener, one native listener per type for every effect', () => {
+      // The gesture host's own listeners start with its first retain; take
+      // it first so that only the hook's are counted.
       const releaseHost = getGestureHost(document).retain();
-      const added = vi.spyOn(document, 'addEventListener');
-      const types = () =>
-        added.mock.calls
+      const onDocument = vi.spyOn(document, 'addEventListener');
+      const onWindow = vi.spyOn(window, 'addEventListener');
+      const scrollTypes = (spy: typeof onWindow | typeof onDocument) =>
+        spy.mock.calls
           .map(([type]) => type)
-          .filter(type => type === 'scroll' || type === 'scrollend');
+          .filter(type => ['scroll', 'scrollend', 'wheel'].includes(type))
+          .sort();
       try {
-        render(<Bar enabled inContainer />);
-        expect(types()).toEqual(['scrollend']);
+        render(
+          <>
+            <Bar enabled inContainer />
+            <Bar enabled />
+          </>,
+        );
+        expect(scrollTypes(onDocument)).toEqual([]);
+        // At most one each, whatever the number of effects (the host may
+        // hold the scroll channel already).
+        for (const type of ['scroll', 'scrollend', 'wheel']) {
+          expect(
+            scrollTypes(onWindow).filter(each => each === type).length,
+          ).toBeLessThanOrEqual(1);
+        }
+        expect(scrollTypes(onWindow)).toContain('scrollend');
         cleanup();
-        added.mockClear();
+        onWindow.mockClear();
+        // Where the browser sends no `scrollend`, none is listened for.
         const restoreScrollEnd = withoutScrollEnd();
         try {
           render(<Bar enabled inContainer />);
-          expect(types()).toEqual(['scroll']);
+          expect(scrollTypes(onWindow)).not.toContain('scrollend');
         } finally {
           restoreScrollEnd();
         }
       } finally {
-        added.mockRestore();
+        onDocument.mockRestore();
+        onWindow.mockRestore();
         releaseHost();
       }
     });
@@ -705,6 +727,258 @@ function normalCdf(z: number): number {
   const half = (sum * h) / 3 / Math.sqrt(2 * Math.PI);
   return z >= 0 ? 0.5 + half : 0.5 - half;
 }
+
+/** A wheel step over `target`: a trackpad's pixels unless told otherwise. */
+function wheel(target: EventTarget, {ctrlKey = false} = {}) {
+  act(() => {
+    target.dispatchEvent(
+      new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: 24,
+        ctrlKey,
+      }),
+    );
+  });
+}
+
+/** A scroll event of `scroller` (the document for the page), or its end. */
+function scrollOf(
+  scroller: EventTarget,
+  type: 'scroll' | 'scrollend' = 'scroll',
+) {
+  act(() => {
+    scroller.dispatchEvent(new Event(type));
+  });
+}
+
+// spec:AST-094 FR43: on the web a pan also takes wheel and trackpad
+// scrolling, so a scroll the wheel or the trackpad drives is the user's, as a
+// finger's is, and fades. No finger is down in any of these.
+describe('useScrollEdgeEffect under wheel and trackpad scrolling', () => {
+  let now = 1000;
+  let restoreClock = () => {};
+  beforeEach(() => {
+    host.isFinger = false;
+    now = 1000;
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    restoreClock = () => clock.mockRestore();
+  });
+  afterEach(() => {
+    restoreClock();
+  });
+
+  it('a wheel’s scroll of the page fades the effect in, and back out', () => {
+    render(<Bar enabled />);
+    observer().report(true);
+    wheel(document.body);
+    scrollOf(document);
+    observer().report(false);
+    expect(animator.animate).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {spring: bars.scrollEdgeEffect.appear},
+    );
+    scrollOf(document, 'scrollend');
+    now += 1000;
+    wheel(document.body);
+    scrollOf(document);
+    observer().report(true);
+    expect(animator.animate).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {spring: bars.scrollEdgeEffect.disappear},
+    );
+    // Only the first report was put in place at once.
+    expect(animator.set).toHaveBeenCalledTimes(1);
+  });
+
+  // Chromium scrolls a wheel step at once and sends its `scrollend` in the
+  // same task, before the observer reports the crossing.
+  it('a wheel step whose scroll ends before the observer reports still fades', () => {
+    render(<Bar enabled />);
+    observer().report(true);
+    wheel(document.body);
+    scrollOf(document);
+    scrollOf(document, 'scrollend');
+    observer().report(false);
+    expect(animator.animate).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {spring: bars.scrollEdgeEffect.appear},
+    );
+    // The program's scroll afterwards switches at once.
+    now += 1000;
+    scrollOf(document);
+    observer().report(true);
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
+  });
+
+  it('a trackpad’s scroll of a scroll container fades the effect', () => {
+    const {getByTestId} = render(<Bar enabled inContainer />);
+    observer().report(true);
+    wheel(getByTestId('sentinel'));
+    scrollOf(getByTestId('container'));
+    observer().report(false);
+    expect(animator.animate).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {spring: bars.scrollEdgeEffect.appear},
+    );
+  });
+
+  it('keeps the scroll the wheel’s until the scroller’s scrollend: a mouse wheel’s smooth scroll, a trackpad’s momentum', () => {
+    render(<Bar enabled />);
+    observer().report(true);
+    wheel(document.body);
+    scrollOf(document);
+    // Still moving 300 ms on, with no wheel since.
+    now += 300;
+    scrollOf(document);
+    observer().report(false);
+    expect(animator.animate).toHaveBeenCalledTimes(1);
+    scrollOf(document, 'scrollend');
+    // The program scrolls back afterwards (a status-bar tap): at once.
+    now += 300;
+    scrollOf(document);
+    observer().report(true);
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
+    expect(animator.animate).toHaveBeenCalledTimes(1);
+  });
+
+  it('a wheel that scrolls nothing leaves the program’s later scroll switching', () => {
+    render(<Bar enabled />);
+    observer().report(true);
+    // At the top already: the wheel scrolls nothing.
+    wheel(document.body);
+    now += 200;
+    scrollOf(document);
+    observer().report(false);
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {promote: false},
+    );
+    expect(animator.animate).not.toHaveBeenCalled();
+  });
+
+  it('a ctrl-wheel is a pinch, not a scroll', () => {
+    render(<Bar enabled />);
+    observer().report(true);
+    wheel(document.body, {ctrlKey: true});
+    scrollOf(document);
+    observer().report(false);
+    expect(animator.animate).not.toHaveBeenCalled();
+  });
+
+  it('a wheel outside a scroll container leaves the container’s scroll the program’s', () => {
+    const {getByTestId} = render(<Bar enabled inContainer />);
+    observer().report(true);
+    wheel(document.body);
+    scrollOf(getByTestId('container'));
+    observer().report(false);
+    expect(animator.animate).not.toHaveBeenCalled();
+  });
+
+  // The WebKit workaround (the hook's file header): composited only while
+  // the user's scroll runs, so the program's later scroll finds no layer.
+  it('composites the layer from the wheel’s first scroll until its scrollend, and never for a wheel that scrolls nothing', async () => {
+    const {getByTestId} = render(<Bar enabled />);
+    const layer = getByTestId('layer');
+    animator.element = layer;
+    const promotion = () =>
+      layer.style.getPropertyValue('--_scroll-edge-will-change');
+    wheel(document.body);
+    expect(promotion()).toBe('');
+    scrollOf(document);
+    expect(promotion()).toBe('opacity');
+    scrollOf(document, 'scrollend');
+    await Promise.resolve();
+    expect(promotion()).toBe('');
+    now += 1000;
+    wheel(document.body);
+    now += 200;
+    scrollOf(document);
+    expect(promotion()).toBe('');
+  });
+
+  it('ends the wheel’s scroll after a quiet spell where the browser sends no scrollend', () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    const own = Object.getOwnPropertyDescriptor(window, 'onscrollend');
+    const proto = Object.getPrototypeOf(window) as object;
+    const inherited = Object.getOwnPropertyDescriptor(proto, 'onscrollend');
+    Reflect.deleteProperty(window, 'onscrollend');
+    Reflect.deleteProperty(proto, 'onscrollend');
+    const wait = (ms: number) => {
+      now += ms;
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    };
+    try {
+      expect('onscrollend' in window).toBe(false);
+      const {getByTestId} = render(<Bar enabled />);
+      const layer = getByTestId('layer');
+      animator.element = layer;
+      const promotion = () =>
+        layer.style.getPropertyValue('--_scroll-edge-will-change');
+      observer().report(true);
+      wheel(document.body);
+      scrollOf(document);
+      // Its smooth scroll keeps moving: still the wheel's.
+      wait(100);
+      scrollOf(document);
+      wait(150);
+      expect(promotion()).toBe('opacity');
+      // Quiet for the 200 ms spell: the scroll has ended.
+      wait(60);
+      expect(promotion()).toBe('');
+      // The program's scroll afterwards switches at once.
+      wait(300);
+      scrollOf(document);
+      observer().report(false);
+      expect(animator.set).toHaveBeenLastCalledWith(
+        {opacity: 1},
+        {promote: false},
+      );
+      expect(animator.animate).not.toHaveBeenCalled();
+    } finally {
+      if (inherited != null) {
+        Object.defineProperty(proto, 'onscrollend', inherited);
+      }
+      if (own != null) {
+        Object.defineProperty(window, 'onscrollend', own);
+      }
+      vi.useRealTimers();
+    }
+  });
+
+  // spec:AST-094 FR24: no listener while the touch presentation is off.
+  it('listens for wheels only while the effect runs, passively: none with a mouse or while disabled', () => {
+    cleanup();
+    const added = vi.spyOn(window, 'addEventListener');
+    const removed = vi.spyOn(window, 'removeEventListener');
+    try {
+      const wheelListeners = () =>
+        added.mock.calls.filter(([type]) => type === 'wheel');
+      pointer.isTouch = false;
+      render(<Bar enabled />);
+      pointer.isTouch = true;
+      render(<Bar enabled={false} />);
+      expect(wheelListeners()).toEqual([]);
+      cleanup();
+      render(<Bar enabled />);
+      expect(wheelListeners()).toHaveLength(1);
+      expect(wheelListeners()[0]?.[2]).toEqual({capture: true, passive: true});
+      cleanup();
+      expect(removed.mock.calls.some(([type]) => type === 'wheel')).toBe(true);
+    } finally {
+      added.mockRestore();
+      removed.mockRestore();
+    }
+  });
+});
 
 describe('the internal motion entry', () => {
   // Lab reaches the effect and its table only through

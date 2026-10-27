@@ -13,7 +13,9 @@
  *   appear and disappear springs when seeked, keeps playing through a
  *   blocked main thread, does no Layout or Paint, is a cross-fade of at most
  *   200 ms under Reduce Motion, and turns around from where it is when the
- *   content comes back mid-fade; Reduce Transparency makes it an opaque
+ *   content comes back mid-fade; a wheel's scroll fades it as a finger's
+ *   does, and the program's then switches it (`spec:AST-094` FR43, real
+ *   wheel input in Chromium); Reduce Transparency makes it an opaque
  *   band; the layer is hidden from assistive technology; a mouse keeps
  *   today's opaque bar; a storyboard of the fade in and out
  * @position Browser proof for AppShell.tsx's touch bar and
@@ -45,6 +47,8 @@ import {
   traceRendering,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
+  WHEEL_SKIP,
   withStorybook,
   type CastFrame,
 } from '@astryxdesign/interaction-harness';
@@ -525,6 +529,44 @@ test('a finger’s scroll fades the effect; the program’s then switches it at 
   await waitForRest(layer);
   expect(await presentedOpacity(layer)).toBe(1);
   // A status-bar tap or a scrollTo: no finger on the content.
+  await scrollToY(page, top);
+  await frames(page, 3);
+  expect(await layer.evaluate(element => element.getAnimations().length)).toBe(
+    0,
+  );
+  expect(await presentedOpacity(layer)).toBe(0);
+});
+
+// spec:AST-094 FR43: on the web a pan also takes wheel and trackpad
+// scrolling, so a wheel's scroll is the user's and fades, as a finger's does.
+// Real wheel input through the drivers; WebKit's mobile emulation has none.
+test('a wheel’s scroll fades the effect in, as a finger’s does; the program’s then switches it at once', async ({
+  page,
+}) => {
+  const {layer, top} = await openShell(page);
+  const driver = await webInputDriver(page);
+  test.skip(!driver.wheels, WHEEL_SKIP);
+  // The wheel's scroll ends (its `scrollend`) before the program's starts.
+  const ended = await page.evaluateHandle(() => ({
+    done: new Promise<void>(resolve => {
+      document.addEventListener('scrollend', () => resolve(), {
+        capture: true,
+        once: true,
+      });
+    }),
+  }));
+  // A trackpad's scroll over the content (pixel deltas), down past the
+  // switch.
+  await driver.wheel({x: 200, y: 500, dy: top + UNDER});
+  await waitForAnimation(layer);
+  await waitForRest(layer);
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(top + 10);
+  expect(await presentedOpacity(layer)).toBe(1);
+  await page.evaluate(async box => {
+    await box.done;
+  }, ended);
+  await ended.dispose();
+  // A status-bar tap or a scrollTo: no wheel and no finger, so at once.
   await scrollToY(page, top);
   await frames(page, 3);
   expect(await layer.evaluate(element => element.getAnimations().length)).toBe(

@@ -8,8 +8,9 @@
  *   and their registration from the component that animates with them (a
  *   bar's: the bars domain of the UIKit constants table, registered here
  *   before the first animation), the colour tokens, the touch presentation
- *   resolver (utils/touchPresentation) and the shared finger-scroll reader
- *   (gestures/useFingerScroll)
+ *   resolver (utils/touchPresentation), the shared finger-scroll reader
+ *   (gestures/useFingerScroll) and the shared input stream's wheel and
+ *   scroll events (utils/inputStream)
  * @output Exports `useScrollEdgeEffect`: props for a bar's scroll edge effect
  *   layer (the veil, its shape and colour) and for the sentinel that tells
  *   when content has moved under the bar, with the veil fading in and out on
@@ -61,10 +62,19 @@
  * how it plays.
  *
  * The first report puts the effect in place without a fade, so a page that
- * loads scrolled shows it at once. After that the effect fades only when a
- * finger drives the scroll (a finger is down in the scroller, or its
+ * loads scrolled shows it at once. After that the effect fades only when the
+ * user drives the scroll: a finger (a finger is down in the scroller, or its
  * momentum is still running: `useFingerScroll`, over the gesture host,
- * which ends at the scroller's `scrollend`). A scroll the program starts
+ * which ends at the scroller's `scrollend`), or a wheel or trackpad, since
+ * on the web a pan also takes wheel and trackpad scrolling (`spec:AST-094`
+ * FR43). A scroll of the scroller that starts within `WHEEL_SCROLL_GAP_MS`
+ * of a wheel over it is the wheel's until the scroller's `scrollend` (a
+ * mouse wheel's smooth scroll and a trackpad's momentum included) or, where
+ * the browser sends none, a quiet spell of `PROMOTION_RECHECK_MS`. The
+ * observer's report follows the scroller's latest scroll event, so the fade
+ * reads that scroll's kind.
+ * A ctrl-wheel is a pinch and scrolls nothing, and a wheel that scrolls
+ * nothing makes no later scroll the wheel's. A scroll the program starts
  * (`scrollTo`, a status-bar tap) switches it at once, with no compositing
  * layer. That is a WebKit engine workaround: on iOS 26.2, while a composited
  * layer sits under a sticky header (a running animation, `will-change`, a
@@ -74,18 +84,19 @@
  * blank frame in 5 takes; `will-change: opacity` on the child, a blank in
  * 5 of 5, with no opacity change at all; the layer dropped in the same task
  * as the scroll, none in 6). A finger's scroll never blanks them. So the
- * layer is composited only while a finger works the scroller: from the
+ * layer is composited only while the user works the scroller: from a
  * finger's landing, so a fade that starts mid-drag finds its layer (on a
  * software rasterizer, creating it as the fade starts costs that frame),
- * until the finger's scroll has ended; the program's switch is written
- * without promotion. Where the browser sends no `scrollend`, the
- * finger-scroll watch ends a finger's scroll 150 ms after its last scroll
- * event, and the promotion is checked again `PROMOTION_RECHECK_MS` (200 ms)
- * after that event, so no fling leaves the layer promoted. The workaround
- * goes once WebKit no longer drops a sticky header's items when the program
- * scrolls over a composited layer: the plain-HTML repro above, re-run on
- * each iOS release, shows when; the program's scroll then fades as UIKit's
- * does. The fade is opacity only; under Reduce Motion the
+ * until the finger's scroll has ended, and from a wheel's first scroll until
+ * that scroll has ended; the program's switch is written without promotion.
+ * Where the browser sends no `scrollend`, the finger-scroll watch ends a
+ * finger's scroll 150 ms after its last scroll event, and a wheel's scroll
+ * and the promotion end `PROMOTION_RECHECK_MS` (200 ms) after that event, so
+ * no fling leaves the layer promoted. The workaround goes once WebKit no
+ * longer drops a sticky header's items when the program scrolls over a
+ * composited layer: the plain-HTML repro above, re-run on each iOS release,
+ * shows when; the program's scroll then fades as UIKit's does. The fade is
+ * opacity only; under Reduce Motion the
  * animator plays its own cross-fade (design:reduced-motion DR2). The springs
  * are the bars table's measured `bars.scrollEdgeEffect.appear` and
  * `.disappear`, internal constants: touch motion stays internal until the
@@ -103,26 +114,40 @@ import {useFingerScroll} from '../gestures/useFingerScroll';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SpringDescription} from './spring';
 import {useAnimator} from './useAnimator';
+import {subscribeInput} from '../utils/inputStream';
 import {useTouchPresentation} from '../utils/touchPresentation';
 
 /** No scroller: nothing is watched (a mouse, or the effect is off). */
 const NO_SCROLLER: RefObject<Element | null> = {current: null};
 
 /**
+ * How soon after a wheel over the scroller a scroll of it counts as that
+ * wheel's, in ms. An inference: no event says which input moved a scroller.
+ * Measured basis: in Chromium, with real wheel input through the harness's
+ * drivers, a wheel step reaches the page about 1 ms before the scroll it
+ * causes, in the same task, and its `scrollend` 0.2 ms after that scroll; so
+ * a wheel's own scroll starts well inside the window, and a scroll the
+ * program starts later is not the wheel's. 100 ms is the gesture host's
+ * quiet gap that ends a wheel gesture (`spec:AST-094` FR43).
+ */
+const WHEEL_SCROLL_GAP_MS = 100;
+
+/**
  * The private custom property the layer's `will-change` reads: `opacity`
- * while a finger works the scroller (see the file header), unset otherwise.
- * Set inline by this hook only; it is not theme data.
+ * while the user works the scroller, a finger or a wheel's scroll (see the
+ * file header), unset otherwise. Set inline by this hook only; it is not
+ * theme data.
  */
 export const SCROLL_EDGE_LAYER_PROMOTION = '--_scroll-edge-will-change';
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
-
 /**
  * Where the browser sends no `scrollend`, how long after the scroller's last
- * scroll event the layer's promotion is checked again, in ms: past the
- * finger-scroll watch's 150 ms spell (gestures/fingerScroll.ts), after which
- * it reads the finger's scroll as ended, so a fling never leaves the layer
- * promoted.
+ * scroll event its scroll counts as ended, a wheel's included, and the
+ * layer's promotion is checked again, in ms. An inference, since no event
+ * ends the scroll there: past the finger-scroll watch's 150 ms spell
+ * (gestures/fingerScroll.ts: longer than the gap between a momentum scroll's
+ * events), so the watch has read the finger's scroll as ended by then and a
+ * fling never leaves the layer promoted.
  */
 const PROMOTION_RECHECK_MS = 200;
 
@@ -141,8 +166,9 @@ const styles = stylex.create({
     insetBlockStart: 0,
     pointerEvents: 'none',
     opacity: 0,
-    // Composited only while a finger works the scroller: the hook sets the
-    // private property from the finger's landing until its scroll ends (a composited
+    // Composited only while the user works the scroller: the hook sets the
+    // private property from a finger's landing until its scroll ends, and
+    // through a wheel's scroll (a composited
     // layer under a sticky bar makes iOS 26.2 drop the bar's items when the
     // program scrolls back to the top; see the file header).
     willChange: 'var(--_scroll-edge-will-change, auto)',
@@ -325,6 +351,11 @@ export function useScrollEdgeEffect({
     const doc = sentinel?.ownerDocument ?? document;
     const container = root?.current ?? null;
     let isShown: boolean | null = null;
+    // Whether the scroll now moving the scroller is a wheel's or a
+    // trackpad's, and whether its latest scroll event was (the wheel reading
+    // below).
+    let isWheelScroll = false;
+    let movedByWheel = false;
     // How far below the container's padding edge this engine starts the
     // root rectangle (its top padding in WebKit, 0 in Chromium): unknown
     // until the first report of a container; a page has no padding edge.
@@ -354,7 +385,8 @@ export function useScrollEdgeEffect({
       if (next === isShown) {
         return;
       }
-      if (isShown != null && isFingerScroll()) {
+      if (isShown != null && (isFingerScroll() || movedByWheel)) {
+        // The user's scroll: a finger's, or a wheel's or trackpad's (FR43).
         animator.animate(
           {opacity: next ? 1 : 0},
           {spring: next ? springs.appear : springs.disappear},
@@ -386,16 +418,17 @@ export function useScrollEdgeEffect({
       }
     };
     observe();
-    // The layer is composited only while a finger works the scroller (the
-    // file header): from its landing until its scroll, momentum included,
-    // ends.
+    // The layer is composited only while the user works the scroller (the
+    // file header): from a finger's landing until its scroll, momentum
+    // included, ends, and through a wheel's scroll.
     const scroller: Node = container ?? doc;
     const host = getGestureHost(doc);
     const releaseHost = host.retain();
     let isPromoted = false;
     const updatePromotion = () => {
       const layer = animator.element;
-      const next = host.isFingerDownIn(scroller) || isFingerScroll();
+      const next =
+        host.isFingerDownIn(scroller) || isFingerScroll() || isWheelScroll;
       if (layer == null || next === isPromoted) {
         return;
       }
@@ -407,13 +440,15 @@ export function useScrollEdgeEffect({
       }
     };
     const unsubscribeFingers = host.onFingersChange(updatePromotion);
-    // One document listener per effect; this base has no shared input
-    // stream. Its `scrollend` drops the layer once the finger's scroll has
-    // ended, after the finger-scroll watch has heard the same event. Where
-    // the browser sends no `scrollend`, the scroller's scroll events time a
-    // re-check PROMOTION_RECHECK_MS after the last one instead.
+    // Wheel and trackpad scrolling, and the end of the user's scroll (the
+    // file header, FR43): passive, on the window's capture phase through the
+    // shared input stream (one native listener per type for every effect),
+    // and only while the effect runs (FR24).
     const view = doc.defaultView;
     const hasScrollEnd = view != null && 'onscrollend' in view;
+    const scrollerOf = (event: Event): EventTarget | null =>
+      event.target === doc ? doc : event.target;
+    let wheelAt = Number.NEGATIVE_INFINITY;
     let recheck: ReturnType<typeof setTimeout> | null = null;
     const clearRecheck = () => {
       if (recheck != null) {
@@ -421,26 +456,76 @@ export function useScrollEdgeEffect({
         recheck = null;
       }
     };
-    const scrollType = hasScrollEnd ? 'scrollend' : 'scroll';
-    const onScrollEvent = hasScrollEnd
-      ? () => queueMicrotask(updatePromotion)
-      : (event: Event) => {
-          const target = event.target === doc ? doc : event.target;
-          if (target !== scroller) {
-            return;
-          }
-          clearRecheck();
-          recheck = setTimeout(() => {
-            recheck = null;
-            updatePromotion();
-          }, PROMOTION_RECHECK_MS);
-        };
-    doc.addEventListener(scrollType, onScrollEvent, PASSIVE_CAPTURE);
+    const onWheel = (event: WheelEvent) => {
+      // A ctrl-wheel is a pinch (a trackpad pinch, or Control and a wheel):
+      // it scrolls nothing. Over a container, only a wheel inside it.
+      const target = event.target;
+      if (
+        event.ctrlKey ||
+        (container != null &&
+          !(target instanceof Node && container.contains(target)))
+      ) {
+        return;
+      }
+      wheelAt = performance.now();
+    };
+    const onScroll = (event: Event) => {
+      if (scrollerOf(event) !== scroller) {
+        return;
+      }
+      // A recognizer's own scroll (a menu's edge autoscroll) is never the
+      // user's.
+      if (host.isOwnScroll(scroller)) {
+        movedByWheel = false;
+        return;
+      }
+      if (
+        !isWheelScroll &&
+        performance.now() - wheelAt <= WHEEL_SCROLL_GAP_MS
+      ) {
+        isWheelScroll = true;
+        updatePromotion();
+      }
+      // The observer's next report follows this scroll, so it fades when
+      // this scroll is the wheel's, even once its `scrollend` has come: a
+      // wheel step's scroll can end in the same task, before the report.
+      movedByWheel = isWheelScroll;
+      if (!hasScrollEnd) {
+        // No `scrollend`: a quiet spell past the finger-scroll watch's ends a
+        // wheel's scroll and checks the promotion again.
+        clearRecheck();
+        recheck = setTimeout(() => {
+          recheck = null;
+          isWheelScroll = false;
+          updatePromotion();
+        }, PROMOTION_RECHECK_MS);
+      }
+    };
+    // A wheel's scroll ends at its scroller's `scrollend`; the finger's,
+    // after the finger-scroll watch has heard the same `scrollend`.
+    const onScrollEnd = (event: Event) => {
+      if (scrollerOf(event) === scroller) {
+        isWheelScroll = false;
+      }
+      queueMicrotask(updatePromotion);
+    };
+    const unsubscribers =
+      view == null
+        ? []
+        : [
+            subscribeInput(view, 'wheel', onWheel),
+            subscribeInput(view, 'scroll', onScroll),
+            ...(hasScrollEnd
+              ? [subscribeInput(view, 'scrollend', onScrollEnd)]
+              : []),
+          ];
     return () => {
       observerRef.current = null;
       observer.disconnect();
       unsubscribeFingers();
-      doc.removeEventListener(scrollType, onScrollEvent, PASSIVE_CAPTURE);
+      for (const stop of unsubscribers) {
+        stop();
+      }
       clearRecheck();
       releaseHost();
       animator.element?.style.removeProperty(SCROLL_EDGE_LAYER_PROMOTION);
