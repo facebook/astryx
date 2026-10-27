@@ -172,6 +172,9 @@ export * from './Outline';
 // Overflow list
 export * from './OverflowList';
 
+// Animating one element (spec:AST-107 FR3)
+export * from './animator';
+
 // Hooks
 export * from './hooks';
 

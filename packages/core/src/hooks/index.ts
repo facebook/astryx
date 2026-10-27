@@ -123,6 +123,9 @@ export type {
   UseInteractiveRoleOptions,
 } from './useInteractiveRole';
 
+export {useAnimator} from './useAnimator';
+export type {UseAnimatorResult} from './useAnimator';
+
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
 

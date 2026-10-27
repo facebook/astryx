@@ -699,6 +699,11 @@
       "types": "./dist/VisuallyHidden/index.d.ts",
       "default": "./dist/VisuallyHidden/index.js"
     },
+    "./animator": {
+      "source": "./src/animator/index.ts",
+      "types": "./dist/animator/index.d.ts",
+      "default": "./dist/animator/index.js"
+    },
     "./hooks": {
       "source": "./src/hooks/index.ts",
       "types": "./dist/hooks/index.d.ts",
