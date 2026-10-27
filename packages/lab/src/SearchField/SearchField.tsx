@@ -5,7 +5,7 @@
 /**
  * @file SearchField.tsx
  * @input React, StyleX, core's theme tokens, Icon, the UIKit search table
- *   (`@astryxdesign/core/motion/uikit`) and its touch layer,
+ *   (`@astryxdesign/core/internal/motion`) and its touch layer,
  *   SearchFieldTouch.ts (the animator, the touch resolver, the keyboard's
  *   height and searchFieldModel.ts's math)
  * @output Exports SearchField (the phone search field of iOS 26's
@@ -121,7 +121,7 @@ import {
   type SearchFieldPlacement,
 } from './SearchFieldTouch';
 import {bottomEdges} from './searchFieldModel';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/internal/motion';
 
 const {bottom} = search;
 

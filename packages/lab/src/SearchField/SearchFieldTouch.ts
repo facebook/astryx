@@ -4,11 +4,10 @@
 
 /**
  * @file SearchFieldTouch.ts
- * @input The animator (`@astryxdesign/core/motion/useAnimator`), the
- *   search table (`@astryxdesign/core/motion/uikit`), the touch resolver
- *   (`@astryxdesign/core/utils/touchPresentation`), the tap recognizer
- *   (`@astryxdesign/core/gestures`), searchFieldModel.ts and lab's
- *   keyboard listener (keyboard/useKeyboardHeight.ts)
+ * @input The animator and the search table (Core's internal entry
+ *   `@astryxdesign/core/internal/motion`), the touch resolver and the tap
+ *   recognizer (`@astryxdesign/core/internal/touch`), searchFieldModel.ts and
+ *   lab's keyboard listener (keyboard/useKeyboardHeight.ts)
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts and, under a finger, plays UIKit's activation and cancel
  *   (stacked: one clock; bottom: the measured gel) from the frame that
@@ -36,7 +35,8 @@ import {
 import {
   TapGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
+  useTouchPresentation,
+} from '@astryxdesign/core/internal/touch';
 import {isRtlElement} from '../utils/isRtlElement';
 import {
   activationTiming,
@@ -58,10 +58,9 @@ import {
   type Animator,
   type MotionCurve,
   type MotionHandle,
-} from '@astryxdesign/core/motion/animator';
-import {search} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+  search,
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
 import {
   keyboardCoversPage,
   useKeyboardHeight,
