@@ -301,6 +301,49 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
     expect(states).toEqual([]);
   });
 
+  it('makes no touch listener cancelling for a scroll-only claimer: with it beside a watcher, the touchend stays passive and the contextmenu off (spec:AST-094 FR20, FR24)', () => {
+    const {watched, pull} = mount(
+      '<div id="watched"></div><div id="pull"></div>',
+    );
+    const added = vi.spyOn(window, 'addEventListener');
+    detachers.push(() => added.mockRestore());
+    const coarse = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => true,
+    });
+    // A watcher installs the host's touch listeners, all passive (FR20).
+    detachers.push(
+      coarse.attach(
+        watched,
+        new PanGestureRecognizer({claimsTouches: false, direction: 'vertical'}),
+      ),
+    );
+    added.mockClear();
+    // A pull that takes only the wheel claims no touch.
+    detachers.push(
+      coarse.attach(
+        pull,
+        new PanGestureRecognizer({
+          direction: 'vertical',
+          allowedPointerTypes: [],
+          allowedScrollTypes: ['continuous'],
+        }),
+      ),
+    );
+    const calls = added.mock.calls as unknown as [
+      string,
+      unknown,
+      AddEventListenerOptions | undefined,
+    ][];
+    expect(
+      calls.filter(
+        ([type, , options]) =>
+          type === 'touchend' && options?.passive === false,
+      ),
+    ).toEqual([]);
+    expect(calls.filter(([type]) => type === 'contextmenu')).toEqual([]);
+  });
+
   it('listens for the wheel only where a recognizer a wheel can drive allows it: a tap that allows scroll input adds no wheel listener', () => {
     const {box} = mount('<div id="box"></div>');
     const added = vi.spyOn(box, 'addEventListener');
@@ -326,6 +369,27 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
     // A mouse wheel's notch, in lines (Firefox's).
     expect(wheel(box, {dx: 1, mode: 1, time: 300}).defaultPrevented).toBe(true);
     expect(states.filter(state => state === 'began')).toHaveLength(2);
+  });
+
+  it('leaves a wheel every taker declined to the page from its first step, as with no gesture system: a pan whose shouldReceiveTouch refuses it prevents nothing (spec:AST-094 FR43, FR19)', () => {
+    const {box} = mount('<div id="box"></div>');
+    const pan = new PanGestureRecognizer({
+      direction: 'horizontal',
+      // A Toast declines a wheel a scroller under it can still take.
+      shouldReceiveTouch: () => false,
+    });
+    const states = statesOf(pan);
+    detachers.push(host.attach(box, pan));
+    const prevented = [0, 16, 32, 48, 64, 80].map(
+      time => wheel(box, {dx: 16, time}).defaultPrevented,
+    );
+    expect(prevented).toEqual([false, false, false, false, false, false]);
+    expect(states).toEqual([]);
+    clock.runDue(300);
+    // A notch, too.
+    expect(wheel(box, {dx: 1, mode: 1, time: 400}).defaultPrevented).toBe(
+      false,
+    );
   });
 
   it('takes no wheel for a pan whose caller allows no scroll type: its element gets no wheel listener, and the page scrolls', () => {
@@ -380,6 +444,42 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
     expect(states).not.toContain('ended');
     clock.runDue(48 + 100);
     expect(states).toContain('ended');
+  });
+
+  it("releases a mouse wheel's notches still, so position alone decides, while a trackpad's scroll keeps its speed (coordinator ruling; FR43 is silent)", () => {
+    const {notched, smooth} = mount(
+      '<div id="notched"></div><div id="smooth"></div>',
+    );
+    const released: Record<string, {velocity: number; scroll: number}> = {};
+    for (const [key, element] of [
+      ['notched', notched],
+      ['smooth', smooth],
+    ] as const) {
+      const pan = new PanGestureRecognizer({direction: 'vertical'});
+      pan.addTransitionListener((current, _from, to) => {
+        if (to === 'ended') {
+          released[key] = {
+            velocity: current.velocity().y,
+            scroll: current.scrollVelocity().y,
+          };
+        }
+      });
+      detachers.push(host.attach(element, pan));
+    }
+    // Three quick 100 px notches, as a mouse wheel reports them.
+    for (const time of [0, 16, 32]) {
+      expect(wheel(notched, {dy: 100, time}).defaultPrevented).toBe(true);
+    }
+    clock.runDue(32 + 100);
+    expect(Math.abs(released.notched.velocity)).toBe(0);
+    expect(Math.abs(released.notched.scroll)).toBe(0);
+    // A trackpad's steady scroll keeps its speed at the release.
+    for (const time of [500, 516, 532, 548]) {
+      wheel(smooth, {dy: 8, time});
+    }
+    clock.runDue(548 + 100);
+    expect(Math.abs(released.smooth.velocity)).toBeGreaterThan(0);
+    expect(Math.abs(released.smooth.scroll)).toBeGreaterThan(0);
   });
 
   it('starts a new wheel gesture after a quiet gap even when the end timer has not run yet (a blocked main thread)', () => {
