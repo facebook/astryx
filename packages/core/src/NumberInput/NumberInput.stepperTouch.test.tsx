@@ -611,7 +611,7 @@ describe('NumberInput steppers under a finger', () => {
     expect(committed(onChange)).toEqual([6, 7]);
   });
 
-  it('a pointer click past the click guard\'s window after a hold is a press of its own', () => {
+  it("a pointer click past the click guard's window after a hold is a press of its own", () => {
     // A press\'s own click follows its lift at once; the gesture system bounds
     // that wait with the click guard\'s window (CLICK_GUARD_WINDOW_MS, M-G17
     // in motion/MEASUREMENTS.md), so half a second later a click steps.
@@ -913,42 +913,152 @@ describe('NumberInput steppers losing a held press', () => {
 });
 
 describe('NumberInput steppers where the primary pointer is fine', () => {
-  it('nothing touch-only attaches: no press tracker, no touch listener, no warning', () => {
+  it('the column listens through the gesture host alone: its passive pointerdown and its claiming touchmove, no page listener while idle, no warning (spec:AST-094 FR43, FR24)', () => {
     // A fine pointer: this test's context has no coarse pointer.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
-    // `spec:AST-094` FR19, FR24: where the primary pointer is fine no touch
-    // listener is registered, at the document or on the field.
-    const touchListeners: string[] = [];
+    const added: {target: EventTarget; type: string; passive: boolean}[] = [];
+    const listening = new Set<string>();
+    const scopeOf = (target: EventTarget) =>
+      target === document ? 'document' : target === window ? 'window' : null;
     const addEventListener = EventTarget.prototype.addEventListener;
+    const removeEventListener = EventTarget.prototype.removeEventListener;
     vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(
       function (this: EventTarget, type, listener, options) {
-        const isField =
-          this instanceof Node &&
-          screen.queryByRole('spinbutton')?.closest('div')?.contains(this) ===
-            true;
-        if (
-          type.startsWith('touch') &&
-          (this === document || this === window || isField)
-        ) {
-          touchListeners.push(type);
+        added.push({
+          target: this,
+          type,
+          passive: typeof options === 'object' && options.passive === true,
+        });
+        const scope = scopeOf(this);
+        if (scope != null) {
+          listening.add(`${scope}:${type}`);
         }
         addEventListener.call(this, type, listener, options);
       },
     );
+    vi.spyOn(EventTarget.prototype, 'removeEventListener').mockImplementation(
+      function (this: EventTarget, type, listener, options) {
+        const scope = scopeOf(this);
+        if (scope != null) {
+          listening.delete(`${scope}:${type}`);
+        }
+        removeEventListener.call(this, type, listener, options);
+      },
+    );
+    // The press's page listeners (the modality tracking's document
+    // pointerdown is a page-lifetime listener, not the press's).
+    const pageListeners = () =>
+      [...listening].filter(key =>
+        /:(touch|pointermove|pointerup|pointercancel)/.test(key),
+      );
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {onChange, increment} = setup();
     const column = increment.parentElement as HTMLElement;
-    expect(touchListeners).toEqual([]);
+    // Idle: the column carries the gesture host's passive pointerdown and,
+    // as a press that keeps its touch, its blocking touchmove (FR24, for
+    // every pointer); nothing else listens for touch on the page or the
+    // field, and the press's page listeners are not there.
+    expect(
+      added
+        .filter(entry => entry.target === column)
+        .map(({type, passive}) => ({type, passive}))
+        .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0)),
+    ).toEqual([
+      {type: 'pointerdown', passive: true},
+      {type: 'touchmove', passive: false},
+    ]);
+    const field = column.closest('div:has(input)') ?? column.parentElement;
+    expect(
+      added.filter(
+        ({target, type}) =>
+          type.startsWith('touch') &&
+          target !== column &&
+          (scopeOf(target) != null ||
+            (target instanceof Node && field?.contains(target) === true)),
+      ),
+    ).toEqual([]);
+    expect(pageListeners()).toEqual([]);
     expect(warn).not.toHaveBeenCalled();
-    // The host writes no touch-action of its own on the column.
-    expect(column.style.getPropertyValue('touch-action')).toBe('');
-    // A mouse still holds the stepper, on the column's own pointer events.
+    // A mouse press is the press tracker's, as a finger's is: it paints at
+    // press-down, commits once at the release, and leaves nothing listening
+    // on the page.
     const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
     fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    expect(press(increment)).toBe('on');
     wait(600);
     fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
     expect(committed(onChange)).toEqual([6]);
-    expect(touchListeners).toEqual([]);
+    expect(press(increment)).toBeNull();
+    expect(pageListeners()).toEqual([]);
+  });
+
+  it('the column takes touch-action manipulation for its kept press, as under a finger (spec:AST-094 FR18, FR43)', async () => {
+    // A touchscreen laptop's finger presses the steppers as on a phone.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    // As under a finger: a frame read an earlier test scheduled runs first,
+    // on a real frame, and the host writes its touch-action in the next one.
+    vi.useRealTimers();
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'performance',
+        'Date',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+      ],
+    });
+    vi.advanceTimersByTime(epoch);
+    // jsdom drops touch-action, so the host's writes are observed.
+    const writes: {style: CSSStyleDeclaration; value: string | null}[] = [];
+    const setProperty = CSSStyleDeclaration.prototype.setProperty;
+    vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty').mockImplementation(
+      function (
+        this: CSSStyleDeclaration,
+        name: string,
+        value: string | null,
+        priority?: string,
+      ) {
+        if (name === 'touch-action') {
+          writes.push({style: this, value});
+        }
+        setProperty.call(this, name, value, priority);
+      },
+    );
+    const {increment} = setup();
+    wait(16);
+    const column = increment.parentElement as HTMLElement;
+    const columnWrites = writes
+      .filter(({style}) => style === column.style)
+      .map(w => w.value);
+    expect(columnWrites).toContain('manipulation');
+    expect(new Set(columnWrites)).toEqual(new Set(['manipulation']));
+  });
+
+  it('a right click on a stepper presses nothing: no paint, no step (spec:AST-094 FR43)', () => {
+    // The host takes a mouse's primary button only.
+    const {onChange, increment} = setup();
+    const pointer = {
+      pointerType: 'mouse',
+      pointerId: 1,
+      isPrimary: true,
+      button: 2,
+      buttons: 2,
+    };
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    expect(press(increment)).toBeNull();
+    wait(800);
+    fireEvent.pointerUp(increment, {
+      ...pointer,
+      buttons: 0,
+      clientX: 212,
+      clientY: 8,
+    });
+    fireEvent.contextMenu(increment);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 

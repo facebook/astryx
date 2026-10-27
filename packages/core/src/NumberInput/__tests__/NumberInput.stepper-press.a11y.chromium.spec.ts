@@ -100,7 +100,7 @@ test('a held finger refuses text selection on the stepper column for that press 
   await expect.poll(refuses).toBe(false);
 });
 
-test("with a mouse the stepper column keeps the browser's own touch-action (spec:AST-094 FR19)", async ({
+test('under a fine pointer the stepper column takes touch-action manipulation too, so a finger on a touchscreen laptop presses as on a phone (spec:AST-094 FR18, FR43)', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -117,7 +117,7 @@ test("with a mouse the stepper column keeps the browser's own touch-action (spec
   const column = page
     .getByRole('button', {name: 'Increment Quantity'})
     .locator('..');
-  await expect(column).toHaveCSS('touch-action', 'auto');
+  await expect(column).toHaveCSS('touch-action', 'manipulation');
   await context.close();
 });
 
