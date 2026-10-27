@@ -89,9 +89,11 @@ export const swipeActions = {
   /**
    * A release this fast goes the way it moves: it opens the row when it
    * opens and closes it when it closes, from anywhere short of the commit
-   * point. A flick therefore never fires an action. The speed is the swipe
-   * pan's velocity when the finger lifts, which UIKit never decays: a lift
-   * after a pause carries the last moving speed.
+   * point. A flick therefore never fires an action. The speed is the release
+   * velocity of a dragged surface (`spec:AST-100` FR2): the pan's velocity as
+   * the finger lifts, and 0 once the finger has stayed still before lifting,
+   * where UIKit's pan, which never decays, still reports its last moving
+   * speed. The measurements below are UIKit's pan velocities.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, the swipe pan's velocity read at its end: released past
    *   half the open width while closing at 19.9, 21.2, 35.7 and 40.7 pt/s

@@ -64,6 +64,7 @@ import {
   writeEvidence,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
+import {UIKIT_VELOCITY} from '../../motion/uikit/gestures';
 import {swipeActions} from '../../motion/uikit/swipeActions';
 
 const storybook = withStorybook(test);
@@ -415,41 +416,83 @@ test('the settle after a held release is UIKit’s spring, frame by frame, with 
 test('a flick hands the row’s velocity to the settle', async ({
   page,
 }, testInfo) => {
-  const {driver, row, entries, start} = await openRow(page);
-  const openWidth = await openWidthOf(entries);
   // A quick throw toward the trailing side: about 55 px of swipe, short of
   // half the panel, still moving at 1000 px/s when it lifts. The release
   // projects past half the panel, so the row opens; the settle starts with
   // the row's own velocity, which the tracking spring had built up.
-  await installTimerGate(page);
-  // The row's tracking curve as the finger lifts, before the release replaces
-  // it: its keyframes, points on the curve.
-  await row.evaluate(node => {
-    addEventListener(
-      'touchend',
-      () => {
-        const animation = node
-          .getAnimations()
-          .find(candidate =>
-            (candidate.effect as KeyframeEffect)
-              .getKeyframes()
-              .some(frame => 'translate' in frame),
-          );
-        const effect = animation?.effect as KeyframeEffect | undefined;
-        const duration = Number(effect?.getComputedTiming().duration ?? 0);
-        Object.assign(window, {
-          __trackingAtLift: (effect?.getKeyframes() ?? []).map(frame => ({
-            t: (frame.computedOffset ?? 0) * duration,
-            value: parseFloat(String(frame.translate)),
-          })),
-        });
-      },
-      {capture: true, once: true},
+  // WebKit stamps a touch event when it dispatches it, so a stall on a busy
+  // machine between the last move and the lift reads as a finger that rested
+  // (`spec:AST-100` FR2: the release velocity is 0), and the throw no longer
+  // flicks. Only a delivered flick is judged: the throw is replayed on a
+  // fresh page until the lift arrives within the stillness interval.
+  let opened: OpenRow | undefined;
+  let openWidth = 0;
+  let liftGap = Number.POSITIVE_INFINITY;
+  for (
+    let attempt = 0;
+    attempt < 3 && liftGap > UIKIT_VELOCITY.stillness.value;
+    attempt += 1
+  ) {
+    opened = await openRow(page);
+    openWidth = await openWidthOf(opened.entries);
+    await installTimerGate(page);
+    // The row's tracking curve as the finger lifts, before the release
+    // replaces it: its keyframes, points on the curve. And how long after
+    // the last move the lift was stamped.
+    await opened.row.evaluate(node => {
+      let lastMove = Number.NaN;
+      addEventListener(
+        'touchmove',
+        event => {
+          lastMove = event.timeStamp;
+        },
+        {capture: true},
+      );
+      addEventListener(
+        'touchend',
+        event => {
+          Object.assign(window, {__liftGap: event.timeStamp - lastMove});
+        },
+        {capture: true, once: true},
+      );
+      addEventListener(
+        'touchend',
+        () => {
+          const animation = node
+            .getAnimations()
+            .find(candidate =>
+              (candidate.effect as KeyframeEffect)
+                .getKeyframes()
+                .some(frame => 'translate' in frame),
+            );
+          const effect = animation?.effect as KeyframeEffect | undefined;
+          const duration = Number(effect?.getComputedTiming().duration ?? 0);
+          Object.assign(window, {
+            __trackingAtLift: (effect?.getKeyframes() ?? []).map(frame => ({
+              t: (frame.computedOffset ?? 0) * duration,
+              value: parseFloat(String(frame.translate)),
+            })),
+          });
+        },
+        {capture: true, once: true},
+      );
+    });
+    await opened.driver.play(
+      flick(opened.start, {
+        velocity: {x: -1000, y: 0},
+        durationMs: 80,
+        hz: 120,
+      }),
     );
-  });
-  await driver.play(
-    flick(start, {velocity: {x: -1000, y: 0}, durationMs: 80, hz: 120}),
-  );
+    liftGap = await page.evaluate(
+      () => (window as unknown as {__liftGap: number}).__liftGap,
+    );
+  }
+  expect(
+    liftGap,
+    'the browser delivers the lift within the stillness interval',
+  ).toBeLessThanOrEqual(UIKIT_VELOCITY.stillness.value);
+  const {row} = opened as OpenRow;
   const motion = await motionOf(row, -openWidth);
   // The settle's keyframes: the points the animator computed on its curve.
   // The browser draws straight lines between them, up to a quarter pixel
