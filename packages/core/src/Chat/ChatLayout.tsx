@@ -437,17 +437,22 @@ export function ChatLayout({
           {/* Frosted glass layer */}
           <div {...stylex.props(styles.blurLayer, currentDensity.blurLayer)} />
 
-          {/* Composer, in the keyboard-aware region (spec:AST-099 FR4). Focus
-              rests on this named group after the keyboard's Done, which makes
-              it focusable for that park alone (useChatKeyboard), so a click
-              or a tap beside the composer never focuses it (spec:AST-017
-              FR59). It is no tab stop, and no landmark, so several layouts on
-              one page do not repeat one. */}
+          {/* Composer, in the keyboard-aware region (spec:AST-099 FR4). Under
+              the touch presentation focus rests on this named group after the
+              keyboard's Done, which makes it focusable for that park alone
+              (useChatKeyboard), so a tap beside the composer never focuses
+              it. It is no tab stop, and no landmark, so several layouts on one
+              page do not repeat one. Under a fine pointer, where nothing parks,
+              it is a plain container (spec:AST-017 FR59). */}
           <KeyboardSurfaceContext value={true}>
             <div
               ref={keyboard.composerRef}
-              role="group"
-              aria-label={t('@astryx.chatLayout.composerRegion')}
+              role={keyboard.isTouch ? 'group' : undefined}
+              aria-label={
+                keyboard.isTouch
+                  ? t('@astryx.chatLayout.composerRegion')
+                  : undefined
+              }
               {...stylex.props(styles.dock, currentDensity.dock)}>
               <div
                 {...stylex.props(styles.dockInner, currentDensity.dockInner)}>

@@ -470,9 +470,14 @@ test.describe('under a mouse', () => {
   test('a click in the dock beside the composer does not focus the composer group (spec:AST-017 FR59)', async ({
     page,
   }) => {
-    const {editable} = await openChat(page);
+    const {dock, editable} = await openChat(page);
     await editable.click();
-    const region = page.getByRole('group', {name: 'Message composer'});
+    // The composer region: the dock's last box, a plain container under a
+    // mouse.
+    const region = dock.locator(':scope > div').last();
+    await expect(
+      page.getByRole('group', {name: 'Message composer'}),
+    ).toHaveCount(0);
     const outer = await region.boundingBox();
     const inner = await region.locator(':scope > div').boundingBox();
     if (outer == null || inner == null) {

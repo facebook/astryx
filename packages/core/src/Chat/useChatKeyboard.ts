@@ -103,6 +103,12 @@ export interface UseChatKeyboardResult {
   messagesRef: (element: HTMLElement | null) => void;
   /** Ref for the composer region whose text taps are claimed. */
   composerRef: RefObject<HTMLDivElement | null>;
+  /**
+   * Whether the touch presentation is on: only then is the composer region
+   * a named group, the target of Done's park (spec:AST-099 FR4); under a
+   * fine pointer it is a plain container (spec:AST-017 FR59).
+   */
+  isTouch: boolean;
 }
 
 // A transcript within this many px of its end counts as at its newest message.
@@ -584,5 +590,6 @@ export function useChatKeyboard({
     dockRef: dock.ref,
     messagesRef: messages.ref,
     composerRef,
+    isTouch,
   };
 }

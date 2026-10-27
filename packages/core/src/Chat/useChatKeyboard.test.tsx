@@ -414,14 +414,36 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     expect(region.hasAttribute('tabindex')).toBe(false);
   });
 
-  it('never makes the composer region a focus target under a mouse (spec:AST-017 FR59)', () => {
+  it('leaves the composer region a plain container under a mouse: no group, no name and no focus target (spec:AST-017 FR59)', () => {
     primaryPointer('fine');
     const {message} = renderWithSearch('textarea');
-    const region = screen.getByRole('group', {name: 'Message composer'});
-    expect(region.hasAttribute('tabindex')).toBe(false);
+    expect(screen.queryByRole('group', {name: 'Message composer'})).toBeNull();
+    const layout = screen.getByTestId('layout');
+    // The composer's containers inside the layout, the region among them.
+    const containers = () => {
+      const list: Element[] = [];
+      for (
+        let element = message.parentElement;
+        element != null && element !== layout;
+        element = element.parentElement
+      ) {
+        list.push(element);
+      }
+      return list;
+    };
+    expect(
+      containers().filter(
+        element =>
+          element.hasAttribute('role') ||
+          element.hasAttribute('aria-label') ||
+          element.hasAttribute('tabindex'),
+      ),
+    ).toEqual([]);
     act(() => message.focus());
     act(() => message.blur());
-    expect(region.hasAttribute('tabindex')).toBe(false);
+    expect(
+      containers().filter(element => element.hasAttribute('tabindex')),
+    ).toEqual([]);
   });
 
   it('leaves focus where the browser puts it when it moves on to another field', () => {
