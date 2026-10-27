@@ -17,7 +17,6 @@
  *   with Core.
  */
 
-import type {Key} from 'react';
 import {
   REORDER_ENGINE,
   type ListReorderOptions,
@@ -29,7 +28,7 @@ import type {
 } from '../reorderable/createReorderable';
 
 /** The options `reorderable` was made with by `createReorderable`. */
-export function reorderableOptions<TKey extends Key, TTo>(
+export function reorderableOptions<TKey extends string | number, TTo>(
   reorderable: Reorderable<TKey, TTo>,
 ): ReorderableOptions<TKey, TTo> {
   return (reorderable as unknown as ReorderableInternals)
@@ -42,7 +41,7 @@ export function reorderableOptions<TKey extends Key, TTo>(
  * owner's `start(key)` still finds the collection's list (spec:AST-103 FR4a),
  * and its own `start` is the owner's.
  */
-export function adaptReorderable<TKey extends Key, TTo>(
+export function adaptReorderable<TKey extends string | number, TTo>(
   reorderable: Reorderable<TKey, TTo>,
   options: ReorderableOptions<TKey, TTo>,
 ): Reorderable<TKey, TTo> {
