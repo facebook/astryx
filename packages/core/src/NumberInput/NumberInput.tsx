@@ -459,6 +459,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
 import {formatEditableNumber} from './numberParser';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {isPrimaryClick} from '../utils/primaryClick';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
@@ -1184,7 +1185,12 @@ export function NumberInput({
   const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
     // The steppers never take focus: an editing field stays focused.
     event.preventDefault();
-    stepperPointerTypeRef.current = event.pointerType;
+    // Only a primary click presses a stepper: a right click, a pen's barrel
+    // button and a macOS ctrl-click start no press (`spec:AST-094` FR43), so
+    // they name no pointer for the click after them.
+    stepperPointerTypeRef.current = isPrimaryClick(event)
+      ? event.pointerType
+      : null;
   };
 
   // iOS Safari follows the second tap of a quick double tap with a
