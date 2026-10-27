@@ -262,7 +262,7 @@ export default defineConfig(
   // Core's internal subpaths (`@astryxdesign/core/internal/*`) and its
   // gesture, motion and touch-support source are for Core and Lab only.
   {
-    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    files: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     ignores: ['packages/core/**', 'packages/lab/**', '**/dist/**'],
     plugins: {
       '@astryx': astryxEslintPlugin,
@@ -775,20 +775,17 @@ export default defineConfig(
             'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padEnd']",
+          selector: "CallExpression[callee.property.name='padEnd']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padEnd() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padStart']",
+          selector: "CallExpression[callee.property.name='padStart']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padStart() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='repeat']",
+          selector: "CallExpression[callee.property.name='repeat']",
           message:
             'Use the formatter kit — section(), text(), code() — not .repeat() for layout (INV23, FR3). See architecture:cli-surface.',
         },

@@ -113,6 +113,16 @@ ruleTester.run('no-core-internal-import', rule, {
       code: `import {GestureArena} from '../../../packages/core/src/internal/touch';`,
       errors: [{message: deep('../../../packages/core/src/internal/touch')}],
     },
+    // A template literal with no expressions names the module as a string
+    // does.
+    {
+      code: 'const t = import(`@astryxdesign/core/internal/touch`);',
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
+    },
+    {
+      code: 'const t = require(`@astryxdesign/core/internal/touch`);',
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
+    },
     {
       code: `const g = require('../core/src/gestures/GestureArena');`,
       errors: [{message: deep('../core/src/gestures/GestureArena')}],

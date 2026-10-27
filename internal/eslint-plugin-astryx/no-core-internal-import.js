@@ -9,7 +9,8 @@
  * them.
  *
  * Reported, by `import`, `export … from`, `import()`, `require()` and
- * `typeof import()`:
+ * `typeof import()` (a dynamic import or require named by a string or by a
+ * template literal with no expressions):
  *   - `@astryxdesign/core/internal` and any `@astryxdesign/core/internal/*`
  *     subpath, which are reserved for Astryx's own packages and sit outside
  *     the compatibility promise (spec:AST-017 FR21);
@@ -57,9 +58,19 @@ const rule = {
         context.report({node, messageId: 'deep', data: {source}});
       }
     }
+    // A dynamic `import()` or `require()` names its module by a string, or
+    // by a template literal with no expressions, which is a string too.
     function checkLiteral(node) {
-      if (node != null && node.type === 'Literal') {
+      if (node == null) {
+        return;
+      }
+      if (node.type === 'Literal') {
         check(node, node.value);
+      } else if (
+        node.type === 'TemplateLiteral' &&
+        node.expressions.length === 0
+      ) {
+        check(node, node.quasis[0]?.value.cooked);
       }
     }
     return {

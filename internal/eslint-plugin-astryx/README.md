@@ -194,7 +194,8 @@ internal, gesture, motion and touch-support source (`@astryxdesign/core/gestures
 `@astryxdesign/core/motion` and their subpaths, or any path into
 `core/src/{internal,gestures,motion,touch-support}`), which a package outside Core and Lab reaches only through public entries
 (`architecture:react-component-runtime` INV13). It checks `import`,
-`export … from`, `import()`, `require()` and `typeof import()`. The repo config
+`export … from`, `import()`, `require()` and `typeof import()`, a dynamic
+import or require named by a string or a template literal with no expressions. The repo config
 turns it on for every linted file outside `packages/core` and `packages/lab`
 (the global ignores still leave some scripts unlinted), so only Core and Lab
 may import them.
