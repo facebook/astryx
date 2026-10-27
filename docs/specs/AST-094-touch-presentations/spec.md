@@ -464,6 +464,12 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
 
+- **FR42 — The default look changes no size for touch.** The default Astryx
+  look makes no size change for phones or touch; under a coarse pointer, touch
+  targets meet 44 px through an invisible hit area only. Mobile size changes
+  belong to theme adaptations. An alert's phone width is the one decided
+  exception (`component:AlertDialog`) (DEC-20).
+
 ### Platform support
 
 - Supported engines: Astryx's supported browsers (`spec:AST-013`) with touch
@@ -551,6 +557,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                    | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a pinch blocked other than by the author's `touch-action`, or a changed mouse path fails                                                                                                                                                                                                                      |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                                                                                                                                                                                                                                                                                                                                                                          | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                                                                                                                                                                                                                                    |
 | FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a DropdownMenu trigger the caller renders, a row with a context menu, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                                                                                                                                                                                                                                                                                                                             | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                                                                                                                                                                     |
+| FR42            | Default-theme geometry tests under a coarse and a fine pointer, and hit-testing                                                | every component at phone width with a finger and with a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | a default-theme size that differs under touch or at phone width, other than an alert's width, or a touch target under 44 px, fails                                                                                                                                                                                                                                                                                                                                                 |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ## Decision log
@@ -701,6 +708,18 @@ rows likewise highlight on touch-down is a guess until a short UIMenu on the
 iOS 26.2 simulator measures it.
 
 Rejected: the 150 ms delay on every menu row.
+
+### DEC-20 — Touch changes no size in the default look
+
+**Reference:** `spec:AST-094/DEC-20`
+**Decider:** `cixzhang`, `2026-10-26`
+
+Sizes stay the same on phones and under touch in the default look, so a
+product looks the same everywhere unless its theme chooses otherwise; touch
+reach comes from invisible hit areas. Themes own mobile size changes through
+their adaptations.
+
+Rejected: touch-only row heights and control sizes in the default look.
 
 ## Open questions
 
