@@ -11,9 +11,11 @@ pixels per CSS px, touch, mobile viewport rules), in Chromium and WebKit.
 The exemplar to copy is
 [`BottomSheetDetent.interaction.browser.spec.ts`](../../packages/core/src/BottomSheet/__tests__/BottomSheetDetent.interaction.browser.spec.ts).
 The harness proves its own instruments in
-[`src/harness.interaction.browser.spec.ts`](src/harness.interaction.browser.spec.ts):
-every positive check has a negative control beside it (a rAF animation that
-freezes, a `top` animation that lays out every frame).
+[`src/harness.interaction.browser.spec.ts`](src/harness.interaction.browser.spec.ts).
+The busy-main-thread proof and the rendering-trace counts have a negative
+control beside their positive checks (a rAF animation that freezes under a
+blocked main thread, a `top` animation that lays out every frame); other
+self-tests check an instrument against a known answer.
 
 ## Running
 
@@ -41,25 +43,25 @@ newly animated layer). The script keeps Mesa's shader cache on the host
 (`~/.cache/astryx-webkit-shaders/<image>`, or `ASTRYX_WEBKIT_SHADER_CACHE`), so
 only the first run on a machine pays for them.
 
-Evidence (storyboards, curve traces, busy-main-thread frames) is written to
+Evidence (storyboards, curve traces) is written to
 `test-results/interaction-evidence/` (override with
 `ASTRYX_INTERACTION_EVIDENCE`) and attached to the test report. It is never
 committed: a pull request links or attaches it.
 
 ## Instruments
 
-| Module          | What it gives a spec                                                                                                                                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
-| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
-| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                               |
-| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                              |
-| `trace.ts`      | `traceRendering(page, body)`: main-thread Layout / Paint / UpdateLayoutTree / PrePaint counts, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents.      |
-| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                        |
-| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`. |
-| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                            |
-| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                     |
-| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                       |
+| Module          | What it gives a spec                                                                                                                                                                                                                                                         |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`.                                                |
+| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                                                               |
+| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                                                                              |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                                                                             |
+| `trace.ts`      | `traceRendering(page, body)`: main-thread counts of UpdateLayoutTree / Layout / PrePaint / Paint / Layerize / UpdateLayer / ScrollLayer / HitTest, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents. |
+| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                                                                       |
+| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`.                                                |
+| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                                                                           |
+| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                                                                    |
+| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                                                                      |
 
 ## The proofs
 
@@ -120,7 +122,8 @@ action may be the page's first contact with the harness, take
 
 **Busy main thread.** Mark the element, start the screencast, start the
 animation, wait until it runs (`waitForAnimation`: an animation cannot start
-while the thread is held), block the main thread 500–1000 ms, stop. Always
+while the thread is held), block the main thread for 1 s (`spec:AST-094`
+FR5's verification row), stop. Always
 start the gesture or animation first and block mid-flight, never before:
 in headless Chromium a touch that starts while the main thread is busy does
 not scroll or start a gesture even with only passive listeners (the input
@@ -147,7 +150,9 @@ deliver one frame in five or six), and tolerates nothing a frozen animation
 does: at least one frame in the judged part, no stall longer than three of the
 screencast's intervals (two dropped frames), and at least 90% of the frames it
 delivered in the judged part presenting a new position (one miss is always
-allowed; a frame it did not deliver is a gap, for the stall check). Pass
+allowed; a frame it did not deliver is a gap, for the stall check, unless
+it delivered fewer than four frames there: then the judged part's span counts
+every frame, so one late frame is not "1 of 1 moved"). Pass
 `maxMedianFrameMs` (20 at 60 Hz) only in a proof that claims display rate.
 `verdict.failures` names each miss with its numbers, and `summary` carries the
 raw numbers for the report. Frames are judged in presentation order: a loaded
@@ -171,7 +176,9 @@ steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. `startCompositorTrace(page)`, started with the screencast and
 stopped after the block, records when the compositor presented each frame
-(`Display::FrameDisplayed`); pass it as `presented`. A gap between two moved
+(`Display::FrameDisplayed`); pass it as `presented`. The record is
+browser-wide (its frames carry no page identity), so it throws when another
+page is open as it starts or stops, or opened while it ran. A gap between two moved
 frames with nothing delivered inside it is then measured between the
 compositor's own frames: the frames it presented there count as presented
 (`recorderSkipped`, in the summary), and a gap it did not present through is

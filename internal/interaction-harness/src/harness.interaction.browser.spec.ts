@@ -3,8 +3,9 @@
 /**
  * @file harness.interaction.browser.spec.ts
  * @input Fixture pages written inline (no Storybook), real Chromium/WebKit
- * @output Proof that each harness instrument measures what it claims, with a
- *   negative control beside every positive one: scripted timestamps reach the
+ * @output Proof that each harness instrument measures what it claims (the
+ *   busy-main-thread proof and the rendering-trace counts with a negative
+ *   control beside their positive checks): scripted timestamps reach the
  *   page; a flick flings natively (Chromium); a second finger and a pinch
  *   arrive as distinct pointers; the screencast shows a compositor animation
  *   advancing through a blocked main thread while a rAF animation freezes;
@@ -626,6 +627,71 @@ test.describe('frame evidence', () => {
     expect(transform.Paint ?? 0).toBe(0);
     // ~24 frames in 400 ms: one layout per frame.
     expect(top.Layout ?? 0).toBeGreaterThan(18);
+  });
+
+  test('the compositor record refuses another open page, whose frames it could not tell apart', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'the compositor record is a Chromium trace (README: engine limits)',
+    );
+    await fixture(page);
+    // Another page animating: its presented frames would be credited to
+    // this one, so the record refuses to start.
+    const other = await page.context().newPage();
+    await other.setContent(
+      '<style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="width:50px;height:50px;background:red;animation:spin 1s linear infinite"></div>',
+    );
+    await expect(startCompositorTrace(page)).rejects.toThrow(
+      /another page is open as the trace starts/,
+    );
+    await other.close();
+    // A page opened mid-trace: stop() refuses too, whether it is still open
+    // or closed again before the record stops.
+    const record = await startCompositorTrace(page);
+    const late = await page.context().newPage();
+    await expect(record.stop()).rejects.toThrow(
+      /another page opened during the record/,
+    );
+    await late.close();
+    const brief = await startCompositorTrace(page);
+    const spinner = await page.context().newPage();
+    await spinner.setContent(
+      '<style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="width:50px;height:50px;background:red;animation:spin 1s linear infinite"></div>',
+    );
+    await page.waitForTimeout(200);
+    await spinner.close();
+    await expect(brief.stop()).rejects.toThrow(
+      /another page opened during the record/,
+    );
+    // In another context too.
+    const browser = page.context().browser();
+    if (browser != null) {
+      const elsewhere = await startCompositorTrace(page);
+      const context = await browser.newContext();
+      await (await context.newPage()).close();
+      await context.close();
+      await expect(elsewhere.stop()).rejects.toThrow(
+        /another page opened during the record/,
+      );
+    }
+    // Alone, it records.
+    const alone = await startCompositorTrace(page);
+    await page.waitForTimeout(100);
+    await expect(alone.stop()).resolves.toBeInstanceOf(Array);
+  });
+
+  test('the long-task log fails closed when it never ran on the document', async ({
+    page,
+  }) => {
+    // No installLongTaskLog before navigating: an empty answer would read as
+    // "no long task", so it throws instead.
+    await fixture(page);
+    await expect(readLongTasks(page)).rejects.toThrow(
+      /not running on this document/,
+    );
   });
 
   test("the long-task log records the page's own long task but not a DevTools evaluate, which the trace reports apart", async ({
