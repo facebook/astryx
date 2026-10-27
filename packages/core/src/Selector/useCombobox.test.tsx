@@ -838,6 +838,39 @@ describe('useCombobox field props — result count (FR7)', () => {
     expect(announced()).toEqual(['No one matches', 'No one matches']);
   });
 
+  it('announces a return to the query the field mounted with, once the query has changed', async () => {
+    const writes = recordPoliteWrites();
+    const empty = (query: string) => (
+      <Picker
+        field="input"
+        query={query}
+        options={[]}
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />
+    );
+    const {rerender} = render(empty('zz'));
+    await nextFrames();
+    expect(writes).toEqual([]);
+
+    rerender(
+      <Picker
+        field="input"
+        query="z"
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    await waitFor(() => expect(writes).toEqual(['3 results']));
+    await nextFrames();
+
+    rerender(empty('zz'));
+    await waitFor(() =>
+      expect(writes).toEqual(['3 results', 'No one matches']),
+    );
+    expect(announced()).toEqual(['3 results', 'No one matches']);
+  });
+
   it('announces a string emptySearchText that no element shows', async () => {
     const {rerender} = render(
       <Picker field="input" query="" emptySearchText="No one matches" />,

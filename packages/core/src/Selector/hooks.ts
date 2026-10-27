@@ -717,7 +717,14 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
   const emptySearchText =
     emptySearchTextOption ?? t('@astryx.combobox.noResults');
   const announcedQueryRef = useRef(query);
+  // The query a field mounts with is not announced, but every later query is,
+  // a return to that first query included: latched the first time the query
+  // differs from it (adjusting state during render, as CodeBlock does).
   const [mountQuery] = useState(query);
+  const [hasQueryChanged, setHasQueryChanged] = useState(false);
+  if (!hasQueryChanged && query !== mountQuery) {
+    setHasQueryChanged(true);
+  }
   const optionCount = selectableItems.length;
   // The element the caller shows `emptySearchText` in. A stable callback ref,
   // so React never detaches and reattaches an unchanged element.
@@ -769,7 +776,7 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
       optionCount === 0 &&
       query != null &&
       query !== '' &&
-      query !== mountQuery,
+      (hasQueryChanged || query !== mountQuery),
     query ?? '',
   );
 

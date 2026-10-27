@@ -58,7 +58,7 @@ vi.mock('./useAnnounce', async importOriginal => ({
 
 const {EmptyState} = await import('../EmptyState');
 const {ChatComposer} = await import('../Chat');
-const {Selector} = await import('../Selector');
+const {Selector, useCombobox} = await import('../Selector');
 const {MultiSelector} = await import('../MultiSelector');
 const {CommandPalette} = await import('../CommandPalette');
 const {BaseTypeahead} = await import('../Typeahead/BaseTypeahead');
@@ -100,6 +100,25 @@ async function expectDelegated(text: string) {
     String(message).includes(text),
   );
   expect(own).toEqual([]);
+}
+
+/** A field of the caller's own over useCombobox, with its empty message. */
+function ComboboxField({query}: {query: string}) {
+  const combobox = useCombobox({
+    selectableItems: [],
+    isOpen: true,
+    onOpen: () => {},
+    onClose: () => {},
+    listboxId: 'people',
+    query,
+    emptySearchText: 'No one matches',
+  });
+  return (
+    <>
+      <input aria-label="To" {...combobox.getFieldProps()} />
+      <p {...combobox.getEmptyProps()}>{combobox.emptySearchText}</p>
+    </>
+  );
 }
 
 /** Each adopter, shown in the state where its own content appears. */
@@ -181,6 +200,11 @@ const ADOPTERS: Record<string, () => Promise<void>> = {
       target: {value: 'zzz'},
     });
     await expectDelegated('Nothing called that');
+  },
+  'Selector/hooks.ts': async () => {
+    const {rerender} = render(<ComboboxField query="" />);
+    rerender(<ComboboxField query="zz" />);
+    await expectDelegated('No one matches');
   },
 };
 
