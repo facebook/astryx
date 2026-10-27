@@ -254,6 +254,8 @@ is asked to carry a new decision.
   gesture velocity for Core components; not exported.
 - The native-scroll module's progress and its subscription (INV12) — the one
   source of scroll progress for Core components; not exported.
+- The action-group tracker (INV13) — the one press tracker for action groups
+  outside menus; not exported.
 
 ## Deciding specs
 
