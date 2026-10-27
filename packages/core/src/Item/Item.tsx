@@ -272,9 +272,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * radio). The element containing the rows clips in the inline axis
    * (`overflow-inline: clip`): `List` does; any other host does it once.
    *
-   * The swipe is a touch behaviour, the same on every device: the gesture
-   * reads each touch's pointer, so a finger swipes the row whatever the
-   * primary pointer (a touchscreen laptop's included) and a mouse never does.
+   * The swipe is a touch and pen behaviour, the same on every device: the
+   * gesture reads each touch's pointer, so a finger or a pen swipes the row
+   * whatever the primary pointer (a touchscreen laptop's included) and a mouse
+   * never does.
    * The gesture and its panels load with the row, so its first swipe never
    * waits for a chunk.
    */

@@ -1150,6 +1150,34 @@ describe('swipeActions', () => {
       }
     });
 
+    it('closes an open row on a pen tap on its content, as on a finger tap', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row, onClick} = renderRow();
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      const content = screen.getByRole('button', {name: 'Conversation'});
+      const pen = (type: string) =>
+        act(() => {
+          content.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: 150,
+              clientY: 10,
+              pointerId: 3,
+              pointerType: 'pen',
+            }),
+          );
+        });
+      pen('pointerdown');
+      pen('pointerup');
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('closes a row a finger opened on a tap on its content, as on a phone', async () => {
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {row, onClick} = renderRow();
@@ -1163,6 +1191,33 @@ describe('swipeActions', () => {
       await settled();
       expect(xOf(row)).toBe(0);
       expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('swipes under a pen, as under a finger', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row} = renderRow();
+      const pen = (type: string, x: number) =>
+        act(() => {
+          row.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: x,
+              clientY: 10,
+              pointerId: 2,
+              pointerType: 'pen',
+            }),
+          );
+        });
+      pen('pointerdown', 10);
+      pen('pointermove', 20);
+      pen('pointermove', 35);
+      pen('pointermove', 80);
+      pen('pointerup', 80);
+      await settled();
+      expect(xOf(row)).toBeGreaterThan(0);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
     });
 
     it('never swipes under a mouse', async () => {
