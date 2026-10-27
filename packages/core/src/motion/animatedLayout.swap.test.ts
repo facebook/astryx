@@ -207,31 +207,73 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     getContext.mockRestore();
   });
 
-  it('draws the copy at the old size under a scaled host', () => {
+  it('keeps a canvas with only a hairline drawn: thin marks read back', () => {
+    const data = new Uint8ClampedArray(40 * 20 * 4);
+    data[data.length - 1] = 255;
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () =>
+          ({
+            drawImage: vi.fn(),
+            getImageData: () => ({data}),
+          }) as unknown as CanvasRenderingContext2D,
+      );
+    const {handle, content} = setup();
+    expect(holdLayoutSwap(handle, content)).not.toBeNull();
+    getContext.mockRestore();
+  });
+
+  /** The copy renders at `scale` of its layout size, `extra` px taller. */
+  function stubCopyLayout(scale: number, extra = 0) {
     const {handle, content, host} = setup();
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return parseFloat(this.style.width) || 0;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return (parseFloat(this.style.height) || 0) + extra;
+      },
+    );
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       function (this: HTMLElement) {
         if (this === content) {
           return DOMRect.fromRect({x: 100, y: 50, width: 400, height: 200});
         }
         if (this.hasAttribute('inert')) {
-          // The host is scaled by half: the copy draws at half its styles.
           return DOMRect.fromRect({
             x: 10,
             y: 10,
-            width: parseFloat(this.style.width) / 2,
-            height: parseFloat(this.style.height) / 2,
+            width: this.offsetWidth * scale,
+            height: this.offsetHeight * scale,
           });
         }
         return DOMRect.fromRect({x: 0, y: 0, width: 0, height: 0});
       },
     );
+    return {handle, content, host};
+  }
+
+  it('draws the copy at the old size under a scaled host', () => {
+    const {handle, content, host} = stubCopyLayout(0.5);
     const swap = holdLayoutSwap(handle, content);
     playLayoutSwap(swap!, {host, copy: travel, incoming: []});
     expect(swap!.copy.style.width).toBe('800px');
     expect(swap!.copy.style.height).toBe('400px');
     expect(swap!.copy.style.left).toBe('180px');
     expect(swap!.copy.style.top).toBe('80px');
+    vi.restoreAllMocks();
+  });
+
+  it("does not take a size the copy's own CSS imposes for a scale", () => {
+    // A `min-height: 100%` makes the copy 143 px taller than asked.
+    const {handle, content, host} = stubCopyLayout(1, 143);
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    expect(swap!.copy.style.top).toBe('40px');
+    expect(swap!.copy.style.width).toBe('400px');
     vi.restoreAllMocks();
   });
 
