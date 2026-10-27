@@ -426,7 +426,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
       if (event.key === 'Tab') {
         const active = doc.activeElement;
-        if (!isHTMLElement(active) || !container.contains(active)) {
+        // Any focused node counts, not only HTML elements: an SVG control
+        // inside the container is still inside.
+        if (active == null || !container.contains(active)) {
           // The trap contains focus that is inside it; it does not pull in a
           // Tab pressed elsewhere on the page. A layer can be open while focus
           // legitimately sits outside it — a listbox popup anchored to its own

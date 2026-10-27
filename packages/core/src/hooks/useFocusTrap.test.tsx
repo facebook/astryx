@@ -277,6 +277,25 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     expect(screen.getByTestId('inside')).not.toHaveFocus();
   });
 
+  it('wraps Tab from an SVG control that is the last tabbable inside the trap', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <svg tabIndex={0} data-testid="svg-control" aria-label="Chart point">
+          <circle r={4} />
+        </svg>
+      </Trap>,
+    );
+    const svgControl = screen.getByTestId('svg-control');
+    (svgControl as unknown as SVGElement).focus();
+    expect(svgControl).toHaveFocus();
+
+    expect(fireEvent.keyDown(svgControl, {key: 'Tab'})).toBe(false);
+    expect(screen.getByTestId('first')).toHaveFocus();
+  });
+
   it('pulls focus back in when a Tab from inside leaves the trap', () => {
     render(
       <Trap>
