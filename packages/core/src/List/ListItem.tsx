@@ -6,8 +6,8 @@
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, the press layer (dividers beside a touch-pressed or held row
- *   hide and the layer reaches over the row's own), the touch row heights
- *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
+ *   hide and the layer reaches over the row's own), the touch hit area
+ *   (listRow.stylex.ts, kept live by utils/hitArea.ts), CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -24,7 +24,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -36,11 +36,13 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {isRenderable, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {listRowStyles} from './listRow.stylex';
+import {MIN_TOUCH_TARGET, watchHitArea, writeHitInsets} from '../utils/hitArea';
 
 // =============================================================================
 // Types
@@ -348,6 +350,23 @@ const embeddedStyles = stylex.create({
  * <ListItem label="Docs" href="/docs" target="_blank" rel="noreferrer" />
  * ```
  */
+/**
+ * The theme's touch target size in px (`--size-touch-target`), read under a
+ * finger only; the 44px minimum otherwise.
+ */
+function touchTargetSize(row: HTMLElement): number {
+  const view = row.ownerDocument.defaultView;
+  if (view?.matchMedia?.('(pointer: coarse)').matches !== true) {
+    return MIN_TOUCH_TARGET;
+  }
+  const value = view
+    .getComputedStyle(row)
+    .getPropertyValue('--size-touch-target')
+    .trim();
+  const size = value.endsWith('px') ? Number.parseFloat(value) : Number.NaN;
+  return Number.isFinite(size) && size > 0 ? size : MIN_TOUCH_TARGET;
+}
+
 export function ListItem({
   label,
   description,
@@ -368,6 +387,25 @@ export function ListItem({
   ...restProps
 }: ListItemProps) {
   const ctx = use(ListContext);
+  // Under a finger, an interactive row's hit target grows toward the touch
+  // target where its neighbors leave room, with no visual or layout change
+  // (component:List FR10): utils/hitArea.ts measures how far, and the row's
+  // invisible layer (listRowStyles.touchHitArea) reads it.
+  const isTouchTarget =
+    (onClick != null || href != null || interactiveRef != null) && !isDisabled;
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  const mergedRef = useMergedRefs(ref, rowRef);
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!isTouchTarget || row == null) {
+      return undefined;
+    }
+    return watchHitArea(
+      row,
+      insets => writeHitInsets(row, insets),
+      touchTargetSize(row),
+    );
+  }, [isTouchTarget]);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -412,7 +450,7 @@ export function ListItem({
   return (
     <Item
       as="li"
-      ref={ref}
+      ref={mergedRef}
       marker={marker}
       startContent={startContent}
       label={label}
@@ -432,16 +470,7 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
-          // A list with markers is running text (bullets, numbers, a
-          // Markdown list), not a table: its rows keep their own height, and
-          // each marker stays on its text's first line. A compact list is the
-          // dense case and keeps its density too: its rows already clear the
-          // 24px target minimum (WCAG 2.5.8).
-          !hasMarkers &&
-            density !== 'compact' &&
-            (isRenderable(description)
-              ? listRowStyles.touchTwoLine
-              : listRowStyles.touchOneLine),
+          isTouchTarget && listRowStyles.touchHitArea,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
