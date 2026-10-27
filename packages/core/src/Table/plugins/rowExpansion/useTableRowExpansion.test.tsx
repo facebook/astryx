@@ -337,6 +337,18 @@ describe('useTableRowExpansion (detail panel)', () => {
       expect(cell.style.getPropertyValue('--_table-panel-divider-width')).toBe(
         'initial',
       );
+      // A width set on the row's cells is the divider's too.
+      for (const rowCell of row.cells) {
+        rowCell.style.borderBottomWidth = '3px';
+      }
+      fireEvent.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+      expect(cell.style.getPropertyValue('--_table-panel-divider-width')).toBe(
+        '3px',
+      );
+      fireEvent.click(screen.getAllByRole('button', {name: /collapse/i})[1]);
+      for (const rowCell of row.cells) {
+        rowCell.style.borderBottomWidth = '';
+      }
       // An app's wider border on the row itself wins; the next commit
       // (opening another row) reads it.
       row.style.borderBottom = '3px solid rgb(0, 0, 255)';
