@@ -413,3 +413,76 @@ test('the trailing panel: Delete is outermost and the panel wears its colour', a
     type: 'touchEnd',
   });
 });
+
+test.describe('under a mouse (a fine primary pointer)', () => {
+  // Recognizers attach for every pointer (`spec:AST-094` FR43): a mouse's
+  // press reaches the row's gesture, which takes a finger only.
+  test.use({hasTouch: false});
+
+  test('a mouse drag across a row never moves it, and a click still reaches the row (spec:AST-057 FR6, AR2)', async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-item--swipe-actions&viewMode=story`,
+      {waitUntil: 'load'},
+    );
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const row = page.locator('.astryx-item').first();
+    await expect(row).toBeVisible();
+    const box = await boxOf(row);
+    const y = box.y + box.height / 2;
+    // Every frame's travel while the mouse drags, and the row's clicks.
+    await row.evaluate(node => {
+      const record = {clicks: 0, maxTravel: 0, sampling: true};
+      Object.assign(window, {__mouseDrag: record});
+      node.addEventListener('click', () => (record.clicks += 1), true);
+      const sample = () => {
+        const travel = Math.abs(
+          parseFloat(getComputedStyle(node).translate) || 0,
+        );
+        record.maxTravel = Math.max(record.maxTravel, travel);
+        if (record.sampling) {
+          requestAnimationFrame(sample);
+        }
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.mouse.move(box.x + box.width - 20, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 12; i += 1) {
+      await page.mouse.move(box.x + box.width - 20 - i * 20, y);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const dragged = await page.evaluate(() => {
+      const record = (
+        window as unknown as {
+          __mouseDrag: {clicks: number; maxTravel: number; sampling: boolean};
+        }
+      ).__mouseDrag;
+      record.sampling = false;
+      return {...record};
+    });
+    expect(dragged.maxTravel).toBe(0);
+    await expect(row.locator('[data-swipe-panel="leading"]')).toHaveAttribute(
+      'inert',
+      '',
+    );
+    await expect(row.locator('[data-swipe-panel="trailing"]')).toHaveAttribute(
+      'inert',
+      '',
+    );
+    // A click is still the row's.
+    const clicksBefore = dragged.clicks;
+    await page.mouse.click(box.x + box.width / 2, y);
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as {__mouseDrag: {clicks: number}}).__mouseDrag
+            .clicks,
+      ),
+    ).toBe(clicksBefore + 1);
+  });
+});

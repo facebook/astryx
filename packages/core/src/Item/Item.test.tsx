@@ -32,7 +32,6 @@ import {
 } from './ItemSwipeRevealContext';
 import {emulateTouch} from './__tests__/emulateTouch';
 import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
-import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -776,10 +775,34 @@ describe('swipeActions', () => {
       });
       return event as Event;
     };
+    /**
+     * The finger's pointer event, which a browser sends before the touch
+     * event of the same input (`spec:AST-094` FR43: where the primary
+     * pointer is fine, the press is what installs the host's listeners).
+     */
+    const sendPointer = (type: string) => {
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        button: 0,
+        buttons: type === 'pointerdown' || type === 'pointermove' ? 1 : 0,
+        cancelable: true,
+        clientX: contact.x,
+        clientY: contact.y,
+        composed: true,
+        isPrimary: down.size === 0 || (down.size === 1 && down.has(id)),
+        pointerId: 100 + id,
+        pointerType: 'touch',
+      });
+      Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+      act(() => {
+        contact.target.dispatchEvent(event);
+      });
+    };
     return {
       down(x: number, y = 10) {
         void act(() => vi.advanceTimersByTime(16));
         contact = {id, x, y, target};
+        sendPointer('pointerdown');
         down.set(id, contact);
         return send('touchstart');
       },
@@ -788,20 +811,24 @@ describe('swipeActions', () => {
         void act(() => vi.advanceTimersByTime(16));
         contact = {...contact, x, y};
         down.set(id, contact);
+        sendPointer('pointermove');
         return send('touchmove', cancelable);
       },
       rest(ms = 320) {
         for (let t = 0; t < ms; t += 16) {
           void act(() => vi.advanceTimersByTime(16));
+          sendPointer('pointermove');
           send('touchmove');
         }
       },
       up({afterMs = 16} = {}) {
         void act(() => vi.advanceTimersByTime(afterMs));
+        sendPointer('pointerup');
         down.delete(id);
         return send('touchend');
       },
       cancel() {
+        sendPointer('pointercancel');
         down.delete(id);
         return send('touchcancel');
       },
@@ -1122,7 +1149,7 @@ describe('swipeActions', () => {
       expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
     });
 
-    it('keeps every other recognizer on the gesture host inactive while a finger swipes the row (spec:AST-094 FR19; the row swipe reads each event, spec:AST-057)', async () => {
+    it('swipes under a finger beside another recognizer, which a finger works too: gestures attach for every pointer (spec:AST-094 FR43)', async () => {
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const taps: string[] = [];
       function Other() {
@@ -1136,32 +1163,16 @@ describe('swipeActions', () => {
         );
         return <div ref={ref} data-testid="other" />;
       }
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {row} = renderRow();
       render(<Other />);
       const t = finger(screen.getByTestId('other'), 3);
       t.down(20);
       t.up();
-      // Not opted out of the gate: inactive where the primary pointer is fine.
-      expect(taps).not.toContain('ended');
+      expect(taps).toContain('ended');
       // The row swipes under a finger beside it.
       dragLeading(row, 45);
       await settled();
       expect(xOf(row)).toBe(72);
-      warn.mockRestore();
-      // The control: on a phone's pointer the same tap is recognized.
-      const coarse = pointerQuery(true);
-      try {
-        cleanup();
-        taps.length = 0;
-        render(<Other />);
-        const u = finger(screen.getByTestId('other'), 4);
-        u.down(20);
-        u.up();
-        expect(taps).toContain('ended');
-      } finally {
-        coarse.restore();
-      }
     });
 
     it('closes a row a finger opened on a tap on its content, as on a phone', async () => {
@@ -1170,10 +1181,24 @@ describe('swipeActions', () => {
       dragLeading(row, 45);
       await settled();
       expect(xOf(row)).toBe(72);
-      const f = finger(screen.getByRole('button', {name: 'Conversation'}), 2);
+      const content = screen.getByRole('button', {name: 'Conversation'});
+      const f = finger(content, 2);
       f.down(150);
-      // Taken at the lift: no click reaches the row.
-      expect(f.up().defaultPrevented).toBe(true);
+      f.up();
+      // Where the primary pointer is fine the touch keeps its default, and the
+      // browser reports its click after the lift: the host's click guard
+      // swallows it (`spec:AST-057` FR6), so the row activates nothing.
+      act(() => {
+        content.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 150,
+            clientY: 10,
+            detail: 1,
+          }),
+        );
+      });
       await settled();
       expect(xOf(row)).toBe(0);
       expect(onClick).not.toHaveBeenCalled();
@@ -1200,6 +1225,32 @@ describe('swipeActions', () => {
       mouse('pointermove', 60);
       mouse('pointermove', 120);
       mouse('pointerup', 120);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+    });
+
+    it('never swipes under a pen: only a finger starts the drag (spec:AST-057 FR6)', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row} = renderRow();
+      const pen = (type: string, x: number) =>
+        act(() => {
+          row.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: x,
+              clientY: 10,
+              pointerId: 1,
+              pointerType: 'pen',
+            }),
+          );
+        });
+      pen('pointerdown', 10);
+      pen('pointermove', 60);
+      pen('pointermove', 120);
+      pen('pointerup', 120);
       await settled();
       expect(xOf(row)).toBe(0);
       expect(panelOf(row, 'leading')).toHaveAttribute('inert');
