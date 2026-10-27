@@ -64,7 +64,7 @@ export const docs = {
           name: 'isInteractivePopEnabled',
           type: 'boolean',
           description:
-            "Whether the back swipe pops: a sideways drag anywhere in the content, and in a web app opened from the home screen also a swipe from the leading screen edge. In a browser tab that edge stays the browser's own back swipe. The back swipe is an iOS gesture: on other touch devices (Android's system back owns both screen edges) and with a mouse, Back is the bar's button.",
+            "Whether the back swipe pops: a sideways drag anywhere in the content, under any pointer (a finger, a pen or a mouse drag), and in a web app opened from the home screen also a finger's swipe from the leading screen edge. In a browser tab that edge stays the browser's own back swipe, and on Android the system back owns both screen edges.",
           default: 'true',
         },
         {

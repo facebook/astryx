@@ -4,20 +4,18 @@
 
 /**
  * @file NavigationStackTouch.ts
- * @input core's gesture recognizers and touch resolver
- *   (`@astryxdesign/core/gestures/experimental`), the UIKit table
- *   (`@astryxdesign/core/motion/experimental`) and navigationTransition.ts
- *   for the release math
+ * @input core's gesture recognizers (Core's internal touch entry), the UIKit
+ *   table (its internal motion entry) and navigationTransition.ts for the
+ *   release math
  * @output useBackSwipes: UIKit's two back swipes, from the leading screen
  *   edge and from anywhere in the content (iOS 26), driving a stack through
  *   BackSwipeStack
- * @position NavigationStack's touch layer, imported in one place
- *   (NavigationStack.tsx): what only a finger needs lives here, so a desktop
- *   build can swap this module out
+ * @position NavigationStack's back swipes, imported in one place
+ *   (NavigationStack.tsx)
  *
- * The swipes are touch behaviour: one model under any finger (a coarse
- * primary pointer), Android and iOS alike; a mouse goes back with the bar's
- * button and the browser's history. A swipe is tracked 1:1 and released by
+ * The content swipe answers every pointer, a finger, a pen and a mouse drag
+ * alike (`spec:AST-094` FR43); the edge swipe takes a finger only, as the
+ * screen-edge pan does by default. A swipe is tracked 1:1 and released by
  * UIKit's rule: it finishes when progress plus 0.35 s of the release
  * velocity (the mean of the pan's last three velocities) passes half.
  *
@@ -41,7 +39,6 @@ import {
   useGestureRecognizer,
 } from '@astryxdesign/core/internal/touch';
 import {navigation, UIKIT_GESTURES} from '@astryxdesign/core/internal/motion';
-import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {
   popVelocity,
   progressFromTravel,
@@ -103,8 +100,8 @@ function startsInEdgeBand(x: number, direction: 'ltr' | 'rtl'): boolean {
 /**
  * The stack's back swipes: the edge swipe on `containerRef`, the content
  * swipe on `cardsRef`, both driving the stack `stackRef` holds (read at each
- * touch event, so it always sees the latest render). They run under a finger
- * while `isEnabled` (the stack can pop and allows interactive pops).
+ * touch event, so it always sees the latest render). They run while
+ * `isEnabled` (the stack can pop and allows interactive pops).
  */
 export function useBackSwipes(
   containerRef: RefObject<HTMLElement | null>,
@@ -196,7 +193,6 @@ export function useBackSwipes(
     [stackRef],
   );
 
-  const isTouch = useTouchPresentation().isTouch;
   const browserOwnsEdge = useSyncExternalStore(
     subscribeToNothing,
     () => !isStandaloneWebApp(),
@@ -213,7 +209,7 @@ export function useBackSwipes(
         name: 'NavigationStack.backSwipe',
       }),
     recognizer => onSwipe(recognizer, 0),
-    {isEnabled: isTouch && isEnabled && !browserOwnsEdge},
+    {isEnabled: isEnabled && !browserOwnsEdge},
   );
   // iOS 26's back swipe from anywhere in the content. It waits for the edge
   // swipe to fail, which a touch outside the edge band does at once.
@@ -238,7 +234,7 @@ export function useBackSwipes(
           ),
       }).requireToFail(edge),
     recognizer => onSwipe(recognizer, CONTENT_DEAD_ZONE_PX),
-    {isEnabled: isTouch && isEnabled},
+    {isEnabled},
   );
   // The content swipe pops toward the trailing edge: rightward unless RTL.
   useLayoutEffect(() => {

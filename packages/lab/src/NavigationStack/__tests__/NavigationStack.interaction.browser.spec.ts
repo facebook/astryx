@@ -817,11 +817,12 @@ test('the incoming bar covers the old title while the main thread is blocked', a
   expect(during.at(-1)?.box ?? null, trace).toBeNull();
 });
 
-test('under a mouse the back swipes stay off: Back is the bar’s button', async ({
+test('under a mouse a drag across the content pops, as a finger’s does (spec:AST-094 FR43)', async ({
   browser,
 }) => {
-  // A fine pointer: touch work costs nothing and nothing swipes, even in a
-  // home-screen app.
+  // Gestures attach for every pointer: a mouse drag across the content is
+  // the content swipe, tracked and released as a finger's. The edge swipe
+  // stays a finger's (the screen-edge pan's default).
   const {context, page} = await newFinePage(browser);
   try {
     const {left, width} = await openStack(page, 'pushed', {
@@ -829,20 +830,10 @@ test('under a mouse the back swipes stay off: Back is the bar’s button', async
       pointer: 'mouse',
     });
     const top = card(page, 'screen-About');
-    const before = await top.boundingBox();
-    // A mouse drag from the edge, then one across the content.
-    for (const [from, to] of [
-      [left + 4, left + width * 0.7],
-      [left + width * 0.3, left + width * 0.95],
-    ]) {
-      await page.mouse.move(from, 400);
-      await page.mouse.down();
-      await page.mouse.move(to, 400, {steps: 30});
-      await page.mouse.up();
-    }
-    await page.waitForTimeout(400);
-    expect((await top.boundingBox())?.x).toBeCloseTo(before?.x ?? NaN, 0);
-    await page.locator('[data-navigation-back]').last().click();
+    await page.mouse.move(left + width * 0.3, 400);
+    await page.mouse.down();
+    await page.mouse.move(left + width * 0.95, 400, {steps: 30});
+    await page.mouse.up();
     await expect(top).toHaveCount(0);
   } finally {
     await context.close();
