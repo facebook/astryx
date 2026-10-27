@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-26
+approved_at: 2026-10-27
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -33,11 +33,11 @@ system_specs: [spec:AST-038]
 | Area                    | Contract                                                                                                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Public contract         | `Breadcrumbs` with `children`, `separator` (default `/`), `variant` (`default`, `supporting`, or an augmented value; default `default`), and `label`; target `breadcrumbs` with `variant`. |
-| Behavior                | A labeled navigation landmark holding an ordered list of BreadcrumbItem children; it tells every item the separator and variant to use.                                                    |
+| Behavior                | A labeled navigation landmark holding an ordered list of BreadcrumbItem children; it tells every item in its own surface the separator and variant to use.                                 |
 | End-user impact         | Screen-reader users find the trail as a named "Breadcrumb" landmark and hear it as an ordered list; sighted users see one consistent separator and size across the trail.                  |
 | Builder impact          | None.                                                                                                                                                                                      |
 | Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                |
-| Review checks           | Reject an unlabeled landmark, a trail that is not an ordered list, or items that ignore the trail's separator or variant.                                                                  |
+| Review checks           | Reject an unlabeled landmark, a trail that is not an ordered list, or items in the trail's own surface that ignore its separator or variant.                                               |
 | Governing rules         | `component:BreadcrumbItem` (each item); `design:bidirectionality` DR4 (separator mirroring); `architecture:component-theming-surface`.                                                     |
 
 This table is a review projection; the body below is authoritative.
@@ -62,7 +62,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The navigation landmark, its label, the ordered list, its wrapping layout, and
-  the separator and variant every item receives (FR1–FR4).
+  the separator and variant every item in its own surface receives (FR1–FR4).
 
 **Does not own / non-goals**
 
@@ -145,7 +145,8 @@ lists, three of which BreadcrumbItem owns, by delegation, is deferred.
 | FR3      | `Breadcrumbs.test.tsx` separator and variant tests                 | Default, custom separator, supporting | Items that ignore the trail settings fail. | `audit:Breadcrumbs/behavior`      |
 | FR1      | `Breadcrumbs.test.tsx` ref and test-id tests                       | Root props                            | Dropped ref or test id fails.              | `audit:Breadcrumbs/api`           |
 
-Read from source, with no focused test yet: the `breadcrumbs` target and its
+Read from source, with no focused test yet: crumbs inside a layer getting the
+defaults (FR3); the `breadcrumbs` target and its
 `variant` state, other DOM props, and a caller `aria-label` or
 `aria-labelledby` replacing the name (FR1); the list's markers, inset, and
 wrapping row (FR2); and FR4.
