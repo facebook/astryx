@@ -117,6 +117,19 @@ test("under a finger a small button's target reaches 44 px: the point just below
   await expect(log).toHaveText('Pressed: Cut');
 });
 
+test('a menu trigger in the group keeps its own opening: a tap on it opens its menu (spec:AST-094 FR29)', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-buttongroup--with-dropdown-menu');
+  const trigger = page.getByRole('button', {name: 'Allow options'});
+  await expect(trigger).toBeVisible();
+  const driver = await touchDriver(page);
+  await driver.play(tap(await centerOf(trigger)));
+  await expect(
+    page.getByRole('menuitem', {name: 'Always allow'}),
+  ).toBeVisible();
+});
+
 test.describe('with a mouse', () => {
   test.use({hasTouch: false, isMobile: false});
 
@@ -154,6 +167,16 @@ test.describe('with a mouse', () => {
     expect(looks[2].image).not.toBe('none');
     await page.mouse.up();
     await expect(log).toHaveText('Pressed: Paste');
+  });
+
+  test('a menu trigger in the group keeps its own opening: a click on it opens its menu', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-buttongroup--with-dropdown-menu');
+    await page.getByRole('button', {name: 'Allow options'}).click();
+    await expect(
+      page.getByRole('menuitem', {name: 'Always allow'}),
+    ).toBeVisible();
   });
 
   test('the keyboard is unchanged: Space and Enter on a focused button run it once each', async ({

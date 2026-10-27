@@ -21,20 +21,16 @@
  * - /packages/cli/assets/templates/blocks/components/ButtonGroup/ (showcase blocks)
  */
 
-import {useMemo, useRef, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ButtonSize} from '../Button';
 import {radiusVars, shadowVars} from '../theme/tokens.stylex';
 import type {Elevation} from '../utils/types';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {
-  actionGroupHitAreaStyles,
-  isGroupLaidOut,
-  resolveGroupHitTarget,
-  useActionGroupHitArea,
-} from '../hooks/actionGroupHitArea';
+import type {ActionGroupTarget} from '../hooks/actionGroupTracker';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
+import {resolveHitTarget, watchHitArea, writeHitInsets} from '../utils/hitArea';
 import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
 import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -106,6 +102,26 @@ const styles = stylex.create({
   vertical: {
     flexDirection: 'column',
   },
+  /**
+   * The touch target (`family:action-groups` FR5): under a coarse pointer an
+   * invisible layer extends the group by the insets utils/hitArea.ts writes
+   * (toward 44 px, clamped against whatever sits outside the group), so a
+   * finger just past a small button lands on the group, whose tracker picks
+   * that button. Under the buttons, in the group's own stacking context;
+   * absent under a fine pointer. The custom properties are hitArea.ts's
+   * HIT_INSET_PROPERTIES; physical sides, as it measures them.
+   */
+  hitArea: {
+    position: {default: null, '@media (pointer: coarse)': 'relative'},
+    isolation: {default: null, '@media (pointer: coarse)': 'isolate'},
+    '::after': {
+      content: {default: null, '@media (pointer: coarse)': '""'},
+      position: 'absolute',
+      inset:
+        'calc(var(--astryx-hit-inset-top, 0px) * -1) calc(var(--astryx-hit-inset-right, 0px) * -1) calc(var(--astryx-hit-inset-bottom, 0px) * -1) calc(var(--astryx-hit-inset-left, 0px) * -1)',
+      zIndex: -1,
+    },
+  },
 });
 
 // Resting elevation for the whole group — the connected buttons share one
@@ -134,6 +150,37 @@ const elevationStyles = stylex.create({
 
 /** The buttons the group tracks: each carries the group item marker. */
 const TRACKED_BUTTON = `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`;
+
+/**
+ * The button under a finger, from the buttons measured when the press began:
+ * the nearest one whose target, grown toward 44 px and clamped against its
+ * neighbours (utils/hitArea.ts `resolveHitTarget`), holds the point. The
+ * tracker asks only for a finger's press; a mouse or a pen hit-tests the
+ * buttons' own boxes.
+ */
+const resolveTrackedButton = (
+  x: number,
+  y: number,
+  targets: ReadonlyArray<ActionGroupTarget>,
+): HTMLElement | null =>
+  targets[resolveHitTarget(x, y, targets)]?.element ?? null;
+
+/**
+ * Whether the group takes a press that lands on `target`: one on a tracked
+ * button, or on the group itself (its hit layer). A press on a member the
+ * group leaves to itself, such as a menu trigger, keeps that member's own
+ * press and click. A group with no box (not rendered) takes none.
+ */
+function takesPress(group: HTMLElement | null, target: unknown): boolean {
+  if (group == null || !(target instanceof Element)) {
+    return false;
+  }
+  const box = group.getBoundingClientRect();
+  if (box.width <= 0 || box.height <= 0) {
+    return false;
+  }
+  return target === group || target.closest(TRACKED_BUTTON) != null;
+}
 
 // =============================================================================
 // Component
@@ -223,12 +270,20 @@ export function ButtonGroup({
     // tracker waits the content-touch delay inside a scroller).
     highlightOnsetMs: 0,
     highlightExpansion: 0,
-    resolveTarget: resolveGroupHitTarget,
-    shouldTrack: () => isGroupLaidOut(groupRef.current),
+    resolveTarget: resolveTrackedButton,
+    shouldTrack: target => takesPress(groupRef.current, target),
     isEnabled: tracksPress,
   });
-  // A finger's 44 px target, without the buttons growing (FR5).
-  useActionGroupHitArea(groupRef, tracksPress);
+  // A finger's 44 px target, without the buttons growing (FR5): the hit
+  // layer's insets, live while the group tracks; hitArea.ts measures only
+  // where the primary pointer is coarse.
+  useEffect(() => {
+    const element = groupRef.current;
+    if (!tracksPress || element == null) {
+      return undefined;
+    }
+    return watchHitArea(element, insets => writeHitInsets(element, insets));
+  }, [tracksPress]);
 
   const contextValue = useMemo(
     () => ({orientation, isDisabled, tracksPress}),
@@ -245,7 +300,7 @@ export function ButtonGroup({
             themeProps('button-group', {size, orientation, elevation}),
             stylex.props(
               styles.group,
-              tracksPress && actionGroupHitAreaStyles.hitArea,
+              tracksPress && styles.hitArea,
               orientation === 'vertical' && styles.vertical,
               elevationStyles[elevation],
               xstyle,

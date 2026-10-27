@@ -18,6 +18,10 @@ export type ButtonGroupOrientation = 'horizontal' | 'vertical';
 export interface ButtonGroupContextValue {
   orientation: ButtonGroupOrientation;
   isDisabled: boolean;
+}
+
+/** The context's value with what only core reads; not exported from the package. */
+interface ButtonGroupInternalValue extends ButtonGroupContextValue {
   /**
    * Whether the group tracks a held pointer across its buttons
    * (`family:action-groups`): each button it tracks carries the group item
@@ -26,9 +30,8 @@ export interface ButtonGroupContextValue {
   tracksPress: boolean;
 }
 
-export const ButtonGroupContext = createContext<ButtonGroupContextValue | null>(
-  null,
-);
+export const ButtonGroupContext =
+  createContext<ButtonGroupInternalValue | null>(null);
 ButtonGroupContext.displayName = 'ButtonGroupContext';
 
 /**
@@ -37,4 +40,12 @@ ButtonGroupContext.displayName = 'ButtonGroupContext';
  */
 export function useButtonGroup(): ButtonGroupContextValue | null {
   return use(ButtonGroupContext);
+}
+
+/**
+ * Whether the nearest ButtonGroup tracks a held pointer across its buttons.
+ * Internal to core (Button reads it); not exported from the package.
+ */
+export function useButtonGroupTracksPress(): boolean {
+  return use(ButtonGroupContext)?.tracksPress === true;
 }
