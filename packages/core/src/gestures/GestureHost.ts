@@ -143,7 +143,7 @@ import type {
   TouchSample,
 } from './types';
 import {internals} from './recognizerInternals';
-import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
 import {locksSelectionFor} from './selectionLock';
 import {gestureHosts} from './hostRegistry';
 import {
@@ -1426,7 +1426,9 @@ export class GestureHost {
 
   private readonly onTouchStart = (event: TouchEvent): void => {
     this.noteFingersDown(event);
-    if (!this.takeEvent(event)) {
+    // Where the host reads a finger from its pointer events (no ontouchstart,
+    // as after touch emulation turns on), its Touch Events would track it twice.
+    if (!this.usesTouchEvents || !this.takeEvent(event)) {
       return;
     }
     if (this.fingerTargets.length > 1) {
@@ -1527,7 +1529,9 @@ export class GestureHost {
 
   private readonly onTouchMove = (event: TouchEvent): void => {
     this.noteFingersDown(event);
-    if (!this.takeEvent(event)) {
+    // Where the host reads a finger from its pointer events (no ontouchstart,
+    // as after touch emulation turns on), its Touch Events would track it twice.
+    if (!this.usesTouchEvents || !this.takeEvent(event)) {
       return;
     }
     this.dropFingersNotDown(event);
@@ -1649,10 +1653,14 @@ export class GestureHost {
           (this.isCoarse &&
             this.arena.consumerOf(id)?.keepsTouch?.(id) === true) ||
           // A recognizer that holds the finger before it begins: a
-          // scroll-edge pan pulling away from an edge (FR19, DEC-18).
-          this.arena
-            .participantsOf(id)
-            .some(recognizer => internals(recognizer).keepsTouch(id)))
+          // scroll-edge pan pulling away from an edge (FR19, DEC-18), only
+          // while this is the one finger on the screen: with a second one
+          // down anywhere, even off the recognizer's element, the moves stay
+          // the browser's, for its pinch (FR10).
+          (event.touches.length === 1 &&
+            this.arena
+              .participantsOf(id)
+              .some(recognizer => internals(recognizer).keepsTouch(id))))
       ) {
         event.preventDefault();
         return;
@@ -1673,7 +1681,9 @@ export class GestureHost {
   private readonly onTouchEnd = (event: TouchEvent): void => {
     this.releaseArmedPress();
     this.noteFingersDown(event);
-    if (!this.takeEvent(event)) {
+    // Where the host reads a finger from its pointer events (no ontouchstart,
+    // as after touch emulation turns on), its Touch Events would track it twice.
+    if (!this.usesTouchEvents || !this.takeEvent(event)) {
       return;
     }
     this.dropFingersNotDown(event);
@@ -1708,7 +1718,9 @@ export class GestureHost {
   private readonly onTouchCancel = (event: TouchEvent): void => {
     this.releaseArmedPress();
     this.noteFingersDown(event);
-    if (!this.takeEvent(event)) {
+    // Where the host reads a finger from its pointer events (no ontouchstart,
+    // as after touch emulation turns on), its Touch Events would track it twice.
+    if (!this.usesTouchEvents || !this.takeEvent(event)) {
       return;
     }
     const listed = touchesOf(event.changedTouches);

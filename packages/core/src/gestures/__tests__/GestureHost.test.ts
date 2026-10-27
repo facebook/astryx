@@ -30,7 +30,7 @@ import {createNativeScrollProbe} from '../nativeScroll';
 import {gestureHosts} from '../hostRegistry';
 import {holdPageScroll, type PageScrollDecision} from '../pageHold';
 import {ManualClock, RecordingConsumer} from './harness';
-import {COARSE_POINTER_QUERY} from '../coarsePointer';
+import {COARSE_POINTER_QUERY} from '../../utils/coarsePointer';
 import {coarsePrimaryPointer, pointerQuery} from './pointerQuery';
 import type {GestureTouch} from '../types';
 
@@ -1020,6 +1020,28 @@ describe('GestureHost', () => {
         false,
       );
       touch('touchend', row, moved, [], 32);
+    });
+
+    it('holds nothing while a second finger is down off the sheet: a pinch across the edge stays the page\u2019s (spec:AST-094 FR10)', () => {
+      const {pan} = sheetOverList(0);
+      const row = document.getElementById('row') as HTMLElement;
+      const page = document.createElement('div');
+      document.body.append(page);
+      const first = {id: 1, x: 50, y: 100};
+      const second = {id: 2, x: 150, y: 20};
+      touch('touchstart', page, [second], [first, second], 8);
+      // The sheet's finger pulls away from the list's top edge while the
+      // other finger, on plain page content, moves up: a pinch.
+      const moved = [
+        {...first, y: 108},
+        {...second, y: 12},
+      ];
+      expect(
+        touch('touchmove', row, [moved[0]], moved, 16).defaultPrevented,
+      ).toBe(false);
+      expect(pan.state).not.toBe('began');
+      touch('touchend', row, moved, [], 32);
+      page.remove();
     });
 
     it('cancels nothing once the browser has taken the touch for a scroll', () => {
@@ -3462,5 +3484,43 @@ describe("inputMode 'pointer-events'", () => {
     expect(
       touch('touchmove', box, [claimed], [claimed], 32).defaultPrevented,
     ).toBe(true);
+  });
+});
+
+describe('Touch Events from a browser that exposes no ontouchstart', () => {
+  it('takes a finger once, from its pointer events, so a one-finger long press recognizes (touch emulation turned on after load)', () => {
+    // Chromium fixes `ontouchstart` when the page is created; turning touch
+    // emulation on later sends Touch Events without it.
+    let owner: object | null = window;
+    let descriptor: PropertyDescriptor | undefined;
+    while (owner != null) {
+      descriptor = Object.getOwnPropertyDescriptor(owner, 'ontouchstart');
+      if (descriptor != null) {
+        break;
+      }
+      owner = Object.getPrototypeOf(owner) as object | null;
+    }
+    if (owner != null && descriptor != null) {
+      const from = owner;
+      const saved = descriptor;
+      delete (from as {ontouchstart?: unknown}).ontouchstart;
+      detachers.push(() => Object.defineProperty(from, 'ontouchstart', saved));
+    }
+    expect('ontouchstart' in window).toBe(false);
+    const {box} = mount('<div id="box"></div>');
+    const press = new LongPressGestureRecognizer({name: 'press'});
+    detachers.push(host.attach(box, press));
+    const finger = {id: 1, x: 10, y: 10};
+    pointer('pointerdown', box, {
+      id: 7,
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    touch('touchstart', box, [finger], [finger], 0);
+    host.arena.advanceTime(600);
+    expect(press.state).toBe('began');
   });
 });
