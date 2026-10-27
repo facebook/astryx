@@ -1004,7 +1004,7 @@ export function useSwipeAction({
     rootRef,
     () =>
       new TapGestureRecognizer({
-        allowedPointerTypes: ['touch'],
+        allowedPointerTypes: SWIPE_POINTER_TYPES,
         name: 'item-swipe-dismiss',
         shouldReceiveTouch: (_tap, touch) =>
           isOpen() &&

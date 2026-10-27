@@ -1150,6 +1150,34 @@ describe('swipeActions', () => {
       }
     });
 
+    it('closes an open row on a pen tap on its content, as on a finger tap', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row, onClick} = renderRow();
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      const content = screen.getByRole('button', {name: 'Conversation'});
+      const pen = (type: string) =>
+        act(() => {
+          content.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: 150,
+              clientY: 10,
+              pointerId: 3,
+              pointerType: 'pen',
+            }),
+          );
+        });
+      pen('pointerdown');
+      pen('pointerup');
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('closes a row a finger opened on a tap on its content, as on a phone', async () => {
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {row, onClick} = renderRow();
