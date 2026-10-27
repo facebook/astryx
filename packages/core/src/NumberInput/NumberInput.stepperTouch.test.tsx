@@ -1044,6 +1044,34 @@ describe('NumberInput steppers where the primary pointer is fine', () => {
     expect(new Set(columnWrites)).toEqual(new Set(['manipulation']));
   });
 
+  it("a finger or pen held on a stepper refuses text selection for that press only, and a mouse keeps the browser's selection (spec:AST-094 FR41)", () => {
+    // A pen\'s hold acts as a finger\'s under any primary pointer, so a
+    // touchscreen laptop\'s finger holding a stepper selects nothing; a mouse
+    // keeps its released behavior.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const {increment} = setup();
+    const column = increment.parentElement as HTMLElement;
+    expect(refusesSelection(column)).toBe(false);
+    const id = fingerDown(increment, INCREMENT);
+    expect(refusesSelection(column)).toBe(true);
+    wait(600);
+    expect(refusesSelection(column)).toBe(true);
+    touch('touchend', increment, INCREMENT, id);
+    expect(refusesSelection(column)).toBe(false);
+    const pen = {pointerType: 'pen', pointerId: 43, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pen, clientX: 212, clientY: 8});
+    expect(refusesSelection(column)).toBe(true);
+    wait(600);
+    fireEvent.pointerUp(increment, {...pen, clientX: 212, clientY: 8});
+    expect(refusesSelection(column)).toBe(false);
+    const mouse = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+    fireEvent.pointerDown(increment, {...mouse, clientX: 212, clientY: 8});
+    expect(refusesSelection(column)).toBe(false);
+    wait(600);
+    expect(refusesSelection(column)).toBe(false);
+    fireEvent.pointerUp(increment, {...mouse, clientX: 212, clientY: 8});
+  });
+
   it('a right click on a stepper presses nothing: no paint, no step (spec:AST-094 FR43)', () => {
     // The host takes a mouse's primary button only.
     const {onChange, increment} = setup();
