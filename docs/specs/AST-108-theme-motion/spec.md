@@ -122,7 +122,9 @@ defineTheme({
   component styles already key reduced motion on `prefers-reduced-motion`, so
   the server never guesses and nothing flashes at hydration. `'always'` marks
   the theme's root, and every component style that keys reduced motion on
-  `prefers-reduced-motion` also keys it on that mark; the animator treats the preference as set. An internal,
+  `prefers-reduced-motion` also keys it on that mark; the animator, and every script reader of
+  `prefers-reduced-motion` (a `matchMedia` or `useMediaQuery` check), treat
+  the preference as set. An internal,
   pure `resolveThemeMotion(theme)` returns the knobs, durations, easings, and
   role tables for the animator and for server code; it touches no DOM and has
   no import-time side effects. The animator reads a person's Reduce Motion
@@ -138,15 +140,18 @@ defineTheme({
   `MotionScaleConfig`; existing themes render exactly as before.
 - Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`, and a
   theme-root mark for `reducedMotion: 'always'` that every component style
-  keying reduced motion on `prefers-reduced-motion` also keys on.
+  keying reduced motion on `prefers-reduced-motion` also keys on; Carousel's
+  paging, BottomSheet's panel and sheet gestures, Item's swipe release,
+  MobileNav, AppShell, and Chat, which read the preference in script, also
+  honour it.
 - `design:reduced-motion` gains DR2a: a theme may reduce motion for everyone.
 - Spinner and Skeleton read their loop durations before `tempo` scales them
   (FR4), so their timing is unchanged under every existing theme.
 - BottomSheet's sheet and scrim share `--duration-medium`; when the
   sheet settles on `springs.settle`, its scrim's fade takes the spring's settle
   time (FR4a).
-- `spec:AST-094` FR4 and `design:reduced-motion` DR2 and the draft
-  `design:motion` DR3 and `spec:AST-090` are amended to match.
+- `spec:AST-094` FR1, FR4, and DEC-15, `design:reduced-motion` DR2a, the draft
+  `design:motion` DR3, and `spec:AST-090` are amended to match.
 
 ## Verification
 
