@@ -13,7 +13,8 @@ owners: [cixzhang]
 affects_architecture: [architecture:react-component-runtime]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [useAnimatedLayout, TreeList, Collapsible]
+affects_consumer_docs:
+  [useAnimatedLayout, TreeList, Collapsible, useTableRowExpansion]
 ---
 
 # Animated layout system spec
@@ -140,7 +141,7 @@ Out of coverage, each taking its final place at once:
 - a closing element whose space no end margin frees (a grid item whose
   track or gap changes when it hides, or a flex-row item that sets its row's
   height): it hides at once, without its exit, and the content after it
-  takes its final place at once;
+  takes its final place at once, other than a table detail row (Coverage);
 - an anchored popover tied to a moving element, which layer anchoring keeps
   in place (`architecture:layer-runtime`).
 
