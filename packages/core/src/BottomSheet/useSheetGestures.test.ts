@@ -3136,6 +3136,31 @@ describe('useSheetGestures: the dim follows the sheet', () => {
     expect(valueAt(dim, 0, opacityOf)).toBeCloseTo(dimAt(290), 2);
   });
 
+  it("plays no dim on a backdrop that isn't the visible scrim, and still releases the sheet", () => {
+    // A sheet stacked above another: the stack's one visible backdrop is the
+    // other's, and this one's stays transparent.
+    const {hook} = setup({
+      snapHeights: () => [200],
+      onScrimOpacity: vi.fn(),
+      onScrimTracking: vi.fn(),
+      isScrimShown: () => false,
+    });
+    const {dialog, target} = inDialog();
+    const sheetAnimations = recordAnimations(target);
+    const backdrop = recordAnimations(dialog);
+    down(hook, 0, 0, target);
+    stream(hook, target, {from: 0, to: 290, t0: 0, t1: 600});
+    restAt(hook, 290, 650, target);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(
+        pointerEvent(290, 800, target),
+      ),
+    );
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(sheetAnimations.length).toBeGreaterThan(0);
+    expect(backdrop).toEqual([]);
+  });
+
   it('hands the dim back unpinned when the sheet closes during a release, writing nothing over the close', () => {
     const onScrimOpacity = vi.fn();
     const onScrimTracking = vi.fn();

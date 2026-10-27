@@ -1005,6 +1005,36 @@ describe('BottomSheet replace: under a finger (the touch layer)', () => {
     expect(summary()).toEqual(['One:replaced-fading:0', 'Two:replacing:0']);
   });
 
+  it('the replacing sheet takes the dim over at full strength: its spring plays no dim, where a lone sheet’s does', async () => {
+    const backdrops: Element[] = [];
+    Object.defineProperty(Element.prototype, 'animate', {
+      configurable: true,
+      writable: true,
+      value: function (
+        this: Element,
+        _keyframes: Keyframe[],
+        options?: KeyframeAnimationOptions & {pseudoElement?: string},
+      ) {
+        if (options?.pseudoElement === '::backdrop') {
+          backdrops.push(this);
+        }
+        return {cancel: vi.fn(), startTime: 0} as unknown as Animation;
+      },
+    });
+    render(<Flow />);
+    // The first sheet's box: its present spring brings the dim in with it.
+    layout(getPanel(getDialog('One')), 444, 400);
+    openFlow();
+    await land();
+    expect(backdrops).toContain(getDialog('One'));
+    backdrops.length = 0;
+    layout(getPanel(getDialog('Two')), 444, 400);
+    fireEvent.click(screen.getByRole('button', {name: 'Continue to two'}));
+    await land();
+    // The dim stays where it was through the handoff: nothing dips it.
+    expect(backdrops).toEqual([]);
+  });
+
   it('holds pointer input while the replacing sheet enters, and releases it as it lands (spec:AST-094 FR35)', async () => {
     render(<Flow />);
     openFlow();
