@@ -21,22 +21,22 @@ families: []
 design_specs: []
 architecture: [architecture:public-component-api]
 contributing: []
-system_specs: [spec:AST-009, spec:AST-071]
+system_specs: [spec:AST-009]
 ---
 
 # VisuallyHidden component contract
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                               |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | A wrapper with required `children` and an optional `as` element; accessibility and data props pass through; it accepts no `className` or `style` and ignores `xstyle` today (FR3 gap). |
-| Behavior                | Content stays in the accessibility tree and is clipped from sight by a fixed style block that no caller input can displace.                                                            |
-| End-user impact         | Screen-reader users hear names and announcements that sighted users do not need to see.                                                                                                |
-| Builder impact          | None; the record describes shipped behavior.                                                                                                                                           |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. One implementation gap is listed under Current-state impact.                                                |
-| Review checks           | Reject a `display: none` or `visibility: hidden` hide, a caller input that displaces the clip, or dropped `aria-*` passthrough.                                                        |
-| Governing rules         | `architecture:public-component-api/INV5,INV8`.                                                                                                                                         |
+| Area                    | Contract                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract         | A wrapper with required `children` and an optional `as` element; accessibility and data props pass through. Its styling surface is uncontracted (OQ1). |
+| Behavior                | Content stays in the accessibility tree and is clipped from sight by a fixed style block that no caller input can displace.                            |
+| End-user impact         | Screen-reader users hear names and announcements that sighted users do not need to see.                                                                |
+| Builder impact          | None; the record describes shipped behavior.                                                                                                           |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. The styling surface is left open in OQ1.                                    |
+| Review checks           | Reject a `display: none` or `visibility: hidden` hide, a caller input that displaces the clip, or dropped `aria-*` passthrough.                        |
+| Governing rules         | `architecture:public-component-api/INV5,INV8`; INV6 is open in OQ1.                                                                                    |
 
 This table is a review projection; the body below is authoritative.
 
@@ -52,19 +52,11 @@ guarantee that the hidden node cannot be styled visible.
 - Released default preserved: `yes`
 - Compatibility class: records shipped behavior; no public prop, default, or
   DOM output changes. `xstyle` is accepted by the type and ignored;
-  `className` and `style` are not accepted (the FR3 gap)
+  `className` and `style` are not accepted; the styling surface is open in OQ1
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
-
-## Current-state impact
-
-- **Styling inputs not accepted (FR3).** VisuallyHidden drops `className` and
-  `style` and ignores `xstyle`, so callers cannot style the element, where
-  `architecture:public-component-api` INV6 has root styling inputs compose; no
-  family decision records an exception, and `spec:AST-071` does not list it as
-  a known gap.
 
 ## Ownership boundary
 
@@ -88,11 +80,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                    | Basis                    |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1 | VisuallyHidden renders `children` in the element named by `as` (default `span`), which stays in the accessibility tree.                                                                                                                                                                                                                                                      | Current source and tests |
-| FR2 | The element is absolutely positioned at the inline-start and block-start of its containing block, 1px by 1px with a −1px margin, no padding or border, clipped to an empty rectangle with hidden overflow, unwrapped, and ignores pointer events and selection.                                                                                                              | Current source and tests |
-| FR3 | `ref` reaches the element, and supported `aria-*`, `role`, `id`, `data-*`, and event props reach it. Root styling inputs compose on the element (`architecture:public-component-api` INV6), and the clip styles apply after them so nothing displaces the clip. Implementation gap: `className` and `style` are not accepted and `xstyle` is ignored (Current-state impact). | Current source and tests |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                            | Basis                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| FR1 | VisuallyHidden renders `children` in the element named by `as` (default `span`), which stays in the accessibility tree.                                                                                                                                                                                                              | Current source and tests |
+| FR2 | The element is absolutely positioned at the inline-start and block-start of its containing block, 1px by 1px with a −1px margin, no padding or border, clipped to an empty rectangle with hidden overflow, unwrapped, and ignores pointer events and selection.                                                                      | Current source and tests |
+| FR3 | `ref` reaches the element, and supported `aria-*`, `role`, `id`, `data-*`, and event props reach it. The clip styles apply after every caller input, so nothing displaces the clip. Which root styling inputs VisuallyHidden accepts is uncontracted (OQ1); today `className` and `style` are not forwarded and `xstyle` is ignored. | Current source and tests |
 
 ### Allowed variation
 
@@ -101,11 +93,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State             | Required invariant                                                        | Allowed variation |
-| ----------------- | ------------------------------------------------------------------------- | ----------------- |
-| Icon-only label   | Hidden `span` gives the control its accessible name.                      | Text.             |
-| Live region       | Block element with caller `aria-live` stays hidden and announced.         | Politeness.       |
-| Styling attempted | Caller `className`, `style`, and `xstyle` have no effect today (FR3 gap). | —                 |
+| State             | Required invariant                                                         | Allowed variation |
+| ----------------- | -------------------------------------------------------------------------- | ----------------- |
+| Icon-only label   | Hidden `span` gives the control its accessible name.                       | Text.             |
+| Live region       | Block element with caller `aria-live` stays hidden and announced.          | Politeness.       |
+| Styling attempted | The clip still wins; whether caller styling applies is uncontracted (OQ1). | —                 |
 
 ### Transformation and precedence order
 
@@ -134,26 +126,33 @@ hidden node would defeat its purpose.
 
 ## Family and system relationships
 
-- `architecture:public-component-api` owns passthrough and ref rules; FR3
-  records VisuallyHidden's narrower styling surface.
+- `architecture:public-component-api` owns passthrough, ref, and styling-input
+  rules; FR3 applies INV5 and INV8, and OQ1 holds how INV6 applies here.
 
 ## Verification map
 
-| Contract | Verification                                                                                     | Representative states                                                                   | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Audit section                   |
-| -------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1, AR1 | `VisuallyHidden.test.tsx` render and icon-label tests                                            | Default, `as`, icon-only control                                                        | Content leaving the accessibility tree or a lost accessible name fails.                                                                                                                                                                                                                                                                                                                                                                                                                                           | `audit:VisuallyHidden/a11y`     |
-| FR2      | `VisuallyHidden.test.tsx` clip-style test; stable visual baseline `core-visuallyhidden--default` | Default                                                                                 | A `hidden` attribute fails the unit test; content that becomes visible comes back changed in the visual baseline. Gap: no unit test asserts a clip declaration, although the test environment exposes them.                                                                                                                                                                                                                                                                                                       | `audit:VisuallyHidden/behavior` |
-| FR3, AR2 | `VisuallyHidden.test.tsx` `as`, ref, passthrough, and styling tests                              | `as` with `aria-live`; ref; `id`, `role`, `data-testid`; `className`, `style`, `xstyle` | A lost `aria-live`, a missed ref, or a dropped `id` or `role` fails. The styling tests assert that `className`, `style`, and an `xstyle` attribute are dropped, which pins the recorded gap, not the contract. Gap: no test asserts that VisuallyHidden adds no role or live region of its own; the ref test still passes when a wrapper receives the ref; no test asserts other `aria-*` or event props; and no test checks that the clip wins over caller styles or catches an `xstyle` applied through StyleX. | `audit:VisuallyHidden/behavior` |
-| PR1      | Source review                                                                                    | Every state                                                                             | Gap: no automated check fails if VisuallyHidden adds state or a hook.                                                                                                                                                                                                                                                                                                                                                                                                                                             | `audit:VisuallyHidden/behavior` |
-| AR1      | Accessibility-tree evidence (`spec:AST-009` FR3)                                                 | Icon-only label; live region                                                            | Gap: no accessibility-tree check proves the hidden content stays in the tree; the unit tests query the DOM.                                                                                                                                                                                                                                                                                                                                                                                                       | `audit:VisuallyHidden/a11y`     |
+| Contract | Verification                                                                                     | Representative states                                                                   | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                              | Audit section                   |
+| -------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1, AR1 | `VisuallyHidden.test.tsx` render and icon-label tests                                            | Default, `as`, icon-only control                                                        | Content leaving the accessibility tree or a lost accessible name fails.                                                                                                                                                                                                                                                                                                                                                                      | `audit:VisuallyHidden/a11y`     |
+| FR2      | `VisuallyHidden.test.tsx` clip-style test; stable visual baseline `core-visuallyhidden--default` | Default                                                                                 | A `hidden` attribute fails the unit test; content that becomes visible comes back changed in the visual baseline. Gap: no unit test asserts a clip declaration, although the test environment exposes them.                                                                                                                                                                                                                                  | `audit:VisuallyHidden/behavior` |
+| FR3, AR2 | `VisuallyHidden.test.tsx` `as`, ref, passthrough, and styling tests                              | `as` with `aria-live`; ref; `id`, `role`, `data-testid`; `className`, `style`, `xstyle` | A lost `aria-live`, a missed ref, or a dropped `id` or `role` fails. The styling tests pin today's dropped `className`, `style`, and `xstyle` attribute, which FR3 leaves uncontracted. Gap: no test asserts that VisuallyHidden adds no role or live region of its own; the ref test still passes when a wrapper receives the ref; no test asserts other `aria-*` or event props; and no test checks that the clip wins over caller styles. | `audit:VisuallyHidden/behavior` |
+| PR1      | Source review                                                                                    | Every state                                                                             | Gap: no automated check fails if VisuallyHidden adds state or a hook.                                                                                                                                                                                                                                                                                                                                                                        | `audit:VisuallyHidden/behavior` |
+| AR1      | Accessibility-tree evidence (`spec:AST-009` FR3)                                                 | Icon-only label; live region                                                            | Gap: no accessibility-tree check proves the hidden content stays in the tree; the unit tests query the DOM.                                                                                                                                                                                                                                                                                                                                  | `audit:VisuallyHidden/a11y`     |
 
 ## Decision log
 
-None recorded. The record describes shipped behavior.
+None recorded. The record describes shipped behavior; OQ1 is open.
 
 ## Open questions
 
-None.
+- **OQ1 — Should VisuallyHidden accept root styling inputs?** (`human-api`)
+  `architecture:public-component-api` INV6 has root styling inputs compose
+  unless a family decision names an exception, and the consumer docs plan to
+  remove `xstyle`. If styling-free is a deliberate exception, INV6's owner
+  records it (with a `spec:AST-071` known-gap entry) and FR3 links it, and
+  callers keep no way to style the element. If composition is the direction,
+  FR3 requires `className`, `style`, and `xstyle` to compose with the clip
+  applied last, and today's surface becomes an implementation gap.
 
 ## Content boundary
 
