@@ -99,10 +99,9 @@ export interface ItemSwipeActions {
 
 /**
  * `reveal`: every entry of a resting row is a real button, and a long drag
- * fires the outermost. On iOS, as in a UIKit list, a fast release goes the
- * way it moves (a flick opens the row, a flick back closes it) and a slow one
- * rests the row open past half the panel; elsewhere a release past half the
- * panel rests it open and a fling fires the outermost, as before. `commit`: a
+ * fires the outermost. As in a UIKit list, a fast release goes the way it
+ * moves (a flick opens the row, a flick back closes it) and a slow one rests
+ * the row open past half the panel. `commit`: a
  * release past the commit point slides the row out and fires the outermost
  * entry; nothing rests, and the panel is presentational.
  */
