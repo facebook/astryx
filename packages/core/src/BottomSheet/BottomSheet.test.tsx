@@ -1566,6 +1566,60 @@ describe('BottomSheet', () => {
       delete (Element.prototype as {animate?: unknown}).animate;
     });
 
+    it('a sheet reopened during its exit springs back from where it is (spec:AST-094 FR6)', async () => {
+      const played = recordAnimate();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      const sheet = getSheet();
+      const dialog = screen.getByRole('dialog');
+      // Closed: the dismissal spring runs toward 500 px.
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120);
+      });
+      const before = travelOf(played, sheet).length;
+      // Reopened 120 ms in, partway down.
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      const back = travelOf(played, sheet).slice(before);
+      // A spring from where the sheet was, back to the detent: no jump.
+      expect(back.length).toBeGreaterThan(2);
+      expect(back[0]).toBeGreaterThan(20);
+      expect(back.at(-1)).toBeCloseTo(0, 0);
+      expect(dialog).toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
     it('opens and closes on the sheet spring, closing the dialog when it lands', async () => {
       const played: {keyframes: Keyframe[]; target: Element}[] = [];
       // jsdom has no Web Animations: record what the animator plays.
