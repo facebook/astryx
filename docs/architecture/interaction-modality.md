@@ -166,8 +166,8 @@ work.
   it: no Lab component has its own sample buffer, velocity math, or release
   filter, so Lab reports the same velocity as Core for the same motion.
 - **INV11 — Hover intent is a recognizer setting.** The hover recognizer,
-  `HoverGestureRecognizer`, takes `intent: {enterMs, exitMs, group}`: a small
-  entry delay against brush-over (`design:motion` DEC-1), an exit guard, and a
+  `HoverGestureRecognizer`, takes `intent: {enterMs, exitMs, group}`: an entry delay
+  against brush-over, which an owner's record may set to zero, an exit guard, and a
   group across which a pointer moving from one open trigger to the next shows
   the next at once. Keyboard focus shows at once, and a finger is never gated
   or served by it: intent answers mouse and pen hover only. `useTooltip`,
@@ -239,9 +239,13 @@ is asked to carry a new decision.
   lifetimes, and focus-paint ownership.
 - `architecture:react-component-runtime` owns shared lifecycle and resource
   mechanisms. This record owns only the cross-cutting modality-path,
-  no-stale-interaction-outcome, and gesture-velocity-source requirements.
+  no-stale-interaction-outcome, gesture-velocity-source, and hover-intent
+  (INV11) requirements.
 - The Core velocity tracker and its release filter (INV10) — the one source of
   gesture velocity for Core components; not exported.
+- The hover recognizer, `HoverGestureRecognizer`, and its `intent` setting
+  (INV11) — the one source of hover-show timing for Core components; not
+  exported.
 
 ## Deciding specs
 
@@ -264,7 +268,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV8       | Owner-defined intent order, pending, close, cancellation, disablement, and unmount mutations                                                                          | Older work changes current content, selection, status or announcement, visibility, focus, or activation after owner-defined supersession                                                                                                                                                                    |
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory                                                     | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority                                                                                                                                |
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
-| INV11      | Unit tests of the hover recognizer's intent and browser tests of its adopters with a mouse, a pen, a finger, and the keyboard                                         | A show without the entry delay, a missed handoff within a group, a delayed keyboard show, a finger served by it, or a second hover-timing implementation fails                                                                                                                                              |
+| INV11      | Unit tests of the hover recognizer's intent and browser tests of its adopters with a mouse, a pen, a finger, and the keyboard                                         | A show without the owner's entry delay, a missed handoff within a group, a delayed keyboard show, a finger served by it, or a second hover-timing implementation fails                                                                                                                                      |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
