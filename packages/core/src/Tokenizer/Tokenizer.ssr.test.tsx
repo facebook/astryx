@@ -55,9 +55,10 @@ async function serverRenderThenHydrate(
   } = {},
 ) {
   vi.resetModules();
-  const {Tokenizer} = await import('./Tokenizer');
+  const {TokenizerWithPresentation} =
+    await import('../internal/tokenizer-presentation');
   const tree = (
-    <Tokenizer
+    <TokenizerWithPresentation
       label="Tags"
       searchSource={source}
       value={[ITEMS[0]]}
