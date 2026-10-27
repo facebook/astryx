@@ -2666,6 +2666,10 @@ jobs:
       - name: Report job durations
         uses: actions/github-script@v9
         with:
+          # The listing is one request for every job of the run with its
+          # steps, and GitHub can answer it 502 at its gateway limit: retry a
+          # server error. The action's exempt client errors stay final.
+          retries: 3
           script: |
             const jobs = await github.paginate(
               github.rest.actions.listJobsForWorkflowRunAttempt,
