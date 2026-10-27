@@ -1215,18 +1215,21 @@ const rootOverscroll = (page: Page) =>
     () => getComputedStyle(document.documentElement).overscrollBehaviorY,
   );
 
-test('with a mouse, a drag at the top pulls nothing and the top edge stays the browser’s (spec:AST-094 FR43, as spec:AST-057 AR2 keeps a mouse off a row)', async ({
+test('with a mouse, a drag at the top pulls and refreshes as a finger does, and the top edge stays the browser’s (spec:AST-094 FR43)', async ({
   browser,
 }) => {
   const {context, page, content} = await desktopPage(browser);
   try {
     expect(await rootOverscroll(page)).toBe('auto');
-    // The drag's text selection and native drag stay the browser's.
-    const shown = await mousePull(page, content, 20);
-    await page.waitForTimeout(300);
-    expect(Math.max(...shown.map(Math.abs))).toBe(0);
-    expect(await isBusy(content)).toBe(false);
-    expect(await shownPull(content)).toBe(0);
+    // 300 px of travel: past the trigger, with the button down.
+    await mousePull(page, content, 20);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+    // The drag selected nothing it keeps: the pull took it.
+    expect(
+      await page.evaluate(() => document.getSelection()?.isCollapsed ?? true),
+    ).toBe(true);
     expect(await rootOverscroll(page)).toBe('auto');
   } finally {
     await context.close();
@@ -1254,7 +1257,7 @@ test('with a pen, a drag at the top pulls and refreshes as a finger does, and th
   }
 });
 
-test('under Reduce Motion a release from a pen lands at once: no travel and no fade (design:reduced-motion DR3)', async ({
+test('under Reduce Motion a release from a pen lands at once where the primary pointer is fine: no travel and no fade (spec:AST-094 FR43: design:reduced-motion DR3)', async ({
   browser,
   browserName,
 }) => {
@@ -1279,6 +1282,40 @@ test('under Reduce Motion a release from a pen lands at once: no travel and no f
       ),
       JSON.stringify(log),
     ).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion on a touch screen a release from a pen cross-fades as a finger’s does (spec:AST-094 FR43: design:reduced-motion DR2 on a coarse primary pointer)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const context = await browser.newContext({
+    viewport: {width: 402, height: 714},
+    hasTouch: false,
+    isMobile: false,
+    reducedMotion: 'reduce',
+  });
+  try {
+    const page = await context.newPage();
+    await primaryPointer(page, 'coarse');
+    await openStory(page, storybook(), 'lab-refreshcontrol--on-the-page', {
+      refreshMs: '6000',
+    });
+    const content = page.locator('.astryx-refresh-control').first();
+    await expect(content).toBeVisible();
+    await recordAnimations(page);
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 1);
+    const log = await recordedAnimations(page);
+    expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+    expect(
+      log.some(a => a.part === 'content' && a.properties.includes('opacity')),
+      JSON.stringify(log),
+    ).toBe(true);
   } finally {
     await context.close();
   }
