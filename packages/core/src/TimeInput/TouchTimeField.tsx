@@ -53,6 +53,7 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
 import {WheelGroup} from '../DateInput/WheelGroup';
+import {timeColumns} from '../DateInput/wheelColumns';
 import {dateInputTouchGeometry} from '../DateInput/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {themeProps} from '../utils/themeProps';
@@ -369,6 +370,8 @@ export function TouchTimeField({
     [fireChange, hasSeconds, max, min, optimisticValue],
   );
 
+  // Under a finger, each column sits where UIDatePicker sets its own.
+  const columns = timeColumns(hourFormat, hasSeconds);
   const hourOptions: WheelOption[] = useMemo(() => {
     if (hourFormat === '24h') {
       return Array.from({length: 24}, (_, hour) => ({
@@ -555,6 +558,7 @@ export function TouchTimeField({
                     : hour12From24(parsedWheelTime.hour)
                 }
                 isActive={isSheetOpen}
+                column={columns.hour}
                 onChange={hour =>
                   commitWheelTime(
                     hourFormat === '24h'
@@ -568,6 +572,7 @@ export function TouchTimeField({
                 options={minuteOptions}
                 value={parsedWheelTime.minute}
                 isActive={isSheetOpen}
+                column={columns.minute}
                 onChange={minute => commitWheelTime(composeWheelTime({minute}))}
               />
               {hasSeconds && (
@@ -576,6 +581,7 @@ export function TouchTimeField({
                   options={secondOptions}
                   value={parsedWheelTime.second}
                   isActive={isSheetOpen}
+                  column={columns.second}
                   onChange={second =>
                     commitWheelTime(composeWheelTime({second}))
                   }
@@ -587,6 +593,7 @@ export function TouchTimeField({
                   options={meridiemOptions}
                   value={parsedWheelTime.hour < 12 ? 0 : 1}
                   isActive={isSheetOpen}
+                  column={columns.meridiem}
                   onChange={meridiem =>
                     commitWheelTime(composeWheelTime({meridiem}))
                   }

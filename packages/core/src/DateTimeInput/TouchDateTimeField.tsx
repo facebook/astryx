@@ -99,6 +99,7 @@ import {
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
 import {WheelGroup} from '../DateInput/WheelGroup';
+import {timeColumns} from '../DateInput/wheelColumns';
 import {
   dateInputTouchGeometry,
   dateInputTouchSizes,
@@ -870,6 +871,8 @@ export function TouchDateTimeField({
   );
 
   const timeBounds = timeBoundsForDate(valueParts.date);
+  // Under a finger, each column sits where UIDatePicker sets its own.
+  const columns = timeColumns(hourFormat, hasSeconds);
   const hourOptions: WheelOption[] = useMemo(() => {
     if (hourFormat === '24h') {
       return Array.from({length: 24}, (_, hour) => ({
@@ -1251,6 +1254,7 @@ export function TouchDateTimeField({
                     : hour12From24(parsedWheelTime.hour)
                 }
                 isActive={activePanel === 'time'}
+                column={columns.hour}
                 onChange={hour =>
                   commitWheelTime(
                     hourFormat === '24h'
@@ -1264,6 +1268,7 @@ export function TouchDateTimeField({
                 options={minuteOptions}
                 value={parsedWheelTime.minute}
                 isActive={activePanel === 'time'}
+                column={columns.minute}
                 onChange={minute => commitWheelTime(composeWheelTime({minute}))}
               />
               {hasSeconds && (
@@ -1272,6 +1277,7 @@ export function TouchDateTimeField({
                   options={secondOptions}
                   value={parsedWheelTime.second}
                   isActive={activePanel === 'time'}
+                  column={columns.second}
                   onChange={second =>
                     commitWheelTime(composeWheelTime({second}))
                   }
@@ -1283,6 +1289,7 @@ export function TouchDateTimeField({
                   options={meridiemOptions}
                   value={parsedWheelTime.hour < 12 ? 0 : 1}
                   isActive={activePanel === 'time'}
+                  column={columns.meridiem}
                   onChange={meridiem =>
                     commitWheelTime(composeWheelTime({meridiem}))
                   }

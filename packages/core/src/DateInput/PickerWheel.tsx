@@ -5,8 +5,8 @@
 /**
  * @file PickerWheel.tsx
  * @input Wheel's props (wheelOptions.ts): option list, selected value,
- *   change callback; optionally looping, a rest rule, and a ref for
- *   programmatic turns
+ *   change callback; optionally looping, a rest rule, a ref for
+ *   programmatic turns, and its place in a WheelGroup (wheelColumns.ts)
  * @output Exports PickerWheel — one UIPickerView column
  * @position Internal component; the Wheel under a finger (Wheel.tsx picks
  *   it and imports it statically), drawn standalone or inside a WheelGroup
@@ -52,7 +52,11 @@
  *
  * The rows are drawn twice, as UIKit draws them: dimmed on a cylinder seen
  * in perspective above and below the band (wheelDrum.ts), and flat and
- * magnified inside it.
+ * magnified inside it, each label about its own centre, so the band's row
+ * stays in line with its column. In a WheelGroup every column is drawn
+ * towards the group's centre, and a column given its place (`column`,
+ * wheelColumns.ts) takes the part of the group nearest its labels and sets
+ * them where UIDatePicker sets its own: close together around the centre.
  *
  * Both drawings mount only a window of rows, as UIPickerView lays out only
  * the cells it shows: the cylinder's front half (±90° from the band), the
@@ -74,6 +78,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/PickerWheel.test.tsx
+ * - /packages/core/src/DateInput/wheelColumns.ts (the places it applies)
  * - /packages/core/src/DateInput/Wheel.tsx (the switch)
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
@@ -95,6 +100,7 @@ import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {isRtlElement} from '../hooks/isRtlElement';
 import {rubberBandInverse} from '../motion/rubberBand';
 import {resolveMotion} from '../motion/resolveMotion';
 import {picker} from '../motion/uikit/picker';
@@ -126,6 +132,7 @@ import {
   type WheelLayout,
 } from './wheelPhysics';
 import {useWheelGroup, wheelGroupStyles} from './WheelGroup';
+import type {WheelColumn} from './wheelColumns';
 import {
   nearestEnabledIndex,
   type WheelProps,
@@ -163,6 +170,8 @@ const styles = stylex.create({
     outline: 'none',
     WebkitTapHighlightColor: 'transparent',
   },
+  /** A placed column's part of its group (wheelColumns.ts). */
+  columnSpan: (basis: string) => ({flex: `0 0 ${basis}`}),
   // Outside a WheelGroup: the picker's 216 px, centred in its container.
   standalone: {
     alignSelf: 'center',
@@ -201,6 +210,13 @@ const styles = stylex.create({
   rowDisabled: {
     color: colorVars['--color-text-disabled'],
   },
+  // A placed column's labels: an edge, or their centre, at its place; the
+  // drum and the band's copy move to put that point there. An aligned edge
+  // keeps the rows' padding from the row's, so the band's magnified label
+  // stays inside its clip.
+  alignStart: {justifyContent: 'flex-start'},
+  alignCenter: {justifyContent: 'center'},
+  alignEnd: {justifyContent: 'flex-end'},
   // Both drawings carry their text as generated content, so the listbox's
   // options hold each label once: text searches, find-in-page and assistive
   // technology meet only the options.
@@ -409,8 +425,11 @@ export function PickerWheel({
   isLooping = false,
   resolveRest,
   ref,
+  column: place,
 }: WheelProps) {
   const group = useWheelGroup();
+  // A column takes its place only inside a WheelGroup.
+  const placed = group != null ? place : undefined;
   const columnRef = useRef<HTMLDivElement | null>(null);
   const drumRef = useRef<HTMLDivElement | null>(null);
   const bandCopyRef = useRef<HTMLDivElement | null>(null);
@@ -615,8 +634,10 @@ export function PickerWheel({
     }
   }, [isActive, motion]);
 
-  // Every column draws towards one vanishing point, the group's centre, and
-  // the band's magnified copy sits that much further from it.
+  // Every column draws towards one vanishing point, the group's centre. A
+  // placed column moves its drum and the band's copy so its labels' edge or
+  // centre sits at its place; the band's copy magnifies each label about its
+  // own centre, so the band's row stays in line with its column.
   useIsomorphicLayoutEffect(() => {
     const column = columnRef.current;
     const drum = drumRef.current;
@@ -624,27 +645,36 @@ export function PickerWheel({
     if (column == null || drum == null || bandCopy == null) {
       return;
     }
-    const place = () => {
+    const layOut = () => {
       const columnBox = column.getBoundingClientRect();
       const groupBox =
         group?.groupRef.current?.getBoundingClientRect() ?? columnBox;
       const centre = groupBox.left + groupBox.width / 2;
-      drum.style.perspectiveOrigin = `${centre - columnBox.left}px 50%`;
       const shift =
-        (columnBox.left + columnBox.width / 2 - centre) *
-        (picker.geometry.bandMagnification - 1);
-      bandCopy.style.translate = `${shift}px 0`;
+        placed != null
+          ? placeShift(
+              placed,
+              columnBox,
+              centre,
+              isRtlElement(column),
+              alignInset(stripRef.current, placed.align),
+            )
+          : 0;
+      const translate = placed != null ? `${shift}px 0` : '';
+      drum.style.translate = translate;
+      bandCopy.style.translate = translate;
+      drum.style.perspectiveOrigin = `${centre - columnBox.left - shift}px 50%`;
     };
     // The shared observer measures once at once, then on every resize.
-    const unobserveColumn = observeResize(column, place);
+    const unobserveColumn = observeResize(column, layOut);
     const groupElement = group?.groupRef.current;
     const unobserveGroup =
-      groupElement != null ? observeResize(groupElement, place) : null;
+      groupElement != null ? observeResize(groupElement, layOut) : null;
     return () => {
       unobserveColumn();
       unobserveGroup?.();
     };
-  }, [group, isActive]);
+  }, [group, isActive, placed]);
 
   // A finger lands: a moving wheel stops where it is on screen.
   const onTouchDown = useCallback(
@@ -1039,6 +1069,7 @@ export function PickerWheel({
       data-wheel-band={group == null ? '' : undefined}
       {...stylex.props(
         styles.column,
+        placed != null && styles.columnSpan(spanBasis(placed.span)),
         group == null && styles.standalone,
         // On its own, the column draws the band with its `::before`.
         group == null && wheelGroupStyles.band,
@@ -1069,6 +1100,7 @@ export function PickerWheel({
               {...stylex.props(
                 styles.row,
                 styles.rowLabel,
+                placed != null && alignStyle(placed.align),
                 option.isDisabled && styles.rowDisabled,
               )}
             />
@@ -1093,6 +1125,7 @@ export function PickerWheel({
                   styles.stripRow,
                   styles.stripLabel,
                   styles.stripRowAt(`${position * ROW_HEIGHT}px`),
+                  placed != null && alignStyle(placed.align),
                   option.isDisabled && styles.rowDisabled,
                 )}
               />
@@ -1105,6 +1138,72 @@ export function PickerWheel({
 }
 
 PickerWheel.displayName = 'PickerWheel';
+
+/** wheelColumns.ts's pt, at this wheel's rows. */
+const PLACE_SCALE = ROW_HEIGHT / picker.geometry.rowHeight;
+
+/** A placed column's flex basis: its span of the group (wheelColumns.ts). */
+function spanBasis(span: WheelColumn['span']): string {
+  const [from, to] = span.map(edge =>
+    edge == null ? null : edge * PLACE_SCALE,
+  );
+  if (from == null && to == null) {
+    return '100%';
+  }
+  if (from == null) {
+    return `calc(50% + ${to}px)`;
+  }
+  if (to == null) {
+    return `calc(50% - ${from}px)`;
+  }
+  return `${to - from}px`;
+}
+
+function alignStyle(align: WheelColumn['align']) {
+  if (align === 'start') {
+    return styles.alignStart;
+  }
+  return align === 'end' ? styles.alignEnd : styles.alignCenter;
+}
+
+/**
+ * An aligned label's distance from its row's edge: the rows' inline padding
+ * on that side, read from a band row (0 for centred labels).
+ */
+function alignInset(
+  strip: HTMLElement | null,
+  align: WheelColumn['align'],
+): number {
+  const row = strip?.firstElementChild;
+  if (align === 'center' || row == null) {
+    return 0;
+  }
+  const style = getComputedStyle(row);
+  const padding =
+    align === 'start' ? style.paddingInlineStart : style.paddingInlineEnd;
+  return Number.parseFloat(padding) || 0;
+}
+
+/**
+ * How far a placed column moves its labels (px, physical): from where its
+ * rows put them (`inset` inside an edge of the column, or its centre) to its
+ * place, mirrored right to left.
+ */
+function placeShift(
+  place: WheelColumn,
+  columnBox: DOMRect,
+  centre: number,
+  rightToLeft: boolean,
+  inset: number,
+): number {
+  const target = centre + (rightToLeft ? -1 : 1) * place.offset * PLACE_SCALE;
+  let from = columnBox.left + columnBox.width / 2;
+  if (place.align !== 'center') {
+    const atLeft = (place.align === 'start') !== rightToLeft;
+    from = atLeft ? columnBox.left + inset : columnBox.right - inset;
+  }
+  return target - from;
+}
 
 /**
  * The finger's offset for a shown one: past an end, the travel that the

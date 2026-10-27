@@ -23,7 +23,10 @@
  * of a side column lean towards the picker's centre, not their own. A Wheel
  * inside a WheelGroup reads the group's box for that centre; a Wheel on its
  * own draws its own band and uses its own centre. The band is the frame's
- * (or the lone column's) `::before`, marked `data-wheel-band`.
+ * (or the lone column's) `::before`, marked `data-wheel-band`. UIDatePicker
+ * also sets its columns close together around the centre: a Wheel given its
+ * place (`column`, wheelColumns.ts) takes the part of the group nearest its
+ * labels and sets them there.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/PickerWheel.tsx

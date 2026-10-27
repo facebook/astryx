@@ -30,6 +30,7 @@ import {PickerWheel} from './PickerWheel';
 import {WheelGroup, useWheelGroup} from './WheelGroup';
 import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
 import {rowTransform} from './wheelDrum';
+import {timeColumns} from './wheelColumns';
 
 const ROW = 32;
 const RADIUS = 97.2;
@@ -1350,10 +1351,214 @@ describe('PickerWheel — RTL', () => {
       // the right column toward its left.
       expect(origin('AM/PM')).toBe('184px 50%');
       expect(origin('Hour')).toBe('-61px 50%');
+      // The band's copy magnifies each label about its own centre: an
+      // unplaced column moves neither drawing.
+      for (const label of ['Hour', 'Minute', 'AM/PM']) {
+        const column = screen.getByRole('listbox', {name: label});
+        expect(
+          column.querySelector<HTMLElement>('[data-wheel-drum]')!.style
+            .translate,
+        ).toBe('');
+        expect(
+          column.querySelector<HTMLElement>('[data-wheel-strip]')!
+            .parentElement!.style.translate,
+        ).toBe('');
+      }
     } finally {
       spy.mockRestore();
       window.ResizeObserver = previousObserver;
       vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('PickerWheel — placed in a group', () => {
+  // A 12-hour clock's columns in a 402 px picker (wheelColumns.ts): each takes
+  // the part of the group its span names, laid out by the browser.
+  const COLUMNS = timeColumns('12h', false);
+  const MERIDIEM: WheelOption[] = [
+    {value: 0, label: 'AM'},
+    {value: 1, label: 'PM'},
+  ];
+  const WIDTH = {Hour: 201 - 39.7, Minute: 26.1 + 39.7, 'AM/PM': 201 - 26.1};
+
+  async function renderPlaced(direction: 'ltr' | 'rtl') {
+    const order = ['Hour', 'Minute', 'AM/PM'] as const;
+    const visual = direction === 'rtl' ? [...order].reverse() : [...order];
+    const left: Record<string, number> = {};
+    let x = 0;
+    for (const label of visual) {
+      left[label] = x;
+      x += WIDTH[label];
+    }
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        const label = this.getAttribute('aria-label');
+        const isGroup =
+          this.hasAttribute('data-wheel-band') &&
+          !this.hasAttribute('data-wheel');
+        const at = label != null && label in left ? left[label] : 0;
+        const width =
+          label != null && label in left
+            ? WIDTH[label as keyof typeof WIDTH]
+            : isGroup
+              ? 402
+              : 0;
+        return {
+          x: at,
+          y: 0,
+          left: at,
+          top: 0,
+          right: at + width,
+          bottom: 216,
+          width,
+          height: 216,
+          toJSON() {},
+        };
+      },
+    );
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })),
+    );
+    const previousObserver = window.ResizeObserver;
+    window.ResizeObserver = class {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe(target: Element) {
+        queueMicrotask(() =>
+          this.callback([{target} as ResizeObserverEntry], this),
+        );
+      }
+      unobserve() {}
+      disconnect() {}
+    };
+    // jsdom computes neither an inherited direction nor StyleX's rules:
+    // report the wrapper's direction for the columns and the theme's 8 px
+    // row padding for the band rows, as a browser does.
+    const computed = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element, pseudo) => {
+        const style = computed(element, pseudo);
+        const isColumn = element.hasAttribute('data-wheel');
+        const isBandRow =
+          element.parentElement?.hasAttribute('data-wheel-strip');
+        if (!isColumn && isBandRow !== true) {
+          return style;
+        }
+        const overrides: Record<string, string> = isColumn
+          ? {direction: direction}
+          : {paddingInlineStart: '8px', paddingInlineEnd: '8px'};
+        return {
+          ...overrides,
+          getPropertyValue: (name: string) => style.getPropertyValue(name),
+        } as unknown as CSSStyleDeclaration;
+      },
+    );
+    render(
+      <div dir={direction}>
+        <WheelGroup>
+          <PickerWheel
+            label="Hour"
+            options={HOURS}
+            value={10}
+            onChange={() => {}}
+            column={COLUMNS.hour}
+          />
+          <PickerWheel
+            label="Minute"
+            options={MINUTES}
+            value={0}
+            onChange={() => {}}
+            column={COLUMNS.minute}
+          />
+          <PickerWheel
+            label="AM/PM"
+            options={MERIDIEM}
+            value={0}
+            onChange={() => {}}
+            column={COLUMNS.meridiem}
+          />
+        </WheelGroup>
+      </div>,
+    );
+    await act(async () => {});
+    return () => {
+      window.ResizeObserver = previousObserver;
+    };
+  }
+
+  const shifts = () =>
+    Object.fromEntries(
+      ['Hour', 'Minute', 'AM/PM'].map(label => {
+        const column = screen.getByRole('listbox', {name: label});
+        const drum = column.querySelector<HTMLElement>('[data-wheel-drum]')!;
+        const bandCopy =
+          column.querySelector<HTMLElement>(
+            '[data-wheel-strip]',
+          )!.parentElement!;
+        // Both drawings move together.
+        expect(bandCopy.style.translate).toBe(drum.style.translate);
+        return [label, parseFloat(drum.style.translate)];
+      }),
+    );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('takes the part of the group its span names', async () => {
+    const restore = await renderPlaced('ltr');
+    try {
+      const style = (label: string) =>
+        screen.getByRole('listbox', {name: label}).getAttribute('style') ?? '';
+      expect(style('Hour')).toContain('calc(50% + -39.7px)');
+      expect(style('Minute')).toContain('65.8');
+      expect(style('AM/PM')).toContain('calc(50% - 26.1px)');
+    } finally {
+      restore();
+    }
+  });
+
+  it('sets each column’s labels where UIDatePicker sets its own (spec:AST-094 FR1)', async () => {
+    const restore = await renderPlaced('ltr');
+    try {
+      const moved = shifts();
+      // The hours' right edge 63.8 px left of the centre (201 px), from 8 px
+      // inside the hour column's right edge (161.3 px); the minutes' and
+      // AM/PM's centres 4.7 px left of it and 56.8 px right of it, from their
+      // columns'.
+      expect(moved.Hour).toBeCloseTo(201 - 63.8 - (161.3 - 8), 6);
+      expect(moved.Minute).toBeCloseTo(201 - 4.7 - (161.3 + 227.1) / 2, 6);
+      expect(moved['AM/PM']).toBeCloseTo(201 + 56.8 - (227.1 + 402) / 2, 6);
+      // The vanishing point stays the group's centre.
+      const drum = screen
+        .getByRole('listbox', {name: 'AM/PM'})
+        .querySelector<HTMLElement>('[data-wheel-drum]')!;
+      expect(parseFloat(drum.style.perspectiveOrigin)).toBeCloseTo(
+        201 - 227.1 - moved['AM/PM'],
+        6,
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('mirrors the places right to left', async () => {
+    const restore = await renderPlaced('rtl');
+    try {
+      const moved = shifts();
+      // AM/PM on the left, the hours on the right: every move mirrors.
+      expect(moved.Hour).toBeCloseTo(201 + 63.8 - (402 - (201 - 39.7) + 8), 6);
+      expect(moved.Minute).toBeCloseTo(201 + 4.7 - (174.9 + 240.7) / 2, 6);
+      expect(moved['AM/PM']).toBeCloseTo(201 - 56.8 - 174.9 / 2, 6);
+    } finally {
+      restore();
     }
   });
 });

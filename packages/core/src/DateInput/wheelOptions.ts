@@ -15,6 +15,7 @@
 
 import type {Ref} from 'react';
 import type {BezierPoints} from '../motion/bezier';
+import type {WheelColumn} from './wheelColumns';
 
 export interface WheelOption {
   /** Stable numeric identity of the row (a month 1-12, or a year). */
@@ -80,6 +81,12 @@ export interface WheelProps {
   resolveRest?: (index: number) => number;
   /** Programmatic turns: `spinTo(index)`. */
   ref?: Ref<WheelHandle>;
+  /**
+   * The column's place in its WheelGroup under a finger: where its labels
+   * sit and the part of the group it takes, as UIDatePicker sets its columns
+   * (wheelColumns.ts). Without it the columns share the group equally.
+   */
+  column?: WheelColumn;
 }
 
 /**

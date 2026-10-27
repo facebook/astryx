@@ -31,6 +31,7 @@ import {useTouchPresentation} from '../utils/touchPresentation';
 import {dateInputTouchGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
 import {WheelGroup} from './WheelGroup';
+import {monthYearColumns} from './wheelColumns';
 import {wheelGeometry} from './wheelGeometry.stylex';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
@@ -142,6 +143,7 @@ export function MonthYearWheels({
         options={monthOptions}
         value={month}
         isActive={isActive}
+        column={monthYearColumns.month}
         onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
       />
       <Wheel
@@ -149,6 +151,7 @@ export function MonthYearWheels({
         options={yearOptions}
         value={year}
         isActive={isActive}
+        column={monthYearColumns.year}
         onChange={nextYear => {
           // Jan 31 -> Feb has no equivalent here (months carry no day), but a
           // year change can still land outside the range; clamp to it.
