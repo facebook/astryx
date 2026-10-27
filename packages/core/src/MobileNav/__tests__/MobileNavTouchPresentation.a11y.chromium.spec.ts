@@ -4,8 +4,9 @@
  * @file MobileNavTouchPresentation.a11y.chromium.spec.ts
  * @input The built MobileNav "Default" and AppShell "Auto Height" stories, real
  *   Chromium touch input in a phone context and a mouse on a fine-pointer page
- * @output Browser evidence that under a finger the drawer dismisses as an iOS
- *   sheet does: the dialog stays modal and rendered while the drawer slides
+ * @output Browser evidence that under a finger the drawer takes no tap while
+ *   it slides in, while keys and assistive technology stay live, and that it
+ *   dismisses as an iOS sheet does: the dialog stays modal and rendered while the drawer slides
  *   out and the scrim fades to the end; nothing takes a tap during the
  *   slide-out, neither the leaving drawer nor the page; the dialog closes
  *   and focus returns to the opener when the slide-out ends. Under a mouse
@@ -277,6 +278,34 @@ test('a tap during the slide-in reaches nothing', async ({page}) => {
   expect(
     await page.evaluate(() => document.querySelector('dialog')?.open),
   ).toBe(true);
+});
+
+test('keys and assistive technology stay live during the slide-in (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-mobilenav--default&viewMode=story`,
+  );
+  await page.getByRole('button', {name: 'Open Navigation'}).tap();
+  // Early in the slide-in, while a tap is still held: a key moves focus into
+  // the drawer, and its links stay in the accessibility tree.
+  await page.waitForTimeout(50);
+  await page.keyboard.press('Tab');
+  const state = await page.evaluate(() => {
+    const dialog = document.querySelector('dialog');
+    const drawer = dialog?.querySelector('[tabindex="-1"]');
+    const focused = document.activeElement;
+    return {
+      sliding:
+        drawer?.getAnimations().some(a => a.playState === 'running') ?? false,
+      focusInDialog: dialog?.contains(focused) ?? false,
+      focusInert: focused?.closest('[inert]') != null,
+    };
+  });
+  expect(state.sliding).toBe(true);
+  expect(state.focusInDialog).toBe(true);
+  expect(state.focusInert).toBe(false);
+  await expect(page.getByRole('link', {name: 'Dashboard'})).toHaveCount(1);
 });
 
 test.describe('under a mouse', () => {

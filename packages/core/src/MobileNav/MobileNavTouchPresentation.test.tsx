@@ -5,9 +5,10 @@
  * @input Uses vitest, @testing-library/react, MobileNav and the Layer
  *   module's input hold
  * @output Tests that under a finger the drawer presents and dismisses as a
- *   UIKit sheet does (no touch until the slide-in ends, no input until the
- *   slide-out ends, the dialog closing at its end), and that under a mouse
- *   nothing is held and the close keeps its timing
+ *   UIKit sheet does (no touch until the slide-in ends, while keys and
+ *   assistive technology stay live; no input until the slide-out ends, the
+ *   dialog closing at its end), and that under a mouse nothing is held and
+ *   the close keeps its timing
  * @position Unit tests for MobileNav's touch presentation
  *
  * SYNC: When modified, update the header comment in MobileNav.tsx.
@@ -99,6 +100,25 @@ describe('MobileNav under a finger', () => {
 
     await advance(MAX_EXIT_MS + 10);
     expect(isInHeldLayer(dialog)).toBe(false);
+  });
+
+  it('keeps keys and assistive technology live while it slides in (spec:AST-094 FR35)', () => {
+    render(<Harness />);
+    const open = screen.getByRole('button', {name: 'Open'});
+    open.focus();
+    fireEvent.click(open);
+    const dialog = screen.getByTestId('mobile-nav');
+    expect(isInHeldLayer(dialog)).toBe(true);
+
+    // Only pointer input is held: the drawer keeps the focus showModal()
+    // gave it, and its content stays out of any inert or hidden subtree, so
+    // keys and assistive technology still reach it.
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    const home = screen.getByRole('link', {name: 'Home'});
+    expect(home.closest('[inert]')).toBeNull();
+    expect(home.closest('[aria-hidden="true"]')).toBeNull();
+    home.focus();
+    expect(document.activeElement).toBe(home);
   });
 
   it('stays open, modal and held until the slide-out ends, then closes and gives focus back', async () => {
