@@ -50,7 +50,10 @@ import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
-import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
+import {
+  useButtonGroup,
+  useButtonGroupTracksPress,
+} from '../ButtonGroup/ButtonGroupContext';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {
@@ -640,6 +643,7 @@ export function Button({
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
+  const groupTracksPress = useButtonGroupTracksPress();
   // A group that tracks a held pointer across its buttons
   // (`family:action-groups`) tracks this one, unless it opens a menu: a menu
   // trigger keeps its own opening (`spec:AST-094` FR29) and the controller's
@@ -652,8 +656,7 @@ export function Button({
   // A caller that tracks its own group (an alert's actions, a toggle group's
   // buttons) spreads the marker on the button itself.
   const isGroupTracked =
-    (buttonGroup?.tracksPress === true && !opensPopup) ||
-    PRESS_GROUP_ITEM_ATTRIBUTE in props;
+    (groupTracksPress && !opensPopup) || PRESS_GROUP_ITEM_ATTRIBUTE in props;
   const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
