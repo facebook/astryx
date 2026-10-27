@@ -424,8 +424,9 @@ owns the one coordination case.
 **Reference:** `spec:AST-057/DEC-4`
 **Decider:** `cixzhang`, `2026-10-02`
 
-A mouse drag and hover do nothing with `swipeActions`; a trackpad's
-horizontal scroll is the one non-touch input that swipes a row (DEC-7); what a row offers
+A mouse drag and hover do nothing with `swipeActions`; horizontal wheel
+input, a trackpad's scroll or a mouse's horizontal wheel, is the one
+non-touch input that swipes a row (DEC-7); what a row offers
 a mouse or a keyboard is the row's own content, which this record does not
 govern.
 
