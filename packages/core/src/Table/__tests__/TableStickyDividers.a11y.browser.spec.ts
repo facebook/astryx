@@ -404,3 +404,23 @@ test("a carried border follows a Theme switched between the hooks' owner and the
       .toBe(true);
   }
 });
+
+test("a table revealed from state below the hooks' owner carries a winning row border", async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tablestickycolumns--pinned-dividers-revealed&viewMode=story`,
+  );
+  await page.getByRole('button', {name: 'Show table'}).click();
+  await expect(page.locator('.astryx-table-scroll-wrapper')).toBeVisible();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await expect
+      .poll(async () => {
+        const {pinned, unpinned} = await dividerPixels(page, 1);
+        const red = darkest(pinned);
+        return sameColumn(pinned, unpinned, 24) && red[0] > red[2] + 60;
+      }, `at ${left}px`)
+      .toBe(true);
+  }
+});

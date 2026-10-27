@@ -466,15 +466,21 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         );
       }
     };
+    // Whether the pinned dividers were read since this attach.
+    let hasRead = false;
     const resize = () => {
       update();
       syncPinnedDividers(el);
+      hasRead = true;
     };
-    // The observer's first callback reports the size at observe time, which
-    // the after-commit read already covers: it updates the shadows only.
+    // The observer's first callback reports the size at observe time. The
+    // hook owner's after-commit read usually came first; a table mounted
+    // from state below that owner (a tab, a disclosure) attached without it,
+    // so the dividers are read here then.
     let hasObserved = false;
     const onResize = () => {
-      if (hasObserved) {
+      if (hasObserved || !hasRead) {
+        hasObserved = true;
         resize();
         return;
       }
