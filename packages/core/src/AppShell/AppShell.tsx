@@ -796,8 +796,8 @@ export function AppShell({
           return () => {};
         }
         pending.change.animate();
-        // The column beside the rail, which the glide moves: the copy rides
-        // beside it, in its parent, by the same travel.
+        // The column beside the rail, which the glide moves: the copy sits
+        // beside it, in its parent, and rides its glide.
         let column: HTMLElement = main;
         while (
           column.parentElement != null &&
@@ -815,7 +815,8 @@ export function AppShell({
             : pending.before.left - after.left;
         return playLayoutSwap(pending.swap, {
           host: column.parentElement,
-          copy: p => ({opacity: 1 - p, translate: `${-travel * p}px 0px`}),
+          copy: p => ({opacity: 1 - p}),
+          rideWith: {element: column, travel: {x: travel, y: 0}},
           incoming: Array.from(main.children, element => ({
             element,
             frames: (p: number) => ({opacity: p}),
