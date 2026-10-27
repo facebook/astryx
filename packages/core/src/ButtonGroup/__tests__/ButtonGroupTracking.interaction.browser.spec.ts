@@ -123,8 +123,10 @@ test('a menu trigger in the group keeps its own opening: a tap on it opens its m
   await openStory(page, storybook(), 'core-buttongroup--with-dropdown-menu');
   const trigger = page.getByRole('button', {name: 'Allow options'});
   await expect(trigger).toBeVisible();
+  // The engine's own tap path: WebKit synthesises the click only from it,
+  // and the trigger opens on that click.
   const driver = await touchDriver(page);
-  await driver.play(tap(await centerOf(trigger)));
+  await driver.tap(await centerOf(trigger));
   await expect(
     page.getByRole('menuitem', {name: 'Always allow'}),
   ).toBeVisible();
