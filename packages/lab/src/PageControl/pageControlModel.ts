@@ -82,9 +82,10 @@ export function pageControlLayout(count: number): PageControlLayout {
 }
 
 /**
- * Outside iOS the row is every page at full size, cropped by the control
- * when it is wider: how far it shifts toward its start (px) so the current
- * indicator stays in view, centred where it can be, pinned at either end.
+ * With a fine pointer the row is every page at full size, cropped by the
+ * control when it is wider: how far it shifts toward its start (px) so the
+ * current indicator stays in view, centred where it can be, pinned at either
+ * end.
  */
 export function croppedRowOffset(count: number, current: number): number {
   const n = Math.max(0, Math.floor(count));
