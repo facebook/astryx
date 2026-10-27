@@ -125,8 +125,9 @@ animator2.destroy();
   close on a light flick and a tall sheet that should not take the same drag
   to different snap points, which no motion role or
   theme knob expresses (`spec:AST-002` FR5); Core components keep theirs
-  internal (`spec:AST-100` FR3). It calls `onSettle(index)` once the element
-  settles. It returns
+  internal (`spec:AST-100` FR3). Under reduced motion the element goes to its snap point
+  without travel (`design:reduced-motion` DR1–DR3). It calls `onSettle(index)`
+  once the element settles. It returns
   `{settleTo(index)}`, which settles the element on a snap point without a
   drag and is the keyboard path.
 - **FR3 — `useAnimator` animates one element.** `useAnimator()` returns
@@ -173,11 +174,13 @@ onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
   `createReorderable`'s plain-element attach path (`spec:AST-103`) covers
   collections that are not List.
 
-- **FR8 — A headless context menu.** `createContextMenu(element, {items |
-render, onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
+- **FR8 — A headless context menu.** `createContextMenu(element, {items | menuContent, label?, isDisabled?,
+onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
   attaches a context menu to any element: it opens on the element's context
-  request (a long press, a right click, or Shift+F10), at `at` when given, and
-  `destroy` removes every listener it added. `useContextMenu(ref, options) →
+  request (a long press, a right click, or Shift+F10), at `at` when given; `label`
+  names the menu, `isDisabled` keeps it from opening, and the options mean what
+  `component:ContextMenu`'s props of the same names mean; `destroy` removes
+  every listener it added. `useContextMenu(ref, options) →
 {open, close}` is its thin React wrapper (FR6), and `component:ContextMenu`
   is built on it (FR7): one API at two layers
   (`architecture:public-component-api` INV21).
