@@ -120,8 +120,8 @@ import type {BaseProps} from '@astryxdesign/core';
 import {useListFocus, useMergedRefs} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {Icon} from '@astryxdesign/core/Icon';
-import {tabBar} from '@astryxdesign/core/motion/uikit';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+import {tabBar} from '@astryxdesign/core/internal/motion';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {
   colorVars,
   durationVars,
