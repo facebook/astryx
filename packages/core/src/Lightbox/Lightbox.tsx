@@ -769,6 +769,9 @@ export function Lightbox({
   // double-click can no longer follow; the second click calls it off.
   const clickToggleRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const toggleChromeRef = useRef<() => void>(() => {});
+  // The photo the zoom stage moves, in a gallery or alone: where a click
+  // counts as the photo's.
+  const currentPhotoRef = useRef<HTMLElement | null>(null);
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
       if (didDragRef.current) {
@@ -800,26 +803,35 @@ export function Lightbox({
           UIKIT_TAP.allowableMovement.value;
       // A click on the photo itself is the photo's, zoom or not (a
       // double-click zooms it): the photo takes no pointer events, so the
-      // click lands on its box.
-      const onPhoto = [
-        ...e.currentTarget.querySelectorAll('[data-current] img'),
-      ].some(media => {
-        const r = media.getBoundingClientRect();
+      // click lands on its box. The photo is the one the zoom stage moves,
+      // in a gallery or alone.
+      const photoBox = currentPhotoRef.current?.getBoundingClientRect();
+      const onPhoto =
+        photoBox != null &&
         // A photo with no size yet (still loading) is not under the click.
-        return (
-          r.width > 0 &&
-          r.height > 0 &&
-          e.clientX >= r.left &&
-          e.clientX <= r.right &&
-          e.clientY >= r.top &&
-          e.clientY <= r.bottom
-        );
-      });
+        photoBox.width > 0 &&
+        photoBox.height > 0 &&
+        e.clientX >= photoBox.left &&
+        e.clientX <= photoBox.right &&
+        e.clientY >= photoBox.top &&
+        e.clientY <= photoBox.bottom;
+      // Only a pointer's click on the photo toggles the controls: a keyboard
+      // activation (Enter on Next) fires a click too, with no click count and
+      // at (0, 0), and a click on the controls is theirs.
+      const pointerClick =
+        e.detail >= 1 && target.closest('[data-lightbox-chrome]') == null;
       // Under a fine pointer a click on the photo hides or shows the controls
       // once a double-click can no longer follow, as a tap does under a
       // finger (spec:AST-094 FR43: gestures attach for every pointer). The
       // second click of a double-click, which zooms, calls it off.
-      if (onPhoto && hasZoom && !isVideo && !stageTaps && !dragged) {
+      if (
+        onPhoto &&
+        pointerClick &&
+        hasZoom &&
+        !isVideo &&
+        !stageTaps &&
+        !dragged
+      ) {
         clearTimeout(clickToggleRef.current);
         if (e.detail < 2) {
           clickToggleRef.current = setTimeout(() => {
@@ -843,6 +855,11 @@ export function Lightbox({
     },
     [handleClose, hasZoom, isGallery, isVideo],
   );
+  // A pending toggle belongs to the photo it was clicked on: a page change
+  // calls it off.
+  useEffect(() => {
+    clearTimeout(clickToggleRef.current);
+  }, [index]);
 
   // Zoom: pinch, double tap or double-click, Enter/Space on the image, or
   // +/- keys. Zoom changes are silent to assistive tech (only the transform
@@ -1305,6 +1322,10 @@ export function Lightbox({
       },
     },
   });
+  const currentPhotoContentRef = useMergedRefs<HTMLElement>(
+    stage.contentRef,
+    currentPhotoRef,
+  );
   stageApiRef.current = stage;
   toggleChromeRef.current = () => {
     if (dialogRef.current?.open !== true) {
@@ -1803,7 +1824,7 @@ export function Lightbox({
       />
     ) : (
       <img
-        ref={isCurrent ? stage.contentRef : undefined}
+        ref={isCurrent ? currentPhotoContentRef : undefined}
         src={src}
         alt={isCurrent ? alt : ''}
         aria-hidden={isCurrent ? undefined : true}

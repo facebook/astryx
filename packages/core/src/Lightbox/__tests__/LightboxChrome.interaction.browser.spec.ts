@@ -25,7 +25,13 @@
  *   LightboxZoom.interaction.browser.spec.ts
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -386,6 +392,113 @@ test('with a mouse (a fine pointer), a click on the photo hides the controls onc
     await expect(dialog).toBeVisible();
   } finally {
     await context.close();
+  }
+});
+
+/** A story's viewer in a desktop context (a mouse, no touch), its photo loaded. */
+async function openDesktopViewer(
+  browser: Browser,
+  story: 'core-lightbox--gallery-with-zoom' | 'core-lightbox--with-zoom',
+) {
+  const context = await browser.newContext({
+    viewport: {width: 1280, height: 800},
+    hasTouch: false,
+    isMobile: false,
+  });
+  const page = await context.newPage();
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  await page.route('https://picsum.photos/**', async route =>
+    route.fulfill({contentType: 'image/svg+xml', body: photoSvg()}),
+  );
+  await openStory(page, storybook(), story);
+  await page
+    .getByRole('button', {
+      name:
+        story === 'core-lightbox--with-zoom'
+          ? 'Open with zoom'
+          : 'Open gallery with zoom',
+    })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const photo =
+    story === 'core-lightbox--with-zoom'
+      ? dialog.locator('[data-lightbox-media] img').first()
+      : dialog.locator('[data-current] img');
+  await expect
+    .poll(async () =>
+      photo.evaluate(el => (el as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  const box = await photo.boundingBox();
+  if (box == null) {
+    throw new Error('no photo');
+  }
+  const chrome = dialog.locator('[data-lightbox-chrome]').first();
+  return {
+    context,
+    page,
+    dialog,
+    alpha: async () =>
+      chrome.evaluate(el => parseFloat(getComputedStyle(el).opacity)),
+    centre: {x: box.x + box.width / 2, y: box.y + box.height / 2},
+  };
+}
+
+test('with a mouse, after a keyboard zoom, Enter on Next keeps the controls and the focus on Next: a keyboard activation is no click on the photo', async ({
+  browser,
+}) => {
+  const v = await openDesktopViewer(browser, 'core-lightbox--gallery-with-zoom');
+  try {
+    // Enter zooms the photo 2x about the centre: it covers (0, 0), where a
+    // keyboard activation's click lands.
+    const stage = v.dialog.getByRole('button', {name: 'Zoom', exact: true});
+    await stage.focus();
+    await v.page.keyboard.press('Enter');
+    await expect(stage).toHaveAttribute('aria-pressed', 'true');
+    const next = v.dialog.getByRole('button', {name: 'Next'});
+    await next.focus();
+    await v.page.keyboard.press('Enter');
+    await expect(v.dialog.getByText(/^\d+ \/ \d+$/)).toHaveText('2 / 4');
+    // Past the double-click interval: the controls stay, and the focus with
+    // them.
+    await v.page.waitForTimeout(700);
+    expect(await v.alpha()).toBe(1);
+    await expect(next).toBeFocused();
+  } finally {
+    await v.context.close();
+  }
+});
+
+test('with a mouse, a click on a single zoomable photo hides the controls, and the next shows them', async ({
+  browser,
+}) => {
+  const v = await openDesktopViewer(browser, 'core-lightbox--with-zoom');
+  try {
+    await v.page.mouse.click(v.centre.x, v.centre.y);
+    await expect.poll(v.alpha, {timeout: 3000}).toBe(0);
+    await expect(v.dialog).toBeVisible();
+    await v.page.mouse.click(v.centre.x, v.centre.y);
+    await expect.poll(v.alpha, {timeout: 3000}).toBe(1);
+  } finally {
+    await v.context.close();
+  }
+});
+
+test('with a mouse, a click on the photo followed at once by a page change leaves the next photo its controls', async ({
+  browser,
+}) => {
+  const v = await openDesktopViewer(browser, 'core-lightbox--gallery-with-zoom');
+  try {
+    await v.page.mouse.click(v.centre.x, v.centre.y);
+    await v.page.keyboard.press('ArrowRight');
+    await expect(v.dialog.getByText(/^\d+ \/ \d+$/)).toHaveText('2 / 4');
+    await v.page.waitForTimeout(700);
+    expect(await v.alpha()).toBe(1);
+  } finally {
+    await v.context.close();
   }
 });
 
