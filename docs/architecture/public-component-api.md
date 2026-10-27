@@ -195,8 +195,9 @@ guidance owns the process used to propose and test APIs.
   deprecated in favor of it. INV3 keeps one prop to one concept and INV16 keeps
   one `presentation` prop for a surface choice; INV21 applies the same rule
   across props, components, hooks, and factories. A hook that delegates
-  entirely to a public factory, with no behavior of its own, is one API with
-  that factory, not a second one (`spec:AST-107` FR6). A deprecation follows
+  entirely to a public factory, with no behavior of its own, and a component
+  built entirely on a public factory are one API with that factory, not a
+  second one (`spec:AST-107` FR6, FR8). A deprecation follows
   INV9.
 
 This record applies to stable public packages. Lab components are not stable

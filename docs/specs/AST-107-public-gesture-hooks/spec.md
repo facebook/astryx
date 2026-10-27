@@ -112,10 +112,16 @@ animator2.destroy();
   unlike BottomSheet's `snapPoints`, they are not viewport fractions. At the
   release the element settles on the nearest snap point to where it is,
   except that a release faster than `flickThreshold`, in pixels per second
-  (default 1008, the flick speed measured for UIKit's sheet on iOS 26.2), carries to the next snap point in its direction, and a
+  (default 1008, inside the (996.7, 1028.3] pt/s bracket at which UIKit's sheet
+  switches from its settle spring to its flick spring, measured in a UIKit lab
+  host app on the iOS 26.2 simulator, iPhone 17 Pro, over 134 drag releases on
+  2026-10-23 and 2026-10-24), carries to the next snap point in its direction, and a
   release whose velocity points back toward where the drag started returns to
-  the snap point it started from (`spec:AST-094` FR37). It
-  calls `onSettle(index)` once the element settles. It returns
+  the snap point it started from (`spec:AST-094` FR37). The threshold is public because a product's own
+  snap surface decides how readily a flick commits, which no motion role or
+  theme knob expresses (`spec:AST-002` FR5); Core components keep theirs
+  internal (`spec:AST-100` FR3). It calls `onSettle(index)` once the element
+  settles. It returns
   `{settleTo(index)}`, which settles the element on a snap point without a
   drag and is the keyboard path.
 - **FR3 — `useAnimator` animates one element.** `useAnimator()` returns
@@ -128,10 +134,10 @@ animator2.destroy();
   `stop()` halts them where they are. Reduce Motion is planned for every
   animation (`design:reduced-motion` DR1–DR3). Every `animate` plays on the
   `springs.stateChange` motion role (`spec:AST-094` FR4), which follows the
-  theme's tempo and character; `animate` on a channel it does not know, or
-  after `destroy`, does nothing and resolves at once, (`spec:AST-108` FR3), and `decay` on the fixed
-  momentum decay (`spec:AST-108` FR4); choosing any other spring or curve is
-  not offered.
+  theme's tempo and character (`spec:AST-108` FR3), and every `decay` plays on
+  the fixed momentum decay (`spec:AST-108` FR4); choosing any other spring or
+  curve is not offered. `animate` on a channel it does not know, or any call
+  after `destroy`, does nothing and resolves at once.
 - **FR4 — One hook per job.** `usePanGesture` does not do presses or long
   presses, which `useLongPress` owns. `useAnimator` animates one element, and
   `useAnimatedLayout` animates an area (`spec:AST-105`). A component's own
@@ -181,6 +187,10 @@ render, onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
 
 ## Current-state impact
 
+- `architecture:react-component-runtime` INV13 gains three rules: the
+  recognizer family and the velocity tracker are the only classes, told apart
+  by `kind`, never `instanceof`; no internal factory shares a public factory's
+  name; and the known public-API gap list.
 - Core gains the three factories and the three hooks over them, the headless
   context menu and its hook, Core and Lab components that move onto them
   (FR7), the `architecture:react-component-runtime` INV13 gap list, their docsite
