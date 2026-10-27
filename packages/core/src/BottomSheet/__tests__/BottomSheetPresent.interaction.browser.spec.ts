@@ -304,7 +304,7 @@ test('a non-modal sheet holds only itself while it enters: a tap on the page bes
   // The sheet still finishes entering and stays open (a non-modal sheet is
   // a manual popover).
   await expect
-    .poll(() =>
+    .poll(async () =>
       page
         .locator('dialog[aria-label="Nearby places"]')
         .evaluate(dialog => dialog.matches(':popover-open')),
