@@ -254,16 +254,14 @@ The `chat-layout` target itself is declared on the Chat family document
 
 ## Decision log
 
-### DEC-1 — Drag-to-dismiss is ChatLayout's behavior, with no caller control
+### DEC-1 — Drag-to-dismiss is ChatLayout's touch behavior, with no caller control
 
 **Reference:** `component:ChatLayout/DEC-1`
 **Decider:** `cixzhang`, `2026-10-25`
 
-Drag-to-dismiss is ChatLayout's and its composer's behavior, as in Messages:
-dragging the conversation down to the composer with a finger puts the keyboard
-away, and a caller has nothing to configure. It attaches for every pointer
-(`spec:AST-094` FR43); in a desktop browser a mouse press already takes focus
-off the composer.
+Drag-to-dismiss is ChatLayout's and its composer's behavior on touch, as in
+Messages: dragging the conversation down to the composer puts the keyboard
+away, and a caller has nothing to configure.
 
 Rejected: an off-switch prop with no caller that needs it.
 

@@ -331,9 +331,11 @@ export function useChatKeyboard({
   const atEndRef = useRef(false);
   const scrollBeforeRef = useRef(0);
   const commitRef = useRef<() => void>(() => {});
-  // Touch listeners only where the primary pointer is coarse (spec:AST-094
-  // FR19): under a mouse the transcript registers none, and nothing of the
-  // ride on the keyboard's own motion attaches.
+  // The touch presentation: under a coarse primary pointer the ride on the
+  // keyboard's own motion, the settle that waits for a scrolling finger and
+  // the composer's touch routes attach; under a fine one none of them does
+  // (spec:AST-094 FR24). The drag-to-dismiss below attaches for every pointer
+  // (FR43).
   const touchPresentation = useTouchPresentation();
   const isTouch = touchPresentation.isTouch;
 
