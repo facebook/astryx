@@ -35,37 +35,46 @@ interface MouseSwitch {
   isChecked: () => Promise<boolean>;
   /** How many `change` events the input has sent since opening. */
   changes: () => Promise<number>;
+  /** Each click the input has heard since opening: whether it was trusted. */
+  clicks: () => Promise<boolean[]>;
 }
 
 /**
  * The Default story in a context with no touch screen, so the primary
- * pointer is not coarse. (Contexts made here inherit the project's phone
- * options unless they are named.)
+ * pointer is not coarse, or with `hasTouch`, a touch screen beside the mouse.
+ * (Contexts made here inherit the project's phone options unless they are
+ * named.)
  */
 async function openMouseSwitch(
   browser: Browser,
   storyId = 'core-switch--default',
+  {hasTouch = false}: {hasTouch?: boolean} = {},
 ): Promise<MouseSwitch> {
   const context = await browser.newContext({
     viewport: {width: 480, height: 320},
     screen: {width: 480, height: 320},
     deviceScaleFactor: 1,
     isMobile: false,
-    hasTouch: false,
+    hasTouch,
   });
   const page = await context.newPage();
   await openStory(page, storybook(), storyId);
-  expect(
-    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
-  ).toBe(false);
+  if (!hasTouch) {
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+  }
   await page.evaluate(() => {
-    const w = window as unknown as {__changes: number};
+    const w = window as unknown as {__changes: number; __clicks: boolean[]};
     w.__changes = 0;
-    document
-      .querySelector('#storybook-root [role="switch"]')!
-      .addEventListener('change', () => {
-        w.__changes++;
-      });
+    w.__clicks = [];
+    const input = document.querySelector('#storybook-root [role="switch"]')!;
+    input.addEventListener('change', () => {
+      w.__changes++;
+    });
+    input.addEventListener('click', event => {
+      w.__clicks.push(event.isTrusted);
+    });
   });
   const thumb = await page
     .locator('#storybook-root .astryx-switch-thumb')
@@ -82,6 +91,10 @@ async function openMouseSwitch(
     isChecked: async () => input.isChecked(),
     changes: async () =>
       page.evaluate(() => (window as unknown as {__changes: number}).__changes),
+    clicks: async () =>
+      page.evaluate(
+        () => (window as unknown as {__clicks: boolean[]}).__clicks,
+      ),
   };
 }
 
@@ -171,6 +184,41 @@ test.describe('Switch under a mouse (spec:AST-094 FR43)', () => {
       ]);
       expect(await sw.isChecked()).toBe(false);
       expect(await sw.changes()).toBe(0);
+    } finally {
+      await sw.close();
+    }
+  });
+
+  test('after a mouse flip, a finger’s tap on a touch screen still gets the browser’s own click: only a finger’s flip cancels its touchend', async ({
+    browser,
+  }) => {
+    const sw = await openMouseSwitch(browser, 'core-switch--default', {
+      hasTouch: true,
+    });
+    try {
+      const {x, y} = sw.center;
+      await mouseDrag(sw.page, [
+        {x, y},
+        {x: x + FLIP_DISTANCE + 6, y},
+        {x: x + 90, y},
+      ]);
+      expect(await sw.isChecked()).toBe(true);
+      const thumb = await sw.page
+        .locator('#storybook-root .astryx-switch-thumb')
+        .first()
+        .boundingBox();
+      if (thumb == null) {
+        throw new Error('the switch has no thumb');
+      }
+      await sw.page.touchscreen.tap(
+        thumb.x + thumb.width / 2,
+        thumb.y + thumb.height / 2,
+      );
+      await sw.page.waitForTimeout(350);
+      expect(await sw.isChecked()).toBe(false);
+      // The tap's click is the browser's (trusted), not the switch's
+      // fallback click after a cancelled touchend.
+      expect((await sw.clicks()).at(-1)).toBe(true);
     } finally {
       await sw.close();
     }
