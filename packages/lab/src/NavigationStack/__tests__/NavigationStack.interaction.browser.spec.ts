@@ -167,12 +167,19 @@ interface BarFrame {
   bars: Record<string, number>;
   /** Effective opacity (own times every ancestor's) of the back button. */
   back: {platter: number; chevron: number} | null;
+  /** Whether an animation drives a card or a bar in this frame. */
+  animating: boolean;
 }
 
 /**
  * Starts sampling, every frame, each card's and bar's x relative to the
  * stack and the back button's effective opacities; the returned function
- * stops and returns them.
+ * stops and returns them. A layer's x is its computed `translate` (the
+ * cards and bars sit at the stack's leading edge, checked when the trace
+ * starts), so a frame reads no layout. Under load, in a frame that comes a
+ * few milliseconds late, WebKit evaluates two layers that animate on one
+ * clock about a millisecond apart (boxes and translates alike): `animating`
+ * says which frames an animation drives.
  */
 async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
   await page.evaluate(() => {
@@ -191,21 +198,36 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
       }
       return opacity;
     };
+    const translateX = (element: Element) => {
+      const value = getComputedStyle(element).translate;
+      return value === 'none' ? 0 : parseFloat(value);
+    };
+    const read = (selector: string, attribute: string) => {
+      const out: Record<string, number> = {};
+      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+        const key = element.getAttribute(attribute);
+        if (key != null) {
+          out[key] = translateX(element);
+        }
+      }
+      return out;
+    };
+    // A layer at rest sits at the stack's edge: its box is its translate.
+    const left = stack?.getBoundingClientRect().left ?? 0;
+    for (const element of document.querySelectorAll(
+      '[data-navigation-screen], [data-navigation-bar]',
+    )) {
+      if (element.getAnimations().length > 0) {
+        continue;
+      }
+      const offset =
+        element.getBoundingClientRect().left - left - translateX(element);
+      if (Math.abs(offset) > 0.5) {
+        throw new Error(`a layer sits ${offset} px from the stack's edge`);
+      }
+    }
     const t0 = performance.now();
     const tick = () => {
-      const left = stack?.getBoundingClientRect().left ?? 0;
-      const read = (selector: string, attribute: string) => {
-        const out: Record<string, number> = {};
-        for (const element of document.querySelectorAll<HTMLElement>(
-          selector,
-        )) {
-          const key = element.getAttribute(attribute);
-          if (key != null) {
-            out[key] = element.getBoundingClientRect().left - left;
-          }
-        }
-        return out;
-      };
       const button = document.querySelector('[data-navigation-back]');
       const chevron = button?.firstElementChild ?? null;
       w.__bars.push({
@@ -216,6 +238,13 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
           button == null || chevron == null
             ? null
             : {platter: effective(button), chevron: effective(chevron)},
+        animating: [
+          ...document.querySelectorAll(
+            '[data-navigation-screen], [data-navigation-bar]',
+          ),
+        ].some(element =>
+          element.getAnimations().some(a => a.playState === 'running'),
+        ),
       });
       if (!w.__barsStop) {
         requestAnimationFrame(tick);
@@ -883,12 +912,16 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
     await page.waitForTimeout(1200);
     const frames = await stop();
     const swiping = frames.filter(f => (f.cards['screen-About'] ?? 0) > 0.5);
-    expect(swiping.length).toBeGreaterThan(10);
+    expect(swiping.filter(f => !f.animating).length).toBeGreaterThan(10);
     for (const f of swiping) {
+      // Within a pixel while the finger drives both layers; through the
+      // release's spring back, the other bar proofs' 1 % of the width (in
+      // a late frame WebKit evaluates two layers on one clock about a
+      // millisecond apart).
       expect(
         Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
         JSON.stringify(f),
-      ).toBeLessThan(1);
+      ).toBeLessThan(f.animating ? width * 0.01 : 1);
       // UIKit's revealed title stays centred while its screen slides in.
       expect(
         Math.abs(f.bars['screen-General']),
