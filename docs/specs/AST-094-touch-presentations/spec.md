@@ -512,9 +512,10 @@ outside a menu closes it.
   neighbor's target. On the web, a pan also
   takes wheel and trackpad scrolling; a pinch takes a ctrl-wheel; one shared
   context request answers a long press, a right click, and Shift+F10; the
-  press model has a fine-pointer profile with no delay (FR11); and under a
-  mouse, a trackpad, or a pen a reorder starts on a drag from its handle
-  without a hold. Under a fine pointer only a
+  press model has a fine-pointer profile with no delay (FR11); and with a
+  mouse, a trackpad, or a pen where the primary pointer is fine a reorder
+  starts on a drag from its handle without a hold, while a pen where the
+  primary pointer is coarse keeps the finger's hold (`spec:AST-103` FR3). Under a fine pointer only a
   component that uses a gesture listens (FR24), and under reduced motion a
   release from a mouse, a trackpad, or a pen follows `design:reduced-motion`
   DR2 on a coarse primary pointer and DR3 otherwise; and gestures add no
