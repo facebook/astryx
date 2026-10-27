@@ -130,7 +130,9 @@ While an item is dragged, the surrounding items stay where they are, the
 source stays in place and dimmed, a moving preview follows the pointer, and an
 accent insertion line between items marks where it will land; the items
 rearrange once, at the drop, and a cancel restores at once. Keyboard
-reordering shows the same insertion line.
+reordering shows the same insertion line. A drop marker, with motion only on
+the release, is more accurate for small drop targets than neighbors that move
+under the pointer.
 
 Rejected: neighbors sliding aside during the drag.
 
