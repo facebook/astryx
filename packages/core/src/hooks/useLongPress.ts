@@ -18,8 +18,10 @@
  * touch is cancelled. The pending timer is also cleared on unmount. The
  * default duration and tolerance are the long-press recognizer's
  * (motion/uikit/longPress.ts); the recognizer measures its tolerance as a
- * distance, as UIKit does, and this hook on each axis, as ContextMenu's
- * measured hold and the menu trigger's released behavior do.
+ * distance, as UIKit does, and this hook on each axis: the released rule
+ * that ContextMenu's hold and the menu trigger keep. GUESS (`spec:AST-094`
+ * FR2): the context menu's own movement allowance and press thresholds are
+ * not measured yet (motion/MEASUREMENTS.md M-CM3, M-CM6).
  *
  * Two ways in, one detector. Spread the touch handlers onto an element, or —
  * when the caller already runs its own pointer-event machine, as
