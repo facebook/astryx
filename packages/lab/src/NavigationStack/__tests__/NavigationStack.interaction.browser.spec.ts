@@ -167,8 +167,11 @@ interface BarFrame {
   bars: Record<string, number>;
   /** Effective opacity (own times every ancestor's) of the back button. */
   back: {platter: number; chevron: number} | null;
-  /** Whether an animation drives a card or a bar in this frame. */
-  animating: boolean;
+  /**
+   * Each card's and bar's running `translate` animations (start time,
+   * progress and keyframes), one string per layer: `[]` when none moves it.
+   */
+  curves: {cards: Record<string, string>; bars: Record<string, string>};
 }
 
 /**
@@ -176,10 +179,11 @@ interface BarFrame {
  * stack and the back button's effective opacities; the returned function
  * stops and returns them. A layer's x is its computed `translate` (the
  * cards and bars sit at the stack's leading edge, checked when the trace
- * starts), so a frame reads no layout. Under load, in a frame that comes a
- * few milliseconds late, WebKit evaluates two layers that animate on one
- * clock about a millisecond apart (boxes and translates alike): `animating`
- * says which frames an animation drives.
+ * starts), so a frame reads no layout. While an animation moves a layer, its
+ * computed value is not proof of where it is: in WebKit under load the first
+ * computed read in a frame can come from an earlier time (the same element
+ * read twice in one frame gives two values, one curve and one progress), so
+ * `curves` records each layer's running animations to compare instead.
  */
 async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
   await page.evaluate(() => {
@@ -226,6 +230,34 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
         throw new Error(`a layer sits ${offset} px from the stack's edge`);
       }
     }
+    const curves = (selector: string, attribute: string) => {
+      const out: Record<string, string> = {};
+      for (const element of document.querySelectorAll(selector)) {
+        const key = element.getAttribute(attribute);
+        if (key != null) {
+          out[key] = JSON.stringify(
+            element
+              .getAnimations()
+              .filter(
+                a =>
+                  a.playState === 'running' &&
+                  (a.effect as KeyframeEffect)
+                    .getKeyframes()
+                    .some(k => k.translate != null),
+              )
+              .map(a => {
+                const effect = a.effect as KeyframeEffect;
+                return [
+                  a.startTime,
+                  effect.getComputedTiming().progress,
+                  effect.getKeyframes().map(k => k.translate ?? null),
+                ];
+              }),
+          );
+        }
+      }
+      return out;
+    };
     const t0 = performance.now();
     const tick = () => {
       const button = document.querySelector('[data-navigation-back]');
@@ -238,13 +270,10 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
           button == null || chevron == null
             ? null
             : {platter: effective(button), chevron: effective(chevron)},
-        animating: [
-          ...document.querySelectorAll(
-            '[data-navigation-screen], [data-navigation-bar]',
-          ),
-        ].some(element =>
-          element.getAnimations().some(a => a.playState === 'running'),
-        ),
+        curves: {
+          cards: curves('[data-navigation-screen]', 'data-navigation-screen'),
+          bars: curves('[data-navigation-bar]', 'data-navigation-bar'),
+        },
       });
       if (!w.__barsStop) {
         requestAnimationFrame(tick);
@@ -912,16 +941,24 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
     await page.waitForTimeout(1200);
     const frames = await stop();
     const swiping = frames.filter(f => (f.cards['screen-About'] ?? 0) > 0.5);
-    expect(swiping.filter(f => !f.animating).length).toBeGreaterThan(10);
+    const isTracked = (f: BarFrame) =>
+      (f.curves.cards['screen-About'] ?? '[]') === '[]' &&
+      (f.curves.bars['screen-About'] ?? '[]') === '[]';
+    expect(swiping.filter(isTracked).length).toBeGreaterThan(10);
     for (const f of swiping) {
-      // Within a pixel while the finger drives both layers; through the
-      // release's spring back, the other bar proofs' 1 % of the width (in
-      // a late frame WebKit evaluates two layers on one clock about a
-      // millisecond apart).
-      expect(
-        Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
-        JSON.stringify(f),
-      ).toBeLessThan(f.animating ? width * 0.01 : 1);
+      if (isTracked(f)) {
+        // The finger moves both layers: within a pixel.
+        expect(
+          Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
+          JSON.stringify(f),
+        ).toBeLessThan(1);
+      } else {
+        // After the lift one animation moves both: the bar runs the card's
+        // own start time, progress and curve.
+        expect(f.curves.bars['screen-About'], JSON.stringify(f)).toBe(
+          f.curves.cards['screen-About'],
+        );
+      }
       // UIKit's revealed title stays centred while its screen slides in.
       expect(
         Math.abs(f.bars['screen-General']),
