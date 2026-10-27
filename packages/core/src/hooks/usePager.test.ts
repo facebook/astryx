@@ -222,6 +222,25 @@ function mouse(
   return event;
 }
 
+/** A wheel for the gesture host: `dx`/`dy` px (or lines with `mode` 1). */
+function wheel(
+  target: EventTarget,
+  init: {dx?: number; dy?: number; mode?: number; time: number},
+): WheelEvent {
+  const event = new WheelEvent('wheel', {
+    bubbles: true,
+    cancelable: true,
+    clientX: 300,
+    clientY: 100,
+    deltaX: init.dx ?? 0,
+    deltaY: init.dy ?? 0,
+    deltaMode: init.mode ?? 0,
+  });
+  Object.defineProperty(event, 'timeStamp', {value: init.time});
+  target.dispatchEvent(event);
+  return event;
+}
+
 interface Fixture {
   pager: Pager;
   viewport: HTMLElement;
@@ -945,37 +964,9 @@ describe('createPager', () => {
     });
   }
 
-  it('attached without its recognizers (a fine pointer, spec:AST-094 FR19), it takes no touch and still animates goTo', async () => {
-    const f = setup({defaultIndex: 0});
-    f.pager.dispose();
-    const pager = createPager(
-      {count: 5, defaultIndex: 0},
-      {host: f.host, animator: f.animator},
-    );
-    pager.attach(f.viewport, f.track, {touch: false});
-    // A finger's drag: nothing follows it.
-    touch('touchstart', f.page, 300, 100, now);
-    for (let i = 1; i <= 30; i++) {
-      await advance(8, f.clock);
-      touch('touchmove', f.page, 300 - 8 * i, 100, now);
-    }
-    touch('touchend', f.page, 60, 100, now);
-    await advance(16, f.clock);
-    expect(pager.index).toBe(0);
-    expect(f.x()).toBe(0);
-    // goTo still plays setContentOffset's curve to the page.
-    pager.goTo(2);
-    await advance(16, f.clock);
-    await advance(16, f.clock);
-    expect(pager.isSettling).toBe(true);
-    for (let i = 0; i < 60 && pager.isSettling; i++) {
-      await advance(16, f.clock);
-    }
-    expect(f.x()).toBe(-2 * WIDTH);
-    pager.dispose();
-  });
-
-  it('on a fine primary pointer the pager takes no input (spec:AST-094 FR19): a mouse drag leaves the track and the page as they were', async () => {
+  // spec:AST-094 FR43: gestures work for every pointer. A mouse drags the
+  // pager as a finger does.
+  it('on a fine primary pointer a mouse drag pages the pager like a finger (spec:AST-094 FR43)', async () => {
     const f = setup({defaultIndex: 1});
     stubMedia(false, false);
     f.pager.dispose();
@@ -992,8 +983,83 @@ describe('createPager', () => {
     await advance(8, f.clock);
     mouse('pointerup', f.page, 52, 100, now);
     await frames(f, 2);
+    // 500 px/s at the lift, past the advance speed: the next page.
+    expect(pager.index).toBe(2);
+    for (let i = 0; i < 80 && pager.isSettling; i++) {
+      await advance(16, f.clock);
+    }
+    expect(f.x()).toBe(-2 * WIDTH);
+    pager.dispose();
+  });
+
+  // spec:AST-094 FR43: on the web a pan also takes wheel and trackpad
+  // scrolling, along its own axis.
+  async function wheelPager(defaultIndex: number) {
+    const f = setup({defaultIndex});
+    stubMedia(false, false);
+    f.pager.dispose();
+    const pager = createPager(
+      {count: 3, defaultIndex},
+      {host: f.host, animator: f.animator},
+    );
+    pager.attach(f.viewport, f.track);
+    return {f, pager};
+  }
+
+  async function endWheel(f: Fixture) {
+    // A wheel gesture ends 100 ms after its last wheel.
+    await advance(120, f.clock);
+    f.clock.runDue(now);
+    await frames(f, 2);
+  }
+
+  it("takes a trackpad's horizontal scroll as a drag (spec:AST-094 FR43): the content follows it, and the scroll's end releases it at its velocity", async () => {
+    const {f, pager} = await wheelPager(1);
+    const events: WheelEvent[] = [];
+    // 6.5 px every 8 ms (about 810 px/s), a trackpad's continuous scroll.
+    for (let i = 0; i < 12; i++) {
+      events.push(wheel(f.page, {dx: 6.5, time: now}));
+      await advance(8, f.clock);
+    }
+    expect(events.every(event => event.defaultPrevented)).toBe(true);
+    expect(pager.isDragging).toBe(true);
+    // A scroll toward later content drags the track toward its start.
+    expect(f.x()).toBeLessThan(-WIDTH);
+    await endWheel(f);
+    expect(pager.index).toBe(2);
+    for (let i = 0; i < 80 && pager.isSettling; i++) {
+      await advance(16, f.clock);
+    }
+    expect(f.x()).toBe(-2 * WIDTH);
+    pager.dispose();
+  });
+
+  it("takes a mouse wheel's notches as well (spec:AST-094 FR43)", async () => {
+    const {f, pager} = await wheelPager(1);
+    // Whole 100 px notches on the horizontal axis (a tilt wheel, or Shift
+    // with a wheel): discrete scrolling.
+    expect(wheel(f.page, {dx: 100, time: now}).defaultPrevented).toBe(true);
+    await advance(30, f.clock);
+    wheel(f.page, {dx: 100, time: now});
+    await advance(8, f.clock);
+    await endWheel(f);
+    expect(pager.index).toBe(2);
+    pager.dispose();
+  });
+
+  it('leaves a vertical wheel over the pager to the page (spec:AST-094 FR43)', async () => {
+    const {f, pager} = await wheelPager(1);
+    const events: WheelEvent[] = [];
+    for (let i = 0; i < 6; i++) {
+      events.push(wheel(f.page, {dy: 12.5, time: now}));
+      await advance(8, f.clock);
+    }
+    await endWheel(f);
+    expect(events.some(event => event.defaultPrevented)).toBe(false);
+    expect(pager.isDragging).toBe(false);
     expect(pager.index).toBe(1);
     expect(f.x()).toBe(-WIDTH);
+    pager.dispose();
   });
 });
 
@@ -1567,15 +1633,17 @@ describe('usePager (React)', () => {
     view.unmount();
   });
 
-  // spec:AST-094 FR19: recognizers attach only where the primary pointer is
-  // coarse. On any other pointer the pager attaches none and adds no input
-  // listener, and goTo still moves it.
-  it('on a fine primary pointer attaches no recognizer and listens to no input, and goTo still moves the pager; under a finger it attaches the pan and the catch', () => {
+  // spec:AST-094 FR19 and FR43: recognizers attach for every pointer. Under a
+  // fine pointer the host keeps its listener on the element and adds none to
+  // the document at rest (FR24), and goTo moves the pager on either pointer.
+  it('attaches the pan and the catch on a fine primary pointer as under a finger (spec:AST-094 FR19, FR43), adds no input listener to the document at rest (FR24), and goTo moves the pager', () => {
     stubMedia(false, false);
     const attach = vi.spyOn(GestureHost.prototype, 'attach');
     const listen = vi.spyOn(document, 'addEventListener');
     const inputListeners = () =>
-      listen.mock.calls.filter(([type]) => /^(touch|pointer|mouse)/.test(type));
+      listen.mock.calls.filter(([type]) =>
+        /^(touch|pointer|mouse|wheel)/.test(type),
+      );
     const box: {pager: Pager | null} = {pager: null};
     const view = render(
       createElement(Paged, {
@@ -1584,7 +1652,7 @@ describe('usePager (React)', () => {
         },
       }),
     );
-    expect(attach).not.toHaveBeenCalled();
+    expect(attach).toHaveBeenCalledTimes(2);
     expect(inputListeners()).toEqual([]);
     act(() => {
       box.pager?.goTo(2);
@@ -1593,7 +1661,7 @@ describe('usePager (React)', () => {
     view.unmount();
     stubMedia(false, true);
     const touchView = render(createElement(Paged, {}));
-    expect(attach).toHaveBeenCalledTimes(2);
+    expect(attach).toHaveBeenCalledTimes(4);
     touchView.unmount();
   });
 
