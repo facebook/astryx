@@ -55,8 +55,8 @@ deciding_specs: [spec:AST-094/DEC-17]
 A person can press one action in a group of sibling actions, slide across the
 others while the highlight follows, and act on the one they lift on, the same
 way in every group, with SegmentedControl as the one named exception. Every
-member gets the behavior from one shared implementation, so no member builds
-its own.
+member gets the behavior from one shared implementation, or menus from their
+own press model, so no member builds its own.
 
 ## Membership rule
 
@@ -93,8 +93,9 @@ These are not members:
 
 ## Shared owner
 
-One shared, internal implementation gives every member FR1–FR5
-(`architecture:interaction-modality` INV13); no member keeps its own copy.
+One shared, internal implementation gives every member other than menus
+FR1–FR5 (`architecture:interaction-modality` INV13); menus get them from
+`module:DropdownMenu/useMenuPress`. No member keeps another copy.
 
 ## Canonical concepts
 
@@ -115,7 +116,8 @@ One shared, internal implementation gives every member FR1–FR5
   (`spec:AST-094` FR27).
 - **FR3 — Sliding off cancels.** A press that lifts outside the group acts on
   nothing; a cancelled pointer, a second finger, or the window losing focus
-  ends the gesture with nothing acting (`spec:AST-094` FR28).
+  ends the gesture with nothing acting (`spec:AST-094` FR28). Whether a
+  member that opened for the gesture stays open stays with the member.
 - **FR4 — A toggle group toggles only the lifted action.** In a toggle group,
   only the action lifted on toggles; sliding across never toggles the actions
   passed over.
@@ -149,12 +151,13 @@ One shared, internal implementation gives every member FR1–FR5
 
 ## Adoption and exceptions
 
-| Components or surface                       | Required adoption                                                     |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| Menus, Selector, MultiSelector, date wheels | Follow FR1–FR5 through the shared implementation.                     |
-| AlertDialog's actions                       | Track the actions only.                                               |
-| ButtonGroup, ToggleButtonGroup, Toolbar     | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
-| Banner and Toast action rows                | Track only a row with two or more sibling actions.                    |
+| Components or surface                            | Required adoption                                                     |
+| ------------------------------------------------ | --------------------------------------------------------------------- |
+| Menus and Selector's and MultiSelector's options | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
+| Date and time wheels                             | Follow FR1–FR5 through the shared implementation.                     |
+| AlertDialog's actions                            | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar          | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| Banner and Toast action rows                     | Track only a row with two or more sibling actions.                    |
 
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;

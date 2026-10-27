@@ -229,6 +229,13 @@ const INTERACTIVE = [
   '[role="switch"]',
   '[role="tab"]',
   '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]',
+  '[role="treeitem"]',
+  '[role="combobox"]',
+  '[role="textbox"]',
+  '[role="searchbox"]',
+  '[role="spinbutton"]',
   '[role="option"]',
   '[role="slider"]',
   '[tabindex]:not([tabindex="-1"])',
@@ -330,19 +337,43 @@ interface Candidate {
   readonly rect: HitRect;
 }
 
-/** The page's interactive elements and their rects: one read. */
+/** The watched element `element` belongs to, if any (itself included). */
+function watchedOwner(element: Element): Element | null {
+  for (
+    let node: Element | null = element;
+    node != null;
+    node = node.parentElement
+  ) {
+    if (watched.has(node)) {
+      return node;
+    }
+  }
+  return null;
+}
+
+/**
+ * The page's interactive elements and their rects: one read. A watched
+ * control counts by its own box, never by a part inside it (its invisible
+ * input is grown by its hit area, which must not shrink a neighbour's).
+ */
 function readCandidates(doc: Document): Candidate[] {
-  return [...doc.querySelectorAll(INTERACTIVE)].map(element => ({
-    element,
-    rect: plainRect(element),
-  }));
+  const seen = new Set<Element>();
+  const candidates: Candidate[] = [];
+  for (const found of doc.querySelectorAll(INTERACTIVE)) {
+    const element = watchedOwner(found) ?? found;
+    if (!seen.has(element)) {
+      seen.add(element);
+      candidates.push({element, rect: plainRect(element)});
+    }
+  }
+  return candidates;
 }
 
 /** A control's rect and clamped insets, from candidates already read. */
 function measureOne(
   watch: Watch,
   candidates: ReadonlyArray<Candidate>,
-): {target: HitRect; insets: HitInsets} {
+): {target: HitRect; insets: HitInsets; neighbours: HitRect[]} {
   const target = plainRect(watch.element);
   // Two targets each growing up to half the minimum reach each other from a
   // minimum apart.
@@ -362,7 +393,11 @@ function measureOne(
         !isOwn(watch, element),
     )
     .map(({rect}) => rect);
-  return {target, insets: clampedHitInsets(target, neighbours, watch.minSize)};
+  return {
+    target,
+    insets: clampedHitInsets(target, neighbours, watch.minSize),
+    neighbours,
+  };
 }
 
 /** One pass: every pending control's reads, then every write. */
@@ -424,25 +459,48 @@ function scheduleAll(): void {
  * neighbour, and the next tap uses the fresh insets.
  */
 function onPress(event: Event): void {
-  const element = event.currentTarget as Element;
+  // One listener for every watched control, on the document: a control, a
+  // row or a handle carries none of its own (a list's listeners stay the
+  // list's, spec:AST-103 FR5). The innermost watched element the press
+  // lands in is the one it is for.
+  for (
+    let node: Element | null =
+      event.target instanceof Element ? event.target : null;
+    node != null;
+    node = node.parentElement
+  ) {
+    if (watched.has(node)) {
+      checkPress(node, event as PointerEvent);
+      return;
+    }
+  }
+}
+
+function checkPress(element: Element, event: PointerEvent): void {
   const entry = watched.get(element);
   if (entry == null) {
     return;
   }
   // A swallower left from a touch that sent no click goes with the next one.
   entry.disarm?.();
-  const press = event as PointerEvent;
+  const press = event;
   if (!isCoarse || press.pointerType !== 'touch') {
     return;
   }
   const candidates = readCandidates(element.ownerDocument);
-  let isInside = false;
+  const x = press.clientX;
+  const y = press.clientY;
+  // The touch is the control's unless a neighbour is nearer it: inside the
+  // fresh area too (a corner beside an offset or diagonal neighbour), and
+  // a few px past it, where a browser's own touch adjustment reaches.
+  let isNearerNeighbour = false;
   for (const watch of entry.watches) {
-    const {target, insets} = measureOne(watch, candidates);
+    const {target, insets, neighbours} = measureOne(watch, candidates);
     deliver(watch, insets);
-    isInside ||= contains(grown(target, insets), press.clientX, press.clientY);
+    const own = distanceTo(target, x, y);
+    isNearerNeighbour ||= neighbours.some(rect => distanceTo(rect, x, y) < own);
   }
-  if (!isInside) {
+  if (isNearerNeighbour) {
     const swallow = (click: Event) => {
       disarm();
       // A keyboard or assistive-technology activation (detail 0) is never
@@ -501,7 +559,6 @@ function observe(element: Element, entry: Watched): void {
   }
   const stopScope =
     parent == null ? null : observeContent(parent, () => onScopeChange(parent));
-  element.addEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   entry.release = () => {
     visibility?.unobserve(element);
     resize?.unobserve(element);
@@ -517,7 +574,6 @@ function observe(element: Element, entry: Watched): void {
       }
     }
     stopScope?.();
-    element.removeEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
     entry.disarm?.();
   };
 }
@@ -532,6 +588,7 @@ function startObserving(): void {
     return;
   }
   view.addEventListener('resize', scheduleAll);
+  view.document.addEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   if (typeof IntersectionObserver === 'function') {
     visibility = new IntersectionObserver(entries => {
       for (const entry of entries) {
@@ -587,6 +644,7 @@ function stopObserving(): void {
     entry.release = null;
   }
   view?.removeEventListener('resize', scheduleAll);
+  view?.document.removeEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   visibility?.disconnect();
   resize?.disconnect();
   visibility = null;
@@ -616,6 +674,29 @@ function onPointerChange(): void {
   }
 }
 
+/** Options of `watchHitArea`. */
+export interface WatchHitAreaOptions {
+  /** The size to grow toward, px. @default 44 */
+  readonly minSize?: number;
+}
+
+/**
+ * Stops every watch and forgets them, for tests: no observer, listener or
+ * answer outlives a test that left a watch behind.
+ */
+export function resetHitAreaForTests(): void {
+  stopObserving();
+  for (const entry of watched.values()) {
+    entry.disarm?.();
+  }
+  watched.clear();
+  pending.clear();
+  pointer?.removeEventListener('change', onPointerChange);
+  pointer = null;
+  view = null;
+  isCoarse = false;
+}
+
 /**
  * Keeps `element`'s hit insets live until the returned function runs:
  * `onInsets` hears each change (typically `writeHitInsets` on the control).
@@ -628,19 +709,23 @@ function onPointerChange(): void {
 export function watchHitArea(
   element: Element,
   onInsets: (insets: HitInsets) => void,
-  minSize: number = MIN_TOUCH_TARGET,
+  {minSize = MIN_TOUCH_TARGET}: WatchHitAreaOptions = {},
 ): () => void {
   const owner = element.ownerDocument.defaultView;
   if (owner == null) {
     return () => {};
   }
-  if (watched.size === 0) {
-    view = owner;
-    pointer = owner.matchMedia?.(TOUCH_QUERY) ?? null;
+  view = owner;
+  // Read the pointer query at every watch, not only the first: an
+  // environment that replaces matchMedia (a test) must not leave a stale
+  // answer behind from a watch that never stopped.
+  const query = owner.matchMedia?.(TOUCH_QUERY) ?? null;
+  if (query !== pointer) {
+    pointer?.removeEventListener('change', onPointerChange);
+    pointer = query;
     pointer?.addEventListener('change', onPointerChange);
-    isCoarse = false;
-    onPointerChange();
   }
+  onPointerChange();
   const watch: Watch = {
     element,
     minSize,
