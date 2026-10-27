@@ -222,6 +222,52 @@ function mergeGenerativeAxes(inherited, own) {
 }
 
 /**
+ * The file `specifier` resolves to through `require`, or null when Core has
+ * no such entry: no file where its `exports` points (`MODULE_NOT_FOUND`), or
+ * no such subpath in them (`ERR_PACKAGE_PATH_NOT_EXPORTED`). Any other error
+ * is thrown.
+ * @param {NodeJS.Require} require
+ * @param {string} specifier
+ * @returns {string | null}
+ */
+export function resolveEntry(require, specifier) {
+  try {
+    return require.resolve(specifier);
+  } catch (error) {
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    if (
+      code === 'MODULE_NOT_FOUND' ||
+      code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Core's root entry, loaded once, the first time a theme module requires
+ * `@astryxdesign/core`. The root loads all of Core and React (thousands of
+ * modules), and most themes import only the theme subpath, so nothing loads
+ * it before a theme asks (the CommonJS patch for a theme's `.cjs` dependencies
+ * wraps an installed root only when the load requires it, too). jiti asks for
+ * a virtual module synchronously, so it loads through `require` of an ES
+ * module, which the CLI's Node floor supports. An entry that fails to load
+ * throws to the theme that imports it. Only a Core with no root entry has no
+ * loader, and the theme namespace stands in for its root.
+ * @param {string} file - The root entry's file
+ * @returns {() => any}
+ */
+export function lazyCoreRoot(file) {
+  /** @type {{root: any} | null} */
+  let loaded = null;
+  return () => {
+    loaded ??= {root: createRequire(file)(file)};
+    return loaded.root;
+  };
+}
+
+/**
  * Wrap an installed core module so every `defineTheme()` call records the raw
  * input against the theme it produced.
  *
@@ -509,30 +555,25 @@ export function interceptCore(coreThemeModule, coreRootModule) {
         }
       };
 
-      // The theme subpath is small, so it is wrapped now. A specifier that
-      // CommonJS cannot resolve cannot be used by a `.cjs` source dependency
-      // either, so it creates no unobserved path.
-      /** @type {any} */
-      let themeExports;
-      try {
-        themeExports = requireFromTheme('@astryxdesign/core/theme');
-      } catch {
-        themeExports = undefined;
-      }
-      if (themeExports !== undefined && !wrap(themeExports)) covered = false;
+      // A specifier that CommonJS cannot resolve cannot be used by a `.cjs`
+      // source dependency either, so it creates no unobserved path. Both are
+      // resolved before anything is patched, so an error leaves nothing to
+      // undo.
+      const themeFile = resolveEntry(
+        requireFromTheme,
+        '@astryxdesign/core/theme',
+      );
+      const rootFile = resolveEntry(requireFromTheme, '@astryxdesign/core');
+
+      // The theme subpath is small, so it is wrapped now. It loads here, and
+      // its error, if it throws, is the build's.
+      if (themeFile && !wrap(requireFromTheme(themeFile))) covered = false;
 
       // The root loads all of Core, so it is wrapped when this load first
       // requires it (a `.cjs` dependency, or the virtual module's own loader),
       // not before: every CommonJS require goes through `Module._load`, which
       // is watched for the load's duration. A load that never requires the
       // root leaves no path through it to observe.
-      /** @type {string | null} */
-      let rootFile;
-      try {
-        rootFile = requireFromTheme.resolve('@astryxdesign/core');
-      } catch {
-        rootFile = null;
-      }
       if (rootFile) {
         /** @type {any} */
         const loader = Module;
@@ -549,13 +590,8 @@ export function interceptCore(coreThemeModule, coreRootModule) {
             typeof request === 'string' &&
             request.includes('@astryxdesign/core')
           ) {
-            /** @type {string | null} */
-            let resolved;
-            try {
-              resolved = loader._resolveFilename(request, parent, isMain);
-            } catch {
-              resolved = null;
-            }
+            // The request just loaded, so it resolves.
+            const resolved = loader._resolveFilename(request, parent, isMain);
             if (resolved === rootFile) {
               seen = true;
               if (!wrap(exports)) covered = false;
