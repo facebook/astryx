@@ -39,6 +39,7 @@ import {
   TabList as ProposedTabList,
 } from './proposed/TabList';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Slider} from '@astryxdesign/core/Slider';
 import {Token} from '@astryxdesign/core/Token';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
@@ -1217,6 +1218,208 @@ export function ListReorderRig({mode}: {mode: Mode}) {
         {mode === 'before'
           ? 'Reorder is instant, so the user has to re-read the list to find out what changed.'
           : 'FLIP: measure, move, invert, play. Rows travel on --ease-move, so a change the user did not initiate stays followable.'}
+      </Hint>
+    </VStack>
+  );
+}
+
+// --- Slider: one transition per key step ----------------------------------
+
+const SLIDER_THUMB = 20;
+const SLIDER_STEP = 10;
+const KEY_STEPS: Readonly<Record<string, (value: number) => number>> = {
+  ArrowRight: value => value + SLIDER_STEP,
+  ArrowUp: value => value + SLIDER_STEP,
+  ArrowLeft: value => value - SLIDER_STEP,
+  ArrowDown: value => value - SLIDER_STEP,
+  Home: () => 0,
+  End: () => 100,
+};
+
+const sliderSx = stylex.create({
+  root: {
+    position: 'relative',
+    height: '28px',
+    width: '100%',
+    touchAction: 'none',
+    cursor: 'pointer',
+  },
+  track: {
+    position: 'absolute',
+    insetInline: 0,
+    top: '12px',
+    height: '4px',
+    borderRadius: '2px',
+    backgroundColor: 'var(--color-track, var(--color-border))',
+    overflow: 'hidden',
+  },
+  fill: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'var(--color-accent)',
+    transformOrigin: 'left center',
+  },
+  // The thumb's travel is the track less one thumb, as in Core's Slider.
+  rail: {
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineStart: 0,
+    width: `calc(100% - ${SLIDER_THUMB}px)`,
+    pointerEvents: 'none',
+  },
+  carrier: {
+    position: 'absolute',
+    inset: 0,
+  },
+  thumb: {
+    position: 'absolute',
+    top: '4px',
+    insetInlineStart: 0,
+    width: `${SLIDER_THUMB}px`,
+    height: `${SLIDER_THUMB}px`,
+    borderRadius: '50%',
+    backgroundColor: 'var(--color-background-surface)',
+    boxShadow: '0 0 0 1px var(--color-border), 0 1px 3px rgba(0, 0, 0, 0.25)',
+    pointerEvents: 'auto',
+    outline: {
+      default: 'none',
+      ':focus-visible': '2px solid var(--color-accent)',
+    },
+    outlineOffset: '2px',
+  },
+  // A key step travels; a drag never does, so the thumb stays under the
+  // pointer. Reduce Motion takes the travel away and keeps the jump.
+  stepping: {
+    transitionProperty: 'transform',
+    // The lab's scaled state duration; its Reduce Motion modes zero the
+    // travel (--lab-translate), as the system setting does.
+    transitionDuration: {
+      default: 'calc(var(--lab-duration-state) * var(--lab-translate, 1))',
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: 'var(--ease-move)',
+  },
+});
+
+/** A bounce through 0..100 in key-sized steps, for the loop. */
+function useSliderStepLoop(setValue: (update: (v: number) => number) => void) {
+  const direction = useRef(1);
+  useLoop(() => {
+    setValue(v => {
+      if (
+        v + direction.current * SLIDER_STEP > 100 ||
+        v + direction.current * SLIDER_STEP < 0
+      ) {
+        direction.current = -direction.current;
+      }
+      return v + direction.current * SLIDER_STEP;
+    });
+  }, 900);
+}
+
+/**
+ * The proposed thumb. A key step (or the loop, which steps the same way)
+ * moves it with one transform transition; a pointer drag moves it with none,
+ * so it never lags the pointer. A transition retargets from where the thumb
+ * is when the next key lands; spring retargeting with the carried velocity
+ * lands with useAnimator (AST-107, #8600).
+ */
+function ProposedSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fraction = value / 100;
+
+  const valueAt = (clientX: number) => {
+    const root = rootRef.current;
+    if (root == null) {
+      return value;
+    }
+    const box = root.getBoundingClientRect();
+    const travel = Math.max(1, box.width - SLIDER_THUMB);
+    const raw = ((clientX - box.left - SLIDER_THUMB / 2) / travel) * 100;
+    return Math.min(100, Math.max(0, Math.round(raw)));
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      {...stylex.props(sliderSx.root)}
+      onPointerDown={e => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setIsDragging(true);
+        onChange(valueAt(e.clientX));
+        e.currentTarget.querySelector<HTMLElement>('[role="slider"]')?.focus();
+      }}
+      onPointerMove={e => {
+        if (isDragging) {
+          onChange(valueAt(e.clientX));
+        }
+      }}
+      onPointerUp={() => setIsDragging(false)}
+      onPointerCancel={() => setIsDragging(false)}>
+      <div {...stylex.props(sliderSx.track)}>
+        <div
+          {...stylex.props(sliderSx.fill, !isDragging && sliderSx.stepping)}
+          style={{transform: `scaleX(${fraction})`}}
+        />
+      </div>
+      <div {...stylex.props(sliderSx.rail)}>
+        <div
+          {...stylex.props(sliderSx.carrier, !isDragging && sliderSx.stepping)}
+          style={{transform: `translateX(${fraction * 100}%)`}}>
+          <div
+            role="slider"
+            tabIndex={0}
+            aria-label="Proposed volume"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={value}
+            {...stylex.props(sliderSx.thumb)}
+            onKeyDown={e => {
+              const next = KEY_STEPS[e.key]?.(value);
+              if (next != null) {
+                e.preventDefault();
+                onChange(Math.min(100, Math.max(0, next)));
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Slider keyboard step. `before` is Core's Slider: a key step jumps the thumb.
+ * `after` gives each key step one transform transition and a drag none.
+ */
+export function SliderStepRig({mode}: {mode: Mode}) {
+  const [value, setValue] = useState(30);
+  useSliderStepLoop(setValue);
+
+  return (
+    <VStack gap={3} {...stylex.props(sx.full)}>
+      {mode === 'before' ? (
+        <Slider
+          label="Volume"
+          isLabelHidden
+          value={value}
+          step={SLIDER_STEP}
+          onChange={setValue}
+        />
+      ) : (
+        <ProposedSlider value={value} onChange={setValue} />
+      )}
+      <Hint>
+        {mode === 'before'
+          ? 'Core\u2019s Slider. Focus the thumb and press the arrow keys: each step jumps, so a run of steps reads as flicker. A drag tracks the pointer, as it should.'
+          : 'Each key step travels on --duration-state and --ease-move; a drag has no transition, so the thumb stays under the pointer. Reduce Motion keeps the jump.'}
       </Hint>
     </VStack>
   );

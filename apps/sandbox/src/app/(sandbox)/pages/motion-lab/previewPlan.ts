@@ -776,8 +776,8 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
     hardCase:
       'The same thumb must be transitioned for keyboard and untransitioned for drag, or dragging lags the pointer. One control, two input paths, opposite answers.',
     controls: ['step duration', 'input method', 'step size'],
-    status: 'specified',
-    rig: null,
+    status: 'built',
+    rig: 'SliderStepRig',
     priority: 2,
     measurementNote: null,
   },

@@ -28,6 +28,7 @@ import {
   ListReorderRig,
   RailRig,
   SkeletonSwapRig,
+  SliderStepRig,
   StatCountRig,
   TabIndicatorRig,
 } from '../LabDemos';
@@ -296,14 +297,43 @@ export default function PreviewsPage() {
         </DemoCard>
       </Grid>
 
+      <DemoCard
+        title="Slider keyboard step"
+        question="One thumb, two input paths, opposite answers: a key step should travel, a drag must not, or the thumb lags the finger. Step with the arrow keys, then drag, in each pane."
+        badges={<Badge variant="error" label="ADD" />}>
+        <ComparePanes
+          panes={[
+            {
+              tone: 'before',
+              label: 'Today \u2014 real Slider, steps jump',
+              content: <SliderStepRig mode="before" />,
+            },
+            {
+              tone: 'after',
+              label: 'Proposed \u2014 one transition per key step',
+              content: <SliderStepRig mode="after" />,
+            },
+          ]}
+        />
+        <DemoBody>
+          <Text type="supporting" color="secondary">
+            The proposal is a transform transition on the thumb and the fill,
+            switched off for the length of a drag and under Reduce Motion. A key
+            pressed mid-step retargets from where the thumb is; carrying its
+            velocity into the next step, as a spring would, lands with
+            useAnimator (AST-107, #8600).
+          </Text>
+        </DemoBody>
+      </DemoCard>
+
       <VStack gap={2}>
         <Heading level={2}>What is not here</Heading>
         <Text color="secondary">
           Around twenty more previews are specified but not built —
           ContextMenu&rsquo;s pointer-anchored origin, CommandPalette filter
           motion, TreeList depth, TransferList&rsquo;s cross-container move,
-          Carousel, Calendar month change, Slider keyboard step, Resizable snap.
-          Each one has a written brief saying what it must demonstrate, on{' '}
+          Carousel, Calendar month change, Resizable snap. Each one has a
+          written brief saying what it must demonstrate, on{' '}
           <Link href="/pages/motion-lab/preview-plan/">Preview plan</Link>. The
           ones above were built first because each settles a decision that
           blocks other work.
