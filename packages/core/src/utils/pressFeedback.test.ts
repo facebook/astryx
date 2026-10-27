@@ -27,8 +27,10 @@ import {
 } from './interactionOverlay.stylex';
 import {
   installPressFeedback,
+  PRESS_GROUP_ITEM_ATTRIBUTE,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
+  pressGroupItemProps,
 } from './pressFeedback';
 import {
   PRESS_FADE_MS,
@@ -134,6 +136,66 @@ describe('the press reaches the surface the finger landed on', () => {
     press(ariaDisabled, 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(document.querySelectorAll(`[${PRESSED_ATTRIBUTE}]`)).toHaveLength(0);
+  });
+});
+
+describe('an action group whose own tracker paints its actions', () => {
+  // family:action-groups: the group's tracker follows a held pointer across
+  // its actions and paints them; the controller must not write the press
+  // attribute there too.
+  function group(): {actions: HTMLElement[]; field: HTMLElement} {
+    const root = document.createElement('div');
+    const actions = [pressable('button'), pressable('button')];
+    for (const action of actions) {
+      for (const [name, value] of Object.entries(pressGroupItemProps)) {
+        action.setAttribute(name, value);
+      }
+      root.appendChild(action);
+    }
+    // A member the tracker skips (a menu trigger) carries no marker.
+    const field = pressable('button');
+    root.appendChild(field);
+    document.body.appendChild(root);
+    return {actions, field};
+  }
+
+  it('paints nothing on an action its group tracks', () => {
+    const {actions} = group();
+    expect(actions[0].hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(true);
+    press(actions[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    press(actions[0], 'pointerup', 10, 10);
+    vi.advanceTimersByTime(PRESS_FLASH_MS);
+    expect(actions[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves the paint the group writes on it alone', () => {
+    const {actions} = group();
+    actions[1].setAttribute(PRESSED_ATTRIBUTE, 'on');
+    press(actions[1], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    press(actions[1], 'pointercancel', 10, 10);
+    expect(actions[1].getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('still paints a member the group does not track', () => {
+    const {field} = group();
+    press(field, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(field.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('still records the touch, so a scroll it drives brakes the next one', () => {
+    const {actions} = group();
+    scroller.appendChild(actions[0].parentElement as HTMLElement);
+    press(actions[0], 'pointerdown', 10, 10);
+    // The browser takes the touch to scroll: the cancel records nothing, so
+    // the touch-down alone must have recorded the finger.
+    press(actions[0], 'pointercancel', 10, 10);
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
+    expect(pressedRow()).toBe(-1);
   });
 });
 
