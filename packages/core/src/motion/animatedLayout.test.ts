@@ -194,6 +194,43 @@ describe('the walk (spec:AST-105 FR3, Coverage)', () => {
     }
   });
 
+  it('reads every follower (place, transform, scale) before it starts any glide, so a long page is laid out once', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div><div id="b"></div><div id="c"></div></div>',
+    );
+    for (const [id, y] of [
+      ['a', 0],
+      ['b', 40],
+      ['c', 80],
+    ] as const) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, y, 400, 40], after: [0, y + 80, 400, 40]},
+        phase,
+      );
+    }
+    // A style or layout read after a glide started lays the page out again.
+    const readsAfterAGlide: string[] = [];
+    const computed = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element, pseudo?: string | null) => {
+        if (played.some(p => p.keyframes[0].translate != null)) {
+          readsAfterAGlide.push((element as HTMLElement).id);
+        }
+        return computed(element, pseudo);
+      },
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    expect(played.filter(p => p.keyframes[0].translate != null)).toHaveLength(
+      3,
+    );
+    expect(readsAfterAGlide).toEqual([]);
+  });
+
   it('takes the children of a display: contents wrapper and skips absolute, fixed, hidden and display: none elements', async () => {
     const {area, changed, phase} = setUp(
       `<div id="area"><div id="changed"></div>

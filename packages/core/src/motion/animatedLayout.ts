@@ -530,6 +530,8 @@ function flush(batch: Batch): void {
     after?: DOMRect;
     rawX?: number;
     rawY?: number;
+    isMovedByApp?: boolean;
+    scale?: {x: number; y: number};
   }[] = [];
   for (const element of followers) {
     const before = batch.before.get(element);
@@ -558,12 +560,22 @@ function flush(batch: Batch): void {
     }
     entries.push({element, before, carried, carriedMs});
   }
+  // Every reading (places, transforms, scales) before any glide starts: a
+  // glide started between two readings would make the next one lay the page
+  // out again, once per element (on a long page, the whole cost).
   const byElement = new Map<Element, (typeof entries)[number]>();
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
     entry.rawX = entry.before.left - entry.after.left;
     entry.rawY = entry.before.top - entry.after.top;
     byElement.set(entry.element, entry);
+  }
+  for (const entry of entries) {
+    const after = entry.after as DOMRect;
+    if (intersects(entry.before, visible) || intersects(after, visible)) {
+      entry.isMovedByApp = movedByApp(entry.element);
+      entry.scale = scaleOf(entry.element, after);
+    }
   }
   for (const entry of entries) {
     const {element, before, carried, carriedMs} = entry;
@@ -598,14 +610,14 @@ function flush(batch: Batch): void {
       });
       continue;
     }
-    if (movedByApp(element)) {
+    if (entry.isMovedByApp === true) {
       // The app moves it itself: it takes its final place at once
       // (`spec:AST-105` Coverage).
       continue;
     }
     // Where it shows now, against its new place, in its own px; the part the
     // carried glide does not cover is the new move.
-    const scale = scaleOf(element, after);
+    const scale = entry.scale ?? {x: 1, y: 1};
     const now = carried(0);
     const moveX = dx / scale.x - now.x;
     const moveY = dy / scale.y - now.y;
