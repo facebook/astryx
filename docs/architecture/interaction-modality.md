@@ -36,7 +36,7 @@ deciding_specs: [spec:AST-100/DEC-1]
 {
   "scope": "global",
   "triggers": {
-    "interaction": ["INV1", "INV2", "INV3", "INV4", "INV7", "INV8"]
+    "interaction": ["INV1", "INV2", "INV3", "INV4", "INV7", "INV8", "INV11"]
   }
 }
 ```
@@ -170,7 +170,9 @@ work.
   against brush-over, which an owner's record may set to zero, an exit guard, and a
   group across which a pointer moving from one open trigger to the next shows
   the next at once. Keyboard focus shows at once, and a finger is never gated
-  or served by it: intent answers mouse and pen hover only. `useTooltip`,
+  or served by it: intent answers mouse and pen hover only. The hover recognizer attaches for hover-capable
+  pointers and registers no touch listener, the one exception to
+  `architecture:react-component-runtime` INV13's fine-pointer rule. `useTooltip`,
   `useHoverCard`, `useMenuHover`, and `useContainerReveal` take their hover
   timing from it. Enter and exit animation, hover tint, and the default delay
   itself stay with their owners. The setting adds no module and is internal
@@ -268,7 +270,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV8       | Owner-defined intent order, pending, close, cancellation, disablement, and unmount mutations                                                                          | Older work changes current content, selection, status or announcement, visibility, focus, or activation after owner-defined supersession                                                                                                                                                                    |
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory                                                     | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority                                                                                                                                |
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
-| INV11      | Unit tests of the hover recognizer's intent and browser tests of its adopters with a mouse, a pen, a finger, and the keyboard                                         | A show without the owner's entry delay, a missed handoff within a group, a delayed keyboard show, a finger served by it, or a second hover-timing implementation fails                                                                                                                                      |
+| INV11      | Unit tests of the hover recognizer's intent and browser tests of its adopters with a mouse, a pen, a finger, and the keyboard                                         | A show without the owner's entry delay, a missed handoff within a group, a delayed keyboard show, a finger served by it, or a second hover-timing implementation , a hover-shown surface that closes before the pointer reaches it, fails                                                                   |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
