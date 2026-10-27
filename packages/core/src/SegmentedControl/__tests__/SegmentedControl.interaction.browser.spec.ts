@@ -961,7 +961,7 @@ test('with a mouse nothing changes: no lens, the theme’s color transition, and
   }
 });
 
-test('the slide plays UISegmentedControl’s measured spring, an internal constant: no theme setting retunes it', async ({
+test('the slide plays UISegmentedControl’s measured spring, an internal motion role: no theme setting retunes it', async ({
   page,
 }) => {
   const control = await openControl(page);

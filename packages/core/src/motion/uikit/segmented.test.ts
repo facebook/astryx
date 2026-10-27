@@ -6,7 +6,7 @@
  *   the spring solver, and samples of UIKit's own selection slide
  * @output Holds `segmentedControl.selectionSpring` to UISegmentedControl's
  *   measured slide (position per frame, iOS 26.2 simulator), an internal
- *   constant no theme retunes
+ *   motion role no theme retunes
  * @position Testing; parity of the segmented-control constants (law P4,
  *   unit layer). The browser layer is
  *   SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts.
@@ -16,7 +16,7 @@ import {describe, expect, it} from 'vitest';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
-import {segmentedControl} from './segmented';
+import {registerSegmentedTable, segmentedControl} from './segmented';
 import {springs} from './springs';
 
 /**
@@ -127,10 +127,12 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
   });
 });
 
-describe('an internal constant', () => {
-  it('the slide spring is no motion role (spec:AST-094 FR4 names none for the segmented control), and the only value: the titles switch at once', () => {
-    expect(motionRoleOf(segmentedControl.selectionSpring)).toBeUndefined();
-    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toBeUndefined();
+describe('an internal motion role', () => {
+  it('the slide spring is the internal role segmented.selectionSpring once registered (spec:AST-094 FR4), and the only value: the titles switch at once', () => {
+    registerSegmentedTable();
+    expect(motionRoleOf(segmentedControl.selectionSpring)?.id).toBe(
+      'segmented.selectionSpring',
+    );
     expect(Object.keys(segmentedControl)).toEqual(['selectionSpring']);
   });
 
