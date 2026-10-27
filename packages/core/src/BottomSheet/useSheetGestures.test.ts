@@ -1365,6 +1365,39 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
+    it('promotes a top pull-down from a finger where the primary pointer is fine (a touchscreen laptop), as on a phone', () => {
+      // A touchscreen laptop: a mouse is the primary pointer, and a finger on
+      // the screen sends touches, which the browser would scroll the content
+      // with. The body's touch listeners serve that finger as they serve a
+      // phone's: under a fine pointer a component may listen on its own
+      // element (spec:AST-094 FR24).
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('any-pointer: coarse'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      let move: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 0);
+        move = touch(el, 'touchmove', 50);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      // The pull is the sheet's, not the content's scroll.
+      expect(move?.defaultPrevented).toBe(true);
+    });
+
     it('promotes a bottom pull-up (touch) into a sheet drag that travels', () => {
       const {hook} = setup({snapHeights: () => [200]});
       // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
@@ -2871,7 +2904,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     }
   });
 
-  it('registers no touch listener where the primary pointer is fine, and its own where it is coarse (spec:AST-094 FR24)', () => {
+  it("registers its body's own touch listeners under every primary pointer, and the catch's only where it is coarse (spec:AST-094 FR24)", () => {
     const touchTypes = (spy: {mock: {calls: unknown[][]}}): string[] =>
       spy.mock.calls
         .map((call: unknown[]) => String(call[0]))
@@ -2901,11 +2934,12 @@ describe('useSheetGestures: the release on the compositor', () => {
       const onDialog = vi.spyOn(dialog, 'addEventListener');
       act(() => hook.result.current.sheetRef(sheet));
       act(() => hook.result.current.bodyProps.ref(body));
+      // A touchscreen laptop's finger pulls the body as a phone's does: under
+      // a fine pointer a component may listen on its own element.
+      expect(touchTypes(onBody)).toContain('touchmove');
       if (coarse) {
-        expect(touchTypes(onBody)).toContain('touchmove');
         expect(touchTypes(onDialog)).toContain('touchstart');
       } else {
-        expect(touchTypes(onBody)).toEqual([]);
         expect(touchTypes(onDialog)).toEqual([]);
       }
       hook.unmount();
