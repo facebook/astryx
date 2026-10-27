@@ -175,7 +175,11 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     const getContext = vi
       .spyOn(HTMLCanvasElement.prototype, 'getContext')
       .mockImplementation(
-        () => ({drawImage}) as unknown as CanvasRenderingContext2D,
+        () =>
+          ({
+            drawImage,
+            getImageData: () => ({data: new Uint8ClampedArray([0, 0, 0, 255])}),
+          }) as unknown as CanvasRenderingContext2D,
       );
     const {handle, content} = setup();
     holdLayoutSwap(handle, content);
@@ -185,6 +189,50 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
       0,
     );
     getContext.mockRestore();
+  });
+
+  it('does not copy content holding a canvas it cannot read back', () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () =>
+          ({
+            drawImage: vi.fn(),
+            // A WebGL canvas without preserveDrawingBuffer reads back empty.
+            getImageData: () => ({data: new Uint8ClampedArray(16 * 16 * 4)}),
+          }) as unknown as CanvasRenderingContext2D,
+      );
+    const {handle, content} = setup();
+    expect(holdLayoutSwap(handle, content)).toBeNull();
+    getContext.mockRestore();
+  });
+
+  it('draws the copy at the old size under a scaled host', () => {
+    const {handle, content, host} = setup();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === content) {
+          return DOMRect.fromRect({x: 100, y: 50, width: 400, height: 200});
+        }
+        if (this.hasAttribute('inert')) {
+          // The host is scaled by half: the copy draws at half its styles.
+          return DOMRect.fromRect({
+            x: 10,
+            y: 10,
+            width: parseFloat(this.style.width) / 2,
+            height: parseFloat(this.style.height) / 2,
+          });
+        }
+        return DOMRect.fromRect({x: 0, y: 0, width: 0, height: 0});
+      },
+    );
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    expect(swap!.copy.style.width).toBe('800px');
+    expect(swap!.copy.style.height).toBe('400px');
+    expect(swap!.copy.style.left).toBe('180px');
+    expect(swap!.copy.style.top).toBe('80px');
+    vi.restoreAllMocks();
   });
 
   it('labels no live control: a copied label drops its for', () => {
@@ -201,15 +249,22 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     const {handle, content, host} = setup();
     const scroller = document.getElementById('scroller') as HTMLElement;
     Object.defineProperty(scroller, 'scrollTop', {value: 25});
-    const set = vi.spyOn(Element.prototype, 'scrollTop', 'set');
+    const scrollTo = vi.fn();
+    const original = Element.prototype.scrollTo;
+    Element.prototype.scrollTo = scrollTo;
     const swap = holdLayoutSwap(handle, content);
     playLayoutSwap(swap!, {host, copy: travel, incoming: []});
-    const copied = set.mock.contexts.find(
+    const copied = scrollTo.mock.contexts.find(
       element => (element as Element).textContent === 'Rows',
     );
     expect(copied).toBeDefined();
-    expect(set).toHaveBeenCalledWith(25);
-    set.mockRestore();
+    // At once, whatever the copy's own scroll-behavior (a smooth strip).
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: 25,
+      left: 0,
+      behavior: 'instant',
+    });
+    Element.prototype.scrollTo = original;
   });
 
   it('fades a copied SVG label through its text element, not a span', () => {
@@ -391,11 +446,11 @@ describe('the glide in a right-to-left document', () => {
     vi.restoreAllMocks();
   });
 
-  it('moves a follower by its inline-start edge, the right one', async () => {
+  it("moves a follower by its container's inline-start edge, even with its own direction", async () => {
     document.body.innerHTML = `
-      <div id="area" dir="rtl">
+      <div id="area" style="direction: rtl">
         <div id="rail"></div>
-        <div id="column" style="direction: rtl"></div>
+        <div id="column" style="direction: ltr"></div>
       </div>`;
     const area = document.getElementById('area') as HTMLElement;
     const rail = document.getElementById('rail') as HTMLElement;

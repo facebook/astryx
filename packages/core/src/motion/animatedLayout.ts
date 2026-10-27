@@ -518,10 +518,12 @@ function flush(batch: Batch): void {
   const byElement = new Map<Element, (typeof entries)[number]>();
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    // The move is the inline-start edge's: in a right-to-left document an
+    // The move is the inline-start edge's, by the container's direction (it
+    // decides where the element sits): in a right-to-left container an
     // element that narrows keeps its left edge and moves its right one.
+    const container = entry.element.parentElement ?? entry.element;
     const isRtl =
-      entry.element.ownerDocument.defaultView?.getComputedStyle(entry.element)
+      container.ownerDocument.defaultView?.getComputedStyle(container)
         .direction === 'rtl';
     entry.rawX = isRtl
       ? entry.before.right - entry.after.right
