@@ -383,6 +383,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   onScrimOpacity: (opacity: number) => void;
   /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
   onScrimTracking?: (tracking: boolean) => void;
+  /** Whether that ::backdrop is the stack's visible scrim; see useSheetGestures. */
+  isScrimShown?: () => boolean;
   /**
    * Under a finger (any touch device), the sheet opens and closes
    * on UIKit's sheet spring (useSheetGestures `present` / `dismiss`) instead
@@ -542,6 +544,7 @@ export function BottomSheetPanel({
   onDismiss,
   onScrimOpacity,
   onScrimTracking,
+  isScrimShown,
   hasSpringPresentation = false,
   onPresentingChange,
   onElementChange,
@@ -649,6 +652,7 @@ export function BottomSheetPanel({
     snapHeights,
     onScrimOpacity,
     onScrimTracking,
+    isScrimShown,
     onPresentingChange,
   });
 
