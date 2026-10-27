@@ -146,7 +146,7 @@ const MiddleItem = memo(function MiddleItem({
   toggleRef,
 }: {
   index: number;
-  animatedLayout: AnimatedLayout;
+  animatedLayout: AnimatedLayout | undefined;
   toggleRef: RefObject<((open?: boolean) => void) | null>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -183,6 +183,7 @@ const MiddleItem = memo(function MiddleItem({
 export default function AnimatedLayoutPerfPage() {
   const [rowCount, setRowCount] = useState('5000');
   const [rendering, setRendering] = useState<Rendering>('full');
+  const [glide, setGlide] = useState<'on' | 'off'>('on');
   const toggleRef = useRef<((open?: boolean) => void) | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [metrics, setMetrics] = useState<RunMetrics>(EMPTY_METRICS);
@@ -195,7 +196,8 @@ export default function AnimatedLayoutPerfPage() {
 
   const count = Number(rowCount);
   const middle = Math.floor(count / 2);
-  const key = `${rowCount}:${rendering}`;
+  const key = `${rowCount}:${rendering}:${glide}`;
+  const handle = glide === 'on' ? animatedLayout : undefined;
   const baseline = baselines[key];
 
   // Virtualized: only the rows in (and just around) the viewport render; the
@@ -345,7 +347,7 @@ export default function AnimatedLayoutPerfPage() {
           <MiddleItem
             key={i}
             index={i}
-            animatedLayout={animatedLayout}
+            animatedLayout={handle}
             toggleRef={toggleRef}
           />
         ) : (
@@ -356,7 +358,7 @@ export default function AnimatedLayoutPerfPage() {
       );
     }
     return out;
-  }, [animatedLayout, middle, windowRange]);
+  }, [handle, middle, windowRange]);
 
   return (
     <AppShell contentPadding={4} height="fill">
@@ -397,6 +399,16 @@ export default function AnimatedLayoutPerfPage() {
               <SegmentedControlItem value="full" label="Every row" />
               <SegmentedControlItem value="virtualized" label="Virtualized" />
             </SegmentedControl>
+            <SegmentedControl
+              label="Glide"
+              value={glide}
+              onChange={value => setGlide(value as 'on' | 'off')}
+              isDisabled={isRunning}
+              disabledMessage="Stop the active run before changing the glide."
+              size="sm">
+              <SegmentedControlItem value="on" label="With handle" />
+              <SegmentedControlItem value="off" label="No handle" />
+            </SegmentedControl>
             <Button
               label={isRunning ? 'Running…' : 'Run benchmark'}
               onClick={() => {
@@ -428,6 +440,7 @@ export default function AnimatedLayoutPerfPage() {
                 <Badge
                   label={rendering === 'full' ? 'Every row' : 'Virtualized'}
                 />
+                <Badge label={glide === 'on' ? 'With handle' : 'No handle'} />
                 <Badge label={`${TOGGLES} toggles`} />
               </HStack>
               <Grid columns={2} gap={3}>
@@ -457,9 +470,11 @@ export default function AnimatedLayoutPerfPage() {
                 first frame are medians over the run&apos;s toggles; the rest
                 are totals for the run. Commit + walk runs from the change to
                 the glide starting: React&apos;s commit of the item, then the
-                walk and its reads. A dropped frame is a measured animation
-                frame gap over 20 ms. Save a baseline, change the build or the
-                CPU throttle in DevTools, and run again to compare.
+                walk and its reads. Run No handle for the same list to see what
+                the browser&apos;s own layout costs without the walk. A dropped
+                frame is a measured animation frame gap over 20 ms. Save a
+                baseline, change the build or the CPU throttle in DevTools, and
+                run again to compare.
               </Text>
             </VStack>
           </Card>
