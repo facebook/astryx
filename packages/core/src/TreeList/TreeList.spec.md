@@ -26,7 +26,8 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-002/DEC-1, spec:AST-005/DEC-1]
+system_specs:
+  [spec:AST-002/DEC-1, spec:AST-005/DEC-1, spec:AST-094/FR4, spec:AST-105]
 ---
 
 # TreeList component contract
@@ -105,6 +106,7 @@ Supporting one does not justify omitting another from the durable contract.
 | FR5 | `TreeListItemData` MUST admit `className`, `style`, and `xstyle` as one per-item styling seam. Every supplied value MUST compose on the same Item row box; an implementation MUST NOT treat current support for only one mechanism as authority to exclude the other two.                                                                                                                                                                                                 | Owner decision; `architecture:public-component-api` INV5–INV6; `spec:AST-002/DEC-1` | Settled intent; implementation may be staged        |
 | FR6 | The Item row box is the logical element that paints the row, owns its hover state, and contains Start content, Item label and description, and End content. The styling seam MUST NOT move to the semantic `<li>` or another element without a compatibility decision.                                                                                                                                                                                                    | Owner decision and the caller-owned per-row interaction boundary                    | Settled intent                                      |
 | FR7 | A click on an Item row outside its Item label performs the row's action: an Item with `onClick` runs it; otherwise an Item with children toggles; otherwise an Item whose only action is its link follows that link as Enter does, with modified and middle clicks following the shared enlarged-surface rule in `family:navigation-destinations`. The Chevron and controls in Start content and End content keep their own activation, and a disabled Item does nothing. | Owner decision; `family:navigation-destinations`                                    | Settled intent; implementation may be staged        |
+| FR8 | Expanding or collapsing an Item with children MUST play its group's own motion: under a coarse primary pointer the group's rows slide out from under the parent as one block, inside a clip that grows with them, and back under it on collapse, while the Chevron turns, on a motion role (`spec:AST-094` FR4); under a fine pointer the group appears and leaves at once. Rows after the group move as `spec:AST-105` FR2–FR3 say.                                      | UIKit outline list (`UICollectionView`), iOS 26.2; `spec:AST-105` FR2–FR3           | Proposed; awaiting an engineering owner's approval  |
 
 ### Allowed variation
 
@@ -118,6 +120,9 @@ Supporting one does not justify omitting another from the durable contract.
 - **AV4 — Row implementation.** The row's HTML tag and internal descendants may
   change while the same logical row remains the target of all three styling
   inputs and keeps the observable boundary in FR6.
+- **AV5 — Expansion motion.** Under a fine pointer a group appears and leaves at
+  once; under reduced motion nothing travels, and the group fades where it lands
+  (`design:reduced-motion`).
 
 ### Representative states
 
@@ -127,6 +132,7 @@ Supporting one does not justify omitting another from the durable contract.
 | Flat items               | Each Item contains an Item label.                                                           | Description and consumer slots may be absent. |
 | Styled item              | The supplied `className`, `style`, and `xstyle` values compose on only that item's row box. | Any subset of the three inputs may be absent. |
 | Expandable item          | Item may contain Chevron and delegated Chevron glyph.                                       | Expanded or collapsed state.                  |
+| Item toggled by a finger | Its group slides out from under it, or back, as one block while the Chevron turns.          | Reduced motion: a fade, no travel.            |
 | Nested `lineGuides` tree | Guide instances show parent-child relationships.                                            | Count and position follow hierarchy.          |
 | `noGuides` tree          | Guide instances are absent; indentation remains.                                            | All other anatomy remains unchanged.          |
 | Described item           | Item description renders below Item label.                                                  | Caller-provided description text.             |
@@ -250,6 +256,8 @@ authorize or prohibit a future target.
   item paths to preserve that result.
 - TreeList's current custom-router path inherits the `useLinkComponent` adoption
   gap recorded by the family until the accepted implementation lands.
+- `spec:AST-105` owns the animated layout handle and how the content after a
+  toggled group moves; TreeList owns only the group's own motion (FR8).
 
 ## Verification map
 
@@ -262,6 +270,7 @@ authorize or prohibit a future target.
 | AR1                 | Tree View accessibility contract (`internal/a11y-spec`, pending) bound to TreeList, in jsdom and Chromium; `TreeList.test.tsx` row-naming cases ("names a parent row by its label alone, not the chevron toggle", "names a plain row by its label and describes it with its description", "names and describes link and action rows themselves, not only their inner control", "keeps start and end content, including controls, out of the row name", "typeahead matches the label, not the description or start content") and `TreeListRowNames.a11y.chromium.spec.ts` for the browser-computed names; `TreeList.test.tsx` structural ARIA cases ("sets aria-level, aria-posinset, and aria-setsize at the top level", "sets aria-level/posinset/setsize correctly at deeper levels", "sets aria-level across three depths"); `TreeList.test.tsx` and `useTreeFocus.test.tsx` keyboard suites | Flat and nested trees; expanded/collapsed; selected/unselected; LTR and RTL; typeahead                                                                               | A row loses its role, label name, state or position, two rows hold a Tab stop, an arrow key stops moving or stops mirroring under RTL, Home/End or typeahead stop working, or the tree claims multi-select                                          | `audit:TreeList/accessibility` |
 | FR5, FR6, ORD1      | Focused `TreeList.test.tsx` row-identity and styling-composition coverage, required with implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | One input at a time; all three together; sibling rows                                                                                                                | Dropping any mechanism, applying mechanisms to different elements, targeting the `<li>`, changing the merge order, or styling a sibling row fails.                                                                                                  | `audit:TreeList/api`           |
 | FR7                 | Focused `TreeList.test.tsx` row-click coverage, required with implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Action, parent, link, and disabled rows; clicks in the indent and padding, on the Chevron, and on Start and End content controls; plain, modified, and middle clicks | A click outside the label does nothing or runs the wrong action, a link-row click reaches ancestors twice, the Chevron or a Start or End content control activates the row, or a disabled row acts.                                                 | `audit:TreeList/behavior`      |
+| FR8                 | Real-browser frame evidence under a finger and a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | expand and collapse; a toggle mid-motion; reduced motion; with and without an `animatedLayout` handle                                                                | Rows inside the group that jump, travel under a fine pointer or reduced motion, or layout or paint per frame fails                                                                                                                                  | `audit:TreeList/behavior`      |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Canonical anatomy and five current local targets                                                                                                                     | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.                                                                                                                                                                 | `audit:TreeList/theming`       |
 
 Focused target-placement assertions cover all five local targets. Runtime support
@@ -300,7 +309,10 @@ Rejected: multi-select (`aria-multiselectable`, Shift/Ctrl ranges); a Tab stop p
 
 ## Open questions
 
-None.
+- **OQ1 — Rows after a toggled group, without a handle.** Under a finger, with
+  no `animatedLayout` handle: (a) the rows after the group take their new
+  places at once, as `spec:AST-105` FR2 reads; or (b) they move with the group
+  as part of its own motion, as a UIKit outline list's rows do.
 
 ## Content boundary
 
