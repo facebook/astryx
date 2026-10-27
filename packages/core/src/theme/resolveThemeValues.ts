@@ -31,7 +31,11 @@ import {
   generateTypeScaleComponents,
   type TypeScaleConfig,
 } from './expandTypeScale';
-import {expandMotionScale, type MotionScaleConfig} from './expandMotionScale';
+import {
+  expandThemeMotion,
+  preTempoName,
+  type ThemeMotionConfig,
+} from './themeMotion';
 import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
 import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import {deepMergeComponents} from './mergeComponents';
@@ -54,8 +58,8 @@ export interface ThemeValuesInput {
   color?: ColorScaleConfig;
   /** Radius scale configuration. */
   radius?: RadiusScaleConfig;
-  /** Motion scale configuration. */
-  motion?: MotionScaleConfig;
+  /** Motion: the three knobs, a motion scale configuration, or both. */
+  motion?: ThemeMotionConfig;
   /** Syntax highlighting theme. */
   syntax?: SyntaxThemeDefinition;
   /** Explicit token overrides — highest precedence. */
@@ -293,9 +297,9 @@ export function resolveThemeValues(
     Object.assign(tokens, expandRadiusScale(input.radius));
   }
 
-  // 4. Motion-generated tokens
+  // 4. Motion-generated tokens (spec:AST-108 FR2, FR5)
   if (input.motion) {
-    Object.assign(tokens, expandMotionScale(input.motion));
+    Object.assign(tokens, expandThemeMotion(input.motion));
   }
 
   // 5. Font family tokens
@@ -317,6 +321,12 @@ export function resolveThemeValues(
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
         tokens[key] = resolveTokenValue(value, {strict: strictTokens});
+        // An explicit duration beats tempo, so a busy loop reading the
+        // pre-tempo value reads it too (spec:AST-108 FR4).
+        const preTempo = preTempoName(key);
+        if (preTempo !== key && preTempo in tokens) {
+          tokens[preTempo] = tokens[key];
+        }
       }
     }
   }

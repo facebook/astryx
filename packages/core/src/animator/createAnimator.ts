@@ -12,9 +12,11 @@
  *   `useAnimator` hook (hooks/useAnimator.ts) is a thin wrapper over it.
  *
  * A product animates one element with the motion Core uses. Every `animate`
- * plays the `springs.stateChange` motion role (`spec:AST-094` FR4), `decay`
- * coasts on UIScrollView's normal deceleration, and Reduce Motion is
- * planned for every call (`design:reduced-motion` DR1–DR3). The handle hands
+ * plays the `springs.stateChange` motion role (`spec:AST-094` FR4) at the
+ * tempo and character of the theme the element is in (`spec:AST-108` FR3),
+ * `decay` coasts any channel on UIScrollView's normal deceleration (FR4:
+ * fixed), and Reduce Motion is planned for every call
+ * (`design:reduced-motion` DR1–DR3). The handle hands
  * out values and these methods only; the motion module beneath it stays
  * internal (`spec:AST-107` FR4). Importing this module does no DOM work, so
  * it is safe on the server.
@@ -27,10 +29,14 @@
 
 import {
   createMotionAnimator,
+  SETTLE_THRESHOLD,
   type Animator as MotionAnimator,
+  type MotionCurve,
+  type MotionProperty,
   type MotionValues,
 } from '../motion/animator';
 import {coast} from '../motion/coast';
+import {solveDecay} from '../motion/decay';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 
 /**
@@ -52,21 +58,20 @@ export type AnimatorSnapshot = Readonly<Record<AnimatorChannel, number>>;
 /** Options of `AnimatorHandle.animate`. */
 export interface AnimatorAnimateOptions {
   /**
-   * Each channel's velocity at the start, such as a drag's release velocity
-   * (`usePanGesture` reports it at `ended`). A channel without one keeps the
+   * Each channel's velocity at the start, such as a drag's release velocity.
+   * A channel without one keeps the
    * velocity it has on screen, so an `animate` that interrupts another
    * carries on smoothly.
    */
   velocity?: AnimatorValues;
 }
 
-/** A release velocity for `AnimatorHandle.decay`, on the translate channels. */
-export interface AnimatorDecayVelocity {
-  /** px/s */
-  x?: number;
-  /** px/s */
-  y?: number;
-}
+/**
+ * A release velocity for `AnimatorHandle.decay`, per channel, in its units
+ * per second: px/s for `x` and `y`, degrees per second for `rotate`, and
+ * per second for `scale` and `opacity`.
+ */
+export type AnimatorDecayVelocity = AnimatorValues;
 
 /**
  * Animates one element. Each method acts on the channels it is given and
@@ -84,10 +89,10 @@ export interface AnimatorHandle {
     options?: AnimatorAnimateOptions,
   ): Promise<void>;
   /**
-   * Coasts `x` and `y` from a release velocity, slowing as a scroll view's
-   * momentum does, and resolves when they stop (or when another call takes
-   * them over). The distance follows from the velocity alone: there are no
-   * bounds.
+   * Coasts the given channels from a release velocity, slowing as a scroll
+   * view's momentum does, and resolves when they stop (or when another call
+   * takes them over). The distance follows from the velocity alone: there are
+   * no bounds, except that opacity stops at 0 or 1.
    */
   decay(velocity: AnimatorDecayVelocity): Promise<void>;
   /**
@@ -135,6 +140,29 @@ function motionValues(values: AnimatorValues | undefined): MotionValues {
   return out;
 }
 
+/**
+ * A coast from `from` at `velocity` on the momentum decay a scroll view
+ * uses (`spec:AST-108` FR4: fixed, whatever the theme), ending at rest; an
+ * opacity coast stops at 0 or 1.
+ */
+function momentum(
+  from: number,
+  velocity: number,
+  threshold: number,
+  isUnit: boolean,
+): MotionCurve {
+  const glide = solveDecay({from, velocity});
+  const edge = !isUnit ? null : glide.rest < 0 ? 0 : glide.rest > 1 ? 1 : null;
+  const hit = edge == null ? null : glide.timeToReach(edge);
+  const duration = hit ?? glide.settleTime(threshold);
+  const end = edge ?? glide.rest;
+  return {
+    duration,
+    at: t => (t >= duration ? end : glide.value(t)),
+    velocity: t => (t >= duration ? 0 : glide.velocity(t)),
+  };
+}
+
 function snapshot(
   read: (channel: AnimatorChannel) => number,
 ): AnimatorSnapshot {
@@ -180,11 +208,32 @@ export function createAttachableAnimator(): {
       if (inactive()) {
         return;
       }
-      const curves = coast(motion, {x: velocity.x, y: velocity.y});
-      if (Object.keys(curves).length === 0) {
-        return;
+      const given = motionValues(velocity);
+      // The translate axes coast as a throw, which Reduce Motion lets
+      // continue; the others coast as a transition, which it replaces
+      // (design:reduced-motion DR2).
+      const translate = coast(motion, {x: given.x, y: given.y});
+      const others: Partial<Record<MotionProperty | 'scale', MotionCurve>> = {};
+      for (const channel of ['scale', 'rotate', 'opacity'] as const) {
+        const v0 = given[channel];
+        if (v0 != null) {
+          const property = channel === 'scale' ? 'scaleX' : channel;
+          others[channel] = momentum(
+            motion.get(property),
+            v0,
+            SETTLE_THRESHOLD[property],
+            channel === 'opacity',
+          );
+        }
       }
-      await motion.decay(curves).finished;
+      const moving: Promise<boolean>[] = [];
+      if (Object.keys(translate).length > 0) {
+        moving.push(motion.decay(translate).finished);
+      }
+      if (Object.keys(others).length > 0) {
+        moving.push(motion.play(others).finished);
+      }
+      await Promise.all(moving);
     },
     set(values) {
       if (!inactive()) {
@@ -205,6 +254,9 @@ export function createAttachableAnimator(): {
     destroy() {
       if (!destroyed) {
         destroyed = true;
+        // Halts every channel where it shows, so the element keeps those
+        // values and nothing reads as moving, then lets go of it.
+        motion.stop();
         motion.dispose();
       }
     },

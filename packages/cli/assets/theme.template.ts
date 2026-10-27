@@ -179,12 +179,24 @@ export const myTheme = defineTheme({
   radius: {base: 4, multiplier: 1},
 
   /**
-   * Duration scale in ms. Each of fast/medium/slow also gets a -min and -max
-   * sibling computed with `ratio` (min = base × ratio, max = base ÷ ratio), so
-   * a component can pick a longer or shorter variant of the same tempo.
+   * Motion. Three knobs set how it feels everywhere, CSS durations and touch
+   * springs alike:
+   *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
+   *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
+   *     curves and how lively a spring is. Exits and fades never overshoot.
+   *   reducedMotion — 'always' reduces motion for everyone; 'system' (the
+   *     default) follows each person's setting.
+   *   e.g. motion: {tempo: 0.85, character: 'crisp'}
+   * Finger tracking, momentum, the keyboard, press and hover clocks and busy
+   * loops never follow them.
+   *
+   * A duration scale in ms wins over tempo for the durations it sets. Each of
+   * fast/medium/slow also gets a -min and -max sibling computed with `ratio`
+   * (min = base × ratio, max = base ÷ ratio), so a component can pick a longer
+   * or shorter variant of the same tempo.
    *   Snappy {fast: 100, medium: 250} · Default {fast: 175, medium: 410, slow: 975}
    *   Cinematic {fast: 200, medium: 500, slow: 1200}
-   * `easing` overrides --ease-standard.
+   * `easing` overrides --ease-standard. Explicit `tokens` win over both.
    *
    * Reference: `astryx docs motion`.
    */

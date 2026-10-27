@@ -12,6 +12,9 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {readFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   durationToMs,
@@ -295,6 +298,36 @@ describe('the release', () => {
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
     vi.advanceTimersByTime(PRESS_FADE_MS);
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('scales the fade by the tempo of the theme the row is in (spec:AST-108 FR4, component:Button FR15)', () => {
+    const theme = document.createElement('div');
+    theme.setAttribute('data-astryx-theme', 'slow');
+    theme.setAttribute('data-astryx-motion-tempo', '1.5');
+    document.body.appendChild(theme);
+    theme.appendChild(scroller);
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    press(rows[0], 'pointerup', 10, 10);
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS / 2);
+    expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('times the stylesheet’s release fade by the same tempo', () => {
+    // The animation the attribute drives, scaled by the custom property a
+    // theme with a tempo writes beside its duration tokens.
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    expect(source).toMatch(
+      /calc\(\$\{pressConsts\.releaseMs\}ms \* var\(--_astryx-motion-tempo, 1\)\)/,
+    );
   });
 
   it('answers a tap too quick for the delay, at the release', () => {

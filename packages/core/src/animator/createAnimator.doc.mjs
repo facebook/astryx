@@ -35,13 +35,13 @@ export const docs = {
       name: 'animate',
       type: '(target: {x?, y?, scale?, rotate?, opacity?}, options?: {velocity?}) => Promise<void>',
       description:
-        "Springs the given channels to `target` from wherever they are on screen, on the theme's state-change motion, and resolves when they arrive (or as soon as a later call takes them over). `x` and `y` are px, `scale` is 1 at the element's size, `rotate` is degrees and `opacity` runs from 0 to 1. Pass `velocity` (units per second, such as a drag's release velocity) to start with it; without it a channel keeps the velocity it has on screen, so interrupting a motion never jumps.",
+        "Springs the given channels to `target` from wherever they are on screen, on the theme's state-change motion, at its tempo and character, and resolves when they arrive (or as soon as a later call takes them over). `x` and `y` are px, `scale` is 1 at the element's size, `rotate` is degrees and `opacity` runs from 0 to 1. Pass `velocity` (units per second, such as a drag's release velocity) to start with it; without it a channel keeps the velocity it has on screen, so interrupting a motion never jumps.",
     },
     {
       name: 'decay',
-      type: '(velocity: {x?, y?}) => Promise<void>',
+      type: '(velocity: {x?, y?, scale?, rotate?, opacity?}) => Promise<void>',
       description:
-        "Coasts `x` and `y` from a release velocity in px/s, slowing as a scroll view's momentum does, and resolves when they stop. The distance follows from the velocity: use it to fling something away, then remove or reset it.",
+        "Coasts the given channels from a release velocity in their units per second, slowing as a scroll view's momentum does, and resolves when they stop; opacity stops at 0 or 1. The distance follows from the velocity: use it to fling something away, then remove or reset it.",
     },
     {
       name: 'set',
@@ -109,7 +109,7 @@ export const docs = {
         category: 'Content',
         criterion: '2.3.3 Animation from Interactions',
         description:
-          'When the person asks for reduced motion, every call is planned for them. On a touch screen a move or a scale becomes a short opacity cross-fade: the element fades out where it was and fades back in where it lands. With a mouse it lands at once. A decay keeps its momentum, as it continues the throw the person made. No option turns this off.',
+          'When the person asks for reduced motion, every call is planned for them. On a touch screen a move or a scale becomes a short opacity cross-fade: the element fades out where it was and fades back in where it lands. With a mouse it lands at once. A decay of `x` and `y` keeps its momentum, as it continues the throw the person made; a decay of `scale`, `rotate` or `opacity` is planned like a move. No option turns this off.',
       },
     ],
   },
@@ -128,7 +128,8 @@ export const docsDense = {
   returnDescriptions: {
     animate:
       '(target, {velocity?}) => Promise<void>; springs on the state-change motion.',
-    decay: '({x?, y?}) => Promise<void>; coasts from a release velocity.',
+    decay:
+      '({x?, y?, scale?, rotate?, opacity?}) => Promise<void>; coasts from a release velocity.',
     set: '(values) => void; jumps, ending motion.',
     get: '() => every value on screen.',
     getVelocity: '() => every velocity on screen.',

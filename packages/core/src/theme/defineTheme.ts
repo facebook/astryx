@@ -71,7 +71,7 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
-import type {MotionScaleConfig} from './expandMotionScale';
+import type {ThemeMotionConfig} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -234,13 +234,27 @@ export interface DefineThemeInput {
    */
   typography?: TypographyConfig;
   /**
-   * Motion configuration. Computes duration min/max variants from
-   * base values and a scaling ratio: min = base × ratio, max = base / ratio.
+   * Motion configuration: three knobs (spec:AST-108), a motion scale, or both.
    *
-   * Explicit `tokens` overrides take precedence over motion-generated values.
+   * - `tempo` (default 1, clamped to 0.75–1.5) scales every motion duration,
+   *   the theme's CSS durations and the springs of its touch motion alike.
+   * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
+   *   entrance and move curves and how lively a spring is; exits and fades
+   *   never overshoot.
+   * - `reducedMotion` (`'system'` or `'always'`) reduces motion for
+   *   everyone when `'always'`; nothing loosens a person's own setting.
+   *
+   * A motion scale computes duration min/max variants from base values and a
+   * ratio (min = base × ratio, max = base / ratio); its durations win over
+   * `tempo`, and explicit `tokens` overrides win over both. Finger tracking,
+   * momentum, the keyboard, press and hover clocks and loops never follow the
+   * knobs.
    *
    * @example
    * ```
+   * motion: { tempo: 1.2, character: 'crisp' }
+   *
+   * // A motion scale, as before:
    * motion: { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
    *
    * // Suggested starting points:
@@ -249,7 +263,7 @@ export interface DefineThemeInput {
    * //   Cinematic: { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
    * ```
    */
-  motion?: MotionScaleConfig;
+  motion?: ThemeMotionConfig;
   /**
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
@@ -549,13 +563,35 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   // The theme's own value axes and the resolved base an `extends` supplies.
   // The same axis metadata is retained so adaptation rules can complete partial
   // configs without approximating values from unrelated built-in defaults.
+  //
+  // Motion inherits field by field (spec:AST-108 FR5): a duration-scale field
+  // or knob the child leaves unset keeps its base's value, so the child's
+  // motion tokens come from the merged configuration, and the lineage's
+  // explicit motion tokens keep winning over what that regenerates.
+  const baseMotion = base?.__axes?.motion;
+  const motion: ThemeMotionConfig | undefined =
+    input.motion != null && baseMotion != null
+      ? {...baseMotion, ...input.motion}
+      : input.motion;
+  const lineageMotionTokens =
+    input.motion != null && base?.__inputTokens != null
+      ? Object.fromEntries(
+          Object.entries(base.__inputTokens).filter(
+            ([name]) =>
+              name.startsWith('--duration-') || name.startsWith('--ease-'),
+          ),
+        )
+      : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
     color: input.color,
     radius: input.radius,
-    motion: input.motion,
+    motion,
     syntax: input.syntax,
-    tokens: input.tokens,
+    tokens:
+      lineageMotionTokens != null && Object.keys(lineageMotionTokens).length > 0
+        ? {...lineageMotionTokens, ...input.tokens}
+        : input.tokens,
     components: input.components,
   };
   const ownAxes: ThemeGenerativeAxes = {

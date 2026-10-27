@@ -16,6 +16,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {solveDecay} from '../motion/decay';
+import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring} from '../motion/spring';
 import {springs} from '../motion/uikit/springs';
 import {
@@ -207,6 +208,29 @@ describe('createAnimator', () => {
     }
   });
 
+  it('animate follows the tempo and character of the theme the element is in (spec:AST-108 FR3)', async () => {
+    // What Theme writes for a theme that sets the knobs.
+    const scope = document.createElement('div');
+    scope.setAttribute('data-astryx-theme', 'Unhurried');
+    scope.setAttribute('data-astryx-motion-tempo', '1.5');
+    scope.setAttribute('data-astryx-motion-character', 'expressive');
+    document.body.append(scope);
+    const box = document.createElement('div');
+    scope.append(box);
+    const animator = createAnimator(box);
+    void animator.animate({x: 120});
+    const start = await started();
+    await advance(150);
+    const t = (performance.now() - start) / 1000;
+    const themed = solveSpring(
+      toSpring(resolveMotion(box, springs.stateChange)),
+      {from: 0, to: 120},
+    );
+    const plain = solveSpring(STATE_CHANGE, {from: 0, to: 120});
+    expect(animator.get().x).toBeCloseTo(themed.value(t), 6);
+    expect(animator.get().x).not.toBeCloseTo(plain.value(t), 1);
+  });
+
   it('animate starts from a given velocity, and otherwise from the one on screen', async () => {
     const animator = createAnimator(element());
     void animator.animate({x: 100}, {velocity: {x: 900}});
@@ -299,6 +323,34 @@ describe('createAnimator', () => {
     expect(animator.get().y).toBeCloseTo(y.rest, 0);
   });
 
+  it('decay coasts every channel it is given on the same momentum decay', async () => {
+    const animator = createAnimator(element());
+    let done = false;
+    void animator.decay({scale: 0.8, rotate: 90}).then(() => {
+      done = true;
+    });
+    const start = await started();
+    await advance(250);
+    const t = (performance.now() - start) / 1000;
+    const scale = solveDecay({from: 1, velocity: 0.8});
+    const rotate = solveDecay({from: 0, velocity: 90});
+    expect(animator.get().scale).toBeCloseTo(scale.value(t), 4);
+    expect(animator.get().rotate).toBeCloseTo(rotate.value(t), 3);
+    await advance(10_000);
+    expect(done).toBe(true);
+    expect(animator.get().scale).toBeCloseTo(scale.rest, 3);
+    expect(animator.get().rotate).toBeCloseTo(rotate.rest, 1);
+  });
+
+  it('an opacity coast stops at 0 or 1', async () => {
+    const animator = createAnimator(element());
+    animator.set({opacity: 0.5});
+    void animator.decay({opacity: -5});
+    await started();
+    await advance(10_000);
+    expect(animator.get().opacity).toBe(0);
+  });
+
   it('set puts values in place at once and writes them to the element', () => {
     const box = element();
     const animator = createAnimator(box);
@@ -354,9 +406,30 @@ describe('createAnimator', () => {
     const count = recorded.length;
     await expect(animator.animate({x: 0})).resolves.toBeUndefined();
     await expect(animator.decay({x: 500})).resolves.toBeUndefined();
+    await expect(animator.decay({scale: 1})).resolves.toBeUndefined();
     animator.set({y: 50});
+    expect(() => animator.stop()).not.toThrow();
+    expect(() => animator.destroy()).not.toThrow();
     expect(recorded.length).toBe(count);
     expect(animator.get().y).toBe(0);
+    expect(animator.getVelocity().x).toBe(0);
+  });
+
+  it('destroy removes every listener it added (spec:AST-107 FR6)', async () => {
+    const added = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const removed = vi.spyOn(EventTarget.prototype, 'removeEventListener');
+    try {
+      const animator = createAnimator(element());
+      void animator.animate({x: 200, opacity: 0.5});
+      await started();
+      await advance(100);
+      animator.destroy();
+      await advance(1000);
+      expect(removed.mock.calls.length).toBe(added.mock.calls.length);
+    } finally {
+      added.mockRestore();
+      removed.mockRestore();
+    }
   });
 
   it('a channel it does not know is ignored: no throw, and a call with nothing it knows resolves at once', async () => {
@@ -374,6 +447,9 @@ describe('createAnimator', () => {
     expect(box.style.width).toBe('');
     await expect(
       animator.animate({height: 10} as unknown as AnimatorValues),
+    ).resolves.toBeUndefined();
+    await expect(
+      animator.decay({height: 10} as unknown as AnimatorValues),
     ).resolves.toBeUndefined();
     expect(recorded).toEqual([]);
   });
