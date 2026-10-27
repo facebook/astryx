@@ -119,9 +119,12 @@ import {
   type ListReorderSession,
 } from './listReorderContext';
 import {
+  arrowTarget,
   autoscrollStep,
+  cellOf,
   clampTop,
   dropPosition,
+  gridOf,
   nearestSlot,
   type ReorderGeometry,
   type ReorderSlot,
@@ -536,6 +539,14 @@ interface ReorderMessages {
   itemAt: (position: number) => string;
   /** Reorder mode ended: the row's name and its place. */
   modeDone: (label: string, position: number, total: number) => string;
+  /** A move in a two-dimensional layout: the item's row and column too. */
+  placeGrid: (
+    label: string,
+    row: number,
+    column: number,
+    position: number,
+    total: number,
+  ) => string;
   pickedUp: (position: number, total: number) => string;
   dropped: (position: number, total: number) => string;
   cancelled: (position: number, total: number) => string;
@@ -564,6 +575,14 @@ export function messagesFrom(t: TranslatorFn): ReorderMessages {
     itemAt: position => t('@astryx.list.reorderItemAt', {position}),
     modeDone: (label, position, total) =>
       t('@astryx.list.reorderModeDone', {label, position, total}),
+    placeGrid: (label, row, column, position, total) =>
+      t('@astryx.list.reorderPlaceGrid', {
+        label,
+        row,
+        column,
+        position,
+        total,
+      }),
     pickedUp: (position, total) =>
       t('@astryx.list.reorderPickedUp', {position, total}),
     dropped: (position, total) =>
@@ -1807,9 +1826,30 @@ export class ListReorderController implements ListReorderSession {
         return;
       case 'ArrowUp':
       case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowRight': {
+        // Along the layout's axis: a list's column, an attached row, or
+        // both axes in a grid (spec:AST-103 FR4).
+        const list = this.getList();
+        const row = this.rowOf(handle);
+        if (list == null || row == null) {
+          return;
+        }
+        const rows = this.rowsIn(list);
+        const index = rows.indexOf(row);
+        const target = arrowTarget(
+          this.keyGrid(list, rows),
+          index,
+          event.key,
+          this.isRtl(list),
+        );
+        if (target == null) {
+          return;
+        }
         event.preventDefault();
-        this.step(handle, event.key === 'ArrowUp' ? -1 : 1);
+        this.step(handle, target - index);
         return;
+      }
       default:
         return;
     }
@@ -1823,7 +1863,7 @@ export class ListReorderController implements ListReorderSession {
    * into a row that stays at either end is refused and announced; one past
    * the list's end does nothing.
    */
-  step(handle: HTMLElement | null, delta: -1 | 1): void {
+  step(handle: HTMLElement | null, delta: number): void {
     const list = this.getList();
     const options = this.options;
     const row = this.rowOf(handle);
@@ -1852,12 +1892,13 @@ export class ListReorderController implements ListReorderSession {
     order.splice(to, 0, row);
     this.focusRow = row;
     this.isMovingByKey = true;
-    this.lastStep = delta;
+    this.lastStep = delta < 0 ? -1 : 1;
+    const grid = this.keyGrid(list, rows);
     this.announceWhenCommitted({
       row,
       to,
-      landed: this.placeIn(order, to),
-      kept: this.placeIn(rows, index),
+      landed: this.placeIn(order, to, grid),
+      kept: this.placeIn(rows, index, grid),
       politeness: undefined,
     });
     if (this.animates) {
@@ -1885,9 +1926,64 @@ export class ListReorderController implements ListReorderSession {
     options.onReorder({key, to});
   }
 
+  /**
+   * The layout's rows in reading order, for reorder mode's arrows and its
+   * announcements: from `positions()`, else an attached container's measured
+   * items; a List's rows are one column.
+   */
+  private keyGrid(
+    list: HTMLElement,
+    rows: ReadonlyArray<HTMLElement>,
+  ): number[][] {
+    const slots = slotsOf(this.options?.positions, rows.length);
+    if (slots != null) {
+      return gridOf(slots, this.isRtl(list));
+    }
+    if (this.itemElements == null || rows.length === 0) {
+      return rows.map((_, index) => [index]);
+    }
+    const boxes = rows.map(element => element.getBoundingClientRect());
+    // Nothing laid out (the items are not rendered yet): one column.
+    if (boxes.every(box => box.width === 0 && box.height === 0)) {
+      return rows.map((_, index) => [index]);
+    }
+    const tolerance = Math.max(
+      1,
+      Math.min(...boxes.map(box => box.height)) / 2,
+    );
+    return gridOf(
+      boxes.map(box => ({
+        x: box.left + box.width / 2,
+        y: box.top + box.height / 2,
+      })),
+      this.isRtl(list),
+      tolerance,
+    );
+  }
+
+  private isRtl(list: HTMLElement): boolean {
+    return getComputedStyle(list).direction === 'rtl';
+  }
+
   /** What reorder mode announces for the row at `at` in `order`. */
-  private placeIn(order: ReadonlyArray<HTMLElement>, at: number): string {
+  private placeIn(
+    order: ReadonlyArray<HTMLElement>,
+    at: number,
+    grid?: ReadonlyArray<ReadonlyArray<number>>,
+  ): string {
     const name = (index: number) => this.nameOf(order[index], index);
+    // A two-dimensional layout names the item's row and column.
+    if (
+      grid != null &&
+      grid.length > 1 &&
+      grid.some(gridRow => gridRow.length > 1)
+    ) {
+      const {row, column} = cellOf(grid, at);
+      return (
+        this.messages?.placeGrid(name(at), row, column, at + 1, order.length) ??
+        ''
+      );
+    }
     return (
       this.messages?.place(
         name(at),

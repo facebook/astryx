@@ -379,4 +379,122 @@ describe('createReorderable attach', () => {
     expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 2});
     detach();
   });
+
+  describe('reorder mode in a positions() layout (spec:AST-103 FR4)', () => {
+    /** A deck whose cards sit on `slots`, moved by the app on each report. */
+    function laidOut(
+      names: ReadonlyArray<string>,
+      slots: ReadonlyArray<{x: number; y: number}>,
+    ) {
+      const deckOf = deck(names);
+      const onReorder = vi.fn(({key, to}: {key: string | number; to: number}) =>
+        deckOf.move(String(key), to),
+      );
+      const {detach} = createReorderable({
+        onReorder,
+        positions: () => slots,
+      }).attach(deckOf.container, {items: deckOf.items});
+      const grip = (name: string) => {
+        const card = deckOf.cards.find(each =>
+          each.el.textContent?.startsWith(name),
+        );
+        if (card == null) {
+          throw new Error(`no card ${name}`);
+        }
+        return card.grip;
+      };
+      return {...deckOf, onReorder, detach, grip};
+    }
+
+    it('moves along a row with Left and Right, and Up and Down do nothing', async () => {
+      const {onReorder, detach, grip} = laidOut(
+        ['A', 'B', 'C'],
+        [
+          {x: 40, y: 20},
+          {x: 120, y: 20},
+          {x: 200, y: 20},
+        ],
+      );
+      const a = grip('A');
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      fireEvent.keyDown(a, {key: 'ArrowDown'});
+      expect(onReorder).not.toHaveBeenCalled();
+      fireEvent.keyDown(a, {key: 'ArrowRight'});
+      expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 1});
+      await waitFor(() =>
+        expect(document.body).toHaveTextContent(
+          'A, position 2 of 3, after B, before C',
+        ),
+      );
+      detach();
+    });
+
+    it('moves Left and Right the other way in right-to-left', () => {
+      const {container, onReorder, detach, grip} = laidOut(
+        ['A', 'B', 'C'],
+        [
+          {x: 200, y: 20},
+          {x: 120, y: 20},
+          {x: 40, y: 20},
+        ],
+      );
+      container.dir = 'rtl';
+      container.style.direction = 'rtl';
+      const a = grip('A');
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      fireEvent.keyDown(a, {key: 'ArrowLeft'});
+      expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 1});
+      detach();
+    });
+
+    it('moves on both axes in a grid: Up and Down keep the column, and a row and a column join the announcement', async () => {
+      // Three columns, two rows.
+      const {onReorder, detach, grip} = laidOut(
+        ['A', 'B', 'C', 'D', 'E', 'F'],
+        [
+          {x: 40, y: 20},
+          {x: 120, y: 20},
+          {x: 200, y: 20},
+          {x: 40, y: 80},
+          {x: 120, y: 80},
+          {x: 200, y: 80},
+        ],
+      );
+      const a = grip('A');
+      a.focus();
+      fireEvent.keyDown(a, {key: 'Enter'});
+      fireEvent.keyDown(a, {key: 'ArrowDown'});
+      expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 3});
+      await waitFor(() =>
+        expect(document.body).toHaveTextContent(
+          'A, row 2, column 1, position 4 of 6',
+        ),
+      );
+      fireEvent.keyDown(a, {key: 'ArrowRight'});
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'a', to: 4});
+      detach();
+    });
+
+    it("moves Down to a shorter row's last position", () => {
+      // Three, then two.
+      const {onReorder, detach, grip} = laidOut(
+        ['A', 'B', 'C', 'D', 'E'],
+        [
+          {x: 40, y: 20},
+          {x: 120, y: 20},
+          {x: 200, y: 20},
+          {x: 40, y: 80},
+          {x: 120, y: 80},
+        ],
+      );
+      const c = grip('C');
+      c.focus();
+      fireEvent.keyDown(c, {key: 'Enter'});
+      fireEvent.keyDown(c, {key: 'ArrowDown'});
+      expect(onReorder).toHaveBeenCalledWith({key: 'c', to: 4});
+      detach();
+    });
+  });
 });

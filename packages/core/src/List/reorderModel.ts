@@ -149,6 +149,89 @@ export function nearestSlot(
 }
 
 /**
+ * A layout's rows in reading order, from its slots: each row lists its
+ * items' indices from the reading start (the left, or the right in
+ * right-to-left). Slots whose centres are within `tolerance` px vertically
+ * share a row.
+ */
+export function gridOf(
+  slots: ReadonlyArray<ReorderSlot>,
+  isRtl: boolean,
+  tolerance = 1,
+): number[][] {
+  const byY = slots
+    .map((slot, index) => ({slot, index}))
+    .sort((a, b) => a.slot.y - b.slot.y || a.index - b.index);
+  const rows: {slot: ReorderSlot; index: number}[][] = [];
+  for (const item of byY) {
+    const row = rows[rows.length - 1];
+    if (row != null && Math.abs(item.slot.y - row[0].slot.y) <= tolerance) {
+      row.push(item);
+    } else {
+      rows.push([item]);
+    }
+  }
+  return rows.map(row =>
+    row
+      .sort((a, b) => (isRtl ? b.slot.x - a.slot.x : a.slot.x - b.slot.x))
+      .map(({index}) => index),
+  );
+}
+
+/** An arrow key reorder mode reads (spec:AST-103 FR4). */
+export type ReorderArrow = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+
+/**
+ * Where an arrow moves the item at `index` in a layout of `rows` (gridOf's),
+ * as an index in the order; null when the arrow does not move along the
+ * layout's axis or leaves it. A column moves with Up and Down, a row with
+ * Left and Right (mirrored in right-to-left), and a grid with all four: Left
+ * and Right to the previous and next position in reading order, Up and Down
+ * to the same column in the previous or next row, or that row's last
+ * position when it is shorter.
+ */
+export function arrowTarget(
+  rows: ReadonlyArray<ReadonlyArray<number>>,
+  index: number,
+  arrow: ReorderArrow,
+  isRtl: boolean,
+): number | null {
+  const count = rows.reduce((sum, row) => sum + row.length, 0);
+  const isColumn = rows.every(row => row.length === 1);
+  const isRow = rows.length === 1;
+  const along = (delta: number) => {
+    const to = index + delta;
+    return to < 0 || to >= count ? null : to;
+  };
+  if (arrow === 'ArrowUp' || arrow === 'ArrowDown') {
+    if (isRow) {
+      return null;
+    }
+    if (isColumn) {
+      return along(arrow === 'ArrowUp' ? -1 : 1);
+    }
+    const r = rows.findIndex(row => row.includes(index));
+    const c = rows[r].indexOf(index);
+    const next = rows[r + (arrow === 'ArrowUp' ? -1 : 1)];
+    return next == null ? null : next[Math.min(c, next.length - 1)];
+  }
+  if (isColumn) {
+    return null;
+  }
+  const forward = (arrow === 'ArrowRight') !== isRtl;
+  return along(forward ? 1 : -1);
+}
+
+/** The 1-based row and column of the slot at `index` in `rows`. */
+export function cellOf(
+  rows: ReadonlyArray<ReadonlyArray<number>>,
+  index: number,
+): {row: number; column: number} {
+  const r = rows.findIndex(row => row.includes(index));
+  return {row: r + 1, column: rows[r].indexOf(index) + 1};
+}
+
+/**
  * Points per autoscroll tick with the dragged row's edge `depth` points past
  * the scroll edge (negative inside): none further inside than the start
  * inset, then UIKit's measured steps, interpolated and rounded.
