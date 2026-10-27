@@ -1494,6 +1494,23 @@ describe('GestureHost', () => {
       expect(isFingerScroll(host, list)).toBe(false);
     });
 
+    it('forgets a finger scroll in progress when the watch stops listening, so a later program scroll is not the finger’s', () => {
+      const pointer = pointerQuery(true);
+      detachers.push(pointer.restore);
+      const {list, row} = mount('<div id="list"><div id="row"></div></div>');
+      detachers.push(watchFingerScrolls(host, list));
+      const finger = {id: 1, x: 10, y: 10};
+      touch('touchstart', row, [finger], [finger], 0);
+      list.dispatchEvent(new Event('scroll'));
+      expect(isFingerScroll(host, list)).toBe(true);
+      // The pointer turns fine mid-scroll: the watch stops listening, and its
+      // scrollend never comes.
+      pointer.set(false);
+      pointer.set(true);
+      list.dispatchEvent(new Event('scroll'));
+      expect(isFingerScroll(host, list)).toBe(false);
+    });
+
     it('reads a scroll with no finger down as the program’s, even right after a tap', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
       detachers.push(watchFingerScrolls(host, list));
@@ -3196,5 +3213,66 @@ describe('an action group under a fine pointer (family:action-groups FR5; spec:A
     expect(
       groupAdded.mock.calls.filter(call => call[0] === 'pointerdown'),
     ).toEqual([]);
+  });
+});
+
+describe("inputMode 'pointer-events'", () => {
+  /** A clock whose timers the test fires. */
+  class TimerClock {
+    time = 0;
+    private readonly timers = new Map<number, () => void>();
+    private next = 1;
+    now(): number {
+      return this.time;
+    }
+    setTimeout(callback: () => void): number {
+      const id = this.next++;
+      this.timers.set(id, callback);
+      return id;
+    }
+    clearTimeout(id: number): void {
+      this.timers.delete(id);
+    }
+    /** Runs every timer, and the ones they set, at `time`. */
+    fireAll(time: number): void {
+      this.time = time;
+      while (this.timers.size > 0) {
+        const due = [...this.timers.values()];
+        this.timers.clear();
+        for (const callback of due) {
+          callback();
+        }
+      }
+    }
+  }
+
+  it("tracks a finger once, from its pointer events, so a still finger's long press begins", () => {
+    const {box} = mount('<div id="box"></div>');
+    const timers = new TimerClock();
+    const pointerHost = new GestureHost(document, {
+      clock: timers,
+      inputMode: 'pointer-events',
+      isPrimaryPointerCoarse: () => true,
+    });
+    const press = new LongPressGestureRecognizer();
+    const states: string[] = [];
+    press.addListener(r => states.push(r.state));
+    detachers.push(pointerHost.attach(box, press));
+    // A browser with Touch Events sends both for one finger.
+    pointer('pointerdown', box, {
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    const finger = {id: 7, x: 10, y: 10};
+    touch('touchstart', box, [finger], [finger], 0);
+    expect(press.numberOfTouches).toBe(1);
+    timers.fireAll(800);
+    expect(states).toContain('began');
+    pointer('pointerup', box, {pointerType: 'touch', x: 10, y: 10, time: 820});
+    touch('touchend', box, [finger], [], 820);
+    expect(states).toContain('ended');
   });
 });
