@@ -73,6 +73,13 @@ const storybook = withStorybook(test);
 
 const HYSTERESIS = 10;
 const HEIGHT = 60;
+/**
+ * Three frames at 60 Hz. A Web Animation's start resolves to the time of the
+ * frame that started it, which can lie a frame or two before the task that
+ * made it on a loaded machine; a start dated before a busy task it waited on
+ * lies a whole block earlier.
+ */
+const START_SLACK_MS = 50;
 
 /** UIKit's trigger distance for a scroll view `dimension` tall. */
 const triggerFor = (dimension: number) => Math.max(73, 0.198 * dimension);
@@ -745,6 +752,7 @@ test('a list shorter than the screen still pulls and refreshes', async ({
 
 test('on the page, the document’s top edge belongs to the pull near the top only', async ({
   page,
+  browserName,
 }) => {
   const {driver, content, start} = await openRefresh(
     page,
@@ -767,13 +775,18 @@ test('on the page, the document’s top edge belongs to the pull near the top on
   await waitForContentRest(content);
   expect(await isBusy(content)).toBe(true);
   expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
-  // No long task from the pull, the trigger or the settle.
-  expect(
-    await readLongTasks(page, {
-      from: started,
-      to: await page.evaluate(() => performance.timeOrigin + performance.now()),
-    }),
-  ).toEqual([]);
+  // No long task from the pull, the trigger or the settle. WebKit has no Long
+  // Tasks API, and the harness's log refuses to read where it never ran.
+  if (browserName === 'chromium') {
+    expect(
+      await readLongTasks(page, {
+        from: started,
+        to: await page.evaluate(
+          () => performance.timeOrigin + performance.now(),
+        ),
+      }),
+    ).toEqual([]);
+  }
 });
 
 test('a pull pushed back past its start hands the finger to native scrolling', async ({
@@ -1236,9 +1249,11 @@ test('the spinner stays at the top of the scroll view while the content is pulle
 /**
  * Samples the content's presented translation every frame from `from`
  * ('lift': the finger's lift, 'end': the refresh's end) and blocks the main
- * thread for `blockMs` right after it, before the next frame, as a busy app
- * would: in its own task after the lift, or in the commit that ends the busy
- * state.
+ * thread for `blockMs` right after it, as a busy app would: in its own task
+ * after the lift (the next frame may come first on a loaded machine), or in
+ * the commit that ends the busy state. It also records, for each animation on
+ * the content, when the main thread first saw it and when its curve starts on
+ * the document timeline.
  */
 async function sampleAfter(
   content: Locator,
@@ -1255,6 +1270,25 @@ async function sampleAfter(
       };
       const samples: number[] = [];
       (window as unknown as {__after: number[]}).__after = samples;
+      const tracked: {
+        animation: Animation;
+        seen: number;
+        start: number | null;
+      }[] = [];
+      (window as unknown as {__tracked: typeof tracked}).__tracked = tracked;
+      const track = () => {
+        const now = performance.now();
+        for (const animation of element.getAnimations()) {
+          let entry = tracked.find(item => item.animation === animation);
+          if (entry == null) {
+            entry = {animation, seen: now, start: null};
+            tracked.push(entry);
+          }
+          if (entry.start == null && animation.startTime != null) {
+            entry.start = Number(animation.startTime);
+          }
+        }
+      };
       const block = () => {
         const until = performance.now() + blockMs;
         while (performance.now() < until) {
@@ -1262,12 +1296,14 @@ async function sampleAfter(
         }
       };
       const sample = () => {
+        track();
         samples.push(shown());
         if (samples.length < 90) {
           requestAnimationFrame(sample);
         }
       };
       const begin = () => {
+        track();
         samples.push(shown());
         requestAnimationFrame(sample);
       };
@@ -1298,6 +1334,24 @@ async function sampleAfter(
   );
 }
 
+/**
+ * The first animation the content ran after `sampleAfter`'s moment: when the
+ * main thread first saw it, and when its curve starts on the document
+ * timeline.
+ */
+async function firstAnimation(
+  page: Page,
+): Promise<{seen: number; start: number | null} | null> {
+  return page.evaluate(() => {
+    const [first] = (
+      window as unknown as {
+        __tracked: {seen: number; start: number | null}[];
+      }
+    ).__tracked;
+    return first == null ? null : {seen: first.seen, start: first.start};
+  });
+}
+
 /** How far the first moving frame went, as a share of the whole travel. */
 async function firstStep(page: Page, to: number): Promise<number> {
   const samples = await page.evaluate(
@@ -1318,9 +1372,21 @@ test('the settle starts where its curve starts, even when the page is busy right
   await sampleAfter(content, 'lift', 250);
   await driver.play(slowPull(start, 300, 150));
   await page.waitForTimeout(1200);
-  // The spring's first frames cover a few percent of the way; a settle that
-  // started before the block would show up most of the way down.
-  expect(await firstStep(page, HEIGHT)).toBeLessThanOrEqual(0.25);
+  // The settle is made in the lift's own task and starts at the next frame the
+  // main thread commits: before the busy task (the compositor then plays it
+  // through the block) or after it. Either way its curve starts at the frame
+  // it was made for, so its first frames show; a start dated back to before a
+  // block it waited on would skip them. Where the content sits in the first
+  // frame after the block tells the cases apart only by luck: that frame
+  // carries the time it was due, or on a loaded machine the current time, so
+  // the proof reads the animation's own start.
+  const settle = await firstAnimation(page);
+  expect(settle).not.toBeNull();
+  expect(settle?.start).not.toBeNull();
+  expect(settle?.start ?? 0).toBeGreaterThanOrEqual(
+    (settle?.seen ?? 0) - START_SLACK_MS,
+  );
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
 });
 
 test('the end slides from its start, even when the page is busy as the refresh ends', async ({
