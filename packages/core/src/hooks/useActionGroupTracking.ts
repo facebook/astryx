@@ -45,7 +45,10 @@ import {lockSelection} from '../utils/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_PRESS} from '../motion/uikit/gestures';
-import {createActionGroupTracker} from './actionGroupTracker';
+import {
+  createActionGroupTracker,
+  type ActionGroupTrackerOptions,
+} from './actionGroupTracker';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 export interface ActionGroupTrackingOptions {
@@ -55,6 +58,12 @@ export interface ActionGroupTrackingOptions {
   highlightOnsetMs: number;
   /** How far outside an action the finger keeps it highlighted, px. */
   highlightExpansion: number;
+  /**
+   * Picks the action under the pointer from the actions measured when the
+   * press begins, in place of the flat `highlightExpansion` margin: a group
+   * whose touch targets grow toward 44 px resolves the nearest action.
+   */
+  resolveTarget?: ActionGroupTrackerOptions['resolveTarget'];
   /** Pointers that are tracked; others keep the browser's click. @default every pointer */
   pointerTypes?: ReadonlyArray<PointerKind>;
   /** A press whose target this rejects is not tracked. */
@@ -115,6 +124,7 @@ export function useActionGroupTracking(
       roots: () => [ref.current],
       itemSelector: optionsRef.current.itemSelector,
       highlightExpansion: optionsRef.current.highlightExpansion,
+      resolveTarget: optionsRef.current.resolveTarget,
       onActivate: optionsRef.current.onActivate,
       // The browser's own click for a press the group ran is taken, so the
       // action runs once: the gesture host swallows it for a press it claims,

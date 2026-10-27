@@ -343,6 +343,32 @@ describe('useActionGroupTracking', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it("picks the action through the caller's resolveTarget: a touch outside both actions runs the one it returns", () => {
+    const resolveTarget = vi.fn(
+      (
+        _x: number,
+        _y: number,
+        targets: ReadonlyArray<ActionGroupTrackerModule.ActionGroupTarget>,
+      ) => targets[1]?.element ?? null,
+    );
+    const {cancel, del, message, onCancel, onDelete} = mount({
+      options: {resolveTarget},
+    });
+    const f = finger();
+    // On the message, outside both actions' rects, where the flat margin
+    // would highlight nothing.
+    f.down(message, centerOf(MESSAGE));
+    expect(paintOf(del)).toBe('on');
+    expect(paintOf(cancel)).toBeNull();
+    f.up(message, centerOf(MESSAGE));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
+    const getOptions = vi
+      .mocked(createActionGroupTracker)
+      .mock.calls.at(-1)?.[0];
+    expect(getOptions?.().resolveTarget).toBe(resolveTarget);
+  });
+
   it('tracks through the shared action-group tracker', () => {
     vi.mocked(createActionGroupTracker).mockClear();
     const {cancel, onCancel} = mount();
