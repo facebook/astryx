@@ -62,8 +62,12 @@ const guide = {
   },
 };
 
-vi.mock('../keyboard', () => ({
+// The cap imports the keyboard module's own files (not its index).
+vi.mock('../keyboard/keyboardLayoutGuide', () => ({
   getKeyboardLayoutGuide: () => guide,
+}));
+vi.mock('../keyboard/keyboardHeight', async importOriginal => ({
+  ...(await importOriginal<typeof import('../keyboard/keyboardHeight')>()),
   // The keyboard module's one height.
   getKeyboardHeight: () => guide.inset,
 }));

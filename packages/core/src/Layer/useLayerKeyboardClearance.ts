@@ -59,7 +59,11 @@
 import {useRef, useState, type RefObject} from 'react';
 import {flushSync} from 'react-dom';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {getKeyboardLayoutGuide, getKeyboardHeight} from '../keyboard';
+// The keyboard module's own files, not its index: the index also re-exports
+// BottomSheet's keyboard hook, and an import through it would put that hook's
+// on-demand code in every layered component's import.
+import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
+import {getKeyboardHeight} from '../keyboard/keyboardHeight';
 import {keyboardNotification} from '../motion/uikit/timing';
 import {
   keyboardClearanceCap,
