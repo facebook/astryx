@@ -1374,6 +1374,7 @@ test.describe('where the primary pointer is fine', () => {
         'pinchable',
         'sheetBody',
         'card',
+        'publicPan',
         'slider',
         'switchRow',
         'onePan',

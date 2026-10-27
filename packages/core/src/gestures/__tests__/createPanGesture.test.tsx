@@ -19,6 +19,7 @@ import {
   type PanGestureOptions,
 } from '../createPanGesture';
 import {usePanGesture} from '../../hooks/usePanGesture';
+import {armClickGuard, disarmClickGuard} from '../../utils/clickGuard';
 import {coarsePrimaryPointer} from './harness';
 
 function touch(
@@ -406,6 +407,16 @@ describe('usePanGesture (spec:AST-107 FR1, FR6)', () => {
     document.body.append(holder);
     surfaces.push(holder);
     // React keeps its own root listeners on the container after unmount.
+    // The page's once-per-document listeners go in first, so the count is
+    // the pan's alone: React's own, and the click guard's window click
+    // listener, which the guard keeps once a gesture first arms it
+    // (utils/clickGuard.ts).
+    const warmup = document.createElement('div');
+    document.body.append(warmup);
+    surfaces.push(warmup);
+    render(<div />, {container: warmup}).unmount();
+    armClickGuard(document);
+    disarmClickGuard(document);
     const live = trackListeners();
     const before = live();
     const {getByTestId, unmount} = render(
@@ -417,6 +428,10 @@ describe('usePanGesture (spec:AST-107 FR1, FR6)', () => {
     drag(getByTestId('surface'), 40, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
     unmount();
+    // The drag's claimed lift armed the click guard, which outlives the pan
+    // on purpose, to swallow the browser's click after it, until the next
+    // press or its window ends: end it here.
+    disarmClickGuard(document);
     expect(live()).toBe(before);
   });
 
