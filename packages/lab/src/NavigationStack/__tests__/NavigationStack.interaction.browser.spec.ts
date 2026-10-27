@@ -1766,8 +1766,17 @@ test('the bar title’s handover keeps running while the main thread is blocked'
   // in and rising) on them until it is nearly at rest.
   const end = Math.min(block.to, fade.from + 350);
   const during = series.filter(item => item.t >= block.from && item.t <= end);
-  const expected = Math.floor((end - block.from) / 16.7);
-  expect(expected).toBeGreaterThan(5);
+  // Counted at the screencast's own cadence, the median interval between the
+  // frames it delivered here (never faster than 60 Hz): a loaded runner's
+  // cast delivers fewer frames than the display presents. A frozen title
+  // delivers none, and fails the floor below.
+  const gaps = during
+    .slice(1)
+    .map((item, i) => item.t - during[i].t)
+    .sort((a, b) => a - b);
+  const cadence = Math.max(16.7, gaps[Math.floor(gaps.length / 2)] ?? Infinity);
+  const expected = Math.floor((end - block.from) / cadence);
+  expect(expected, JSON.stringify(during)).toBeGreaterThan(5);
   expect(during.length, JSON.stringify(during)).toBeGreaterThanOrEqual(
     expected - 2,
   );
