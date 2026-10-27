@@ -90,6 +90,15 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
       'const getMediaQueryString = width => `(min-width: ${width}px)`;',
       'const formatClassName = name => `${name} Button-root`;',
     ].map(code => ({code})),
+    // CSS units adjacent to interpolated values are serializers, even when
+    // the helper's name is generic or describes a motion role.
+    {code: 'function format(x, y) { return `${x}px ${y}px`; }'},
+    {
+      code: 'function formatMotionRoleValue(duration, bounce) { return `${duration}s ${bounce}`; }',
+    },
+    ...['px', 's', 'ms', 'deg'].map(unit => ({
+      code: `const format = (a, b) => \`\${a}${unit} \${b}${unit}\`;`,
+    })),
     {code: 'const formatLength = size => `${size}px`;'},
     {
       code: "function formatLabel() { return 'No results'; }",
@@ -192,6 +201,17 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {
       code: "function formatColorLabel() { return 'Choose a color'; }",
       errors: [{messageId: 'hardcodedReturn'}],
+    },
+    // CSS-fragment exemptions must not hide prose or affect other sinks.
+    ...[
+      'function formatLabel(seconds, count) { return `${seconds}s ${count} remaining`; }',
+      'function formatLabel(count) { return `${count} seconds remaining`; }',
+      'function formatLabel(count, total) { return `${count} in ${total}`; }',
+      "function formatLabel() { return 'px '; }",
+    ].map(code => ({code, errors: [{messageId: 'hardcodedReturn'}]})),
+    {
+      code: 'announce(`${duration}s ${bounce}`);',
+      errors: [{messageId: 'hardcodedCallArg'}],
     },
     // The callee allowlist must not exempt formatter returns.
     {

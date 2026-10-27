@@ -38,9 +38,10 @@
  *      expression-bodied arrows. Helper names are a heuristic, not data-flow
  *      analysis. Obvious CSS serializer names (color, style, shadow, transform,
  *      gradient, length, angle, RGB/HSL/hex) are excluded; text-sink suffixes
- *      such as formatColorLabel remain checked. Nested callbacks are not the
- *      enclosing helper's returns. Concatenations and TypeScript assertions
- *      are walked along with templates and fallbacks.
+ *      such as formatColorLabel remain checked. Standalone px/s/ms/deg unit
+ *      chunks after interpolations are CSS fragments, not English. Nested
+ *      callbacks are not the enclosing helper's returns. Concatenations and
+ *      TypeScript assertions are walked along with templates and fallbacks.
  *
  * Ignores:
  *   - Test files (*.test.*, __tests__/**)
@@ -226,8 +227,13 @@ function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
       }
       return;
     case 'TemplateLiteral':
-      for (const quasi of expr.quasis) {
+      for (const [index, quasi] of expr.quasis.entries()) {
         const raw = quasi.value?.cooked ?? quasi.value?.raw ?? '';
+        // A unit following an interpolation is CSS, not English prose. Keep
+        // this formatter-only and do not exempt chunks like "s remaining".
+        if (opts.requireEnglish && index > 0 && /^\s*(?:px|s|ms|deg)\s*$/.test(raw)) {
+          continue;
+        }
         if (typeof raw === 'string' && looksUserFacing(raw)) {
           // One report per template is enough.
           if (report(quasi, raw)) return;
