@@ -18,7 +18,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
-import {COARSE_POINTER_QUERY} from '@astryxdesign/core/gestures/coarsePointer';
+import {COARSE_POINTER_QUERY} from '@astryxdesign/core/internal/touch';
 import {TabBar, TabBarItem, type TabBarProps} from './TabBar';
 
 function Glyph({name}: {name: string}) {
