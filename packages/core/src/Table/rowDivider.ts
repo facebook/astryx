@@ -110,8 +110,9 @@ export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
 /**
  * The divider a detail panel takes from its row: the color and style of the
  * row's cells (a theme's `table-cell` styling or an app's own, which never
- * reach the panel's cell), at the panel's own width unless the row's own
- * border wins the collapse (an app styling the `<tr>`), as custom property
+ * reach the panel's cell), with their width where they set one, at the
+ * panel's own width otherwise, unless the row's own border wins the
+ * collapse (an app styling the `<tr>`), as custom property
  * values for the panel's cell. Every value is written, `initial` where the
  * panel keeps its own, so a panel nested in another never inherits that
  * one's.
@@ -135,8 +136,11 @@ export function panelDividerFor(row: Element): {
     };
   }
   const cellStyle = getComputedStyle(rowCell);
+  // The row's cells hand their divider down (their own width is 0); a width
+  // an app or a theme sets on them anyway is the divider's.
+  const cellWidth = parseFloat(cellStyle.borderBottomWidth) || 0;
   return {
-    width: 'initial',
+    width: cellWidth > 0 ? `${cellWidth}px` : 'initial',
     style: cellStyle.borderBottomStyle,
     color: cellStyle.borderBottomColor,
   };

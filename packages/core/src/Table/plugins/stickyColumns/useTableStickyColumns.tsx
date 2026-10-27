@@ -498,6 +498,15 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     for (const type of stateEvents) {
       el.addEventListener(type, onStateChange, {passive: true});
     }
+    // A theme in `system` mode re-resolves its colors when the operating
+    // system switches between light and dark, with no commit: a carried
+    // border is read again then.
+    const scheme =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
+    const onSchemeChange = () => syncPinnedDividers(el);
+    scheme?.addEventListener('change', onSchemeChange);
     const resizeObserver =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
@@ -514,6 +523,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       for (const type of stateEvents) {
         el.removeEventListener(type, onStateChange);
       }
+      scheme?.removeEventListener('change', onSchemeChange);
       cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
