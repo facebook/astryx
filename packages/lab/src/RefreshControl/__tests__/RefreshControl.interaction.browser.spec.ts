@@ -19,8 +19,10 @@
  *   does not turn the spinner; under a fine pointer a pen drag pulls and
  *   refreshes as a finger does, a mouse drag pulls nothing, and the top edge
  *   stays the browser's (spec:AST-094 FR43), and under Reduce Motion a pen
- *   release lands at once (DR3); storyboards of the pull, the settle and the
- *   end.
+ *   release lands at once (DR3); a pen's trigger draws the indicator as a
+ *   finger's does (the same copy of the spokes fading over the same stepping
+ *   spokes), and under Reduce Motion applies the gradient at once with no
+ *   copy (DR2, DEC-3); storyboards of the pull, the settle and the end.
  *
  * The control follows the touch presentation (a coarse primary pointer, one
  * touch model on iOS and Android alike). The harness's touch contexts report
@@ -1277,6 +1279,157 @@ test('under Reduce Motion a release from a pen lands at once: no travel and no f
       ),
       JSON.stringify(log),
     ).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+/** The spinner's glyph: the eight spokes, and the trigger's copy while it fades. */
+const glyphOf = (content: Locator) =>
+  content.locator(':scope > div:last-child > div > span').first();
+
+interface GlyphLog {
+  /** Each copy the glyph gained: its spokes, animated properties and fade. */
+  copies: {spokes: number; properties: string[]; fadeMs: number}[];
+  /** For each copy whose fade ended: whether that end had removed it. */
+  removedAtFinish: boolean[];
+}
+
+/** Records the copies the glyph gains from now on (the trigger's cross-fade). */
+async function recordGlyphCopies(glyph: Locator) {
+  await glyph.evaluate(element => {
+    const log: GlyphLog = {copies: [], removedAtFinish: []};
+    (window as unknown as {__glyphLog: GlyphLog}).__glyphLog = log;
+    // The hook starts the copy's fade as it appends the copy, so the fade
+    // exists by the time this observer runs.
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          const copy = node as Element;
+          const [fade] = copy.getAnimations();
+          const keyframes =
+            (fade?.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+          const properties = new Set<string>();
+          for (const keyframe of keyframes) {
+            for (const key of Object.keys(keyframe)) {
+              if (
+                !['offset', 'computedOffset', 'easing', 'composite'].includes(
+                  key,
+                )
+              ) {
+                properties.add(key);
+              }
+            }
+          }
+          log.copies.push({
+            spokes: copy.children.length,
+            properties: [...properties].sort(),
+            fadeMs: Number(fade?.effect?.getComputedTiming().duration),
+          });
+          fade?.addEventListener('finish', () => {
+            log.removedAtFinish.push(!copy.isConnected);
+          });
+        }
+      }
+    }).observe(element, {childList: true});
+  });
+}
+
+/** The copies recorded so far, and each child's animations' timing now. */
+const readGlyph = (glyph: Locator) =>
+  glyph.evaluate(element => ({
+    ...(window as unknown as {__glyphLog: GlyphLog}).__glyphLog,
+    children: element.children.length,
+    steps: Array.from(element.children).map(child =>
+      child.getAnimations().map(animation => {
+        const timing = animation.effect?.getComputedTiming();
+        return {
+          durationMs: Number(timing?.duration),
+          iterations: timing?.iterations ?? null,
+        };
+      }),
+    ),
+  }));
+
+test('with a pen, the trigger draws the indicator as a finger\u2019s does: a copy of the spokes fades out over the same stepping spokes (spec:AST-094 FR13, FR43)', async ({
+  page,
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  // Under a finger, on the phone page.
+  const finger = await openRefresh(page, undefined, {refreshMs: '8000'});
+  const fingerGlyph = glyphOf(finger.content);
+  await recordGlyphCopies(fingerGlyph);
+  await finger.driver.play(slowPull(finger.start, 300, 200));
+  await expect.poll(() => isBusy(finger.content)).toBe(true);
+  await expect
+    .poll(async () => (await readGlyph(fingerGlyph)).removedAtFinish.length, {
+      timeout: 9000,
+    })
+    .toBe(1);
+  const underFinger = await readGlyph(fingerGlyph);
+  expect(underFinger.copies.map(copy => copy.spokes)).toEqual([8]);
+  // Under a pen, on a page whose primary pointer is fine.
+  const {context, page: desktop, content} = await desktopPage(browser);
+  try {
+    const glyph = glyphOf(content);
+    await recordGlyphCopies(glyph);
+    await penPull(desktop);
+    await expect.poll(() => isBusy(content)).toBe(true);
+    await expect
+      .poll(async () => (await readGlyph(glyph)).removedAtFinish.length, {
+        timeout: 9000,
+      })
+      .toBe(1);
+    const underPen = await readGlyph(glyph);
+    // One copy of the eight spokes, fading its opacity alone on the
+    // finger's curve, and removed by its own fade's end.
+    expect(underPen.copies, JSON.stringify(underPen)).toEqual([
+      {
+        spokes: 8,
+        properties: ['opacity'],
+        fadeMs: underFinger.copies[0].fadeMs,
+      },
+    ]);
+    expect(underPen.removedAtFinish).toEqual([true]);
+    // Then the eight spokes alone, each stepping on one endless animation of
+    // one turn, as under the finger.
+    expect(underPen.children).toBe(8);
+    expect(underPen.steps, JSON.stringify(underPen.steps)).toEqual(
+      underFinger.steps,
+    );
+    expect(
+      underPen.steps.map(steps => steps.map(step => step.iterations)),
+    ).toEqual(Array.from({length: 8}, () => [Infinity]));
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion a pen\u2019s trigger applies the gradient at once, with no copy of the spokes (design:reduced-motion DR2, DEC-3; spec:AST-094 FR43)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  // DEC-3: the spokes' gradient changes in place, so under reduced motion it
+  // applies at once on any pointer, with no added element.
+  const {context, page, content} = await desktopPage(browser, {
+    reducedMotion: 'reduce',
+  });
+  try {
+    const glyph = glyphOf(content);
+    await recordGlyphCopies(glyph);
+    await penPull(page);
+    await expect.poll(() => isBusy(content)).toBe(true);
+    await page.waitForTimeout(400);
+    const underPen = await readGlyph(glyph);
+    expect(underPen.copies, JSON.stringify(underPen)).toEqual([]);
+    expect(underPen.children).toBe(8);
+    // The gradient steps from the trigger.
+    expect(
+      underPen.steps.map(steps => steps.map(step => step.iterations)),
+    ).toEqual(Array.from({length: 8}, () => [Infinity]));
   } finally {
     await context.close();
   }
