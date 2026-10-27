@@ -4,7 +4,7 @@
  * @file bareFixture.ts
  * @input Nothing: bundled by esbuild and injected into a blank page
  * @output A page with nothing attached: the document's gesture host and the
- *   recognizers on `window.__api`, for a test to attach what it needs, and
+ *   recognizers (pan, screen-edge pan, tap, long press) on `window.__api`, for a test to attach what it needs, and
  *   `window.__pageTouch`, the count of touch listeners on the window and the
  *   document right now
  * @position Browser fixture of gestures.browser.spec.ts for the checks that
@@ -14,15 +14,22 @@
 import {getGestureHost} from '../../GestureHost';
 import {LongPressGestureRecognizer} from '../../LongPressGestureRecognizer';
 import {PanGestureRecognizer} from '../../PanGestureRecognizer';
-import {lockSelection} from '../../selectionLock';
+import {PinchGestureRecognizer} from '../../PinchGestureRecognizer';
+import {ScreenEdgePanGestureRecognizer} from '../../ScreenEdgePanGestureRecognizer';
+import {lockSelection} from '../../../utils/selectionLock';
+import {TapGestureRecognizer} from '../../TapGestureRecognizer';
 
 declare global {
   interface Window {
     __pageTouch: number;
+    __wheelLog: string[];
     __api: {
       host: ReturnType<typeof getGestureHost>;
       LongPressGestureRecognizer: typeof LongPressGestureRecognizer;
       PanGestureRecognizer: typeof PanGestureRecognizer;
+      PinchGestureRecognizer: typeof PinchGestureRecognizer;
+      ScreenEdgePanGestureRecognizer: typeof ScreenEdgePanGestureRecognizer;
+      TapGestureRecognizer: typeof TapGestureRecognizer;
       lockSelection: typeof lockSelection;
     };
   }
@@ -31,6 +38,7 @@ declare global {
 // The touch listeners on the window and the document, as the engine sees
 // them: what makes the page pay for touches.
 window.__pageTouch = 0;
+window.__wheelLog = [];
 const live = new Set<string>();
 const listenerIds = new WeakMap<object, number>();
 let nextListenerId = 1;
@@ -87,5 +95,8 @@ window.__api = {
   host: getGestureHost(document),
   LongPressGestureRecognizer,
   PanGestureRecognizer,
+  PinchGestureRecognizer,
+  ScreenEdgePanGestureRecognizer,
+  TapGestureRecognizer,
   lockSelection,
 };

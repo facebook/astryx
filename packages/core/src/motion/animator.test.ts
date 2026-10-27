@@ -26,6 +26,11 @@ import {
 } from './animator';
 import {cubicBezier} from './bezier';
 import {coast} from './coast';
+import {
+  presentedElements,
+  presentedOffsetOf,
+  resolvePresented,
+} from './presentation';
 import {solveDecay} from './decay';
 import {solveSpring, solveSpringTowardRamp, toSpring} from './spring';
 import {scroll} from './uikit/scroll';
@@ -1227,6 +1232,8 @@ describe('promotion: a compositing layer while it moves', () => {
     // would force a style recalculation in the input handler.
     stylesheet['will-change'] = 'transform, opacity';
     const {animator, element} = setup();
+    // In the document, where the read happens.
+    document.body.append(element);
     await commitFrame(clock);
     await vi.advanceTimersByTimeAsync(0);
     const readsOf = () =>
@@ -1239,6 +1246,46 @@ describe('promotion: a compositing layer while it moves', () => {
     expect(element.style.willChange).toBe('transform, opacity, translate');
     await advance(PROMOTION_LINGER_MS + 10);
     expect(element.style.willChange).toBe('');
+    element.remove();
+  });
+
+  it('reads no style for a node out of the document: a node removed before its read is never read', async () => {
+    // A shared animator (animatorFor) is never detached: its node can leave
+    // the document with the read still waiting. A node out of the document
+    // has no style to read, and reading one costs a style pass for nothing.
+    stubMedia(false, false);
+    const readsOf = (node: Element) =>
+      vi
+        .mocked(window.getComputedStyle)
+        .mock.calls.filter(([read]) => read === node).length;
+    const removed = document.createElement('div');
+    document.body.append(removed);
+    createAnimator(removed, {now: () => clock, requestFrame});
+    removed.remove();
+    const kept = document.createElement('div');
+    document.body.append(kept);
+    createAnimator(kept, {now: () => clock, requestFrame});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(readsOf(removed)).toBe(0);
+    // A node still in the document is read, once, in that task.
+    expect(readsOf(kept)).toBe(1);
+    kept.remove();
+  });
+
+  it("keeps the stylesheet's will-change when a node read nothing before it moves", () => {
+    // Put back after its read was skipped, a node reads its stylesheet's
+    // reasons when a promotion needs them.
+    stylesheet['will-change'] = 'transform, opacity';
+    stubMedia(false, false);
+    const element = document.createElement('div');
+    const animator = createAnimator(element, {
+      now: () => clock,
+      requestFrame,
+    });
+    document.body.append(element);
+    animator.set({y: 10});
+    expect(element.style.willChange).toBe('transform, opacity, translate');
+    element.remove();
   });
 
   it("keeps the stylesheet's will-change when an element attached in this task moves at once", () => {
@@ -3274,5 +3321,93 @@ describe('attach', () => {
     const element = document.createElement('div');
     createAnimator(element);
     expect(element.getAttribute('style')).toBeNull();
+  });
+});
+
+describe('the presented offset iOS hit testing reads', () => {
+  it('reports translate while it moves: drawn minus where its animation started, zero before the browser starts it', async () => {
+    const {element, animator} = setup();
+    animator.animate({y: 300}, {spring: springs.sheetPresent});
+    // A call from rest starts at the browser's commit: nothing has moved yet.
+    expect(presentedOffsetOf(element)).toEqual({x: 0, y: 0});
+    await commitFrame(clock);
+    expect(presentedElements()).toContain(element);
+    expect(presentedOffsetOf(element)).toEqual({x: 0, y: 0});
+    clock += 120;
+    await vi.advanceTimersByTimeAsync(120);
+    const offset = presentedOffsetOf(element);
+    expect(offset.x).toBe(0);
+    expect(offset.y).toBeCloseTo(animator.get('y'), 9);
+    expect(offset.y).toBeGreaterThan(0);
+    expect(offset.y).toBeLessThan(300);
+    // The curve ends and its animation retires: nothing left to report.
+    clock += 5000;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(presentedElements()).not.toContain(element);
+  });
+
+  it('stops reporting on stop, set, dispose and detach, and never for a pseudo-element or opacity alone', async () => {
+    const {element, animator} = setup();
+    const play = async () => {
+      animator.animate({x: 200}, {spring: springs.sheetPresent});
+      await advance(16);
+      expect(presentedElements()).toContain(element);
+    };
+    await play();
+    animator.stop();
+    expect(presentedElements()).not.toContain(element);
+    await play();
+    animator.set({x: 10});
+    expect(presentedElements()).not.toContain(element);
+    await play();
+    const other = document.createElement('div');
+    animator.attach(other);
+    expect(presentedElements()).not.toContain(element);
+    expect(presentedElements()).toContain(other);
+    animator.dispose();
+    expect(presentedElements()).not.toContain(other);
+
+    const fade = setup();
+    fade.animator.animate({opacity: 0}, {spring: springs.sheetPresent});
+    await advance(16);
+    expect(presentedElements()).not.toContain(fade.element);
+
+    const backdrop = setup({pseudoElement: '::backdrop'});
+    backdrop.animator.animate({y: 100}, {spring: springs.sheetPresent});
+    await advance(16);
+    expect(presentedElements()).not.toContain(backdrop.element);
+    backdrop.animator.dispose();
+    fade.animator.dispose();
+  });
+
+  it('resolves where it is drawn on request: one custom-property write, the offset restarting there', async () => {
+    const {element, animator} = setup();
+    animator.play({y: {duration: 1, at: t => 300 * t, velocity: () => 300}});
+    await advance(400);
+    expect(presentedOffsetOf(element).y).toBeCloseTo(120, 6);
+    resolvePresented([element]);
+    expect(element.style.getPropertyValue('--astryx-presented')).toBe('1');
+    expect(presentedOffsetOf(element).y).toBeCloseTo(0, 6);
+    await advance(100);
+    expect(presentedOffsetOf(element).y).toBeCloseTo(30, 6);
+    // Unreported once at rest, the property goes too.
+    animator.stop();
+    expect(element.style.getPropertyValue('--astryx-presented')).toBe('');
+    animator.dispose();
+  });
+
+  it('starts over from the current value when a rebase or a retarget builds a new animation', async () => {
+    const {element, animator} = setup();
+    animator.play({y: {duration: 1, at: t => 300 * t, velocity: () => 300}});
+    await advance(500);
+    expect(presentedOffsetOf(element).y).toBeCloseTo(150, 6);
+    animator.rebase({y: 40});
+    // The new animation starts where the element is drawn now.
+    expect(presentedOffsetOf(element).y).toBeCloseTo(0, 6);
+    await advance(100);
+    expect(presentedOffsetOf(element).y).toBeCloseTo(30, 6);
+    animator.animate({y: 0}, {spring: springs.sheetPresent});
+    expect(presentedOffsetOf(element).y).toBeCloseTo(0, 6);
+    animator.dispose();
   });
 });
