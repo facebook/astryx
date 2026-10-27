@@ -13,7 +13,13 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type CSSProperties,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
 import type {
@@ -167,7 +173,7 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 // over the cell's border area, covers whatever the table painted there with
 // the pinned base, and draws the divider with the cell's own border tokens
 // (TableCell.tsx); a border an app or a theme sets on the cell or row directly
-// is read on mount and on resize (syncPinnedDividers).
+// is read after each commit and on resize (syncPinnedDividers).
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 /** Spread into a pinned cell's props: the attribute the divider sync finds. */
 const PINNED_PROPS: Record<string, string> = {[PINNED_ATTRIBUTE]: ''};
@@ -351,29 +357,45 @@ function collapsedBottom(cell: Element): BottomEdge {
 /**
  * Where an app styles a cell's or row's `border-bottom` directly, past the
  * custom properties, the pinned divider takes the border the table paints.
- * Read on mount and on resize, never on scroll.
+ * Read after each commit and on resize, never on scroll. Every read comes
+ * before any write, so the style is computed once for all pinned cells, and a
+ * cell is written only when what it carries changes.
  */
 function syncPinnedDividers(root: HTMLElement): void {
+  const changes: [HTMLElement, string[]][] = [];
   for (const cell of root.querySelectorAll<HTMLElement>(
     `[${PINNED_ATTRIBUTE}]`,
   )) {
-    cell.style.removeProperty(PINNED_DIVIDER_WIDTH);
-    cell.style.removeProperty(PINNED_DIVIDER_STYLE);
-    cell.style.removeProperty(PINNED_DIVIDER_COLOR);
     const want = collapsedBottom(cell);
+    const value = [`${want.width}px`, want.style, want.color];
+    const carried = cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH);
+    if (carried !== '') {
+      // It carries a border already: keep it while it is still the one.
+      const same =
+        carried === value[0] &&
+        cell.style.getPropertyValue(PINNED_DIVIDER_STYLE) === value[1] &&
+        cell.style.getPropertyValue(PINNED_DIVIDER_COLOR) === value[2];
+      if (!same) {
+        changes.push([cell, value]);
+      }
+      continue;
+    }
+    // It draws its tokens: carry the border only where the table paints
+    // another.
     const drawn = getComputedStyle(cell, '::before');
-    const drawnWidth = parseFloat(drawn.borderBottomWidth) || 0;
     const matches =
-      want.width === drawnWidth &&
+      want.width === (parseFloat(drawn.borderBottomWidth) || 0) &&
       (want.width === 0 ||
         (want.style === drawn.borderBottomStyle &&
           want.color === drawn.borderBottomColor));
-    if (matches) {
-      continue;
+    if (!matches) {
+      changes.push([cell, value]);
     }
-    cell.style.setProperty(PINNED_DIVIDER_WIDTH, `${want.width}px`);
-    cell.style.setProperty(PINNED_DIVIDER_STYLE, want.style);
-    cell.style.setProperty(PINNED_DIVIDER_COLOR, want.color);
+  }
+  for (const [cell, [width, style, color]] of changes) {
+    cell.style.setProperty(PINNED_DIVIDER_WIDTH, width);
+    cell.style.setProperty(PINNED_DIVIDER_STYLE, style);
+    cell.style.setProperty(PINNED_DIVIDER_COLOR, color);
   }
 }
 
@@ -409,6 +431,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
   // listeners (synchronizing with the DOM) rather than React state, so
   // scrolling never triggers re-renders.
   const detachRef = useRef<(() => void) | null>(null);
+  // Re-reads the edge shadows and the pinned dividers; set while attached.
+  const refreshRef = useRef<(() => void) | null>(null);
   // The scroll container's merged ref, kept while the inner ref is the same.
   const mergedScrollWrapperRef = useRef<{
     inner: ScrollWrapperRenderProps['htmlProps']['ref'] | null;
@@ -417,6 +441,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
   const attachScrollShadow = useCallback((el: HTMLDivElement | null) => {
     detachRef.current?.();
     detachRef.current = null;
+    refreshRef.current = null;
     if (!el) {
       return;
     }
@@ -453,12 +478,26 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     const resizeObserver =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
+    // The table too: columns added or widened change what scrolls without
+    // resizing the wrapper.
+    const table = el.querySelector('table');
+    if (table != null) {
+      resizeObserver?.observe(table);
+    }
     resize();
+    refreshRef.current = resize;
     detachRef.current = () => {
       el.removeEventListener('scroll', update);
       resizeObserver?.disconnect();
     };
   }, []);
+
+  // After each commit: a border that changed with the render (a row
+  // highlighted on click) reaches the pinned divider, and the edge shadows
+  // follow content that changed without a resize.
+  useLayoutEffect(() => {
+    refreshRef.current?.();
+  });
 
   return useMemo(
     (): TablePlugin<T> => ({
