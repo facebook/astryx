@@ -140,15 +140,17 @@ export function attachReorder(
   );
   // Right after the container, in its theme scope (and inside the modal
   // dialog that encloses it): the handles' instructions and reorder mode's
-  // hint, as List renders them after its list. No layout box.
-  const hintHost = doc.createElement('span');
+  // hint, as List renders them after its list. No layout box. Block
+  // elements, so the hint's layer renders in place rather than moving out of
+  // phrasing content to a safe host (Layer/layerHost.ts).
+  const hintHost = doc.createElement('div');
   hintHost.setAttribute('data-astryx-reorder-hint-host', '');
   hintHost.style.display = 'contents';
   const instructions = doc.createElement('span');
   instructions.id = hintId;
   instructions.hidden = true;
   instructions.textContent = translate('@astryx.list.reorderHint', undefined);
-  const hintRoot = doc.createElement('span');
+  const hintRoot = doc.createElement('div');
   hintRoot.style.display = 'contents';
   hintHost.append(instructions, hintRoot);
   if (container.parentNode != null) {
