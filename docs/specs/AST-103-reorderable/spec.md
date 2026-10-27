@@ -138,8 +138,9 @@ const {detach} = reorderable.attach(listElement, {
   `useMemo`; one created again on each render still works, because the
   collection uses the latest callbacks when a move commits and a new object
   during a drag does not cancel the drag. One object passed to two
-  collections reorders each on its own and moves nothing between them; its
-  `start` targets the collection mounted last, with a development warning.
+  collections, or attached to two containers, reorders each on its own and
+  moves nothing between them; its `start` targets the one mounted or attached
+  last, with a development warning.
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
