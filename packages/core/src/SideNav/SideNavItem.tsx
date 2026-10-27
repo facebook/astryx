@@ -40,7 +40,6 @@ import {
   useCallback,
   useId,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -60,7 +59,6 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
-import {useMenuPress} from '../hooks/useMenuPress';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useTooltip} from '../Tooltip';
@@ -324,14 +322,6 @@ interface NavItemElementProps {
 }
 
 /**
- * Marks a row's own action (its link or button), so a collapsed rail's
- * flyout tracks a held pointer across its rows' actions and not their
- * toggles or extra actions.
- */
-const ROW_ACTION_ATTRIBUTE = 'data-astryx-side-nav-action';
-const FLYOUT_ITEM_SELECTOR = `[${ROW_ACTION_ATTRIBUTE}]:not(:disabled):not([aria-disabled="true"])`;
-
-/**
  * Renders `<a>` (via LinkComponent) when `href` is set, otherwise `<button>`.
  * Centralizes the link-vs-button decision used across all SideNavItem paths.
  */
@@ -351,8 +341,7 @@ function NavItemElement({
         ref={ref as React.Ref<HTMLAnchorElement>}
         href={href}
         onClick={onClick}
-        {...rest}
-        {...{[ROW_ACTION_ATTRIBUTE]: ''}}>
+        {...rest}>
         {children}
       </LinkComponent>
     );
@@ -363,8 +352,7 @@ function NavItemElement({
       type="button"
       onClick={onClick}
       disabled={isDisabled}
-      {...rest}
-      {...{[ROW_ACTION_ATTRIBUTE]: ''}}>
+      {...rest}>
       {children}
     </button>
   );
@@ -629,17 +617,6 @@ export function SideNavItem({
       ownsFocus: false,
     });
 
-  // In the collapsed rail's flyout, a press that slides across the rows acts
-  // on the row it lifts on, the highlight following the pointer
-  // (`family:action-groups` FR1-FR3, FR5); a mouse released outside closes it.
-  const flyoutRef = useRef<HTMLDivElement>(null);
-  const flyoutPress = useMenuPress({
-    menuRef: flyoutRef,
-    itemSelector: FLYOUT_ITEM_SELECTOR,
-    onDismiss: popover.hide,
-    isEnabled: isCollapsed && hasChildren,
-  });
-
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
     return null;
@@ -706,8 +683,6 @@ export function SideNavItem({
           </button>
           {popover.render(
             <div
-              ref={flyoutRef}
-              {...flyoutPress.menuProps}
               {...stylex.props(styles.popoverSurface)}
               onMouseEnter={hoverContentProps.onMouseEnter}
               onMouseLeave={hoverContentProps.onMouseLeave}
