@@ -26,11 +26,9 @@
  * touch model on every touch device) the popover opens and closes the way
  * UIMenu does: it grows out of its trigger on UIKit's open spring and
  * collapses back into it on the close spring (menuSurfaceMotion.ts), and a
- * pan that begins outside closes it. On a compact touch screen it also sits
- * where UIMenu does: over its trigger, centered on it, top-aligned
- * (bottom-aligned when the trigger is in the lower half of the viewport),
- * 8 px from the viewport's sides. Under a mouse it keeps the layer's own
- * entrance and placement and the theme's motion tokens (D-01).
+ * pan that begins outside closes it. On every screen it opens beside its
+ * trigger at the layer's placement. Under a mouse it keeps the layer's own
+ * entrance and the theme's motion tokens (D-01).
  *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
@@ -92,11 +90,8 @@ import {resolveMenuWidth} from './menuWidth';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {usePresentation} from '../utils/presentation';
-import {useTouchPresentation} from '../utils/touchPresentation';
 import {
-  COVER_TRIGGER_STYLE,
   createMenuSurfaceMotion,
-  placeOverTrigger,
   type MenuSurfaceMotion,
 } from './DropdownMenuTouch';
 // Loaded on demand: only the bottom-sheet presentation renders the sheet.
@@ -445,9 +440,7 @@ interface DropdownMenuBaseProps extends BaseProps {
   hasChevron?: boolean;
   /**
    * Popover position relative to the trigger. Ignored by bottom-sheet
-   * presentation, and on a compact touch screen under the touch modes (unless
-   * `presentation` is `'popover'`), where the menu sits over its trigger as
-   * UIMenu does.
+   * presentation.
    * Uses the same placement values as other Astryx layer-based components.
    * @default 'below'
    */
@@ -455,9 +448,7 @@ interface DropdownMenuBaseProps extends BaseProps {
 
   /**
    * Popover alignment along the placement axis. Ignored by bottom-sheet
-   * presentation, and on a compact touch screen under the touch modes (unless
-   * `presentation` is `'popover'`), where the menu is centered on its trigger
-   * as UIMenu is.
+   * presentation.
    * Uses the same alignment values as other Astryx layer-based components.
    * @default 'start'
    */
@@ -1017,15 +1008,6 @@ function DropdownMenuPopover({
   // motion and the pan-outside dismissal.
   const isTouchPresentationRef = useRef(false);
   const isUikitMotionRef = useRef(false);
-  // On a compact touch screen, under the touch modes, the popover covers its
-  // trigger as UIMenu does (iOS 26.2): centered on it, kept off the
-  // viewport's sides by CSS, with its vertical edge chosen as it opens
-  // (placeOverTrigger). Elsewhere, and with a pinned 'popover', it opens
-  // below it.
-  const {isTouch, isCompact} = useTouchPresentation();
-  const coversTrigger = touchModes === true && isTouch && isCompact;
-  const coversTriggerRef = useRef(coversTrigger);
-  coversTriggerRef.current = coversTrigger;
   const getSurfaceMotion = useCallback(
     (element: HTMLElement): MenuSurfaceMotion => {
       const current = surfaceMotionRef.current;
@@ -1177,14 +1159,6 @@ function DropdownMenuPopover({
     isUikitMotionRef.current = isUikitMotion;
     const trigger = buttonRef.current;
     if (surface != null && trigger != null) {
-      placeOverTrigger(
-        surface,
-        trigger,
-        coversTriggerRef.current,
-        // The menu's own scrolling element (its first role="menu"; a nested
-        // flyout comes after it in DOM order).
-        surface.querySelector<HTMLElement>('[role="menu"]'),
-      );
       if (isUikitMotion) {
         getSurfaceMotion(surface).enter(() => {
           const triggerBox = trigger.getBoundingClientRect();
@@ -1945,29 +1919,18 @@ function DropdownMenuPopover({
             </MenuRegionsContext>
           </div>,
         ),
-        coversTrigger
-          ? {
-              positioning: 'custom',
-              style: COVER_TRIGGER_STYLE,
-              xstyle: [
-                styles.popoverViewport,
-                resolvedMaxHeight != null &&
-                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
-                popoverXstyle,
-              ],
-            }
-          : {
-              placement,
-              alignment,
-              offset: spacingVars['--spacing-1'],
-              xstyle: [
-                styles.popoverViewport,
-                resolvedMaxHeight != null &&
-                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
-                popoverXstyle,
-                layerAnimations[placement],
-              ],
-            },
+        {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [
+            styles.popoverViewport,
+            resolvedMaxHeight != null &&
+              dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
+            popoverXstyle,
+            layerAnimations[placement],
+          ],
+        },
       )}
     </>
   );
