@@ -89,7 +89,8 @@ SegmentedControl is a named exception: this family's rule does not bind it.
 
 These are not members:
 
-- text inputs and InputGroup's input, which keep the caret and selection;
+- text inputs and InputGroup as a whole, whose input keeps the caret and
+  selection and whose addons belong to that input rather than forming a group;
 - TabList, whose scrollable rows need a drag to scroll and whose tabs switch
   views;
 - Pagination and Stepper, inline page controls in the page flow rather than a
@@ -164,18 +165,18 @@ Selector's and MultiSelector's options FR1–FR5
 
 ## Adoption and exceptions
 
-| Components or surface                                  | Required adoption                                                     |
-| ------------------------------------------------------ | --------------------------------------------------------------------- |
-| Menus and Selector's and MultiSelector's options       | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
-| TopNav's, SideNavHeading's, and NavHeadingMenu's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
-| Date and time wheels                                   | Follow FR1–FR5 through the shared implementation.                     |
-| AlertDialog's actions                                  | Track the actions only.                                               |
-| ButtonGroup, ToggleButtonGroup, Toolbar                | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
-| Banner and Toast action rows                           | Track only a row with two or more sibling actions.                    |
+| Components or surface                                                    | Required adoption                                                     |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Menus and Selector's and MultiSelector's options                         | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
+| TopNav's, SideNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
+| Date and time wheels                                                     | Follow FR1–FR5 through the shared implementation.                     |
+| AlertDialog's actions                                                    | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar                                  | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| Banner and Toast action rows                                             | Track only a row with two or more sibling actions.                    |
 
-TopNav's, SideNavHeading's, and NavHeadingMenu's menus track presses
-with their own code today; their adoption of the menu press model is an
-implementation gap.
+TopNav's, SideNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus act on
+the browser's click today and track no held pointer across their rows; their
+adoption of the menu press model is an implementation gap.
 
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;

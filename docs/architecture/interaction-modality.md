@@ -180,8 +180,9 @@ work.
   held pointer across a group's actions for every `family:action-groups`
   member other than menus and Selector's and MultiSelector's options, whose
   tracking and public `menuPressStep` belong to
-  `module:DropdownMenu/useMenuPress` (OQ1; implementation gap: MultiSelector
-  does not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
+  `module:DropdownMenu/useMenuPress` (OQ1; implementation gaps: MultiSelector,
+  and TopNav's, SideNavHeading's, NavHeadingMenu's and BreadcrumbItem's menus,
+  do not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
   FR21).
 
 ## Allowed variation
