@@ -641,6 +641,8 @@ export class SwitchTouchController {
 
   private touchDown(time: number): void {
     this.landBase(time);
+    // A new press starts with no lift to cancel.
+    this.cancelsTouchEnd = false;
     this.released = false;
     this.pendingTravel = false;
     this.drag = null;
@@ -706,8 +708,10 @@ export class SwitchTouchController {
         // A drag that flipped, or a press slid off and lifted outside (it
         // toggles, as UISwitch's does: `spec:AST-020` FR9/DEC-5, the
         // reversible-toggle exception): no click comes from the browser, so
-        // the switch clicks its input and cancels the lift.
-        this.cancelsTouchEnd = true;
+        // the switch clicks its input and cancels the lift. Only a finger's
+        // lift has a `touchend` to cancel: a mouse or a pen sends none, and a
+        // cancel left armed would take the next finger tap's click.
+        this.cancelsTouchEnd = touch.pointerType === 'touch';
         this.clickGuardUntil = now() + CLICK_GUARD_MS;
         this.release(touch.time);
         this.endPressListeners(CLICK_GUARD_MS);
