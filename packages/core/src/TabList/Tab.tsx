@@ -188,7 +188,16 @@ const styles = stylex.create({
       },
     },
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast'],
+    // Under a hovering mouse the colour swaps at once: the controller's
+    // press image hands back to this hover colour when the release ends, and
+    // an eased swap would show the bare tab for a frame in between.
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      [stylex.when.ancestor(':hover', tabScope)]: {
+        default: null,
+        '@media (hover: hover)': '0s',
+      },
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   selected: {
