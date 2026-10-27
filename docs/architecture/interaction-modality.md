@@ -47,8 +47,8 @@ Astryx components behave predictably when people move between keyboard, pointer,
 touch, pen, and programmatic focus. Essential actions remain perceivable and
 reachable while their controlled state or task context is presented, and newer user
 intent remains authoritative over stale work, and every Core and Lab gesture of one kind, dragged or scrolling, reads the
-same release velocity. This record defines those shared interaction invariants, the
-one gesture velocity source, the shared modality state, the boundary between modality and
+same release velocity, and scroll-linked motion reads one scroll progress. This record defines those shared interaction invariants, the
+one gesture velocity source, the one scroll-progress source, the shared modality state, the boundary between modality and
 component focus ownership, and the evidence required when any of them changes.
 
 It does not define focus-ring appearance, hover paint, press treatment, or new
@@ -165,6 +165,23 @@ work.
   threshold compares the tracker's release velocity. Lab keeps no copy of
   it: no Lab component has its own sample buffer, velocity math, or release
   filter, so Lab reports the same velocity as Core for the same motion.
+- **INV12 — Native scroll reports progress.** The native-scroll module also
+  reports progress: `progress(range)` turns a scroll position into a value from
+  0 to 1 over a range, an element's span or a distance, with its edges, and a
+  subscription delivers it off the render path to the animator or a CSS custom
+  property, never React state. Native `animation-timeline: scroll()` is
+  preferred where the platform supports it, with this as the fallback. Progress
+  still reports under reduced motion, and travel it drives stops there on every
+  path, through the animator or a CSS custom property alike. Scroll snapping and momentum stay native. It adds no
+  module and is internal (`spec:AST-017` FR21).
+
+- **INV13 — Press tracking across a group has one owner.** In
+  `@astryxdesign/core`, one internal module, `actionGroupTracker`, tracks a
+  held pointer across a group's actions for every `family:action-groups`
+  member other than menus, whose tracking and public `menuPressStep` stay
+  with `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
+  of the tracking. Moving menus onto the shared tracker is planned (OQ1). It is not exported (`spec:AST-017`
+  FR21).
 
 ## Allowed variation
 
@@ -229,14 +246,19 @@ is asked to carry a new decision.
   lifetimes, and focus-paint ownership.
 - `architecture:react-component-runtime` owns shared lifecycle and resource
   mechanisms. This record owns only the cross-cutting modality-path,
-  no-stale-interaction-outcome, and gesture-velocity-source requirements.
+  no-stale-interaction-outcome, gesture-velocity-source,
+  scroll-progress-source (INV12), and group press-tracking (INV13)
+  requirements.
 - The Core velocity tracker and its release filter (INV10) — the one source of
   gesture velocity for Core components; not exported.
+- The native-scroll module's progress and its subscription (INV12) — the one
+  source of scroll progress for Core components; not exported.
 
 ## Deciding specs
 
-`spec:AST-100/DEC-1` decides one release velocity per kind of surface (INV10).
-Otherwise no separate specification changes this record. The last-input rule was approved as
+`spec:AST-100/DEC-1` decides one release velocity per kind of surface (INV10),
+and `spec:AST-094/DEC-17` decides one press tracking for every action group
+(INV13). Otherwise no separate specification changes this record. The last-input rule was approved as
 a system architecture decision by `cixzhang` on 2026-08-30. Essential-action
 reachability, newer-intent precedence, and the evidence/scope guard were approved by
 `cixzhang` on 2026-09-10.
@@ -254,6 +276,8 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV8       | Owner-defined intent order, pending, close, cancellation, disablement, and unmount mutations                                                                          | Older work changes current content, selection, status or announcement, visibility, focus, or activation after owner-defined supersession                                                                                                                                                                    |
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory                                                     | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority                                                                                                                                |
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
+| INV12      | Unit tests of native scroll's progress and real-browser proofs of its adopters                                                                                        | Progress routed through React state, a missing edge, travel under Reduce Motion, use where native scroll-driven animation is supported, or a public export fails                                                                                                                                            |
+| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                         | A member that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                                                                          |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
@@ -267,3 +291,9 @@ indicator on pointer press, and keeping internal action focus owned by the
 action. The benchmark also verifies programmatic editor focus after both
 keyboard and pointer input before the behavior is treated as complete. A
 benchmark demonstrates the invariants; it does not carry authority for them.
+
+## Open questions
+
+- **OQ1 — When menus move onto the shared tracker.** (`engineering`) Open.
+  Planned: `module:DropdownMenu/useMenuPress` converges onto the shared
+  tracker as a follow-up, on the timing the owner set.
