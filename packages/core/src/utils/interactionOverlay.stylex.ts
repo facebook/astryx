@@ -113,8 +113,13 @@ export const pressConsts = stylex.defineConsts({
   releaseMs: 200,
 });
 
-/** The release's clock as CSS. */
-const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/**
+ * The release's clock as CSS, scaled by the tempo of the theme the control
+ * is in: `--_astryx-motion-tempo`, which a theme with a `tempo` writes beside
+ * its duration tokens (`spec:AST-108` FR4, `component:Button` FR15). The
+ * controller's timer scales by the same tempo (pressFeedback.ts).
+ */
+const PRESS_RELEASE_DURATION = `calc(${pressConsts.releaseMs}ms * var(--_astryx-motion-tempo, 1))`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';

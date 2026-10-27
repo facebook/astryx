@@ -79,6 +79,13 @@ function msOf(value: string): number {
   return Number.parseFloat(value);
 }
 
+/**
+ * The private custom property a theme with a `tempo` writes beside its
+ * duration tokens: the press release fade (`utils/interactionOverlay.stylex.ts`)
+ * multiplies its clock by it.
+ */
+export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
+
 /** The duration tokens at `tempo`: today's values times it, to the ms. */
 export function durationTokensAt(tempo: number): Record<string, string> {
   const tokens: Record<string, string> = {};
@@ -116,6 +123,9 @@ export function expandThemeMotion(
     for (const [name, value] of Object.entries(durationDefaults)) {
       tokens[preTempoName(name)] = value;
     }
+    // The press release fade, a fixed clock in the stylesheet, scales by the
+    // tempo itself (FR4; `component:Button` FR15), read where it plays.
+    tokens[MOTION_TEMPO_PROPERTY] = String(knobs.tempo);
   }
   if (isScaleConfig(config)) {
     const scale = expandMotionScale(config);

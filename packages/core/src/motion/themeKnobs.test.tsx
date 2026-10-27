@@ -213,6 +213,36 @@ describe('a theme that reduces motion for everyone (FR6)', () => {
     expect(createAnimator(moving).reducedMotion()).toBe('off');
     expect(reducedMotionFade(moving)).toBeNull();
   });
+
+  it("an ancestor's 'always' reaches every nested theme's script readers: one set to 'system' or with no motion config cannot remove it", () => {
+    const {getByTestId} = render(
+      <Theme
+        theme={defineTheme({
+          name: 'StillAncestor',
+          motion: {reducedMotion: 'always'},
+        })}>
+        <Theme
+          theme={defineTheme({
+            name: 'StillNestedSystem',
+            motion: {reducedMotion: 'system'},
+          })}>
+          <div data-testid="system" />
+        </Theme>
+        <Theme theme={defineTheme({name: 'StillNestedPlain'})}>
+          <div data-testid="plain" />
+        </Theme>
+      </Theme>,
+    );
+    for (const id of ['system', 'plain']) {
+      const element = getByTestId(id);
+      expect(themeReducesMotion(element), id).toBe(true);
+      expect(createAnimator(element).reducedMotion(), id).toBe('instant');
+      expect(reducedMotionFade(element), id).toEqual({
+        duration: 0,
+        easing: 'linear',
+      });
+    }
+  });
 });
 
 describe('a CSS part timed from its spring (FR4a)', () => {

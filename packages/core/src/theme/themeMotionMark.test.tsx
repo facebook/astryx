@@ -2,13 +2,14 @@
 
 /**
  * @file themeMotionMark.test.tsx
- * @input vitest (jsdom), React Testing Library, react-dom/server, Theme and
- *   defineTheme
+ * @input vitest (jsdom), React Testing Library, react-dom/server, Theme,
+ *   defineTheme and generateAdaptationCSS
  * @output Checks `spec:AST-108` FR6's root mark: `reducedMotion: 'always'`
  *   marks the Theme wrapper (in a server render too, so nothing changes at
  *   hydration) and, for the root theme, `<html>`, so portaled layers reduce
- *   their motion; `'system'` marks nothing; a child theme inherits the setting
- *   from the theme it extends; the mark leaves with the theme; a theme that
+ *   their motion; `'system'` marks nothing; an ancestor's mark reaches every
+ *   nested theme, whose component CSS stays reduced; a child theme inherits
+ *   the setting from the theme it extends; the mark leaves with the theme; a theme that
  *   sets tempo or character writes them, for the animator, on the same
  *   elements
  * @position Testing; validates Theme.tsx's use of themeMotion.ts
@@ -18,6 +19,7 @@ import {render} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
+import {generateAdaptationCSS} from './generateThemeRules';
 import {Theme} from './Theme';
 
 const MARK = 'data-astryx-reduced-motion';
@@ -71,6 +73,58 @@ describe('the reduced-motion mark (spec:AST-108 FR6)', () => {
     expect(wrappers[0].hasAttribute(MARK)).toBe(false);
     expect(wrappers[1].hasAttribute(MARK)).toBe(true);
     expect(document.documentElement.hasAttribute(MARK)).toBe(false);
+  });
+
+  it("an ancestor's 'always' reaches every nested theme: one set to 'system' or with no motion config cannot remove it", () => {
+    const rules = [
+      {
+        when: {motion: 'reduce' as const},
+        value: {tokens: {'--duration-fast': '0ms'}},
+      },
+      {
+        when: {motion: 'no-preference' as const},
+        value: {tokens: {'--duration-fast': '200ms'}},
+      },
+    ];
+    const nestedSystem = defineTheme({
+      name: 'StillNestedSystem',
+      motion: {reducedMotion: 'system'},
+      adaptations: {rules},
+    });
+    const nestedPlain = defineTheme({
+      name: 'StillNestedPlain',
+      adaptations: {rules},
+    });
+    const {container} = render(
+      <Theme theme={always}>
+        <Theme theme={nestedSystem}>
+          <p>system</p>
+        </Theme>
+        <Theme theme={nestedPlain}>
+          <p>plain</p>
+        </Theme>
+      </Theme>,
+    );
+    const scopes = (css: string) =>
+      [...css.matchAll(/@scope \(([^)]*(?:\([^)]*\)[^)]*)*)\) to/g)].map(
+        match => match[1],
+      );
+    for (const theme of [nestedSystem, nestedPlain]) {
+      const wrapper = container.querySelector(
+        `[data-astryx-theme="${theme.name}"]`,
+      ) as Element;
+      // No mark of its own, and nothing that removes the ancestor's.
+      expect(wrapper.hasAttribute(MARK), theme.name).toBe(false);
+      expect(wrapper.closest(`[${MARK}]`), theme.name).not.toBeNull();
+      // Its component CSS: the 'reduce' rule's marked block applies here,
+      // whatever the person's setting, and the 'no-preference' rule does not.
+      const [, marked, noPreference] = scopes(
+        generateAdaptationCSS(theme).component,
+      );
+      expect(wrapper.matches(marked), theme.name).toBe(true);
+      expect(wrapper.matches(noPreference), theme.name).toBe(false);
+      expect(wrapper.querySelector('p')?.closest(`[${MARK}]`)).not.toBeNull();
+    }
   });
 
   it('a theme extending an always theme keeps it unless it says otherwise', () => {
