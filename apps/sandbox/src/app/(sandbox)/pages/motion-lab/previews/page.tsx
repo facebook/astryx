@@ -325,7 +325,8 @@ export default function PreviewsPage() {
             decelerating curve has the panel about 97% out, so hiding it then
             takes away a few pixels that are not visible at 1&times;. It was
             code hygiene, and it is fixed. Open the real Drawer to check its
-            close, at 1&times; and with the rail slowed down.
+            close at 1&times;; it sits outside the lab, so the rail does not
+            slow it.
           </Text>
           <RealDrawerProbe />
         </DemoBody>

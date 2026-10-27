@@ -1324,7 +1324,9 @@ export function DrawerExitRig({close}: {close: 'cut' | 'awaited'}) {
     };
   }, [close, isOpen, isRendered, slideMs, speed]);
 
-  useLoop(toggle, 1400);
+  // Long enough for a whole slide and a beat at rest at any rail speed, so
+  // the two panes stay in step.
+  useLoop(toggle, Math.max(1400, slideMs + 1000));
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
@@ -1350,7 +1352,10 @@ export function DrawerExitRig({close}: {close: 'cut' | 'awaited'}) {
   );
 }
 
-/** Opens Core's own Drawer, to check its close at 1x and slowed down. */
+/**
+ * Opens Core's own Drawer, to check its close at 1x. It is a top-layer
+ * dialog outside the lab's scope, so the rail's speed does not reach it.
+ */
 export function RealDrawerProbe() {
   const [isOpen, setIsOpen] = useState(false);
   return (
