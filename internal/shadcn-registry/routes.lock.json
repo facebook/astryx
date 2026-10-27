@@ -1965,6 +1965,11 @@
       "aliases": []
     },
     {
+      "name": "example-create-drag-to-snap-points-playing-card-in-plain-java-script",
+      "path": "examples/create-drag-to-snap-points/playing-card-in-plain-java-script",
+      "aliases": []
+    },
+    {
       "name": "example-date-input-clearable",
       "path": "examples/date-input/clearable",
       "aliases": []
@@ -3660,6 +3665,11 @@
       "aliases": []
     },
     {
+      "name": "example-use-drag-to-snap-points-playing-card-on-three-places",
+      "path": "examples/use-drag-to-snap-points/playing-card-on-three-places",
+      "aliases": []
+    },
+    {
       "name": "example-use-hover-card-profile-preview",
       "path": "examples/use-hover-card/profile-preview",
       "aliases": []
@@ -3760,6 +3770,11 @@
       "aliases": []
     },
     {
+      "name": "hook-create-drag-to-snap-points",
+      "path": "hooks/create-drag-to-snap-points",
+      "aliases": []
+    },
+    {
       "name": "hook-use-animator",
       "path": "hooks/use-animator",
       "aliases": []
@@ -3807,6 +3822,11 @@
     {
       "name": "hook-use-dev-warning",
       "path": "hooks/use-dev-warning",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-drag-to-snap-points",
+      "path": "hooks/use-drag-to-snap-points",
       "aliases": []
     },
     {
