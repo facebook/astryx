@@ -1845,11 +1845,34 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
     for (const [exportName, value] of Object.entries(mod)) {
       if (isThemeObject(value)) return {theme: value, exportName, degraded};
     }
+    // A plain-object default export is the module's theme even when it has
+    // no tokens of its own (local tokens, typography or component styles may
+    // be all it defines), or no name: the build's validation says what it
+    // lacks.
+    if (isPlainObject(mod.default)) {
+      return {theme: mod.default, exportName: 'default', degraded};
+    }
   }
+  if (isPlainObject(mod)) return {theme: mod, exportName: 'default', degraded};
 
   throw new Error(
     `Could not find a defineTheme() result in ${filePath}.\n` +
       `Expected an export like: export const myTheme = defineTheme({ name: '...', tokens: {...} })`,
+  );
+}
+
+/**
+ * A plain object, not an array or a module namespace: a theme module's
+ * default export, read as its theme.
+ * @param {any} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    value[Symbol.toStringTag] !== 'Module'
   );
 }
 
@@ -1868,12 +1891,9 @@ function isThemeObject(value) {
 }
 
 /**
- * Extract the theme definition from a JS/TS file.
- * Tries jiti first (full TS support), falls back to regex+eval.
- *
- * The legacy fallback needs no interception: it evaluates the `defineTheme()`
- * ARGUMENT, so what it returns is raw authored input with `adaptations` still
- * on it — nothing has erased anything yet. It is therefore never degraded.
+ * Extract the theme definition from a JS/TS file, through jiti (full TS
+ * support). A module that does not load fails with its own error: the theme
+ * is never read from the file's text instead.
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
@@ -1884,18 +1904,12 @@ async function extractThemeDefinition(filePath, interception, /** @type {any} */
   try {
     return await importThemeModule(filePath, interception, loader);
   } catch (jitiError) {
-    try {
-      return {
-        theme: extractThemeDefinitionLegacy(filePath),
-        degraded: {topLevelAwait: false, commonJs: false},
-      };
-    } catch {
-      const je = /** @type {Error} */ (jitiError);
-      throw new Error(
-        `Failed to load theme from ${filePath}: ${je.message}\n` +
-          `Make sure all imports in the theme file are resolvable.`,
-      );
-    }
+    const je = /** @type {Error} */ (jitiError);
+    throw new Error(
+      `Failed to load theme from ${filePath}: ${je.message}\n` +
+        `Make sure all imports in the theme file are resolvable.`,
+      {cause: jitiError},
+    );
   }
 }
 
@@ -1938,45 +1952,6 @@ export async function validateThemePrivateInputs(
     return [...new Set(inputs.flatMap(input => validatePrivateVars(input)))];
   } finally {
     interception.strip(theme);
-  }
-}
-
-/**
- * Fallback extraction via regex + eval.
- * Only works for plain object literals — can't follow imports or variables.
- * Never erase icon references: an unresolved registry must preserve the loader
- * error instead of turning an incomplete theme into a successful build.
- * @param {string} filePath
- * @returns {any}
- */
-function extractThemeDefinitionLegacy(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-
-  const defineMatch = content.match(/defineTheme\s*\(\s*({[\s\S]*?})\s*\)/);
-  if (!defineMatch) {
-    const defaultMatch = content.match(/export\s+default\s+({[\s\S]*?});/);
-    if (!defaultMatch) {
-      throw new Error(
-        `Could not find defineTheme() call or default export in ${filePath}.\n` +
-          `Expected: defineTheme({ name: '...', tokens: {...} })`,
-      );
-    }
-
-    return eval(`(${defaultMatch[1]})`);
-  }
-
-  let objStr = defineMatch[1];
-  objStr = objStr.replace(/\s+as\s+const/g, '');
-
-  try {
-    return eval(`(${objStr})`);
-  } catch (e) {
-    const err = /** @type {Error} */ (e);
-    throw new Error(
-      `Failed to parse theme definition in ${filePath}: ${err.message}\n` +
-        `Make sure the defineTheme() argument is a plain object literal.`,
-      {cause: e},
-    );
   }
 }
 

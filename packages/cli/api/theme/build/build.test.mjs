@@ -212,6 +212,32 @@ describe('themeBuild() — receipt', () => {
   });
 });
 
+describe('themeBuild() — a theme module that does not load', () => {
+  it('fails with the import error, rather than build the theme from the file text', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'unresolved.mjs'),
+      "import './missing-helper.mjs';\nexport default {name: 'unresolved', tokens: {'--color-bg': '#000'}};\n",
+    );
+    await expect(
+      themeBuild('unresolved.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toThrow(
+      /Failed to load theme from .*unresolved\.mjs: .*missing-helper\.mjs/s,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'unresolved.css'))).toBe(false);
+  });
+
+  it('fails with the error the module throws, rather than build the theme from the file text', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'throws.mjs'),
+      "throw new Error('the theme module failed');\nexport default {name: 'throws', tokens: {'--color-bg': '#000'}};\n",
+    );
+    await expect(themeBuild('throws.mjs', {}, {cwd: tmpDir})).rejects.toThrow(
+      /the theme module failed/,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'throws.css'))).toBe(false);
+  });
+});
+
 describe('themeBuild() — dropped declarations reach the receipt', () => {
   // Core's generator refuses a declaration whose value would end it early
   // (an unquoted `;` or brace, an unclosed string/comment/url). The runtime
