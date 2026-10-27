@@ -251,10 +251,11 @@
       "sections": [
         "quick-start",
         "creating-a-custom-theme",
+        "icon-sizes",
         "light-dark-mode",
         "integration-themes"
       ],
-      "skeleton": "4af0a08dbcf2008c2ad6c12e61a1451130f10109fdb666a08933a7ce69ce18bd",
+      "skeleton": "eacd1432d49237ed62f82ea054c0e5930503e9f072ab40b4965461f29cf31080",
       "mentions": []
     },
     "use-a-theme": {

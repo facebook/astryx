@@ -14,6 +14,10 @@
  * - String mode: Pass a semantic name (e.g. 'close', 'chevronDown') — resolved from the
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
  *
+ * Both modes size the glyph from IconSize.stylex.ts, so a theme's `width` and
+ * `height` on the `icon` target's size selector set that size's glyph
+ * dimension, including the font size 1em-based registry artwork follows.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/Icon.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Icon/Icon.test.tsx (tests for new/changed behavior)
@@ -33,7 +37,7 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useIconSize} from './IconDefaultSizeContext';
 import {
-  iconBoxSizeStyles,
+  iconRegistrySizeStyles,
   iconSizeStyles,
   type IconSize,
 } from './IconSize.stylex';
@@ -162,6 +166,9 @@ export interface IconProps extends Omit<
    * - 'sm': 1rem (16px at a 16px root)
    * - 'md': 1.25rem (20px at a 16px root)
    * - 'lg': 1.5rem (24px at a 16px root)
+   *
+   * A theme sets a size's glyph dimension with `width` and `height` on
+   * `components.icon['size:sm']` (and the other sizes).
    *
    * An explicit value wins. When omitted, Icon uses the nearest default supplied
    * by an owning Astryx component for its icon slot, then falls back to 'md'.
@@ -365,7 +372,7 @@ function IconFromRegistry({
         stylex.props(
           styles.span,
           colorStyles[color],
-          iconBoxSizeStyles[size],
+          iconRegistrySizeStyles[size],
           xstyle,
         ),
         className ?? undefined,

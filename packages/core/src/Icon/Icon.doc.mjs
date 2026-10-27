@@ -86,7 +86,7 @@ export const docs = {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg'",
       description:
-        'Icon size. An explicit value wins. When omitted, Icon uses the nearest default supplied by an owning Astryx component for its icon slot, then falls back to md when no contextual default exists.',
+        "Icon size. xsm, sm, md, and lg are 12, 16, 20, and 24px at a 16px root and scale with the root font size; a theme sets a size's glyph dimension with width and height on components.icon['size:sm'] (and the other sizes). An explicit value wins. When omitted, Icon uses the nearest default supplied by an owning Astryx component for its icon slot, then falls back to md when no contextual default exists.",
       default: "Contextual; otherwise 'md'",
     },
     {
@@ -104,6 +104,26 @@ export const docs = {
   ],
   theming: {
     targets: [{className: 'astryx-icon', visualProps: ['color', 'size']}],
+    vars: [
+      {
+        name: '--_icon-width',
+        description:
+          'Glyph width for the size; set by width on the icon target',
+        default: '0.75rem, 1rem, 1.25rem, or 1.5rem by size',
+        private: true,
+      },
+      {
+        name: '--_icon-height',
+        description:
+          'Glyph height for the size; set by height on the icon target',
+        default: '0.75rem, 1rem, 1.25rem, or 1.5rem by size',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'width', vars: ['--_icon-width'], replaces: true},
+      {property: 'height', vars: ['--_icon-height'], replaces: true},
+    ],
   },
   usage: {
     description:
@@ -191,7 +211,7 @@ export const docsZh = {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg'",
       description:
-        '图标尺寸。显式值优先。省略时，Icon 使用最近的 Astryx 所属组件为其图标槽提供的默认尺寸；如果没有上下文默认值，则回退为 md。',
+        "图标尺寸。xsm、sm、md、lg 在 16px 根字号下分别为 12、16、20、24px，并随根字号缩放；主题在 components.icon['size:sm']（及其他尺寸）上设置 width 和 height，即可决定该尺寸的图标尺寸。显式值优先。省略时，Icon 使用最近的 Astryx 所属组件为其图标槽提供的默认尺寸；如果没有上下文默认值，则回退为 md。",
       default: "上下文默认值；否则为 'md'",
     },
     {
@@ -209,6 +229,24 @@ export const docsZh = {
   ],
   theming: {
     targets: [{className: 'astryx-icon', visualProps: ['color', 'size']}],
+    vars: [
+      {
+        name: '--_icon-width',
+        description: '该尺寸的图标宽度；由 icon 目标上的 width 设置',
+        default: '按尺寸为 0.75rem、1rem、1.25rem 或 1.5rem',
+        private: true,
+      },
+      {
+        name: '--_icon-height',
+        description: '该尺寸的图标高度；由 icon 目标上的 height 设置',
+        default: '按尺寸为 0.75rem、1rem、1.25rem 或 1.5rem',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'width', vars: ['--_icon-width'], replaces: true},
+      {property: 'height', vars: ['--_icon-height'], replaces: true},
+    ],
   },
   usage: {
     description:
@@ -332,7 +370,7 @@ export const docsDense = {
   propDescriptions: {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, upload, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to Astryx icon color tokens.',
-    size: "explicit Icon size; otherwise nearest owning-component default, then 'md' when no contextual default exists",
+    size: "xsm/sm/md/lg = 12/16/20/24px at a 16px root, scale w/ root font size; theme sets a size's glyph dimension via width + height on components.icon['size:sm'] etc. Explicit Icon size; otherwise nearest owning-component default, then 'md' when no contextual default exists",
     label:
       'Accessible name for a meaningful, standalone icon. Sets role="img" + aria-label and drops the default aria-hidden. Omit (default) for decorative icons (stays aria-hidden). Empty string = decorative. The accessible-name/alt-text prop for icons.',
     xstyle:
