@@ -4,12 +4,11 @@
 
 /**
  * @file PageControl.tsx
- * @input React, StyleX, core's theme tokens and translator, the gesture
- *   system's press recognizer (`@astryxdesign/core/gestures`), the touch
- *   presentation (`@astryxdesign/core/utils/touchPresentation`), the
- *   compositor animator (`@astryxdesign/core/motion/animator`) and the UIKit
- *   page-control table (`@astryxdesign/core/motion/uikit`),
- *   pageControlModel.ts for the math
+ * @input React, StyleX, core's theme tokens and translator, the touch
+ *   presentation and the writing-direction read
+ *   (`@astryxdesign/core/internal/touch`), the compositor animator and the
+ *   UIKit page-control table (`@astryxdesign/core/internal/motion`),
+ *   PageControlTouch.ts for the touch layer, pageControlModel.ts for the math
  * @output Exports PageControl: a row of page indicators, the current one
  *   highlighted, that pages one step per tap and follows a finger scrubbing
  *   across it, like UIPageControl
@@ -88,7 +87,7 @@ import {
   mergeProps,
   mergeRefs,
 } from '@astryxdesign/core/utils';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '@astryxdesign/core/internal/touch';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {animatorFor} from '@astryxdesign/core/internal/motion';

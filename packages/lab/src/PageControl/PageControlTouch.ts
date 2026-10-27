@@ -18,7 +18,7 @@
  */
 
 import {useEffect, useLayoutEffect, useRef, type RefObject} from 'react';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '@astryxdesign/core/internal/touch';
 import {
   LongPressGestureRecognizer,
   PanGestureRecognizer,
