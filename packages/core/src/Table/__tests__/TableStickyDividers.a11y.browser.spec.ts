@@ -219,3 +219,55 @@ test('the end shadow follows columns added without a resize', async ({
   await page.getByRole('button', {name: 'Add columns'}).click();
   await expect.poll(shadow).toBe('1');
 });
+
+test("an app's :hover rule on the cells reaches the pinned cell in CSS", async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await page
+      .locator('.astryx-table-scroll-wrapper tbody tr')
+      .nth(0)
+      .hover({position: {x: 400, y: 10}});
+    const {pinned, unpinned} = await dividerPixels(page, 0);
+    expect(sameColumn(pinned, unpinned, 24), `at ${left}px`).toBe(true);
+    const purple = darkest(pinned);
+    expect(purple[2], `at ${left}px is purple`).toBeGreaterThan(purple[1] + 60);
+  }
+});
+
+test('a pinned cell stops carrying a border once its own wins again', async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  const highlight = page.getByRole('button', {name: 'Highlight'});
+  await highlight.click();
+  await highlight.click();
+  const pinnedCell = page
+    .locator('.astryx-table-scroll-wrapper tbody tr')
+    .nth(2)
+    .locator('td')
+    .first();
+  // Nothing carried: the token (and a later theme change) reaches it in CSS.
+  await expect(pinnedCell).toHaveAttribute('data-astryx-table-pinned', '');
+  const {pinned, unpinned} = await dividerPixels(page, 2);
+  expect(sameColumn(pinned, unpinned)).toBe(true);
+});
+
+test("the next row's wider top border wins under the pinned cell too", async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'Thick top'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    const {pinned, unpinned} = await dividerPixels(page, 2);
+    expect(sameColumn(pinned, unpinned, 24), `at ${left}px`).toBe(true);
+    const orange = darkest(pinned);
+    expect(orange[0], `at ${left}px is orange`).toBeGreaterThan(orange[2] + 60);
+  }
+});
