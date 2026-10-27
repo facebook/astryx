@@ -31,7 +31,8 @@ affects_consumer_docs: []
 ## Intent
 
 `createReorderable` applies to a whole collection: its object is passed as
-the collection's `reorderable` prop. Per-item control comes from each item's
+the collection's `reorderable` prop, or attached to a container of plain
+elements (FR4b). Per-item control comes from each item's
 key (`itemKey`, or the collection's existing identity) and from
 `isReorderable(key)`.
 
@@ -39,7 +40,8 @@ A person can change the order of items in a collection by dragging a row's
 handle, by keyboard, or with a screen reader, and every collection that allows
 it behaves the same way. A caller turns reordering on by passing one
 behavior object, made once by `createReorderable`, to the collection's
-`reorderable` prop, and applies the change it reports. A collection that does
+`reorderable` prop or attaching it to plain elements, and applies the change
+it reports. A collection that does
 not reorder loads none of it.
 
 ## Non-goals
@@ -216,7 +218,10 @@ const {detach} = reorderable.attach(listElement, {
   accessible name, and it renders FR4's hint as an element it owns. A move
   commits when `items()` reports the new order after `onReorder`: `attach`
   announces it and plays the drop then, and a move whose order has not changed
-  by the end of that task is refused and announced, as in FR4. `detach` ends any drag or reorder mode in progress, calling nothing, and
+  by the end of that task is refused and announced, as in FR4. `attach` resolves its strings and number formats as a component outside a
+  provider does, from the shipped English catalog
+  (`architecture:internationalization` INV3). `detach` ends any drag or reorder
+  mode in progress, calling nothing, and
   removes every listener, observer, timer, element, and attribute `attach`
   added, restoring each handle's own role and name; and creating or importing the object does no DOM
   work, so it is safe on the server.
@@ -256,7 +261,7 @@ const {detach} = reorderable.attach(listElement, {
 | FR4 hint            | Browser tests with a mouse, a finger, and a keyboard                                                                     | the hint's axis in vertical, horizontal, and grid collections; each move button and Done; a tap-only reorder; the hint's theme roles                                                                                                                                               | a hint off the keyboard hint's layer, anchoring, or theme roles, buttons that ignore taps or are hidden from assistive technology, a button whose move or announcement differs from its key, focus leaving the handle, or a hint that outlives the mode fails                                                                                                                                                         |
 | FR4 two-dimensional | Keyboard and announcement-routing tests on a wrapping card grid, left-to-right and right-to-left                         | Left and Right across a row end; Up and Down between full rows and into a short last row; announcements with row and column; the hint's four buttons; a resize that changes the column count                                                                                       | a move off reading order, a mirrored direction wrong in right-to-left, a short-row move that is not clamped to its last position, a missing row or column, or a column count read from anything but layout fails                                                                                                                                                                                                      |
 | FR4a                | Keyboard, mouse, and announcement-routing tests of `start(key)`                                                          | `start` from a context-menu item and a toolbar button; a key that is not reorderable, not mounted, or unknown; an object re-created each render; one object on two collections                                                                                                     | `start` that does not focus and scroll to the handle, a hint or announcement that differs from the handle's mode, a missing-key call that throws or acts, or a two-collection call without a development warning fails                                                                                                                                                                                                |
-| FR4b                | Browser tests of `attach` on plain elements with a mouse, a finger, and the keyboard, and listener counts after `detach` | a drag, a cancelled drag, reorder mode, a fanned layout with `positions`, a move the app applies and one it does not, `detach` mid-drag, a server import                                                                                                                           | a missing drag, mode, or announcement on plain elements; a handle without FR4's role, pressed state, or name; a move announced before `items()` reports it, or one the app did not apply left unrefused; a drag or mode still running, or a listener, observer, hint element, or handle attribute left, after `detach`; or DOM work at import fails                                                                   |
+| FR4b                | Browser tests of `attach` on plain elements with a mouse, a finger, and the keyboard, and listener counts after `detach` | a drag, a cancelled drag, reorder mode, a fanned layout with `positions`, a move the app applies and one it does not, `detach` mid-drag, a server import, a page in another language                                                                                               | a missing drag, mode, or announcement on plain elements; a handle without FR4's role, pressed state, or name; a move announced before `items()` reports it, or one the app did not apply left unrefused; a drag or mode still running, or a listener, observer, hint element, or handle attribute left, after `detach`;, strings other than the shipped English catalog's, or DOM work at import fails                |
 | FR5                 | Element and listener counts of a list with and without the prop                                                          | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                                                                                                                                                                                                                                                               |
 
 ## Decision log
