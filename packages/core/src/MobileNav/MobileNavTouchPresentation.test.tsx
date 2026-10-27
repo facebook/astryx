@@ -5,7 +5,8 @@
  * @input Uses vitest, @testing-library/react, MobileNav and the Layer
  *   module's input hold
  * @output Tests that under a finger the drawer takes no touch until its
- *   slide-in ends while keys and assistive technology stay live, and after a
+ *   slide-in ends (when its transition ends, before or after a timer of its
+ *   duration would) while keys and assistive technology stay live, and after a
  *   close takes no input until the dialog closes, on the mouse's timing (at
  *   most 250 ms in), and that under a mouse nothing is held and the close
  *   keeps its timing
@@ -46,9 +47,10 @@ function Harness() {
   );
 }
 
-// jsdom resolves no `var()`, so the drawer's slide-in reads as unreadable and
-// runs for MAX_EXIT_MS, and a close lands MAX_CLOSE_DELAY_MS in; a hold ends
-// when its timer settles.
+// jsdom has no Web Animations, so a slide-in's end is unknown and its hold
+// runs for MAX_EXIT_MS unless a test gives the drawer a transition; it
+// resolves no `var()`, so a close lands MAX_CLOSE_DELAY_MS in. A hold ends
+// when what ends it settles.
 async function advance(ms: number) {
   await act(async () => {
     vi.advanceTimersByTime(ms);
@@ -85,9 +87,37 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/**
+ * Gives the drawer a slide-in transition (Web Animations' `getAnimations()`,
+ * which jsdom lacks) whose end the test decides.
+ */
+function stubSlideIn() {
+  let end = () => {};
+  const finished = new Promise<void>(resolve => {
+    end = resolve;
+  });
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value(this: Element) {
+      return this.matches('dialog [tabindex="-1"]') ? [{finished}] : [];
+    },
+  });
+  return {
+    async end() {
+      await act(async () => {
+        end();
+      });
+    },
+  };
+}
+
 describe('MobileNav under a finger', () => {
   beforeEach(() => {
     stubMatchMedia({reduceMotion: false, pointer: 'coarse'});
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(Element.prototype, 'getAnimations');
   });
 
   it('takes no touch until the slide-in ends', async () => {
@@ -100,6 +130,36 @@ describe('MobileNav under a finger', () => {
     expect(isInHeldLayer(dialog)).toBe(true);
 
     await advance(MAX_EXIT_MS + 10);
+    expect(isInHeldLayer(dialog)).toBe(false);
+  });
+
+  it('takes touch again when its slide-in transition ends, however soon (FR35)', async () => {
+    const slideIn = stubSlideIn();
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+    const dialog = screen.getByTestId('mobile-nav');
+    await advance(300);
+    expect(isInHeldLayer(dialog)).toBe(true);
+
+    await slideIn.end();
+    expect(isInHeldLayer(dialog)).toBe(false);
+  });
+
+  it('holds until its slide-in transition ends, past a timer of its duration (FR35)', async () => {
+    // A 410 ms slide-in starts a frame or two after the drawer opens, so it
+    // ends after a 410 ms timer started on open would.
+    const slideIn = stubSlideIn();
+    render(<Harness />);
+    const drawer = screen
+      .getByTestId('mobile-nav')
+      .querySelector<HTMLElement>('[tabindex="-1"]');
+    drawer?.style.setProperty('transition-duration', '0.41s');
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+    const dialog = screen.getByTestId('mobile-nav');
+    await advance(420);
+    expect(isInHeldLayer(dialog)).toBe(true);
+
+    await slideIn.end();
     expect(isInHeldLayer(dialog)).toBe(false);
   });
 

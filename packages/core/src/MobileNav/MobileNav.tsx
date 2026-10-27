@@ -36,7 +36,8 @@
  * inert and focus() on the opener is silently dropped.
  *
  * Under a finger, through the Layer module's input hold, nothing takes a
- * touch until the slide-in ends (`spec:AST-094` FR35), and after a close
+ * touch until the slide-in ends, on its transition's own end
+ * (`spec:AST-094` FR35), and after a close
  * request the leaving drawer takes no input until the dialog closes. The
  * dialog closes on the same timing under every pointer: partway into the
  * slide-out, at most MAX_CLOSE_DELAY_MS after the request (FR5, ORD3); the
@@ -361,35 +362,29 @@ function resolveCloseDelay(dialog: HTMLDialogElement): number {
 }
 
 /**
- * Longest duration in a `transition-duration` list, in ms; null if unreadable.
+ * Settles when the drawer's slide-in that has just started ends: when its own
+ * transitions finish, or are cancelled (a close reverses them), and at most
+ * MAX_EXIT_MS in, the cap a theme's duration gets. Reading the drawer's
+ * animations updates its style, so the slide-in's transition exists by then;
+ * a drawer with none has no slide-in to wait for. Without Web Animations
+ * (outside a real browser) the end is unknown, and the cap ends it.
  *
- * @internal Exported for unit tests.
+ * The hold follows the transition itself rather than a timer of its duration
+ * started as the drawer opens: the transition starts a frame or two after the
+ * open, so such a timer ends the hold before the slide-in does, and under
+ * load it can also run after it.
  */
-export function parseLongestDurationMs(value: string): number | null {
-  const durations = value
-    .split(',')
-    .map(part => parseShortestDurationMs(part))
-    .filter((ms): ms is number => ms !== null);
-  return durations.length ? Math.max(...durations) : null;
-}
-
-/**
- * How long the drawer's slide-in that has just started runs, in ms: its
- * `--duration-medium` transition, which themes rewrite, read rather than
- * assumed, and at most MAX_EXIT_MS. Under reduced motion the drawer moves in
- * 0.01 s.
- */
-function resolveSlideDuration(drawer: HTMLElement | null): number {
-  const duration =
-    drawer == null
-      ? null
-      : parseLongestDurationMs(
-          window.getComputedStyle(drawer).transitionDuration,
-        );
-  // Unreadable: an unresolved var() outside a real browser.
-  return duration === null
-    ? MAX_EXIT_MS
-    : Math.min(MAX_EXIT_MS, Math.max(0, duration));
+async function slideInEnd(drawer: HTMLElement | null): Promise<unknown> {
+  const cap = after(MAX_EXIT_MS);
+  if (drawer == null || typeof drawer.getAnimations !== 'function') {
+    return cap;
+  }
+  return Promise.race([
+    Promise.allSettled(
+      drawer.getAnimations().map(async animation => animation.finished),
+    ),
+    cap,
+  ]);
 }
 
 /** Resolves after `ms`. */
@@ -641,12 +636,9 @@ export function MobileNav({
     const isTouch =
       dialog.ownerDocument.defaultView?.matchMedia(TOUCH_QUERY).matches ??
       false;
-    const hold = (scope: 'viewport' | 'layer', ms: number) => {
+    const hold = (scope: 'viewport' | 'layer', until: Promise<unknown>) => {
       releaseHoldRef.current?.();
-      releaseHoldRef.current = holdInput(dialog, {
-        until: after(ms),
-        scope,
-      });
+      releaseHoldRef.current = holdInput(dialog, {until, scope});
     };
 
     if (isOpen) {
@@ -668,14 +660,14 @@ export function MobileNav({
         drawerRef.current?.focus();
       }
       if (isTouch) {
-        hold('viewport', resolveSlideDuration(drawerRef.current));
+        hold('viewport', slideInEnd(drawerRef.current));
       }
     } else if (dialog.open && isTouch) {
       // The leaving drawer's content takes no input until the dialog closes,
       // at most MAX_CLOSE_DELAY_MS in, as under a mouse (FR5, ORD3); then
       // focus goes back to the opener.
       const delay = resolveCloseDelay(dialog);
-      hold('layer', delay);
+      hold('layer', after(delay));
       closeTimeoutRef.current = setTimeout(() => {
         releaseHoldRef.current?.();
         releaseHoldRef.current = null;
