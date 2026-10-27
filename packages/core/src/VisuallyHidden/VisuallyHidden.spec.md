@@ -21,22 +21,22 @@ families: []
 design_specs: []
 architecture: [architecture:public-component-api]
 contributing: []
-system_specs: [spec:AST-009]
+system_specs: [spec:AST-009, spec:AST-071]
 ---
 
 # VisuallyHidden component contract
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | A wrapper with required `children` and an optional `as` element; accessibility and data props pass through. Its styling surface is uncontracted (OQ1). |
-| Behavior                | Content stays in the accessibility tree and is clipped from sight by a fixed style block that no caller input can displace.                            |
-| End-user impact         | Screen-reader users hear names and announcements that sighted users do not need to see.                                                                |
-| Builder impact          | None; the record describes shipped behavior.                                                                                                           |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. The styling surface is left open in OQ1.                                    |
-| Review checks           | Reject a `display: none` or `visibility: hidden` hide, a caller input that displaces the clip, or dropped `aria-*` passthrough.                        |
-| Governing rules         | `architecture:public-component-api/INV5,INV8`; INV6 is open in OQ1.                                                                                    |
+| Area                    | Contract                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | A wrapper with required `children` and an optional `as` element; accessibility and data props pass through. It accepts no `className` or `style` and ignores `xstyle` today (FR3 gap, OQ1). |
+| Behavior                | Content stays in the accessibility tree and is clipped from sight by a fixed style block that no caller input can displace.                                                                 |
+| End-user impact         | Screen-reader users hear names and announcements that sighted users do not need to see.                                                                                                     |
+| Builder impact          | None; the record describes shipped behavior.                                                                                                                                                |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. One implementation gap is listed under Current-state impact; OQ1 is open.                                        |
+| Review checks           | Reject a `display: none` or `visibility: hidden` hide, a caller input that displaces the clip, or dropped `aria-*` passthrough.                                                             |
+| Governing rules         | `architecture:public-component-api/INV5,INV6,INV8`; `spec:AST-071` FR2.                                                                                                                     |
 
 This table is a review projection; the body below is authoritative.
 
@@ -52,11 +52,20 @@ guarantee that the hidden node cannot be styled visible.
 - Released default preserved: `yes`
 - Compatibility class: records shipped behavior; no public prop, default, or
   DOM output changes. `xstyle` is accepted by the type and ignored;
-  `className` and `style` are not accepted; the styling surface is open in OQ1
+  `className` and `style` are not accepted; the styling surface is the FR3 gap (OQ1)
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **Styling inputs not accepted (FR3).** VisuallyHidden drops `className` and
+  `style` and ignores `xstyle`, so callers cannot style the element, where
+  `architecture:public-component-api` INV6 and `spec:AST-071` FR2 have root
+  styling inputs compose. The consumer docs plan to remove `xstyle`; OQ1
+  decides whether the component conforms or INV6's owner records it as an
+  exception.
 
 ## Ownership boundary
 
@@ -74,17 +83,17 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept | Closed values or states | Meaning                                | Availability by variant/orientation/state | Default | Owner                      | Stability | Invalid-value behavior  |
-| ------- | ----------------------- | -------------------------------------- | ----------------------------------------- | ------- | -------------------------- | --------- | ----------------------- |
-| Element | Any element type        | The rendered element, inline or block. | Always                                    | `span`  | `component:VisuallyHidden` | Stable    | Rendered as React does. |
+| Concept | Closed values or states                                                                            | Meaning                                | Availability by variant/orientation/state | Default | Owner                      | Stability | Invalid-value behavior                                                                                          |
+| ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------- | ------- | -------------------------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| Element | An intrinsic element, or a component that forwards `className` and `ref` to the element it renders | The rendered element, inline or block. | Always                                    | `span`  | `component:VisuallyHidden` | Stable    | A component that does not forward `className` and `ref` renders its content unclipped, and the ref stays unset. |
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                            | Basis                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| FR1 | VisuallyHidden renders `children` in the element named by `as` (default `span`), which stays in the accessibility tree.                                                                                                                                                                                                              | Current source and tests |
-| FR2 | The element is absolutely positioned at the inline-start and block-start of its containing block, 1px by 1px with a −1px margin, no padding or border, clipped to an empty rectangle with hidden overflow, unwrapped, and ignores pointer events and selection.                                                                      | Current source and tests |
-| FR3 | `ref` reaches the element, and supported `aria-*`, `role`, `id`, `data-*`, and event props reach it. The clip styles apply after every caller input, so nothing displaces the clip. Which root styling inputs VisuallyHidden accepts is uncontracted (OQ1); today `className` and `style` are not forwarded and `xstyle` is ignored. | Current source and tests |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Basis                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | VisuallyHidden renders `children` in the element named by `as` (default `span`), which stays in the accessibility tree.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Current source and tests |
+| FR2 | When `as` is an intrinsic element or forwards `className` to the element it renders, that element is absolutely positioned at the inline-start and block-start of its containing block, 1px by 1px with a −1px margin, no padding or border, clipped to an empty rectangle with hidden overflow, unwrapped, and ignores pointer events and selection.                                                                                                                                                                                                                                       | Current source and tests |
+| FR3 | `ref` reaches the element (for a component `as`, when it forwards `ref`), and supported `aria-*`, `role`, `id`, `data-*`, and event props reach it. The clip styles apply after every caller input, so nothing displaces the clip. Root styling inputs compose on the element (`architecture:public-component-api` INV6, `spec:AST-071` FR2). Implementation gap: `className` and `style` are not accepted and `xstyle` is ignored; the consumer docs plan to remove `xstyle`, and OQ1 decides whether VisuallyHidden conforms or becomes a recorded INV6 exception (Current-state impact). | Current source and tests |
 
 ### Allowed variation
 
@@ -93,11 +102,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State             | Required invariant                                                         | Allowed variation |
-| ----------------- | -------------------------------------------------------------------------- | ----------------- |
-| Icon-only label   | Hidden `span` gives the control its accessible name.                       | Text.             |
-| Live region       | Block element with caller `aria-live` stays hidden and announced.          | Politeness.       |
-| Styling attempted | The clip still wins; whether caller styling applies is uncontracted (OQ1). | —                 |
+| State             | Required invariant                                                      | Allowed variation |
+| ----------------- | ----------------------------------------------------------------------- | ----------------- |
+| Icon-only label   | Hidden `span` gives the control its accessible name.                    | Text.             |
+| Live region       | Block element with caller `aria-live` stays hidden and announced.       | Politeness.       |
+| Styling attempted | The clip still wins; caller styling has no effect today (FR3 gap, OQ1). | —                 |
 
 ### Transformation and precedence order
 
@@ -127,7 +136,7 @@ hidden node would defeat its purpose.
 ## Family and system relationships
 
 - `architecture:public-component-api` owns passthrough, ref, and styling-input
-  rules; FR3 applies INV5 and INV8, and OQ1 holds how INV6 applies here.
+  rules; FR3 applies INV5, INV6, and INV8 and records the INV6 gap.
 
 ## Verification map
 
@@ -148,7 +157,8 @@ None recorded. The record describes shipped behavior; OQ1 is open.
 - **OQ1 — Should VisuallyHidden accept root styling inputs?** (`human-api`)
   `architecture:public-component-api` INV6 has root styling inputs compose
   unless a family decision names an exception, and the consumer docs plan to
-  remove `xstyle`. If styling-free is a deliberate exception, INV6's owner
+  remove `xstyle`; until an owner decides, the styling-free surface is the FR3
+  gap. If styling-free is a deliberate exception, INV6's owner
   records it (with a `spec:AST-071` known-gap entry) and FR3 links it, and
   callers keep no way to style the element. If composition is the direction,
   FR3 requires `className`, `style`, and `xstyle` to compose with the clip
