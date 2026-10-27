@@ -45,19 +45,37 @@ import {themeProps} from '../utils/themeProps';
 /** The toggles the group tracks: each carries the group item marker. */
 const TRACKED_TOGGLE = `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`;
 
+/** The group's disabled toggles: they take no press, but they hold their place. */
+const DISABLED_TOGGLE = `${TRACKED_TOGGLE}:is(:disabled, [aria-disabled="true"])`;
+
 /**
  * The toggle under a finger, from the toggles measured when the press began:
  * the nearest one whose target, grown toward 44 px and clamped against its
- * neighbours (utils/hitArea.ts `resolveHitTarget`), holds the point. The
- * tracker asks only for a finger's press; a mouse or a pen hit-tests the
- * toggles' own boxes.
+ * neighbours (utils/hitArea.ts `resolveHitTarget`), holds the point. A
+ * disabled toggle counts as a neighbour, so a finger on it, or nearer it
+ * than any enabled toggle, toggles nothing: an enabled neighbour's growth
+ * never takes a disabled toggle's place. The tracker asks only for a
+ * finger's press; a mouse or a pen hit-tests the toggles' own boxes.
  */
-const resolveTrackedToggle = (
+function resolveTrackedToggle(
+  group: HTMLElement | null,
   x: number,
   y: number,
   targets: ReadonlyArray<ActionGroupTarget>,
-): HTMLElement | null =>
-  targets[resolveHitTarget(x, y, targets)]?.element ?? null;
+): HTMLElement | null {
+  const disabled: ActionGroupTarget[] =
+    group == null
+      ? []
+      : Array.from(
+          group.querySelectorAll<HTMLElement>(DISABLED_TOGGLE),
+          element => {
+            const {left, top, right, bottom} = element.getBoundingClientRect();
+            return {element, left, top, right, bottom};
+          },
+        );
+  const index = resolveHitTarget(x, y, [...targets, ...disabled]);
+  return index >= 0 && index < targets.length ? targets[index].element : null;
+}
 
 /**
  * Whether the group takes a press that lands on `target`: one on a tracked
@@ -300,7 +318,8 @@ export function ToggleButtonGroup(props: ToggleButtonGroupProps): ReactNode {
     itemSelector: TRACKED_TOGGLE,
     highlightOnsetMs: 0,
     highlightExpansion: 0,
-    resolveTarget: resolveTrackedToggle,
+    resolveTarget: (x, y, targets) =>
+      resolveTrackedToggle(groupRef.current, x, y, targets),
     shouldTrack: target => takesPress(groupRef.current, target),
     isEnabled: tracksPress,
   });
