@@ -234,8 +234,11 @@ function isDirectExecution() {
     return (
       realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
     );
-  } catch {
-    return false;
+  } catch (error) {
+    // A script path that names nothing on disk is not this file. Any other
+    // error is thrown.
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') return false;
+    throw error;
   }
 }
 

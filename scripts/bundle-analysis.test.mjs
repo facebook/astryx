@@ -9,9 +9,11 @@
  * @position Unit test of ./bundle-analysis.mjs
  */
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 import {buildMap, measure} from './bundle-analysis.mjs';
 
@@ -87,5 +89,49 @@ describe('bundle analysis', () => {
   it('counts the code a set shares once', () => {
     const both = measure(['Barrel', 'Direct'], comps).js.raw;
     expect(both).toBeLessThan(comps.Barrel.totalRaw + comps.Direct.totalRaw);
+  });
+});
+
+describe('bundle analysis as a script', () => {
+  const SCRIPT = pathToFileURL(
+    path.join(import.meta.dirname, 'bundle-analysis.mjs'),
+  ).href;
+  /** Import the script in a process whose script path is `argv1`. */
+  const importWith = argv1 =>
+    spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `process.argv[1] = ${JSON.stringify(argv1)}; await import(${JSON.stringify(SCRIPT)});`,
+      ],
+      {encoding: 'utf8'},
+    );
+
+  it('reads a script path that names nothing on disk as another script', () => {
+    const missing = path.join(
+      os.tmpdir(),
+      'astryx-bundle-analysis-missing.mjs',
+    );
+    const res = importWith(missing);
+    expect({status: res.status, stderr: res.stderr}).toEqual({
+      status: 0,
+      stderr: '',
+    });
+  });
+
+  it('throws on a script path it cannot resolve for another reason, rather than read it as another script', () => {
+    const dir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-bundle-analysis-argv-'),
+    );
+    try {
+      const loop = path.join(dir, 'loop.mjs');
+      fs.symlinkSync('loop.mjs', loop);
+      const res = importWith(loop);
+      expect(res.status).not.toBe(0);
+      expect(res.stderr).toMatch(/ELOOP/);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
   });
 });
