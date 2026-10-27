@@ -247,7 +247,7 @@ export default function PreviewsPage() {
         </DemoBody>
       </DemoCard>
 
-      <Grid columns={{minWidth: 420}} gap={4}>
+      <Grid columns={{minWidth: 420, max: 2}} gap={4}>
         <DemoCard
           title="Checkbox tick"
           question="A high-frequency surface, so criterion 2 applies: the answer may be that it should be almost nothing."
