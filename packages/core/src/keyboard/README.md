@@ -59,10 +59,11 @@ exported from the package entry.
   field the surface owns has focus, and `putBack()` pans it back without
   scrolling the document, by scrolling into view a probe fixed where the
   visual viewport sat at the report (or the element given, such as a
-  full-viewport dialog). Its one listener, a passive capture-phase
-  `touchstart` on the document, lives only while a surface watches.
-  ChatLayout watches under a finger; BottomSheet's hook watches while its
-  sheet is presented.
+  full-viewport dialog). Every watch in a document shares one listener, a
+  passive capture-phase `touchstart` on the document, which lives only while
+  a surface watches. ChatLayout watches under a finger; BottomSheet's hook
+  watches while its sheet is presented under a coarse primary pointer. Under
+  a fine one neither registers a touch listener.
 - **BottomSheet's hook (FR4, FR5):** `useSheetKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
