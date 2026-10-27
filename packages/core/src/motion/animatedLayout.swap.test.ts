@@ -592,6 +592,23 @@ describe('more swap layout cases', () => {
     expect(spring?.keyframes[0].boxShadow).toBe('100px 0px 0px 0px red');
     expect(spring?.keyframes.at(-1)?.boxShadow).toBe('0px 0px 0px 0px red');
     expect(spring?.startTime).toBe(500);
+    // Released when the motion ends: the element shows its own styles again.
+    const cancel = vi.fn();
+    played = [];
+    const original = Element.prototype.animate;
+    Element.prototype.animate = function (
+      this: Element,
+      ...args: Parameters<typeof original>
+    ) {
+      const animation = original.apply(this, args);
+      (animation as unknown as {cancel: () => void}).cancel = cancel;
+      return animation;
+    };
+    playLayoutFrames(handle, [{element: title, frames: () => ({opacity: 1})}]);
+    played[0].finish?.();
+    expect(cancel).toHaveBeenCalled();
+    Element.prototype.animate = original;
+    played = [];
     played = [];
     media['(prefers-reduced-motion: reduce)'] = true;
     media['(pointer: coarse)'] = true;
