@@ -33,6 +33,8 @@ deciding_specs:
     spec:AST-071/DEC-1,
     spec:AST-017/DEC-23,
     spec:AST-012/DEC-6,
+    spec:AST-107/DEC-2,
+    spec:AST-107/DEC-3,
   ]
 ---
 
@@ -259,6 +261,8 @@ public promises until promotion.
   theme width names and inclusive-`from`/exclusive-`below` edge meanings.
 - `spec:AST-071/DEC-1` — every styling input works from every styling system,
   so a part's styling inputs come as a set.
+- `spec:AST-107/DEC-2` and `spec:AST-107/DEC-3` — a hook over a public
+  factory, and a component built entirely on one, are one API with it (INV21).
 - `spec:AST-017/DEC-23` — a touch presentation or open-surface touch mode is
   a default the caller can always override, through one `presentation` prop
   that also restores the previous surface and mode.
