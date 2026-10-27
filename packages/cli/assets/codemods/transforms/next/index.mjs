@@ -7,11 +7,19 @@
  * this file into the resolved version folder.
  */
 
+import migrateCodeBlockTokenizerToLanguage, {
+  meta as migrateCodeBlockTokenizerToLanguageMeta,
+} from './migrate-codeblock-tokenizer-to-language.mjs';
 import migrateInternationalizationContext, {
   meta as migrateInternationalizationContextMeta,
 } from './migrate-internationalization-context.mjs';
 
 export default [
+  {
+    name: 'migrate-codeblock-tokenizer-to-language',
+    transform: migrateCodeBlockTokenizerToLanguage,
+    meta: migrateCodeBlockTokenizerToLanguageMeta,
+  },
   {
     name: 'migrate-internationalization-context',
     transform: migrateInternationalizationContext,
