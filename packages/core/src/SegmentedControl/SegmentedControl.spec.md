@@ -18,10 +18,10 @@ verified_by:
   ]
 modules: []
 families: []
-design_specs: []
+design_specs: [design:user-states, design:reduced-motion]
 architecture: [architecture:component-theming-surface]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-094/FR4, spec:AST-094/FR13, spec:AST-094/FR19]
 ---
 
 # SegmentedControl component contract
@@ -30,8 +30,8 @@ system_specs: []
 
 SegmentedControl presents a group of mutually exclusive choices through
 SegmentedControlItem children. This draft records the current consumer anatomy
-and theming ownership without changing selection behavior, targets, or public
-API.
+and theming ownership, and proposes how a finger presses, drags, and selects
+(FR5–FR10); targets and public API are unchanged.
 
 ## Compatibility and migration
 
@@ -68,12 +68,18 @@ in `SegmentedControl.doc.mjs` and `SegmentedControlItem.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                           | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The radiogroup container carries the current `segmented-control` target and renders its supplied children.    | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | Each SegmentedControlItem renders one radio button carrying the current `segmented-control-item` target.      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR3 | A visible item label and optional icon render inside the item without separate public targets.                | Current source and tests        | Verified current behavior; no target change        |
-| FR4 | Selected and disabled remain reflected states on `segmented-control-item`, not standalone anatomy or targets. | Current source, docs, and tests | Verified current behavior; no target change        |
+| ID   | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                                                                                  | Draft review state                                 |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| FR1  | The radiogroup container carries the current `segmented-control` target and renders its supplied children.                                                                                                                                                                                                                                                                                                             | Current source, docs, and tests                                                        | Verified current behavior; no new behavior decided |
+| FR2  | Each SegmentedControlItem renders one radio button carrying the current `segmented-control-item` target.                                                                                                                                                                                                                                                                                                               | Current source, docs, and tests                                                        | Verified current behavior; no new behavior decided |
+| FR3  | A visible item label and optional icon render inside the item without separate public targets.                                                                                                                                                                                                                                                                                                                         | Current source and tests                                                               | Verified current behavior; no target change        |
+| FR4  | Selected and disabled remain reflected states on `segmented-control-item`, not standalone anatomy or targets.                                                                                                                                                                                                                                                                                                          | Current source, docs, and tests                                                        | Verified current behavior; no target change        |
+| FR5  | Under a finger (`spec:AST-094` FR13), a change of selection slides the selected surface from the old segment to the new one as one surface, the radiogroup's `::before`, animating transform and opacity only; under a mouse the theme's colour transition applies (`spec:AST-094` FR19).                                                                                                                              | `spec:AST-094` FR13; measured iOS 26.2 behavior                                        | Follows `spec:AST-094`                             |
+| FR6  | The slide plays on the internal `segmented.*` motion roles with UIKit's measured values (`spec:AST-094` FR4, DEC-11; thresholds internal under `spec:AST-002` FR3); under Reduce Motion the old surface fades out in place as the new one fades in (`design:reduced-motion` DR1–DR3).                                                                                                                                  | `spec:AST-094` FR4                                                                     | Follows `spec:AST-094`                             |
+| FR7  | Under a finger, a held unselected segment paints the pressed overlay on its part, as under a mouse (`design:user-states` DR1); no theme role changes or dims it.                                                                                                                                                                                                                                                       | `design:user-states` DR1; owner decision (DEC-1)                                       | Decided                                            |
+| FR8  | Under a finger, holding the selected segment lifts the selected surface by the theme's general pressed-thumb-lift role for draggable thumbs (SegmentedControl, Switch, Slider), only while it is pressed; the role is none by default, so shipped themes are unchanged. A theme that sets it grows the surface and casts its shadow, as a transform and shadow on the existing surface (`design:user-states` DR3).     | `design:user-states` DR3; owner decision (DEC-1)                                       | Decided                                            |
+| FR9  | During a drag of the selected surface, the selected label's colour follows the surface, with an internal hysteresis around each boundary; label weights change only when the drag starts. A tap selects through the browser's click (`spec:AST-094` FR11).                                                                                                                                                             | Measured iOS 26.2 behavior; `spec:AST-094` FR11                                        | Follows `spec:AST-094`                             |
+| FR10 | Under a finger, a drag from the selected segment carries the selected surface with the finger, within an internal overshoot past the end segments, and the lift commits the segment nearest the finger through that segment's click; a drag that starts on another segment leaves the surface in place and commits where it lifts, as a menu's press-tracking slide commits where it lifts (`spec:AST-094` FR26–FR28). | Measured iOS 26.2 behavior; this record's own model (`family:action-groups` exception) | Governed here                                      |
 
 ### Allowed variation
 
@@ -91,7 +97,10 @@ in `SegmentedControl.doc.mjs` and `SegmentedControlItem.doc.mjs`.
 
 ### Performance and resources
 
-- No new performance or resource rule is introduced.
+- **PR1 — The touch presentation adds no element.** SegmentedControl is a
+  repeated control, so it keeps the strict element budget
+  (`architecture:component-style-authoring` INV7): the slide uses the
+  radiogroup's `::before`, and the lift is a transform and shadow on it.
 
 ## Accessibility contract
 
@@ -129,22 +138,39 @@ Selection is a state of Segment, not a separate anatomy part.
 
 ## Verification map
 
-| Contract            | Verification                                                | Representative states                          | Mutation or failure expectation                                                        | Audit section                    |
-| ------------------- | ----------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------- |
-| FR1, FR2            | `SegmentedControl.test.tsx` radiogroup and rendering suites | Control with multiple segment items            | Removing the group or item semantics fails existing role and content assertions.       | `audit:SegmentedControl/anatomy` |
-| FR3                 | `SegmentedControl.test.tsx` label and icon suites           | Visible label, icon with label, icon-only item | Removing or changing current label/icon rendering fails existing DOM assertions.       | `audit:SegmentedControl/anatomy` |
-| FR4                 | `SegmentedControl.test.tsx` selection and disabled suites   | Selected, unselected, and disabled items       | Breaking reflected item state fails current ARIA, class, or data-attribute assertions. | `audit:SegmentedControl/theming` |
-| Target inventory    | `packages/core/src/theme/themingTargets.test.ts`            | Control and item targets                       | Runtime and documented target metadata drift fails target validation.                  | `audit:SegmentedControl/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                               | Canonical anatomy and both current targets     | Missing, extra, prefixed, or stale mappings fail repository validation.                | `audit:SegmentedControl/theming` |
+| Contract            | Verification                                                               | Representative states                                                                                            | Mutation or failure expectation                                                                                                                           | Audit section                    |
+| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1, FR2            | `SegmentedControl.test.tsx` radiogroup and rendering suites                | Control with multiple segment items                                                                              | Removing the group or item semantics fails existing role and content assertions.                                                                          | `audit:SegmentedControl/anatomy` |
+| FR3                 | `SegmentedControl.test.tsx` label and icon suites                          | Visible label, icon with label, icon-only item                                                                   | Removing or changing current label/icon rendering fails existing DOM assertions.                                                                          | `audit:SegmentedControl/anatomy` |
+| FR4                 | `SegmentedControl.test.tsx` selection and disabled suites                  | Selected, unselected, and disabled items                                                                         | Breaking reflected item state fails current ARIA, class, or data-attribute assertions.                                                                    | `audit:SegmentedControl/theming` |
+| FR5, FR6, PR1       | Selection-motion unit tests and real-browser proofs in Chromium and WebKit | a tap, a retarget, keyboard selection, Reduce Motion, a mouse                                                    | a second surface or added element, a Layout or Paint per frame, a curve off its role, travel under Reduce Motion, or changed behavior under a mouse fails | `audit:SegmentedControl/theming` |
+| FR7, FR8            | Theme tests and real-browser proofs under a finger                         | the default theme, a theme that sets a dim and a lift, a held unselected segment, a held selected segment        | a look that ignores the theme roles, a lift or dim under the default theme, or a lift that adds an element fails                                          | `audit:SegmentedControl/theming` |
+| FR9, FR10           | Touch-tracking unit tests and real-browser proofs                          | a hold, a drag, a release between segments, the end overshoot, a slow dither, a tap, a drag from another segment | a weight change mid-drag, a label that flips twice in a small dither, or a commit anywhere but the segment nearest the finger fails                       | `audit:SegmentedControl/anatomy` |
+| Target inventory    | `packages/core/src/theme/themingTargets.test.ts`                           | Control and item targets                                                                                         | Runtime and documented target metadata drift fails target validation.                                                                                     | `audit:SegmentedControl/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | Canonical anatomy and both current targets                                                                       | Missing, extra, prefixed, or stale mappings fail repository validation.                                                                                   | `audit:SegmentedControl/theming` |
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-selection, accessibility, or API decision.
+### DEC-1 — A held segment keeps the overlay; a pressed thumb may lift by theme
+
+**Reference:** `component:SegmentedControl/DEC-1`
+**Decider:** `cixzhang`, `2026-10-26`
+
+A held unselected segment keeps today's pressed overlay, with no theme role to
+dim it. A pressed selected thumb may lift by a general theme role shared by
+every draggable thumb, none by default, so the look stays the theme's and
+shipped themes are unchanged.
+
+Rejected: a pressed-treatment role that dims a segment's title.
 
 ## Open questions
 
 None.
+
+- **OQ2 — A general pressed-thumb lift for draggable thumbs.** (`human-design`)
+  Open. Proposed: one theme role shared by SegmentedControl, Switch, and Slider,
+  none by default (today's look), amending `design:user-states` DR3 for touch
+  presentations.
 
 ## Content boundary
 

@@ -57,16 +57,19 @@ surface.
   remain inoperable and MUST NOT gain a pressed visual treatment.
 - **DR3 — Persistent selection wins.** A selected SegmentedControl item MUST
   keep its raised selected surface during pointer hold; only an unselected item
-  receives the pressed overlay. Under a finger the item keeps that surface, and its press timing follows
+  receives the pressed overlay. A theme may own one press treatment on a
+  selected thumb: the general pressed-thumb lift shared by the draggable thumbs
+  of SegmentedControl, Switch, and Slider lifts a selected thumb only while it
+  is pressed, is none by default, and keeps a Switch thumb circular. Under a finger the item keeps that surface, and its press timing follows
   `spec:AST-094` FR11.
 
 ## Anatomy and hierarchy
 
-| Role                        | Purpose                                  | Required relationship                                                         |
-| --------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------- |
-| interaction target          | Receives the pointer hold or drag        | Owns or controls the paint surface named in the matrix                        |
-| pressed overlay             | Confirms the active manipulation         | Composes over the existing fill without replacing content or persistent state |
-| persistent selected surface | Communicates an already-selected segment | Remains visually unchanged during pointer hold                                |
+| Role                        | Purpose                                  | Required relationship                                                              |
+| --------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| interaction target          | Receives the pointer hold or drag        | Owns or controls the paint surface named in the matrix                             |
+| pressed overlay             | Confirms the active manipulation         | Composes over the existing fill without replacing content or persistent state      |
+| persistent selected surface | Communicates an already-selected segment | Remains unchanged during pointer hold, except the theme's pressed-thumb lift (DR3) |
 
 ## State representation
 
