@@ -139,8 +139,11 @@ function mouseDrag(handle: Element, from: number, to: number) {
   fireEvent.pointerMove(handle, {...MOUSE, clientY: to});
 }
 
+/** The rows' labels, without what the reorder draws over them. */
 const labels = () =>
-  Array.from(document.querySelectorAll('li')).map(row => row.textContent);
+  Array.from(document.querySelectorAll('li:not([data-astryx-leaving])')).map(
+    row => row.textContent,
+  );
 
 const handleOf = (label: string) =>
   screen.getByRole('button', {name: `Reorder ${label}`});
@@ -476,6 +479,28 @@ describe('List reorderable', () => {
     // Out of the mode, the arrows move nothing.
     await user.keyboard('{ArrowUp}');
     expect(onReorder).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks a key move's new place with the insertion line until the mode ends (design:ordered-collection-reordering)", async () => {
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const handle = handleOf('Inbox');
+    handle.focus();
+    await user.keyboard(' ');
+    // No line before a move.
+    expect(list.querySelector('[data-astryx-reorder-line]')).toBeNull();
+    await user.keyboard('{ArrowDown}');
+    layOut(list);
+    await user.keyboard('{ArrowDown}');
+    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    const line = list.querySelector<HTMLElement>('[data-astryx-reorder-line]');
+    expect(line).not.toBeNull();
+    expect(line).not.toHaveAttribute('hidden');
+    expect(line).toHaveAttribute('aria-hidden', 'true');
+    await user.keyboard('{Escape}');
+    expect(list.querySelector('[data-astryx-reorder-line]')).toBeNull();
   });
 
   it('moves nothing with the arrows outside reorder mode', async () => {
@@ -920,6 +945,63 @@ describe('List reorderable', () => {
     await waitFor(() =>
       expect(document.body).toHaveTextContent('Dropped, position 3 of 3'),
     );
+  });
+
+  it('keeps the other rows still during a drag: the source dims in place, a preview follows the pointer, and an insertion line marks the drop position (design:ordered-collection-reordering)', async () => {
+    stubPrimaryPointer(false);
+    const onReorder = vi.fn();
+    render(<ReorderableRows initial={['A', 'B', 'C']} onReorder={onReorder} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const [a, b, c] = Array.from(list.querySelectorAll('li'));
+    mouseDrag(handleOf('A'), 322, 322 + 70);
+    // The rows the drag passes stay where they are.
+    for (const row of [a, b, c]) {
+      expect(['', '0px 0px', 'none']).toContain(row.style.translate);
+    }
+    // The source stays in its place, dimmed.
+    expect(a).toHaveAttribute('data-astryx-reorder-source');
+    // A preview of it follows the pointer, hidden from assistive technology.
+    const preview = list.querySelector<HTMLElement>(
+      '[data-astryx-reorder-preview]',
+    );
+    expect(preview).not.toBeNull();
+    expect(preview).toHaveAttribute('aria-hidden', 'true');
+    expect(preview!.textContent).toBe(a.textContent);
+    expect(preview!.style.translate).toBe('0px 70px');
+    // The line sits after C, where A would land (position 2 of 0-2).
+    const line = list.querySelector<HTMLElement>('[data-astryx-reorder-line]');
+    expect(line).not.toBeNull();
+    expect(line).not.toHaveAttribute('hidden');
+    expect(line!.style.translate).toBe('0px 131px');
+    // The drop rearranges the rows and takes the preview and line away.
+    act(() => {
+      fireEvent.pointerUp(handleOf('A'), {...MOUSE, clientY: 322 + 70});
+    });
+    expect(onReorder).toHaveBeenCalledWith({key: 'A', to: 2});
+    expect(labels()).toEqual(['B', 'C', 'A']);
+    expect(list.querySelector('[data-astryx-reorder-preview]')).toBeNull();
+    expect(list.querySelector('[data-astryx-reorder-line]')).toBeNull();
+    expect(a).not.toHaveAttribute('data-astryx-reorder-source');
+  });
+
+  it('restores a cancelled drag at once: no preview, no line, the source undimmed, nothing moved', async () => {
+    stubPrimaryPointer(false);
+    const onReorder = vi.fn();
+    render(<ReorderableRows initial={['A', 'B', 'C']} onReorder={onReorder} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const a = list.querySelector('li')!;
+    mouseDrag(handleOf('A'), 322, 322 + 70);
+    expect(list.querySelector('[data-astryx-reorder-preview]')).not.toBeNull();
+    act(() => {
+      fireEvent.pointerCancel(handleOf('A'), {...MOUSE, clientY: 322 + 70});
+    });
+    expect(list.querySelector('[data-astryx-reorder-preview]')).toBeNull();
+    expect(list.querySelector('[data-astryx-reorder-line]')).toBeNull();
+    expect(a).not.toHaveAttribute('data-astryx-reorder-source');
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(labels()).toEqual(['A', 'B', 'C']);
   });
 
   it.each([

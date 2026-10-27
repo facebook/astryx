@@ -7,7 +7,9 @@
  *   delay from the UIKit constants table (motion/uikit/reorder.ts)
  * @output Interaction proofs for a reorderable List under a finger
  *   (spec:AST-103 verification): a hold on a handle then a drag moves the row
- *   and the drop settles it into its new place; a flick on a handle scrolls
+ *   and the drop settles it into its new place; while the finger holds the
+ *   drag the rows stay still, the source dims, a preview follows and an
+ *   insertion line marks the drop position; a flick on a handle scrolls
  *   and moves nothing; a cancelled drag puts the row back; with Reduce Motion
  *   the drop takes its place without travel; and a flush row's handle stays
  *   inside the list
@@ -39,7 +41,7 @@ const isTouch = async (page: Page) =>
 /** The story's row labels, in order. */
 async function labels(page: Page): Promise<string[]> {
   return page
-    .locator('#storybook-root li')
+    .locator('#storybook-root li:not([data-astryx-leaving])')
     .evaluateAll(rows => rows.map(row => row.textContent?.trim() ?? ''));
 }
 
@@ -62,15 +64,17 @@ async function handleOf(page: Page, label: string) {
 
 /** The layout top of each row, by label, once nothing animates. */
 async function settledTops(page: Page): Promise<Record<string, number>> {
-  return page.locator('#storybook-root li').evaluateAll(rows => {
-    const tops: Record<string, number> = {};
-    for (const row of rows) {
-      tops[row.textContent?.trim() ?? ''] = Math.round(
-        row.getBoundingClientRect().top,
-      );
-    }
-    return tops;
-  });
+  return page
+    .locator('#storybook-root li:not([data-astryx-leaving])')
+    .evaluateAll(rows => {
+      const tops: Record<string, number> = {};
+      for (const row of rows) {
+        tops[row.textContent?.trim() ?? ''] = Math.round(
+          row.getBoundingClientRect().top,
+        );
+      }
+      return tops;
+    });
 }
 
 test.describe('under a finger', () => {
@@ -118,6 +122,72 @@ test.describe('under a finger', () => {
           ),
         ),
     ).toBe(false);
+  });
+
+  test('while the finger holds a drag, the rows stay still: the source dims in place, a preview follows, and an insertion line marks the drop position', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'the held finger lifts through Chromium CDP',
+    );
+    const before = await settledTops(page);
+    const {at, rowHeight} = await handleOf(page, 'Inbox');
+    const driver = await touchDriver(page);
+    const script = holdThenDrag(
+      at,
+      {x: at.x, y: at.y + rowHeight * 2},
+      {holdMs: HOLD_MS, durationMs: 400, restMs: 120},
+    );
+    await driver.play(script.slice(0, -1));
+    expect(await settledTops(page)).toEqual(before);
+    const state = await page.evaluate(() => {
+      const source = document.querySelector<HTMLElement>(
+        '[data-astryx-reorder-source]',
+      );
+      const preview = document.querySelector<HTMLElement>(
+        '[data-astryx-reorder-preview]',
+      );
+      const line = document.querySelector<HTMLElement>(
+        '[data-astryx-reorder-line]',
+      );
+      return {
+        sourceOpacity: source == null ? null : getComputedStyle(source).opacity,
+        previewTop: preview?.getBoundingClientRect().top ?? null,
+        lineShown: line != null && !line.hidden,
+        lineTop: line?.getBoundingClientRect().top ?? null,
+      };
+    });
+    expect(Number(state.sourceOpacity)).toBeLessThan(1);
+    expect(state.previewTop).toBeGreaterThan(before.Inbox + rowHeight);
+    expect(state.lineShown).toBe(true);
+    // In the gap after Drafts, where Inbox would land.
+    expect(
+      Math.abs((state.lineTop ?? Number.NaN) - (before.Drafts + rowHeight)),
+    ).toBeLessThan(4);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await page.waitForTimeout(SETTLE_MS);
+    expect(await labels(page)).toEqual([
+      'Sent',
+      'Drafts',
+      'Inbox',
+      'Archive',
+      'Spam',
+      'Trash',
+    ]);
+    expect(
+      await page.evaluate(
+        () =>
+          document.querySelector(
+            '[data-astryx-reorder-preview], [data-astryx-reorder-line]',
+          ) == null,
+      ),
+    ).toBe(true);
   });
 
   test('a cancelled drag puts the row back and moves nothing', async ({
