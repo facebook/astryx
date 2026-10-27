@@ -206,7 +206,7 @@ export const docs = {
           name: 'onActiveChange',
           type: '(isActive: boolean) => void',
           description:
-            "Called with true when the tap that chooses the search tab activates its field. Set isActive false on cancel, and return to the tab it was chosen from in onChange's state if you want to leave search.",
+            'Called with true when the tap that chooses the search tab activates its field, and with false when another tab is chosen while the search tab is selected: a tap on it, the leading circle, or Escape under a mouse. A Cancel button you draw sets isActive false itself.',
         },
         {
           name: 'fieldRef',

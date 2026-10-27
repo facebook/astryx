@@ -244,9 +244,10 @@ export interface TabBarSearchTabProps {
   /** Whether the field is active: raised above the keyboard. */
   isActive?: boolean;
   /**
-   * Called when the search tab's tap activates the field, and with
-   * `false` when search ends: a tap on Cancel, the leading circle
-   * leaving search, or another tab being chosen.
+   * Called with `true` when the search tab's tap activates the field, and
+   * with `false` when another tab is chosen while the search tab is
+   * selected: a tap on it, the leading circle, or Escape under a mouse. A
+   * Cancel button the app draws sets `isActive` itself.
    */
   onActiveChange?: (isActive: boolean) => void;
   /** The field's handle: focused by the tap that activates it. */
@@ -939,11 +940,15 @@ export function TabBar({
         (item.value === moreValue && isMoreSelected)
       ) {
         onReselect?.(item.value);
-      } else {
-        onChange(item.value);
+        return;
       }
+      // Leaving the search tab ends search: the field goes with the tab.
+      if (search != null && value === search.value) {
+        search.onActiveChange?.(false);
+      }
+      onChange(item.value);
     },
-    [value, onChange, onReselect, moreValue, isMoreSelected],
+    [value, onChange, onReselect, moreValue, isMoreSelected, search],
   );
   const isSearchSelected = search != null && search.value === value;
   // The tab the search tab was chosen from: the leading circle holds it while
@@ -1064,9 +1069,8 @@ export function TabBar({
           : selectedItem;
       if (back != null) {
         flushSync(() => {
-          // The field goes with the tab: leaving search ends it, as a
-          // tap on another tab or on Cancel does.
-          search?.onActiveChange?.(false);
+          // Choosing the tab it holds leaves the search tab, which ends
+          // search (see choose).
           choose(back);
         });
       }
@@ -1456,7 +1460,6 @@ export function TabBar({
               event.preventDefault();
               const back = lastTabValue;
               flushSync(() => {
-                search.onActiveChange?.(false);
                 choose({value: back});
               });
               capsuleRef.current
