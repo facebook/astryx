@@ -155,20 +155,24 @@ export function NavHeadingMenuItem({
   // The element type above changes when `isDisabled` flips, so React replaces
   // the row. Carry focus over to the replacement when the outgoing node held it
   // (spec:AST-085 FR4). The ref cleanup runs before the old node is removed, so
-  // `activeElement` is still readable there.
-  const refocusRef = useRef(false);
+  // `activeElement` is still readable there. Only a different node replacing a
+  // removed one takes focus: React also detaches and re-attaches the same node
+  // (for example when an <Activity> boundary hides and reveals the row), and
+  // that must not pull focus back after the person has moved elsewhere.
+  const focusedNodeRef = useRef<HTMLElement | null>(null);
   const itemRef = useCallback(
     (node: HTMLElement | null) => {
       if (node === null) {
         return;
       }
-      if (refocusRef.current) {
-        refocusRef.current = false;
+      const outgoing = focusedNodeRef.current;
+      focusedNodeRef.current = null;
+      if (outgoing !== null && outgoing !== node && !outgoing.isConnected) {
         node.focus();
       }
       const release = mergeRefs<HTMLElement>(ref)(node);
       return () => {
-        refocusRef.current = document.activeElement === node;
+        focusedNodeRef.current = document.activeElement === node ? node : null;
         release?.();
       };
     },

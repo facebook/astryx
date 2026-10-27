@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import type {KeyboardEvent} from 'react';
+import {Activity, type KeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {LinkProvider} from '../Link';
@@ -243,6 +243,32 @@ describe('NavHeadingMenuItem', () => {
       </NavHeadingMenu>,
     );
     expect(screen.getByRole('menuitem')).not.toHaveFocus();
+  });
+
+  it('does not pull focus back when an Activity boundary reveals a row', () => {
+    const tree = (mode: 'visible' | 'hidden') => (
+      <>
+        <button type="button">Elsewhere</button>
+        <Activity mode={mode}>
+          <NavHeadingMenu>
+            <NavHeadingMenuItem label="Docs" href="/docs" />
+          </NavHeadingMenu>
+        </Activity>
+      </>
+    );
+    const {rerender} = render(tree('visible'));
+    screen.getByRole('menuitem').focus();
+    expect(screen.getByRole('menuitem')).toHaveFocus();
+
+    // Hide the row while it holds focus, then move focus elsewhere.
+    rerender(tree('hidden'));
+    const other = screen.getByRole('button', {name: 'Elsewhere'});
+    other.focus();
+    expect(other).toHaveFocus();
+
+    // Revealing the same node must leave focus where the person put it.
+    rerender(tree('visible'));
+    expect(other).toHaveFocus();
   });
 
   it('renders description text', () => {
