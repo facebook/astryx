@@ -450,7 +450,10 @@ async function openDesktopViewer(
 test('with a mouse, after a keyboard zoom, Enter on Next keeps the controls and the focus on Next: a keyboard activation is no click on the photo', async ({
   browser,
 }) => {
-  const v = await openDesktopViewer(browser, 'core-lightbox--gallery-with-zoom');
+  const v = await openDesktopViewer(
+    browser,
+    'core-lightbox--gallery-with-zoom',
+  );
   try {
     // Enter zooms the photo 2x about the centre: it covers (0, 0), where a
     // keyboard activation's click lands.
@@ -458,6 +461,14 @@ test('with a mouse, after a keyboard zoom, Enter on Next keeps the controls and 
     await stage.focus();
     await v.page.keyboard.press('Enter');
     await expect(stage).toHaveAttribute('aria-pressed', 'true');
+    // Zoomed in: the photo covers (0, 0).
+    const photo = v.dialog.locator('[data-current] img');
+    await expect
+      .poll(async () => {
+        const box = await photo.boundingBox();
+        return box != null && box.x <= 0 && box.y <= 0;
+      })
+      .toBe(true);
     const next = v.dialog.getByRole('button', {name: 'Next'});
     await next.focus();
     await v.page.keyboard.press('Enter');
@@ -490,7 +501,10 @@ test('with a mouse, a click on a single zoomable photo hides the controls, and t
 test('with a mouse, a click on the photo followed at once by a page change leaves the next photo its controls', async ({
   browser,
 }) => {
-  const v = await openDesktopViewer(browser, 'core-lightbox--gallery-with-zoom');
+  const v = await openDesktopViewer(
+    browser,
+    'core-lightbox--gallery-with-zoom',
+  );
   try {
     await v.page.mouse.click(v.centre.x, v.centre.y);
     await v.page.keyboard.press('ArrowRight');
