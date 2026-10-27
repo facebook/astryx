@@ -10,7 +10,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {navigation} from '@astryxdesign/core/motion/uikit';
+import {navigation} from '@astryxdesign/core/internal/motion';
 import {
   layersAt,
   layerVelocities,

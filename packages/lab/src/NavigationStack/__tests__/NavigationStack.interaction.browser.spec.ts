@@ -413,12 +413,14 @@ test('the back swipe from the leading edge tracks the finger and pops past half'
   await expect.poll(topTitle).toBe('General');
   await expect(top).toHaveCount(0);
 
-  // Once the edge pan has begun (15 px hysteresis), the card is the finger's
-  // travel past it: 1:1.
+  // The edge pan is attached to the whole stack, an element reaching beyond
+  // the edge band, so an in-band touch decides at FR19's 10 px
+  // (`spec:AST-094` FR18, DEC-22); once it has begun, the card is the
+  // finger's travel past that point: 1:1.
   const tracking = travel.filter(t => t.card > 1 && t.finger < width * 0.6);
   expect(tracking.length).toBeGreaterThan(5);
   for (const t of tracking) {
-    expect(Math.abs(t.card - (t.finger - 15))).toBeLessThan(2);
+    expect(Math.abs(t.card - (t.finger - 10))).toBeLessThan(2);
   }
 });
 
