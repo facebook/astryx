@@ -36,6 +36,12 @@ export interface CastFrame {
 }
 
 export interface Screencast {
+  /**
+   * Frames captured so far: wait for the first one to know the cast saw the
+   * page before an animation starts (`busyWindowProof` then knows its at-rest
+   * position).
+   */
+  frameCount(): number;
   /** Stops and returns every frame captured, in order. */
   stop(): Promise<CastFrame[]>;
 }
@@ -44,14 +50,21 @@ export interface ScreencastOptions {
   /** Lossless frames by default: marker colours survive PNG, not JPEG. */
   readonly format?: 'png' | 'jpeg';
   readonly quality?: number;
+  /**
+   * Keep one presented frame in this many (default 1, every frame): a slower
+   * evidence channel, like a loaded machine's screencast, for proving that a
+   * verdict does not depend on the screencast's rate.
+   */
+  readonly everyNthFrame?: number;
 }
 
 /**
  * Starts capturing composited frames. Chromium delivers one per presented
  * frame (16.7 ms at 60 Hz), timestamped by the compositor; WebKit's own
  * screencast delivers one per composited update (about every 14 ms in the
- * Linux build), stamped on its monotonic clock and rebased here onto the wall
- * clock. Both keep delivering while the page's main thread is blocked, and
+ * Linux build), stamped on CLOCK_MONOTONIC and rebased here onto the wall
+ * clock by that clock's measured offset, so both engines share the page's
+ * timeline. Both keep delivering while the page's main thread is blocked, and
  * neither sends a frame when nothing on screen changed.
  */
 export async function startScreencast(
@@ -74,7 +87,7 @@ export async function startScreencast(
 async function chromiumScreencast(
   page: Page,
   viewport: {width: number; height: number},
-  {format = 'png', quality = 90}: ScreencastOptions,
+  {format = 'png', quality = 90, everyNthFrame = 1}: ScreencastOptions,
 ): Promise<Screencast> {
   const cdp: CDPSession = await page.context().newCDPSession(page);
   const frames: CastFrame[] = [];
@@ -101,9 +114,10 @@ async function chromiumScreencast(
     quality,
     maxWidth: viewport.width,
     maxHeight: viewport.height,
-    everyNthFrame: 1,
+    everyNthFrame,
   });
   return {
+    frameCount: () => frames.length,
     async stop() {
       await cdp.send('Page.stopScreencast');
       cdp.off('Page.screencastFrame', onFrame);
@@ -116,13 +130,22 @@ async function chromiumScreencast(
 async function webkitScreencast(
   page: Page,
   viewport: {width: number; height: number},
-  {quality = 90}: ScreencastOptions,
+  {quality = 90, everyNthFrame = 1}: ScreencastOptions,
 ): Promise<Screencast> {
   const session = webkitPageSession(page);
   const frames: CastFrame[] = [];
   let generation = 0;
+  let delivered = 0;
   const onFrame = (payload: unknown) => {
     const frame = payload as {data: string; timestamp: number};
+    // WebKit's screencast has no everyNthFrame: keep one frame in N here.
+    delivered += 1;
+    if ((delivered - 1) % everyNthFrame !== 0) {
+      session
+        .send('Screencast.screencastFrameAck', {generation})
+        .catch(() => {});
+      return;
+    }
     frames.push({
       // WebKit stamps frames in seconds on the monotonic clock; rebased below.
       t: frame.timestamp * 1000,
@@ -141,18 +164,23 @@ async function webkitScreencast(
     quality,
   })) as {generation: number};
   generation = started.generation;
-  const wallAtStart = Date.now();
+  // WebKit stamps frames in seconds on CLOCK_MONOTONIC, which this process
+  // shares: rebase them by the wall clock's offset from that clock, sampled
+  // together. (Taking the first frame as the start shifted every frame earlier
+  // by however long that frame took to come, 60–100 ms on a busy page.)
+  const wallMinusMonotonic = Date.now() - Number(process.hrtime.bigint()) / 1e6;
   return {
+    frameCount: () => frames.length,
     async stop() {
       await session.send('Screencast.stopScreencast');
       session.off?.('Screencast.screencastFrame', onFrame);
       if (frames.length === 0) {
         return frames;
       }
-      const ordered = inPresentationOrder(frames);
-      // Rebase the monotonic stamps onto the wall clock (first frame ≈ start).
-      const offset = wallAtStart - ordered[0].t;
-      return ordered.map(f => ({...f, t: f.t + offset}));
+      return inPresentationOrder(frames).map(f => ({
+        ...f,
+        t: f.t + wallMinusMonotonic,
+      }));
     },
   };
 }
@@ -399,6 +427,16 @@ export async function sampleRects(
           opacity: number;
         }[]
       >(resolve => {
+        // The harness's own waits run on the real timers: a frozen timer gate
+        // (story.ts) holds only the page's.
+        const gate = (
+          window as unknown as {
+            __harnessTimerGate?: {
+              frame?: typeof requestAnimationFrame;
+            };
+          }
+        ).__harnessTimerGate;
+        const frame = gate?.frame ?? window.requestAnimationFrame.bind(window);
         const samples: {
           t: number;
           box: {x: number; y: number; width: number; height: number} | null;
@@ -416,12 +454,12 @@ export async function sampleRects(
             opacity: Number(style.opacity),
           });
           if (now < end) {
-            requestAnimationFrame(tick);
+            frame(tick);
           } else {
             resolve(samples);
           }
         };
-        requestAnimationFrame(tick);
+        frame(tick);
       }),
     durationMs,
   );
