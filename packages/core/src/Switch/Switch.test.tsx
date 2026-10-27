@@ -1233,6 +1233,59 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
     // Busy stays attached, so the change that made it busy keeps its motion.
     expect(touchListenersWhileRendering('busy')).toBeGreaterThan(baseline);
   });
+
+  it('runs no hit-area observer or window listener under a fine pointer, or while disabled under a coarse one', () => {
+    const observersWhileRendering = (
+      isCoarse: boolean,
+      isDisabled: boolean,
+    ): {observers: number; resize: number} => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        query =>
+          ({
+            ...coarseMedia(query),
+            matches: isCoarse && query.includes('pointer: coarse'),
+          }),
+      );
+      let observers = 0;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor() {
+            observers += 1;
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      const onWindow = vi.spyOn(window, 'addEventListener');
+      const {unmount} = render(
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled={isDisabled}
+        />,
+      );
+      const resize = onWindow.mock.calls.filter(
+        ([type]) => type === 'resize',
+      ).length;
+      unmount();
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      return {observers, resize};
+    };
+    expect(observersWhileRendering(false, false)).toEqual({
+      observers: 0,
+      resize: 0,
+    });
+    expect(observersWhileRendering(true, true)).toEqual({
+      observers: 0,
+      resize: 0,
+    });
+    // Enabled under a coarse pointer it measures.
+    expect(observersWhileRendering(true, false).observers).toBe(1);
+  });
 });
 
 describe('hit area under a coarse pointer (Switch FR4)', () => {

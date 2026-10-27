@@ -949,14 +949,16 @@ export function Switch({
       ),
     );
   // Under a coarse pointer, the hit area's insets toward 44 px, stopping at
-  // half the gap to each neighbouring target (Switch FR4).
+  // half the gap to each neighbouring target (Switch FR4). A disabled switch
+  // watches nothing (spec:AST-094 FR24); the watch itself starts its
+  // observers only while the primary pointer is coarse.
   useIsomorphicLayoutEffect(() => {
     const surface = surfaceRef.current;
-    if (surface == null) {
+    if (surface == null || isDisabled) {
       return;
     }
     return watchHitArea(surface, insets => writeHitInsets(surface, insets));
-  }, []);
+  }, [isDisabled]);
   useSwitchTouch(touchParts, {
     isOn,
     isInteractive: !isDisabled && !isBusy,
