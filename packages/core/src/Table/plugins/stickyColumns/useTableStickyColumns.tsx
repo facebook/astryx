@@ -159,6 +159,24 @@ function resolveStickySide(
 const SHADOW_VAR_START = '--table-sticky-shadow-start';
 const SHADOW_VAR_END = '--table-sticky-shadow-end';
 
+// A pinned cell draws its own row divider. With collapsed borders the table
+// paints every border at its cell's static place: a sticky cell moves, its
+// border does not, so without this the line under a pinned column would be
+// whichever scrolled cell's border passes beneath it, and missing where that
+// cell has none. The cell's ::before (already the row overlay's layer) extends
+// over the cell's border area, covers whatever the table painted there with
+// the pinned base, and draws the divider with the cell's own border tokens
+// (TableCell.tsx); a border an app or a theme sets on the cell or row directly
+// is read on mount and on resize (syncPinnedDividers).
+const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
+/** Spread into a pinned cell's props: the attribute the divider sync finds. */
+const PINNED_PROPS = {[PINNED_ATTRIBUTE]: ''} as Record<string, string>;
+const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
+const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
+const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
+const PINNED_BASE = `var(--table-sticky-background, ${colorVars['--color-background-card']})`;
+const DIVIDER_WIDTH = `var(${PINNED_DIVIDER_WIDTH}, var(--_table-row-divider-width, 0px))`;
+
 const stickyStyles = stylex.create({
   cell: {
     position: 'sticky',
@@ -176,6 +194,19 @@ const stickyStyles = stylex.create({
       zIndex: -1,
       pointerEvents: 'none',
       backgroundColor: 'var(--table-row-overlay, transparent)',
+      // The divider: the layer reaches the bottom of the cell's border area,
+      // paints the pinned base there (hiding the table's static border and any
+      // scrolled cell's border), then the divider over it.
+      marginBottom: `calc(-1 * ${DIVIDER_WIDTH})`,
+      borderBottomWidth: DIVIDER_WIDTH,
+      borderBottomStyle: `var(${PINNED_DIVIDER_STYLE}, solid)`,
+      borderBottomColor: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+      backgroundImage: `linear-gradient(${PINNED_BASE}, ${PINNED_BASE})`,
+      backgroundSize: `100% ${DIVIDER_WIDTH}`,
+      backgroundPosition: 'bottom',
+      backgroundRepeat: 'no-repeat',
+      backgroundOrigin: 'border-box',
+      backgroundClip: 'border-box',
       transitionProperty: 'background-color',
       transitionDuration: durationVars['--duration-fast'],
       transitionTimingFunction: easeVars['--ease-standard'],
@@ -256,6 +287,96 @@ const shadowStyles = stylex.create({
   },
 });
 
+// =============================================================================
+// Pinned dividers: app overrides
+// =============================================================================
+
+/** Border styles by collapsed-border precedence, weakest first (CSS 2.1). */
+const STYLE_RANK = [
+  'inset',
+  'groove',
+  'outset',
+  'ridge',
+  'dotted',
+  'dashed',
+  'solid',
+  'double',
+];
+
+interface BottomEdge {
+  width: number;
+  style: string;
+  color: string;
+}
+
+function bottomEdge(element: Element): BottomEdge {
+  const style = getComputedStyle(element);
+  return {
+    width: parseFloat(style.borderBottomWidth) || 0,
+    style: style.borderBottomStyle,
+    color: style.borderBottomColor,
+  };
+}
+
+/**
+ * The bottom border the table paints for a cell: the cell's own, or its row's
+ * where an app styles the row and the row's wins the collapse (wider, then
+ * the stronger style; the cell wins a tie).
+ */
+function collapsedBottom(cell: Element): BottomEdge {
+  const own = bottomEdge(cell);
+  const row = cell.parentElement;
+  if (row == null) {
+    return own;
+  }
+  const other = bottomEdge(row);
+  if (own.style === 'hidden' || other.style === 'hidden') {
+    return {width: 0, style: 'none', color: own.color};
+  }
+  const drawn = (edge: BottomEdge) => edge.style !== 'none' && edge.width > 0;
+  if (!drawn(other)) {
+    return own;
+  }
+  if (!drawn(own) || other.width > own.width) {
+    return other;
+  }
+  if (other.width < own.width) {
+    return own;
+  }
+  return STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style)
+    ? other
+    : own;
+}
+
+/**
+ * Where an app styles a cell's or row's `border-bottom` directly, past the
+ * custom properties, the pinned divider takes the border the table paints.
+ * Read on mount and on resize, never on scroll.
+ */
+function syncPinnedDividers(root: HTMLElement): void {
+  for (const cell of root.querySelectorAll<HTMLElement>(
+    `[${PINNED_ATTRIBUTE}]`,
+  )) {
+    cell.style.removeProperty(PINNED_DIVIDER_WIDTH);
+    cell.style.removeProperty(PINNED_DIVIDER_STYLE);
+    cell.style.removeProperty(PINNED_DIVIDER_COLOR);
+    const want = collapsedBottom(cell);
+    const drawn = getComputedStyle(cell, '::before');
+    const drawnWidth = parseFloat(drawn.borderBottomWidth) || 0;
+    const matches =
+      want.width === drawnWidth &&
+      (want.width === 0 ||
+        (want.style === drawn.borderBottomStyle &&
+          want.color === drawn.borderBottomColor));
+    if (matches) {
+      continue;
+    }
+    cell.style.setProperty(PINNED_DIVIDER_WIDTH, `${want.width}px`);
+    cell.style.setProperty(PINNED_DIVIDER_STYLE, want.style);
+    cell.style.setProperty(PINNED_DIVIDER_COLOR, want.color);
+  }
+}
+
 // Stable empty default so an unset start/end doesn't allocate a fresh array
 // (and bust the memo) on every render.
 const EMPTY: string[] = [];
@@ -319,11 +440,15 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         );
       }
     };
+    const resize = () => {
+      update();
+      syncPinnedDividers(el);
+    };
     el.addEventListener('scroll', update, {passive: true});
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
-    update();
+    resize();
     detachRef.current = () => {
       el.removeEventListener('scroll', update);
       resizeObserver?.disconnect();
@@ -361,6 +486,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           ...props,
           htmlProps: {
             ...props.htmlProps,
+            ...PINNED_PROPS,
             style: {...props.htmlProps.style, ...offsetStyle},
           },
           xstyle: [
@@ -389,6 +515,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           ...props,
           htmlProps: {
             ...props.htmlProps,
+            ...PINNED_PROPS,
             style: {...props.htmlProps.style, ...offsetStyle},
           },
           xstyle: [
