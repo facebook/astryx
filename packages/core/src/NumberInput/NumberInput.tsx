@@ -224,6 +224,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
 import {formatEditableNumber} from './numberParser';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
@@ -520,6 +521,15 @@ function getSteppedValue({
     return currentValue;
   }
   return Object.is(nextValue, -0) ? 0 : nextValue;
+}
+
+/** Whether the primary pointer is coarse (a phone, a tablet). */
+function isCoarsePrimaryPointer(view: Window | null): boolean {
+  return (
+    view != null &&
+    typeof view.matchMedia === 'function' &&
+    view.matchMedia(TOUCH_QUERY).matches
+  );
 }
 
 /**
@@ -922,10 +932,19 @@ export function NumberInput({
       return;
     }
     // A mouse click moves focus to the field, so the arrow keys and the wheel
-    // keep stepping. A finger, a pen or assistive technology steps the value
-    // without moving focus: on a phone, focusing the field would bring up the
-    // on-screen keyboard, which a stepper never does.
-    if (pointerType === 'mouse' && event.detail > 0) {
+    // keep stepping, and so do a pen and an activation with no pointer (a
+    // screen reader's) where the primary pointer is fine. A finger, and a pen
+    // or an activation with no pointer where the primary pointer is coarse,
+    // step the value without moving focus: there, focusing the field would
+    // bring up the on-screen keyboard, which a stepper never does.
+    const isMouseClick = pointerType === 'mouse' && event.detail > 0;
+    const isFinePointer = !isCoarsePrimaryPointer(
+      event.currentTarget.ownerDocument.defaultView,
+    );
+    if (
+      isMouseClick ||
+      (isFinePointer && (pointerType === 'pen' || pointerType == null))
+    ) {
       inputRef.current?.focus();
     }
     stepValue(direction);
