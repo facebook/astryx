@@ -401,6 +401,29 @@ describe('usePanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(events.at(-1)?.translation).toEqual({x: 30, y: 0});
   });
 
+  it('calls onPan from no effect: a drag in progress at unmount ends without a cancelled event (architecture:react-component-runtime INV2)', () => {
+    const events: PanGestureEvent[] = [];
+    const {getByTestId, unmount} = render(
+      <Draggable axis="x" onPan={event => events.push(event)} />,
+    );
+    drag(getByTestId('surface'), 40, 0, {lift: false});
+    expect(phases(events)).toEqual(['began', 'changed']);
+    unmount();
+    expect(phases(events)).toEqual(['began', 'changed']);
+  });
+
+  it('calls onPan from no effect: a drag in progress when the axis changes ends without a cancelled event (architecture:react-component-runtime INV2)', () => {
+    const events: PanGestureEvent[] = [];
+    const onPan = (event: PanGestureEvent) => events.push(event);
+    const {getByTestId, rerender} = render(
+      <Draggable axis="x" onPan={onPan} />,
+    );
+    drag(getByTestId('surface'), 40, 0, {lift: false});
+    expect(phases(events)).toEqual(['began', 'changed']);
+    rerender(<Draggable axis="y" onPan={onPan} />);
+    expect(phases(events)).toEqual(['began', 'changed']);
+  });
+
   it('attaches once under StrictMode and removes every listener at unmount', () => {
     const events: PanGestureEvent[] = [];
     const holder = document.createElement('div');
