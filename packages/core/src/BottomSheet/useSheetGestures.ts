@@ -52,13 +52,14 @@
  * the pixels stop meaning the same thing when the viewport changes, the stop
  * the user chose does not.
  *
- * Where the primary pointer is coarse (spec:AST-094 FR13, FR19), a finger's
- * or a pen's drag runs on the gesture system's recognizers (../gestures),
+ * Where the primary pointer is coarse (spec:AST-094 FR13), a finger's or a
+ * pen's drag runs on the gesture system's recognizers (../gestures),
  * which report UIKit's numbers: a pan's translation from where it began (past
  * its threshold) and its velocity (UIKit's filter). A mouse anywhere, and a
  * pen or a finger where the primary pointer is fine, drag the sheet as they
  * did before the recognizers (spec:AST-017 FR59), through the handle's and
- * the body's own pointer listeners: 1:1 from the first pixel on the handle,
+ * the body's own pointer listeners (a finger's body pull through the body's
+ * own touch listeners): 1:1 from the first pixel on the handle,
  * from the body's top after 8 px anchored at the press, with today's detent
  * magnet, stretch past the top and release (one answer for the tracking and
  * the release, spec:AST-094 FR13). Wheel and trackpad scrolling drive the
@@ -2144,9 +2145,9 @@ export function useSheetGestures({
         return true;
       }
       // Past scroll input, the recognizers serve a finger, and a pen, where
-      // the primary pointer is coarse (spec:AST-094 FR19); a mouse's drag,
-      // and anything where the primary pointer is fine, take the pointer
-      // path below (spec:AST-017 FR59).
+      // the primary pointer is coarse; a mouse's drag, and anything where the
+      // primary pointer is fine, keep the pointer path below, as before the
+      // recognizers (spec:AST-017 FR59).
       if (
         touch.pointerType === 'mouse' ||
         !readTouchPresentation().isTouch ||
