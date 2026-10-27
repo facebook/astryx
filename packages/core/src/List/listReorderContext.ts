@@ -42,6 +42,14 @@ export interface ListReorderOptions {
   readonly onReorder: (move: {key: Key; to: number}) => void;
   /** Whether the item with `key` moves; every item does without it. */
   readonly isReorderable?: (key: Key) => boolean;
+  /**
+   * Each item's slot centre, in px from the top-left of the container's
+   * padding box (spec:AST-103 FR1): a drag proposes the nearest slot.
+   */
+  readonly positions?: () => ReadonlyArray<{
+    readonly x: number;
+    readonly y: number;
+  }>;
 }
 
 /** The handle a reorderable row ends with (List/ListReorderHandle.tsx). */

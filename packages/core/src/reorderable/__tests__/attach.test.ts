@@ -274,4 +274,70 @@ describe('createReorderable attach', () => {
     detach();
     expect(dialog.querySelector('[aria-live="polite"]')).toBeNull();
   });
+
+  it('drops an item in a positions() layout on the slot whose centre is nearest its own (spec:AST-103 FR1)', () => {
+    // A row of three 60 x 40 cards, 80 px apart, laid out by the app.
+    const {container, cards, items, move} = deck(['A', 'B', 'C']);
+    const slots = [
+      {x: 40, y: 20},
+      {x: 120, y: 20},
+      {x: 200, y: 20},
+    ];
+    container.getBoundingClientRect = () =>
+      DOMRect.fromRect({x: 100, y: 300, width: 240, height: 40});
+    for (const card of cards) {
+      const place = () => cards.indexOf(card);
+      Object.defineProperty(card.el, 'offsetParent', {
+        configurable: true,
+        get: () => container,
+      });
+      Object.defineProperty(card.el, 'offsetTop', {
+        configurable: true,
+        value: 0,
+      });
+      Object.defineProperty(card.el, 'offsetLeft', {
+        configurable: true,
+        get: () => slots[place()].x - 30,
+      });
+      Object.defineProperty(card.el, 'offsetHeight', {
+        configurable: true,
+        value: 40,
+      });
+      Object.defineProperty(card.el, 'offsetWidth', {
+        configurable: true,
+        value: 60,
+      });
+      card.el.getBoundingClientRect = () =>
+        DOMRect.fromRect({
+          x: 100 + slots[place()].x - 30,
+          y: 300,
+          width: 60,
+          height: 40,
+        });
+    }
+    const onReorder = vi.fn(({key, to}: {key: string | number; to: number}) =>
+      move(String(key), to),
+    );
+    const {detach} = createReorderable({
+      onReorder,
+      positions: () => slots,
+    }).attach(container, {items});
+    const MOUSE = {pointerType: 'mouse', pointerId: 1, button: 0, clientY: 320};
+    const grip = cards[0].grip;
+    // From A's centre (140, 320) to just past C's (305, 322).
+    fireEvent.pointerDown(grip, {...MOUSE, clientX: 140});
+    fireEvent.pointerMove(grip, {...MOUSE, clientX: 150});
+    fireEvent.pointerMove(grip, {...MOUSE, clientX: 305, clientY: 322});
+    const preview = document.querySelector<HTMLElement>(
+      '[data-astryx-reorder-preview]',
+    );
+    // The preview follows the pointer on both axes.
+    expect(preview?.style.translate).toBe('165px 2px');
+    act(() => {
+      fireEvent.pointerUp(grip, {...MOUSE, clientX: 305, clientY: 322});
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenCalledWith({key: 'a', to: 2});
+    detach();
+  });
 });

@@ -62,6 +62,15 @@ export interface ReorderableOptions<
    * refused. Every item moves without it.
    */
   isReorderable?: (key: TKey) => boolean;
+  /**
+   * For a layout such as a grid or a fanned hand: one `{x, y}` per item, in
+   * item order, the centre of that item's slot in px from the top-left of the
+   * collection's container (its padding box, where an absolutely placed item
+   * is measured from). A drag drops an item on the slot within its range
+   * whose centre is nearest its own. An array of another length is ignored,
+   * and drop positions then come from the measured layout, as without it.
+   */
+  positions?: () => ReadonlyArray<{readonly x: number; readonly y: number}>;
 }
 
 declare const reorderableBrand: unique symbol;

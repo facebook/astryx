@@ -120,7 +120,10 @@ import {
   autoscrollStep,
   clampTop,
   dropPosition,
+  nearestSlot,
   type ReorderGeometry,
+  type ReorderSlot,
+  slotsOf,
 } from './reorderModel';
 
 /**
@@ -417,6 +420,18 @@ interface DragSession {
   lastY: number;
   /** The edge autoscroll's timer, on UIKit's 20 ms clock. */
   readonly edge: EdgeAutoscroll;
+  /**
+   * The slots `positions()` gives (spec:AST-103 FR1), whose nearest centre a
+   * drag proposes; null in a measured layout.
+   */
+  readonly slots: ReadonlyArray<ReorderSlot> | null;
+  /** The container's padding box left in the viewport at the begin. */
+  readonly originX: number;
+  /** The dragged item's layout left inside the container. */
+  readonly left: number;
+  /** The pointer's distance from the dragged item's left. */
+  readonly grabX: number;
+  lastX: number;
   /** Points per tick of the running autoscroll; 0 when none. */
   step: number;
   /** The dragged row's inline stacking before the drag. */
@@ -541,6 +556,8 @@ export interface ReorderGestureEvent {
   readonly state: 'began' | 'changed' | 'ended' | 'cancelled';
   /** The finger's (or pointer's) y in the viewport. */
   readonly y: number;
+  /** Its x in the viewport, which a `positions()` layout follows. */
+  readonly x?: number;
   /**
    * At a release, the finger's (or pointer's) y velocity in px/s, which the
    * dropped row's glide starts at (spec:AST-094 FR6, FR38).
@@ -923,9 +940,13 @@ export class ListReorderController implements ListReorderSession {
           }
           isDragging = true;
           this.draggedHandle = handle;
-          this.gesture(this.rowOf(handle), {state: 'began', y});
+          this.gesture(this.rowOf(handle), {state: 'began', y, x});
         }
-        this.gesture(null, {state: 'changed', y: move.clientY});
+        this.gesture(null, {
+          state: 'changed',
+          y: move.clientY,
+          x: move.clientX,
+        });
       };
       const onUp = (up: PointerEvent) => {
         if (up.pointerId !== pointerId) {
@@ -937,6 +958,7 @@ export class ListReorderController implements ListReorderSession {
           this.gesture(null, {
             state: 'ended',
             y: up.clientY,
+            x: up.clientX,
             velocity: velocity.velocity(up.timeStamp).y,
           });
         }
@@ -1002,6 +1024,7 @@ export class ListReorderController implements ListReorderSession {
           this.gesture(state === 'began' ? this.rowOf(held) : null, {
             state,
             y: recognizer.location().y,
+            x: recognizer.location().x,
             velocity:
               state === 'ended' && touch != null
                 ? velocity.velocity(touch.time).y
@@ -1019,11 +1042,11 @@ export class ListReorderController implements ListReorderSession {
     switch (event.state) {
       case 'began':
         if (row != null) {
-          this.begin(row, event.y);
+          this.begin(row, event.y, event.x ?? 0);
         }
         break;
       case 'changed':
-        this.track(event.y);
+        this.track(event.y, event.x ?? this.session?.lastX ?? 0);
         break;
       case 'ended':
         this.drop(event.velocity ?? 0);
@@ -1056,7 +1079,7 @@ export class ListReorderController implements ListReorderSession {
   }
 
   /** Picks up `row` under a pointer at `y`. Returns whether it did. */
-  private begin(row: HTMLElement, y: number): boolean {
+  private begin(row: HTMLElement, y: number, x: number): boolean {
     const list = this.getList();
     if (list == null || this.session != null) {
       return false;
@@ -1090,6 +1113,12 @@ export class ListReorderController implements ListReorderSession {
     const shown = shownY(row, at);
     const origin = row.getBoundingClientRect().top - shown - tops[dragged];
     const scroller = scrollerOf(list);
+    // A positions() layout: the dragged item follows the pointer on both
+    // axes, and the nearest slot centre is its drop position.
+    const slots = slotsOf(this.options?.positions, rows.length);
+    const listBox = list.getBoundingClientRect();
+    const originX = listBox.left + list.clientLeft;
+    const left = row.getBoundingClientRect().left - originX;
     // Every row gets an identity offset for the session: a row's first offset
     // would otherwise change how it paints in the middle of the drag (a
     // layout and a paint); with one in place, neither a move nor a slide lays
@@ -1155,11 +1184,16 @@ export class ListReorderController implements ListReorderSession {
       step: 0,
       restore,
       preview,
+      slots,
+      originX,
+      left,
+      grabX: x - (originX + left),
+      lastX: x,
     };
     this.session = session;
     // Rows still sliding from an earlier drag go to their places.
     this.moveTo(dragged);
-    this.track(y);
+    this.track(y, x);
     this.announce(
       this.messages?.pickedUp(dragged + 1, rows.length) ?? '',
       'polite',
@@ -1182,17 +1216,38 @@ export class ListReorderController implements ListReorderSession {
     });
   }
 
-  private track(y: number): void {
+  private track(y: number, x: number): void {
     const session = this.session;
     if (session == null) {
       return;
     }
     session.lastY = y;
-    const {geometry, dragged} = session;
+    session.lastX = x;
+    const {geometry, dragged, slots} = session;
     const row = geometry.rows[dragged];
     const origin = session.origin - session.scrolled;
-    const top = this.draggedTop(session, y);
-    animatorFor(session.preview).set({y: top - (origin + row.top)});
+    // In a positions() layout the item follows the pointer freely: the
+    // list's own ends bound a vertical list's rows, not a grid's or a fan's.
+    const top =
+      slots != null ? y - session.grabOffset : this.draggedTop(session, y);
+    const shiftY = top - (origin + row.top);
+    if (slots != null) {
+      // The preview follows the pointer on both axes; the drop position is
+      // the slot within the drag's range whose centre is nearest its own.
+      const shiftX = x - session.grabX - (session.originX + session.left);
+      animatorFor(session.preview).set({x: shiftX, y: shiftY});
+      const width = session.rows[dragged].offsetWidth;
+      const nearest = nearestSlot(slots, geometry.rows, dragged, {
+        x: session.left + shiftX + width / 2,
+        y: row.top + shiftY + row.height / 2,
+      });
+      if (nearest !== session.position) {
+        this.moveTo(nearest);
+      }
+      this.autoscroll(top, row.height);
+      return;
+    }
+    animatorFor(session.preview).set({y: shiftY});
     const position = dropPosition(
       geometry,
       dragged,
@@ -1274,7 +1329,7 @@ export class ListReorderController implements ListReorderSession {
     scroller.element.scrollTop = next;
     session.scrolled += moved;
     scroller.position = next;
-    this.track(session.lastY);
+    this.track(session.lastY, session.lastX);
     return moved;
   }
 
