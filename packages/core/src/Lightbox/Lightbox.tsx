@@ -124,7 +124,10 @@ const styles = stylex.create({
     position: 'fixed',
     inset: 0,
     width: '100vw',
-    height: '100vh',
+    // The dynamic viewport: the height a mobile browser shows. Its 100vh is
+    // the large viewport, measured with the toolbars retracted, so a viewer
+    // that tall runs under Safari's bottom toolbar and hides the caption.
+    height: stylex.firstThatWorks('100dvh', '100vh'),
     maxWidth: 'none',
     maxHeight: 'none',
     margin: 0,

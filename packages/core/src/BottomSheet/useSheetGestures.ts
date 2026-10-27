@@ -1317,7 +1317,7 @@ export function useSheetGestures({
   // pointer (design:reduced-motion DR2).
   const dragTouchRef = useRef(false);
 
-  // Whether the primary pointer is coarse, subscribed: the sheet's touch-only
+  // Whether the primary pointer is coarse, subscribed: the catch's touch-only
   // listeners exist only then (spec:AST-094 FR24), and come and go with it.
   const coarsePrimary = useMediaQuery(TOUCH_QUERY);
 
@@ -2751,13 +2751,16 @@ export function useSheetGestures({
         : {start: onTouchStart, move: onTouchMove, end: onTouchEnd};
     setBodyMounts(mounts => mounts + 1);
   }, []);
-  // The body's touch listeners, only where the primary pointer is coarse
-  // (spec:AST-094 FR24): attached for each mounted body, removed when it
-  // goes or the primary pointer turns fine.
+  // The body's touch listeners, for a finger under any primary pointer: a
+  // touchscreen laptop's finger pulls the sheet from the content's top as a
+  // phone's does, where the pointer listeners would lose it to the browser's
+  // scroll. Under a fine pointer a component may listen on its own element
+  // (spec:AST-094 FR24). Attached for each mounted body, removed when it
+  // goes.
   useEffect(() => {
     const node = bodyNodeRef.current;
     const h = bodyTouchHandlersRef.current;
-    if (!coarsePrimary || node == null || h == null) {
+    if (node == null || h == null) {
       return;
     }
     node.addEventListener('touchstart', h.start, {passive: true});
@@ -2770,7 +2773,7 @@ export function useSheetGestures({
       node.removeEventListener('touchend', h.end);
       node.removeEventListener('touchcancel', h.end);
     };
-  }, [bodyMounts, coarsePrimary]);
+  }, [bodyMounts]);
 
   const reconcileScrollPreservationInset = useCallback(
     (body: HTMLElement) => {
