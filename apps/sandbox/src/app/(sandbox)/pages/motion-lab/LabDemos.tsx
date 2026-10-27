@@ -41,6 +41,7 @@ import {
 } from './proposed/TabList';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Token} from '@astryxdesign/core/Token';
+import {themeProps} from '@astryxdesign/core/utils';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {useMotionLab} from './MotionLabStore';
@@ -908,8 +909,8 @@ const FILL_STEPS = [12, 58, 34, 86] as const;
  * which transitions `width` (a layout property, every frame of every tick).
  * After is a sandbox copy of its track and fill that moves the same fill with
  * `transform: scaleX()` on the same token and curve, so only the technique
- * differs. It carries ProgressBar's theming-target classes, so the theme
- * paints it as it paints the real bar.
+ * differs. It carries ProgressBar's theming targets (root, track and fill),
+ * so the theme paints it as it paints the real bar.
  */
 export function ProgressFillRig({mode}: {mode: Mode}) {
   const [step, setStep] = useState(0);
@@ -921,24 +922,28 @@ export function ProgressFillRig({mode}: {mode: Mode}) {
       {mode === 'before' ? (
         <ProgressBar label="Uploading" value={value} hasValueLabel />
       ) : (
-        <VStack gap={1}>
-          <HStack gap={2} hAlign="between">
-            <Text>Uploading</Text>
-            <Text color="secondary">{value}%</Text>
-          </HStack>
-          <div
-            className={`astryx-progress-bar-track ${styles.fillTrack}`}
-            role="progressbar"
-            aria-label="Uploading"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={value}>
+        <div {...themeProps('progress-bar', {variant: 'accent'})}>
+          <VStack gap={1}>
+            <HStack gap={2} hAlign="between">
+              <Text>Uploading</Text>
+              <Text color="secondary">{value}%</Text>
+            </HStack>
             <div
-              className={`astryx-progress-bar-fill ${styles.fillScale}`}
-              style={{transform: `scaleX(${value / 100})`}}
-            />
-          </div>
-        </VStack>
+              {...themeProps('progress-bar-track')}
+              className={`astryx-progress-bar-track ${styles.fillTrack}`}
+              role="progressbar"
+              aria-label="Uploading"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={value}>
+              <div
+                {...themeProps('progress-bar-fill', {variant: 'accent'})}
+                className={`astryx-progress-bar-fill ${styles.fillScale}`}
+                style={{transform: `scaleX(${value / 100})`}}
+              />
+            </div>
+          </VStack>
+        </div>
       )}
       <Hint>
         {mode === 'before'
