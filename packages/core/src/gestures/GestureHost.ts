@@ -18,9 +18,9 @@
  *   passive `pointerdown` listener and the page has none; a press on it (a
  *   mouse's primary button, a pen, or a finger, whose `pointerdown` comes
  *   before its `touchstart`) installs the host's page listeners, which go
- *   once that press's contacts end (FR24). There a finger's claim rests on
- *   `touch-action`: an element's blocking `touchmove` listener stays a
- *   coarse pointer's, so the element keeps its one listener.
+ *   once that press's contacts end (FR24). Under every pointer, an element
+ *   whose recognizer claims a moving finger also keeps its blocking
+ *   `touchmove`, a listener FR24 counts apart from the press's one.
  * - A press consumer takes a mouse press as a press (DEC-21): PressTracker's
  *   fine-pointer profile paints at once and brakes no scroll (FR11).
  * - The host follows the query (a tablet docking or undocking a mouse):
@@ -47,7 +47,8 @@
  *   removed target never strands a gesture.
  * - Mice and pens come from Pointer Events, with coalesced samples for
  *   velocity. A pen on an iPad also produces `stylus` touches; those are left
- *   to the pointer path.
+ *   to the pointer path, except that a claimed pen's stylus touches are
+ *   cancelled as a finger's, its touchend included (FR21).
  * - `pointercancel` on a finger is the browser saying it took that finger
  *   for its own pan or zoom; so is a `touchmove` that can no longer be
  *   cancelled where `touch-action` let the browser pan, and a scroll above
@@ -292,6 +293,12 @@ function isPanRecognizer(
 
 type StylusTouch = Touch & {touchType?: string};
 
+function hasStylusTouch(event: TouchEvent): boolean {
+  return touchesOf(event.changedTouches).some(
+    touch => (touch as StylusTouch).touchType === 'stylus',
+  );
+}
+
 interface PlacedContact {
   readonly x: number;
   readonly y: number;
@@ -345,23 +352,6 @@ function containsAlongFlatTree(ancestor: Node, node: Node): boolean {
  * An event's time on the arena's clock (`performance.now()`). Some engines
  * and DOM emulators stamp events in epoch milliseconds instead.
  */
-/**
- * What an event, or one of its touches, landed on. Inside an open shadow root
- * the document's listeners see the shadow host, in `event.target` and in a
- * touch's `target` alike, while the composed path starts at the element
- * itself. A touch whose target is not the event's (another finger) keeps its
- * own.
- */
-function landedOn(
-  event: Event,
-  retargeted: EventTarget | null = event.target,
-): EventTarget | null {
-  if (retargeted !== event.target) {
-    return retargeted;
-  }
-  return event.composedPath()[0] ?? retargeted;
-}
-
 function eventTime(event: Event): number {
   const time = event.timeStamp;
   if (
@@ -434,6 +424,11 @@ export class GestureHost {
   private readonly processed = new WeakSet<Event>();
   /** pointerId → arena id, for live mouse and pen contacts. */
   private readonly pointerIds = new Map<number, number>();
+  /**
+   * A pen whose lift a recognizer claimed, until its stylus touchend: an
+   * iPad sends the pen's pointer events first (FR21, FR43).
+   */
+  private isPenLiftClaimed = false;
   /** Fingers whose first uncancelable `touchmove` was already judged. */
   private readonly judgedUncancelable = new Set<number>();
   /**
@@ -1836,7 +1831,7 @@ export class GestureHost {
         return;
       }
     }
-    if (moved.some(touch => (touch as StylusTouch).touchType === 'stylus')) {
+    if (hasStylusTouch(event)) {
       for (const id of this.pointerIds.values()) {
         if (this.arena.isClaimed(id)) {
           // A pen whose pointer a recognizer owns: its stylus touches too,
@@ -1851,6 +1846,17 @@ export class GestureHost {
   private readonly onTouchEnd = (event: TouchEvent): void => {
     this.releaseArmedPress();
     this.noteFingersDown(event);
+    if (hasStylusTouch(event)) {
+      // A pen's lift is its pointer's: the stylus touchend only refuses the
+      // compatibility mouse events and click when a gesture took the pen.
+      const isClaimed =
+        this.isPenLiftClaimed ||
+        [...this.pointerIds.values()].some(id => this.arena.isClaimed(id));
+      this.isPenLiftClaimed = false;
+      if (isClaimed && event.cancelable) {
+        event.preventDefault();
+      }
+    }
     // Where the host reads a finger from its pointer events (no ontouchstart,
     // as after touch emulation turns on), its Touch Events would track it twice.
     if (!this.usesTouchEvents || !this.takeEvent(event)) {
@@ -2237,6 +2243,10 @@ export class GestureHost {
       return;
     }
     this.exitHover(event.pointerId);
+    if (event.pointerType === 'pen') {
+      // A new pen press: no earlier lift's stylus touchend is still owed.
+      this.isPenLiftClaimed = false;
+    }
     if (event.pointerType === 'touch' && this.usesTouchEvents) {
       this.pairPointer(event.pointerId, {
         x: event.clientX,
@@ -2351,6 +2361,9 @@ export class GestureHost {
     );
     if (!clicked && needsSuppression(dispositions)) {
       armClickGuard(this.doc);
+    }
+    if (event.pointerType === 'pen' && this.usesTouchEvents) {
+      this.isPenLiftClaimed = clicked || needsSuppression(dispositions);
     }
   };
 
