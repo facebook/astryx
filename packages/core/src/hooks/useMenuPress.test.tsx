@@ -1004,9 +1004,11 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
   function PublicHarness({
     onSelect,
     onOpenChange,
+    longPressDelayMs,
   }: {
     onSelect?: (label: string) => void;
     onOpenChange?: (open: boolean) => void;
+    longPressDelayMs?: number;
   }) {
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -1020,6 +1022,7 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
         onOpenChange?.(true);
         return true;
       },
+      longPressDelayMs,
       // An untyped caller passing DropdownMenu's own option gets nothing
       // from it: the touch model is not part of the public hook.
       ...({touchModel: 'uikit'} as object),
@@ -1067,6 +1070,41 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
       button: 0,
     });
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('with no delay set, a finger opens the menu as it presses where the primary pointer is coarse (spec:AST-094 FR25, FR29)', () => {
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(<PublicHarness onOpenChange={onOpenChange} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it('with a delay set, a finger waits for it on a touch screen too, as released', () => {
+    vi.useFakeTimers();
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(
+      <PublicHarness onOpenChange={onOpenChange} longPressDelayMs={500} />,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 });
 
