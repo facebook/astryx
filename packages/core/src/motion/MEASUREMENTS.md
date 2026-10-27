@@ -287,11 +287,12 @@ of scale momentum and of a two-finger-tap action, the content point under the
 centroid staying put, Photos' aspect-fill double tap and its maximum zoom
 (M-ZM2), the 40 pt gap between Photos' pages, and its drag-to-dismiss (the
 shrink and fades by travel, the release rule and the springs; the cancel
-distance is M-ZM3). A zoomed pan flicked into an edge coasts and bounces like
+distance is M-ZM3 and the release's projection M-ZM4). A zoomed pan flicked into an edge coasts and bounces like
 any scroll view (`scroll.*`).
 
-| ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
-| ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
-| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |
-| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |
-| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving   | the largest N that still cancels                                          | B, C   |
+| ID    | What                         | App and gesture                                                                    | Extract                                                                       | Method |
+| ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ |
+| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                    | B, C   |
+| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size     | B, C   |
+| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving   | the largest N that still cancels                                              | B, C   |
+| M-ZM4 | Dismiss flick projection     | Photos: flick a photo down from rest, lifting after 6–19 pt at a range of speeds   | the shortest travel that still dismisses at each speed: the projection's rate | B, C   |

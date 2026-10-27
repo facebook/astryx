@@ -274,6 +274,60 @@ test('brought back within 10 pt of the start and held still, it springs back fro
   await expectRestored(v);
 });
 
+test('an 18 px flick down closes: its projected travel passes the commit point (FR36)', async ({
+  page,
+}) => {
+  const v = await openViewer(page);
+  // About 8 pt past the pan's threshold, quickly: short of the 10 pt commit
+  // point, but the release velocity carries its projection past it.
+  await v.driver.play(
+    drag(
+      v.centre,
+      {x: v.centre.x, y: v.centre.y + 18},
+      {durationMs: 40, restMs: 0},
+    ),
+  );
+  await expect(v.dialog).toBeHidden();
+});
+
+test('without zoom, a dragged photo draws outside its own box', async ({
+  page,
+}) => {
+  const v = await openViewer(page);
+  let clipping: string[] | null = null;
+  let moves = 0;
+  await v.driver.play(
+    drag(
+      v.centre,
+      {x: v.centre.x, y: v.centre.y + 120},
+      {durationMs: 600, restMs: 150},
+    ),
+    {
+      onEvent: async step => {
+        moves += step.type === 'touchMove' ? 1 : 0;
+        if (step.type === 'touchMove' && moves === 12 && clipping == null) {
+          // Every box between the photo and the dialog (which clips at the
+          // screen's edge) lets the moved photo show.
+          clipping = await v.photo.evaluate(el => {
+            const found: string[] = [];
+            for (
+              let box = el.parentElement;
+              box != null && box.tagName !== 'DIALOG';
+              box = box.parentElement
+            ) {
+              if (getComputedStyle(box).overflow !== 'visible') {
+                found.push(box.className);
+              }
+            }
+            return found;
+          });
+        }
+      },
+    },
+  );
+  expect(clipping).toEqual([]);
+});
+
 test('a slow short drag released below the threshold springs back', async ({
   page,
 }, testInfo) => {

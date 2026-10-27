@@ -451,6 +451,16 @@ describe("Photos' drag to dismiss (iOS 26.2)", () => {
     expect(zoomMedia.dismiss.cancelTravel).toBeLessThan(20);
   });
 
+  it('dismisses a short flick down: its projected travel reaches the commit point (spec:AST-094 FR36)', () => {
+    // An 18 px flick reaches the stage as about 8 pt past the pan's begin
+    // threshold: short of the commit point, but its velocity carries it on.
+    expect(dismissCommits(8, 600)).toBe(true);
+    // The same travel lifted still springs back: nothing projects it on.
+    expect(dismissCommits(8, 0)).toBe(false);
+    // Moving back up cancels, however far it came (FR37).
+    expect(dismissCommits(8, -600)).toBe(false);
+  });
+
   it('sends a dismissed photo below the screen when the stage only hugs it', () => {
     const geometry = landscape();
     const t = dismissTransform(geometry, 0, 100);

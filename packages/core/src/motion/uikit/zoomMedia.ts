@@ -166,8 +166,9 @@ export const zoomMedia = {
      */
     chromeFadeStart: 17.8,
     /**
-     * A release within this distance of where the drag started cancels, as
-     * a release moving up does; any other release dismisses, however short
+     * The commit point: a release whose projected travel (`projectionRate`)
+     * stays within this distance of where the drag started cancels, as a
+     * release moving up does; any other release dismisses, however short
      * the pull (20, 40 and 60 pt pulls held still, then lifted, dismiss; a
      * pull brought back to about 5 pt cancels).
      * @source GUESS — between the measured 5 pt (cancels) and 20 pt
@@ -175,6 +176,15 @@ export const zoomMedia = {
      * @measure M-ZM3
      */
     cancelTravel: 10,
+    /**
+     * The deceleration rate that projects a release's travel (spec:AST-094
+     * FR3, FR36): the drag dismisses when its travel plus where its velocity
+     * would coast passes `cancelTravel`, so a short flick down closes.
+     * @source GUESS — UIScrollView's normal deceleration rate, the WWDC18
+     *   projection's default; Photos' own projection is not measured
+     * @measure M-ZM4
+     */
+    projectionRate: 0.998,
     /**
      * The dismissal's position spring (critically damped, response about
      * 0.21 s): the photo leaves along it.

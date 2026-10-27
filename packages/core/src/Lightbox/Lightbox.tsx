@@ -155,12 +155,13 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
-    // The backdrop dims the page without blurring it, on every pointer, as the
-    // owners decided for modal backdrops (#8120): a full-viewport
-    // backdrop-filter is costly to repaint, and the touch paths fade the
-    // backdrop every frame. The dim is the theme's overlay colour.
+    // The backdrop dims and blurs the page as on main: the theme's overlay
+    // colour over a 2 px blur. The drag to dismiss fades it every frame;
+    // removing the blur during a drag is the owners' call (#8120 covers the
+    // modal scrims).
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
+      backdropFilter: 'blur(2px)',
     },
   },
   container: {
@@ -178,7 +179,9 @@ const styles = stylex.create({
     alignItems: 'center',
     maxWidth: '100%',
     maxHeight: '100%',
-    overflow: 'hidden',
+    // ZOOM_DISMISSING_ATTRIBUTE on the stage inside: a photo dragged to
+    // dismiss draws outside the box that hugs it.
+    overflow: {default: 'hidden', ':has([data-zoom-dismissing])': 'visible'},
   },
   // On a touch screen (the shared touch resolver, useTouchPresentation) a
   // zoomable photo's stage fills the viewer, as a photo viewer's zooming
@@ -200,7 +203,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    // ZOOM_DISMISSING_ATTRIBUTE: a photo dragged to dismiss draws outside it.
+    overflow: {default: 'hidden', ':is([data-zoom-dismissing])': 'visible'},
     cursor: 'default',
     userSelect: 'none',
     minHeight: 0,

@@ -102,6 +102,12 @@ import {
 
 export {ZOOM_DRAGGING_ATTRIBUTE, type ZoomStage};
 
+/**
+ * Set on the stage while a drag to dismiss moves the photo, until it settles:
+ * a stage that only hugs the photo lets the moved photo draw outside it.
+ */
+export const ZOOM_DISMISSING_ATTRIBUTE = 'data-zoom-dismissing';
+
 export interface UseZoomStageOptions {
   /** The stage: the box the photo is fitted and centred in, clipping it. */
   stageRef: RefObject<HTMLElement | null>;
@@ -539,6 +545,10 @@ export function useZoomStage(
         animator.stop();
         optionsRef.current.onDragStart?.();
         dismissRef.current = geometry;
+        optionsRef.current.stageRef.current?.setAttribute(
+          ZOOM_DISMISSING_ATTRIBUTE,
+          '',
+        );
       }
       const geometry = dismissRef.current;
       if (geometry == null) {
@@ -590,7 +600,7 @@ export function useZoomStage(
         return;
       }
       setTarget(IDENTITY);
-      animator.animate(
+      const position = animator.animate(
         {x: 0, y: 0},
         {
           spring: zoomMedia.dismiss.cancelPositionSpring,
@@ -598,11 +608,19 @@ export function useZoomStage(
         },
         {touchRelease: true},
       );
-      animator.animate(
+      const size = animator.animate(
         {scale: 1},
         {spring: zoomMedia.dismiss.cancelSizeSpring},
         {touchRelease: true},
       );
+      // Back in its box: the stage clips again, unless another drag began.
+      void Promise.all([position.finished, size.finished]).then(() => {
+        if (dismissRef.current == null && !leavingRef.current) {
+          optionsRef.current.stageRef.current?.removeAttribute(
+            ZOOM_DISMISSING_ATTRIBUTE,
+          );
+        }
+      });
     },
     {isEnabled: options.dismiss?.isEnabled === true, manageStyle: false},
   );
@@ -614,6 +632,9 @@ export function useZoomStage(
     panRef.current = null;
     dismissRef.current = null;
     leavingRef.current = false;
+    optionsRef.current.stageRef.current?.removeAttribute(
+      ZOOM_DISMISSING_ATTRIBUTE,
+    );
   }, [options.itemKey]);
 
   const api = core.api;
@@ -629,6 +650,9 @@ export function useZoomStage(
         animator.stop();
         animator.set({x: 0, y: 0, scale: 1, opacity: 1});
         setTarget(IDENTITY);
+        optionsRef.current.stageRef.current?.removeAttribute(
+          ZOOM_DISMISSING_ATTRIBUTE,
+        );
       },
     }),
     [animator, api, setTarget],
