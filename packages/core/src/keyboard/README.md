@@ -68,7 +68,7 @@ exported from the package entry.
   a surface watches. ChatLayout watches under a finger; BottomSheet's hook
   watches while its sheet is presented under a coarse primary pointer. Under
   a fine one neither registers a touch listener.
-- **BottomSheet's hook (FR4, FR5):** `useSheetKeyboard(options)` gives a
+- **BottomSheet's hook (FR4, FR5; `sheetKeyboard.ts`):** `useSheetKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
   keyboard when the sheet starts to move. It returns the room the keyboard
@@ -214,7 +214,8 @@ keyboard module measures them from the visual viewport, as in every browser
 
 | File                     | What it holds                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `keyboardHeight.ts`      | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardHeight.ts`      | The keyboard module: the height, its listeners, the focus routes.                                                     |
+| `sheetKeyboard.ts`       | BottomSheet's hook and its ride, apart so code that only reads the height never loads the animator.                   |
 | `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
 | `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
 | `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |

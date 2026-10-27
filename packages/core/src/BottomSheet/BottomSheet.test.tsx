@@ -25,10 +25,8 @@ import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {resetBottomSheetStackForTests} from './bottomSheetStack';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
-import {
-  __focusTakeoverCallersForTest,
-  __resetRevealsAtReportForTest,
-} from '../keyboard/keyboardHeight';
+import {__focusTakeoverCallersForTest} from '../keyboard/keyboardHeight';
+import {__resetRevealsAtReportForTest} from '../keyboard/sheetKeyboard';
 import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
 
 // A sheet has no stops unless its host asks for them, so the tests that
