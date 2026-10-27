@@ -75,6 +75,7 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {devWarn, warnOnce} from '../utils/devWarning';
 import {
   getInteractionModality,
@@ -1173,6 +1174,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   onFocus,
   onKeyDown: onKeyDownProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: MultiSelectorProps<T>) {
   const inputGroup = useInputGroup();
@@ -1220,6 +1222,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const fieldLabelId = useId();
   const inputLabelId = useId();
   const readOnlyDescriptionId = useId();
   const searchId = useId();
@@ -1284,6 +1287,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ],
     inputGroup,
   );
+  // A caller aria-labelledby names the trigger together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const triggerLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelId, ariaLabelledByProp)
+      : ariaLabelledBy;
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -2566,7 +2575,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     'aria-describedby':
       [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
       undefined,
-    'aria-labelledby': ariaLabelledBy,
+    'aria-labelledby': triggerLabelledBy,
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
@@ -2602,6 +2611,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       // in this mode; the selector's own wiring below wins over them.
       ...rest,
       'aria-describedby': ariaDescribedByProp,
+      // Only a caller value is handed back, so a control that names itself
+      // with its own aria-labelledby before spreading keeps it.
+      ...(ariaLabelledByProp != null
+        ? {'aria-labelledby': ariaLabelledByProp}
+        : null),
       ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;
@@ -2858,6 +2872,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={triggerId}
+      labelID={ariaLabelledByProp != null ? fieldLabelId : undefined}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
