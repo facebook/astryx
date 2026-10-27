@@ -55,8 +55,8 @@ deciding_specs: [spec:AST-094/DEC-17]
 A person can press one action in a group of sibling actions, slide across the
 others while the highlight follows, and act on the one they lift on, the same
 way in every group, with SegmentedControl as the one named exception. Every
-member gets the behavior from one shared implementation, or menus from their
-own press model, so no member builds its own.
+member gets the behavior from one shared implementation, or menus and
+Selector's and MultiSelector's options from the menu press model, so no member builds its own.
 
 ## Membership rule
 
@@ -93,8 +93,9 @@ These are not members:
 
 ## Shared owner
 
-One shared, internal implementation gives every member other than menus
-FR1–FR5 (`architecture:interaction-modality` INV13); menus get them from
+One shared, internal implementation gives every member other than menus and
+Selector's and MultiSelector's options FR1–FR5
+(`architecture:interaction-modality` INV13); those get them from
 `module:DropdownMenu/useMenuPress`. No member keeps another copy.
 
 ## Canonical concepts
