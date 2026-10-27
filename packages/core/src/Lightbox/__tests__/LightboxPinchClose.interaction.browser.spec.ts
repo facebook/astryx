@@ -475,14 +475,16 @@ test('under Reduce Motion a release at 0.966 returns to the fitted size by a fad
       restMs: 150,
     }),
   );
+  // Held at once: the dip's fade out is short, and its fade back in starts
+  // only after the landing.
   await waitForAnimation(v.photo);
-  const released = await v.scale();
   const held = await holdAnimations(page, v.photo);
   const duration = Math.max(...held.map(a => a.curveEndMs));
   const samples = await sampleCurve(v.photo, timeline(duration));
   await releaseAnimations(page);
   const scales = curveOf(samples, 'scaleX');
   const opacity = curveOf(samples, 'opacity');
+  const released = scales[0].value;
   // design:reduced-motion DR2: a return the component starts at the lift
   // cross-fades, opacity only, in 200 ms or less.
   expect(duration).toBeLessThanOrEqual(205);
@@ -497,12 +499,16 @@ test('under Reduce Motion a release at 0.966 returns to the fitted size by a fad
     );
   }
   expect(Math.min(...opacity.map(s => s.value))).toBeLessThan(0.5);
-  await waitForRest(v.photo);
+  // The dip lands, then fades back in. On a busy runner its two halves can
+  // sit a few frames apart with nothing running between them, so wait for
+  // the photo itself rather than for rest.
+  await expect
+    .poll(async () =>
+      v.photo.evaluate(el => parseFloat(getComputedStyle(el).opacity)),
+    )
+    .toBe(1);
   await expect(v.dialog).toBeVisible();
   expect(await v.scale()).toBe(1);
-  expect(
-    await v.photo.evaluate(el => parseFloat(getComputedStyle(el).opacity)),
-  ).toBe(1);
   expect(await v.backdropAlpha()).toBeCloseTo(1, 2);
 });
 
