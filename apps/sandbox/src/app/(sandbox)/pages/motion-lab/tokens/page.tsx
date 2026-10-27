@@ -249,7 +249,10 @@ export default function MotionTokensPage() {
                   </Text>
                   {ease.evidence != null && (
                     <Text type="supporting" color="secondary">
-                      Already in the code: <code>{ease.evidence}</code>
+                      Already in the code:{' '}
+                      <code style={{overflowWrap: 'anywhere'}}>
+                        {ease.evidence}
+                      </code>
                     </Text>
                   )}
                 </DemoBody>
