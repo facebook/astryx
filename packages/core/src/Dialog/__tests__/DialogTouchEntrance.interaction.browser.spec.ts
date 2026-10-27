@@ -2,15 +2,17 @@
 
 /**
  * @file DialogTouchEntrance.interaction.browser.spec.ts
- * @input The built Dialog stories "Purpose Info" and "Scrolling Content", real
- *   touch input through the interaction harness in its phone context, and a
- *   mouse on a fine-pointer page
+ * @input The built Dialog stories "Purpose Info" and "Scrolling Content" and
+ *   the AlertDialog story "Delete", real touch input through the interaction
+ *   harness in its phone context, and a mouse there and on a fine-pointer
+ *   page
  * @output Browser evidence for spec:AST-094 FR35 on Dialog: under a finger, a
  *   tap or a drag that lands while the dialog is still entering closes
  *   nothing, runs no action, moves no focus and scrolls nothing, and the
  *   dialog finishes entering and stays open; keys stay live and the content
- *   stays in the accessibility tree meanwhile. With a mouse, a click during
- *   the entrance acts as before.
+ *   stays in the accessibility tree meanwhile; an alert's entrance holds its
+ *   action alike. With a mouse, a click during the entrance acts as before,
+ *   on a touch screen too: the hold decides by each event's pointer.
  * @position Browser proof for Dialog's entrance hold (Dialog.tsx, through the
  *   Layer module's holdEntranceInput); the hold itself is proven in
  *   Layer/__tests__/inputHold.interaction.browser.spec.ts
@@ -38,6 +40,7 @@ type Point = {x: number; y: number};
 
 const INFO = 'core-dialog--purpose-info';
 const SCROLLING = 'core-dialog--scrolling-content';
+const ALERT = 'core-alertdialog--delete';
 
 /** A point on the backdrop: the top of the viewport, above the dialog. */
 const BACKDROP: Point = {x: 201, y: 6};
@@ -213,6 +216,23 @@ test.describe('under a finger (spec:AST-094 FR35)', () => {
     expect(await scrollTop()).toBeGreaterThan(0);
   });
 
+  test("a tap on an alert's action while it enters runs nothing, and once it has entered the same tap runs it", async ({
+    page,
+  }) => {
+    const driver = await openMidEntrance(page, ALERT, 'Delete item');
+    const action = page.getByRole('button', {name: 'Delete', exact: true});
+
+    await driver.tap(await centerOf(action));
+    await frames(page);
+    await expect(openDialogs(page)).toHaveCount(1);
+
+    await finishEntrance(page);
+    await expect(openDialogs(page)).toHaveCount(1);
+
+    await driver.tap(await centerOf(action));
+    await expect(openDialogs(page)).toHaveCount(0);
+  });
+
   test('keys and assistive technology stay live while the dialog enters', async ({
     page,
   }) => {
@@ -226,6 +246,21 @@ test.describe('under a finger (spec:AST-094 FR35)', () => {
 
     // A key acts at once: Escape closes the dialog mid-entrance.
     await page.keyboard.press('Escape');
+    await expect(openDialogs(page)).toHaveCount(0);
+  });
+});
+
+test.describe('with a mouse on a touch screen', () => {
+  test('a click on the backdrop while the dialog enters closes it, as before: only a finger is held', async ({
+    page,
+  }) => {
+    await openMidEntrance(page, INFO, 'Open Info Modal');
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      'the primary pointer is a finger',
+    ).toBe(true);
+
+    await page.mouse.click(BACKDROP.x, BACKDROP.y);
     await expect(openDialogs(page)).toHaveCount(0);
   });
 });

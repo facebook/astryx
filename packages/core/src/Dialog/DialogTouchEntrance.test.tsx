@@ -1,15 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {act, render} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {isInHeldLayer} from '../Layer/inputHold';
 import {TOUCH_QUERY} from '../utils/touchQueries';
 import {Dialog} from './Dialog';
 
 /** Ends the entrance every dialog reports (jsdom runs no CSS animation). */
 let finishEntrance: () => void = () => {};
 
-/** The primary pointer: a finger (`coarse`) or a mouse. */
+/** The primary pointer: a finger (`coarse`, a touch screen) or a mouse. */
 function stubPointer(coarse: boolean) {
   vi.stubGlobal(
     'matchMedia',
@@ -56,47 +55,89 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function TestDialog({isOpen}: {isOpen: boolean}) {
+const noop = () => {};
+
+function TestDialog({
+  isOpen,
+  onAct = noop,
+}: {
+  isOpen: boolean;
+  onAct?: () => void;
+}) {
   return (
-    <Dialog isOpen={isOpen} onOpenChange={() => {}} aria-label="Held">
-      <button type="button">Act</button>
-    </Dialog>
+    <>
+      <button type="button" onClick={onAct}>
+        Outside
+      </button>
+      <Dialog isOpen={isOpen} onOpenChange={() => {}} aria-label="Held">
+        <button type="button" onClick={onAct}>
+          Act
+        </button>
+      </Dialog>
+    </>
   );
 }
 
-const theDialog = () => {
-  const dialog = document.querySelector('dialog');
-  if (dialog == null) {
-    throw new Error('no dialog');
-  }
-  return dialog;
-};
+const INIT = {bubbles: true, cancelable: true, composed: true};
 
-describe('Dialog entrance under a finger (spec:AST-094 FR35)', () => {
-  it('holds pointer input while it enters, and gives it back when the entrance ends', async () => {
+/** A press and its click, as a browser sends them for `pointerType`. */
+function tap(element: Element, pointerType: string, pointerId: number) {
+  element.dispatchEvent(
+    new PointerEvent('pointerdown', {...INIT, pointerId, pointerType}),
+  );
+  element.dispatchEvent(
+    new PointerEvent('pointerup', {...INIT, pointerId, pointerType}),
+  );
+  element.dispatchEvent(
+    new PointerEvent('click', {...INIT, pointerType, detail: 1}),
+  );
+}
+
+const button = (name: string) =>
+  screen.getByRole('button', {name, hidden: true});
+
+describe('Dialog entrance (spec:AST-094 FR35)', () => {
+  it("holds a finger's tap on its action while it enters, and lets one through once it has entered", async () => {
     stubPointer(true);
-    render(<TestDialog isOpen />);
-    expect(isInHeldLayer(theDialog())).toBe(true);
+    const onAct = vi.fn();
+    render(<TestDialog isOpen onAct={onAct} />);
+
+    tap(button('Act'), 'touch', 1);
+    expect(onAct).not.toHaveBeenCalled();
 
     await act(async () => {
       finishEntrance();
       await Promise.resolve();
     });
-    expect(isInHeldLayer(theDialog())).toBe(false);
+    tap(button('Act'), 'touch', 2);
+    expect(onAct).toHaveBeenCalledTimes(1);
   });
 
-  it('gives input back when it closes mid-entrance', () => {
+  it('lets input through again when it closes mid-entrance', () => {
     stubPointer(true);
-    const view = render(<TestDialog isOpen />);
-    expect(isInHeldLayer(theDialog())).toBe(true);
+    const onAct = vi.fn();
+    const view = render(<TestDialog isOpen onAct={onAct} />);
 
-    view.rerender(<TestDialog isOpen={false} />);
-    expect(isInHeldLayer(theDialog())).toBe(false);
+    view.rerender(<TestDialog isOpen={false} onAct={onAct} />);
+    tap(button('Outside'), 'touch', 1);
+    expect(onAct).toHaveBeenCalledTimes(1);
   });
 
-  it('holds nothing with a mouse', () => {
+  it("leaves a mouse's click alone, even where the primary pointer is a finger", () => {
+    stubPointer(true);
+    const onAct = vi.fn();
+    render(<TestDialog isOpen onAct={onAct} />);
+
+    tap(button('Act'), 'mouse', 1);
+    expect(onAct).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds a finger's tap where the primary pointer is a mouse", () => {
     stubPointer(false);
-    render(<TestDialog isOpen />);
-    expect(isInHeldLayer(theDialog())).toBe(false);
+    const onAct = vi.fn();
+    render(<TestDialog isOpen onAct={onAct} />);
+
+    tap(button('Act'), 'touch', 1);
+    expect(onAct).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
-import {TOUCH_QUERY} from '../utils/touchQueries';
+import {afterEach, describe, expect, it} from 'vitest';
 import {holdEntranceInput} from './holdEntranceInput';
 import {isInHeldLayer} from './inputHold';
 
@@ -42,21 +41,40 @@ function mountLayer(animations: Animation[]): HTMLElement {
   return layer;
 }
 
-/** The primary pointer: a finger (`coarse`) or a mouse. */
-function stubPointer(coarse: boolean) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((query: string) => ({
-      matches: coarse && query === TOUCH_QUERY,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })),
+const INIT = {bubbles: true, cancelable: true, composed: true};
+
+/** A press and its click on `element`: the events that reached it. */
+function tap(element: Element, pointerType: string, pointerId: number) {
+  const reached: string[] = [];
+  const record = (event: Event) => reached.push(event.type);
+  const types = ['pointerdown', 'pointerup', 'click'];
+  for (const type of types) {
+    element.addEventListener(type, record);
+  }
+  element.dispatchEvent(
+    new PointerEvent('pointerdown', {...INIT, pointerId, pointerType}),
   );
+  element.dispatchEvent(
+    new PointerEvent('pointerup', {...INIT, pointerId, pointerType}),
+  );
+  element.dispatchEvent(
+    new PointerEvent('click', {...INIT, pointerType, detail: 1}),
+  );
+  for (const type of types) {
+    element.removeEventListener(type, record);
+  }
+  return reached;
+}
+
+/** The holds a case starts, released after it: a hold listens on the window. */
+const releases: (() => void)[] = [];
+
+function hold(layer: Element): (() => void) | null {
+  const release = holdEntranceInput(layer);
+  if (release != null) {
+    releases.push(release);
+  }
+  return release;
 }
 
 const flush = async () => {
@@ -66,17 +84,18 @@ const flush = async () => {
 };
 
 afterEach(() => {
+  for (const release of releases.splice(0)) {
+    release();
+  }
   document.body.replaceChildren();
-  vi.unstubAllGlobals();
 });
 
 describe('holdEntranceInput', () => {
-  it('under a finger, holds the layer until its entrance ends', async () => {
-    stubPointer(true);
+  it('holds the layer until its entrance ends, whatever the primary pointer', async () => {
     const entrance = deferred();
     const layer = mountLayer([fakeAnimation(entrance.promise)]);
 
-    expect(holdEntranceInput(layer)).toBeTypeOf('function');
+    expect(hold(layer)).toBeTypeOf('function');
     expect(isInHeldLayer(layer.firstElementChild)).toBe(true);
 
     entrance.resolve();
@@ -85,7 +104,6 @@ describe('holdEntranceInput', () => {
   });
 
   it('waits for every animation of the entrance', async () => {
-    stubPointer(true);
     const short = deferred();
     const long = deferred();
     const layer = mountLayer([
@@ -93,7 +111,7 @@ describe('holdEntranceInput', () => {
       fakeAnimation(long.promise, {endTime: 400}),
     ]);
 
-    holdEntranceInput(layer);
+    hold(layer);
     short.resolve();
     await flush();
     expect(isInHeldLayer(layer)).toBe(true);
@@ -104,35 +122,38 @@ describe('holdEntranceInput', () => {
   });
 
   it('ends the hold when the entrance is canceled (a close midway)', async () => {
-    stubPointer(true);
     const entrance = deferred();
     const layer = mountLayer([fakeAnimation(entrance.promise)]);
 
-    holdEntranceInput(layer);
+    hold(layer);
     entrance.reject(new DOMException('canceled', 'AbortError'));
     await flush();
     expect(isInHeldLayer(layer)).toBe(false);
   });
 
   it('returns a release that ends the hold early', () => {
-    stubPointer(true);
     const layer = mountLayer([fakeAnimation(new Promise(() => {}))]);
 
-    const release = holdEntranceInput(layer);
+    const release = hold(layer);
     release?.();
     expect(isInHeldLayer(layer)).toBe(false);
   });
 
-  it('holds nothing with a mouse: the primary pointer is fine', () => {
-    stubPointer(false);
+  it("decides by each event's pointer: a finger's tap is held, a mouse's click passes (spec:AST-094 FR35)", () => {
     const layer = mountLayer([fakeAnimation(new Promise(() => {}))]);
+    const button = layer.firstElementChild as Element;
 
-    expect(holdEntranceInput(layer)).toBeNull();
-    expect(isInHeldLayer(layer)).toBe(false);
+    hold(layer);
+    expect(tap(button, 'touch', 1)).toEqual([]);
+    expect(tap(button, 'pen', 2)).toEqual([]);
+    expect(tap(button, 'mouse', 3)).toEqual([
+      'pointerdown',
+      'pointerup',
+      'click',
+    ]);
   });
 
   it('holds nothing when no entrance runs: none, finished, or endless', () => {
-    stubPointer(true);
     const never = new Promise(() => {});
     for (const animations of [
       [],
@@ -140,7 +161,7 @@ describe('holdEntranceInput', () => {
       [fakeAnimation(never, {endTime: Infinity})],
     ]) {
       const layer = mountLayer(animations);
-      expect(holdEntranceInput(layer)).toBeNull();
+      expect(hold(layer)).toBeNull();
       expect(isInHeldLayer(layer)).toBe(false);
     }
   });

@@ -4,13 +4,14 @@
  * @file DrawerTouchEntrance.interaction.browser.spec.ts
  * @input The built Drawer stories "Showcase" (modal, with a scrim) and "Row
  *   Inspector" (non-modal), real touch input through the interaction harness
- *   in its phone context, and a mouse on a fine-pointer page
+ *   in its phone context, and a mouse there and on a fine-pointer page
  * @output Browser evidence for spec:AST-094 FR35 on Drawer: under a finger, a
  *   tap or a drag that lands while the drawer is still sliding in closes
  *   nothing, runs no action, moves no focus and scrolls nothing, and the
  *   drawer finishes sliding in and stays open; keys stay live and the content
  *   stays in the accessibility tree meanwhile. With a mouse, a click during
- *   the slide-in acts as before.
+ *   the slide-in acts as before, on a touch screen too: the hold decides by
+ *   each event's pointer.
  * @position Browser proof for Drawer's entrance hold (useDrawerDialogPresence,
  *   through the Layer module's holdEntranceInput); the hold itself is proven
  *   in Layer/__tests__/inputHold.interaction.browser.spec.ts
@@ -270,6 +271,23 @@ test.describe('under a finger (spec:AST-094 FR35)', () => {
 
     // A key acts at once: Escape closes the drawer mid-slide.
     await page.keyboard.press('Escape');
+    await expect(
+      page.getByRole('dialog', {name: 'Deployment details'}),
+    ).toBeHidden();
+  });
+});
+
+test.describe('with a mouse on a touch screen', () => {
+  test('a click on the scrim while the drawer slides in closes it, as before: only a finger is held', async ({
+    page,
+  }) => {
+    await openMidEntrance(page, MODAL, 'Open inspector');
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      'the primary pointer is a finger',
+    ).toBe(true);
+
+    await page.mouse.click(STRIP.x, STRIP.y);
     await expect(
       page.getByRole('dialog', {name: 'Deployment details'}),
     ).toBeHidden();
