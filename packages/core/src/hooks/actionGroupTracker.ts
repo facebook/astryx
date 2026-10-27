@@ -21,7 +21,7 @@
  *   and sliding onto another highlights that one; between or outside the
  *   actions nothing is highlighted;
  * - lifting runs the action under the finger, and nothing when there is none;
- *   the lifted action's highlight fades (PRESS_FADE_MS);
+ *   the lifted action's highlight fades (the press fade);
  * - a press the owner calls inert (an alert during its transitions) is taken
  *   but paints and runs nothing.
  *
@@ -32,6 +32,12 @@
  * (a lens that chases it), and an owner that shows the highlight another way
  * (focus, a dimmed title) turns the paint off and follows
  * `onHighlightChange(next, previous)`.
+ *
+ * The highlight is painted through `paintPress`, the one writer of the press
+ * attribute (utils/pressFeedback.ts), as the document's press controller
+ * paints: a write ends any fade another painter left running on that action,
+ * so neither cuts the other's fade short, and a paint the tracker did not
+ * write (a `held` row) is left alone.
  *
  * Nothing reads layout after a press begins: the actions' rects are read once
  * in `begin`, then hit-tested; `offsetBy` shifts them when the content moves
@@ -56,8 +62,7 @@
  * SYNC: When modified, update actionGroupTracker.test.ts
  */
 
-import {PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
-import {PRESS_FADE_MS} from '../utils/pressGesture';
+import {paintPress} from '../utils/pressFeedback';
 
 /** An action that is not enabled takes no highlight and does not run. */
 const DISABLED = ':disabled, [aria-disabled="true"]';
@@ -233,46 +238,33 @@ export function createActionGroupTracker(
   // The finger's last position: `remeasure` resolves it again.
   let lastX = 0;
   let lastY = 0;
-  const fades = new Map<Element, ReturnType<typeof setTimeout>>();
+  // The actions this tracker left fading: `dispose` finishes those fades.
+  const fading = new Set<Element>();
 
   const paints = () => getOptions().paintsHighlight !== false;
 
-  const clearFade = (element: Element) => {
-    const fade = fades.get(element);
-    if (fade != null) {
-      clearTimeout(fade);
-      fades.delete(element);
-    }
-  };
   const paint = (element: HTMLElement) => {
     if (!paints()) {
       return;
     }
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'on');
+    fading.delete(element);
+    paintPress(element, 'on');
   };
   const cut = (element: HTMLElement) => {
     if (!paints()) {
       return;
     }
-    clearFade(element);
-    element.removeAttribute(PRESSED_ATTRIBUTE);
+    fading.delete(element);
+    paintPress(element, 'none');
   };
   const release = (element: HTMLElement) => {
     if (!paints()) {
       return;
     }
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'fading');
-    fades.set(
-      element,
-      setTimeout(() => {
-        fades.delete(element);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
-      }, PRESS_FADE_MS),
-    );
+    // The fade ends on the one writer's clock (the press fade).
+    if (paintPress(element, 'fading')) {
+      fading.add(element);
+    }
   };
 
   const highlight = (next: HTMLElement | null) => {
@@ -436,13 +428,11 @@ export function createActionGroupTracker(
       return isTracking;
     },
     dispose() {
-      for (const [element, fade] of fades) {
-        clearTimeout(fade);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
+      for (const element of fading) {
+        // Only a fade still running: a later paint is its painter's.
+        paintPress(element, 'none', {onlyFrom: ['fading']});
       }
-      fades.clear();
+      fading.clear();
       reset();
     },
   };
