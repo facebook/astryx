@@ -15,7 +15,15 @@
  *   Perf, for measuring `useAnimatedLayout` at scale
  */
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
@@ -33,6 +41,7 @@ import {
 } from '@astryxdesign/core/SegmentedControl';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Heading, Text} from '@astryxdesign/core/Text';
+import type {AnimatedLayout} from '@astryxdesign/core/hooks';
 
 type Rendering = 'full' | 'virtualized';
 
@@ -126,10 +135,55 @@ const wait = async (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/**
+ * The item that changes. Its open state is its own, so a toggle re-renders
+ * it alone: the run measures the item's commit and the walk, not a list
+ * re-render.
+ */
+const MiddleItem = memo(function MiddleItem({
+  index,
+  animatedLayout,
+  toggleRef,
+}: {
+  index: number;
+  animatedLayout: AnimatedLayout;
+  toggleRef: RefObject<((open?: boolean) => void) | null>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  useEffect(() => {
+    toggleRef.current = open => setIsOpen(current => open ?? !current);
+    return () => {
+      toggleRef.current = null;
+    };
+  }, [toggleRef]);
+  return (
+    <VStack xstyle={styles.middle}>
+      <Collapsible
+        trigger={`Row ${index + 1}: the middle item`}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        animatedLayout={animatedLayout}>
+        <VStack gap={1}>
+          <Text type="supporting">
+            Expanding this item glides every row after it in the list.
+          </Text>
+          <Text type="supporting">
+            The walk visits the rows around it, at each level up to the list,
+            and moves only those whose rectangle changed and that are in view.
+          </Text>
+          <Text type="supporting">
+            Closing it plays its exit while the rows below glide up.
+          </Text>
+        </VStack>
+      </Collapsible>
+    </VStack>
+  );
+});
+
 export default function AnimatedLayoutPerfPage() {
   const [rowCount, setRowCount] = useState('5000');
   const [rendering, setRendering] = useState<Rendering>('full');
-  const [isOpen, setIsOpen] = useState(false);
+  const toggleRef = useRef<((open?: boolean) => void) | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [metrics, setMetrics] = useState<RunMetrics>(EMPTY_METRICS);
   const [baselines, setBaselines] = useState<Record<string, RunMetrics>>({});
@@ -179,7 +233,7 @@ export default function AnimatedLayoutPerfPage() {
     runningRef.current = true;
     setIsRunning(true);
     setMetrics(EMPTY_METRICS);
-    flushSync(() => setIsOpen(false));
+    flushSync(() => toggleRef.current?.(false));
     // The middle item, centered in the viewport.
     viewport.scrollTop = Math.max(
       0,
@@ -234,7 +288,7 @@ export default function AnimatedLayoutPerfPage() {
       for (let i = 0; i < TOGGLES && runningRef.current; i++) {
         rects = 0;
         const start = performance.now();
-        flushSync(() => setIsOpen(open => !open));
+        flushSync(() => toggleRef.current?.());
         // The layout walk runs in a microtask after the commit.
         await Promise.resolve();
         await Promise.resolve();
@@ -281,40 +335,28 @@ export default function AnimatedLayoutPerfPage() {
     setBaselines(current => ({...current, [key]: metrics}));
   }, [key, metrics]);
 
-  const rows = [];
-  for (let i = windowRange.start; i < windowRange.end; i++) {
-    if (i === middle) {
-      rows.push(
-        <VStack key={i} xstyle={styles.middle}>
-          <Collapsible
-            trigger={`Row ${i + 1}: the middle item`}
-            isOpen={isOpen}
-            onOpenChange={setIsOpen}
-            animatedLayout={animatedLayout}>
-            <VStack gap={1}>
-              <Text type="supporting">
-                Expanding this item glides every row after it in the list.
-              </Text>
-              <Text type="supporting">
-                The walk visits the rows after it, at each level up to the list,
-                and moves only those whose rectangle changed and that are in
-                view.
-              </Text>
-              <Text type="supporting">
-                Closing it plays its exit while the rows below glide up.
-              </Text>
-            </VStack>
-          </Collapsible>
-        </VStack>,
+  // The rows, built once per list and window: a toggle re-renders only the
+  // middle item.
+  const rows = useMemo(() => {
+    const out = [];
+    for (let i = windowRange.start; i < windowRange.end; i++) {
+      out.push(
+        i === middle ? (
+          <MiddleItem
+            key={i}
+            index={i}
+            animatedLayout={animatedLayout}
+            toggleRef={toggleRef}
+          />
+        ) : (
+          <HStack key={i} vAlign="center" xstyle={styles.row}>
+            <Text type="supporting">Row {i + 1}</Text>
+          </HStack>
+        ),
       );
-      continue;
     }
-    rows.push(
-      <HStack key={i} vAlign="center" xstyle={styles.row}>
-        <Text type="supporting">Row {i + 1}</Text>
-      </HStack>,
-    );
-  }
+    return out;
+  }, [animatedLayout, middle, windowRange]);
 
   return (
     <AppShell contentPadding={4} height="fill">
