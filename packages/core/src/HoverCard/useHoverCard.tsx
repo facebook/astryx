@@ -424,7 +424,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   );
 
   const handleFocusIn = useCallback(() => {
-    if (!isEnabled) {
+    // A controlled `isOpen={false}` force-hides the card: keyboard focus on
+    // the trigger must not open it any more than hover does.
+    if (!isEnabled || isOpen === false) {
       return;
     }
     // A tap focuses the trigger it activates. Opening on that focus would
@@ -440,7 +442,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     }
     clearTimeouts();
     showLayer();
-  }, [isEnabled, isTouchInteraction, clearTimeouts, showLayer]);
+  }, [isEnabled, isOpen, isTouchInteraction, clearTimeouts, showLayer]);
 
   const handleFocusOut = useCallback(
     (e: FocusEvent) => {

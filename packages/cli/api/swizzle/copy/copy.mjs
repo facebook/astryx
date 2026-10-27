@@ -57,10 +57,23 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  * @param {string} content
  * @param {string} [ownerPackage]
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, depth = 0) {
+  /**
+   * An import escapes the component directory only when it climbs further
+   * than the file's own depth inside it: from `Table/plugins/sortable/x.ts`
+   * (depth 2) `../../types` is `Table/types`, copied alongside, and stays
+   * relative; `../../../utils/x` leaves the component and is rewritten.
+   * @param {string} importPath
+   */
+  const escapes = importPath => {
+    const climbs = importPath.match(/^(?:\.\.\/)+/)?.[0].length ?? 0;
+    return climbs / 3 > depth;
+  };
   /** @param {string} importPath */
   const mapTarget = importPath => {
     // Strip ALL leading `../` so a two-levels-up path never yields `<pkg>/..`.
+    // Every component directory sits directly under the package's `src`, so
+    // whatever follows the climbs is the path from that root.
     const rest = importPath.replace(/^(?:\.\.\/)+/, '');
     const parts = rest.split('/');
     const last = parts[parts.length - 1];
@@ -77,13 +90,17 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
   return content
     .replace(
       /(from\s+['"])(\.\.\/[^'"]+)(['"])/g,
-      (_m, prefix, importPath, suffix) =>
-        `${prefix}${mapTarget(importPath)}${suffix}`,
+      (m, prefix, importPath, suffix) =>
+        escapes(importPath)
+          ? `${prefix}${mapTarget(importPath)}${suffix}`
+          : m,
     )
     .replace(
       /(import\(\s*['"])(\.\.\/[^'"]+)(['"])/g,
-      (_m, prefix, importPath, suffix) =>
-        `${prefix}${mapTarget(importPath)}${suffix}`,
+      (m, prefix, importPath, suffix) =>
+        escapes(importPath)
+          ? `${prefix}${mapTarget(importPath)}${suffix}`
+          : m,
     );
 }
 
@@ -188,6 +205,41 @@ function isExcludedFromCopy(file) {
   return (
     file.includes('.test.') || file.includes('.doc.') || file === 'README.md'
   );
+}
+
+/** Directories inside a component that hold tests, never source. */
+const EXCLUDED_DIRS = new Set(['__tests__', '__snapshots__']);
+
+/**
+ * Every source file under a component directory, as paths relative to it,
+ * subdirectories included: a component's `plugins/`, `modules/` or `hooks/`
+ * are imported by its top-level files, so a copy without them cannot compile.
+ *
+ * @param {string} dir
+ * @param {string} [rel]
+ * @returns {string[]}
+ */
+function listSourceFiles(dir, rel = '') {
+  /** @type {string[]} */
+  const out = [];
+  const entries = fs.readdirSync(dir, {withFileTypes: true}).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  );
+  for (const entry of entries) {
+    const relPath = rel ? path.join(rel, entry.name) : entry.name;
+    if (entry.isDirectory()) {
+      if (EXCLUDED_DIRS.has(entry.name)) continue;
+      out.push(...listSourceFiles(path.join(dir, entry.name), relPath));
+    } else if (entry.isFile() && !isExcludedFromCopy(entry.name)) {
+      out.push(relPath);
+    }
+  }
+  return out;
+}
+
+/** @param {string} relPath */
+function toPosix(relPath) {
+  return relPath.split(path.sep).join('/');
 }
 
 /**
@@ -300,10 +352,7 @@ export async function swizzleCopy(component, options = {}) {
   const outputDir = path.join(outputBase, dirName);
 
   // Pre-flight path and overwrite checks before any mkdir/writeFile.
-  const sourceFiles = fs.readdirSync(componentDir).filter(file => {
-    if (isExcludedFromCopy(file)) return false;
-    return fs.statSync(path.join(componentDir, file)).isFile();
-  });
+  const sourceFiles = listSourceFiles(componentDir);
   for (const file of sourceFiles) {
     confineWrite(path.join(outputDir, file), cwd, {
       allowAbsolute: true,
@@ -330,7 +379,6 @@ export async function swizzleCopy(component, options = {}) {
     throw writeFailed(outputDir, cwd, err);
   }
 
-  const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
   // A copy that fails part-way undoes what it already wrote, so the report is
@@ -338,13 +386,17 @@ export async function swizzleCopy(component, options = {}) {
   // the bytes the file had before this run (null when the copy created it).
   /** @type {Array<{dest: string, original: Buffer|null}>} */
   const written = [];
-  for (const file of files) {
-    if (isExcludedFromCopy(file)) continue;
+  // Subdirectories this copy created, so a failed copy can take them back out.
+  /** @type {string[]} */
+  const createdDirs = [];
+  for (const file of sourceFiles) {
     const srcPath = path.join(componentDir, file);
-    if (!fs.statSync(srcPath).isFile()) continue;
     let content = fs.readFileSync(srcPath, 'utf-8');
+    // A file's depth inside the component decides which of its `../` imports
+    // leave the component (rewritten) and which stay inside it (kept).
+    const depth = file.split(path.sep).length - 1;
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      content = rewriteImports(content, owner.ownerPackage, depth);
     }
     if (
       (file.endsWith('.ts') || file.endsWith('.tsx')) &&
@@ -354,6 +406,21 @@ export async function swizzleCopy(component, options = {}) {
     }
     const dest = path.join(outputDir, file);
     try {
+      // Create each missing ancestor one at a time so every directory this
+      // copy adds is on record for the rollback, not only the deepest one.
+      /** @type {string[]} */
+      const missing = [];
+      for (
+        let dir = path.dirname(dest);
+        dir !== outputDir && !fs.existsSync(dir);
+        dir = path.dirname(dir)
+      ) {
+        missing.unshift(dir);
+      }
+      for (const dir of missing) {
+        fs.mkdirSync(dir);
+        createdDirs.push(dir);
+      }
       // The snapshot read is guarded too: a destination that cannot be read
       // back (no permission, or a directory with this name) must still undo
       // the earlier writes and report ERR_WRITE_FAILED.
@@ -362,6 +429,13 @@ export async function swizzleCopy(component, options = {}) {
       fs.writeFileSync(dest, content);
     } catch (err) {
       const unrestored = undoCopy(written);
+      for (const dir of [...createdDirs].reverse()) {
+        try {
+          fs.rmdirSync(dir);
+        } catch {
+          // Not empty (something could not be undone), or already gone.
+        }
+      }
       if (!outputDirExisted) {
         try {
           fs.rmdirSync(outputDir);
@@ -375,11 +449,7 @@ export async function swizzleCopy(component, options = {}) {
   }
 
   const relOutput = path.relative(cwd, outputDir);
-  const copiedFiles = files.filter(
-    f =>
-      !isExcludedFromCopy(f) &&
-      fs.statSync(path.join(componentDir, f)).isFile(),
-  );
+  const copiedFiles = sourceFiles.map(toPosix);
   const feedback = buildFeedback(dirName, owner.issuesUrl);
 
   /** @type {import('../swizzle.type.mjs').SwizzleCopyResponse['data']} */
@@ -388,7 +458,7 @@ export async function swizzleCopy(component, options = {}) {
     package: owner.package,
     outputDir: relOutput,
     filesCopied: copied,
-    files: copiedFiles.map(f => f),
+    files: copiedFiles,
     usesStyleX,
   };
   if (feedback) data.feedback = feedback;

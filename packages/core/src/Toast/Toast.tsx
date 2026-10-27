@@ -185,7 +185,10 @@ export function ToastSurface({
 }: ToastSurfaceProps) {
   const t = useTranslator();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isPausedRef = useRef(false);
+  // Hover, focus-within, window blur and a held gesture each pause the timer
+  // independently; count them so leaving one source cannot restart the
+  // countdown while another still holds it.
+  const pauseCountRef = useRef(0);
   const remainingRef = useRef(autoHideDuration);
   // Will be initialized by startTimer when actually used
   const startTimeRef = useRef<number | null>(null);
@@ -197,7 +200,7 @@ export function ToastSurface({
   onDismissRef.current = onDismiss;
 
   const startTimer = useCallback(() => {
-    if (!isAutoHide || isPausedRef.current) {
+    if (!isAutoHide || pauseCountRef.current > 0) {
       return;
     }
     if (timerRef.current) {
@@ -210,10 +213,13 @@ export function ToastSurface({
   }, [isAutoHide]);
 
   const pauseTimer = useCallback(() => {
-    if (!isAutoHide || isPausedRef.current) {
+    if (!isAutoHide) {
       return;
     }
-    isPausedRef.current = true;
+    pauseCountRef.current += 1;
+    if (pauseCountRef.current > 1) {
+      return;
+    }
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -225,10 +231,13 @@ export function ToastSurface({
   }, [isAutoHide]);
 
   const resumeTimer = useCallback(() => {
-    if (!isAutoHide || !isPausedRef.current) {
+    if (!isAutoHide || pauseCountRef.current === 0) {
       return;
     }
-    isPausedRef.current = false;
+    pauseCountRef.current -= 1;
+    if (pauseCountRef.current > 0) {
+      return;
+    }
     startTimer();
   }, [isAutoHide, startTimer]);
 
@@ -258,7 +267,7 @@ export function ToastSurface({
     };
   }, [isAutoHide, pauseTimer, resumeTimer]);
 
-  const isTimerPaused = useCallback(() => isPausedRef.current, []);
+  const isTimerPaused = useCallback(() => pauseCountRef.current > 0, []);
   const dismissFromGesture = useCallback(() => {
     onDismissRef.current('manual');
   }, []);

@@ -112,10 +112,20 @@ const STATIC_EXPORTS = {
     types: './dist/Indicator/indicator.markers.stylex.d.ts',
     default: './dist/Indicator/indicator.markers.stylex.js',
   },
+  './DropdownMenu/menuBottomSheet.stylex': {
+    source: './src/DropdownMenu/menuBottomSheet.stylex.ts',
+    types: './dist/DropdownMenu/menuBottomSheet.stylex.d.ts',
+    default: './dist/DropdownMenu/menuBottomSheet.stylex.js',
+  },
   './Layer/layerAnimations.stylex': {
     source: './src/Layer/layerAnimations.stylex.ts',
     types: './dist/Layer/layerAnimations.stylex.d.ts',
     default: './dist/Layer/layerAnimations.stylex.js',
+  },
+  './Layer/layerStructureReset.stylex': {
+    source: './src/Layer/layerStructureReset.stylex.ts',
+    types: './dist/Layer/layerStructureReset.stylex.d.ts',
+    default: './dist/Layer/layerStructureReset.stylex.js',
   },
   './Layer/layerTextReset.stylex': {
     source: './src/Layer/layerTextReset.stylex.ts',

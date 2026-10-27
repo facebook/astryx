@@ -47,6 +47,44 @@ describe('swizzle.copy — path safety', () => {
     });
   }, SLOW);
 
+  it('copies a component\'s subdirectories so its inner imports resolve', async () => {
+    // Markdown imports from ./plugins and ./parser; Table from ./plugins/*.
+    // Every relative import left in a copied file must point at a copied file.
+    for (const name of ['Markdown', 'Table']) {
+      const r = await swizzle(name, {cwd: REPO, output: './' + OUT});
+      expect(r.type).toBe('swizzle.copy');
+      expect(r.data.files.some(f => f.startsWith('plugins/'))).toBe(true);
+      expect(r.data.files.some(f => f.includes('__tests__'))).toBe(false);
+      expect(r.data.filesCopied).toBe(r.data.files.length);
+
+      const outDir = path.join(REPO, OUT, name);
+      const dangling = [];
+      for (const file of r.data.files) {
+        if (!/\.tsx?$/.test(file)) continue;
+        const abs = path.join(outDir, file);
+        expect(fs.existsSync(abs), `${name}/${file} was not written`).toBe(true);
+        const content = fs.readFileSync(abs, 'utf-8');
+        const re = /(?:from|import\()\s*['"](\.\.?\/[^'"]+)['"]/g;
+        let m;
+        while ((m = re.exec(content)) !== null) {
+          const target = path.resolve(path.dirname(abs), m[1]);
+          const candidates = [
+            target,
+            `${target}.ts`,
+            `${target}.tsx`,
+            path.join(target, 'index.ts'),
+            path.join(target, 'index.tsx'),
+          ];
+          if (!candidates.some(c => fs.existsSync(c) && fs.statSync(c).isFile())) {
+            dangling.push(`${name}/${file}: ${m[1]}`);
+          }
+        }
+      }
+      expect(dangling, 'relative imports in the copy must resolve').toEqual([]);
+      fs.rmSync(path.join(REPO, OUT), {recursive: true, force: true});
+    }
+  }, SLOW * 2);
+
   it('copies a real component, then refuses to clobber without overwrite', async () => {
     const r = await swizzle('Button', {cwd: REPO, output: './' + OUT});
     expect(r.type).toBe('swizzle.copy');
