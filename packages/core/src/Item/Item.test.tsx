@@ -345,21 +345,42 @@ describe('Item', () => {
     expect(anchor?.textContent).toContain('Link');
   });
 
-  it('follows the link on a click in a link row’s own box, outside its anchor (its padding, or its touch hit area under a finger)', () => {
+  /** A link row whose box spans x 0–100 and y 10–50, its anchor followed. */
+  function linkRow() {
     const {container} = render(<Item label="Link" href="/docs" />);
     const anchor = container.querySelector('a') as HTMLAnchorElement;
     const followed = vi.fn((event: MouseEvent) => event.preventDefault());
     anchor.addEventListener('click', followed);
     const row = container.firstElementChild as HTMLElement;
-    fireEvent.click(row);
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 0, y: 10, width: 100, height: 40}),
+    );
+    return {anchor, followed, row};
+  }
+
+  it('follows the link on a tap in a link row’s touch band, past its box (spec:AST-094 FR42)', () => {
+    const {anchor, followed, row} = linkRow();
+    fireEvent.click(row, {clientX: 50, clientY: 5, detail: 1});
     expect(followed).toHaveBeenCalledTimes(1);
     // A click on the anchor itself follows it once, not twice.
     fireEvent.click(anchor);
     expect(followed).toHaveBeenCalledTimes(2);
-    // Modifier keys carry over, so a ctrl or cmd click opens as on the label.
-    fireEvent.click(row, {ctrlKey: true});
+    // Modifier keys carry over, so a ctrl or cmd tap opens as on the label.
+    fireEvent.click(row, {clientX: 50, clientY: 55, detail: 1, ctrlKey: true});
     expect(followed).toHaveBeenCalledTimes(3);
     expect(followed.mock.calls[2][0].ctrlKey).toBe(true);
+  });
+
+  it('does nothing for a click inside a link row’s box but outside its anchor, for every pointer, as before (spec:AST-017 FR59)', () => {
+    const {followed, row} = linkRow();
+    fireEvent.click(row, {clientX: 4, clientY: 30, detail: 1});
+    expect(followed).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for a click with no pointer behind it', () => {
+    const {followed, row} = linkRow();
+    fireEvent.click(row, {clientX: 50, clientY: 5, detail: 0});
+    expect(followed).not.toHaveBeenCalled();
   });
 
   it('keeps a row with both onClick and href on onClick for a click in its own box', () => {

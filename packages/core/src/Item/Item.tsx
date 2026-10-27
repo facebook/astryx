@@ -744,13 +744,22 @@ export function Item({
       return;
     }
     if (onClick == null && href != null && !isLinkRoot) {
-      // A link row's own box follows its link: a click in its padding, or a
-      // tap in its touch hit area under a finger, goes to the row's anchor
-      // with its modifier keys, so the link component and the browser decide
-      // the destination and the tab as for a click on the label.
-      (e.currentTarget as HTMLElement)
-        .querySelector<HTMLElement>('[data-astryx-row-link]')
-        ?.dispatchEvent(
+      // A tap in a link row's touch hit area under a finger (the band past
+      // the row's box, `spec:AST-094` FR42) follows its link: it goes to the
+      // row's anchor, with its modifier keys, so the link component and the
+      // browser decide the destination as for a tap on the label. A click
+      // inside the row's box but outside its anchor does nothing, as before,
+      // for every pointer; so does a click with no pointer behind it.
+      const row = e.currentTarget as HTMLElement;
+      const box = row.getBoundingClientRect();
+      const isInBand =
+        e.detail > 0 &&
+        (e.clientX < box.left ||
+          e.clientX > box.right ||
+          e.clientY < box.top ||
+          e.clientY > box.bottom);
+      if (isInBand) {
+        row.querySelector<HTMLElement>('[data-astryx-row-link]')?.dispatchEvent(
           new MouseEvent('click', {
             bubbles: true,
             cancelable: true,
@@ -761,6 +770,7 @@ export function Item({
             button: e.button,
           }),
         );
+      }
       return;
     }
     onClick?.(e);
