@@ -110,8 +110,9 @@ const {detach} = reorderable.attach(listElement, {
 - **FR1 — One factory makes the behavior.** `createReorderable(options)`
   returns a reorderable object. `options` carries the change callback,
   `onReorder({ key, to })`, an optional `isReorderable(key)` predicate, and
-  an optional `positions()` for layouts the measured layout cannot place,
-  such as cards set with transforms in a fanned hand.
+  an optional `positions()`, which supplies drop positions for layouts such as a
+  fanned hand or a custom grid; collections the measured layout already places
+  do not need it.
   `positions()` returns one `{x, y}` per item, in item order: the center of
   that item's slot, in pixels from the top-left corner of the collection's
   container box. A drag reports as `to` the slot, within the drop range, whose center is
