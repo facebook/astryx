@@ -11,7 +11,8 @@
  *   card's `::after` (sampled frame by frame, both engines), keeps fading on
  *   every frame while the main thread is blocked, starts at the first frame
  *   after a busy one and keeps its layer until the strength reaches 0 (both
- *   engines), and does no Layout or Paint; under reduced motion it is one opacity cross-fade of 200 ms or
+ *   engines), and does no Layout or Paint; a second tap 70 ms after the
+ *   first leaves nothing pressed (both engines); under reduced motion it is one opacity cross-fade of 200 ms or
  *   less on a coarse pointer (design:reduced-motion DR2) and immediate with
  *   any other pointer (DR3); a storyboard of the release, its trace
  *   asserted
@@ -663,6 +664,22 @@ test('after a busy first frame, the release starts at that frame and keeps a but
   // partway through it on a clock started before the block.
   expect(fading.length, JSON.stringify(frames)).toBeGreaterThan(2);
   expect(fading.at(-1)?.[1], JSON.stringify(frames)).toBeLessThan(0.05);
+});
+
+test('a second tap 70 ms after the first leaves nothing pressed', async ({
+  page,
+}) => {
+  const opened = await openSurface(page, BUTTONS, secondaryButton);
+  // Two quick taps, the second while the first one's release still runs:
+  // the second press is lifted too, so its release runs and the press goes.
+  await page.touchscreen.tap(opened.center.x, opened.center.y);
+  await page.waitForTimeout(70);
+  await page.touchscreen.tap(opened.center.x, opened.center.y);
+  await expect
+    .poll(async () => opened.surface.getAttribute('data-astryx-press'), {
+      timeout: 2000,
+    })
+    .toBeNull();
 });
 
 test('the release of a button does no Layout or Paint per frame', async ({
