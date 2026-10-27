@@ -249,8 +249,9 @@ export interface TabBarSearchTabProps {
   /**
    * Called with `true` when the search tab's tap activates the field, and
    * with `false` when another tab is chosen while the search tab is
-   * selected: a tap on it, the leading circle, or Escape under a mouse. A
-   * Cancel button the app draws sets `isActive` itself.
+   * selected (a tap on it, the leading circle, or Escape under a mouse) and
+   * when Cancel ends search for a field without `cancel` (see `fieldRef`).
+   * Under a mouse, a Cancel button the app draws sets `isActive` itself.
    */
   onActiveChange?: (isActive: boolean) => void;
   /**
@@ -259,7 +260,11 @@ export interface TabBarSearchTabProps {
    * field's cancel button under a finger. Without `cancel`, the circle
    * reports `onActiveChange(false)`.
    */
-  fieldRef?: RefObject<{focus(): void; blur(): void; cancel?(): void} | null>;
+  fieldRef?: RefObject<{
+    focus(options?: FocusOptions): void;
+    blur(): void;
+    cancel?(): void;
+  } | null>;
   /**
    * Whether choosing the search tab activates its field at once (UIKit's
    * `automaticallyActivatesSearch`); otherwise the field waits inline.
@@ -1026,7 +1031,9 @@ export function TabBar({
       }
     });
     if (activates) {
-      search.fieldRef?.current?.focus();
+      // The field rises above the keyboard itself, so the page keeps still
+      // (spec:AST-099 FR4).
+      search.fieldRef?.current?.focus({preventScroll: true});
     }
   };
   const minimize = useTabBarMinimize({
