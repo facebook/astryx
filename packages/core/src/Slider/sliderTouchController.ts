@@ -9,13 +9,15 @@
  * @output Exports `SliderTouchController` (UISlider's touch tracking),
  *   `sliderCoastCurve` (the release coast as a closed-form curve) and the
  *   `SliderTouchModel` and `SliderTouchParts` types
- * @position Internal to Slider: its touch presentation (a finger, or a pen
- *   on a thumb, under a coarse primary pointer: one touch model on every
- *   touch device, spec:AST-094 FR13), attached by useSliderTouch once that
- *   presentation applies; useSliderTouch is its one import site, so a desktop
- *   build can swap the module. A mouse or a trackpad keeps Slider's own
- *   pointer handlers. Every spring is the UIKit table's internal constant
- *   (touch motion has no theme surface).
+ * @position Internal to Slider: UISlider's tracking for every pointer
+ *   (`spec:AST-094` FR43), attached by useSliderTouch while the slider is
+ *   enabled; useSliderTouch is its one import site. Under a coarse primary
+ *   pointer it is the touch presentation (a finger, or a pen, through the
+ *   thumbs' touch targets: one touch model on every touch device, FR13);
+ *   elsewhere a mouse drag on a thumb pans it with no lift and no coast, and
+ *   a mouse press on the track keeps Slider's own pointer handlers. A wheel
+ *   or a trackpad's scroll stays the page's. Every spring is the UIKit
+ *   table's internal constant (touch motion has no theme surface).
  *
  * WHAT A FINGER DOES (UISlider, iOS 26.2; values and sources in
  * motion/uikit/slider.ts)
@@ -304,6 +306,10 @@ export class SliderTouchController {
         // A mouse drag on a thumb is a pan too, claimed after the same
         // hysteresis (`spec:AST-094` FR43, FR19).
         allowedPointerTypes: ['touch', 'pen', 'mouse'],
+        // A control's thumb is no pan: it takes no wheel or trackpad scroll
+        // in any direction, as a range input takes none (UISlider is a
+        // UIControl), so a scroll over the slider stays the page's.
+        allowedScrollTypes: [],
         // A held thumb does something, so a held finger never starts a text
         // selection or the callout on it: the gesture host takes this lock
         // for each held press and releases it on the lift (spec:AST-094
