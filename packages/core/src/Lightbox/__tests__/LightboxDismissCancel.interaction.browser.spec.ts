@@ -43,7 +43,7 @@ import {
   type TouchDriver,
   type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside} from './screenSignal';
+import {cadenceOutside, presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -380,7 +380,9 @@ test('the cancel keeps moving every frame while the main thread is blocked', asy
       cadenceOutside(tracked, block) * (browserName === 'webkit' ? 1.5 : 1.15),
     ),
   );
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.frames).toBeGreaterThanOrEqual(
+    presentedFramesExpected(proof) - 2,
+  );
   expect(proof.longestStallFrames).toBeLessThanOrEqual(2);
   expect(proof.monotonic).toBe(true);
   await expectRestored(v);
