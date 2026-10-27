@@ -424,14 +424,31 @@ function scheduleAll(): void {
  * neighbour, and the next tap uses the fresh insets.
  */
 function onPress(event: Event): void {
-  const element = event.currentTarget as Element;
+  // One listener for every watched control, on the document: a control, a
+  // row or a handle carries none of its own (a list's listeners stay the
+  // list's, spec:AST-103 FR5). The innermost watched element the press
+  // lands in is the one it is for.
+  for (
+    let node: Element | null =
+      event.target instanceof Element ? event.target : null;
+    node != null;
+    node = node.parentElement
+  ) {
+    if (watched.has(node)) {
+      checkPress(node, event as PointerEvent);
+      return;
+    }
+  }
+}
+
+function checkPress(element: Element, event: PointerEvent): void {
   const entry = watched.get(element);
   if (entry == null) {
     return;
   }
   // A swallower left from a touch that sent no click goes with the next one.
   entry.disarm?.();
-  const press = event as PointerEvent;
+  const press = event;
   if (!isCoarse || press.pointerType !== 'touch') {
     return;
   }
@@ -501,7 +518,6 @@ function observe(element: Element, entry: Watched): void {
   }
   const stopScope =
     parent == null ? null : observeContent(parent, () => onScopeChange(parent));
-  element.addEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   entry.release = () => {
     visibility?.unobserve(element);
     resize?.unobserve(element);
@@ -517,7 +533,6 @@ function observe(element: Element, entry: Watched): void {
       }
     }
     stopScope?.();
-    element.removeEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
     entry.disarm?.();
   };
 }
@@ -532,6 +547,7 @@ function startObserving(): void {
     return;
   }
   view.addEventListener('resize', scheduleAll);
+  view.document.addEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   if (typeof IntersectionObserver === 'function') {
     visibility = new IntersectionObserver(entries => {
       for (const entry of entries) {
@@ -587,6 +603,7 @@ function stopObserving(): void {
     entry.release = null;
   }
   view?.removeEventListener('resize', scheduleAll);
+  view?.document.removeEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
   visibility?.disconnect();
   resize?.disconnect();
   visibility = null;
@@ -616,6 +633,29 @@ function onPointerChange(): void {
   }
 }
 
+/** Options of `watchHitArea`. */
+export interface WatchHitAreaOptions {
+  /** The size to grow toward, px. @default 44 */
+  readonly minSize?: number;
+}
+
+/**
+ * Stops every watch and forgets them, for tests: no observer, listener or
+ * answer outlives a test that left a watch behind.
+ */
+export function resetHitAreaForTests(): void {
+  stopObserving();
+  for (const entry of watched.values()) {
+    entry.disarm?.();
+  }
+  watched.clear();
+  pending.clear();
+  pointer?.removeEventListener('change', onPointerChange);
+  pointer = null;
+  view = null;
+  isCoarse = false;
+}
+
 /**
  * Keeps `element`'s hit insets live until the returned function runs:
  * `onInsets` hears each change (typically `writeHitInsets` on the control).
@@ -628,19 +668,23 @@ function onPointerChange(): void {
 export function watchHitArea(
   element: Element,
   onInsets: (insets: HitInsets) => void,
-  minSize: number = MIN_TOUCH_TARGET,
+  {minSize = MIN_TOUCH_TARGET}: WatchHitAreaOptions = {},
 ): () => void {
   const owner = element.ownerDocument.defaultView;
   if (owner == null) {
     return () => {};
   }
-  if (watched.size === 0) {
-    view = owner;
-    pointer = owner.matchMedia?.(TOUCH_QUERY) ?? null;
+  view = owner;
+  // Read the pointer query at every watch, not only the first: an
+  // environment that replaces matchMedia (a test) must not leave a stale
+  // answer behind from a watch that never stopped.
+  const query = owner.matchMedia?.(TOUCH_QUERY) ?? null;
+  if (query !== pointer) {
+    pointer?.removeEventListener('change', onPointerChange);
+    pointer = query;
     pointer?.addEventListener('change', onPointerChange);
-    isCoarse = false;
-    onPointerChange();
   }
+  onPointerChange();
   const watch: Watch = {
     element,
     minSize,
