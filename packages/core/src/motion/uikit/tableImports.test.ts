@@ -23,6 +23,8 @@ import {describe, expect, it} from 'vitest';
  */
 const SHARED_TABLES = new Set([
   'motion/uikit/gestures.ts',
+  // The long-press values: useLongPress and the menus' press model read them.
+  'motion/uikit/longPress.ts',
   'motion/uikit/navigation.ts',
   'motion/uikit/paging.ts',
   'motion/uikit/scroll.ts',
