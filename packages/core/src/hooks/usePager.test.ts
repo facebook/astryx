@@ -6,7 +6,8 @@
  *   an injected clock with a recording Web Animations stub, and synthetic
  *   touches at explicit timestamps
  * @output Proves the pager's behaviour: 1:1 tracking with no layout read, the
- *   rubber band at the ends, UIKit's page choice and settle at the lift, the
+ *   rubber band at the ends, UIKit's measured page choice (`pageForRelease`)
+ *   and settle at the lift, the
  *   catch, goTo cancelling a drag, loop, RTL, axis lock, shouldBeginPan,
  *   resize and the callbacks' timing
  * @position Testing; the browser proofs are
@@ -23,7 +24,13 @@ import {createAnimator, type Animator} from '../motion/animator';
 import {solveAnimatedPageScroll, solvePaging} from '../motion/paging';
 import {rubberBand} from '../motion/rubberBand';
 import {paging} from '../motion/uikit/paging';
-import {createPager, usePager, type Pager, type PagerOptions} from './usePager';
+import {
+  createPager,
+  pageForRelease,
+  usePager,
+  type Pager,
+  type PagerOptions,
+} from './usePager';
 
 const WIDTH = 400;
 
@@ -1097,8 +1104,9 @@ describe("children pages: each child's start edge, as a snap container places it
 
   it('a slow drag past half the way to the next child settles there; short of half, back', async () => {
     const f = setupChildren(CARDS, 10);
-    // 125 px/s to 90 px, past half of the 160 px to the next child.
-    await drag(f, {from: 300, dx: -90, step: 2, dt: 16, hold: 100});
+    // The finger moves 100 px: past the pan's 10 pt claim the content
+    // travels 90 px, past half of the 160 px to the next child.
+    await drag(f, {from: 300, dx: -100, step: 2, dt: 16, hold: 100});
     await settle(f);
     expect(f.pager.index).toBe(1);
     expect(f.x()).toBe(-160);
@@ -1684,5 +1692,158 @@ describe('usePager (React)', () => {
     expect(second).not.toBe(first);
     expect(pager!.pan.view).toBe(second);
     view.unmount();
+  });
+});
+
+describe("pageForRelease: UIKit's measured page choices (402 pt pages)", () => {
+  const PAGE = 402;
+  const page = (fraction: number, velocity: number, startIndex = 1) =>
+    pageForRelease({
+      position: (startIndex + fraction) * PAGE,
+      velocity,
+      stride: PAGE,
+      count: 6,
+      startIndex,
+    });
+
+  it('released at rest, settles on the nearest page', () => {
+    expect(page(0.485, 0)).toBe(1);
+    expect(page(0.575, 0)).toBe(2);
+    expect(page(0.45, 0)).toBe(1);
+    expect(page(0.55, 0)).toBe(2);
+    expect(page(-0.485, 0)).toBe(1);
+    expect(page(-0.575, 0)).toBe(0);
+  });
+
+  it('pages with the velocity at the advance speed, from wherever the content is', () => {
+    // The pan's last velocity sample at the lift, measured at 10, 25 and
+    // 40 % of the page: the same flip everywhere.
+    for (const fraction of [0.1, 0.25, 0.4]) {
+      expect(page(fraction, 292.7)).toBe(1);
+      expect(page(fraction, 298.6)).toBe(1);
+      expect(page(fraction, 310.7)).toBe(2);
+      expect(page(fraction, 329.9)).toBe(2);
+      expect(page(-fraction, -298.6)).toBe(1);
+      expect(page(-fraction, -310.7)).toBe(0);
+    }
+    // 600 pt/s from 6 % advances; 150 pt/s at 46 % stays.
+    expect(page(0.06, 600)).toBe(2);
+    expect(page(0.46, 150)).toBe(1);
+    expect(page(-0.06, -600)).toBe(0);
+  });
+
+  it('a slow release past the midpoint still advances', () => {
+    expect(page(0.55, 150)).toBe(2);
+  });
+
+  it('never travels more than one page from the page the drag started on', () => {
+    // 1.5 pages from page 1 at 0, 600 and 3000 pt/s: page 2.
+    expect(page(1.5, 0)).toBe(2);
+    expect(page(1.5, 600)).toBe(2);
+    expect(page(1.5, 3000)).toBe(2);
+    // A flick of 1200 from 70 %: one page.
+    expect(page(0.7, 1200)).toBe(2);
+  });
+
+  it('a flick against the drag returns to the start page', () => {
+    expect(page(0.4, -600)).toBe(1);
+    expect(page(-0.4, 600)).toBe(1);
+  });
+
+  // spec:AST-094 FR37, where UIKit, slower than the advance speed, takes the
+  // nearest page.
+  it('a release whose velocity points back toward the start page cancels, whatever the travel', () => {
+    expect(page(0.7, -50)).toBe(1);
+    expect(page(0.95, -299)).toBe(1);
+    expect(page(-0.7, 50)).toBe(1);
+    expect(page(-0.95, 299)).toBe(1);
+    // At rest, or moving on, the travel decides as before.
+    expect(page(0.7, 0)).toBe(2);
+    expect(page(0.7, 50)).toBe(2);
+    expect(page(-0.7, -50)).toBe(0);
+  });
+
+  it('clamps to the pages, or leaves the range when looping', () => {
+    expect(page(0.3, 600, 5)).toBe(5);
+    expect(page(-0.3, -600, 0)).toBe(0);
+    expect(
+      pageForRelease({
+        position: 5.3 * PAGE,
+        velocity: 600,
+        stride: PAGE,
+        count: 6,
+        startIndex: 5,
+        loop: true,
+      }),
+    ).toBe(6);
+    expect(
+      pageForRelease({
+        position: -0.3 * PAGE,
+        velocity: -600,
+        stride: PAGE,
+        count: 6,
+        startIndex: 0,
+        loop: true,
+      }),
+    ).toBe(-1);
+  });
+
+  it('a stale start page past either end counts from the nearest real page, so a release still pages', () => {
+    // The count shrank under a drag that began on page 7 of 8.
+    expect(
+      pageForRelease({
+        position: 400,
+        velocity: -1000,
+        stride: 100,
+        count: 5,
+        startIndex: 7,
+      }),
+    ).toBe(3);
+    expect(
+      pageForRelease({
+        position: 0,
+        velocity: 1000,
+        stride: 100,
+        count: 5,
+        startIndex: -2,
+      }),
+    ).toBe(1);
+    // At rest it lands on a real page.
+    expect(
+      pageForRelease({
+        position: 400,
+        velocity: 0,
+        stride: 100,
+        count: 3,
+        startIndex: 4,
+      }),
+    ).toBe(2);
+  });
+
+  it('reads an exact page boundary as on it', () => {
+    expect(page(0, 600)).toBe(2);
+    expect(page(0, -600)).toBe(0);
+    expect(page(0, 0)).toBe(1);
+  });
+
+  it('handles degenerate geometry', () => {
+    expect(
+      pageForRelease({
+        position: 10,
+        velocity: 0,
+        stride: 0,
+        count: 3,
+        startIndex: 0,
+      }),
+    ).toBe(0);
+    expect(
+      pageForRelease({
+        position: 10,
+        velocity: 0,
+        stride: 100,
+        count: 1,
+        startIndex: 0,
+      }),
+    ).toBe(0);
   });
 });
