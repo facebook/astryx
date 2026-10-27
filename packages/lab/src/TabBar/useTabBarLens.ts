@@ -82,22 +82,20 @@ import {
 } from 'react';
 import {flushSync} from 'react-dom';
 import {
+  isRtlElement,
+  lockSelection,
   LongPressGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
+} from '@astryxdesign/core/internal/touch';
 import {
-  createAnimator,
   type Animator,
+  createAnimator,
   type MotionCurve,
-} from '@astryxdesign/core/motion/animator';
-import {
   registerTabBarTable,
   tabBar,
   UIKIT_GESTURES,
-} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {lockSelection} from '@astryxdesign/core/gestures/selectionLock';
-import {isRtlElement} from '../utils/isRtlElement';
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
 import {
   copyTransform,
   itemCenters,
