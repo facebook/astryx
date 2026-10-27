@@ -71,7 +71,7 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
-import type {MotionScaleConfig} from './expandMotionScale';
+import type {ThemeMotionConfig} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -234,13 +234,27 @@ export interface DefineThemeInput {
    */
   typography?: TypographyConfig;
   /**
-   * Motion configuration. Computes duration min/max variants from
-   * base values and a scaling ratio: min = base × ratio, max = base / ratio.
+   * Motion configuration: three knobs (spec:AST-108), a motion scale, or both.
    *
-   * Explicit `tokens` overrides take precedence over motion-generated values.
+   * - `tempo` (default 1, clamped to 0.75–1.5) scales every motion duration,
+   *   the theme's CSS durations and the springs of its touch motion alike.
+   * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
+   *   entrance and move curves and how lively a spring is; exits and fades
+   *   never overshoot.
+   * - `reducedMotion` (`'system'` or `'always'`) reduces motion for
+   *   everyone when `'always'`; nothing loosens a person's own setting.
+   *
+   * A motion scale computes duration min/max variants from base values and a
+   * ratio (min = base × ratio, max = base / ratio); its durations win over
+   * `tempo`, and explicit `tokens` overrides win over both. Finger tracking,
+   * momentum, the keyboard, press and hover clocks and loops never follow the
+   * knobs.
    *
    * @example
    * ```
+   * motion: { tempo: 1.2, character: 'crisp' }
+   *
+   * // A motion scale, as before:
    * motion: { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
    *
    * // Suggested starting points:
@@ -249,7 +263,7 @@ export interface DefineThemeInput {
    * //   Cinematic: { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
    * ```
    */
-  motion?: MotionScaleConfig;
+  motion?: ThemeMotionConfig;
   /**
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.

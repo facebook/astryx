@@ -27,6 +27,7 @@
 import type {ComponentStyleMap, TokenName, TokenValue} from './defineTheme';
 import type {TypographyConfig, TypographyRole} from './types';
 import type {MotionScaleConfig} from './expandMotionScale';
+import type {ThemeMotionConfig, ThemeMotionKnobs} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -133,8 +134,11 @@ export interface ThemeAdaptationValue {
   color?: Partial<ColorScaleConfig>;
   /** Radius axis overrides, completed from root metadata. */
   radius?: Partial<RadiusScaleConfig>;
-  /** Motion axis overrides, completed from root metadata. */
-  motion?: Partial<MotionScaleConfig>;
+  /**
+   * Motion axis overrides, completed from root metadata: scale fields, or the
+   * `tempo` and `character` knobs (spec:AST-108 FR5).
+   */
+  motion?: Partial<MotionScaleConfig> & Omit<ThemeMotionKnobs, 'reducedMotion'>;
   /** Portable semantic-token writes. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /** Replacements for exact theme-local names enrolled by the root lineage. */
@@ -176,7 +180,7 @@ export interface ThemeGenerativeAxes {
   typography?: TypographyConfig;
   color?: ColorScaleConfig;
   radius?: RadiusScaleConfig;
-  motion?: MotionScaleConfig;
+  motion?: ThemeMotionConfig;
 }
 
 /** One rule lowered to concrete CSS writes. */
@@ -570,13 +574,42 @@ function completeRadius(
 }
 
 function completeMotion(
-  root: MotionScaleConfig | undefined,
-  rule: Partial<MotionScaleConfig>,
+  root: ThemeMotionConfig | undefined,
+  rule: Partial<MotionScaleConfig> & ThemeMotionKnobs,
   path: string,
-): MotionScaleConfig {
-  const fast = rule.fast ?? root?.fast;
-  const medium = rule.medium ?? root?.medium;
-  const ratio = rule.ratio ?? root?.ratio;
+): ThemeMotionConfig {
+  if ((rule as ThemeMotionKnobs).reducedMotion !== undefined) {
+    throw new Error(
+      `${path}.reducedMotion is a theme-wide setting: set it on the theme's own ` +
+        `motion, not in an adaptation rule.`,
+    );
+  }
+  const knobs: ThemeMotionKnobs = {
+    ...((rule.tempo ?? root?.tempo) !== undefined
+      ? {tempo: (rule.tempo ?? root?.tempo) as number}
+      : {}),
+    ...((rule.character ?? root?.character) !== undefined
+      ? {character: rule.character ?? root?.character}
+      : {}),
+  };
+  if (knobs.tempo !== undefined) {
+    assertFiniteNumber(knobs.tempo, `${path}.tempo`);
+  }
+  const rootScale: Partial<MotionScaleConfig> =
+    root != null && 'fast' in root ? root : {};
+  const writesScale =
+    rule.fast !== undefined ||
+    rule.medium !== undefined ||
+    rule.ratio !== undefined ||
+    rule.slow !== undefined ||
+    rule.easing !== undefined;
+  if (!writesScale && 'fast' in rootScale === false) {
+    // Knobs only, over a root with no scale: the knobs generate the tokens.
+    return knobs;
+  }
+  const fast = rule.fast ?? rootScale.fast;
+  const medium = rule.medium ?? rootScale.medium;
+  const ratio = rule.ratio ?? rootScale.ratio;
   if (fast === undefined || medium === undefined || ratio === undefined) {
     throw new Error(
       `${path} must supply \`fast\`, \`medium\`, and \`ratio\` unless each missing field exists on the effective root motion axis.`,
@@ -585,17 +618,18 @@ function completeMotion(
   assertFiniteNumber(fast, `${path}.fast`);
   assertFiniteNumber(medium, `${path}.medium`);
   assertFiniteNumber(ratio, `${path}.ratio`);
-  const slow = rule.slow ?? root?.slow;
+  const slow = rule.slow ?? rootScale.slow;
   if (slow !== undefined) {
     assertFiniteNumber(slow, `${path}.slow`);
   }
-  const easing = rule.easing ?? root?.easing;
+  const easing = rule.easing ?? rootScale.easing;
   return {
     fast,
     medium,
     ratio,
     ...(slow !== undefined ? {slow} : {}),
     ...(easing !== undefined ? {easing} : {}),
+    ...knobs,
   };
 }
 
