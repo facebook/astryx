@@ -229,6 +229,13 @@ const INTERACTIVE = [
   '[role="switch"]',
   '[role="tab"]',
   '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]',
+  '[role="treeitem"]',
+  '[role="combobox"]',
+  '[role="textbox"]',
+  '[role="searchbox"]',
+  '[role="spinbutton"]',
   '[role="option"]',
   '[role="slider"]',
   '[tabindex]:not([tabindex="-1"])',
@@ -483,17 +490,13 @@ function checkPress(element: Element, event: PointerEvent): void {
   const candidates = readCandidates(element.ownerDocument);
   const x = press.clientX;
   const y = press.clientY;
-  // A touch the browser gives the control outside its fresh area (a
-  // browser's own touch adjustment reaches a few px past a target) is still
-  // the control's unless a neighbour is nearer it.
+  // The touch is the control's unless a neighbour is nearer it: inside the
+  // fresh area too (a corner beside an offset or diagonal neighbour), and
+  // a few px past it, where a browser's own touch adjustment reaches.
   let isNearerNeighbour = false;
   for (const watch of entry.watches) {
     const {target, insets, neighbours} = measureOne(watch, candidates);
     deliver(watch, insets);
-    if (contains(grown(target, insets), x, y)) {
-      isNearerNeighbour = false;
-      break;
-    }
     const own = distanceTo(target, x, y);
     isNearerNeighbour ||= neighbours.some(rect => distanceTo(rect, x, y) < own);
   }

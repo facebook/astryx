@@ -466,6 +466,44 @@ describe('watchHitArea', () => {
     stop();
   });
 
+  it('swallows a touch inside the fresh area that an offset neighbour is nearer (a corner)', () => {
+    const control = byId('switch');
+    // A tall link beside it, 8 px to the right, reaching far below.
+    place(control, rect(100, 100, 24, 24));
+    place(byId('link'), rect(132, 100, 60, 80));
+    const stop = watchHitArea(control, () => {});
+    show(control);
+    flush();
+    // Inside the area (right inset 4, bottom 10), below the switch: 5 px from
+    // the link, 9.5 px from the switch.
+    const press = new Event('pointerdown', {bubbles: true});
+    Object.assign(press, {pointerType: 'touch', clientX: 127, clientY: 133});
+    control.dispatchEvent(press);
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      detail: 1,
+    });
+    control.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    stop();
+  });
+
+  it('counts tree items, menu checkbox and radio items as neighbours', () => {
+    document.body.innerHTML =
+      '<span id="switch" role="switch" tabindex="0"></span>' +
+      '<div id="item" role="treeitem"></div>';
+    const control = byId('switch');
+    place(control, rect(100, 100, 24, 24));
+    place(byId('item'), rect(132, 100, 60, 24));
+    const heard: HitInsets[] = [];
+    const stop = watchHitArea(control, insets => heard.push(insets));
+    show(control);
+    flush();
+    expect(heard.at(-1)?.right).toBe(4);
+    stop();
+  });
+
   it('leaves a touch the browser hands a lone control a few px past its area to it: only a nearer neighbour swallows', () => {
     const control = byId('switch');
     place(control, rect(100, 100, 24, 24));
