@@ -71,14 +71,20 @@ test.describe('on a 320 px phone', () => {
     expect(box.width).toBeCloseTo(272, 0);
     expect(strip.to - strip.from).toBeCloseTo(48, 0);
 
-    // The strip is backdrop (the dialog itself), not drawer.
+    // The strip is backdrop (the dialog itself), not drawer. Under a finger
+    // the drawer takes no input until its slide-in has ended (a transparent
+    // shield over the layer, `spec:AST-094` FR35); the shield goes on a timer
+    // the page can run just after the transition's own end, so the probe
+    // waits for it.
     const at = {x: (strip.from + strip.to) / 2, y: viewport.height / 2};
-    expect(
-      await page.evaluate(
-        ({x, y}) => document.elementFromPoint(x, y)?.tagName.toLowerCase(),
-        at,
-      ),
-    ).toBe('dialog');
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          ({x, y}) => document.elementFromPoint(x, y)?.tagName.toLowerCase(),
+          at,
+        ),
+      )
+      .toBe('dialog');
 
     await page.touchscreen.tap(at.x, at.y);
     await expect(nav).toBeHidden();
