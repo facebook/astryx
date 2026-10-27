@@ -28,6 +28,11 @@ export type PanGestureState = 'began' | 'changed' | 'ended' | 'cancelled';
 export interface PanGestureEvent {
   state: PanGestureState;
   /**
+   * What drove the drag: a finger, a mouse or a pen. A caller that animates
+   * the release can tell a touch's from a pointer's.
+   */
+  pointerType: 'touch' | 'mouse' | 'pen';
+  /**
    * Movement since the drag began, in CSS px. The travel the drag needed to
    * begin is not part of it, so an element that follows it does not jump.
    */
@@ -72,9 +77,15 @@ export function createPanGesture(
   options: PanGestureOptions,
 ): PanGesture {
   const {axis, onPan} = options;
+  // A gesture's touches are all of one kind (requiresExclusiveTouchType).
+  let pointerType: PanGestureEvent['pointerType'] = 'touch';
   const recognizer = new PanGestureRecognizer({
     name: 'pan',
     direction: axis === 'x' ? 'horizontal' : axis === 'y' ? 'vertical' : 'any',
+    shouldReceiveTouch: (_recognizer, touch) => {
+      pointerType = touch.pointerType;
+      return true;
+    },
   });
   const along = (point: Point) =>
     axis === 'x'
@@ -94,6 +105,7 @@ export function createPanGesture(
     }
     onPan({
       state,
+      pointerType,
       translation: along(recognizer.translation()),
       velocity:
         state === 'cancelled' ? {...ZERO} : along(recognizer.velocity()),

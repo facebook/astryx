@@ -41,7 +41,7 @@ export const docs = {
       name: 'options.onPan',
       type: '(event: PanGestureEvent) => void',
       description:
-        "Called with `{state, translation, velocity}` as the drag begins, changes, ends at the release, or is cancelled. `state` is 'began', 'changed', 'ended' or 'cancelled'. `translation` is the movement since the drag began, in pixels: the travel the drag needed to begin is not part of it, so an element that follows it does not jump. `velocity` is in pixels per second; at 'ended' it is the release velocity (0 when the finger rested before lifting), and at 'cancelled' it is 0. Read through a ref: a new function each render re-creates nothing.",
+        "Called with `{state, pointerType, translation, velocity}` as the drag begins, changes, ends at the release, or is cancelled. `state` is 'began', 'changed', 'ended' or 'cancelled'. `pointerType` is 'touch', 'mouse' or 'pen': what drove the drag. `translation` is the movement since the drag began, in pixels: the travel the drag needed to begin is not part of it, so an element that follows it does not jump. `velocity` is in pixels per second; at 'ended' it is the release velocity (0 when the finger rested before lifting), and at 'cancelled' it is 0. Read through a ref: a new function each render re-creates nothing.",
       required: true,
     },
   ],
@@ -98,14 +98,14 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Reports a drag as values ({state, translation, velocity}) for a surface you move yourself. Claims at UIKit’s 10 pt; taps, scrolls, presses and long presses are never a pan. Thin layer over createPanGesture(element, options) → {destroy}. No keyboard path of its own: give the drag another way (WCAG 2.5.7). Reduce Motion: animate with useAnimator. Prefer BottomSheet snapPoints / Carousel hasSnap when they fit.',
+    'Reports a drag as values ({state, pointerType, translation, velocity}) for a surface you move yourself. Claims at UIKit’s 10 pt; taps, scrolls, presses and long presses are never a pan. Thin layer over createPanGesture(element, options) → {destroy}. No keyboard path of its own: give the drag another way (WCAG 2.5.7). Reduce Motion: animate with useAnimator. Prefer BottomSheet snapPoints / Carousel hasSnap when they fit.',
   paramDescriptions: {
     ref: 'element to drag; one pan per node, re-created when the ref moves, destroyed at unmount.',
     options: 'config object.',
     'options.axis':
       "'x' | 'y': limit to one axis; the other is never reported and reads 0.",
     'options.onPan':
-      "({state, translation, velocity}): state 'began' | 'changed' | 'ended' | 'cancelled'; translation px since the drag began (threshold travel excluded, no jump); velocity px/s, release velocity at 'ended', 0 at 'cancelled'. Read through a ref.",
+      "({state, pointerType, translation, velocity}): state 'began' | 'changed' | 'ended' | 'cancelled'; pointerType 'touch' | 'mouse' | 'pen'; translation px since the drag began (threshold travel excluded, no jump); velocity px/s, release velocity at 'ended', 0 at 'cancelled'. Read through a ref.",
   },
   returnDescriptions: {
     void: 'nothing (no recognizer). createPanGesture returns {destroy}: removes every listener, cancels a drag in progress.',

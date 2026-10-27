@@ -217,6 +217,7 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
     for (const event of events) {
       expect(Object.keys(event).sort()).toEqual([
+        'pointerType',
         'state',
         'translation',
         'velocity',
