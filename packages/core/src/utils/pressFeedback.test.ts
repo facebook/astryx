@@ -395,7 +395,7 @@ describe('a scroll takes it away and nothing brings it back', () => {
     expect(pressedRow()).toBe(-1);
   });
 
-  it('without scrollend (Safari 17, 18), still brakes a moving list, and presses once its scroll events stop', () => {
+  it('on an engine without scrollend, still brakes a moving list, and presses once its scroll events stop', () => {
     // A touch device: the brake and the finger's lift are coarse-pointer
     // work (spec:AST-094 FR24).
     coarsePrimaryPointer();
@@ -415,6 +415,40 @@ describe('a scroll takes it away and nothing brings it back', () => {
     press(rows[2], 'pointerdown', 10, 190);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(pressedRow()).toBe(2);
+  });
+
+  it('a pen press leaves no finger behind: a later programmatic scroll is not a brake', () => {
+    // A pen raises pointer events but no touch events, so no touchend would
+    // ever clear a finger it recorded.
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointerup', 10, 10, 'pen');
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(1);
+  });
+
+  it('a pen that drags a list still arms the brake: a touch stopping that glide presses nothing', () => {
+    // The browser takes the pen to scroll (pointercancel), and the scroll it
+    // drives follows; a finger landing on the gliding list is a brake.
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointercancel', 10, 10, 'pen');
+    scroller.dispatchEvent(new Event('scroll'));
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
+    expect(pressedRow()).toBe(-1);
+  });
+
+  it('a pen taken to scroll that never scrolls stops counting after the brake window', () => {
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointercancel', 10, 10, 'pen');
+    vi.advanceTimersByTime(PRESS_SCROLL_BRAKE_MS + 1);
+    // A programmatic scroll after that is not a brake.
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(1);
   });
 
   it('presses normally once the list has come to rest, at its scrollend', () => {
@@ -1289,6 +1323,41 @@ describe('a control is tracked like UIControl', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('a menu row in a menu that cannot scroll highlights at once (FR11, DEC-14)', () => {
+    // A menu whose rows fit: overflow set, but nothing to scroll.
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    menu.style.overflowY = 'auto';
+    Object.defineProperty(menu, 'clientHeight', {
+      configurable: true,
+      value: 200,
+    });
+    Object.defineProperty(menu, 'scrollHeight', {
+      configurable: true,
+      value: 200,
+    });
+    const row = pressable('div', 'cell');
+    row.setAttribute('role', 'menuitem');
+    menu.appendChild(row);
+    document.body.appendChild(menu);
+    press(row, 'pointerdown', 10, 10);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('a menu row in a menu that can scroll waits the content-touch delay (FR11, DEC-14)', () => {
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    makeScroller(menu);
+    const row = pressable('div', 'cell');
+    row.setAttribute('role', 'menuitem');
+    menu.appendChild(row);
+    document.body.appendChild(menu);
+    press(row, 'pointerdown', 10, 10);
+    expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
   });
 
   it('marks a control with an empty marker and a cell with `cell`', () => {

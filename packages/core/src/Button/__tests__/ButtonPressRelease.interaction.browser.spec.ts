@@ -608,7 +608,12 @@ test('the release of a button does no Layout or Paint per frame', async ({
   let release = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await opened.driver.play(tap(opened.center, {holdMs: HOLD_MS}));
-    [release] = await waitForAnimation(opened.surface);
+    // The release is the longest animation running: the 250 ms `::before`
+    // opacity fade, not the 125 ms press-scale transition that starts with it.
+    const running = await waitForAnimation(opened.surface);
+    release = running.reduce((longest, animation) =>
+      animation.durationMs > longest.durationMs ? animation : longest,
+    );
     await page.waitForTimeout(RELEASE_MS + 100);
   });
   // The steady part of the release: its first and last frames may commit.
