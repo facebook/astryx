@@ -520,9 +520,13 @@ describe('run leases', () => {
         isAlive: pid => pid === 101,
         limitMs: 150,
       });
-      await expect(done).rejects.toThrow(
+      const error = await done.catch(e => e);
+      expect(error.message).toMatch(
         /test run 101 in this checkout still uses that build/,
       );
+      // A leftover lease (a run killed by SIGHUP) can name another process
+      // that took its pid: the message names the file to remove.
+      expect(error.message).toContain(path.join(built.leaseDir, '101'));
       expect(Date.now() - startedAt).toBeLessThan(2000);
       expect(builds).toEqual([]);
       expect(coreBuildIsStale(built.entry, built.roots)).toBe(true);

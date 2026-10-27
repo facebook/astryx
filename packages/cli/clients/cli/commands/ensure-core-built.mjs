@@ -28,8 +28,9 @@
  * the checkout while it runs (ended by its teardown or its exit), and a stale
  * rebuild waits, on a timer and for at most two minutes, until every run that
  * started before it has ended, so a second run never rebuilds Core under a run
- * already in progress; past the limit it tests the build it has, with a
- * warning naming the live run.
+ * already in progress; past the limit it stops with an error naming each
+ * live run and its lease file (a run killed by SIGHUP leaves its lease, and
+ * another process can take its pid).
  */
 
 import {execFileSync} from 'node:child_process';
@@ -463,7 +464,7 @@ export async function ensureCoreBuiltForRunAt({
   });
   if (stillLive.length > 0) {
     throw new Error(
-      `[ensure-core-built] Core's sources changed since packages/core/dist was built, and test run ${stillLive.join(', ')} in this checkout still uses that build after ${Math.round((limitMs ?? EARLIER_RUN_WAIT_MS) / 1000)} s: rebuilding would delete dist under it, and this run would test old code. Run again once it ends.`,
+      `[ensure-core-built] Core's sources changed since packages/core/dist was built, and test run ${stillLive.join(', ')} in this checkout still uses that build after ${Math.round((limitMs ?? EARLIER_RUN_WAIT_MS) / 1000)} s: rebuilding would delete dist under it, and this run would test old code. Run again once it ends; if that process is not a test run, remove its lease: ${stillLive.map(pid => path.join(leaseDir, String(pid))).join(', ')}.`,
     );
   }
   ensureCoreBuiltAt({
