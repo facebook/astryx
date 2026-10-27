@@ -188,8 +188,8 @@ render, onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
 ## Current-state impact
 
 - `architecture:react-component-runtime` INV13 gains three rules: the
-  recognizer family and the velocity tracker are the only classes, told apart
-  by `kind`, never `instanceof`; no internal factory shares a public factory's
+  recognizer family is the only class family, told apart by `kind`, never
+  `instanceof`, and the velocity tracker moves to a `create…` factory; no internal factory shares a public factory's
   name; and the known public-API gap list.
 - Core gains the three factories and the three hooks over them, the headless
   context menu and its hook, Core and Lab components that move onto them
