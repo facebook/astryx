@@ -27,6 +27,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getGestureHost} from '../gestures/GestureHost';
+import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
 
@@ -537,17 +538,21 @@ describe('AlertDialog action tracking', () => {
     vi.unstubAllGlobals();
   });
 
-  it('marks both actions for the tracking and takes them off the document press controller', () => {
+  it('marks both actions as tracked group items from the first render, keeping their pressable marker', () => {
     const {cancel, action} = renderOpen();
     for (const button of [cancel, action]) {
-      expect(button).toHaveAttribute('data-astryx-alert-action');
-      expect(button).not.toHaveAttribute('data-astryx-pressable');
+      // The document press controller leaves a pointer's press on a marked
+      // item to the group's tracker, its one painter; it still records the
+      // touch for the scroll brake, through the pressable marker.
+      expect(button).toHaveAttribute(PRESS_GROUP_ITEM_ATTRIBUTE, '');
+      expect(button).toHaveAttribute('data-astryx-pressable');
     }
   });
 
-  it('keeps the document press controller in the inline preview, which is not tracked', () => {
+  it('leaves the actions to the document press controller in the inline preview, which is not tracked', () => {
     const {cancel, action} = renderOpen({isInline: true});
     for (const button of [cancel, action]) {
+      expect(button).not.toHaveAttribute(PRESS_GROUP_ITEM_ATTRIBUTE);
       expect(button).toHaveAttribute('data-astryx-pressable');
     }
   });
