@@ -47,7 +47,8 @@
  *   control tapped while another element has focus) is delivered the same
  *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
  *   finger and where the keyboard is measured. The keyboard's Done moves
- *   focus to the composer region ChatLayout names, which is no tab stop. A script's focus() while
+ *   focus to the composer region ChatLayout names, which is no tab stop and
+ *   is focusable for that park alone (spec:AST-017 FR59). A script's focus() while
  *   nothing has focus raises no event before Safari reveals the field, so
  *   nothing can take that move over: the composer's own focus routes pass
  *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
@@ -240,6 +241,24 @@ export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
     selection?.removeAllRanges();
     selection?.addRange(range);
   }
+}
+
+/**
+ * Done's park (spec:AST-099 FR4): focus rests on the composer region, which
+ * is focusable for the park alone, so a click or a tap beside the composer
+ * never focuses it (spec:AST-017 FR59). The region gives the focus stop up as
+ * soon as focus leaves it.
+ */
+function parkFocus(region: HTMLElement): void {
+  region.setAttribute('tabindex', '-1');
+  region.addEventListener(
+    'blur',
+    () => {
+      region.removeAttribute('tabindex');
+    },
+    {once: true},
+  );
+  region.focus({preventScroll: true});
 }
 
 /**
@@ -554,7 +573,7 @@ export function useChatKeyboard({
       claim: destination => findTextEntryControl(destination, composer),
       park: origin => {
         if (findTextEntryControl(origin, composer) != null) {
-          composer.focus({preventScroll: true});
+          parkFocus(composer);
         }
       },
     });
