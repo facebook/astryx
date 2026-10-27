@@ -26,7 +26,9 @@
  *
  * A spec with no `always`, `audit`, or `release-only` line is scoped: a PR runs
  * it when it changes the spec, the spec's component folder, or a component the
- * spec is named after, or matches one of its `scope` tokens. A token starting
+ * spec is named after, or matches one of its `scope` tokens. A changed
+ * knowledge record (`*.spec.md`) counts toward neither the folder nor a path
+ * token: no browser renders it. A token starting
  * with `^` is a regular expression over changed paths; any other token is a
  * package-qualified component (`core/Selector`, `richtext/*`) matched against
  * the PR's component scope.
@@ -244,6 +246,9 @@ export function selectSpecs({
   title,
 }) {
   const audited = auditedComponents(title);
+  // A knowledge record (`<Name>.spec.md`) is Markdown no browser renders, so a
+  // changed record selects no spec by its folder or a path token.
+  const rendered = changedPaths?.filter(p => !isKnowledgeRecord(p));
   const selected = [];
   for (const {file, routing} of specs) {
     const reason = (() => {
@@ -259,7 +264,7 @@ export function selectSpecs({
       if (changedPaths.includes(file)) return 'spec changed';
       const owners = specOwners(file);
       for (const prefix of owners.prefixes) {
-        const hit = changedPaths.find(p => p.startsWith(prefix));
+        const hit = rendered.find(p => p.startsWith(prefix));
         if (hit) return `changed ${hit}`;
       }
       for (const component of owners.components) {
@@ -268,7 +273,7 @@ export function selectSpecs({
       for (const token of routing.scope) {
         if (token.startsWith('^')) {
           const pattern = new RegExp(token);
-          const hit = changedPaths.find(p => pattern.test(p));
+          const hit = rendered.find(p => pattern.test(p));
           if (hit) return `changed ${hit}`;
         } else if (componentMatches(token, components)) {
           return `component ${token}`;
@@ -279,6 +284,14 @@ export function selectSpecs({
     if (reason) selected.push({file, reason});
   }
   return selected;
+}
+
+/**
+ * Whether a changed path is a knowledge record: Markdown, never rendered.
+ * @param {string} file
+ */
+export function isKnowledgeRecord(file) {
+  return file.endsWith('.spec.md');
 }
 
 /** @param {{suites?: object[]}} listing Playwright JSON reporter output (`--list`). */

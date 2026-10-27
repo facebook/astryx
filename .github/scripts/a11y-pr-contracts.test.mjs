@@ -202,6 +202,26 @@ describe('selectSpecs', () => {
     ).toEqual([]);
   });
 
+  it('runs no spec for a changed knowledge record alone', () => {
+    const record = 'packages/core/src/Chat/ChatLayout.spec.md';
+    expect(pr(all, {changedPaths: [record]})).toEqual([always.file]);
+    const pattern = spec(
+      'internal/a11y-spec/src/patterns/accordion.chromium.spec.ts',
+      ['// @pr-a11y scope ^packages/core/src/Collapsible/'],
+    );
+    expect(
+      pr([pattern], {
+        changedPaths: ['packages/core/src/Collapsible/Collapsible.spec.md'],
+      }),
+    ).toEqual([]);
+    // Code beside the record still selects the spec.
+    expect(
+      pr(all, {
+        changedPaths: [record, 'packages/core/src/Chat/ChatLayout.tsx'],
+      }),
+    ).toEqual([always.file, scoped.file]);
+  });
+
   it('runs every scoped spec when the changed files are unknown', () => {
     expect(pr(all, {changedPaths: null})).toEqual([
       always.file,
