@@ -287,11 +287,44 @@ export function selectSpecs({
 }
 
 /**
- * Whether a changed path is a knowledge record: Markdown, never rendered.
+ * Path segments that never hold knowledge records. Mirrors
+ * `IGNORED_COMPONENT_KNOWLEDGE_SEGMENTS` in `knowledge-paths.cjs` (a test
+ * keeps them equal); copied because this runner uses only Node built-ins.
+ */
+export const IGNORED_RECORD_SEGMENTS = new Set([
+  '__fixtures__',
+  '__generated__',
+  '__snapshots__',
+  '__tests__',
+  'build',
+  'coverage',
+  'dist',
+  'fixtures',
+  'generated',
+  'node_modules',
+  'test',
+  'test-utils',
+  'tests',
+]);
+
+/**
+ * Whether a changed path is a knowledge record: Markdown, never rendered. A
+ * `*.spec.md` under a hidden, fixture, test, generated, build-output,
+ * coverage, or dependency folder, or named `*.generated.spec.md`, is not a
+ * record (`architecture:knowledge-contracts` INV27), so it still selects specs.
  * @param {string} file
  */
 export function isKnowledgeRecord(file) {
-  return file.endsWith('.spec.md');
+  if (!file.endsWith('.spec.md') || file.endsWith('.generated.spec.md')) {
+    return false;
+  }
+  return !file
+    .split('/')
+    .slice(0, -1)
+    .some(
+      segment =>
+        segment.startsWith('.') || IGNORED_RECORD_SEGMENTS.has(segment),
+    );
 }
 
 /** @param {{suites?: object[]}} listing Playwright JSON reporter output (`--list`). */
