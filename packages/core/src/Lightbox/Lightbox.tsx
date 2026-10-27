@@ -12,9 +12,10 @@
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
  *   zoom transition between a source, `sourceFor`, and the photo), zoomStage's chrome
- *   curves (a tap on the photo hides the controls, as Photos' chrome) and holdInput (the
+ *   curves (a tap on the photo hides the controls, as Photos' chrome), holdInput (the
  *   Layer module's input hold: a touch opening holds taps and drags until it ends,
- *   spec:AST-094 FR35)
+ *   spec:AST-094 FR35) and openerActivation (the click that opened a viewer, recorded by
+ *   one document listener every closed touch viewer shares)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -63,6 +64,7 @@ import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {holdInput} from '../Layer/inputHold';
+import {takeOpenerActivation, useOpenerActivation} from './openerActivation';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {useTranslator} from '../i18n';
 
@@ -139,7 +141,8 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   defaultIndex?: number;
   /**
-   * Callback when the gallery index changes via prev/next navigation.
+   * Callback when the gallery index changes: the previous and next buttons,
+   * the arrow keys or a swipe.
    */
   onIndexChange?: (index: number) => void;
   /**
@@ -672,23 +675,6 @@ export function Lightbox({
     isPresent: () => dialogRef.current?.open ?? false,
   });
 
-  // The opener is the element the viewer was opened from: a click or tap on
-  // it (which a plain image, or a button in Safari, does not focus), else
-  // the focused element.
-  const activationRef = useRef<{target: Element; time: number} | null>(null);
-  useEffect(() => {
-    if (isOpen) {
-      return undefined;
-    }
-    const record = (event: Event) => {
-      if (event.target instanceof Element) {
-        activationRef.current = {target: event.target, time: event.timeStamp};
-      }
-    };
-    document.addEventListener('click', record, true);
-    return () => document.removeEventListener('click', record, true);
-  }, [isOpen]);
-
   // The native `cancel` event is the browser's own close-watcher firing: an
   // Android back gesture, or a close request the stack never saw a press for.
   // Escape presses the stack owns never arrive here — it preventDefault()s
@@ -980,6 +966,11 @@ export function Lightbox({
   // touch device (the shared touch resolver), whose pinch and pan give past
   // their limits and bounce back.
   const {isTouch} = useTouchPresentation();
+  // The opener is the element the viewer was opened from: a click or tap on
+  // it (which a plain image, or a button in Safari, does not focus), else
+  // the focused element. Only the touch presentation reads it, through one
+  // listener every closed touch viewer shares (spec:AST-094 FR24).
+  useOpenerActivation(!isOpen && isTouch);
   const onDragStart = () => {
     didDragRef.current = true;
   };
@@ -1252,8 +1243,7 @@ export function Lightbox({
         return;
       }
       triggerElementRef.current = document.activeElement;
-      const activation = activationRef.current;
-      activationRef.current = null;
+      const activation = takeOpenerActivation();
       // A click opened it (within this task's events): its target, or the
       // button or link around it, is the opener.
       openerRef.current =
