@@ -395,6 +395,9 @@ describe('full-suite scope', () => {
       'packages/core/vite.config.ts',
       'packages/core/src/test-utils/render.tsx',
       'apps/storybook/.storybook/preview.tsx',
+      // Node tooling keeps its whole Node project (FR8), internal/ included.
+      'internal/scripts/lib/a-future-strategy.mjs',
+      'scripts/score-ledger.mjs',
     ]) {
       expect(full(['packages/core/src/Button/Button.tsx', file]), file).toBe(
         true,
@@ -409,5 +412,10 @@ describe('full-suite scope', () => {
       }).fullSuite,
     ).toBe(true);
     expect(classifyChanges([], {expectedCount: 1}).fullSuite).toBe(true);
+  });
+
+  it('runs everything when there are no paths to scope from', () => {
+    expect(classifyChanges([]).fullSuite).toBe(true);
+    expect(classifyChanges([], {expectedCount: 0}).fullSuite).toBe(true);
   });
 });

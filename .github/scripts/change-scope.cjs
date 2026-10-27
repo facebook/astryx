@@ -71,15 +71,16 @@ const PACKAGE_INFRA_PATTERNS = [
   /^packages\/[^/]+\/src\/(?:test-utils|testing|__mocks__)\//,
   /^packages\/[^/]+\/src\/[^/]*setup[^/]*\.[^/]+$/i,
   /^apps\/storybook\/\.storybook\//,
+  /^internal\//,
 ];
 
 // Surfaces a pull request's tests can be scoped to by the import graph (the
 // components and modules it changed, and what imports them). Anything else,
-// or any infrastructure path above, runs the full suite.
+// or any infrastructure path above, runs the full suite; Node tooling keeps
+// its whole Node project (spec:AST-030 FR8).
 const SCOPABLE_SURFACES = new Set([
   SURFACES.KNOWLEDGE,
   SURFACES.DOCSITE,
-  SURFACES.NODE_TOOLING,
   'storybook-visual',
   ...RUNTIME_PACKAGE_SURFACES.map(([, surface]) => surface),
 ]);
@@ -184,7 +185,8 @@ function classifyChanges(changes, {expectedCount} = {}) {
       touchesDesignAssets: false,
       specChangesetConflict: false,
       docsiteOnly: false,
-      fullSuite: !complete,
+      // No paths to scope from runs everything (spec:AST-030 FR4).
+      fullSuite: true,
       surfaces: complete ? [] : [SURFACES.SHARED_OR_UNKNOWN],
       complete,
       reason: complete ? 'no changed files' : 'changed-file list is incomplete',

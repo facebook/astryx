@@ -211,7 +211,8 @@ they are separately named.
   infrastructure, broad CI keeps every owner and required context and narrows
   what those owners run. The Vitest test owner runs the tests whose module graph
   reaches a changed file, against the merge commit's base parent, plus every test
-  that reads repository sources through the file system. The visual and RTL
+  that reads repository sources through the file system, directly or through a
+  module it imports; a computed `import()` counts as reading sources. The visual and RTL
   owners audit the changed components and their reverse dependents: the
   components whose built bundle, `import()` targets included, reaches a changed
   module. A changed module that no component bundle holds adds none, and without
@@ -220,7 +221,8 @@ they are separately named.
   dependency manifests and lockfile, root configuration, a package's manifest,
   build or test configuration and test setup, `internal/` (the test harness
   included), `theme-build` paths (tokens and themes), Storybook configuration,
-  and every other `shared-or-unknown` path except Changesets. Every fail-closed
+  `node-tooling` paths (FR8 keeps their whole Node project), and every other
+  `shared-or-unknown` path except Changesets. Every fail-closed
   condition of FR3–FR4 also runs the full suite. `main`, release branches,
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.

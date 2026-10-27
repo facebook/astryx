@@ -280,8 +280,11 @@ describe('analyze-pr component ownership', () => {
       );
       const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
 
-      // The family folder owns each component it holds.
-      expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer', 'core/Chat', 'core/ChatComposer']);
+      // A family folder's components are reverse dependents of its change:
+      // visual and RTL audit them, PR accessibility (changed components with
+      // stories of their own) does not.
+      expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer']);
+      expect(analysis.dependentComponentOwners).toEqual(['core/Chat', 'core/ChatComposer']);
       expect(analysis.unresolvedComponentSources).toEqual([]);
       expect(analysis.forceFullComponentAudits).toBe(false);
     } finally {

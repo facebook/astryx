@@ -696,14 +696,13 @@ jobs:
       - name: Run this shard of the UI tests
         env:
           SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
-          GUARD_PATTERN: "node:fs|from 'fs'|from \"fs\"|require\\('fs'\\)"
         run: |
           if [ "$SCOPED" = true ]; then
             pnpm test:ui --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-            # Tests that read sources through the file system (guards over
-            # every component's files) see changes no import reaches: they
-            # all run too.
-            mapfile -t GUARDS < <(git grep -l -E "$GUARD_PATTERN" -- '*.test.ts' '*.test.tsx' '*.test.mjs' '*.test.js' '*.test.cjs')
+            # Tests that read sources through the file system, directly or
+            # through a helper (guards over every component's files), see
+            # changes no import reaches: they all run too.
+            mapfile -t GUARDS < <(node .github/scripts/fs-guard-tests.mjs)
             if [ "${#GUARDS[@]}" -gt 0 ]; then
               pnpm test:ui --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
             fi
@@ -758,14 +757,13 @@ jobs:
       - name: Run this shard of the Node tests
         env:
           SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
-          GUARD_PATTERN: "node:fs|from 'fs'|from \"fs\"|require\\('fs'\\)"
         run: |
           if [ "$SCOPED" = true ]; then
             pnpm test:node --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-            # Tests that read sources through the file system (guards over
-            # every component's files) see changes no import reaches: they
-            # all run too.
-            mapfile -t GUARDS < <(git grep -l -E "$GUARD_PATTERN" -- '*.test.ts' '*.test.tsx' '*.test.mjs' '*.test.js' '*.test.cjs')
+            # Tests that read sources through the file system, directly or
+            # through a helper (guards over every component's files), see
+            # changes no import reaches: they all run too.
+            mapfile -t GUARDS < <(node .github/scripts/fs-guard-tests.mjs)
             if [ "${#GUARDS[@]}" -gt 0 ]; then
               pnpm test:node --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
             fi

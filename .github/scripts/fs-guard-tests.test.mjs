@@ -1,0 +1,50 @@
+import {describe, expect, it} from 'vitest';
+
+import {fsGuardTests} from './fs-guard-tests.mjs';
+
+const sources = {
+  'packages/core/src/Button/Button.test.tsx':
+    "import {Button} from './Button';",
+  'packages/core/src/Button/Button.tsx': 'export function Button() {}',
+  'packages/core/src/serverSafe.test.ts': "import fs from 'node:fs';",
+  'packages/cli/test/doc-quality.test.mjs':
+    "import {guides} from '../foundation/discovery.mjs';",
+  'packages/cli/foundation/discovery.mjs':
+    "import {read} from './io.js';\nexport const guides = read();",
+  'packages/cli/foundation/io.ts': "import {readFileSync} from 'fs';",
+  'scripts/topics.test.mjs':
+    'const load = name => import(`./topics/${name}.mjs`);',
+  'scripts/plain.test.mjs': "import {sum} from './sum.mjs';",
+  'scripts/sum.mjs': 'export const sum = (a, b) => a + b;',
+  'scripts/literal.test.mjs': "const mod = await import('./sum.mjs');",
+};
+
+const guards = () =>
+  fsGuardTests(Object.keys(sources), file => {
+    if (!(file in sources)) throw new Error(`untracked ${file}`);
+    return sources[file];
+  });
+
+describe('fsGuardTests', () => {
+  it('lists a test that reads the file system itself', () => {
+    expect(guards()).toContain('packages/core/src/serverSafe.test.ts');
+  });
+
+  it('lists a test that reads sources through a helper it imports, .js naming .ts', () => {
+    expect(guards()).toContain('packages/cli/test/doc-quality.test.mjs');
+  });
+
+  it('lists a test that imports a computed path', () => {
+    expect(guards()).toContain('scripts/topics.test.mjs');
+  });
+
+  it('leaves out tests whose imports read no files', () => {
+    expect(guards()).not.toContain('packages/core/src/Button/Button.test.tsx');
+    expect(guards()).not.toContain('scripts/plain.test.mjs');
+    expect(guards()).not.toContain('scripts/literal.test.mjs');
+  });
+
+  it('lists only tests', () => {
+    expect(guards().every(file => /\.test\./.test(file))).toBe(true);
+  });
+});

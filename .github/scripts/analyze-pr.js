@@ -593,10 +593,7 @@ function sizeTargets(changedFiles, reached = null) {
       if (changedTops.has(top) || reachedModules.length > 0) targets.push(target);
       if (reached != null) {
         for (const module of reachedModules) reached.paths.add(prefix + module);
-        if (changedTops.has(top)) {
-          reached.paths.add(prefix + top);
-          reached.ownFolder.add(target.key);
-        }
+        if (changedTops.has(top)) reached.paths.add(prefix + top);
       }
     }
     if (reached != null && reach != null && reach.size > 0) reached.measured.add(prefix);
@@ -808,7 +805,7 @@ function analyze() {
   // Components a change can affect, by reach in the head build and, when the
   // merge base is built, in the base build too: CI's size-base job builds only
   // the base, and a module change can add or remove reach.
-  const reachedSources = { paths: new Set(), measured: new Set(), ownFolder: new Set() };
+  const reachedSources = { paths: new Set(), measured: new Set() };
   const headTargets = sizeTargets(changedFiles, reachedSources);
   let targets = headTargets;
   let baseComponentSizes = null;
@@ -835,14 +832,13 @@ function analyze() {
   }
   const componentSizes = baseOnly ? null : measureSizes(targets);
 
-  // A changed family folder owns each component it holds (modified owners).
-  // A changed module outside every component folder (a shared hook, the
-  // animator) adds the components whose head bundle reaches it as reverse
-  // dependents: visual and RTL audits run them, PR accessibility stays with
-  // changed owners (spec:AST-030 FR12). In a package whose bundles were read,
-  // a module no bundle holds adds none. One in a package whose bundles could
-  // not be read stays unresolved and asks for full audits, as does
-  // --force-full.
+  // Every changed module, inside a component folder or not (a shared hook,
+  // the animator, a family folder), adds the components whose head bundle
+  // reaches it as reverse dependents: visual and RTL audits run them, PR
+  // accessibility stays with changed components (spec:AST-030 FR12, FR13).
+  // In a package whose bundles were read, a module no bundle holds adds none.
+  // One outside every component folder in a package whose bundles could not
+  // be read stays unresolved and asks for full audits, as does --force-full.
   const isDecided = (file) =>
     [...reachedSources.measured].some((prefix) => file.startsWith(prefix)) ||
     [...reachedSources.paths].some((reachedPath) => {
@@ -854,12 +850,12 @@ function analyze() {
   );
   const dependentComponentOwners = [];
   const dependentComponents = [];
-  if (!baseOnly && unreachedSources.length < unresolvedComponentSources.length) {
+  if (!baseOnly) {
     for (const target of headTargets) {
       const owner = `${target.pkg.packageName}/${target.name}`;
       if (newComponentOwners.includes(owner) || modifiedComponentOwners.includes(owner)) continue;
-      const isOwnFolder = reachedSources.ownFolder.has(target.key);
-      (isOwnFolder ? modifiedComponentOwners : dependentComponentOwners).push(owner);
+      if (dependentComponentOwners.includes(owner)) continue;
+      dependentComponentOwners.push(owner);
       // The legacy bare-name lists carry component folders only, as above.
       if (
         componentStats[target.name] ||
@@ -869,7 +865,7 @@ function analyze() {
         continue;
       }
       componentStats[target.name] = getComponentStats(target.pkg, target.name);
-      (isOwnFolder ? modifiedComponents : dependentComponents).push(target.name);
+      dependentComponents.push(target.name);
     }
     console.log(`Reverse dependents: ${dependentComponentOwners.join(', ') || 'none'}`);
   }
