@@ -45,7 +45,7 @@ describe('keyboardNotification', () => {
     expect(code).not.toContain('buttonReleaseMs');
     // The fade's length and curve, however esbuild prints them: inline in its
     // group or through a shared constant.
-    expect(code).not.toMatch(/\b500\b/);
+    expect(code).not.toMatch(/\b200\b/);
     expect(code).not.toContain('.42,0,.58,1');
   });
 });
