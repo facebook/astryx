@@ -62,9 +62,10 @@ export interface ActionGroupTrackingOptions {
    */
   highlightExpansion: number;
   /**
-   * Picks the action under the pointer from the actions measured when the
-   * press begins, in place of the flat `highlightExpansion` margin: a group
-   * whose touch targets grow toward 44 px resolves the nearest action.
+   * Picks the action under a finger from the actions measured when the press
+   * begins, in place of the flat `highlightExpansion` margin: a group whose
+   * touch targets grow toward 44 px resolves the nearest action. A mouse or a
+   * pen hit-tests the exact rects.
    */
   resolveTarget?: ActionGroupTrackerOptions['resolveTarget'];
   /** Pointers that are tracked; others keep the browser's click. @default every pointer */
@@ -134,7 +135,12 @@ export function useActionGroupTracking(
         pointerRef.current === 'touch'
           ? optionsRef.current.highlightExpansion
           : 0,
-      resolveTarget: optionsRef.current.resolveTarget,
+      // The caller's choice, like the expansion, is a finger's: a mouse or a
+      // pen hit-tests the exact rects (`family:action-groups` FR5).
+      resolveTarget:
+        pointerRef.current === 'touch'
+          ? optionsRef.current.resolveTarget
+          : undefined,
       onActivate: optionsRef.current.onActivate,
       // The browser's own click for a press the group ran is taken, so the
       // action runs once: the gesture host swallows it for a press it claims,

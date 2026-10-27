@@ -369,6 +369,44 @@ describe('useActionGroupTracking', () => {
     expect(getOptions?.().resolveTarget).toBe(resolveTarget);
   });
 
+  it("lets a mouse hit-test the exact rects even with a resolveTarget, which is a finger's (family:action-groups FR5)", () => {
+    const resolveTarget = vi.fn(
+      (
+        _x: number,
+        _y: number,
+        targets: ReadonlyArray<ActionGroupTrackerModule.ActionGroupTarget>,
+      ) => targets[1]?.element ?? null,
+    );
+    const {cancel, del, message, onCancel, onDelete} = mount({
+      options: {resolveTarget},
+    });
+    const mouse = (type: string, point: {x: number; y: number}) => {
+      time += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      message.dispatchEvent(event);
+    };
+    // A coarse primary pointer with a mouse beside it: on the message, outside
+    // both actions, the mouse highlights nothing and runs nothing.
+    mouse('pointerdown', centerOf(MESSAGE));
+    expect(paintOf(del)).toBeNull();
+    expect(paintOf(cancel)).toBeNull();
+    mouse('pointerup', centerOf(MESSAGE));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(resolveTarget).not.toHaveBeenCalled();
+  });
+
   it('tracks through the shared action-group tracker', () => {
     vi.mocked(createActionGroupTracker).mockClear();
     const {cancel, onCancel} = mount();
