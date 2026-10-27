@@ -508,7 +508,7 @@ export function SideNav({
     if (snapshot == null) {
       return;
     }
-    const endRail = playRail(snapshot);
+    const endRail = playRail(snapshot, shell?.rail() ?? navRef.current);
     const endContent = shell?.afterRailChange() ?? (() => {});
     endMotionRef.current = () => {
       endRail();

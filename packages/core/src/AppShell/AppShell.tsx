@@ -49,6 +49,7 @@ import {SideNavShellContext, type SideNavShell} from '../SideNav/railMotion';
 import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import {
   holdLayoutSwap,
+  layoutMotionFor,
   playLayoutSwap,
   reportLayoutChange,
   type LayoutChange,
@@ -765,6 +766,7 @@ export function AppShell({
   // (`component:SideNav` FR6).
   const railRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const contentLayout = useAnimatedLayout({containerRef: shellRef});
   const pendingContentRef = useRef<{
     change: LayoutChange;
@@ -809,18 +811,37 @@ export function AppShell({
           return () => {};
         }
         const after = main.getBoundingClientRect();
-        const travel =
-          getComputedStyle(main).direction === 'rtl'
-            ? pending.before.right - after.right
-            : pending.before.left - after.left;
+        const isRtl = getComputedStyle(main).direction === 'rtl';
+        const travel = isRtl
+          ? pending.before.right - after.right
+          : pending.before.left - after.left;
+        const incoming: {element: Element; frames: (p: number) => Keyframe}[] =
+          Array.from(main.children, element => ({
+            element,
+            frames: p => ({opacity: p}),
+          }));
+        // An expand slides the narrower column in from its old start, which
+        // opens a gap at its trailing edge: the content surface (the elevated
+        // backdrop, or the main element) reaches over it as it closes.
+        const surface = backdropRef.current ?? main;
+        const color = getComputedStyle(surface).backgroundColor;
+        if (
+          (isRtl ? travel > 0 : travel < 0) &&
+          layoutMotionFor(main).kind === 'spring' &&
+          !/^rgba\(.*,\s*0\)$|^transparent$/.test(color)
+        ) {
+          incoming.push({
+            element: surface,
+            frames: p => ({
+              boxShadow: `${-travel * (1 - p)}px 0px 0px 0px ${color}`,
+            }),
+          });
+        }
         return playLayoutSwap(pending.swap, {
           host: column.parentElement,
           copy: p => ({opacity: 1 - p}),
           rideWith: {element: column, travel: {x: travel, y: 0}},
-          incoming: Array.from(main.children, element => ({
-            element,
-            frames: (p: number) => ({opacity: p}),
-          })),
+          incoming,
         });
       },
     }),
@@ -887,7 +908,7 @@ export function AppShell({
           : styles.contentWrapper,
       )}>
       {shouldElevateWithCorner && (
-        <div {...stylex.props(styles.elevatedBackdrop)} />
+        <div ref={backdropRef} {...stylex.props(styles.elevatedBackdrop)} />
       )}
       {mainInner}
     </div>

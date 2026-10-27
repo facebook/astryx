@@ -314,6 +314,17 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(animated('clipPath').length).toBeGreaterThan(0);
   });
 
+  it('plays for a resizable rail outside AppShell, whose nav remounts with the collapse', async () => {
+    render(<Shell inShell={false} isResizable />);
+    await toggle();
+    expect(railWidth()).toBe(COLLAPSED);
+    const clip = animated('clipPath').find(entry =>
+      entry.element.hasAttribute('inert'),
+    );
+    expect(clip).toBeDefined();
+    expect(clip?.element.isConnected).toBe(true);
+  });
+
   it('removes its copies and restores the row when the rail unmounts mid-motion', async () => {
     const {rerender} = render(<Shell />);
     await toggle();

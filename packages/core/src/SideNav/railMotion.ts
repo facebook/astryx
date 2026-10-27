@@ -102,8 +102,17 @@ function textElements(rail: HTMLElement): Element[] {
  * After the change commits, before paint: play the rail's motion from the
  * snapshot. Returns what ends it at once (an unmount mid-motion).
  */
-export function playRail(snapshot: RailSnapshot): () => void {
-  const {rail, railRect, swap} = snapshot;
+export function playRail(
+  snapshot: RailSnapshot,
+  current: HTMLElement | null,
+): () => void {
+  const {railRect, swap} = snapshot;
+  // The rail as it is now: a resizable rail's nav remounts when its resize
+  // wrapper comes and goes with the collapse.
+  const rail = current?.isConnected === true ? current : snapshot.rail;
+  if (!rail.isConnected) {
+    return () => {};
+  }
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
   const delta = next.width - railRect.width;
