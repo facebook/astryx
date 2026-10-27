@@ -7,8 +7,9 @@
  * @output Exports the geometry and the curves of UIKit's zoom transition
  *   (iOS 18 `.zoom`): where the detail starts on its source, both portals'
  *   frames and opacities at a progress, the progress springs that open and
- *   close it, and MotionCurves for `Animator.play` on elements at rest in
- *   their boxes
+ *   close it, MotionCurves for `Animator.play` on elements at rest in
+ *   their boxes, and each portal as a path for the shared rect morph
+ *   (`zoomPath`)
  * @position Pure math for Lightbox's zoom transition, played by
  *   and by navigation's zoom push
  *
@@ -41,6 +42,7 @@
  */
 
 import type {MotionCurve} from '../motion/animator';
+import type {MorphPath} from '../motion/rectMorph';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 
@@ -104,7 +106,9 @@ export function zoomFramesAt(
   const detailAspect = detail.height / detail.width;
   const sourceAspect = source.height / source.width;
   const start = zoomStartRect(source, detailAspect, align);
-  const lerp = (a: number, b: number) => a + (b - a) * p;
+  // Exact at both ends, so a portal at its own box shows no transform.
+  const lerp = (a: number, b: number) =>
+    p === 0 ? a : p === 1 ? b : a + (b - a) * p;
   const width = lerp(start.width, detail.width);
   const x = lerp(start.x, detail.x);
   const anchor = lerp(anchorOf(start, align), anchorOf(detail, align));
@@ -231,5 +235,64 @@ export function zoomElementCurves(
       const frames = zoomFramesAt(p, geometry);
       return portal === 'detail' ? frames.detailOpacity : frames.sourceOpacity;
     }),
+  };
+}
+
+/**
+ * A portal as a path for the shared rect morph (motion/rectMorph.ts,
+ * architecture:layer-runtime INV15): the detail laid out in its resting box,
+ * or the source's copy laid out on the source (`box`), each scaled uniformly
+ * (each keeps its aspect), on the frames and gains above. An interrupted
+ * motion continues in a straight line from the rect on screen to the end it
+ * heads for, its opacity on the same gains from where it stood: a closing
+ * photo fades out only near its source, and an opening turned around never
+ * brightens again.
+ */
+export function zoomPath(
+  geometry: ZoomGeometry,
+  portal: 'detail' | 'source',
+  box: Rect,
+): MorphPath {
+  const rectAt = (p: number) => zoomFramesAt(p, geometry)[portal];
+  const opacityAt = (p: number) => {
+    const frames = zoomFramesAt(p, geometry);
+    return portal === 'detail' ? frames.detailOpacity : frames.sourceOpacity;
+  };
+  const first = rectAt(0);
+  const last = rectAt(1);
+  return {
+    box,
+    scale: 'uniform',
+    rectAt,
+    opacityAt,
+    restartFrom(rect, opacity, end) {
+      // Where the rect on screen stands on the path: the width moves with
+      // the progress.
+      const at =
+        last.width !== first.width
+          ? (rect.width - first.width) / (last.width - first.width)
+          : end === 'rest'
+            ? 0
+            : 1;
+      const goal = end === 'rest' ? 1 : 0;
+      const target = rectAt(goal);
+      // A fade on a spring of its own can lag the frame: what it shows now
+      // joins the gains by the end.
+      const lag = opacity - opacityAt(at);
+      const lerp = (a: number, b: number, q: number) =>
+        q === 0 ? a : q === 1 ? b : a + (b - a) * q;
+      return {
+        box,
+        scale: 'uniform',
+        rectAt: q => ({
+          x: lerp(rect.x, target.x, q),
+          y: lerp(rect.y, target.y, q),
+          width: lerp(rect.width, target.width, q),
+          height: lerp(rect.height, target.height, q),
+        }),
+        opacityAt: q =>
+          clamp01(opacityAt(at + (goal - at) * q) + lag * (1 - q)),
+      };
+    },
   };
 }

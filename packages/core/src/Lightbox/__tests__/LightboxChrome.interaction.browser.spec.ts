@@ -190,11 +190,13 @@ test('a tap on the photo hides the controls on the 0.2 s easeInEaseOut fade, and
   if (close == null) {
     throw new Error('no close button');
   }
+  // The show is the next animation on the controls, not the hide before it.
+  const since = await page.evaluate(() => performance.now());
   await v.driver.tap({
     x: close.x + close.width / 2,
     y: close.y + close.height / 2,
   });
-  await waitForAnimation(v.chrome);
+  await waitForAnimation(v.chrome, {since});
   await waitForRest(v.chrome);
   await expect(v.dialog).toBeVisible();
   expect(await v.alpha(v.chrome)).toBe(1);
@@ -356,6 +358,25 @@ test('a keyboard focus on a hidden control brings them back', async ({
   expect(onControl).toBe(true);
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
+  expect(await v.alpha(v.chrome)).toBe(1);
+});
+
+test('with the controls hidden, a tap where the caption sits shows them', async ({
+  page,
+}) => {
+  // The first photo's caption sits below it, outside the photo's box.
+  const v = await openGallery(page);
+  await hideByTap(v, page);
+  const caption = v.dialog.locator('[data-current] [data-lightbox-caption]');
+  const box = await caption.boundingBox();
+  if (box == null) {
+    throw new Error('no caption');
+  }
+  const since = await page.evaluate(() => performance.now());
+  await v.driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  await waitForAnimation(v.chrome, {since});
+  await waitForRest(v.chrome);
+  await expect(v.dialog).toBeVisible();
   expect(await v.alpha(v.chrome)).toBe(1);
 });
 
