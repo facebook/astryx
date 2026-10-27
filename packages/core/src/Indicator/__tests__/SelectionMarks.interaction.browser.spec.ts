@@ -12,8 +12,9 @@
  *   theme's transition (the negative control); the presented frames of a tap
  *   show no colour between the two states (storyboard); and a main thread
  *   blocked right after the change keeps showing the whole mark (judging the
- *   frame on screen when the block began and the frames inside it, after a
- *   precondition that the change was presented first).
+ *   frames on screen during the block once the change showed, each the
+ *   settled checked colour, after a precondition that the change showed by
+ *   the block's end).
  * @position Real-engine layer of the touch mark change; the stylesheet layer
  *   is Indicator/selectionMotion.test.ts.
  */
@@ -259,7 +260,9 @@ const BUSY_ATTEMPTS = 3;
 interface BusyProbe {
   /** The colour at the rest state's sample point before the tap. */
   readonly restColour: RGB;
-  /** Each frame on screen during the block, oldest first. */
+  /** The colour there once the block is over and the page has settled. */
+  readonly settledColour: RGB;
+  /** Each frame on screen during the block once the change showed, oldest first. */
   readonly colours: RGB[];
   readonly trace: Record<string, unknown>;
 }
@@ -267,13 +270,16 @@ interface BusyProbe {
 /**
  * One busy-window probe: a tap checks "Push notification", then the main
  * thread blocks for 500 ms. It returns what the screen showed during the
- * block: the last frame presented before the block began, plus every frame
- * presented inside it. Chromium's screencast sends nothing for an unchanged
- * screen, so once the row's 200 ms press release has ended the block window
- * can hold no frame at all, and an earlier captured frame was never on screen
- * during it. The capture starts before the tap, so the frame that presents
- * the change is in it; when the block began before that frame (a lagging
- * runner), the probe missed its window and returns null.
+ * block from the change's presentation on: the last frame presented before
+ * the block began if it already shows the change, plus every frame presented
+ * inside the block from the change on. Chromium's screencast sends nothing for
+ * an unchanged screen, so the block window can hold no frame at all, and an
+ * earlier captured frame was never on screen during it. The capture starts
+ * before the tap, so the frame that presents the change is in it. Both
+ * engines' compositors can present a change the page committed before the
+ * block a few milliseconds into it, which is presentation latency, not the
+ * blocked thread holding the mark back. When the change shows only after the
+ * block (a lagging runner), the probe missed its window and returns null.
  */
 async function probeBusyAfterChange(page: Page): Promise<BusyProbe | null> {
   await openStory(page, storybook(), 'core-checkboxlist--default');
@@ -291,6 +297,8 @@ async function probeBusyAfterChange(page: Page): Promise<BusyProbe | null> {
   const busy = await blockMainThread(page, 500);
   await frames(page, 2);
   const shot = await cast.stop();
+  // The mark once the block is over: the checked colour, whole.
+  const settledColour = await pagePixel(page, sample);
   const decoded = await decodeFrames(page, shot, sample);
   const read = shot.map((frame, i) => ({
     t: frame.t,
@@ -299,24 +307,26 @@ async function probeBusyAfterChange(page: Page): Promise<BusyProbe | null> {
   const change = read.find(
     frame => !near(frame.colour, restColour, PRESS_TOLERANCE),
   );
-  if (change == null || change.t > busy.from) {
+  if (change == null || change.t > busy.to) {
     return null;
   }
   const before = read
     .filter(frame => frame.t >= change.t && frame.t < busy.from)
     .at(-1);
   const inside = read.filter(
-    frame => frame.t >= busy.from && frame.t <= busy.to,
+    frame => frame.t >= busy.from && frame.t <= busy.to && frame.t >= change.t,
   );
   const onScreen = before == null ? inside : [before, ...inside];
   return {
     restColour,
+    settledColour,
     colours: onScreen.map(frame => frame.colour),
     trace: {
       busy,
       frames: shot.length,
       changePresented: change.t,
       inBlock: inside.length,
+      settledColour,
       judged: onScreen.map(frame => ({t: frame.t, colour: frame.colour})),
     },
   };
@@ -517,14 +527,17 @@ test.describe('selection marks under a finger', () => {
     }
     if (probe == null) {
       throw new Error(
-        `in ${BUSY_ATTEMPTS} attempts the change was never presented before the block`,
+        `in ${BUSY_ATTEMPTS} attempts the change was never presented during the block`,
       );
     }
-    const {colours, restColour} = probe;
-    // Whatever the screen showed during the block is the checked mark, whole.
+    const {colours, restColour, settledColour} = probe;
+    expect(near(settledColour, restColour, PRESS_TOLERANCE)).toBe(false);
+    // Whatever the screen showed during the block, once the change showed,
+    // is the checked mark, whole: the settled colour, never a frozen blend.
     for (const colour of colours) {
       expect(near(colour, restColour, PRESS_TOLERANCE)).toBe(false);
       expect(near(colour, colours[0], 8)).toBe(true);
+      expect(near(colour, settledColour, 8)).toBe(true);
     }
     await writeEvidence(
       'selection-marks/busy-after-change',
