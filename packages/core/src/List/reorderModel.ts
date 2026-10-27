@@ -5,8 +5,9 @@
  * @input A list's row geometry (layout tops and heights inside the list) and
  *   the reorder values of the UIKit constants table (motion/uikit/reorder.ts)
  * @output Pure functions of a reorder's drag: the position a dragged row proposes
- *   (where the insertion cue goes), the movable range that a fixed row at
- *   either end of the list bounds, the autoscroll step and the tracking clamp
+ *   (where the insertion cue goes), from the measured rows or from the slots
+ *   `positions()` gives, the movable range that a fixed row at either end of
+ *   the list bounds, the autoscroll step and the tracking clamp
  * @position List internals; List/listReorderEngine.tsx drives a drag with
  *   them. No DOM, no React: unit tested against the UIKit lab measurements
  *
@@ -51,7 +52,7 @@ export interface ReorderGeometry {
  * (spec:AST-103 FR1, FR4).
  */
 export function movableRange(
-  rows: ReadonlyArray<ReorderRow>,
+  rows: ReadonlyArray<Pick<ReorderRow, 'isFixed'>>,
   dragged: number,
 ): {start: number; end: number} {
   let start = 0;
@@ -99,6 +100,52 @@ export function dropPosition(
   }
   const {start, end} = movableRange(rows, dragged);
   return Math.min(end, Math.max(start, position));
+}
+
+/** A slot's centre: px from the top-left corner of the collection's container box. */
+export interface ReorderSlot {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * The slots `positions()` gives (spec:AST-103 FR1): null without it, or when
+ * it gives other than one per item, and drop positions then come from the
+ * measured layout.
+ */
+export function slotsOf(
+  positions: (() => ReadonlyArray<ReorderSlot>) | undefined,
+  count: number,
+): ReadonlyArray<ReorderSlot> | null {
+  const slots = positions?.();
+  return slots != null && slots.length === count ? slots : null;
+}
+
+/**
+ * The drop position a dragged item proposes among `slots`: the slot within
+ * its movable range whose centre is nearest the item's centre (spec:AST-103
+ * FR1); the first of equally near slots.
+ */
+export function nearestSlot(
+  slots: ReadonlyArray<ReorderSlot>,
+  items: ReadonlyArray<Pick<ReorderRow, 'isFixed'>>,
+  dragged: number,
+  center: ReorderSlot,
+): number {
+  const {start, end} = movableRange(items, dragged);
+  let nearest = start;
+  let nearestDistance = Infinity;
+  for (let index = start; index <= end; index += 1) {
+    const distance = Math.hypot(
+      slots[index].x - center.x,
+      slots[index].y - center.y,
+    );
+    if (distance < nearestDistance) {
+      nearest = index;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
 }
 
 /**

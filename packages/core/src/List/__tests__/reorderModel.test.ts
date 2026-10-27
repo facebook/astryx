@@ -16,8 +16,10 @@ import {reorder} from '../../motion/uikit/reorder';
 import {
   autoscrollStep,
   clampTop,
-  movableRange,
   dropPosition,
+  movableRange,
+  nearestSlot,
+  slotsOf,
   type ReorderGeometry,
   type ReorderRow,
 } from '../reorderModel';
@@ -219,5 +221,56 @@ describe('clampTop', () => {
       listBottom: 2000,
     };
     expect(clampTop(900, 44, bounds)).toBe(778);
+  });
+});
+
+describe('slotsOf', () => {
+  const slots = [
+    {x: 40, y: 20},
+    {x: 120, y: 20},
+    {x: 200, y: 20},
+  ];
+
+  it('takes positions() when it gives one slot per item (spec:AST-103 FR1)', () => {
+    expect(slotsOf(() => slots, 3)).toEqual(slots);
+  });
+
+  it('ignores positions() whose length differs from the item count, or none', () => {
+    expect(slotsOf(() => slots.slice(0, 2), 3)).toBeNull();
+    expect(slotsOf(undefined, 3)).toBeNull();
+  });
+});
+
+describe('nearestSlot', () => {
+  // A 3 x 2 grid of 80 x 40 slots.
+  const grid = [
+    {x: 40, y: 20},
+    {x: 120, y: 20},
+    {x: 200, y: 20},
+    {x: 40, y: 60},
+    {x: 120, y: 60},
+    {x: 200, y: 60},
+  ];
+  const free = grid.map(() => ({isFixed: false}));
+
+  it("proposes the slot whose centre is nearest the dragged item's centre (spec:AST-103 FR1)", () => {
+    expect(nearestSlot(grid, free, 0, {x: 125, y: 58})).toBe(4);
+    expect(nearestSlot(grid, free, 0, {x: 190, y: 25})).toBe(2);
+    // Where it started.
+    expect(nearestSlot(grid, free, 4, {x: 118, y: 61})).toBe(4);
+  });
+
+  it('stays within the drop range that fixed items at either end bound, and passes one in the middle', () => {
+    const fixedEnds = free.map((item, index) =>
+      index === 0 || index === 5 ? {isFixed: true} : item,
+    );
+    // Over the fixed first slot: the nearest slot in range is the one below.
+    expect(nearestSlot(grid, fixedEnds, 2, {x: 41, y: 19})).toBe(3);
+    // Over the fixed last slot: the nearest in range is the one above.
+    expect(nearestSlot(grid, fixedEnds, 1, {x: 199, y: 61})).toBe(2);
+    const fixedMiddle = free.map((item, index) =>
+      index === 3 ? {isFixed: true} : item,
+    );
+    expect(nearestSlot(grid, fixedMiddle, 0, {x: 41, y: 59})).toBe(3);
   });
 });
