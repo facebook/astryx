@@ -103,7 +103,7 @@ function mount() {
     switchTouchGeometry(40, 24),
   );
   controller.setOtherTrack(trackStateOf({className: 'on'}));
-  controller.attach({surface, input, thumb, track});
+  controller.attach({surface, input, thumb, track}, 'touch');
   const fade = animators.find(
     animator =>
       animator.element === track && animator.pseudoElement === '::after',

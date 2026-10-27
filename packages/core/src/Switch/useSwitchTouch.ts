@@ -9,13 +9,16 @@
  *   so the touch presentation adds no element), its value, whether it is
  *   interactive, the track's
  *   other state (switchFill.ts) and the thumb geometry (switchTouch.ts)
- * @output Exports useSwitchTouch: Switch's touch presentation. A drag moves
- *   the thumb with a rubber band and flips
- *   the switch; a release commits; every motion runs on the compositor
+ * @output Exports useSwitchTouch: Switch's gestures for every pointer and its
+ *   touch presentation. A drag flips the switch and a release commits; under
+ *   a finger the drag moves the thumb with a rubber band and every motion
+ *   runs on the compositor
  * @position DOM half of Switch's touch presentation, on the gesture system
- *   (../gestures) and the compositor animator (../motion/animator). Active
- *   under a finger, one model on every touch device (`spec:AST-094`); a mouse
- *   keeps the switch's own presentation
+ *   (../gestures) and the compositor animator (../motion/animator). Its
+ *   gestures work for a mouse, a pen and a finger (`spec:AST-094` FR43); its
+ *   presentation is the touch presentation's, under a coarse primary pointer
+ *   (FR13), and under a fine one the switch keeps its own look, which the
+ *   value moves
  *
  * UISwitch on iOS 26.2 is the reference; every number is in
  * motion/uikit/switch.ts. How it maps onto the web:
@@ -33,10 +36,12 @@
  *   and the release commits. A vertical drag, even after a hold, is the
  *   page's scroll: the browser takes the touch and the switch yields.
  *   A tap, a hold or a short drag activates through the browser's own click
- *   (FR11); where the browser sends no click for the lift, the switch clicks
- *   its input itself once the click window passes. A drag that flipped the
- *   switch gets no click from the browser, so its `touchend` is cancelled
- *   and the switch clicks its input. A press slid off and lifted outside
+ *   (FR11); where the browser sends no click for a finger's lift (a hold),
+ *   the switch clicks its input itself once the click window passes. A mouse
+ *   or a pen gets a click whenever it is released on the input, so one that
+ *   sends none was released off it and the switch is left alone. A drag
+ *   that flipped the switch gets no click from the browser, so its
+ *   `touchend` is cancelled and the switch clicks its input. A press slid off and lifted outside
  *   toggles too, as UISwitch's does (`spec:AST-020` FR9/DEC-5, the
  *   reversible-toggle exception), and the switch clicks its input for it. Forms, `onChange` and keyboard activation
  *   stay the native checkbox's.
@@ -73,6 +78,15 @@
  *   and the colour layer fades on the same fade. The thumb under a dragging
  *   finger still follows it (direct manipulation). UISwitch itself keeps its
  *   springs; the record decides here.
+ * - Under a fine primary pointer the switch keeps its own presentation
+ *   (FR13): the same tracking, flip rule and release decide the value, with
+ *   no animator, no lift and no colour fade, and the thumb moves when the
+ *   value does. Only its press listens at rest (one passive `pointerdown`
+ *   the gesture host arms, FR24); the click guard and the context-menu
+ *   block come with a press and go with its click window.
+ * - A mouse or a pen slid off and released outside without a flip leaves
+ *   the switch alone, as the native checkbox does: the reversible-toggle
+ *   exception (Switch FR6) is a finger's.
  * - The springs and the minimum lift time play as the motion roles
  *   `component:Switch` names (`switchControl.lift` and so on: `spec:AST-094`
  *   FR4, DEC-5), registered by registerSwitchTable() before the first
@@ -213,6 +227,12 @@ function liftThenSettle({
   };
 }
 
+/**
+ * The switch's presentation: the touch presentation under a coarse primary
+ * pointer, or its own under a fine one (`spec:AST-094` FR13).
+ */
+type SwitchPresentation = 'touch' | 'pointer';
+
 interface Elements {
   surface: HTMLElement;
   input: HTMLInputElement;
@@ -281,6 +301,11 @@ export class SwitchTouchController {
   private isTracking = false;
   /** Passive: until when the browser's next trusted click is swallowed. */
   private clickGuardUntil = 0;
+  /** Which presentation the switch has: the touch one, or its own (FR13). */
+  private presentation: SwitchPresentation = 'touch';
+  /** The press-time listeners under a fine pointer, while armed. */
+  private pressListeners: (() => void) | null = null;
+  private pressListenersTimer: ReturnType<typeof setTimeout> | null = null;
   /** Passive: the switch released on this touch; its `touchend` is cancelled. */
   private cancelsTouchEnd = false;
   /** Passive: a lift is waiting for the browser's own click. */
@@ -297,14 +322,22 @@ export class SwitchTouchController {
     return this.elements != null;
   }
 
-  attach(elements: Elements): void {
-    // The switch's springs play as its motion roles (spec:AST-094 FR4).
-    registerSwitchTable();
+  attach(elements: Elements, presentation: SwitchPresentation): void {
     this.detach();
     this.elements = elements;
+    this.presentation = presentation;
     this.measureGeometry();
     this.direction = isRtlElement(elements.surface) ? -1 : 1;
     this.isVisuallyOn = this.isOn;
+    const host = getGestureHost(elements.surface.ownerDocument);
+    if (presentation === 'pointer') {
+      // The switch's own look: the gestures decide the value and the CSS
+      // shows it (FR13, FR43).
+      this.detachers = this.attachPassive(host, elements);
+      return;
+    }
+    // The switch's springs play as its motion roles (spec:AST-094 FR4).
+    registerSwitchTable();
     this.thumb = createAnimator(elements.thumb);
     // The layer rests clear (its class's opacity 0) while the visuals show
     // the value; from here its opacity is the animator's.
@@ -319,8 +352,6 @@ export class SwitchTouchController {
     });
     this.shadow.set({opacity: 0});
     this.paintFade();
-
-    const host = getGestureHost(elements.surface.ownerDocument);
     this.detachers = this.attachPassive(host, elements);
   }
 
@@ -384,17 +415,68 @@ export class SwitchTouchController {
       }
     };
     const touchEndOptions = {capture: true, passive: false} as const;
-    surface.addEventListener('touchend', onTouchEnd, touchEndOptions);
-    surface.addEventListener('click', onClick, true);
-    surface.addEventListener('contextmenu', onContextMenu);
+    const listen = (): (() => void) => {
+      surface.addEventListener('touchend', onTouchEnd, touchEndOptions);
+      surface.addEventListener('click', onClick, true);
+      surface.addEventListener('contextmenu', onContextMenu);
+      return () => {
+        surface.removeEventListener('touchend', onTouchEnd, touchEndOptions);
+        surface.removeEventListener('click', onClick, true);
+        surface.removeEventListener('contextmenu', onContextMenu);
+      };
+    };
+    if (this.presentation === 'pointer') {
+      // Under a fine pointer only the press the host arms listens at rest
+      // (FR24): the switch's own listeners come with a press (touchDown)
+      // and go once its click window is over.
+      this.listenForPress = listen;
+      return [
+        host.attachConsumer(surface, tracker),
+        () => tracker.dispose(),
+        () => this.stopPressListeners(),
+      ];
+    }
     return [
       host.attachConsumer(surface, tracker),
       () => tracker.dispose(),
-      () =>
-        surface.removeEventListener('touchend', onTouchEnd, touchEndOptions),
-      () => surface.removeEventListener('click', onClick, true),
-      () => surface.removeEventListener('contextmenu', onContextMenu),
+      listen(),
     ];
+  }
+
+  /** Under a fine pointer: adds the switch's own listeners for a press. */
+  private listenForPress: (() => () => void) | null = null;
+
+  private startPressListeners(): void {
+    if (this.pressListenersTimer != null) {
+      clearTimeout(this.pressListenersTimer);
+      this.pressListenersTimer = null;
+    }
+    if (this.pressListeners == null && this.listenForPress != null) {
+      this.pressListeners = this.listenForPress();
+    }
+  }
+
+  /** The press's click window is over: its listeners go (FR24). */
+  private endPressListeners(afterMs: number): void {
+    if (this.pressListeners == null) {
+      return;
+    }
+    if (this.pressListenersTimer != null) {
+      clearTimeout(this.pressListenersTimer);
+    }
+    this.pressListenersTimer = setTimeout(() => {
+      this.pressListenersTimer = null;
+      this.stopPressListeners();
+    }, afterMs);
+  }
+
+  private stopPressListeners(): void {
+    if (this.pressListenersTimer != null) {
+      clearTimeout(this.pressListenersTimer);
+      this.pressListenersTimer = null;
+    }
+    this.pressListeners?.();
+    this.pressListeners = null;
   }
 
   /** Undo everything: listeners, timers, animations and inline styles. */
@@ -403,6 +485,7 @@ export class SwitchTouchController {
       detach();
     }
     this.detachers = [];
+    this.listenForPress = null;
     this.clearTimers();
     for (const animator of [this.thumb, this.fade, this.shadow]) {
       const element = animator?.element;
@@ -565,17 +648,14 @@ export class SwitchTouchController {
     this.downOffset = this.offsetAt(time);
   }
 
-  /** Passive: a finger (or pen) on the switch, UIControl's events. */
+  /** Passive: a mouse, a pen or a finger on the switch, UIControl's events (FR43). */
   private onControlEvent(event: ControlEvent, touch: GestureTouch): void {
-    if (touch.pointerType === 'mouse') {
-      // A mouse on a touch device clicks the checkbox natively.
-      return;
-    }
     const travel = touch.x - touch.startX;
     switch (event) {
       case 'touchDown':
         this.isTracking = true;
         this.clickGuardUntil = 0;
+        this.startPressListeners();
         this.touchDown(touch.startTime);
         return;
       case 'touchDragInside':
@@ -603,7 +683,24 @@ export class SwitchTouchController {
         this.move(touch.time, travel);
         if (this.drag?.flip.didFlip !== true && event === 'touchUpInside') {
           // A tap, a hold or a short drag: the browser's click activates it.
-          this.release(touch.time, {byBrowserClick: true});
+          // Only a finger's lift can come with no click (a hold); a mouse or
+          // a pen gets one whenever it is released on the input, so with no
+          // click it was released off the input, inside the tracking slop,
+          // and the switch is left alone, as the native checkbox is.
+          this.release(touch.time, {
+            byBrowserClick: true,
+            clicksIfNoBrowserClick: touch.pointerType === 'touch',
+          });
+          this.endPressListeners(BROWSER_CLICK_WAIT_MS + CLICK_GUARD_MS);
+          return;
+        }
+        if (this.drag?.flip.didFlip !== true && touch.pointerType !== 'touch') {
+          // A mouse or a pen slid off and released outside, with no flip:
+          // the switch is left alone, as the native checkbox is (the
+          // reversible-toggle exception, Switch FR6, is a finger's).
+          this.released = true;
+          this.abandon(touch.time);
+          this.endPressListeners(0);
           return;
         }
         // A drag that flipped, or a press slid off and lifted outside (it
@@ -613,6 +710,7 @@ export class SwitchTouchController {
         this.cancelsTouchEnd = true;
         this.clickGuardUntil = now() + CLICK_GUARD_MS;
         this.release(touch.time);
+        this.endPressListeners(CLICK_GUARD_MS);
         return;
       case 'touchCancel':
         // The browser took the touch for its scroll, or a recognizer above
@@ -622,6 +720,7 @@ export class SwitchTouchController {
           this.released = true;
           this.abandon(touch.time);
         }
+        this.endPressListeners(0);
         return;
       case 'touchDragEnter':
       case 'touchDragExit':
@@ -635,7 +734,7 @@ export class SwitchTouchController {
    */
   private move(time: number, travel: number | null): void {
     const thumb = this.thumb;
-    if (thumb == null || this.isStepping) {
+    if (this.isStepping) {
       return;
     }
     this.isStepping = true;
@@ -651,11 +750,15 @@ export class SwitchTouchController {
     // The thumb under the finger is direct manipulation, which reduced
     // motion leaves alone (design:reduced-motion): under it the thumb is
     // placed at once, since the animator would cross-fade a move.
-    const target = this.toX(dragTarget(drag.start, x, this.geometry));
-    if (thumb.reducedMotion() === 'off') {
-      thumb.animate({x: target}, {spring: TRACKING}, {at: time});
-    } else {
-      thumb.set({x: target});
+    // Under a fine pointer nothing follows the pointer: the switch keeps its
+    // own look, and the value moves the thumb (FR13).
+    if (thumb != null) {
+      const target = this.toX(dragTarget(drag.start, x, this.geometry));
+      if (thumb.reducedMotion() === 'off') {
+        thumb.animate({x: target}, {spring: TRACKING}, {at: time});
+      } else {
+        thumb.set({x: target});
+      }
     }
     drag.flip = stepFlip(drag.flip, x, this.geometry);
     if (drag.flip.isVisuallyOn !== this.isVisuallyOn) {
@@ -670,7 +773,10 @@ export class SwitchTouchController {
    */
   private release(
     time: number,
-    {byBrowserClick = false}: {byBrowserClick?: boolean} = {},
+    {
+      byBrowserClick = false,
+      clicksIfNoBrowserClick = true,
+    }: {byBrowserClick?: boolean; clicksIfNoBrowserClick?: boolean} = {},
   ): void {
     if (this.released) {
       return;
@@ -685,7 +791,8 @@ export class SwitchTouchController {
     }
     if (
       commit !== this.isOn &&
-      this.thumb?.reducedMotion({touchRelease: true}) !== 'off'
+      this.thumb != null &&
+      this.thumb.reducedMotion({touchRelease: true}) !== 'off'
     ) {
       // Under reduced motion the travel is one cross-fade, played when the
       // value commits (setValue) so that it lands in the new value's frame;
@@ -699,7 +806,7 @@ export class SwitchTouchController {
     if (byBrowserClick) {
       this.browserClickTimer = setTimeout(() => {
         this.browserClickTimer = null;
-        if (commit !== this.isOn) {
+        if (clicksIfNoBrowserClick && commit !== this.isOn) {
           this.elements?.input.click();
         }
         this.scheduleReconcile();
@@ -838,7 +945,7 @@ export class SwitchTouchController {
   /** The fade layer's colour: the track's fill in its other state. */
   private paintFade(): void {
     const track = this.elements?.track;
-    if (track == null || this.otherTrack == null) {
+    if (track == null || this.fade == null || this.otherTrack == null) {
       return;
     }
     track.style.setProperty(FADE_FILL, readFillOf(track, this.otherTrack));
@@ -1005,9 +1112,10 @@ export class SwitchTouchController {
 }
 
 /**
- * Switch's touch presentation, attached under a finger (a coarse primary
- * pointer). Its parts must be rendered (and styled for it) whether or not it
- * is active; it only animates and listens.
+ * Switch's gestures, attached for every pointer (`spec:AST-094` FR43), with
+ * the touch presentation under a coarse primary pointer (FR13). Its parts
+ * must be rendered (and styled for it) whether or not it is active; it only
+ * animates and listens.
  */
 export function useSwitchTouch(
   parts: SwitchTouchParts,
@@ -1050,11 +1158,10 @@ export function useSwitchTouch(
     const input = parts.input.current;
     const thumb = parts.thumb.current;
     const track = parts.track.current;
-    // A disabled switch takes no touch: no touch-only listener is active
-    // (spec:AST-094 FR24). A busy one stays attached (setInteractive ignores
-    // its presses), so the change that made it busy keeps its motion.
+    // A disabled switch takes no press: no listener is active (spec:AST-094
+    // FR24). A busy one stays attached (setInteractive ignores its presses),
+    // so the change that made it busy keeps its motion.
     if (
-      !isTouch ||
       isDisabled ||
       surface == null ||
       input == null ||
@@ -1063,7 +1170,10 @@ export function useSwitchTouch(
     ) {
       return undefined;
     }
-    controller.attach({surface, input, thumb, track});
+    controller.attach(
+      {surface, input, thumb, track},
+      isTouch ? 'touch' : 'pointer',
+    );
     return () => controller.detach();
   }, [controller, isTouch, isDisabled, parts]);
 }

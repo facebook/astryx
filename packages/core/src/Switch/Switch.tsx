@@ -227,13 +227,11 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
     isolation: 'isolate',
-    // Under a finger, horizontal moves are the switch's drag and vertical
-    // ones the page's scroll; set in CSS so it holds before hydration
+    // Horizontal touch moves are the switch's drag and vertical ones the
+    // page's scroll, under any primary pointer (a touchscreen laptop's finger
+    // too, spec:AST-094 FR18, FR43); set in CSS so it holds before hydration
     // (useSwitchTouch.ts).
-    touchAction: {
-      default: null,
-      [TOUCH]: 'pan-y pinch-zoom',
-    },
+    touchAction: 'pan-y pinch-zoom',
   },
   input: {
     position: 'absolute',
