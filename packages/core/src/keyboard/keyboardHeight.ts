@@ -348,7 +348,7 @@ export interface RevealPanWatch {
    * viewport's top, into view, or a probe fixed where the visual viewport sat.
    */
   putBack: (anchor?: Element | null) => void;
-  /** Removes the watch's listener. */
+  /** Ends the watch; the document's touch listener goes with its last watch. */
   stop: () => void;
 }
 
@@ -372,6 +372,43 @@ export interface RevealPanWatch {
  * // On any later report: if (watch.isRevealPan(height)) watch.putBack();
  * ```
  */
+// One capture-phase touch listener per document, shared by every reveal-pan
+// watch in it (spec:AST-094 FR24: no per-instance document listener), added
+// with the first watch and removed with the last.
+const touchStartWatches = new WeakMap<
+  Document,
+  {listener: () => void; watches: Set<() => void>}
+>();
+
+function watchTouchStarts(doc: Document, onTouchStart: () => void): () => void {
+  let shared = touchStartWatches.get(doc);
+  if (shared == null) {
+    const watches = new Set<() => void>();
+    const listener = () => {
+      for (const watch of [...watches]) {
+        watch();
+      }
+    };
+    doc.addEventListener('touchstart', listener, {
+      capture: true,
+      passive: true,
+    });
+    shared = {listener, watches};
+    touchStartWatches.set(doc, shared);
+  }
+  shared.watches.add(onTouchStart);
+  return () => {
+    const current = touchStartWatches.get(doc);
+    if (current == null || !current.watches.delete(onTouchStart)) {
+      return;
+    }
+    if (current.watches.size === 0) {
+      doc.removeEventListener('touchstart', current.listener, true);
+      touchStartWatches.delete(doc);
+    }
+  };
+}
+
 export function watchRevealPan(
   win: Window,
   {owns, onTouch}: WatchRevealPanOptions,
@@ -380,13 +417,9 @@ export function watchRevealPan(
   let atReport: {x: number; y: number; top: number; scale: number} | null =
     null;
   let touchedSinceReport = false;
-  const handleTouchStart = () => {
+  const stopTouchStarts = watchTouchStarts(doc, () => {
     touchedSinceReport = true;
     onTouch?.();
-  };
-  doc.addEventListener('touchstart', handleTouchStart, {
-    capture: true,
-    passive: true,
   });
   return {
     report: () => {
@@ -443,9 +476,7 @@ export function watchRevealPan(
       probe.scrollIntoView(options);
       probe.remove();
     },
-    stop: () => {
-      doc.removeEventListener('touchstart', handleTouchStart, true);
-    },
+    stop: stopTouchStarts,
   };
 }
 
@@ -524,7 +555,9 @@ export function useSheetKeyboard({
   const isOpenRef = useRef(isOpen);
   isFullyExpandedRef.current = isFullyExpanded;
   isOpenRef.current = isOpen;
-  // The ride attaches only under a coarse primary pointer (the touch query).
+  // Touch-only work (the ride, the reveal-pan watch) attaches only under a
+  // coarse primary pointer (the touch query): under a fine one no touch
+  // listener is registered (architecture INV13, spec:AST-094 FR24).
   const isTouch = useMediaQuery(TOUCH_QUERY, false);
 
   useEffect(() => {
@@ -1036,14 +1069,19 @@ export function useSheetKeyboard({
     // view once the sheet lands the field itself, and the field lands at once
     // on every later report.
     let lastHeight = getKeyboardHeight(window);
-    const revealPan = watchRevealPan(window, {
-      owns: focused => hasKeyboardLayoutRef.current && body.contains(focused),
-      // The reader's own scroll may stop a smooth reveal short: forget where
-      // it was going.
-      onTouch: () => {
-        smoothTarget = null;
-      },
-    });
+    // Under a coarse primary pointer only: the watch reads touches, and an
+    // on-screen keyboard's pan comes with a touch screen.
+    const revealPan = isTouch
+      ? watchRevealPan(window, {
+          owns: focused =>
+            hasKeyboardLayoutRef.current && body.contains(focused),
+          // The reader's own scroll may stop a smooth reveal short: forget
+          // where it was going.
+          onTouch: () => {
+            smoothTarget = null;
+          },
+        })
+      : null;
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeKeyboardHeight(window, event => {
@@ -1052,12 +1090,12 @@ export function useSheetKeyboard({
       }
       if (event.height !== lastHeight) {
         lastHeight = event.height;
-        revealPan.report();
+        revealPan?.report();
         cancelAnimationFrame(animationFrame);
         revealFocusedControl();
         return;
       }
-      if (revealPan.isRevealPan(event.height)) {
+      if (revealPan?.isRevealPan(event.height) === true) {
         revealsAtReport.add(window);
         cancelAnimationFrame(animationFrame);
         // A smooth reveal still under way lands the field where it is going.
@@ -1082,7 +1120,7 @@ export function useSheetKeyboard({
             getObstructionTop()
         ) {
           // The full-viewport dialog is fixed at the layout viewport's top.
-          revealPan.putBack(dialog);
+          revealPan?.putBack(dialog);
         }
         return;
       }
@@ -1110,7 +1148,7 @@ export function useSheetKeyboard({
       unsubscribeGuide?.();
       heldHide?.release();
       contentAnimator()?.set({y: 0});
-      revealPan.stop();
+      revealPan?.stop();
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);
