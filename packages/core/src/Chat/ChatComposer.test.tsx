@@ -12,6 +12,7 @@ import {
 import {ChatLayout} from './ChatLayout';
 import {KeyboardSurfaceContext} from './keyboardSurface';
 import {useChatComposerContext} from './ChatContext';
+import {createStaticSource} from '../Typeahead/createStaticSource';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import type * as AnnounceModule from '../hooks/useAnnounce';
 
@@ -77,6 +78,36 @@ describe('ChatComposer focus indication', () => {
     fireEvent.keyDown(document, {key: 'Tab'});
     fireEvent.focus(editor);
 
+    expect(body.className).not.toBe(restingClass);
+  });
+
+  it('adds the composer ring when Tab enters a disabled trigger editor', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        isDisabled
+        onSubmit={() => {}}
+        input={
+          <ChatComposerInput
+            triggers={[
+              {
+                character: '@',
+                searchSource: createStaticSource([]),
+                onSelect: () => '',
+              },
+            ]}
+          />
+        }
+      />,
+    );
+    const editor = screen.getByRole('combobox');
+    const body = editor.parentElement!.parentElement!.parentElement!;
+    const restingClass = body.className;
+    expect(editor).toHaveAttribute('aria-disabled', 'true');
+
+    await user.tab();
+
+    expect(editor).toHaveFocus();
     expect(body.className).not.toBe(restingClass);
   });
 

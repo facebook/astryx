@@ -65,11 +65,11 @@ import {
   claimTapFocus,
   findTextEntryControl,
   getKeyboardLayoutGuide,
-  getMobileKeyboardHeight,
+  getKeyboardHeight,
   isKeyboardMeasurable,
   refuseFocusReveal,
   rideKeyboard,
-  subscribeMobileKeyboard,
+  subscribeKeyboardHeight,
   useKeyboardHeight,
   watchRevealPan,
   type KeyboardTransition,
@@ -287,6 +287,8 @@ export function useChatKeyboard({
   const atEndRef = useRef(false);
   const scrollBeforeRef = useRef(0);
   const commitRef = useRef<() => void>(() => {});
+  const touchPresentation = useTouchPresentation();
+  const isTouch = touchPresentation.isTouch;
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
@@ -322,7 +324,7 @@ export function useChatKeyboard({
       if (ridingRef.current) {
         return;
       }
-      const next = liftFor(getMobileKeyboardHeight(win));
+      const next = liftFor(getKeyboardHeight(win));
       if (Math.abs(next - liftRef.current) < 0.5) {
         return;
       }
@@ -392,18 +394,22 @@ export function useChatKeyboard({
         })
         .catch(() => undefined);
     };
-    const guide = getKeyboardLayoutGuide(win);
-    const unsubscribe = guide.subscribe(follow);
+    // The ride on the keyboard's own motion attaches only under a coarse
+    // primary pointer; under a fine one the layout follows the height alone.
+    const unsubscribe = isTouch
+      ? getKeyboardLayoutGuide(win).subscribe(follow)
+      : undefined;
     // Mounted under a keyboard that is already up: take its place at once.
     commit();
     return () => {
-      unsubscribe();
+      unsubscribe?.();
       ridingRef.current = false;
     };
   }, [
     rootRef,
     scrollRef,
     isSelfScrolling,
+    isTouch,
     dock.animator,
     messages.animator,
     liftStore,
@@ -482,7 +488,6 @@ export function useChatKeyboard({
   // reveal-pan watch puts the pan back, so the composer rests on the keyboard
   // and the page does not move (spec:AST-099 FR4). Synchronizes the keyboard
   // module's reports, under a finger only (spec:AST-094 FR24).
-  const touchPresentation = useTouchPresentation();
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;
     const win = composer?.ownerDocument.defaultView;
@@ -497,8 +502,8 @@ export function useChatKeyboard({
     const watch = watchRevealPan(win, {
       owns: focused => composer.contains(focused),
     });
-    let reportedHeight = getMobileKeyboardHeight(win);
-    const unsubscribe = subscribeMobileKeyboard(win, event => {
+    let reportedHeight = getKeyboardHeight(win);
+    const unsubscribe = subscribeKeyboardHeight(win, event => {
       if (event.type !== 'viewport') {
         return;
       }
