@@ -5,7 +5,8 @@
 /**
  * @file menuTriggerPress.ts
  * @input The menu press model's shared state (useMenuPress.ts), useLongPress,
- *   the native scroll probe and the menu press values
+ *   the native scroll probe, the menu press values, the system's long-press
+ *   duration (motion/uikit/longPress.ts) and the coarse-pointer read
  * @output Exports `useMenuTriggerPress`: the trigger half of the menu press
  *   model (a mouse press-down open, a held or pressed finger open, the
  *   scroll-view wait)
@@ -18,7 +19,12 @@
  * SYNC: When modified, update useMenuPress.ts and useMenuPress.test.tsx.
  */
 
-import {useCallback, useMemo, type RefObject} from 'react';
+import {
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
 import type {
@@ -31,13 +37,30 @@ import {
   MENU_PRESS_HOLD_OPEN_SLOP_PX,
 } from './menuPressValues';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
+import {LONG_PRESS_DURATION_MS} from '../motion/uikit/longPress';
+import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
 
 /**
  * How long a finger rests on the trigger before the menu opens under it,
  * with the 'pointer' touch model and no `longPressDelayMs`. A tap released
  * sooner opens the menu through the trigger's click.
  */
-export const MENU_PRESS_LONG_PRESS_MS = 500;
+export const MENU_PRESS_LONG_PRESS_MS = LONG_PRESS_DURATION_MS;
+
+/**
+ * How far a finger held on a DropdownMenu trigger may move before the open,
+ * in CSS px, where the primary pointer is coarse: `spec:AST-094` FR29's
+ * drift allowance (FR2's table: unmeasured, a 12 pt move still opened), the
+ * same 13 pt a trigger in a scroll view allows. Where it is fine, and on
+ * ContextMenu, the long press's own allowable movement stays.
+ */
+export const MENU_PRESS_TRIGGER_DRIFT_PX = MENU_PRESS_HOLD_OPEN_SLOP_PX;
+
+const viewOrNull = () => (typeof window === 'undefined' ? null : window);
+const subscribeCoarsePointer = (onChange: () => void) =>
+  watchCoarsePointer(viewOrNull(), onChange);
+const readCoarsePointer = () => isCoarsePointer(viewOrNull());
+const readServerCoarsePointer = () => false;
 
 /** What the trigger half reads and drives of the model. @internal */
 export interface MenuTriggerContext {
@@ -156,17 +179,28 @@ export function useMenuTriggerPress(
   // lands.
   // With `touchModel: 'uikit'` only a trigger inside a scroll view waits
   // (the content-touch delay, within the drift allowance); one in a fixed bar
-  // opens as the finger presses, so its detector never runs.
+  // opens as the finger presses, so its detector never runs. A held finger
+  // keeps FR29's drift allowance where the primary pointer is coarse; where
+  // it is fine, the shared tolerance stays (useMenuPress FR9).
   const isUikit = options.touchModel === 'uikit';
+  const isPrimaryPointerCoarse = useSyncExternalStore(
+    subscribeCoarsePointer,
+    readCoarsePointer,
+    readServerCoarsePointer,
+  );
   const pointerHoldMs = options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS;
+  const pointerHoldDriftPx = isPrimaryPointerCoarse
+    ? MENU_PRESS_TRIGGER_DRIFT_PX
+    : undefined;
   const plainHold = useLongPress({
     onLongPress: fireLongPress,
     delayMs: pointerHoldMs,
+    moveCancelPx: pointerHoldDriftPx,
   });
   const scrollerHold = useLongPress({
     onLongPress: fireLongPress,
     delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
-    ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
+    moveCancelPx: isUikit ? MENU_PRESS_HOLD_OPEN_SLOP_PX : pointerHoldDriftPx,
   });
   ctx.setHoldDetectors({plain: plainHold, scroller: scrollerHold});
 

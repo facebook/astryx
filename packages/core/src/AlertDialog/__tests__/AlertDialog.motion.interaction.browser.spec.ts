@@ -41,9 +41,11 @@ import {
   blockMainThread,
   compareCurve,
   countBetween,
+  drag,
   freezeTimers,
   installTimerGate,
   openStory,
+  pinch,
   releaseAnimations,
   springStep,
   startScreencast,
@@ -690,36 +692,285 @@ test.describe('under a finger', () => {
     await expect(dialog).toBeVisible();
   });
 
-  test('a tap while the alert leaves reaches nothing', async ({page}) => {
+  test('a key still reaches the alert while it presents: Escape closes it', async ({
+    page,
+  }) => {
+    // Keys and assistive technology stay live while it presents (the hold
+    // covers touches, presses and clicks alone). The key must land inside
+    // the presentation, under its hold, for this to prove anything: a busy
+    // page can push it past, and then it is taken again.
+    let heldAtKey = false;
+    for (let attempt = 0; attempt < 3 && !heldAtKey; attempt += 1) {
+      const {driver, trigger, dialog} = await openPage(page);
+      await page.evaluate(() => {
+        const log = {heldAtKey: [] as boolean[]};
+        (window as unknown as {__keyLog: typeof log}).__keyLog = log;
+        document.addEventListener(
+          'keydown',
+          () =>
+            log.heldAtKey.push(
+              document.querySelector('dialog > [popover]') != null,
+            ),
+          true,
+        );
+      });
+      await driver.tap(await centerOf(trigger));
+      await expect(dialog).toBeVisible();
+      await page.keyboard.press('Escape');
+      heldAtKey = await page.evaluate(
+        () =>
+          (window as unknown as {__keyLog: {heldAtKey: boolean[]}}).__keyLog
+            .heldAtKey[0] === true,
+      );
+      if (heldAtKey) {
+        await expect(dialog).toBeHidden();
+      }
+    }
+    expect(heldAtKey).toBe(true);
+  });
+
+  // spec:AST-094 FR35 (DEC-16): a drag that lands during the entrance
+  // reaches nothing and scrolls nothing; an assistive-technology activation
+  // acts; a pinch still zooms the page. Each must land inside the
+  // presentation's hold to prove anything (the hold's shield is in the alert
+  // when it lands): a busy page can push it past, so each retries.
+  test('a drag that lands while the alert presents reaches nothing and scrolls nothing (spec:AST-094 FR35)', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      'needs native scrolling from injected touches (Mobile Safari on the simulator)',
+    );
+    let heldAtDrag = false;
+    for (let attempt = 0; attempt < 3 && !heldAtDrag; attempt += 1) {
+      const {driver, trigger, dialog} = await openPage(page);
+      const viewport = page.viewportSize();
+      if (viewport == null) {
+        throw new Error('no viewport');
+      }
+      await page.evaluate(() => {
+        // A page that scrolls under the alert.
+        const spacer = document.createElement('div');
+        spacer.style.height = '300vh';
+        document.body.append(spacer);
+        const log = {heldAtDrag: [] as boolean[], clicks: [] as string[]};
+        (window as unknown as {__dragLog: typeof log}).__dragLog = log;
+        document.addEventListener(
+          'touchstart',
+          () =>
+            log.heldAtDrag.push(
+              document.querySelector('dialog > [popover]') != null,
+            ),
+          true,
+        );
+        document.addEventListener(
+          'click',
+          event => {
+            const button = (event.target as Element).closest('dialog button');
+            if (button != null) {
+              log.clicks.push(button.textContent ?? '');
+            }
+          },
+          true,
+        );
+      });
+      await driver.tap(await centerOf(trigger));
+      await waitForAnimation(dialog);
+      const x = viewport.width / 2;
+      await driver.play(
+        drag(
+          {x, y: viewport.height - 40},
+          {x, y: viewport.height - 340},
+          {durationMs: 150, restMs: 50},
+        ),
+      );
+      const log = await page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __dragLog: {heldAtDrag: boolean[]; clicks: string[]};
+            }
+          ).__dragLog,
+      );
+      heldAtDrag = log.heldAtDrag.at(-1) === true;
+      if (heldAtDrag) {
+        await waitForRest(dialog);
+        await expect(dialog).toBeVisible();
+        expect(await page.evaluate(() => window.scrollY)).toBe(0);
+        expect(log.clicks).toEqual([]);
+      }
+    }
+    expect(heldAtDrag).toBe(true);
+  });
+
+  test('an assistive-technology activation reaches its action while the alert presents (spec:AST-094 FR35)', async ({
+    page,
+  }) => {
+    let heldAtActivation = false;
+    for (let attempt = 0; attempt < 3 && !heldAtActivation; attempt += 1) {
+      const {driver, trigger, dialog} = await openPage(page);
+      await driver.tap(await centerOf(trigger));
+      await waitForAnimation(dialog);
+      // An activation with no pointer, as assistive technology sends it:
+      // the button's own click, with no click count.
+      heldAtActivation = await page.evaluate(() => {
+        const held = document.querySelector('dialog > [popover]') != null;
+        const cancel = [...document.querySelectorAll('dialog button')].find(
+          button => button.textContent === 'Cancel',
+        ) as HTMLButtonElement | undefined;
+        cancel?.click();
+        return held;
+      });
+      if (heldAtActivation) {
+        await expect(dialog).toBeHidden();
+      }
+    }
+    expect(heldAtActivation).toBe(true);
+  });
+
+  test('a pinch that lands while the alert presents still zooms the page (spec:AST-094 FR35, FR10)', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      'needs pinch-zoom from injected touches (Mobile Safari on the simulator)',
+    );
+    let heldAtPinch = false;
+    for (let attempt = 0; attempt < 3 && !heldAtPinch; attempt += 1) {
+      const {driver, trigger, dialog} = await openPage(page);
+      const viewport = page.viewportSize();
+      if (viewport == null) {
+        throw new Error('no viewport');
+      }
+      await page.evaluate(() => {
+        const log = {heldAtPinch: [] as boolean[]};
+        (window as unknown as {__pinchLog: typeof log}).__pinchLog = log;
+        document.addEventListener(
+          'touchstart',
+          () =>
+            log.heldAtPinch.push(
+              document.querySelector('dialog > [popover]') != null,
+            ),
+          true,
+        );
+      });
+      await driver.tap(await centerOf(trigger));
+      await waitForAnimation(dialog);
+      await driver.play(
+        pinch({
+          center: {x: viewport.width / 2, y: viewport.height / 2},
+          fromDistance: 60,
+          toDistance: 220,
+          durationMs: 200,
+        }),
+      );
+      // The pinch's first finger (the trigger's tap came before it).
+      heldAtPinch = await page.evaluate(
+        () =>
+          (window as unknown as {__pinchLog: {heldAtPinch: boolean[]}})
+            .__pinchLog.heldAtPinch[1] === true,
+      );
+      if (heldAtPinch) {
+        await expect
+          .poll(async () =>
+            page.evaluate(() => window.visualViewport?.scale ?? 1),
+          )
+          .toBeGreaterThan(1.2);
+        await expect(dialog).toBeVisible();
+      }
+    }
+    expect(heldAtPinch).toBe(true);
+  });
+
+  test('a tap or a key while the alert leaves reaches nothing, on the alert or under it', async ({
+    page,
+  }) => {
     const {driver, trigger, dialog} = await openPage(page);
-    await driver.tap(await centerOf(trigger));
+    const triggerPoint = await centerOf(trigger);
+    await driver.tap(triggerPoint);
     await waitForRest(dialog);
     const del = dialog.getByRole('button', {name: 'Delete'});
     const deletePoint = await centerOf(del);
-    await page.evaluate(() => {
-      const clicks: string[] = [];
-      (window as unknown as {__leaveClicks: string[]}).__leaveClicks = clicks;
-      document.addEventListener(
-        'click',
-        event => {
-          const button = (event.target as Element).closest('button');
-          if (button != null) {
-            clicks.push(button.textContent ?? '');
+    await page.evaluate(
+      ([onDelete, onPage]) => {
+        const log = {
+          clicks: [] as string[],
+          heldHits: [] as boolean[],
+          keys: [] as {open: boolean; focusInAlert: boolean}[],
+        };
+        (window as unknown as {__leave: typeof log}).__leave = log;
+        // A key while it leaves: whether the alert was still up, and whether
+        // focus was still in it (an action that turns inert while focused
+        // would still take Enter).
+        document.addEventListener(
+          'keydown',
+          () => {
+            log.keys.push({
+              open: document.querySelector('dialog[open]') != null,
+              focusInAlert: document.activeElement?.closest('dialog') != null,
+            });
+          },
+          true,
+        );
+        // While it leaves, what a touch would hit, on the alert and on the
+        // page under it: the hold's shield, inside the alert, not the inert
+        // content and not whatever lies beneath it.
+        const hits = () => {
+          for (const point of [onDelete, onPage]) {
+            const hit = document.elementFromPoint(point.x, point.y);
+            log.heldHits.push(
+              hit?.matches('dialog > [popover]') === true &&
+                hit.parentElement?.matches('dialog[open]') === true,
+            );
           }
-        },
-        true,
-      );
-    });
+        };
+        document.addEventListener(
+          'click',
+          event => {
+            const button = (event.target as Element).closest('button');
+            if (button != null) {
+              log.clicks.push(button.textContent ?? '');
+              if (button.textContent === 'Cancel') {
+                requestAnimationFrame(() => requestAnimationFrame(hits));
+              }
+            }
+          },
+          true,
+        );
+      },
+      [deletePoint, triggerPoint],
+    );
+    // Focus is in the alert when it starts to leave (its initial focus).
+    expect(
+      await page.evaluate(
+        () => document.activeElement?.closest('dialog') != null,
+      ),
+    ).toBe(true);
     await driver.tap(
       await centerOf(dialog.getByRole('button', {name: 'Cancel'})),
     );
-    // A second tap on Delete while the alert fades out.
+    // A second tap on Delete, and Enter, while the alert fades out.
     await driver.tap(deletePoint);
+    await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
-    const clicks = await page.evaluate(
-      () => (window as unknown as {__leaveClicks: string[]}).__leaveClicks,
+    const log = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __leave: {
+              clicks: string[];
+              heldHits: boolean[];
+              keys: {open: boolean; focusInAlert: boolean}[];
+            };
+          }
+        ).__leave,
     );
-    expect(clicks).toEqual(['Cancel']);
+    expect(log.clicks).toEqual(['Cancel']);
+    expect(log.heldHits).toEqual([true, true]);
+    // The key landed while it was leaving, with focus already out of it.
+    expect(log.keys).toEqual([{open: true, focusInAlert: false}]);
   });
 
   test('present and dismiss keep presenting frames while the main thread is blocked', async ({

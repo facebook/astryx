@@ -19,18 +19,21 @@
  */
 
 import {act, render} from '@testing-library/react';
+import {StrictMode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   settlingDuration,
   toSpring,
   type SpringDescription,
 } from '../motion/spring';
+import {motionRoleOf} from '../motion/roles';
 import {alertController} from '../motion/uikit/alert';
 import {
   ALERT_DISMISS_SPRING,
   ALERT_PRESENT_SPRING,
 } from '../motion/uikit/springs';
 import type * as SpringsModule from '../motion/uikit/springs';
+import type * as AlertModule from '../motion/uikit/alert';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
 type RecordedCall =
@@ -82,6 +85,23 @@ vi.mock('../motion/uikit/springs', async importOriginal => {
       },
     },
   );
+});
+
+// The roles the hook plays: the alert table's own springs, unless a test
+// changes one.
+vi.mock('../motion/uikit/alert', async importOriginal => {
+  const actual = await importOriginal<typeof AlertModule>();
+  return {
+    ...actual,
+    alertMotion: {
+      get present() {
+        return alertSprings.present ?? actual.alertMotion.present;
+      },
+      get dismiss() {
+        return alertSprings.dismiss ?? actual.alertMotion.dismiss;
+      },
+    },
+  };
 });
 
 vi.mock('../motion/animator', () => ({
@@ -166,7 +186,11 @@ let latest: AlertMotion | null = null;
 function Alert({isOpen, isEnabled}: {isOpen: boolean; isEnabled: boolean}) {
   const motion = useAlertMotion({isOpen, isEnabled});
   latest = motion;
-  return <div ref={motion.ref} data-testid="alert" />;
+  return (
+    <div ref={motion.ref} data-testid="alert">
+      <button type="button">Delete</button>
+    </div>
+  );
 }
 
 const motion = (): AlertMotion => {
@@ -335,6 +359,21 @@ describe('useAlertMotion', () => {
     expect(backdrop.calls.at(-1)).toEqual({kind: 'attach', target: null});
   });
 
+  it('plays its springs through the internal motion roles alert.present and alert.dismiss (AST-094 FR4)', () => {
+    const view = render(<Alert isOpen isEnabled />);
+    const {panel} = animators();
+    const shown = moves(panel).at(-1);
+    expect(shown?.kind === 'animate' && motionRoleOf(shown.spring)?.id).toBe(
+      'alert.present',
+    );
+    now = 2000;
+    view.rerender(<Alert isOpen={false} isEnabled />);
+    const left = moves(panel).at(-1);
+    expect(left?.kind === 'animate' && motionRoleOf(left.spring)?.id).toBe(
+      'alert.dismiss',
+    );
+  });
+
   it('stays presented while it fades out on alertDismiss, then hides', async () => {
     const view = render(<Alert isOpen isEnabled />);
     const {panel, backdrop} = animators();
@@ -377,6 +416,7 @@ describe('useAlertMotion', () => {
   });
 
   it('fades back without hiding when reopened mid-exit', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<Alert isOpen isEnabled />);
     const {panel, backdrop} = animators();
     view.rerender(<Alert isOpen={false} isEnabled />);
@@ -408,7 +448,11 @@ describe('useAlertMotion', () => {
     await act(async () => {
       panel.starts.at(-1)?.(1216);
     });
-    now = 1216 + alertController.present.ignoresTouchesForMs;
+    await act(async () => {
+      vi.advanceTimersByTime(
+        1216 + alertController.present.ignoresTouchesForMs - now,
+      );
+    });
     expect(motion().acceptsTouches()).toBe(true);
     // The abandoned exit ending late does not hide the reopened alert.
     await act(async () => {
@@ -417,22 +461,91 @@ describe('useAlertMotion', () => {
     expect(motion().isPresented).toBe(true);
   });
 
-  it('refuses touches until the presentation completes, counted from its actual start, and while it leaves', async () => {
+  it('gives focus back to the action the dismissal took it from when reopened mid-exit', () => {
+    const view = render(<Alert isOpen isEnabled />);
+    const action = document.querySelector<HTMLButtonElement>(
+      '[data-testid="alert"] > button',
+    );
+    act(() => action?.focus());
+    expect(document.activeElement).toBe(action);
+    // Leaving: the dismissal's hold makes the content inert and blurs it.
+    view.rerender(<Alert isOpen={false} isEnabled />);
+    expect(document.activeElement).toBe(document.body);
+    // Reopened mid-exit: live again, and focused where it was.
+    view.rerender(<Alert isOpen isEnabled />);
+    expect(action?.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(action);
+  });
+
+  it('holds only pointers while it presents: its content stays live for keys and assistive technology', () => {
+    render(<Alert isOpen isEnabled />);
+    const action = document.querySelector<HTMLButtonElement>(
+      '[data-testid="alert"] > button',
+    );
+    // Presenting and held: touches are refused under the shield...
+    expect(motion().acceptsTouches()).toBe(false);
+    expect(document.querySelector('[popover="manual"]')).not.toBeNull();
+    // ...but nothing in the alert is inert or hidden from the accessibility
+    // tree, and it takes focus (a key reaches it).
+    expect(document.querySelector('[data-testid="alert"] [inert]')).toBeNull();
+    // (The shield itself is hidden from it; the content is not.)
+    expect(
+      document.querySelector(
+        '[data-testid="alert"] [aria-hidden="true"]:not([popover])',
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-testid="alert"]')?.hasAttribute('inert'),
+    ).toBe(false);
+    act(() => action?.focus());
+    expect(document.activeElement).toBe(action);
+  });
+
+  it('keeps its input hold when mounted open under StrictMode, whose effect replay runs every cleanup once', () => {
+    render(
+      <StrictMode>
+        <Alert isOpen isEnabled />
+      </StrictMode>,
+    );
+    // Presenting: held, with a shield over the viewport.
+    expect(motion().acceptsTouches()).toBe(false);
+    expect(document.querySelector('[popover="manual"]')).not.toBeNull();
+  });
+
+  it('holds input until the presentation completes, counted from its actual start, and while it leaves', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<Alert isOpen isEnabled />);
     const {panel} = animators();
+    const shield = () => document.querySelector('[popover="manual"]');
     // The browser has not reported its start yet (a busy main thread can
-    // push it later): refused, however long that takes.
-    now = 9000;
+    // push it later): held, however long that takes, with a shield over
+    // the viewport (a presentation's scope).
+    now = 6300;
     expect(motion().acceptsTouches()).toBe(false);
+    expect(shield()).not.toBeNull();
+    // Reported late: the window still counts from the start it reports.
     await act(async () => {
       panel.starts.at(-1)?.(6100);
     });
-    now = 6100 + alertController.present.ignoresTouchesForMs - 1;
+    await act(async () => {
+      vi.advanceTimersByTime(
+        6100 + alertController.present.ignoresTouchesForMs - 6300 - 1,
+      );
+    });
     expect(motion().acceptsTouches()).toBe(false);
-    now = 6100 + alertController.present.ignoresTouchesForMs;
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
     expect(motion().acceptsTouches()).toBe(true);
+    expect(shield()).toBeNull();
+    // Leaving: a dismissal's scope, the shield again and the alert's
+    // content inert.
     view.rerender(<Alert isOpen={false} isEnabled />);
     expect(motion().acceptsTouches()).toBe(false);
+    expect(shield()).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="alert"] > button[inert]'),
+    ).not.toBeNull();
   });
 
   it("under reduced motion refuses touches until the animator's cross-fade ends, not a spring's time after it starts", async () => {
@@ -481,6 +594,7 @@ describe('useAlertMotion', () => {
     expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
       spring: SLOW_PRESENT,
     });
+    now = 2000;
     await act(async () => {
       panel.starts.at(-1)?.(2000);
     });
@@ -490,9 +604,13 @@ describe('useAlertMotion', () => {
       alertController.present.durationMs;
     const present = lengthMs(SLOW_PRESENT);
     expect(present).toBeGreaterThan(alertController.present.durationMs + 100);
-    now = 2000 + present + lag - 1;
+    await act(async () => {
+      vi.advanceTimersByTime(present + lag - 1);
+    });
     expect(motion().acceptsTouches()).toBe(false);
-    now = 2000 + present + lag;
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
     expect(motion().acceptsTouches()).toBe(true);
     view.rerender(<Alert isOpen={false} isEnabled />);
     act(() => {
@@ -506,6 +624,7 @@ describe('useAlertMotion', () => {
   });
 
   it('takes no theme variable: `--motion-springs-alert-*` on its theme changes neither the spring it plays nor the touch window', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     render(
       <div
         data-astryx-theme="slow"
@@ -520,12 +639,17 @@ describe('useAlertMotion', () => {
     expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
       spring: ALERT_PRESENT_SPRING,
     });
+    now = 2000;
     await act(async () => {
       panel.starts.at(-1)?.(2000);
     });
-    now = 2000 + alertController.present.ignoresTouchesForMs - 1;
+    await act(async () => {
+      vi.advanceTimersByTime(alertController.present.ignoresTouchesForMs - 1);
+    });
     expect(motion().acceptsTouches()).toBe(false);
-    now = 2000 + alertController.present.ignoresTouchesForMs;
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
     expect(motion().acceptsTouches()).toBe(true);
   });
 

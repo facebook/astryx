@@ -403,6 +403,9 @@ for (const item of cases) {
               const spinner = node.querySelector('.astryx-spinner');
               return {
                 name: text(node),
+                label: node.getAttribute('aria-label'),
+                // Out of the accessibility tree: a drilled card's receded parent.
+                inTree: node.closest('[inert], [aria-hidden="true"]') === null,
                 haspopup: node.getAttribute('aria-haspopup'),
                 expanded: node.getAttribute('aria-expanded'),
                 disabled: node.getAttribute('aria-disabled'),
@@ -577,11 +580,15 @@ for (const item of cases) {
           observed.dialog.hasButton &&
           observed.dialog.hasMenu
         : expectedExpanded[item.interaction] === (observed.flyout !== null),
+      // The drilled view's first row goes back, by name (a card's header is
+      // named by its label first); the parent's rows have left the
+      // accessibility tree (hidden, or receded under the card).
       drillIn:
         item.interaction !== 'drill-in' ||
-        (observed.flyout?.rows[0]?.name.startsWith('Back to Actions') ===
-          true &&
-          rows.length === 0),
+        ((
+          observed.flyout?.rows[0]?.label ?? observed.flyout?.rows[0]?.name
+        )?.endsWith('Back to Actions') === true &&
+          rows.every(entry => !entry.inTree)),
       flyoutSide:
         !opensSideways ||
         (subjectBox !== undefined &&

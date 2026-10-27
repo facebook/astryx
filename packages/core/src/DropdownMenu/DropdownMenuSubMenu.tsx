@@ -34,10 +34,14 @@
  *
  * Drill-in (the phone presentation): the root menu keeps a view stack
  * (useMenuDrillIn) and this row pushes its view onto it; the root shows the
- * view — a Back row named "Back to <parent>", then these rows — in place of
- * its own, portalled into the root's host so the row stays mounted and its
- * rows stay live. Back, Escape and ArrowLeft pop the view and return focus to
- * the row. The list keeps this level's own roving focus, typeahead and press
+ * view, portalled into the root's host so the row stays mounted and its rows
+ * stay live. As a card (the touch modes, a view without regions) it leads with
+ * UIMenu's sub-menu header: this row's label with its chevron turned down,
+ * named by that label and then "Back to <parent>" (WCAG 2.5.3). Otherwise the
+ * view replaces the root's rows and leads with a Back row that shows and is
+ * named "Back to <parent>". Back, Escape and ArrowLeft pop the view and
+ * return focus to the row. Under a finger the root animates each push and
+ * pop as UIMenu does (menuDrillInMotion.ts). The list keeps this level's own roving focus, typeahead and press
  * model, so nothing beside the row needs to know.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -87,6 +91,7 @@ import {
   durationVars,
   easeVars,
   shadowVars,
+  fontWeightVars,
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
@@ -243,6 +248,19 @@ const flyoutStyles = stylex.create({
   }),
 });
 
+// A drilled-in view's header turns the row's chevron to point down and sets
+// its title in semibold, as UIMenu's sub-menu header does.
+const headerStyles = stylex.create({
+  chevronDown: {
+    rotate: '90deg',
+  },
+  // Its title in semibold: a style the row's label cannot take from the
+  // row (architecture:component-style-authoring INV5).
+  title: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+});
+
 // The drilled-in list shows in place of the parent rows, inside the parent's
 // own box: no surface, shadow or cap of its own.
 const drillInStyles = stylex.create({
@@ -256,6 +274,14 @@ const drillInStyles = stylex.create({
   },
   hidden: {
     display: 'none',
+  },
+  // UIMenu's in-place sub-menu: the view is a card over the parent's rows,
+  // painted as the menu's own box is.
+  card: {
+    backgroundColor: colorVars['--color-background-popover'],
+    borderRadius:
+      'calc(var(--_dropdown-menu-radius) - var(--_dropdown-menu-padding))',
+    boxShadow: shadowVars['--shadow-low'],
   },
 });
 
@@ -545,9 +571,15 @@ export function DropdownMenuSubMenu(
       ? drillIn
       : null;
   const isDrillIn = activeDrillIn != null;
+  // A view shows as a card over the parent's rows only in a card menu (the
+  // touch modes) and without regions of its own (useMenuDrillIn).
+  const isCardView = activeDrillIn?.isCard === true && !hasRegions;
   const viewId = useId();
   const isOnStack = activeDrillIn?.viewStack.includes(viewId) === true;
   const isTopView = isOnStack && activeDrillIn?.viewStack.at(-1) === viewId;
+  // Going back as a card: still rendered while its motion plays out, inert
+  // and hidden from assistive technology.
+  const isLeaving = !isOnStack && activeDrillIn?.leaving === viewId;
   const stringLabel = typeof label === 'string' ? label : undefined;
   const parentLabel = menuCtx?.menuLabel;
   const backLabel =
@@ -717,7 +749,8 @@ export function DropdownMenuSubMenu(
         pendingViewFocusRef.current = options?.focusFirst
           ? 'first'
           : 'container';
-        activeDrillIn.push(viewId);
+        // A view with a header or footer renders beside the menu: no card.
+        activeDrillIn.push(viewId, triggerRef.current, {isCard: !hasRegions});
         onOpenChange?.(true);
         return;
       }
@@ -731,7 +764,16 @@ export function DropdownMenuSubMenu(
         }
       }
     },
-    [canOpen, activeDrillIn, viewId, onOpenChange, layer, focusFirst, menuRef],
+    [
+      canOpen,
+      activeDrillIn,
+      viewId,
+      hasRegions,
+      onOpenChange,
+      layer,
+      focusFirst,
+      menuRef,
+    ],
   );
 
   const close = useCallback(
@@ -739,7 +781,7 @@ export function DropdownMenuSubMenu(
       if (activeDrillIn != null) {
         if (isOnStack) {
           pendingTriggerFocusRef.current = options?.focusTrigger !== false;
-          activeDrillIn.pop();
+          activeDrillIn.pop(triggerRef.current);
           onOpenChange?.(false);
         }
         return;
@@ -1070,7 +1112,8 @@ export function DropdownMenuSubMenu(
   const nestedRows = (
     <DropdownMenuContext value={nestedMenuContext}>
       <DropdownMenuSurfaceContext value={rootSurface}>
-        {isDrillIn && (
+        {isDrillIn && !isCardView && (
+          // A view in place of the rows leads with its Back row.
           <DropdownMenuItem
             icon={
               <Icon
@@ -1081,6 +1124,47 @@ export function DropdownMenuSubMenu(
               />
             }
             label={backLabel}
+            hasCloseOnSelect={false}
+            onClick={() => close({focusTrigger: true})}
+          />
+        )}
+        {isCardView && (
+          // UIMenu's sub-menu header, on a card: the row's own label with its
+          // chevron turned to point down, which takes the sub-menu back. Its
+          // name starts with the text it shows (WCAG 2.5.3), then says where
+          // it goes.
+          <DropdownMenuItem
+            label={
+              // Its title, in semibold.
+              <span
+                data-astryx-menu-submenu-title=""
+                {...stylex.props(headerStyles.title)}>
+                {stringLabel ?? backLabel}
+              </span>
+            }
+            aria-label={
+              stringLabel != null
+                ? t('@astryx.dropdownMenu.subMenuHeader', {
+                    label: stringLabel,
+                    back: backLabel,
+                  })
+                : backLabel
+            }
+            icon={icon}
+            endContent={
+              // Down is down in either direction: no mirroring here.
+              <span {...stylex.props(triggerStyles.caret)}>
+                <Icon
+                  icon="chevronRight"
+                  size="sm"
+                  color="secondary"
+                  xstyle={headerStyles.chevronDown}
+                  data-astryx-menu-submenu-chevron=""
+                  {...themeProps('dropdown-menu-indicator-icon')}
+                />
+              </span>
+            }
+            data-astryx-menu-submenu-header=""
             hasCloseOnSelect={false}
             onClick={() => close({focusTrigger: true})}
           />
@@ -1241,7 +1325,7 @@ export function DropdownMenuSubMenu(
         })}
       />
       {activeDrillIn != null
-        ? isOnStack &&
+        ? (isOnStack || (isLeaving && !hasRegions)) &&
           activeDrillIn.host != null &&
           (hasRegions
             ? // A view with a header or footer renders beside the root's menu,
@@ -1295,14 +1379,16 @@ export function DropdownMenuSubMenu(
                   aria-label={stringLabel}
                   aria-labelledby={stringLabel == null ? triggerId : undefined}
                   // A deeper view shows in its place; this one waits, hidden.
-                  hidden={!isTopView}
+                  hidden={!isTopView && !isLeaving}
                   inert={!isTopView}
+                  aria-hidden={isLeaving || undefined}
                   onKeyDown={handleContentKeyDown}
                   data-testid={menuDataTestId}
                   {...menuPress.menuProps}
                   {...stylex.props(
                     drillInStyles.list,
-                    !isTopView && drillInStyles.hidden,
+                    activeDrillIn.isCard && drillInStyles.card,
+                    !isTopView && !isLeaving && drillInStyles.hidden,
                   )}>
                   {nestedContent}
                 </div>,

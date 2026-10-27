@@ -40,8 +40,14 @@ async function mount(page: Page) {
 }
 
 /** The rows a person can see: not under a hidden wrapper, not in a closed popover. */
+/**
+ * The rows a person can reach: under a finger a drilled view is a card over
+ * the parent's rows, which stay painted, receded, inert and hidden from
+ * assistive technology (spec:AST-094 FR34), so a row counts by role, not by
+ * paint.
+ */
 function shownRows(page: Page) {
-  return page.locator('[role="menuitem"]:visible');
+  return page.getByRole('menuitem');
 }
 
 test.describe('on a phone (coarse pointer)', () => {
@@ -87,12 +93,16 @@ test.describe('on a phone (coarse pointer)', () => {
     expect(await page.locator('[popover]:popover-open').count()).toBe(
       popoversBefore,
     );
+    // UIMenu's header: the row's own label, named for where it goes.
     await expect(shownRows(page)).toHaveText([
-      'Back to Actions',
+      'Move to',
       'Folder A',
       'Folder B',
       'Archive',
     ]);
+    await expect(
+      page.getByRole('menuitem', {name: 'Back to Actions'}),
+    ).toBeVisible();
     await expect(page.getByRole('menuitem', {name: 'Rename'})).toBeHidden();
     // The parent rows have left the accessibility tree while the view shows.
     expect(
@@ -100,7 +110,7 @@ test.describe('on a phone (coarse pointer)', () => {
         () =>
           document
             .querySelector('[role="menuitem"][aria-haspopup="menu"]')
-            ?.closest('[hidden]') instanceof HTMLElement,
+            ?.closest('[hidden], [inert]') instanceof HTMLElement,
       ),
     ).toBe(true);
 
@@ -123,16 +133,23 @@ test.describe('on a phone (coarse pointer)', () => {
     await page.getByRole('menuitem', {name: 'Archive'}).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menu', {name: 'Archive'})).toBeVisible();
-    await expect(shownRows(page)).toHaveText(['Back to Move to', '2025']);
+    await expect(shownRows(page)).toHaveText(['Archive', '2025']);
+    await expect(
+      page.getByRole('menuitem', {name: 'Back to Move to'}),
+    ).toBeVisible();
     await expect(page.getByRole('menuitem', {name: '2025'})).toBeFocused();
     await page.keyboard.press('ArrowLeft');
     await expect(page.getByRole('menuitem', {name: 'Archive'})).toBeFocused();
+    // UIMenu's header: the row's own label, named for where it goes.
     await expect(shownRows(page)).toHaveText([
-      'Back to Actions',
+      'Move to',
       'Folder A',
       'Folder B',
       'Archive',
     ]);
+    await expect(
+      page.getByRole('menuitem', {name: 'Back to Actions'}),
+    ).toBeVisible();
 
     // Back returns to the row with a finger too.
     await page.getByRole('menuitem', {name: 'Back to Actions'}).tap();

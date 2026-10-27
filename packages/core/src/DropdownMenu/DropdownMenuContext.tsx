@@ -43,15 +43,43 @@ export interface DropdownMenuDrillIn {
   isCompactTouch: boolean;
   /** The pushed view ids, outermost first; the last one is the view shown. */
   viewStack: ReadonlyArray<string>;
+  /**
+   * UIMenu's in-place sub-menu: a shown view is a card laid over the parent's
+   * rows from the row it opened from, and the parent's rows stay, receded,
+   * under it (inert and hidden from assistive technology). Otherwise a shown
+   * view replaces the parent's rows.
+   */
+  isCard: boolean;
   /** The element a shown view renders its rows into (a portal target). */
   host: HTMLElement | null;
+  /**
+   * The view going back while its card plays out (UIMenu's back): it stays
+   * rendered in `host`, inert and hidden from assistive technology, until
+   * the motion settles, so nothing copies it. Null otherwise.
+   */
+  leaving: string | null;
   /**
    * Show a sub-menu's view in place of the current rows. A view with a header
    * or footer renders into the root's surface host instead of `host`.
    */
-  push: (viewId: string) => void;
-  /** Return to the rows the shown view replaced. */
-  pop: () => void;
+  push: (
+    viewId: string,
+    row?: HTMLElement | null,
+    options?: {
+      /**
+       * Whether the view shows as a card over the rows (`isCard` menus); a
+       * view with a header or footer renders beside the menu instead, and the
+       * rows step aside for it. @default true
+       */
+      isCard?: boolean;
+    },
+  ) => void;
+  /**
+   * Return to the rows the shown view replaced. `row` (on push, the row the
+   * view opens from; on pop, the row it returns to) lets the menu animate the
+   * change from that row.
+   */
+  pop: (row?: HTMLElement | null) => void;
 }
 
 export interface DropdownMenuContextValue {

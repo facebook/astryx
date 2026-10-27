@@ -41,6 +41,11 @@
  */
 
 import {DELAYS_CONTENT_TOUCHES_MS} from './scroll';
+import {press} from './timing';
+import {
+  LONG_PRESS_ALLOWABLE_MOVEMENT_PX,
+  LONG_PRESS_DURATION_MS,
+} from './longPress';
 
 export type GestureConstantUnit =
   'px' | 'ms' | 'px/s' | 'rad' | 'ratio' | 'count';
@@ -96,7 +101,7 @@ export const UIKIT_LONG_PRESS = {
    * @source measured: UIKit lab, iOS 26.2 simulator, ivar reads confirmed
    *   with HID touches, Oct 23 2026: _minimumPressDuration 0.5
    */
-  minimumPressDuration: {value: 500, unit: 'ms'},
+  minimumPressDuration: {value: LONG_PRESS_DURATION_MS, unit: 'ms'},
   /**
    * UILongPressGestureRecognizer.allowableMovement default, a distance.
    * @source apple-docs
@@ -104,7 +109,7 @@ export const UIKIT_LONG_PRESS = {
    * @source measured: UIKit lab, iOS 26.2 simulator, ivar reads confirmed
    *   with HID touches, Oct 23 2026: a (7, 7) drift begins, (7.2, 7.2) fails
    */
-  allowableMovement: {value: 10, unit: 'px'},
+  allowableMovement: {value: LONG_PRESS_ALLOWABLE_MOVEMENT_PX, unit: 'px'},
 } as const satisfies Record<string, GestureConstant>;
 
 export const UIKIT_PAN = {
@@ -317,17 +322,6 @@ export const UIKIT_VELOCITY = {
   stillness: {value: 40, unit: 'ms'},
 } as const satisfies Record<string, GestureConstant>;
 
-export const UIKIT_CLICK = {
-  /**
-   * Longest the system waits for the browser's click after a touch it
-   * swallows. iOS and Chromium deliver it right after `touchend`; this only
-   * bounds a click that never comes.
-   * @source GUESS — A safety bound, not a UIKit number.
-   * @measure M-G17
-   */
-  strayClickWindow: {value: 1000, unit: 'ms'},
-} as const satisfies Record<string, GestureConstant>;
-
 /**
  * Every group in one object, for a reader that needs several. A reader of
  * one group imports it by name instead (`UIKIT_PAN`): object properties do
@@ -346,7 +340,6 @@ export const UIKIT_GESTURES = {
   press: UIKIT_PRESS,
   menuPress: UIKIT_MENU_PRESS,
   velocity: UIKIT_VELOCITY,
-  click: UIKIT_CLICK,
 } as const;
 
 /**

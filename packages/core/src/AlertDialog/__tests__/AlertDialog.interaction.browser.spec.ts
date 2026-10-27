@@ -9,12 +9,13 @@
  *   tracks as one group (iOS 26.2): the touched action is highlighted in the
  *   frame of the touch; the highlight follows the finger from one action to
  *   the other; lifting runs the action under the finger, once, and nothing
- *   off both; a touch that lands on the message can slide onto an action; a
- *   tap and a mouse click still run their action once; a held finger starts
- *   no text selection (refused by style or by a cancelled selectstart); the tracking is the same under a finger in Chrome's
- *   engine; with `presentation="dialog"` a finger keeps each button's own
- *   press, so the slide from Delete to Cancel runs no Cancel; a storyboard of
- *   the slide from Delete to Cancel.
+ *   off both; only the actions are tracked, so a touch that lands on the
+ *   message runs nothing; a tap and a mouse click run their action once; a
+ *   mouse is tracked too, so its slide from Delete to Cancel runs Cancel; a
+ *   press on the actions selects none of their labels while the title and
+ *   the message stay selectable; the tracking is the same under a finger in
+ *   Chrome's engine;
+ *   a storyboard of the slide from Delete to Cancel.
  * @position Touch lane of AlertDialog, beside the accessibility bindings in
  *   this folder. Run with `pnpm test:interaction AlertDialog`.
  */
@@ -226,104 +227,66 @@ test('a lift off both actions runs nothing and leaves the alert open', async ({
   expect((await readLog(page)).clicks).toEqual([]);
 });
 
-test('a held finger starts no text selection: a selection is refused while it is down, and allowed again after', async ({
+test('a press on the actions starts no text selection, by style, while the title and the message stay selectable (spec:AST-094 FR41)', async ({
   page,
 }) => {
-  const {driver, dialog, centers, bottom} = await openAlert(page);
-  const message = dialog.getByText('This action cannot be undone', {
-    exact: false,
-  });
-  // The lock refuses a selection one of two ways (spec:AST-094 FR41): where
-  // iOS WebKit runs, `user-select: none` on the held surface; elsewhere a
-  // cancelled `selectstart` on the text under the finger, with no style
-  // write. Either is a refusal; with neither, the text is selectable.
-  const refusesSelection = async () => {
-    const userSelect = await dialog.evaluate(element => {
+  const {driver, dialog, del, centers, bottom} = await openAlert(page);
+  const userSelect = async (locator: Locator) =>
+    locator.evaluate(element => {
       const style = getComputedStyle(element);
       return (
         style.getPropertyValue('user-select') ||
         style.getPropertyValue('-webkit-user-select')
       );
     });
-    const isCancelled = await message.evaluate(element => {
-      const start = new Event('selectstart', {bubbles: true, cancelable: true});
-      element.dispatchEvent(start);
-      return start.defaultPrevented;
-    });
-    return userSelect === 'none' || isCancelled;
-  };
-  expect(await refusesSelection()).toBe(false);
+  // The actions' row, the group: its labels are never selected by a press
+  // that slides across them, whatever the pointer.
+  expect(await userSelect(del.locator('..'))).toBe('none');
+  // The title and the message are outside the group: selectable.
+  expect(await userSelect(dialog.getByRole('heading'))).not.toBe('none');
+  const message = dialog.getByText('This action cannot be undone', {
+    exact: false,
+  });
+  expect(await userSelect(message)).not.toBe('none');
+  // A held finger on the actions changes nothing there.
   await driver.play(slide(centers.del, {x: centers.del.x, y: bottom + 60}), {
     onEvent: async (step, index) => {
       if (index !== 0) {
         return;
       }
       expect(step.type).toBe('touchStart');
-      expect(await refusesSelection()).toBe(true);
+      expect(await userSelect(message)).not.toBe('none');
     },
   });
   await expect(dialog).toBeVisible();
-  expect(await refusesSelection()).toBe(false);
 });
 
-test("no pan can take the group's touch: the surface and a short alert's content allow only pinch-zoom, and a long alert's content keeps its pan", async ({
+test("no pan can take the group's press: the actions allow only pinch-zoom, and the rest of the alert keeps its pan", async ({
   page,
 }) => {
   // Chrome on Android cancels a pointer it pans (pointercancel), which ends
-  // the long press that tracks the group: where the group owns a touch, the
-  // browser may pinch-zoom but not pan.
-  const {dialog} = await openAlert(page);
+  // the long press that tracks the group: where the group owns a press, the
+  // browser may pinch-zoom but not pan. Only the actions are the group.
+  const {dialog, cancel} = await openAlert(page);
+  const touchAction = async (locator: Locator) =>
+    locator.evaluate(element => getComputedStyle(element).touchAction);
+  // The actions' row, the group's element.
+  expect(await touchAction(cancel.locator('..'))).toBe('pinch-zoom');
+  expect(await touchAction(dialog)).toBe('auto');
   const message = dialog.getByText('This action cannot be undone', {
     exact: false,
   });
-  const touchAction = async (locator: Locator) =>
-    locator.evaluate(element => getComputedStyle(element).touchAction);
-  expect(await touchAction(dialog)).toBe('pinch-zoom');
-  // The content's scroller (the message's parent), which fits: no pan.
-  expect(await touchAction(message.locator('..'))).toBe('pinch-zoom');
-  // The long story overflows a phone in landscape.
-  await page.setViewportSize({width: 874, height: 402});
-  await openStory(page, storybook(), 'core-alertdialog--long-content');
-  const driver = await touchDriver(page);
-  await driver.tap(
-    await centerOf(page.getByRole('button', {name: 'Delete workspace'})),
-  );
-  const long = page.getByRole('alertdialog');
-  await expect(long).toBeVisible();
-  await waitForRest(long);
-  const scroller = long.getByRole('heading').locator('..');
-  expect(
-    await scroller.evaluate(
-      element => element.scrollHeight > element.clientHeight,
-    ),
-  ).toBe(true);
-  expect(await touchAction(scroller)).toBe('auto');
-  expect(await touchAction(long)).toBe('pinch-zoom');
+  expect(await touchAction(message.locator('..'))).toBe('auto');
 });
 
-test('a touch that lands on the message can slide onto Cancel and run it', async ({
+test('only the actions are tracked: a touch that lands on the message and slides onto Cancel runs nothing', async ({
   page,
 }) => {
   const {driver, dialog, centers} = await openAlert(page);
   await driver.play(slide(centers.message, centers.cancel));
-  await expect(dialog).toBeHidden();
-  expect((await readLog(page)).clicks).toEqual(['Cancel']);
-});
-
-test('with presentation="dialog" a finger keeps each button\'s own press: no group tracking, so the slide from Delete to Cancel runs no Cancel', async ({
-  page,
-}) => {
-  const {driver, dialog, centers} = await openAlert(
-    page,
-    'core-alertdialog--dialog-presentation',
-  );
-  // The dialog a mouse gets: its surface keeps the browser's pan.
-  expect(await dialog.evaluate(el => getComputedStyle(el).touchAction)).toBe(
-    'auto',
-  );
-  await driver.play(slide(centers.del, centers.cancel));
   await page.waitForTimeout(300);
-  expect((await readLog(page)).clicks).not.toContain('Cancel');
+  await expect(dialog).toBeVisible();
+  expect((await readLog(page)).clicks).toEqual([]);
 });
 
 test('a tap runs its action exactly once', async ({page}) => {
@@ -338,12 +301,61 @@ test('a tap runs its action exactly once', async ({page}) => {
 test.describe('with a mouse', () => {
   test.use({hasTouch: false, isMobile: false});
 
+  test('a press on Delete slid to Cancel runs Cancel once, and a click on Delete runs Delete once (family:action-groups FR5)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-alertdialog--delete');
+    // A fine pointer in this context, before anything is checked.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const open = async () => {
+      await page.getByRole('button', {name: 'Delete item'}).click();
+      const dialog = page.getByRole('alertdialog', {name: 'Delete item?'});
+      await expect(dialog).toBeVisible();
+      return dialog;
+    };
+    const clicks: string[] = [];
+    await page.exposeFunction('__alertClick', (label: string) => {
+      clicks.push(label);
+    });
+    await page.evaluate(() => {
+      document.addEventListener(
+        'click',
+        event => {
+          const action = (event.target as Element).closest('dialog button');
+          if (action != null) {
+            (
+              window as unknown as {__alertClick: (label: string) => void}
+            ).__alertClick(action.textContent ?? '');
+          }
+        },
+        true,
+      );
+    });
+    let dialog = await open();
+    const del = await centerOf(dialog.getByRole('button', {name: 'Delete'}));
+    const cancel = await centerOf(dialog.getByRole('button', {name: 'Cancel'}));
+    await page.mouse.move(del.x, del.y);
+    await page.mouse.down();
+    await page.mouse.move(cancel.x, cancel.y, {steps: 8});
+    await page.mouse.up();
+    await expect(dialog).toBeHidden();
+    expect(clicks).toEqual(['Cancel']);
+    // A plain click: the group's click runs it, and the browser's own click
+    // for the same press is swallowed.
+    clicks.length = 0;
+    dialog = await open();
+    await dialog.getByRole('button', {name: 'Delete'}).click();
+    await page.waitForTimeout(300);
+    expect(clicks).toEqual(['Delete']);
+  });
+
   test('the dialog keeps its base styles: its text stays selectable', async ({
     page,
   }) => {
-    // A held finger's suppressed selection (`spec:AST-094` FR41) is a
-    // finger's or a pen's, never a mouse's: with a mouse the dialog keeps what
-    // it had before.
+    // Only the actions' row, the group, takes no text selection: with a
+    // mouse the dialog's title and message stay selectable.
     await openStory(page, storybook(), 'core-alertdialog--delete');
     // A fine pointer in this context, before anything is checked.
     expect(
@@ -364,12 +376,10 @@ test.describe('with a mouse', () => {
   });
 });
 
-test('on a touch screen a mouse click is still the browser click, as before', async ({
-  page,
-}) => {
+test('on a touch screen a mouse click runs its action once', async ({page}) => {
   const {dialog, centers} = await openAlert(page);
-  // A mouse on a touch screen: the primary pointer is coarse, so the group
-  // tracks touches here, and a mouse's click is left to the browser.
+  // A mouse on a touch screen: the primary pointer is coarse, and the group
+  // tracks every pointer, so the click runs Cancel through the group, once.
   expect(
     await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
   ).toBe(true);
@@ -384,13 +394,10 @@ test(
   async ({page}, testInfo) => {
     const {driver, dialog, centers} = await openAlert(page);
     // CSS locators rather than roles: they still resolve once the alert has
-    // closed, so Cancel's paint can be read after the lift.
-    const cancel = page.locator('[data-astryx-alert-action]', {
-      hasText: 'Cancel',
-    });
-    const del = page.locator('[data-astryx-alert-action]', {
-      hasText: 'Delete',
-    });
+    // closed, so Cancel's paint can be read after the lift (the group item
+    // marker leaves with the tracking).
+    const cancel = page.locator('dialog button', {hasText: 'Cancel'});
+    const del = page.locator('dialog button', {hasText: 'Delete'});
     const box = await dialog.boundingBox();
     if (box == null) {
       throw new Error('no dialog box');
