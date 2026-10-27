@@ -19,9 +19,9 @@
  * `flickThreshold` carries to the next one in its direction, and a release
  * moving back toward where the drag started returns to the snap point it
  * started from (`spec:AST-094` FR37). The settle plays the `springs.settle`
- * motion role from the release velocity (FR38); under Reduce Motion it is the
- * motion module's plan for a touch drag's release (`design:reduced-motion`
- * DR2). `settleTo(index)` settles without a drag: the keyboard path.
+ * motion role from the release velocity (FR38); under Reduce Motion a touch
+ * drag's release cross-fades and a mouse or pen drag's lands at once
+ * (`design:reduced-motion` DR2, DR3). `settleTo(index)` settles without a drag: the keyboard path.
  * Importing this module does no DOM work.
  *
  * SYNC: When modified, update:
@@ -205,7 +205,7 @@ export function createDragToSnapPoints(
 
   const pan = createPanGesture(element, {
     axis,
-    onPan: ({state, translation, velocity}: PanGestureEvent) => {
+    onPan: ({state, translation, velocity, pointerType}: PanGestureEvent) => {
       if (destroyed) {
         return;
       }
@@ -225,8 +225,11 @@ export function createDragToSnapPoints(
       }
       const {startIndex} = drag;
       drag = null;
+      // Only a touch drag's release cross-fades under Reduce Motion; a mouse
+      // or pen drag's lands at once (design:reduced-motion DR2, DR3).
+      const touchRelease = pointerType === 'touch';
       if (state === 'cancelled') {
-        settle(startIndex, 0, true);
+        settle(startIndex, 0, touchRelease);
         return;
       }
       const release = velocity[axis];
@@ -239,7 +242,7 @@ export function createDragToSnapPoints(
           flickThreshold,
         }),
         release,
-        true,
+        touchRelease,
       );
     },
   });

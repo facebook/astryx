@@ -102,7 +102,7 @@ export const docs = {
         category: 'Content',
         criterion: '2.3.3 Animation from Interactions',
         description:
-          'When the person asks for reduced motion, the settle after a drag becomes a short cross-fade into the snap point, and `settleTo` lands at once with a mouse or fades on a touch screen. While the finger is down, the element still follows it.',
+          'When the person asks for reduced motion, the settle after a touch drag becomes a short cross-fade into the snap point, and after a mouse or pen drag it lands at once. `settleTo` lands at once with a mouse and fades on a touch screen. While the finger is down, the element still follows it.',
       },
     ],
   },
