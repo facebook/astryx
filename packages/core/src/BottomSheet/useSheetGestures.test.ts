@@ -2520,6 +2520,55 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(toggle.style.getPropertyValue('user-select')).toBe('');
   });
 
+  it("on iOS, also locks a checkbox in the sheet's content under the finger that pulls or catches the sheet (spec:AST-094 FR41)", () => {
+    // The content's pans bring no lock of their own to the gesture host, so
+    // the sheet's drag lock takes the touch's target itself.
+    stubIosIdiom();
+    const {hook} = setup({snapHeights: () => [200]});
+    const body = makeScroller({
+      scrollTop: 0,
+      clientHeight: 200,
+      scrollHeight: 800,
+    });
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    body.appendChild(toggle);
+    attach(hook, sheetOf(body));
+    // A pull down that begins on it, at the content's top.
+    act(() => {
+      touchEvent('touchstart', toggle, [{id: 911, x: 50, y: 300}], 0);
+    });
+    for (let i = 1; i <= 6; i += 1) {
+      act(() => {
+        touchEvent(
+          'touchmove',
+          toggle,
+          [{id: 911, x: 50, y: 300 + i * 10}],
+          i * 16,
+        );
+      });
+    }
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(toggle.style.getPropertyValue('user-select')).toBe('none');
+    act(() => {
+      touchEvent('touchend', toggle, [{id: 911, x: 50, y: 360}], 100);
+    });
+    expect(toggle.style.getPropertyValue('user-select')).toBe('');
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    // A finger that lands on it and catches the settling sheet.
+    act(() => {
+      touchEvent('touchstart', toggle, [{id: 912, x: 50, y: 400}], 1000);
+    });
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(toggle.style.getPropertyValue('user-select')).toBe('none');
+    act(() => {
+      touchEvent('touchend', toggle, [{id: 912, x: 50, y: 400}], 1600);
+    });
+    expect(toggle.style.getPropertyValue('user-select')).toBe('');
+  });
+
   it('elsewhere, cancels the selection a finger holding or dragging the sheet would start, and changes no style', () => {
     stubCoarsePointer();
     vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
