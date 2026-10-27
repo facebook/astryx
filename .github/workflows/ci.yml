@@ -761,6 +761,16 @@ jobs:
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
+      # Before Vitest starts. A scoped run's `--changed` walks the tests'
+      # import graphs before the global setup builds Core, and Vite answers an
+      # unresolvable Core, an optional peer of the CLI, with a stub it caches
+      # for the run: every theme-build test then fails with "Could not resolve
+      # "@astryxdesign/core/theme" imported by "@astryxdesign/cli"". The global
+      # setup then finds Core built and skips its own build.
+      - name: Build core package
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+        run: pnpm -F @astryxdesign/core build
+
       # Scoped like test-ui's run.
       - name: Run this shard of the Node tests
         env:
