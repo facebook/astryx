@@ -264,6 +264,10 @@ public surface belongs to
 
 ## Owning code
 
+- An internal, pure `resolveThemeMotion(theme)` returns a theme's motion
+  knobs, durations, easings, and role tables for the animator and for server
+  code; it touches no DOM and has no import-time side effects
+  (`spec:AST-108` FR6).
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
 - `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
