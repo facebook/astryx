@@ -42,6 +42,7 @@ public struct AstryxNodeView: View {
     case .hStack: "HStack"
     case .icon: "Icon"
     case .item: "Item"
+    case .list: "List"
     case .listItem: "ListItem"
     case .progressBar: "ProgressBar"
     case .selector: "Selector"
