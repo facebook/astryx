@@ -663,6 +663,11 @@ export function Item({
     null,
   );
   const isSwipeOpen = swipeOpenSide != null;
+  // A row that stops serving swipe actions while open is open no longer: its
+  // root takes presses again from this render (react-component-runtime INV1).
+  if (isSwipeOpen && !hasSwipe) {
+    setSwipeOpenSide(null);
+  }
   // The row's swipe as a control rendered in the row reaches it (List's
   // edit-mode delete control, in the marker slot), derived from the props at
   // every render: there from the row's first render, its calls going through
