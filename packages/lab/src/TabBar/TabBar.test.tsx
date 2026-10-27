@@ -648,7 +648,24 @@ describe('TabBar search tab, selected', () => {
     // Without this the app keeps `isActive`, and the next visit to the
     // search tab opens with a stale active field.
     expect(onActiveChange).toHaveBeenLastCalledWith(false);
+    expect(onActiveChange).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('tab', {name: 'Browse'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('choosing another tab while searching reports the field inactive once', () => {
+    // Under a mouse the search tab is selected in place and the other tabs
+    // stay in reach.
+    const onActiveChange = vi.fn();
+    render(<Searching onActiveChange={onActiveChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onActiveChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole('tab', {name: 'Home'}));
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+    expect(onActiveChange).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('tab', {name: 'Home'})).toHaveAttribute(
       'aria-selected',
       'true',
     );
