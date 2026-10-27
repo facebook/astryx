@@ -154,7 +154,7 @@ const {detach} = reorderable.attach(listElement, {
     starts it without a hold;
   - a drag commits once, at the drop (DR4), and `onReorder` is called once
     for it; a cancelled drag calls nothing;
-  - under Reduce Motion the dragged row still follows the finger or pointer,
+  - under Reduce Motion the moving preview still follows the finger or pointer,
     and the other rows and the drop take their places without travel
     (`design:reduced-motion` DR1–DR3; a mouse drop follows DR3).
 - **FR4 — Reorder mode is the one path without a drag.** Each reorderable
@@ -187,6 +187,9 @@ const {detach} = reorderable.attach(listElement, {
   - Escape, or activating the handle again, leaves reorder mode and keeps
     every move, announcing "Done" with the item's position, such as "Done,
     Milk at position 3 of 5";
+  - while the item is in reorder mode, the same accent insertion line a drag
+    shows marks the item's place, moving with each move
+    (`design:ordered-collection-reordering` DR7);
   - while the item is in reorder mode, a hint anchored to it shows the moves
     for its axis and a Done control, with the same layer, anchoring, and
     theme roles as Core's keyboard hint, and stays until the mode ends; each
@@ -229,8 +232,11 @@ const {detach} = reorderable.attach(listElement, {
 - **FR5 — Reordering adds at most one element to a row.** The one added
   element is the handle, the interactive drag target, with its role. Its grip
   is decoration, drawn by a pseudo-element or a theme-role glyph, not by
-  elements. The moving row is the row itself, moved in place, not a copy
-  (`architecture:component-style-authoring` INV7). Reorder listeners are per
+  elements. While a row is dragged, the source row stays in place, dimmed, and one
+  moving preview follows the pointer (`design:ordered-collection-reordering`):
+  the preview is the one transient copy
+  `architecture:component-style-authoring` INV7 allows, inert, hidden from
+  assistive technology, and removed at the drop. Reorder listeners are per
   collection or on the document, never per row (`spec:AST-094` FR24).
 - **FR6 — Stable from the start.** `createReorderable`, its options, and a
   collection's `reorderable` prop are stable public Core API: no
@@ -263,7 +269,7 @@ const {detach} = reorderable.attach(listElement, {
 | FR4 two-dimensional | Keyboard and announcement-routing tests on a wrapping card grid, left-to-right and right-to-left                         | Left and Right across a row end; Up and Down between full rows and into a short last row; announcements with row and column; the hint's four buttons; a resize that changes the column count                                                                                       | a move off reading order, a mirrored direction wrong in right-to-left, a short-row move that is not clamped to its last position, a missing row or column, or a column count read from anything but layout fails                                                                                                                                                                                                                                                                      |
 | FR4a                | Keyboard, mouse, and announcement-routing tests of `start(key)`                                                          | `start` from a context-menu item and a toolbar button; a key that is not reorderable, not mounted, or unknown; an object re-created each render; one object on two collections                                                                                                     | `start` that does not focus and scroll to the handle, a hint or announcement that differs from the handle's mode, a missing-key call that throws or acts, or a two-collection call without a development warning fails                                                                                                                                                                                                                                                                |
 | FR4b                | Browser tests of `attach` on plain elements with a mouse, a finger, and the keyboard, and listener counts after `detach` | a drag, a cancelled drag, reorder mode, a fanned layout with `positions`, a move the app applies and one it does not, `detach` mid-drag, a server import, a page in another language, an item element with no accessible name                                                      | a missing drag, mode, or announcement on plain elements; a handle without FR4's role, pressed state, or name, one named "Reorder" alone when the item has text, or one outside the Tab order; a move announced before `items()` reports it, or one the app did not apply left unrefused; a drag or mode still running, or a listener, observer, hint element, or handle attribute left, after `detach`, strings other than the shipped English catalog's, or DOM work at import fails |
-| FR5                 | Element and listener counts of a list with and without the prop                                                          | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                                                                                                                                                                                                                                                                                                                               |
+| FR5                 | Element and listener counts of a list with and without the prop                                                          | a row at rest; a row picked up; a row dropped                                                                                                                                                                                                                                      | more than one added element per row, a grip drawn with elements, a per-row listener, a second preview, a source that leaves its place, a preview left after the drop, or a preview that assistive technology reaches, fails                                                                                                                                                                                                                                                           |
 
 ## Decision log
 
