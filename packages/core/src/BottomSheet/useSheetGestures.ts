@@ -61,8 +61,10 @@
  * the body's own pointer listeners: 1:1 from the first pixel on the handle,
  * from the body's top after 8 px anchored at the press, with today's detent
  * magnet, stretch past the top and release (one answer for the tracking and
- * the release, spec:AST-094 FR13). Every release reads the same velocity,
- * UIKit's filter over the events' own timestamps (spec:AST-100 FR4). A vertical pan on the handle; on the scrolling body, a
+ * the release, spec:AST-094 FR13). Wheel and trackpad scrolling drive the
+ * handle's and the body's pans on every primary pointer (FR43). Every
+ * release reads the same velocity, UIKit's filter over the events' own
+ * timestamps (spec:AST-100 FR4). A vertical pan on the handle; on the scrolling body, a
  * downward pan that begins only when nothing under the finger can scroll up
  * (`scrollEdge`, the scrollers nested in the body included), and an upward
  * one that does so at the bottom while a taller detent exists. At that edge a
@@ -2130,9 +2132,10 @@ export function useSheetGestures({
         pointerKinds.set(recognizer, touch.pointerType);
         return true;
       }
-      // The recognizers serve a finger, and a pen, where the primary pointer
-      // is coarse (spec:AST-094 FR19); a mouse, and anything where it is
-      // fine, take the pointer path below (spec:AST-017 FR59).
+      // Past scroll input, the recognizers serve a finger, and a pen, where
+      // the primary pointer is coarse (spec:AST-094 FR19); a mouse's drag,
+      // and anything where the primary pointer is fine, take the pointer
+      // path below (spec:AST-017 FR59).
       if (
         touch.pointerType === 'mouse' ||
         !readTouchPresentation().isTouch ||
@@ -2231,8 +2234,10 @@ export function useSheetGestures({
   );
 
   // The handle: a vertical pan, for a finger or a pen where the primary
-  // pointer is coarse (the pointer path above serves the rest). A control's
-  // drag, so text selection and the touch callout are off under the finger.
+  // pointer is coarse, and for wheel and trackpad scrolling on every primary
+  // pointer (spec:AST-094 FR43); the pointer path above serves the rest. A
+  // control's drag, so text selection and the touch callout are off under
+  // the finger.
   const handleElRef = useRef<HTMLElement | null>(null);
   useGestureRecognizer(
     handleElRef,
@@ -2248,9 +2253,10 @@ export function useSheetGestures({
       }),
     onPan,
   );
-  // The body, pulled down where nothing under the finger can scroll up: the
-  // sheet collapses toward its shortest detent or away. (A mouse's pull is
-  // the pointer path's.)
+  // The body, pulled down where nothing under the finger can scroll up, or
+  // scrolled up there by a wheel or a trackpad (FR43): the sheet collapses
+  // toward its shortest detent or away. (A mouse's drag is the pointer
+  // path's.)
   useGestureRecognizer(
     bodyNodeRef,
     () =>
