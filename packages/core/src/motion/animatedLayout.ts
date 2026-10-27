@@ -323,9 +323,10 @@ function takesPart(element: Element, style: CSSStyleDeclaration): boolean {
 /**
  * The band of the page a change can move content into or out of view: the
  * area's visible part, extended above and below by one viewport or by the
- * changed element's size, whichever is larger (a collapse pulls content up by
- * at most that size). Content outside it before the change stays outside it,
- * so the walk stops there.
+ * size of every element changing in the frame, whichever is larger (a
+ * collapse pulls content up by at most its size, and changes in one frame
+ * add up). Content outside it before the change stays outside it, so the
+ * walk stops there.
  */
 interface Band {
   /** Its top edge, in client px. */
@@ -334,12 +335,9 @@ interface Band {
   readonly end: number;
 }
 
-function bandFor(changed: Element, area: Element): Band {
+function bandFor(area: Element, changedSize: number): Band {
   const visible = visibleRect(area);
-  const reach = Math.max(
-    visible.height,
-    changed.getBoundingClientRect().height,
-  );
+  const reach = Math.max(visible.height, changedSize);
   const start = visible.top - reach;
   const end = visible.bottom + reach;
   return {start, end};
@@ -347,11 +345,12 @@ function bandFor(changed: Element, area: Element): Band {
 
 /**
  * The elements a change can move, each with its rectangle before the change:
- * at each ancestor level up to the area, the siblings after the changed
- * element and the siblings before it (a centered, end-aligned or
- * space-between row, or `order`, moves those too). A `display: contents`
- * element has no box: its children stand in its place. At each level the
- * walk stops at the first sibling past `band` (the siblings after it are
+ * the changed element's ancestors up to the area (a centered column moves
+ * the card around the change), and at each of their levels the siblings
+ * after and before (a centered, end-aligned or space-between row, or
+ * `order`, moves those too). A `display: contents` element has no box: its
+ * children stand in its place, walked in the same direction. At each level
+ * the walk stops at the first sibling past `band` (the siblings after it are
  * further along), so its cost grows with depth plus the siblings near the
  * visible part, never with the length of a list.
  */
@@ -370,11 +369,17 @@ function collectCandidates(
     }
     if (style.display === 'contents') {
       for (
-        let child = element.firstElementChild;
+        let child = isAfter
+          ? element.firstElementChild
+          : element.lastElementChild;
         child != null;
-        child = child.nextElementSibling
+        child = isAfter
+          ? child.nextElementSibling
+          : child.previousElementSibling
       ) {
-        take(child, isAfter);
+        if (!take(child, isAfter)) {
+          return false;
+        }
       }
       return true;
     }
@@ -393,6 +398,11 @@ function collectCandidates(
     node != null && node !== area;
     node = node.parentElement
   ) {
+    if (node !== changed) {
+      // An ancestor of the change: where its layout moves it (a centered
+      // column), it glides, and what is inside moves only by its own change.
+      out.set(node, node.getBoundingClientRect());
+    }
     for (
       let sibling = node.nextElementSibling;
       sibling != null && take(sibling, true);
@@ -421,6 +431,8 @@ interface Batch {
   readonly before: Map<Element, DOMRect>;
   /** What each changed element's walk found, so a dropped change moves none. */
   readonly candidates: Map<Element, Element[]>;
+  /** The changed elements' sizes before the change, added up. */
+  changedSize: number;
   scheduled: boolean;
 }
 
@@ -434,6 +446,7 @@ function batchFor(area: Element): Batch {
       changed: new Set(),
       before: new Map(),
       candidates: new Map(),
+      changedSize: 0,
       scheduled: false,
     };
     batches.set(area, created);
@@ -676,18 +689,22 @@ export function reportLayoutChange(
         return;
       }
       const batch = batchFor(area);
-      batch.changed.add(element);
-      const candidates = collectCandidates(
-        element,
-        area,
-        bandFor(element, area),
-      );
-      for (const [candidate, rect] of candidates) {
-        if (!batch.before.has(candidate)) {
-          batch.before.set(candidate, rect);
-        }
+      if (!batch.changed.has(element)) {
+        batch.changed.add(element);
+        batch.changedSize += element.getBoundingClientRect().height;
       }
-      batch.candidates.set(element, [...candidates.keys()]);
+      // Changes in one frame add up: every change's walk reaches the band
+      // their summed size can pull into view.
+      const band = bandFor(area, batch.changedSize);
+      for (const changed of batch.changed) {
+        const candidates = collectCandidates(changed, area, band);
+        for (const [candidate, rect] of candidates) {
+          if (!batch.before.has(candidate)) {
+            batch.before.set(candidate, rect);
+          }
+        }
+        batch.candidates.set(changed, [...candidates.keys()]);
+      }
     },
     animate() {
       const element = resolve(target);

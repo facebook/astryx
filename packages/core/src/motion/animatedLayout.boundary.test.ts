@@ -74,17 +74,16 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       'getElementsBy',
       '.children',
       'childNodes',
-      'lastElementChild',
     ]) {
       expect(body, forbidden).not.toContain(forbidden);
     }
-    // Every descent is a `display: contents` branch: the follower walk's and
-    // the exit's search for the next box.
-    const descents = body.match(/firstElementChild/g) ?? [];
-    expect(descents).toHaveLength(2);
+    // Every descent is a `display: contents` branch: the walk's (in its own
+    // direction, first child or last) and the exit's search for the next box.
+    const descents = body.match(/(first|last)ElementChild/g) ?? [];
+    expect(descents).toHaveLength(3);
     const contentsDescents =
       body.match(
-        /display === 'contents'\)\s*\{\s*for\s*\(\s*let child = \w+\.firstElementChild/g,
+        /display === 'contents'\)\s*\{\s*for\s*\(\s*let child =[^;]*\.(first|last)ElementChild/g,
       ) ?? [];
     expect(contentsDescents).toHaveLength(2);
     // Each level's sibling walk ends at the first sibling past the band.
