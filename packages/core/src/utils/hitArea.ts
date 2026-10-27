@@ -232,6 +232,7 @@ const INTERACTIVE = [
   '[role="option"]',
   '[role="slider"]',
   '[tabindex]:not([tabindex="-1"])',
+  '[data-astryx-pressable]',
 ].join(',');
 
 const TOUCH_QUERY = '(pointer: coarse)';
