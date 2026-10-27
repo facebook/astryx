@@ -320,7 +320,7 @@ describe('useTableRowExpansion (detail panel)', () => {
       const original = window.matchMedia;
       const listeners = (open: Set<string>) => {
         let count = 0;
-        window.matchMedia = ((query: string) => {
+        window.matchMedia = (query: string) => {
           const list = original
             ? original(query)
             : ({matches: false, media: query} as MediaQueryList);
@@ -337,7 +337,7 @@ describe('useTableRowExpansion (detail panel)', () => {
             },
             removeListener: () => {},
           } as MediaQueryList;
-        }) as typeof window.matchMedia;
+        };
         const {unmount} = render(<Harness initialExpanded={open} />);
         unmount();
         return count;

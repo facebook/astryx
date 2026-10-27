@@ -373,6 +373,16 @@ test("an open panel's divider follows an operating-system switch between light a
     });
   const light = await colours();
   expect(light.panel).toBe(light.row);
+  // No override reaches the row, so the panel carries nothing: its divider
+  // is the tokens, in CSS, and follows a theme change on its own.
+  expect(
+    await page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>(
+        'tr[data-expansion-panel] > td',
+      );
+      return panel?.style.getPropertyValue('--_table-panel-divider-color');
+    }),
+  ).toBe('');
   await page.emulateMedia({colorScheme: 'dark'});
   await expect
     .poll(async () => {
@@ -452,9 +462,17 @@ test("a cell border recoloured without re-rendering the hooks' owner stays whole
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-tablestickycolumns--pinned-dividers-revealed&viewMode=story`,
   );
+  // The border is on the cells when the table first reads it, so the pinned
+  // cells carry its width alone; the recolour then reaches them in CSS.
+  await page.getByRole('button', {name: 'Border on cells'}).click();
   await page.getByRole('button', {name: 'Show table'}).click();
   await expect(page.locator('.astryx-table-scroll-wrapper')).toBeVisible();
-  await page.getByRole('button', {name: 'Border on cells'}).click();
+  await expect(
+    page
+      .locator('tbody tr:has(> [data-astryx-table-pinned])')
+      .nth(1)
+      .locator('> [data-astryx-table-pinned]'),
+  ).toHaveAttribute('data-astryx-table-pinned', 'width');
   await page.getByRole('button', {name: 'Recolour row'}).click();
   for (const left of [0, 150]) {
     await scrollTo(page, left);
