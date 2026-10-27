@@ -481,7 +481,7 @@ FR1–FR3 and DEC-3, so a mouse released outside a menu closes it.
 
 - **FR43 — Gestures work on the web.** Gestures attach for every pointer, a
   mouse, a pen, and a finger, not only a coarse primary pointer. These stay
-  off: row swipe actions under a mouse, which would take the browser's text
+  off: row swipe actions under a mouse drag, which would take the browser's text
   selection and native drag, while a trackpad's horizontal scroll swipes a
   row (`spec:AST-057` AR2, DEC-7); a
   pinch under a pen; the screen-edge pan under a mouse, a trackpad, or a pen;
@@ -493,8 +493,8 @@ FR1–FR3 and DEC-3, so a mouse released outside a menu closes it.
   mouse, a trackpad, or a pen a reorder starts on a drag from its handle
   without a hold. Under a fine pointer only a
   component that uses a gesture listens (FR24), and under reduced motion a
-  release from a mouse, a trackpad, or a pen completes at once
-  (`design:reduced-motion` DR3); and the change adds no
+  release from a mouse, a trackpad, or a pen follows `design:reduced-motion`
+  DR2 on a coarse primary pointer and DR3 otherwise; and gestures add no
   stylesheet bytes (`spec:AST-080` FR8) (DEC-21).
 
 ### Platform support
@@ -590,7 +590,7 @@ FR1–FR3 and DEC-3, so a mouse released outside a menu closes it.
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a pinch blocked other than by the author's `touch-action`, or a changed mouse path fails                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a DropdownMenu trigger the caller renders, a row with a context menu, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                                                                                                                                                                                                                                                                                                                                                                                            |
-| FR43            | Browser tests with a mouse, a trackpad, a pen, a finger, and the keyboard, and resource counts                                 | a pan by drag and by wheel; a ctrl-wheel pinch; a long press, a right click, and Shift+F10; a mouse press; a handle drag; a row swipe with a mouse and a trackpad; a component with no gesture                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | a gesture missing under a mouse or pen, a mouse swipe action, a pen pinch, an edge pan under a mouse, a trackpad, or a pen, a press delay under a fine pointer, an idle listener in a component with no gesture, or added stylesheet bytes, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| FR43            | Browser tests with a mouse, a trackpad, a pen, a finger, and the keyboard, and resource counts                                 | a pan by drag and by wheel; a ctrl-wheel pinch; a long press, a right click, and Shift+F10; a mouse press; a handle drag; a row swipe with a mouse and a trackpad; a component with no gesture                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | a gesture missing under a mouse or pen, a mouse-drag swipe action, a pen pinch, an edge pan under a mouse, a trackpad, or a pen, a press delay under a fine pointer, an idle listener in a component with no gesture, or added stylesheet bytes, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## Decision log
@@ -752,12 +752,25 @@ Rejected: the 150 ms delay on every menu row.
 Most of these gestures work as well with a mouse, a trackpad, or a pen, so
 they stay on for every pointer, with web inputs mapped in: wheel and trackpad
 scrolling for a pan, a ctrl-wheel for a pinch, and right click or Shift+F10
-for a long press. What would fight the browser stays off: a mouse's swipe
+for a long press. What would fight the browser stays off: a mouse drag's swipe
 actions, a pen's pinch, and the screen-edge pan under a mouse, a trackpad, or a pen. The 44 px target stays
 touch-only. This supersedes the coarse-only press controller: a mouse press
 now uses the press model with no delay instead of the browser's `:active`.
 
 Rejected: keeping gestures and press tracking touch-only.
+
+### DEC-19 — A phone menu stays beside its trigger
+
+**Reference:** `spec:AST-094/DEC-19`
+**Decider:** `cixzhang`, `2026-10-26`
+
+On a compact touch screen an anchored menu keeps the layer runtime's normal
+placement beside its trigger, inside the viewport gutter, so the trigger stays
+visible while the menu is open wherever the menu fits beside it; a menu taller
+than the room on either side follows the layer runtime's own fallback.
+
+Rejected: covering the trigger, centered on it and aligned with its top or
+bottom, as UIKit's menu does.
 
 ### DEC-22 — An edge band claims only on an element within the band
 
@@ -807,12 +820,6 @@ Rejected: cancelling moves only after the pan begins.
 - **OQ8 — Withdrawing a tentative open.** Resolved by
   `module:DropdownMenu/useMenuPress` DEC-8: nothing withdraws an open, so a
   screen reader hears one open and one close (its AR5).
-- **OQ9 — Where a menu sits on a compact touch screen.** Should an anchored
-  menu on a compact touch screen (`spec:AST-012` FR9) cover its trigger,
-  centered on it and top-aligned with it, or bottom-aligned with it when the
-  trigger's center is below the middle of the viewport, inside a fixed margin
-  from the sides, as UIKit's menu does? `component:DropdownMenu` places the
-  menu beside its trigger today. (`owner decision`)
 - **OQ10 — A sub-menu with its parent visible.** Should a drilled-in sub-menu
   open in place, the menu's box growing to it with the parent menu visible
   behind it, as UIKit's menu does? This is look and feel; today the sub-menu's
