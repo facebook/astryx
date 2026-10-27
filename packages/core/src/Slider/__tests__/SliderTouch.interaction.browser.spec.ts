@@ -1028,10 +1028,9 @@ test(
       },
       testInfo,
     );
-    const box = await thumb.boundingBox();
+    // A cast is the screen's own frames: the harness applies no clip to it.
     const film = await castStoryboard(page, castFrames, {
       name: 'slider-coast-busy-main-thread',
-      clip: {x: 0, y: Math.max(0, (box?.y ?? 0) - 40), width: 402, height: 100},
       zero: block.from,
       from: block.from - 40,
       to: proof.judged.to + 40,
