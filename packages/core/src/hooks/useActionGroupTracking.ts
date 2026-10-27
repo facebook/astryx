@@ -53,7 +53,10 @@ export interface ActionGroupTrackingOptions {
   itemSelector: string;
   /** How long after touch-down the touched action highlights, ms. */
   highlightOnsetMs: number;
-  /** How far outside an action the finger keeps it highlighted, px. */
+  /**
+   * How far outside an action a finger keeps it highlighted, px. A mouse or a
+   * pen hit-tests the actions' exact rects (`family:action-groups` FR5).
+   */
   highlightExpansion: number;
   /** Pointers that are tracked; others keep the browser's click. @default every pointer */
   pointerTypes?: ReadonlyArray<PointerKind>;
@@ -110,11 +113,18 @@ export function useActionGroupTracking(
   useIsomorphicLayoutEffect(() => {
     optionsRef.current = options;
   });
+  // The pointer that started the current press: the hit expansion is a
+  // finger's alone, so a mouse or a pen hit-tests the actions' exact rects
+  // (`family:action-groups` FR5).
+  const pointerRef = useRef<PointerKind>('touch');
   const [tracker] = useState(() =>
     createActionGroupTracker(() => ({
       roots: () => [ref.current],
       itemSelector: optionsRef.current.itemSelector,
-      highlightExpansion: optionsRef.current.highlightExpansion,
+      highlightExpansion:
+        pointerRef.current === 'touch'
+          ? optionsRef.current.highlightExpansion
+          : 0,
       onActivate: optionsRef.current.onActivate,
       // The browser's own click for a press the group ran is taken, so the
       // action runs once: the gesture host swallows it for a press it claims,
@@ -154,8 +164,12 @@ export function useActionGroupTracking(
         // this lock by default; the group names it, since its hold has no
         // minimum duration.
         selectionLock: lockSelection,
-        shouldReceiveTouch: (recognizer, touch) =>
-          receiveTouch(recognizer, touch, optionsRef.current),
+        shouldReceiveTouch: (recognizer, touch) => {
+          if (recognizer.numberOfTouches === 0) {
+            pointerRef.current = touch.pointerType;
+          }
+          return receiveTouch(recognizer, touch, optionsRef.current);
+        },
       }),
     recognizer => {
       switch (recognizer.state) {
