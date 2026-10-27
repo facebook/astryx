@@ -4,9 +4,9 @@
 
 /**
  * @file SearchFieldTouch.ts
- * @input The animator (`@astryxdesign/core/motion/useAnimator`), the
- *   search table (`@astryxdesign/core/motion/uikit`), the touch resolver
- *   (`@astryxdesign/core/utils/touchPresentation`) and searchFieldModel.ts
+ * @input The animator and the search table (Core's internal entry
+ *   `@astryxdesign/core/internal/motion`), the touch resolver
+ *   (`@astryxdesign/core/internal/touch`) and searchFieldModel.ts
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts (the lift, the narrowing middle, the trailing end, the close
  *   button) and, under a finger, plays UIKit's activation and cancel on one
@@ -35,10 +35,10 @@ import {
   type Animator,
   type MotionCurve,
   type MotionHandle,
-} from '@astryxdesign/core/motion/animator';
-import {search} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+  search,
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 
 /** The refs SearchField puts on the parts the touch layer moves. */
 export interface SearchFieldMotion {

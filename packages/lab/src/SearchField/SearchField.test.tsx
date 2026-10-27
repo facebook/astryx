@@ -28,7 +28,7 @@ import {
   type SearchFieldHandle,
   type SearchFieldProps,
 } from './SearchField';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/internal/motion';
 
 function Field(props: Partial<SearchFieldProps>) {
   return <SearchField label="Search" {...props} />;
