@@ -64,7 +64,8 @@ import {
   preloadPopoverBottomSheet,
 } from './lazyPopoverBottomSheet';
 import {Button} from '../Button';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import popoverMessages from '../i18n/generated-locales/en/popover.generated';
 
 // =============================================================================
 // Helpers
@@ -510,7 +511,7 @@ export function Popover({
   style,
   'data-testid': testId,
 }: PopoverProps): ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(popoverMessages);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
