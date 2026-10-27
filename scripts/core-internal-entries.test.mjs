@@ -69,6 +69,7 @@ const COVERED = [
   'gestures/useGestureRecognizer',
   'utils/touchPresentation',
   'motion/animator',
+  'motion/useAnimator',
   'motion/bezier',
   'motion/spring',
   'motion/rubberBand',
@@ -76,10 +77,10 @@ const COVERED = [
   'motion/uikit/gestures',
   'motion/uikit/navigation',
   'motion/uikit/scroll',
+  'motion/uikit/search',
   'motion/uikit/springs',
   'motion/uikit/timing',
   'motion/resolveMotion',
-  'motion/useAnimator',
   'motion/uikit/list',
 ];
 
