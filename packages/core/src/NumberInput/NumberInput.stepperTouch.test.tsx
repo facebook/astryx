@@ -82,12 +82,31 @@ function rectOf(element: Element): DOMRect {
 
 let finger = 1;
 
+/**
+ * A finger's touch event, as a browser sends it: a move or a lift comes after
+ * its pointer event (pointermove, pointerup), from which the gesture host
+ * reads a finger once it has seen its pointerdown.
+ */
 function touch(
   type: 'touchstart' | 'touchmove' | 'touchend',
   target: EventTarget,
   at: {x: number; y: number},
   id: number,
 ): void {
+  if (type !== 'touchstart') {
+    const pointer = {
+      pointerType: 'touch',
+      pointerId: id,
+      isPrimary: true,
+      clientX: at.x,
+      clientY: at.y,
+    };
+    if (type === 'touchmove') {
+      fireEvent.pointerMove(target as Element, pointer);
+    } else {
+      fireEvent.pointerUp(target as Element, pointer);
+    }
+  }
   const event = new Event(type, {bubbles: true, cancelable: true});
   const entry = {identifier: id, clientX: at.x, clientY: at.y, target};
   Object.defineProperty(event, 'changedTouches', {value: [entry]});
