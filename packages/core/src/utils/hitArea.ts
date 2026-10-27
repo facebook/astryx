@@ -239,11 +239,13 @@ const TOUCH_QUERY = '(pointer: coarse)';
 const FRAME_BUDGET_MS = 4;
 
 /**
- * How long the page's content must stay still before a change re-measures
- * every control, ms: a neighbour can move or appear without resizing the
- * control, its parent or the window.
+ * How long a control's parent must stay still after a text or child change
+ * before its controls re-measure, ms: a label or link beside a control can
+ * move without resizing the control or its parent.
  */
 const CONTENT_SETTLE_MS = 100;
+
+const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
 function now(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
@@ -257,15 +259,24 @@ interface Watch {
   last: HitInsets;
 }
 
-const watches = new Map<Element, Set<Watch>>();
+/** Each watched element: its watches, and what observes it while coarse. */
+interface Watched {
+  readonly watches: Set<Watch>;
+  /** Undoes the element's observation; null while the pointer is fine. */
+  release: (() => void) | null;
+  /** The armed one-shot click swallower, if a touch was nearer a neighbour. */
+  disarm: (() => void) | null;
+}
+
+const watched = new Map<Element, Watched>();
 const pending = new Set<Watch>();
+const observedSizes = new WeakMap<Element, string>();
+const scopeTimers = new Map<Element, ReturnType<typeof setTimeout>>();
 let frame: number | null = null;
+let view: Window | null = null;
+let pointer: MediaQueryList | null = null;
 let visibility: IntersectionObserver | null = null;
 let resize: ResizeObserver | null = null;
-let pointer: MediaQueryList | null = null;
-let stopContent: (() => void) | null = null;
-const observedSizes = new WeakMap<Element, string>();
-let contentTimer: ReturnType<typeof setTimeout> | null = null;
 let isCoarse = false;
 
 function sameInsets(a: HitInsets, b: HitInsets): boolean {
@@ -309,6 +320,44 @@ function plainRect(element: Element): HitRect {
   return {left, top, right, bottom};
 }
 
+interface Candidate {
+  readonly element: Element;
+  readonly rect: HitRect;
+}
+
+/** The page's interactive elements and their rects: one read. */
+function readCandidates(doc: Document): Candidate[] {
+  return [...doc.querySelectorAll(INTERACTIVE)].map(element => ({
+    element,
+    rect: plainRect(element),
+  }));
+}
+
+/** A control's rect and clamped insets, from candidates already read. */
+function measureOne(
+  watch: Watch,
+  candidates: ReadonlyArray<Candidate>,
+): {target: HitRect; insets: HitInsets} {
+  const target = plainRect(watch.element);
+  const reach = Math.max(0, watch.minSize / 2);
+  const band = grown(target, {
+    top: reach,
+    right: reach,
+    bottom: reach,
+    left: reach,
+  });
+  const neighbours = candidates
+    .filter(
+      ({element, rect}) =>
+        rect.right > rect.left &&
+        rect.bottom > rect.top &&
+        intersects(band, rect) &&
+        !isOwn(watch, element),
+    )
+    .map(({rect}) => rect);
+  return {target, insets: clampedHitInsets(target, neighbours, watch.minSize)};
+}
+
 /** One pass: every pending control's reads, then every write. */
 function measure(): void {
   frame = null;
@@ -317,12 +366,8 @@ function measure(): void {
   if (!isCoarse || due.length === 0) {
     return;
   }
-  const doc = due[0].element.ownerDocument;
   // Reads: the page's interactive elements once for the whole pass.
-  const candidates = [...doc.querySelectorAll(INTERACTIVE)].map(element => ({
-    element,
-    rect: plainRect(element),
-  }));
+  const candidates = readCandidates(due[0].element.ownerDocument);
   // The budget is for the controls: the page read above is once a frame.
   const started = now();
   const results: {watch: Watch; insets: HitInsets}[] = [];
@@ -333,33 +378,19 @@ function measure(): void {
       pending.add(watch);
       continue;
     }
-    const target = plainRect(watch.element);
-    const reach = Math.max(0, watch.minSize / 2);
-    const band = grown(target, {
-      top: reach,
-      right: reach,
-      bottom: reach,
-      left: reach,
-    });
-    const neighbours = candidates
-      .filter(
-        ({element, rect}) =>
-          rect.right > rect.left &&
-          rect.bottom > rect.top &&
-          intersects(band, rect) &&
-          !isOwn(watch, element),
-      )
-      .map(({rect}) => rect);
-    results.push({
-      watch,
-      insets: clampedHitInsets(target, neighbours, watch.minSize),
-    });
+    results.push({watch, insets: measureOne(watch, candidates).insets});
   }
   // Writes.
   for (const {watch, insets} of results) {
     deliver(watch, insets);
   }
-  if (pending.size > 0 && typeof requestAnimationFrame === 'function') {
+  if (pending.size > 0) {
+    requestFrame();
+  }
+}
+
+function requestFrame(): void {
+  if (frame == null && typeof requestAnimationFrame === 'function') {
     frame = requestAnimationFrame(measure);
   }
 }
@@ -369,66 +400,121 @@ function schedule(watch: Watch): void {
     return;
   }
   pending.add(watch);
-  if (frame == null && typeof requestAnimationFrame === 'function') {
-    frame = requestAnimationFrame(measure);
+  requestFrame();
+}
+
+function scheduleAll(): void {
+  for (const entry of watched.values()) {
+    entry.watches.forEach(schedule);
   }
 }
 
-function eachWatch(element: Element, visit: (watch: Watch) => void): void {
-  for (const watch of watches.get(element) ?? []) {
-    visit(watch);
-  }
-}
-
-function onPointerChange(): void {
-  const next = pointer?.matches ?? false;
-  if (next === isCoarse) {
+/**
+ * At a touch's start, re-measure the control it landed on, at once: if the
+ * touch is outside the fresh area (a neighbour moved nearer since the last
+ * measurement), the control's click is swallowed. The tap then does
+ * nothing rather than toggle the wrong control; nothing is re-sent to the
+ * neighbour, and the next tap uses the fresh insets.
+ */
+function onPress(event: Event): void {
+  const element = event.currentTarget as Element;
+  const entry = watched.get(element);
+  if (entry == null) {
     return;
   }
-  isCoarse = next;
-  for (const set of watches.values()) {
-    for (const watch of set) {
-      if (isCoarse) {
-        schedule(watch);
-      } else {
-        pending.delete(watch);
-        deliver(watch, NO_HIT_INSETS);
+  // A swallower left from a touch that sent no click goes with the next one.
+  entry.disarm?.();
+  const press = event as PointerEvent;
+  if (!isCoarse || press.pointerType !== 'touch') {
+    return;
+  }
+  const candidates = readCandidates(element.ownerDocument);
+  let isInside = false;
+  for (const watch of entry.watches) {
+    const {target, insets} = measureOne(watch, candidates);
+    deliver(watch, insets);
+    isInside ||= contains(grown(target, insets), press.clientX, press.clientY);
+  }
+  if (!isInside) {
+    const swallow = (click: Event) => {
+      click.preventDefault();
+      click.stopPropagation();
+      disarm();
+    };
+    const disarm = () => {
+      element.removeEventListener('click', swallow, true);
+      if (entry.disarm === disarm) {
+        entry.disarm = null;
+      }
+    };
+    element.addEventListener('click', swallow, true);
+    entry.disarm = disarm;
+  }
+}
+
+function onScopeChange(scope: Element): void {
+  const timer = scopeTimers.get(scope);
+  if (timer != null) {
+    clearTimeout(timer);
+  }
+  scopeTimers.set(
+    scope,
+    setTimeout(() => {
+      scopeTimers.delete(scope);
+      for (const [element, entry] of watched) {
+        if (element.parentElement === scope) {
+          entry.watches.forEach(schedule);
+        }
+      }
+    }, CONTENT_SETTLE_MS),
+  );
+}
+
+/** Starts observing one element; only while the pointer is coarse. */
+function observe(element: Element, entry: Watched): void {
+  const parent = element.parentElement;
+  visibility?.observe(element);
+  resize?.observe(element);
+  if (parent != null) {
+    resize?.observe(parent);
+  }
+  const stopScope =
+    parent == null ? null : observeContent(parent, () => onScopeChange(parent));
+  element.addEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
+  entry.release = () => {
+    visibility?.unobserve(element);
+    resize?.unobserve(element);
+    const parentShared = [...watched.keys()].some(
+      other => other !== element && other.parentElement === parent,
+    );
+    if (parent != null && !parentShared) {
+      resize?.unobserve(parent);
+      const timer = scopeTimers.get(parent);
+      if (timer != null) {
+        clearTimeout(timer);
+        scopeTimers.delete(parent);
       }
     }
-  }
+    stopScope?.();
+    element.removeEventListener('pointerdown', onPress, PASSIVE_CAPTURE);
+    entry.disarm?.();
+  };
 }
 
-function remeasureAll(): void {
-  for (const set of watches.values()) {
-    for (const watch of set) {
-      schedule(watch);
-    }
+/**
+ * Everything that watches the page for hit areas: on only while the primary
+ * pointer is coarse, so a mouse page runs no observer, timer or listener for
+ * them (`spec:AST-094` FR24).
+ */
+function startObserving(): void {
+  if (view == null) {
+    return;
   }
-}
-
-function onContentChange(): void {
-  if (contentTimer != null) {
-    clearTimeout(contentTimer);
-  }
-  contentTimer = setTimeout(() => {
-    contentTimer = null;
-    remeasureAll();
-  }, CONTENT_SETTLE_MS);
-}
-
-function start(view: Window): void {
-  pointer = view.matchMedia?.(TOUCH_QUERY) ?? null;
-  isCoarse = pointer?.matches ?? false;
-  pointer?.addEventListener('change', onPointerChange);
-  view.addEventListener('resize', remeasureAll);
-  // Text and children anywhere on the page (the insets are written to a
-  // style attribute, which this does not watch).
-  const body = view.document.body;
-  stopContent = body == null ? null : observeContent(body, onContentChange);
+  view.addEventListener('resize', scheduleAll);
   if (typeof IntersectionObserver === 'function') {
     visibility = new IntersectionObserver(entries => {
       for (const entry of entries) {
-        eachWatch(entry.target, watch => {
+        watched.get(entry.target)?.watches.forEach(watch => {
           watch.isVisible = entry.isIntersecting;
           if (watch.isVisible) {
             schedule(watch);
@@ -451,105 +537,126 @@ function start(view: Window): void {
         if (last === undefined || last === size) {
           continue;
         }
-        for (const set of watches.values()) {
-          for (const watch of set) {
-            if (
-              watch.element === entry.target ||
-              watch.element.parentElement === entry.target
-            ) {
-              schedule(watch);
-            }
+        for (const [element, item] of watched) {
+          if (
+            element === entry.target ||
+            element.parentElement === entry.target
+          ) {
+            item.watches.forEach(schedule);
           }
         }
       }
     });
   }
+  for (const [element, entry] of watched) {
+    // Without IntersectionObserver every control counts as on screen.
+    entry.watches.forEach(watch => {
+      watch.isVisible = visibility == null;
+    });
+    observe(element, entry);
+    if (visibility == null) {
+      entry.watches.forEach(schedule);
+    }
+  }
 }
 
-function stop(view: Window): void {
-  pointer?.removeEventListener('change', onPointerChange);
-  view.removeEventListener('resize', remeasureAll);
-  stopContent?.();
-  stopContent = null;
-  if (contentTimer != null) {
-    clearTimeout(contentTimer);
-    contentTimer = null;
+function stopObserving(): void {
+  for (const entry of watched.values()) {
+    entry.release?.();
+    entry.release = null;
   }
+  view?.removeEventListener('resize', scheduleAll);
   visibility?.disconnect();
   resize?.disconnect();
+  visibility = null;
+  resize = null;
+  scopeTimers.forEach(timer => clearTimeout(timer));
+  scopeTimers.clear();
   if (frame != null && typeof cancelAnimationFrame === 'function') {
     cancelAnimationFrame(frame);
   }
   frame = null;
-  pointer = null;
-  visibility = null;
-  resize = null;
-  isCoarse = false;
   pending.clear();
+}
+
+function onPointerChange(): void {
+  const next = pointer?.matches ?? false;
+  if (next === isCoarse) {
+    return;
+  }
+  isCoarse = next;
+  if (isCoarse) {
+    startObserving();
+    return;
+  }
+  stopObserving();
+  for (const entry of watched.values()) {
+    entry.watches.forEach(watch => deliver(watch, NO_HIT_INSETS));
+  }
 }
 
 /**
  * Keeps `element`'s hit insets live until the returned function runs:
  * `onInsets` hears each change (typically `writeHitInsets` on the control).
- * Where the primary pointer is not coarse the insets are 0 and nothing is
- * measured; where it is, the element is measured while on screen, on resize
- * (its own, its parent's, the window's) and once the page's content settles
- * after a change, all in the shared per-frame pass.
+ * Where the primary pointer is not coarse the insets are 0 and nothing but
+ * the pointer query is listened to; where it is, the element is measured
+ * while on screen, on resize (its own, its parent's, the window's) and once
+ * its parent's text and children settle after a change, all in the shared
+ * per-frame pass, and re-measured at once when a touch starts on it.
  */
 export function watchHitArea(
   element: Element,
   onInsets: (insets: HitInsets) => void,
   minSize: number = MIN_TOUCH_TARGET,
 ): () => void {
-  const view = element.ownerDocument.defaultView;
-  if (view == null) {
+  const owner = element.ownerDocument.defaultView;
+  if (owner == null) {
     return () => {};
   }
-  if (watches.size === 0) {
-    start(view);
+  if (watched.size === 0) {
+    view = owner;
+    pointer = owner.matchMedia?.(TOUCH_QUERY) ?? null;
+    pointer?.addEventListener('change', onPointerChange);
+    isCoarse = false;
+    onPointerChange();
   }
   const watch: Watch = {
     element,
     minSize,
     onInsets,
-    // Without IntersectionObserver every control counts as on screen.
-    isVisible: visibility == null,
+    isVisible: isCoarse && visibility == null,
     last: NO_HIT_INSETS,
   };
-  let set = watches.get(element);
-  if (set == null) {
-    set = new Set();
-    watches.set(element, set);
-    visibility?.observe(element);
-    resize?.observe(element);
-    if (element.parentElement != null) {
-      resize?.observe(element.parentElement);
+  let entry = watched.get(element);
+  if (entry == null) {
+    entry = {watches: new Set(), release: null, disarm: null};
+    watched.set(element, entry);
+    entry.watches.add(watch);
+    if (isCoarse) {
+      observe(element, entry);
     }
+  } else {
+    entry.watches.add(watch);
   }
-  set.add(watch);
   if (watch.isVisible) {
     schedule(watch);
   }
   return () => {
-    const own = watches.get(element);
-    if (own == null || !own.delete(watch)) {
+    const own = watched.get(element);
+    if (own == null || !own.watches.delete(watch)) {
       return;
     }
     pending.delete(watch);
-    if (own.size === 0) {
-      watches.delete(element);
-      visibility?.unobserve(element);
-      resize?.unobserve(element);
-      const parent = element.parentElement;
-      const parentShared = [...watches.keys()].some(
-        other => other.parentElement === parent,
-      );
-      if (parent != null && !parentShared) {
-        resize?.unobserve(parent);
-      }
+    if (own.watches.size === 0) {
+      own.release?.();
+      watched.delete(element);
     }
-    if (watches.size === 0) {
-      stop(view);
+    if (watched.size === 0) {
+      stopObserving();
+      pointer?.removeEventListener('change', onPointerChange);
+      pointer = null;
+      view = null;
+      isCoarse = false;
     }
   };
 }

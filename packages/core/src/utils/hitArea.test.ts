@@ -319,9 +319,11 @@ describe('watchHitArea', () => {
     flush();
     expect(heard).toEqual([]);
     expect(log).toEqual([]);
-    // The pointer turns coarse, then fine again.
+    // The pointer turns coarse (the observers start, and the visibility
+    // observer's first notice comes), then fine again.
     coarse = true;
     pointerListeners.forEach(listener => listener());
+    show(control);
     flush();
     expect(heard).toEqual([{top: 10, right: 10, bottom: 10, left: 10}]);
     coarse = false;
@@ -330,7 +332,7 @@ describe('watchHitArea', () => {
     stop();
   });
 
-  it('re-measures once the page settles after a change that moves a neighbour without resizing the control', async () => {
+  it('re-measures once its parent’s text settles after a change that moves a neighbour without resizing the control', async () => {
     vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const control = byId('switch');
     const link = byId('link');
@@ -341,15 +343,70 @@ describe('watchHitArea', () => {
     show(control);
     flush();
     expect(heard.at(-1)?.right).toBe(10);
-    // The link moves to 8 px away as text before it changes.
+    // The label beside the switch shortens, and the link moves to 8 px away.
     place(link, rect(132, 100, 60, 24));
-    link.textContent = 'More details';
+    (control.parentElement as HTMLElement).lastChild!.textContent = ' Wi';
     await Promise.resolve();
     vi.advanceTimersByTime(100);
     flush();
     expect(heard.at(-1)?.right).toBe(4);
     stop();
     vi.useRealTimers();
+  });
+
+  it('swallows the click of a touch that a fresh measurement puts nearer a neighbour, and only that one', () => {
+    const control = byId('switch');
+    const link = byId('link');
+    place(control, rect(100, 100, 24, 24));
+    place(link, rect(400, 100, 60, 24));
+    const stop = watchHitArea(control, () => {});
+    show(control);
+    flush();
+    // The link moved to 8 px away with nothing re-measuring yet.
+    place(link, rect(132, 100, 60, 24));
+    const touch = (x: number) => {
+      const press = new Event('pointerdown', {bubbles: true});
+      Object.assign(press, {pointerType: 'touch', clientX: x, clientY: 112});
+      control.dispatchEvent(press);
+    };
+    const click = () => {
+      const event = new MouseEvent('click', {bubbles: true, cancelable: true});
+      control.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    // 6 px right of the switch: inside the old area, 2 px from the link.
+    touch(130);
+    expect(click()).toBe(true);
+    // One-shot: the next click is the control's.
+    expect(click()).toBe(false);
+    // A touch with no click leaves nothing behind for the next touch.
+    touch(130);
+    touch(110);
+    expect(click()).toBe(false);
+    stop();
+  });
+
+  it('runs no observer or window listener for hit areas while the primary pointer is fine', () => {
+    coarse = false;
+    const constructed = vi.fn();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor() {
+          constructed();
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const onWindow = vi.spyOn(window, 'addEventListener');
+    const onElement = vi.spyOn(byId('switch'), 'addEventListener');
+    const stop = watchHitArea(byId('switch'), () => {});
+    expect(constructed).not.toHaveBeenCalled();
+    expect(onWindow).not.toHaveBeenCalled();
+    expect(onElement).not.toHaveBeenCalled();
+    stop();
   });
 
   it('stops hearing a control after its function runs', () => {
