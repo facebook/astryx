@@ -41,7 +41,6 @@
  */
 
 import {DELAYS_CONTENT_TOUCHES_MS} from './scroll';
-import {press} from './timing';
 import {
   LONG_PRESS_ALLOWABLE_MOVEMENT_PX,
   LONG_PRESS_DURATION_MS,
