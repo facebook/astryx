@@ -7,7 +7,8 @@
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
  *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
- *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module
+ *   `releaseLayoutExit`, the in-place swap (`holdLayoutSwap` /
+ *   `playLayoutSwap`) and `applyLayoutChangeTransition`: the one module
  *   that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
@@ -39,6 +40,12 @@
  *   the same frame (`playLayoutChange`), or its exit: kept where it is while
  *   it gives up its space and conceals (`holdLayoutExit`). A disclosure's
  *   indicator turns on the same motion (`applyLayoutChangeTransition`).
+ * - A swap holds old content as one transient copy, inert and hidden from
+ *   assistive technology, while new content enters in its place, on the same
+ *   motion, and removes it when the swap ends (`holdLayoutSwap`,
+ *   `playLayoutSwap`; `spec:AST-105` FR8). The caller shapes the frames over
+ *   the swap's progress; under Reduce Motion with a coarse pointer only
+ *   opacity changes.
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -47,6 +54,14 @@
  */
 
 import {motionRole} from './roles';
+import {
+  inertCopy,
+  isCopyable,
+  paintedBackground,
+  placeOver,
+  visiblePartCopy,
+  wrapText,
+} from './transientCopy';
 import {isSpring} from './roleValue';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {registerSpringsTable, SETTLE_SPRING} from './uikit/springs';
@@ -971,6 +986,134 @@ export function releaseLayoutExit(element: HTMLElement): void {
       element.style.setProperty(property, value, priority);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// The in-place swap
+// ---------------------------------------------------------------------------
+
+/**
+ * Old content held as one transient copy while new content enters in its
+ * place (`spec:AST-105` FR8): inert, hidden from assistive technology, and
+ * removed when the swap ends (`architecture:component-style-authoring` INV7).
+ */
+export interface LayoutSwap {
+  readonly area: Element;
+  readonly copy: HTMLElement;
+  /** Where the old content showed, in viewport coordinates. */
+  readonly rect: DOMRect;
+}
+
+/** How a swap plays, as frames over its progress (0 → 1). */
+export interface LayoutSwapMotion {
+  /** The box the copy is laid out in, over the old content's place. */
+  readonly host: Element;
+  /** The copy's frames while it travels. */
+  readonly copy: (p: number) => Keyframe;
+  /** Its text's opacity, on its own curve, when that differs from the copy's. */
+  readonly copyText?: (p: number) => number;
+  /** The copy paints above its neighbours in the background it covers. */
+  readonly isOpaque?: boolean;
+  /** Elements the page already renders, entering with the swap. */
+  readonly incoming: ReadonlyArray<{
+    readonly element: Element;
+    readonly frames: (p: number) => Keyframe;
+  }>;
+}
+
+/**
+ * Before a change commits: hold `element`'s old content as one transient copy
+ * (`spec:AST-105` FR8). With `isVisiblePart`, the copy is the element's
+ * visible part, its content scrolled as it was (a scroll container). Returns
+ * null without a handle, outside its area, under an immediate change, or for
+ * content too large to copy.
+ */
+export function holdLayoutSwap(
+  handle: AnimatedLayout | null | undefined,
+  element: HTMLElement,
+  {isVisiblePart = false}: {isVisiblePart?: boolean} = {},
+): LayoutSwap | null {
+  if (handle == null || typeof element.animate !== 'function') {
+    return null;
+  }
+  const area = areaOf(handle, element);
+  if (
+    area == null ||
+    layoutMotion(area).kind === 'instant' ||
+    !isCopyable(element)
+  ) {
+    return null;
+  }
+  const box = element.getBoundingClientRect();
+  if (!isVisiblePart) {
+    return {area, copy: inertCopy(element), rect: box};
+  }
+  const {copy, rect} = visiblePartCopy(element);
+  return {area, copy, rect};
+}
+
+/**
+ * After the change commits, before paint: the copy leaves while the incoming
+ * elements enter, on FR4's one motion, every part started on the same
+ * timeline time. Under Reduce Motion with a coarse pointer, only opacity
+ * changes (`design:reduced-motion` DR2). Returns what ends the swap at once;
+ * it also ends when its motion does, and the copy is removed.
+ */
+export function playLayoutSwap(
+  swap: LayoutSwap,
+  how: LayoutSwapMotion,
+): () => void {
+  const motion = layoutMotion(swap.area);
+  if (motion.kind === 'instant') {
+    return () => {};
+  }
+  const {copy} = swap;
+  placeOver(copy, how.host, swap.rect);
+  if (how.isOpaque === true) {
+    copy.style.zIndex = '1';
+    copy.style.backgroundColor = paintedBackground(how.host);
+  }
+  const travels = motion.kind === 'spring';
+  const options: KeyframeAnimationOptions = travels
+    ? {duration: motion.progress.durationMs, easing: 'linear', fill: 'both'}
+    : {duration: motion.durationMs, easing: motion.easing, fill: 'both'};
+  const frames = (shape: (p: number) => Keyframe): Keyframe[] =>
+    travels
+      ? sampleKeyframes(motion.progress, remaining => shape(1 - remaining))
+      : [shape(0), shape(1)];
+  const animations: Animation[] = [];
+  const play = (element: Element, shape: (p: number) => Keyframe) => {
+    const animation = safeAnimate(element, frames(shape), options);
+    if (animation != null) {
+      animations.push(animation);
+    }
+  };
+  play(copy, travels ? how.copy : p => ({opacity: 1 - p}));
+  const {copyText} = how;
+  if (travels && copyText != null) {
+    for (const span of wrapText(copy)) {
+      play(span, p => ({opacity: copyText(p)}));
+    }
+  }
+  for (const {element, frames: shape} of how.incoming) {
+    play(element, travels ? shape : p => ({opacity: p}));
+  }
+  let isDone = false;
+  const end = () => {
+    if (isDone) {
+      return;
+    }
+    isDone = true;
+    animations.forEach(animation => animation.cancel());
+    copy.remove();
+  };
+  if (animations.length === 0) {
+    end();
+  } else {
+    // Every part runs on one clock, so the first to finish ends them all.
+    animations[0].addEventListener?.('finish', end);
+  }
+  return end;
 }
 
 /**
