@@ -41,7 +41,7 @@ export const docs = {
       name: 'reorderable',
       type: 'Reorderable',
       description:
-        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its one method, `start(key)`, enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last.",
+        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its `start(key)` enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last. Its `attach(container, {items})` reorders plain elements with no collection component: `items()` returns one `{key, element, handle}` per item in order, and the container gets the same drag, reorder mode and announcements; a move commits when `items()` reports the new order, and `detach()` removes everything `attach` added. Creating the object does no DOM work, so it is safe on the server.",
     },
   ],
   usage: {
@@ -62,6 +62,11 @@ export const docs = {
         guidance: true,
         description:
           "Offer reorder mode from your own UI too, such as a row's context menu, with `reorderable.start(item.id)`.",
+      },
+      {
+        guidance: true,
+        description:
+          'Outside a collection component, attach the object to plain elements with `reorderable.attach(container, {items})`, move the elements in `onReorder`, and call `detach()` when the container goes.',
       },
       {
         guidance: false,
@@ -87,7 +92,7 @@ export const docsDense = {
   },
   returnDescriptions: {
     reorderable:
-      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI.",
+      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI; attach(container, {items}) reorders plain elements.",
   },
   usage: {
     description:

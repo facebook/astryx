@@ -51,6 +51,7 @@ import {useAnnounce} from '../../hooks/useAnnounce';
 import {motionRole} from '../../motion/roles';
 import {getGestureHost} from '../../gestures/GestureHost';
 import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
+import {resetHitAreaForTests} from '../../utils/hitArea';
 import {touchMotion} from '../ListReorderTouch';
 
 function moveKey<T extends Key>(
@@ -153,6 +154,7 @@ describe('List reorderable', () => {
   // The live region outlives each test: clear it, so one test's message is
   // never read by the next.
   afterEach(() => {
+    resetHitAreaForTests();
     const {result, unmount} = renderHook(() => useAnnounce());
     act(() => result.current(''));
     unmount();

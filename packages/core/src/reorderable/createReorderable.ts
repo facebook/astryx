@@ -7,9 +7,11 @@
  * @input The reorder's options, and List's reorder machinery
  *   (List/listReorderEngine.ts: the session, its handle and its touch layer)
  * @output `createReorderable`, which makes the object a collection's
- *   `reorderable` prop takes, whose one public method, `start(key)`, enters
- *   reorder mode from the app's own UI; and its types: `Reorderable`,
- *   `ReorderableOptions`, `ReorderMove`
+ *   `reorderable` prop takes, whose methods are `start(key)`, which enters
+ *   reorder mode from the app's own UI, and `attach(container, {items})`,
+ *   which reorders plain elements with no collection component; and its
+ *   types: `Reorderable`, `ReorderableOptions`, `ReorderMove`,
+ *   `ReorderableItem`, `ReorderableAttachOptions`, `ReorderableAttachment`
  * @position Public Core API (spec:AST-103), exported from the package root.
  *   The machinery ships here, on the object: a collection imports only the
  *   object's type, so one without `reorderable` loads no reorder code (FR2)
@@ -25,6 +27,14 @@ import {
   type ReorderableInternals,
 } from '../List/listReorderContext';
 import {listReorderEngine} from '../List/listReorderEngine';
+import {
+  attachReorderable,
+  type ReorderableAttachment,
+  type ReorderableAttachOptions,
+  type ReorderableItem,
+} from '../List/attachReorderable';
+
+export type {ReorderableAttachment, ReorderableAttachOptions, ReorderableItem};
 
 /** A committed move: the item that moved and where it went. */
 export interface ReorderMove<TKey extends Key = string | number, TTo = number> {
@@ -81,6 +91,36 @@ export interface Reorderable<TKey extends Key = string | number, TTo = number> {
    * mode in the one mounted last.
    */
   start(key: TKey): void;
+  /**
+   * Reorders plain elements with no collection component (spec:AST-103
+   * FR4b): `items()` returns one `{key, element, handle}` per item, in
+   * order, read whenever the reorder needs them. The container gets the
+   * same drag from each handle, reorder mode on each handle, and
+   * announcements as a reorderable List, with `isReorderable` applied, and
+   * each handle takes the toggle role, `aria-pressed`, and the name
+   * "Reorder" followed by its element's accessible name. A move commits when
+   * `items()` reports the new order after `onReorder`; an order unchanged by
+   * the end of that task is refused. `detach` removes every listener,
+   * observer and element `attach` added. Creating the object does no DOM
+   * work, so it is safe on the server; call `attach` in the browser.
+   *
+   * @example
+   * ```
+   * const reorderable = createReorderable({onReorder: ({key, to}) => move(key, to)});
+   * const {detach} = reorderable.attach(listElement, {
+   *   items: () =>
+   *     Array.from(listElement.children, row => ({
+   *       key: row.dataset.id,
+   *       element: row,
+   *       handle: row.querySelector('.grip'),
+   *     })),
+   * });
+   * ```
+   */
+  attach(
+    container: HTMLElement,
+    options: ReorderableAttachOptions<TKey>,
+  ): ReorderableAttachment;
 }
 
 /**
@@ -113,6 +153,8 @@ export function createReorderable<
     options: options as unknown as ListReorderOptions,
     [REORDER_ENGINE]: listReorderEngine,
     start: key => listReorderEngine.start(internals.options, key),
+    attach: (container, attachOptions) =>
+      attachReorderable(internals.options, container, attachOptions),
   };
   return internals as unknown as Reorderable<TKey, TTo>;
 }

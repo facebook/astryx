@@ -234,18 +234,30 @@ function clearRegion(politeness: AnnouncePoliteness): void {
  */
 export function useAnnounce(): AnnounceFn {
   return useCallback(
-    (message: string, politeness: AnnouncePoliteness = 'polite') => {
-      if (!message) {
-        // An empty message clears any lingering status from the region,
-        // including messages joined but not yet exposed — useful when the
-        // triggering context ends.
-        clearRegion(politeness);
-        return;
-      }
-      announceMessage(message, politeness);
-    },
+    (message: string, politeness: AnnouncePoliteness = 'polite') =>
+      announce(message, politeness),
     [],
   );
+}
+
+/**
+ * What `useAnnounce`'s function does, for code outside React (a reorderable
+ * object attached to plain elements). Not exported from the hooks index.
+ *
+ * @internal
+ */
+export function announce(
+  message: string,
+  politeness: AnnouncePoliteness = 'polite',
+): void {
+  if (!message) {
+    // An empty message clears any lingering status from the region,
+    // including messages joined but not yet exposed — useful when the
+    // triggering context ends.
+    clearRegion(politeness);
+    return;
+  }
+  announceMessage(message, politeness);
 }
 
 /**

@@ -7,7 +7,7 @@
  * @position Storybook demonstrations for List consumers
  */
 
-import {useMemo, useRef, useState, type MouseEvent} from 'react';
+import {useEffect, useMemo, useRef, useState, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
@@ -804,6 +804,98 @@ export const ReorderLongList: Story = {
         story:
           'Dragging a row near the top or bottom of the screen scrolls the ' +
           'page, faster the further past the edge the row goes.',
+      },
+    },
+  },
+};
+
+/**
+ * Plain elements with no List: the page builds the rows itself, and
+ * `reorderable.attach` gives them the same drag, reorder mode and
+ * announcements (spec:AST-103 FR4b).
+ */
+function PlainElementsDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const host = ref.current;
+    if (host == null) {
+      return undefined;
+    }
+    const list = document.createElement('ul');
+    list.setAttribute('aria-label', 'Groceries');
+    Object.assign(list.style, {
+      listStyle: 'none',
+      margin: '0',
+      padding: '0',
+      maxWidth: '360px',
+    });
+    for (const label of ['Milk', 'Eggs', 'Bread', 'Apples']) {
+      const row = document.createElement('li');
+      row.dataset.key = label;
+      Object.assign(row.style, {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: '44px',
+        paddingInline: '12px',
+        borderBlockEnd: '1px solid rgb(0 0 0 / 10%)',
+        background: 'Canvas',
+      });
+      const text = document.createElement('span');
+      text.textContent = label;
+      const grip = document.createElement('button');
+      grip.type = 'button';
+      grip.className = 'grip';
+      grip.textContent = '\u2261';
+      Object.assign(grip.style, {
+        inlineSize: '28px',
+        blockSize: '28px',
+        border: 'none',
+        background: 'none',
+        cursor: 'grab',
+        touchAction: 'manipulation',
+      });
+      row.append(text, grip);
+      list.append(row);
+    }
+    host.append(list);
+    const reorderable = createReorderable({
+      onReorder: ({key, to}) => {
+        const row = Array.from(list.children).find(
+          child => (child as HTMLElement).dataset.key === key,
+        );
+        if (row != null) {
+          row.remove();
+          list.insertBefore(row, list.children[to] ?? null);
+        }
+      },
+    });
+    const {detach} = reorderable.attach(list, {
+      items: () =>
+        Array.from(list.children as HTMLCollectionOf<HTMLElement>, row => ({
+          key: row.dataset.key ?? '',
+          element: row,
+          handle: row.querySelector<HTMLElement>('.grip') as HTMLElement,
+        })),
+    });
+    return () => {
+      detach();
+      list.remove();
+    };
+  }, []);
+  return <div ref={ref} />;
+}
+
+export const ReorderPlainElements: Story = {
+  render: () => <PlainElementsDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Without a List: `reorderable.attach(container, {items})` gives ' +
+          'elements the page builds itself the same drag from each handle, ' +
+          'reorder mode and announcements, and `detach()` removes ' +
+          'everything it added.',
       },
     },
   },

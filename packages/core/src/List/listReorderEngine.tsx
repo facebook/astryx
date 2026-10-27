@@ -133,7 +133,7 @@ const sessionsByOptions = new WeakMap<
 >();
 
 /** Records `controller` as mounted with `options`; returns the removal. */
-function mountSession(
+export function mountSession(
   options: ListReorderOptions,
   controller: ListReorderController,
 ): () => void {
@@ -163,11 +163,37 @@ function shownY(element: HTMLElement, at: number): number {
 }
 
 /**
+ * The rows of a container `attach` drives (reorderable/attachReorderable.ts):
+ * its items' elements in order, which need not be its element children.
+ */
+const rowSources = new WeakMap<HTMLElement, () => HTMLElement[]>();
+
+/**
+ * Reads `container`'s rows from `rows` instead of its element children, for
+ * a container `attach` drives; returns the removal.
+ */
+export function setRowSource(
+  container: HTMLElement,
+  rows: () => HTMLElement[],
+): () => void {
+  rowSources.set(container, rows);
+  return () => {
+    if (rowSources.get(container) === rows) {
+      rowSources.delete(container);
+    }
+  };
+}
+
+/**
  * The list's rows: its element children, without the ghost of a removed row
  * still collapsing (the update motion's, `GHOST_ATTRIBUTE`), which holds no
  * place in the order.
  */
 function rowsOf(list: HTMLElement): HTMLElement[] {
+  const source = rowSources.get(list);
+  if (source != null) {
+    return source();
+  }
   return Array.from(list.children).filter(
     (child): child is HTMLElement =>
       child instanceof HTMLElement && !child.hasAttribute(GHOST_ATTRIBUTE),
@@ -451,7 +477,7 @@ interface PendingAnnouncement {
 }
 
 /** The strings the controller announces, from the translator. */
-interface ReorderMessages {
+export interface ReorderMessages {
   /**
    * A row's place in reorder mode: its name, place and count, and the names
    * of the rows before and after it (null at the top or the end).
@@ -474,7 +500,7 @@ interface ReorderMessages {
   cancelled: (position: number, total: number) => string;
 }
 
-function messagesFrom(t: TranslatorFn): ReorderMessages {
+export function messagesFrom(t: TranslatorFn): ReorderMessages {
   return {
     place: (label, position, total, previous, next) =>
       previous == null
@@ -1543,6 +1569,12 @@ export class ListReorderController implements ListReorderSession {
    */
   rowOf(element: Element | null): HTMLElement | null {
     const list = this.getList();
+    const source = list == null ? undefined : rowSources.get(list);
+    if (source != null) {
+      return element == null
+        ? null
+        : (source().find(row => row.contains(element)) ?? null);
+    }
     let node = element;
     while (node != null && node.parentElement !== list) {
       node = node.parentElement;
