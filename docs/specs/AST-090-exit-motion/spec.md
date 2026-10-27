@@ -101,8 +101,8 @@ FR1–FR13 govern dialog and layer surfaces in a pointer presentation. FR14
 governs them in a touch presentation.
 
 - **FR1 — Exits are off by default.** `--duration-exit-dialog` and
-  `--duration-exit-layer` default to `0ms`. When a theme sets them, its tempo
-  scales them (`spec:AST-108`). A surface whose kind's exit
+  `--duration-exit-layer` default to `0ms`. A theme's tempo does not scale an exit
+  duration the theme sets explicitly (`spec:AST-108` FR5). A surface whose kind's exit
   duration is zero closes at once: it is hidden in the update that closes it,
   and focus, callbacks, and dismissal behave as they do for a surface with no
   exit.

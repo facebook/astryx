@@ -67,9 +67,11 @@ defineTheme({
     person's setting. No value loosens Reduce Motion.
 - **FR2 — The knobs generate the CSS motion tokens.** The theme's
   `--duration-*` tokens are their base values times `tempo`. `character` sets
-  the job-named `--ease-entrance` and `--ease-move` tokens, declared in
-  `tokens.stylex.ts`, and `--ease-standard`; `--ease-exit` is the same at
-  every character, so exits stay quiet. With `tempo` 1 and `character`
+  only the job-named `--ease-entrance` and `--ease-move` tokens, declared in
+  `tokens.stylex.ts`. `--ease-standard`, which today's exits read, and
+  `--ease-exit`, which defaults to `cubic-bezier(0.42, 0, 1, 1)` (the exit
+  role's measured curve), are the same at every character, so exits stay
+  quiet. With `tempo` 1 and `character`
   `'standard'`, the tokens are today's: `--duration-*` 130, 175, 230, 310, 410,
   550, 730, 975 and 1300 ms, and `--ease-standard`
   `cubic-bezier(0.24, 1, 0.4, 1)`; `--ease-entrance` and `--ease-move` equal
@@ -105,8 +107,9 @@ defineTheme({
 - **FR5 — Existing motion configuration keeps working.** `defineTheme`'s
   `motion` also accepts the existing `MotionScaleConfig`, and
   `expandMotionScale` and the `MotionScale*` types are unchanged. A
-  `MotionScaleConfig` keeps generating its tokens and gives the animator the
-  `tempo` its `medium` value implies against the default. Explicit
+  `MotionScaleConfig` keeps generating its tokens, so an existing theme's CSS
+  is unchanged, and gives the animator the `tempo` its `medium` value implies
+  against the default, used as is rather than clamped to the knob's range. Explicit
   `MotionScaleConfig` fields and explicit `tokens` win over `tempo` and
   `character`, and an extending theme's motion configuration replaces its
   base's, as today.
@@ -126,7 +129,8 @@ defineTheme({
 ## Current-state impact
 
 - `defineTheme`'s `motion` widens to accept the three knobs beside the existing
-  `MotionScaleConfig`; existing themes render exactly as before.
+  `MotionScaleConfig`; an existing theme's CSS is unchanged, and its springs
+  follow the tempo its configuration implies.
 - Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`.
 - BottomSheet's scrim fades over `--duration-medium` while the sheet settles
   on its spring; it moves to the spring's settle time (FR4a).
