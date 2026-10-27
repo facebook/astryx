@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file createAnimator.ts
  * @input An element; the internal motion animator (motion/animator.ts), the
