@@ -723,6 +723,10 @@ function onPointerDown(event: PointerEvent): void {
     // owns the surface from here; swallowing it would make the second of two
     // quick taps answer with nothing.
     finish(finger);
+    // That tap was the only press live and no finger is down yet, so
+    // finishing it took the listeners down: arm them again, or this touch's
+    // lift goes unheard and its press stays on.
+    track();
   }
   const element = surfaceAt(event.target);
   // The finger is recorded AFTER the brake reads the fling, deliberately: the
