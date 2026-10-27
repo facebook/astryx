@@ -69,13 +69,18 @@
  * Chromium starts it after the block.
  *
  * Promotion: Mobile Safari runs an animation whose start time is set from
- * script on its compositor at its first commit only if the element already
- * has a compositing layer; without one, a block right after that commit
- * freezes it (iOS 26.2 simulator: 2 of 7 runs kept moving). Every animation
- * the animator creates, and every `set`, therefore promotes its channels in
- * the same task: inline `will-change` on the element, merged with the
- * element's own. That is enough (5 of 5, and 4 of 4 through the animator);
- * promotion ends PROMOTION_LINGER_MS after the last motion.
+ * script on its compositor at its first commit only if the element (or the
+ * pseudo-element) already has a compositing layer; without one, a block
+ * right after that commit freezes it (iOS 26.2 simulator: 2 of 7 runs kept
+ * moving, 0 of 5 on a ::before). Every animation the animator creates, and
+ * every `set` (unless it passes `{promote: false}`), therefore promotes its
+ * channels in the same task: inline
+ * `will-change` on the element, merged with the element's own, or the custom
+ * property `--astryx-motion-will-change-<pseudo>` on the host for a
+ * pseudo-element, whose style opts in with
+ * `will-change: var(--astryx-motion-will-change-before, auto)`. That is
+ * enough (5 of 5, and 4 of 4 through the animator); promotion ends
+ * PROMOTION_LINGER_MS after the last motion.
  *
  * Known limits, iOS Safari (measured on the iOS 26.2 simulator):
  * - a block in the task that starts a motion delays it: it starts when the
@@ -112,8 +117,8 @@
  *   call that lands too carries a landing still waiting (two calls in one
  *   frame land together), and a later opacity change lands it at once;
  * - on any other primary pointer (DR3) it completes at once.
- * No call option and no theme value lengthens the fade or keeps travel (DR4):
- * the fade's length is not a theme role.
+ * No call option and no role value lengthens the fade or keeps travel (DR4):
+ * the fade's length is not a role.
  *
  * Momentum under Reduce Motion (`design:reduced-motion` DR2, DEC-2): a
  * decay's momentum continues the velocity a finger handed it on release
@@ -125,18 +130,41 @@
  * Motion policy above, a cross-fade on a coarse pointer or after a touch
  * release (`touchRelease`) and at once elsewhere (DR2, DR3).
  *
+ * Roles: every spring and curve the animator plays passes through
+ * resolveMotion.ts, which names the motion role it plays (`springs.settle`
+ * once `registerSpringsTable()` has run, the Reduce Motion fade's curve,
+ * which the animator registers alone). While touch motion stays internal
+ * (`spec:AST-094` DEC-11), a role plays its table value: nothing reads a CSS
+ * variable or the element's style for it. A spring written inline at the call
+ * site, and a table never registered, play as given; the fade's length is not
+ * a role.
+ *
+ * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
+ * inline style: its end value is held by a static filling animation (after a
+ * curve ends, and after `set`) until the next animation replaces it, and for
+ * as long as the pseudo-element exists. The browser makes a `::backdrop`
+ * again each time its dialog opens, without the hold, so a presentation
+ * calls `set` with its starting value right after `showModal()`, in the same
+ * task: a `set` before it lands on the backdrop the open replaces.
+ *
  * SSR-safe: nothing touches `window` or `document` at module scope, and an
  * animator created without an element only keeps state until one is attached.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/animator.test.ts
  * - /packages/core/src/motion/reducedMotionPlan.ts (the Reduce Motion plan)
+ * - /packages/core/src/motion/__tests__/animator.interaction.browser.spec.ts
+ * - /packages/core/src/motion/resolveMotion.ts (the roles it resolves)
  * - /packages/core/src/motion/README.md
  */
 
 import {cubicBezier} from './bezier';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
-import {reducedMotionCrossFade} from './uikit/timing';
+import {resolveMotion} from './resolveMotion';
+import {
+  reducedMotionCrossFade,
+  registerReducedMotionCrossFade,
+} from './uikit/timing';
 import {planReducedMotion, type ReducedMotionView} from './reducedMotionPlan';
 
 /**
@@ -219,7 +247,28 @@ export interface MotionCurve {
 /**
  * Options of `createAnimator`.
  */
+/** How `set` puts values in place. */
+export interface SetOptions {
+  /**
+   * Whether the write promotes its channels to a compositing layer, as a
+   * drag's per-frame writes need so each is a composite only (default
+   * true). `false` writes the values and nothing else: a one-off switch that
+   * must not give its element a layer, such as a veil under a sticky header
+   * switched during a programmatic scroll (on iOS 26.2, a layer there blanks
+   * the header's painted items for about two frames). A channel another
+   * motion keeps promoted stays promoted, and a channel with other motion
+   * still running gets its animation's layer as usual.
+   */
+  promote?: boolean;
+}
+
 export interface AnimatorOptions {
+  /**
+   * Animates a pseudo-element of the element instead (`'::backdrop'` of a
+   * native dialog). A pseudo-element has no inline style, so a static filling
+   * animation holds its value after a curve ends and after `set`.
+   */
+  pseudoElement?: string;
   /** Starting values; identity by default. Never read from the DOM. */
   initial?: MotionValues;
   /** Clock in ms on the document timeline's time base. */
@@ -292,7 +341,7 @@ export interface Animator {
    * of a drag (one style write per channel, no animation when nothing else
    * on the channel is moving).
    */
-  set(values: MotionValues): void;
+  set(values: MotionValues, options?: SetOptions): void;
   /** Springs to `to` from the presentation values. */
   animate(
     to: MotionValues,
@@ -414,7 +463,12 @@ interface HandleState {
  * dip, the fade back in.
  */
 interface Landing {
-  readonly owner: HandleState;
+  /**
+   * The call that settles when the landing (and its fade back in) ends; a
+   * call that joins the dip takes it over, and the call it replaces is
+   * carried.
+   */
+  owner: HandleState;
   /** ms after the call's start. */
   readonly at: number;
   readonly values: Map<MotionProperty, number>;
@@ -454,6 +508,8 @@ interface ReducedPlan {
   > | null;
   /** The stylesheet opacity a dip borrowed (no call owns opacity). */
   readonly borrowed?: number | null;
+  /** The call joins the waiting dip (see the planner's `joins`). */
+  readonly joins?: boolean;
 }
 
 const PROPERTIES: ReadonlyArray<MotionProperty> = [
@@ -558,10 +614,10 @@ function format(
   }
 }
 
-const shared = new WeakMap<HTMLElement, Animator>();
+const shared = new WeakMap<HTMLElement, Map<string, Animator>>();
 
 /**
- * The one animator for `element`, created on
+ * The one animator for `element` (and `options.pseudoElement`), created on
  * first use. Code that animates one element from several places (a swipe on
  * x, a removal on y) shares it, so their curves compose in one `translate`
  * track and retargeting one axis leaves the other on its curve; two
@@ -573,10 +629,16 @@ export function animatorFor(
   element: HTMLElement,
   options: AnimatorOptions = {},
 ): Animator {
-  let animator = shared.get(element);
+  let byPseudo = shared.get(element);
+  if (byPseudo == null) {
+    byPseudo = new Map();
+    shared.set(element, byPseudo);
+  }
+  const key = options.pseudoElement ?? '';
+  let animator = byPseudo.get(key);
   if (animator == null) {
     animator = createAnimator(element, options);
-    shared.set(element, animator);
+    byPseudo.set(key, animator);
   }
   return animator;
 }
@@ -693,8 +755,9 @@ const REDUCED_TRANSITION: SpringTransition = {
  * @example
  * ```
  * const animator = createAnimator(sheet);
- * // finger lifts at 1200 px/s heading for the detent at 0:
- * animator.animate({y: 0}, {spring: springs.sheetDetent, velocity: {y: 1200}});
+ * // finger lifts at 1200 px/s heading for the detent at 0 (a component
+ * // passes the spring of its motion role):
+ * animator.animate({y: 0}, {spring: {response: 0.45, dampingRatio: 0.9}, velocity: {y: 1200}});
  * // the finger lands again: where is it right now?
  * const y = animator.get('y', event.timeStamp);
  * animator.stop(['y']);
@@ -712,6 +775,7 @@ export function createAnimator(
           requestAnimationFrame(() => callback());
         }
       : null);
+  const pseudoElement = options.pseudoElement;
   // Reduced Motion reads the person's settings and nothing else: no option
   // overrides them (design:reduced-motion DR4).
   const prefersReducedMotion = defaultPrefersReducedMotion;
@@ -761,7 +825,21 @@ export function createAnimator(
   let ownWillChange: string | null = null;
   /** The stylesheet's will-change when there is no inline value. */
   let sheetWillChange = '';
+  /**
+   * Whether sheetWillChange holds a read of the element's current style: it
+   * is read in the task after the element is attached, and again after each
+   * demotion, so a promotion (a drag's first move) reads no style in its
+   * own task.
+   */
+  let sheetWillChangeRead = false;
+  /** The pending read of sheetWillChange, cancelled with its element. */
+  let sheetReadTimer: ReturnType<typeof setTimeout> | null = null;
   let demoteTimer: ReturnType<typeof setTimeout> | null = null;
+  /** A pseudo-element is promoted through a custom property on its host. */
+  const promotionProperty =
+    pseudoElement == null
+      ? null
+      : `--astryx-motion-will-change-${pseudoElement.replace(/^:+/, '')}`;
   /** Channels whose identity the last node held inline (see `attach`). */
   let heldIdentity = new Set<Channel>();
 
@@ -843,7 +921,7 @@ export function createAnimator(
     channel: Channel,
     value: (property: MotionProperty) => number,
   ) => {
-    if (target == null) {
+    if (target == null || pseudoElement != null) {
       return;
     }
     touched.add(channel);
@@ -908,14 +986,32 @@ export function createAnimator(
     return times;
   };
 
+  /** A pseudo-element's resting value, held by a static filling animation. */
+  const hold = (channel: Channel, time: number) => {
+    if (target == null) {
+      return;
+    }
+    const value = format(channel, finalValue);
+    const animation = target.animate([{[channel]: value}, {[channel]: value}], {
+      duration: 1,
+      fill: 'both',
+      pseudoElement,
+    });
+    animation.startTime = time;
+    running.set(channel, animation);
+  };
+
   const rebuild = (channel: Channel, time: number) => {
     const previous = running.get(channel);
     running.delete(channel);
     clearTimeout(retireTimers.get(channel));
     retireTimers.delete(channel);
-    // The element's inline style holds the end state, so its old animation
-    // can go first.
-    previous?.cancel();
+    // An element's inline style holds the end state, so its old animation can
+    // go first. A pseudo-element has none: its old animation keeps holding the
+    // value until the new one exists (same task, no frame in between).
+    if (pseudoElement == null) {
+      previous?.cancel();
+    }
     const properties = CHANNELS[channel];
     // Settled curves become resting values.
     for (const property of properties) {
@@ -932,6 +1028,10 @@ export function createAnimator(
       return;
     }
     if (moving.length === 0) {
+      if (pseudoElement != null) {
+        hold(channel, time);
+      }
+      previous?.cancel();
       return;
     }
     // A channel rebuilt by an explicit call (set, rebase, a retarget of
@@ -958,6 +1058,10 @@ export function createAnimator(
       ),
     );
     if (end <= from) {
+      if (pseudoElement != null) {
+        hold(channel, time);
+      }
+      previous?.cancel();
       return;
     }
     if (callGroup != null) {
@@ -1041,6 +1145,7 @@ export function createAnimator(
       // inline style already holds the same values, so that changes no pixel.
       fill: 'both',
       easing: 'linear',
+      ...(pseudoElement != null ? {pseudoElement} : {}),
     });
     if (waiting != null) {
       // From rest: no start time, so the browser starts the animation when
@@ -1061,7 +1166,9 @@ export function createAnimator(
 
   /**
    * Once the main thread runs after the curve's end, the animation leaves the
-   * running state: the element's inline style already shows the end values.
+   * running state: an element's inline style already shows the end values; a
+   * pseudo-element's end value moves to a static holding animation, created
+   * before the long one goes.
    */
   const scheduleRetire = (
     channel: Channel,
@@ -1088,6 +1195,15 @@ export function createAnimator(
         return;
       }
       running.delete(channel);
+      // A pseudo-element holds its resting value, unless the stylesheet
+      // takes it back now (a borrowed dip that has ended).
+      const handsBack =
+        channel === 'opacity' &&
+        borrowedOpacity != null &&
+        ![...landings].some(landing => landing.fadeIn?.isBorrowed === true);
+      if (pseudoElement != null && !handsBack) {
+        hold(channel, now());
+      }
       animation.cancel();
       releaseIdentity(channel);
       flushReleases();
@@ -1102,22 +1218,36 @@ export function createAnimator(
       target == null
         ? NaN
         : Number.parseFloat(
-            view?.getComputedStyle(target).getPropertyValue('opacity') ?? '',
+            view
+              ?.getComputedStyle(target, pseudoElement ?? null)
+              .getPropertyValue('opacity') ?? '',
           );
     return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 1;
   };
 
   /**
    * Whether the animator holds an opacity of its own on the element: an inline
-   * value it wrote (a `set` over a stylesheet that hides or dims it). A dip
-   * returns to that value.
+   * value it wrote, or a pseudo-element's holding animation (a `set` over a
+   * stylesheet that hides or dims it). A dip returns to that value.
    */
   const writesOwnOpacity = (): boolean =>
-    (target?.style.getPropertyValue('opacity') ?? '') !== '';
+    pseudoElement == null
+      ? (target?.style.getPropertyValue('opacity') ?? '') !== ''
+      : running.has('opacity');
 
-  /** Gives the element's opacity back to its stylesheet: its inline value goes. */
+  /**
+   * Gives the element's opacity back to its stylesheet: an element's inline
+   * value goes; a pseudo-element, which has no inline style, loses the
+   * animation holding its value.
+   */
   const releaseOwnOpacity = () => {
-    target?.style.removeProperty('opacity');
+    if (pseudoElement == null) {
+      target?.style.removeProperty('opacity');
+      return;
+    }
+    const held = running.get('opacity');
+    running.delete('opacity');
+    held?.cancel();
   };
 
   /**
@@ -1202,6 +1332,9 @@ export function createAnimator(
       releaseOwnOpacity();
       return;
     }
+    if (pseudoElement != null) {
+      return;
+    }
     if (target.style.getPropertyValue(channel) !== IDENTITY_TEXT[channel]) {
       return;
     }
@@ -1265,9 +1398,17 @@ export function createAnimator(
 
   // -- promotion -------------------------------------------------------------
 
-  /** Writes the promoted channels as will-change. */
+  /** Writes the promoted channels as will-change (or the pseudo's property). */
   const writePromotion = (element: HTMLElement) => {
     const list = [...promoted].join(', ');
+    if (promotionProperty != null) {
+      if (list === '') {
+        element.style.removeProperty(promotionProperty);
+      } else {
+        element.style.setProperty(promotionProperty, list);
+      }
+      return;
+    }
     if (list === '') {
       element.style.willChange = ownWillChange ?? '';
       ownWillChange = null;
@@ -1276,13 +1417,12 @@ export function createAnimator(
     if (ownWillChange == null) {
       ownWillChange = element.style.willChange;
       // Without an inline value, the stylesheet's reasons stay alongside the
-      // promotion's (read once, as the promotion starts).
-      sheetWillChange =
-        ownWillChange === ''
-          ? (element.ownerDocument.defaultView
-              ?.getComputedStyle(element)
-              .getPropertyValue('will-change') ?? '')
-          : '';
+      // promotion's. They were read in the task after the element was
+      // attached; a promotion that comes first (an element attached in this
+      // task that moves at once) reads them now.
+      if (ownWillChange === '' && !sheetWillChangeRead) {
+        readSheetWillChange(element);
+      }
     }
     const base = ownWillChange !== '' ? ownWillChange : sheetWillChange;
     const own = base === 'auto' ? '' : base;
@@ -1293,8 +1433,45 @@ export function createAnimator(
     element.style.willChange = [...reasons, ...promoted].join(', ');
   };
 
+  /** Reads the element's own will-change while no promotion of ours is written. */
+  const readSheetWillChange = (element: HTMLElement) => {
+    sheetWillChange =
+      element.ownerDocument.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue('will-change') ?? '';
+    sheetWillChangeRead = true;
+  };
+
   /**
-   * Gives the element a compositing layer for
+   * Reads sheetWillChange in a task of its own, so a later promotion reads no
+   * style in its own task. Skipped while a promotion of ours is written,
+   * which the read would see; demote asks again. A pseudo-element's
+   * promotion is its own property, with nothing to read.
+   */
+  const readSheetWillChangeLater = () => {
+    cancelSheetWillChangeRead();
+    sheetWillChangeRead = false;
+    if (target == null || promotionProperty != null) {
+      return;
+    }
+    const element = target;
+    sheetReadTimer = setTimeout(() => {
+      sheetReadTimer = null;
+      if (target === element && promoted.size === 0) {
+        readSheetWillChange(element);
+      }
+    }, 0);
+  };
+
+  const cancelSheetWillChangeRead = () => {
+    if (sheetReadTimer != null) {
+      clearTimeout(sheetReadTimer);
+      sheetReadTimer = null;
+    }
+  };
+
+  /**
+   * Gives the element (or its pseudo-element) a compositing layer for
    * `channel` from the task that starts the motion: Mobile Safari runs an
    * animation whose start time is set from script on its compositor at its
    * first commit only if the element already has a layer.
@@ -1347,6 +1524,8 @@ export function createAnimator(
     promoted.clear();
     if (target != null) {
       writePromotion(target);
+      // Its stylesheet may have changed its will-change since.
+      readSheetWillChangeLater();
     }
   };
 
@@ -1668,6 +1847,7 @@ export function createAnimator(
     finished: Promise<boolean>,
     time: number,
     group: StartGroup | null = null,
+    settlesWithLanding = false,
   ): MotionHandle => {
     const ends = properties.map(p => {
       const segment = segments.get(p);
@@ -1676,7 +1856,9 @@ export function createAnimator(
         : time;
     });
     const end = Math.max(time, ...ends);
-    if (properties.length === 0 || end <= time) {
+    if (settlesWithLanding) {
+      // The landing it joined settles it.
+    } else if (properties.length === 0 || end <= time) {
       settle(owner, true);
     } else {
       // Interruptions settle false as they happen (interrupt); reaching the
@@ -1751,7 +1933,9 @@ export function createAnimator(
     if (from === to && velocity === 0) {
       return null;
     }
-    const curve = solveSpring(toSpring(spring), {from, to, velocity});
+    // The motion role it plays: its table value while DEC-11 holds.
+    const resolved = resolveMotion(target, spring);
+    const curve = solveSpring(toSpring(resolved), {from, to, velocity});
     const duration = Math.min(
       MAX_DURATION_MS,
       curve.settleTime(SETTLE_THRESHOLD[property]) * 1000,
@@ -1764,7 +1948,7 @@ export function createAnimator(
       speed: t => curve.velocity(t / 1000),
       jumps: [],
       owner,
-      spring,
+      spring: resolved,
     };
   };
 
@@ -1774,7 +1958,10 @@ export function createAnimator(
     stops: ReadonlyArray<{at: number; value: number}>,
     jumps: ReadonlyArray<number> = [],
   ): Segment => {
-    const ease = cubicBezier(reducedMotionCrossFade.curve);
+    registerReducedMotionCrossFade();
+    const ease = cubicBezier(
+      resolveMotion(target, reducedMotionCrossFade.curve),
+    );
     const duration = stops[stops.length - 1].at;
     const at = (t: number) => {
       for (let i = 0; i + 1 < stops.length; i++) {
@@ -1895,6 +2082,27 @@ export function createAnimator(
       carriedOwners.add(owner);
     }
     return {carried, owners};
+  };
+
+  /**
+   * A call joins the newest waiting dip: it takes the landing over and
+   * settles when the dip ends, and the call it replaces lands with it. Each
+   * value keeps the call whose move it is.
+   */
+  const joinWaitingDip = (owner: HandleState) => {
+    const dip = [...landings].reverse().find(landing => landing.fadeIn != null);
+    if (dip == null) {
+      settle(owner, true);
+      return;
+    }
+    for (const property of dip.values.keys()) {
+      if (!dip.owners.has(property)) {
+        dip.owners.set(property, dip.owner);
+      }
+    }
+    dip.carried.push(dip.owner);
+    carriedOwners.add(dip.owner);
+    dip.owner = owner;
   };
 
   /** Where opacity is heading: past a waiting landing's fade back in. */
@@ -2113,6 +2321,9 @@ export function createAnimator(
     get hasPendingLanding() {
       return landings.size > 0;
     },
+    get hasWaitingDip() {
+      return [...landings].some(landing => landing.fadeIn != null);
+    },
   };
 
   /**
@@ -2152,6 +2363,7 @@ export function createAnimator(
       holds: plan.holds,
       landing: plan.landing,
       borrowed: plan.borrowed,
+      joins: plan.joins,
     };
   };
 
@@ -2208,6 +2420,9 @@ export function createAnimator(
               }
               retireTimers.clear();
               demote();
+              // demote() asks for a fresh will-change read of the node it
+              // demotes; a detached node gets none.
+              cancelSheetWillChangeRead();
             });
             lastDetached = null;
             const time = now();
@@ -2226,9 +2441,25 @@ export function createAnimator(
       }
       // After the landing's commit, which can promote the element again.
       demote();
+      // A pseudo-element holds an identity with a static animation, which the
+      // cancel below drops: note the channels to hold again on the next node
+      // (never a borrowed opacity, which is the stylesheet's).
       const isOpacityBorrowed =
         borrowedOpacity != null ||
         [...landings].some(landing => landing.restoreIsBorrowed === true);
+      const pseudoHeld =
+        pseudoElement == null || target == null
+          ? null
+          : new Set(
+              (Object.keys(CHANNELS) as Channel[]).filter(
+                channel =>
+                  running.has(channel) &&
+                  !(channel === 'opacity' && isOpacityBorrowed) &&
+                  CHANNELS[channel].every(
+                    p => !segments.has(p) && resting[p] === IDENTITY[p],
+                  ),
+              ),
+            );
       for (const animation of running.values()) {
         animation.cancel();
       }
@@ -2248,16 +2479,21 @@ export function createAnimator(
       // differs, kept through a detach for the node that comes next.
       if (target != null) {
         const outgoing = target;
-        heldIdentity = new Set(
-          (Object.keys(CHANNELS) as Channel[]).filter(
-            channel =>
-              outgoing.style.getPropertyValue(channel) ===
-              IDENTITY_TEXT[channel],
-          ),
-        );
+        heldIdentity =
+          pseudoHeld ??
+          new Set(
+            (Object.keys(CHANNELS) as Channel[]).filter(
+              channel =>
+                outgoing.style.getPropertyValue(channel) ===
+                IDENTITY_TEXT[channel],
+            ),
+          );
       }
       const held = heldIdentity;
       target = next;
+      // A new node: its own will-change is read again.
+      cancelSheetWillChangeRead();
+      sheetWillChangeRead = false;
       if (target == null) {
         return;
       }
@@ -2284,11 +2520,17 @@ export function createAnimator(
         } else if (held.has(channel)) {
           // An identity the animator held inline over a stylesheet that
           // differs goes onto the new node too (writeInline keeps it only
-          // where the new node's stylesheet still differs).
-          writeInline(channel, property => resting[property]);
+          // where the new node's stylesheet still differs); a pseudo-element's
+          // is held again.
+          if (pseudoElement != null) {
+            hold(channel, time);
+          } else {
+            writeInline(channel, property => resting[property]);
+          }
         }
       }
       flushReleases();
+      readSheetWillChangeLater();
     },
 
     get(property, time = now()) {
@@ -2301,7 +2543,7 @@ export function createAnimator(
       return velocityAt(property === 'scale' ? 'scaleX' : property, time);
     },
 
-    set(values) {
+    set(values, setOptions = {}) {
       syncPending();
       const time = now();
       const next = expand(values);
@@ -2314,8 +2556,10 @@ export function createAnimator(
         resting[property] = value;
       }
       // Direct manipulation: the layer makes each write a composite only.
-      for (const property of Object.keys(next) as MotionProperty[]) {
-        promote(CHANNEL_OF[property]);
+      if (setOptions.promote !== false) {
+        for (const property of Object.keys(next) as MotionProperty[]) {
+          promote(CHANNEL_OF[property]);
+        }
       }
       commit(Object.keys(next) as MotionProperty[], time);
     },
@@ -2388,7 +2632,13 @@ export function createAnimator(
         // The dip's own commit cleared it; the borrow lasts the dip.
         borrowedOpacity = plan.borrowed;
       }
-      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.joins === true) {
+        joinWaitingDip(owner);
+      }
+      const handle =
+        plan?.joins === true
+          ? makeHandle(owner, ['opacity'], finished, time, group, true)
+          : makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
         scheduleLanding(owner, handle.started, plan.landing, adopted);
       }
@@ -2490,7 +2740,13 @@ export function createAnimator(
         // The dip's own commit cleared it; the borrow lasts the dip.
         borrowedOpacity = plan.borrowed;
       }
-      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.joins === true) {
+        joinWaitingDip(owner);
+      }
+      const handle =
+        plan?.joins === true
+          ? makeHandle(owner, ['opacity'], finished, time, group, true)
+          : makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
         scheduleLanding(owner, handle.started, plan.landing, adopted);
       }
@@ -2770,6 +3026,7 @@ export function createAnimator(
       retireTimers.clear();
       handBackBorrow();
       demote();
+      cancelSheetWillChangeRead();
       target = null;
     },
   };
