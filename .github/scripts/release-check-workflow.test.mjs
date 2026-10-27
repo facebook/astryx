@@ -245,10 +245,17 @@ describe('explicit release routing', () => {
   });
 
   it('passes pr-a11y only when both accessibility owners succeed', () => {
-    const result = shell(
-      step('pr-a11y', 'Require every accessibility owner').run,
-      {GUARDS_RESULT: 'success', SPECS_RESULT: 'success'},
-    );
+    const join = jobs['pr-a11y'];
+    const owner = step('pr-a11y', 'Require every accessibility owner');
+    expect(join.if).toContain('always()');
+    expect(owner.env).toEqual({
+      GUARDS_RESULT: '${{ needs.pr-a11y-guards.result }}',
+      SPECS_RESULT: '${{ needs.pr-a11y-specs.result }}',
+    });
+    const result = shell(owner.run, {
+      GUARDS_RESULT: 'success',
+      SPECS_RESULT: 'success',
+    });
     expect(result.status, result.stderr).toBe(0);
   });
 
@@ -260,6 +267,16 @@ describe('explicit release routing', () => {
     ['success', 'cancelled'],
     ['success', 'skipped'],
   ])('blocks pr-a11y when its owners are %s/%s', (guards, specs) => {
+    const join = jobs['pr-a11y'];
+    const needs = dependencies(join);
+    needs['pr-a11y-guards'].result = guards;
+    needs['pr-a11y-specs'].result = specs;
+    expect(
+      runs(join, {
+        needs,
+        cancelled: guards === 'cancelled' || specs === 'cancelled',
+      }),
+    ).toBe(true);
     const result = shell(
       step('pr-a11y', 'Require every accessibility owner').run,
       {GUARDS_RESULT: guards, SPECS_RESULT: specs},
