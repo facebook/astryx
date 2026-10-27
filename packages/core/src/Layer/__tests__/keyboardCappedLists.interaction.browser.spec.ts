@@ -2,13 +2,14 @@
 
 /**
  * @file keyboardCappedLists.interaction.browser.spec.ts
- * @input The Selector, MultiSelector and Typeahead stories, and a stand-in
+ * @input The Selector, MultiSelector, Typeahead, Breadcrumbs and ContextMenu
+ *   stories, and a stand-in
  *   software keyboard that drives `window.visualViewport`
- * @output Proves each component's list, as its layer's only content, ends
- *   10 px above the keyboard once the keyboard caps its layer: the list's own
- *   height limit folds in the layer's block-size cap (spec:AST-059 FR9). A
- *   list under a search field is not covered: the field's row still pushes
- *   it about 45 px past the capped layer
+ * @output Proves each list or menu ends 10 px above the keyboard once the
+ *   keyboard caps its layer (spec:AST-059 FR9): a list or menu that is its
+ *   layer's only content folds the layer's block-size cap into its own height
+ *   limit, and a panel with a search field is capped as a whole, its list
+ *   taking what the field's row leaves
  * @position Layer runtime: browser proof of the keyboard cap inside the
  *   composing components; the cap itself is proven by the Popover keyboard
  *   spec
@@ -117,6 +118,41 @@ const cases: {
     },
   },
   {
+    name: 'A searchable Selector',
+    story: 'core-selector--searchable',
+    open: async page => {
+      await page.locator('button[aria-haspopup="listbox"]').first().click();
+      // The keyboard is up for the search field, whose row stays above the list.
+      await page.getByRole('combobox', {name: 'Search options'}).focus();
+      return page.getByRole('listbox');
+    },
+  },
+  {
+    name: 'A searchable MultiSelector',
+    story: 'core-multiselector--searchable',
+    open: async page => {
+      await page.locator('button[aria-haspopup="listbox"]').first().click();
+      await page.getByRole('combobox', {name: 'Search options'}).focus();
+      return page.getByRole('listbox');
+    },
+  },
+  {
+    name: "A Breadcrumb crumb's menu",
+    story: 'core-breadcrumbs--menu-crumb',
+    open: async page => {
+      await page.getByRole('button', {name: 'Teams'}).click();
+      return page.getByRole('menu');
+    },
+  },
+  {
+    name: 'A ContextMenu',
+    story: 'core-contextmenu--default',
+    open: async page => {
+      await page.getByText('Right-click this area').click({button: 'right'});
+      return page.getByRole('menu');
+    },
+  },
+  {
     name: 'Typeahead',
     story: 'core-typeahead--default',
     open: async page => {
@@ -129,7 +165,7 @@ const cases: {
 ];
 
 for (const {name, story, open} of cases) {
-  test(`${name}'s list ends ${LAYER_KEYBOARD_CLEARANCE_PX} px above the keyboard once the keyboard caps its layer`, async ({
+  test(`${name}: its list ends ${LAYER_KEYBOARD_CLEARANCE_PX} px above the keyboard once the keyboard caps its layer`, async ({
     page,
   }) => {
     await installKeyboard(page);
