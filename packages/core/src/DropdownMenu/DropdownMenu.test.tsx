@@ -35,6 +35,7 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+import {isInputShield} from '../Layer/inputHold';
 import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
@@ -404,8 +405,16 @@ describe('DropdownMenu', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
-    expect(screen.getByRole('dialog', {name: 'Actions'})).toBeInTheDocument();
-    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole('dialog', {name: 'Actions'}),
+    ).toBeInTheDocument();
+    // No menu opens as a popover. A touch presentation holds pointer input
+    // while it enters behind a shield in the top layer (`spec:AST-094` FR35),
+    // which is not a menu.
+    const shown = vi
+      .mocked(HTMLElement.prototype.showPopover)
+      .mock.contexts.filter(element => !isInputShield(element as Node));
+    expect(shown).toEqual([]);
   });
 
   it('uses the shared menu BottomSheet frame', () => {

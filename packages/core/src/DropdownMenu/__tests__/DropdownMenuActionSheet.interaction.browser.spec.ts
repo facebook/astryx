@@ -152,6 +152,11 @@ async function openPage(page: Page): Promise<Opened> {
   });
   const card = page.getByRole('dialog', {name: 'Project actions'});
   await expect(card).toBeVisible();
+  // The story opens the card as it loads, and Dialog shows it modally in an
+  // effect after the render that opens it, so the card can be visible a
+  // frame before it is modal. A key pressed then reaches the page, not the
+  // card: close it once it is modal.
+  await expect(card).toHaveJSProperty('open', true);
   await page.keyboard.press('Escape');
   await expect(card).toBeHidden();
   return {
