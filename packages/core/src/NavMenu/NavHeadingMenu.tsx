@@ -18,6 +18,8 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
+import {useMenuPress} from '../hooks/useMenuPress';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -46,6 +48,9 @@ const sizeStyles = stylex.create({
     minWidth: 240,
   },
 });
+
+/** The rows a press, a key or typeahead can reach. */
+const ENABLED_ITEM_SELECTOR = '[role="menuitem"]:not([aria-disabled="true"])';
 
 export interface NavHeadingMenuProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -98,14 +103,24 @@ export function NavHeadingMenu({
   'data-testid': testId,
   onKeyDown: onKeyDownProp,
   onKeyDownCapture: onKeyDownCaptureProp,
+  onPointerDown: onPointerDownProp,
   ...rest
 }: NavHeadingMenuProps) {
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
 
   const {listRef, handleKeyDown, focusItem} = useListFocus({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: ENABLED_ITEM_SELECTOR,
     onEscape: closeMenu,
+  });
+
+  // A press that slides across the rows acts on the row it lifts on, the
+  // highlight following the pointer, as every menu does
+  // (`family:action-groups` FR1-FR3); a mouse released outside closes it.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    itemSelector: ENABLED_ITEM_SELECTOR,
+    onDismiss: closeMenu,
   });
 
   // First-character typeahead over the (enabled) menu items (menus-11).
@@ -114,7 +129,7 @@ export function NavHeadingMenu({
       listRef.current
         ? Array.from(
             listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
+              ENABLED_ITEM_SELECTOR,
             ),
           )
         : [],
@@ -194,6 +209,11 @@ export function NavHeadingMenu({
           inlineStyle,
         )}
         {...rest}
+        {...menuPress.menuProps}
+        onPointerDown={composeEventHandlers(
+          onPointerDownProp,
+          menuPress.menuProps.onPointerDown,
+        )}
         role="menu"
         onKeyDownCapture={handleMenuKeyDownCapture}
         onKeyDown={handleMenuKeyDown}>

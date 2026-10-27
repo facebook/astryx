@@ -26,6 +26,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
@@ -451,6 +452,15 @@ export function TopNavMenu({
   // focus management) and the list-focus ref (for roving tabindex/typeahead).
   const setMenuRef = useMergedRefs<HTMLDivElement>(menuRef, listRef);
 
+  // A press that slides across the items acts on the item it lifts on, the
+  // highlight following the pointer, as every menu does
+  // (`family:action-groups` FR1-FR3); a mouse released outside closes it.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    itemSelector: '[role="menuitem"]',
+    onDismiss: close,
+  });
+
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {
     return null;
@@ -578,6 +588,7 @@ export function TopNavMenu({
           role="menu"
           aria-label={label}
           {...contentProps}
+          {...menuPress.menuProps}
           // After the contentProps spread so the full APG composition (roving
           // tabindex + typeahead + Enter/Space activation) replaces the hover
           // hook's basic arrow-key handler.
