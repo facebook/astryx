@@ -52,14 +52,20 @@ vi.mock('./hitArea', async importOriginal => {
 import {useTouchHitArea} from './touchHitArea';
 import {touchHitAreaStyles} from './touchHitArea.stylex';
 
-function Host({enabled}: {enabled: boolean}) {
+function Host({enabled, target}: {enabled: boolean; target?: string}) {
   const ref = useRef<HTMLSpanElement | null>(null);
   useTouchHitArea(ref, enabled);
   return (
     <div>
       <span
         data-testid="host"
-        ref={ref}
+        ref={node => {
+          // The page's touch target, set before the hook's effect reads it.
+          if (node != null && target != null) {
+            node.style.setProperty('--size-touch-target', target);
+          }
+          ref.current = node;
+        }}
         {...stylex.props(touchHitAreaStyles.layer)}
       />
     </div>
@@ -135,6 +141,15 @@ describe('useTouchHitArea', () => {
     expect(watches[1].minSize).toBe(44);
     host.unmount();
     expect(watches[1].stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a page raise the touch target under a finger, never lower it below 44 px (spec:AST-094 FR42)', () => {
+    stubCoarse();
+    const raised = render(<Host enabled target="60px" />);
+    expect(watches[0].minSize).toBe(60);
+    raised.unmount();
+    render(<Host enabled target="30px" />);
+    expect(watches[1].minSize).toBe(44);
   });
 
   it('writes the insets it hears on the element', () => {
