@@ -258,6 +258,14 @@ function travelAt(path: MorphPath, p: number): Record<TravelProperty, number> {
   return {x: rect.x - box.x, y: rect.y - box.y, scaleX, scaleY};
 }
 
+/** Whether `path`'s rect keeps its box's size at every progress sampled. */
+function keepsSize(path: MorphPath): boolean {
+  return [0, 0.25, 0.5, 0.75, 1, 1.25].every(p => {
+    const {scaleX, scaleY} = travelAt(path, p);
+    return Math.abs(scaleX - 1) < 1e-9 && Math.abs(scaleY - 1) < 1e-9;
+  });
+}
+
 /**
  * Curves for `Animator.play` that put an element laid out in `path.box`, with
  * `transform-origin: 0 0`, on the path's rect as `progress` moves, and its
@@ -273,9 +281,13 @@ export function morphCurves(
   const curves: Partial<Record<MotionProperty, MotionCurve>> = {
     x: travel('x'),
     y: travel('y'),
-    scaleX: travel('scaleX'),
-    scaleY: travel('scaleY'),
   };
+  // A path whose rect keeps the box's size only moves: it plays one
+  // `translate` and no `scale` (a layout glide moves hundreds of rows).
+  if (!keepsSize(path)) {
+    curves.scaleX = travel('scaleX');
+    curves.scaleY = travel('scaleY');
+  }
   const {opacityAt} = path;
   if (opacityAt != null) {
     curves.opacity = mapProgress(fade, p => opacityAt(p));
@@ -369,6 +381,11 @@ export interface RectMorphPlayOptions {
    * late plays the whole curve (the animator's `start`).
    */
   start?: AnimateOptions['start'];
+  /**
+   * The start time on the document timeline (the animator's `at`): one value
+   * handed to several morphs and animations puts them on one clock.
+   */
+  at?: AnimateOptions['at'];
 }
 
 /**
@@ -529,6 +546,7 @@ export function createRectMorph(
   ): AnimateOptions => ({
     ...(play.touchRelease != null ? {touchRelease: play.touchRelease} : null),
     ...(play.start != null ? {start: play.start} : null),
+    ...(play.at != null ? {at: play.at} : null),
     ...(play.crossfadeAs === 'move'
       ? null
       : play.crossfadeAs != null

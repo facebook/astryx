@@ -653,6 +653,24 @@ describe('createRectMorph', () => {
     expect(live(element, 'scale')).toHaveLength(1);
   });
 
+  it('moves a path that keeps its box’s size with one translate and no scale', async () => {
+    const {element, morph} = setup();
+    const moved = {...BOX, x: BOX.x + 40, y: BOX.y - 30};
+    morph.present(lerpPath(moved, BOX), BOUNCY);
+    await playFrame();
+    expect(live(element, 'translate')).toHaveLength(1);
+    expect(live(element, 'scale')).toHaveLength(0);
+  });
+
+  it('starts on the time it is handed, so several morphs share one clock', async () => {
+    const {morph} = setup();
+    const path = lerpPath(SQUARE, BOX);
+    morph.present(path, BOUNCY, {at: clock - 100});
+    await playFrame();
+    const progress = progressCurve(BOUNCY);
+    expectRect(morph.presentedRect()!, path.rectAt(progress.at(0.1)), 0.01);
+  });
+
   it('leaves nothing of its own inline once the present settles', async () => {
     const {element, morph} = setup();
     morph.present(lerpPath(SQUARE, BOX, {opacity: [0, 1]}), SPRING);
