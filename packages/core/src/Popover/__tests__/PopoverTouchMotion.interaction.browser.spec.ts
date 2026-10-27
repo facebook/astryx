@@ -731,14 +731,18 @@ test('the presentation and the dismissal do no Layout or Paint per frame', async
   // windows: a style read during an animation forces a style update, and on
   // an anchored element a layout.
   await story.trigger.focus();
-  const trace = await traceRendering(page, async () => {
-    await page.keyboard.press('Enter');
-    present = await scaleAnimationOf(story.layer);
-    await page.waitForTimeout(present.to - Date.now() + 100);
-    await page.keyboard.press('Escape');
-    dismiss = await scaleAnimationOf(exitCopyOf(page));
-    await page.waitForTimeout(dismiss.to - Date.now() + 100);
-  });
+  const trace = await traceRendering(
+    page,
+    async () => {
+      await page.keyboard.press('Enter');
+      present = await scaleAnimationOf(story.layer);
+      await page.waitForTimeout(present.to - Date.now() + 100);
+      await page.keyboard.press('Escape');
+      dismiss = await scaleAnimationOf(exitCopyOf(page));
+      await page.waitForTimeout(dismiss.to - Date.now() + 100);
+    },
+    {invalidations: true},
+  );
   // The animations hold their end state for a while past the curve; judge
   // the curves themselves, less their first and last frames. The
   // presentation's first 150 ms also carry the focus moving into the
@@ -759,14 +763,31 @@ test('the presentation and the dismissal do no Layout or Paint per frame', async
       to: dismiss.from + dismissSettle - 50,
     },
   ];
+  // On a loaded machine Chrome may make a pass of its own for the layer's
+  // compositor animations (no script, every recalculation for `Animation` on
+  // the layer or its backdrop), which lays the anchored layer out once: that
+  // pass is Chrome's, not the motion's, and is left out.
   for (const window of windows) {
-    const during = countBetween(trace, window.from, window.to);
-    expect(during.Layout ?? 0, `${window.name} ${JSON.stringify(during)}`).toBe(
-      0,
-    );
-    expect(during.Paint ?? 0, `${window.name} ${JSON.stringify(during)}`).toBe(
-      0,
-    );
+    const during = countBetween(trace, window.from, window.to, {
+      skipCompositorAnimationUpdates: true,
+    });
+    // On failure, every rendering event and recalculation of the window, in
+    // ms after its animation's start.
+    const base = window.name === 'present' ? present.from : dismiss.from;
+    const detail = `${window.name} ${JSON.stringify({
+      during,
+      events: trace.events
+        .filter(e => e.t >= window.from && e.t <= window.to)
+        .map(e => `${e.name}@${Math.round(e.t - base)}`),
+      recalcs: (trace.styleInvalidations ?? [])
+        .filter(inv => inv.t >= window.from && inv.t <= window.to)
+        .map(inv => `${inv.reason}#${inv.nodeId}@${Math.round(inv.t - base)}`),
+      scripts: (trace.scripts ?? [])
+        .filter(time => time >= window.from && time <= window.to)
+        .map(time => Math.round(time - base)),
+    })}`;
+    expect(during.Layout ?? 0, detail).toBe(0);
+    expect(during.Paint ?? 0, detail).toBe(0);
   }
   expect(trace.longTasks).toEqual([]);
   expect(await readLongTasks(page, {from: started, to: Date.now()})).toEqual(
