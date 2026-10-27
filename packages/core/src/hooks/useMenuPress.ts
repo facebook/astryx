@@ -27,14 +27,16 @@
  *   tracked release and disarms at the next pointer press or after a short
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
- * - A mouse press on the trigger opens the menu at once. A finger held for
- *   `longPressDelayMs` opens it and the opening press follows the settle
- *   rule (see menuPressGesture.ts). DropdownMenu's own entry
- *   (`useDropdownMenuPress`, touch model `'uikit'`, `spec:AST-094` FR29)
- *   instead opens it as a finger presses on a trigger in a fixed bar, and
- *   inside a scroll view once the 150 ms content-touch delay has passed with
- *   no scroll; the opening finger then travels UIMenu's handoff distance
- *   before it picks.
+ * - A mouse press on the trigger opens the menu at once. With
+ *   `longPressDelayMs` unset, a finger on a touch screen (a coarse primary
+ *   pointer: touch model `'uikit'`, `spec:AST-094` FR25, FR29) opens it as
+ *   it presses on a trigger in a fixed bar, and inside a scroll view once the
+ *   150 ms content-touch delay has passed with no scroll; the opening finger
+ *   then travels UIMenu's handoff distance before it picks. Where the primary
+ *   pointer is fine, or with a delay set, a finger held for that delay (500 ms
+ *   unset) opens it and the opening press follows the settle rule (see
+ *   menuPressGesture.ts). DropdownMenu's own entry (`useDropdownMenuPress`)
+ *   passes its touch model itself.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -72,6 +74,8 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useMediaQuery} from './useMediaQuery';
 import type {UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -196,8 +200,9 @@ export interface UseMenuPressOptions {
    */
   itemSelector: string;
   /**
-   * A mouse pressed the trigger, or a finger has rested on it for the
-   * long-press delay: open the menu under the held pointer. Return whether it opened; a `false` (the
+   * A mouse pressed the trigger, or a finger opened it: as it pressed, on a
+   * touch screen with no `longPressDelayMs` given, or else once it had rested
+   * for that delay. Open the menu under the held pointer. Return whether it opened; a `false` (the
    * press closed an open menu instead) ends the gesture. The click the
    * trigger receives for this same gesture is reported by
    * {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
@@ -232,7 +237,10 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * @default 500
+   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
+   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
+   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
+   * is that wait everywhere, as released (`spec:AST-094` FR25).
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -268,7 +276,10 @@ export interface UseMenuPressReturn {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     [MENU_PRESS_MARKER]: '';
   };
-  /** Spread onto the trigger: a mouse press opens; a held finger opens. */
+  /**
+   * Spread onto the trigger: a mouse press opens; a finger opens as it
+   * presses on a touch screen with no delay given, or else once held for it.
+   */
   triggerProps: {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
@@ -393,7 +404,17 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  return useDropdownMenuPress({...publicOptions, touchModel: 'pointer'});
+  // An unset delay follows FR29 where the primary pointer is coarse
+  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
+  // released wait.
+  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
+  return useDropdownMenuPress({
+    ...publicOptions,
+    touchModel:
+      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
+        ? 'uikit'
+        : 'pointer',
+  });
 }
 
 /**
