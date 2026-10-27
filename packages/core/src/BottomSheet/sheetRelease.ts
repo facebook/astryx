@@ -26,8 +26,10 @@
  *   `sheet.release.detentTolerance`, the one after it), or to the
  *   projection's nearest position if that is farther.
  * - Either way, a release whose velocity points back toward where the
- *   drag began cancels, to the stop nearest that start, whatever the travel
- *   so far (spec:AST-094 FR37). UIKit's own sheet does not: measured, a
+ *   drag began cancels, to the detent nearest that start, whatever the
+ *   travel so far (spec:AST-094 FR37): a cancel commits nothing, so it never
+ *   dismisses, even for a drag begun where a finger caught the sheet near
+ *   gone. UIKit's own sheet does not: measured, a
  *   back-out let go below 250 pt/s settles where it is nearest (sheet.ts).
  *
  * The sheet gets there on UIKit's release spring, picked by the same speed
@@ -160,10 +162,11 @@ export function resolveSheetRelease({
     }
   }
   // spec:AST-094 FR37: a release whose velocity points back toward where
-  // the drag began cancels, whatever the travel so far, to the stop nearest
-  // that start.
+  // the drag began cancels, whatever the travel so far, to the detent nearest
+  // that start. A cancel commits nothing, so it never dismisses: a drag begun
+  // where a finger caught the sheet on its way to gone returns to a detent.
   if (velocity !== 0 && Math.sign(velocity) === Math.sign(start - position)) {
-    index = nearestIndex(positions, start);
+    index = nearestIndex(detents, start);
   }
   if (dismissedOffset != null && index === detents.length) {
     // GUESS (spec:AST-094 FR2): a slow dismissal plays `SHEET_DETENT_SPRING`.
