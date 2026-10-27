@@ -8,8 +8,8 @@
  *   viewport caps)
  * @output The layer runtime's touch layer: useLayerKeyboardClearance
  * @position The one module the layer runtime imports touch-only code through,
- *   and its only import site is useLayer.tsx. A desktop build can swap it for
- *   a no-op (AST-080 FR8).
+ *   and its only import site is useLayer.tsx. It is imported statically, as
+ *   every touch module is (spec:AST-080 DEC-5).
  *
  * SYNC: When modified, keep every touch-only import of useLayer.tsx here.
  */

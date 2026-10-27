@@ -9,20 +9,22 @@
  *   taken off as a falling one starts down, a keyboard already up at the open
  *   capped before paint, the field kept in view, a layer clear of the
  *   keyboard, a bottom-held layer and a layer in another positioning left as
- *   they are, the cap held through a press until its click, and the window
+ *   they are, the positioning read from the last commit, an entering layer
+ *   read without its entrance transform, the cap held through a press until its click, and the window
  *   listeners held only while a press is down
  * @position Testing; real keyboards are proven by the Popover keyboard
  *   browser spec and on the iOS simulator
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import React, {useRef} from 'react';
+import React, {startTransition, use, useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {keyboard} from '../motion/uikit/keyboard';
 import {timing} from '../motion/uikit/timing';
 import type {KeyboardTransition} from '../keyboard';
 import {
   keyboardClearanceCap,
+  LAYER_ANCHORED_ATTRIBUTE,
   LAYER_KEYBOARD_CAP_PROPERTY,
   LAYER_KEYBOARD_CLEARANCE_PX,
   useLayerKeyboardClearance,
@@ -81,6 +83,8 @@ function Harness({
   focusRow = false,
   heldBottom = false,
   layerKey = 'a',
+  entering,
+  shiftedTop,
 }: {
   isOpen?: boolean;
   isAnchored?: boolean;
@@ -89,11 +93,19 @@ function Harness({
   heldBottom?: boolean;
   /** A new key replaces the layer element while it stays open. */
   layerKey?: string;
+  /**
+   * Still entering: its entrance transform holds the layer this many px
+   * below where it settles.
+   */
+  entering?: number;
+  /**
+   * At its full height the viewport fit places the layer here, higher than
+   * `box` and over its trigger; any shorter, it sits at `box`.
+   */
+  shiftedTop?: number;
 }) {
   const layerRef = useRef<HTMLDivElement>(null);
-  const isAnchoredRef = useRef(isAnchored);
-  isAnchoredRef.current = isAnchored;
-  const cap = useLayerKeyboardClearance(isOpen, layerRef, isAnchoredRef);
+  const cap = useLayerKeyboardClearance(isOpen, layerRef);
   // The layer's box: its content height, no taller than the cap the hook
   // returned (the runtime applies it as the layer's own style, which its
   // block-size cap folds in; here the harness applies it the same way). Below its trigger the
@@ -108,11 +120,11 @@ function Harness({
   return (
     <div
       key={layerKey}
-      style={
-        cap == null
-          ? undefined
-          : ({[LAYER_KEYBOARD_CAP_PROPERTY]: `${cap}px`} as React.CSSProperties)
-      }
+      {...(isAnchored ? {[LAYER_ANCHORED_ATTRIBUTE]: ''} : {})}
+      style={{
+        ...(cap == null ? {} : {[LAYER_KEYBOARD_CAP_PROPERTY]: `${cap}px`}),
+        ...(entering == null ? {} : {transform: `translateY(${entering}px)`}),
+      }}
       data-testid="layer"
       ref={el => {
         layerRef.current = el;
@@ -123,7 +135,16 @@ function Harness({
           });
           el.getBoundingClientRect = () => {
             const h = height(el);
-            const top = heldBottom ? box.bottom - h : box.top;
+            // The box an engine reports carries the entrance transform.
+            const shift =
+              entering != null &&
+              el.style.getPropertyValue('transform') !== 'none'
+                ? entering
+                : 0;
+            const natural = box.bottom - box.top;
+            const start =
+              shiftedTop != null && h >= natural ? shiftedTop : box.top;
+            const top = (heldBottom ? box.bottom - h : start) + shift;
             return {
               top,
               bottom: top + h,
@@ -256,6 +277,44 @@ function NestedLayers() {
   );
 }
 
+// A promise that never settles: a render that reads it suspends for good.
+const never = new Promise<never>(() => {});
+
+function Suspends({when}: {when: boolean}) {
+  if (when) {
+    use(never);
+  }
+  return null;
+}
+
+/**
+ * A layer from the runtime whose positioning a render can change; a render
+ * with `suspend` never commits.
+ */
+function Positioned({
+  positioning,
+  suspend = false,
+}: {
+  positioning: 'anchor' | 'custom';
+  suspend?: boolean;
+}) {
+  const layer = useLayer({mode: 'context'});
+  return (
+    <>
+      <button type="button" ref={layer.ref} onClick={layer.show}>
+        Open
+      </button>
+      {layer.render(
+        <>
+          <Suspends when={suspend} />
+          <span>Content</span>
+        </>,
+        {className: 'positioned', positioning},
+      )}
+    </>
+  );
+}
+
 describe('useLayerKeyboardClearance', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -299,6 +358,18 @@ describe('useLayerKeyboardClearance', () => {
     guide.emit({kind: 'show', from: 0, to: COVER});
     advance(timing.keyboardNotificationMs + 1);
     expect(capOf(container)).toBe('');
+  });
+
+  it('caps a layer the viewport fit pushed up over its trigger from where it starts once it is shorter', () => {
+    const {container} = render(<Harness shiftedTop={40} />);
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    expect(capOf(container)).toBe(CAPPED);
+  });
+
+  it('reads a layer that is still entering without its entrance transform, in one read (spec:AST-059 FR8)', () => {
+    const {container} = render(<Harness entering={40} />);
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    expect(capOf(container)).toBe(CAPPED);
   });
 
   it('leaves a layer in another positioning as it is', () => {
@@ -498,5 +569,39 @@ describe('useLayerKeyboardClearance', () => {
     expect(ownCap(inner)).toBe('100vh');
     guide.emit({kind: 'hide', from: COVER, to: 0, animated: false});
     expect(ownCap(outer)).toBe('100vh');
+  });
+
+  it('decides from the positioning its last commit rendered, never from a render React threw away (react-component-runtime INV4)', () => {
+    const natural = BOX.bottom - BOX.top;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (!this.classList.contains('positioned')) {
+          return DOMRect.fromRect({x: 0, y: 30, width: 100, height: 30});
+        }
+        const cap = ownCap(this);
+        const height = cap.endsWith('px')
+          ? Math.min(natural, parseFloat(cap))
+          : natural;
+        return DOMRect.fromRect({x: 0, y: BOX.top, width: 100, height});
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.getBoundingClientRect().height;
+      },
+    );
+    const {rerender} = render(<Positioned positioning="anchor" />);
+    fireEvent.click(screen.getByText('Open'));
+    const layer = document.querySelector<HTMLElement>('.positioned')!;
+    // A transition renders the layer in custom positioning and suspends:
+    // React throws that render away, and the anchored layer stays on screen.
+    act(() => {
+      startTransition(() => {
+        rerender(<Positioned positioning="custom" suspend />);
+      });
+    });
+    expect(document.querySelector('.positioned')).toBe(layer);
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    expect(ownCap(layer)).toBe(CAPPED);
   });
 });

@@ -4,7 +4,8 @@
  * @file layerKeyboardClearance.ts
  * @input A layer's box, the layout viewport's height and the keyboard's
  *   cover
- * @output Exports `LAYER_KEYBOARD_CLEARANCE_PX` and `keyboardClearanceCap`
+ * @output Exports `LAYER_KEYBOARD_CLEARANCE_PX`, `LAYER_ANCHORED_ATTRIBUTE` and
+ *   `keyboardClearanceCap`
  * @position Layer runtime: the software keyboard cap's numbers, with no DOM
  *   and no React, so a browser proof can import them on its own
  *   (useLayerKeyboardClearance.ts applies them; spec:AST-059 FR9)
@@ -25,6 +26,14 @@
  *   way on the hide; a 320 × 240 popover clear of the keyboard did not move
  */
 export const LAYER_KEYBOARD_CLEARANCE_PX = 10;
+
+/**
+ * The attribute useLayer.tsx renders on a layer in anchor positioning. The
+ * cap reads it from the committed element at measurement, not from a value a
+ * render wrote (react-component-runtime INV4): only an anchored layer is
+ * capped (spec:AST-059 FR9).
+ */
+export const LAYER_ANCHORED_ATTRIBUTE = 'data-layer-anchored';
 
 /**
  * The block size that keeps a layer `LAYER_KEYBOARD_CLEARANCE_PX` above a

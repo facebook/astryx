@@ -39,14 +39,16 @@ const COVER = 337;
 /**
  * Replaces `window.visualViewport` before the page loads with one the test
  * drives: `__keyboard(cover)` shrinks it from the bottom and fires one
- * `resize`, as Mobile Safari does.
+ * `resize`, as Mobile Safari does. The keyboard module measures the visual
+ * viewport wherever one exists, Chrome's `navigator.virtualKeyboard`
+ * included (spec:AST-099 FR6, DEC-4). By default the page has no
+ * `navigator.virtualKeyboard`, as in Mobile Safari; `chrome` keeps it.
  */
-async function installKeyboard(page: Page) {
-  await page.addInitScript(() => {
-    // Mobile Safari has no keyboard geometry API: where one exists (Chrome's
-    // navigator.virtualKeyboard), the keyboard module measures nothing
-    // (spec:AST-099 FR6).
-    Reflect.deleteProperty(Navigator.prototype, 'virtualKeyboard');
+async function installKeyboard(page: Page, {chrome = false} = {}) {
+  await page.addInitScript(keepVirtualKeyboard => {
+    if (!keepVirtualKeyboard) {
+      Reflect.deleteProperty(Navigator.prototype, 'virtualKeyboard');
+    }
     const viewport = Object.assign(new EventTarget(), {
       height: window.innerHeight,
       width: window.innerWidth,
@@ -65,7 +67,7 @@ async function installKeyboard(page: Page) {
         viewport.height = window.innerHeight - cover;
         viewport.dispatchEvent(new Event('resize'));
       };
-  });
+  }, chrome);
 }
 
 const keyboard = async (page: Page, cover: number) =>
@@ -86,8 +88,9 @@ async function openPopover(
   page: Page,
   story: string,
   name: string,
+  options: {chrome?: boolean} = {},
 ): Promise<Opened> {
-  await installKeyboard(page);
+  await installKeyboard(page, options);
   await openStory(page, storybook(), story);
   const driver = await touchDriver(page);
   const trigger = page.getByRole('button', {name});
@@ -220,6 +223,34 @@ test('a tall popover shrinks to stay 10 px above the keyboard once it has arrive
   const restored = await boxOf(surface);
   expect(restored.keyboardCap).toBe('');
   expect(restored.bottom).toBeCloseTo(before.bottom, 0);
+});
+
+test("where Chrome's navigator.virtualKeyboard exists, the visual viewport still sets the cap", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    "navigator.virtualKeyboard is Chrome's",
+  );
+  const {surface} = await openPopover(
+    page,
+    'core-popover--keyboard-avoidance',
+    'Add note',
+    {chrome: true},
+  );
+  expect(await page.evaluate(() => 'virtualKeyboard' in navigator)).toBe(true);
+  await page.getByRole('textbox', {name: 'Title'}).focus();
+  const before = await boxOf(surface);
+  const keyboardTop = before.innerHeight - COVER;
+  expect(before.bottom).toBeGreaterThan(keyboardTop);
+  await keyboard(page, COVER);
+  await page.waitForTimeout(timing.keyboardNotificationMs * 1.5);
+  const avoiding = await boxOf(surface);
+  expect(avoiding.top).toBeCloseTo(before.top, 0);
+  expect(
+    Math.abs(avoiding.bottom - (keyboardTop - LAYER_KEYBOARD_CLEARANCE_PX)),
+  ).toBeLessThanOrEqual(1);
 });
 
 test('with the keyboard up, a tap on the scrolled-in Save note clicks it', async ({
