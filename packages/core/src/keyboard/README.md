@@ -6,7 +6,7 @@ that times motion with it. Everything here is internal to
 `@astryxdesign/core`: components import it from `../keyboard`, and nothing is
 exported from the package entry.
 
-## The keyboard module (`useMobileKeyboard.ts`)
+## The keyboard module (`keyboardHeight.ts`)
 
 - **The height (FR2):** `measureKeyboardHeight(window)` is the layout
   viewport's height minus the visual viewport's height times its scale, in CSS
@@ -29,12 +29,14 @@ exported from the package entry.
   `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
   with the keyboard, so the height is 0 there too and nothing rides: the
   browser has made the room (FR8).
-- **One set of listeners (FR1, INV11):** `subscribeMobileKeyboard(window, fn)`
+- **One set of listeners (FR1, INV11):** `subscribeKeyboardHeight(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
-  components subscribe. `useKeyboardHeight()` gives a component the height and
-  re-renders it when the height changes. No other code in core listens to the
-  visual viewport for the keyboard.
+  components subscribe, and `getKeyboardHeight(window)` gives a reader the
+  height that report measured. `useKeyboardHeight()` gives a component the
+  height and re-renders it when the height changes, with one subscription for
+  the component's life. No other code in core listens to the visual viewport
+  for the keyboard.
 - **Focus (FR4):** `refuseFocusReveal(document, {claim, park, isActive})`
   delivers every focus move a surface claims with `preventScroll`, on the
   capture-phase `blur` before the browser's own focus step, so the browser
@@ -57,25 +59,32 @@ exported from the package entry.
   field the surface owns has focus, and `putBack()` pans it back without
   scrolling the document, by scrolling into view a probe fixed where the
   visual viewport sat at the report (or the element given, such as a
-  full-viewport dialog). Its one listener, a passive capture-phase
-  `touchstart` on the document, lives only while a surface watches.
-  ChatLayout watches under a finger; BottomSheet's hook watches while its
-  sheet is presented.
-- **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
+  full-viewport dialog). Every watch in a document shares one listener, a
+  passive capture-phase `touchstart` on the document, which lives only while
+  a surface watches. ChatLayout watches under a finger; BottomSheet's hook
+  watches while its sheet is presented under a coarse primary pointer. Under
+  a fine one neither registers a touch listener.
+- **BottomSheet's hook (FR4, FR5):** `useSheetKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
   keyboard when the sheet starts to move. It returns the room the keyboard
   takes at the end of the sheet's body, which the sheet lays out through a
   functional style on its own body (FR3), committed before the reveal scrolls
-  into it.
+  into it. Under a coarse primary pointer, where the guide publishes the
+  keyboard's own slide (Gboard's, in Chrome on Android), the sheet rides it
+  (FR8): a reveal during the show
+  scrolls the body at once and the content box rides up from where it was on
+  the show's curve; through the hide the room stays and the content box
+  rides down by the scroll the room's drop takes back, and at rest the room
+  drops and the translate clears in one commit. Under a fine pointer nothing
+  of the ride attaches (no guide subscription), and the room follows the
+  reports. Safari's and Firefox's reveals are unchanged.
 
 ## Laying out from the height, riding on top
 
-Layout follows the height (FR3): apply it on your own element through a
-functional style, so the layout is right with no animation running. For an
-element docked at the bottom, rise by the part of the keyboard over its
-resting bottom, and only while a keyboard is up:
-`lift = height > 0 ? max(0, restingBottom − (innerHeight − height)) : 0`.
+Layout follows the height (FR3), through a functional style on your own
+element, so it is right with no animation running; for an element docked at
+the bottom, `lift = height > 0 ? max(0, restingBottom − (innerHeight − height)) : 0`.
 
 ```ts
 const height = useKeyboardHeight();
@@ -178,14 +187,17 @@ keyboard module measures them from the visual viewport, as in every browser
 
 ## Consumers
 
-- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
+- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useSheetKeyboard`, whose
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
   Firefox too, which keeps the content box at the body's height); it reveals the
-  focused field in the keyboard report's own event.
+  focused field in the keyboard report's own event, and in Chrome rides the
+  content box on Gboard's slides (`rideKeyboard`, from the guide's
+  transitions).
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
-  padding are laid out from `useKeyboardHeight`; the guide's ride moves the
-  dock, and a transcript at its newest message, with the keyboard; a tap on
+  padding are laid out from `useKeyboardHeight`; under a coarse pointer the
+  guide's ride moves the dock, and a transcript at its newest message, with
+  the keyboard; a tap on
   the composer's text is the tap route, and every other move into it the
   focus takeover (`refuseFocusReveal`), so none scrolls the page; the
   keyboard's Done parks focus on the composer region, a named group that is
@@ -196,7 +208,7 @@ keyboard module measures them from the visual viewport, as in every browser
 
 | File                     | What it holds                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardHeight.ts`      | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
 | `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
 | `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
 | `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |

@@ -58,12 +58,7 @@ import {keyboard} from '../motion/uikit/keyboard';
 import {keyboard as androidKeyboard} from '../motion/android/keyboard';
 import {cubicBezier} from '../motion/bezier';
 import {keyboardNotification} from '../motion/uikit/timing';
-import {
-  solveSpring,
-  toSpring,
-  type SpringCurve,
-  type SpringDescription,
-} from '../motion/spring';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 
 /** Which browser's keyboard reports the model reads. */
 export type KeyboardProfile = 'webkit' | 'chromium';

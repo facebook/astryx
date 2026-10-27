@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file useMobileKeyboard.test.ts
- * @input useMobileKeyboard.ts, the keyboard layout guide, a stand-in visual
+ * @file keyboardHeight.test.ts
+ * @input keyboardHeight.ts, the keyboard layout guide, a stand-in visual
  *   viewport
  * @output Tests for the on-screen keyboard module (spec:AST-099): the height
  *   (FR2), where it measures (FR6, FR7), its one set of listeners (FR1,
@@ -21,14 +21,15 @@ import {
 } from '../utils/layoutViewport';
 import {
   claimTapFocus,
-  getMobileKeyboardHeight,
+  getKeyboardHeight,
   isKeyboardMeasurable,
   measureKeyboardHeight,
   refuseFocusReveal,
-  subscribeMobileKeyboard,
+  subscribeKeyboardHeight,
   useKeyboardHeight,
   watchRevealPan,
-} from './useMobileKeyboard';
+  type KeyboardHeightEvent,
+} from './keyboardHeight';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -338,8 +339,8 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     const remove = vi.spyOn(viewport, 'removeEventListener');
     const first = vi.fn();
     const second = vi.fn();
-    const stopFirst = subscribeMobileKeyboard(window, first);
-    const stopSecond = subscribeMobileKeyboard(window, second);
+    const stopFirst = subscribeKeyboardHeight(window, first);
+    const stopSecond = subscribeKeyboardHeight(window, second);
     expect(add.mock.calls.map(([type]) => type)).toEqual(['resize', 'scroll']);
 
     report({height: window.innerHeight - 300});
@@ -362,7 +363,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
   it('feeds the keyboard layout guide, which adds no listener of its own', () => {
     const add = vi.spyOn(viewport, 'addEventListener');
     const windowAdd = vi.spyOn(window, 'addEventListener');
-    const stopHook = subscribeMobileKeyboard(window, () => {});
+    const stopHook = subscribeKeyboardHeight(window, () => {});
     const guide = getKeyboardLayoutGuide(window);
     const transitions: number[] = [];
     const stopGuide = guide.subscribe(transition => {
@@ -380,7 +381,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     stopHook();
   });
 
-  it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
+  it('reads the layout once per keyboard change for a lone component, which keeps its one subscription across renders (INV11)', () => {
     // Count every read of the visual viewport's height: one per measurement.
     let height = viewport.height;
     let reads = 0;
@@ -394,31 +395,17 @@ describe('one set of listeners per window (FR1, INV11)', () => {
         height = value;
       },
     });
-    const guide = getKeyboardLayoutGuide(window);
-    const seen: number[] = [];
-    const stopGuide = guide.subscribe(transition => {
-      // A rider reads the height again as it commits its layout.
-      seen.push(getMobileKeyboardHeight(window));
-      seen.push(transition.to);
-    });
-    const stopListener = subscribeMobileKeyboard(window, event => {
-      if (event.type === 'viewport') {
-        seen.push(getMobileKeyboardHeight(window));
-      }
-    });
-    const first = renderHook(() => useKeyboardHeight());
-    const second = renderHook(() => useKeyboardHeight());
+    const add = vi.spyOn(viewport, 'addEventListener');
+    const {result, unmount} = renderHook(() => useKeyboardHeight());
+    add.mockClear();
     reads = 0;
     report({height: window.innerHeight - 300});
-    expect(first.result.current).toBe(300);
-    expect(second.result.current).toBe(300);
-    expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every(value => value === 300)).toBe(true);
+    expect(result.current).toBe(300);
+    // The re-render keeps the subscription: no listener is added again, and
+    // the change is measured once.
+    expect(add).not.toHaveBeenCalled();
     expect(reads).toBe(1);
-    first.unmount();
-    second.unmount();
-    stopListener();
-    stopGuide();
+    unmount();
   });
 
   it('re-renders a component when the height changes, and only then', () => {
@@ -433,22 +420,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     expect(renders).toBe(before);
     report({height: window.innerHeight - 300});
     expect(result.current).toBe(300);
-    expect(getMobileKeyboardHeight(window)).toBe(300);
-    unmount();
-  });
-
-  it('reads a keyboard that is already up when the first component mounts', () => {
-    // Nothing listens yet: the keyboard came up before any keyboard-aware
-    // component mounted (a sheet opened from a focused field).
-    viewport.height = window.innerHeight - 300;
-    const {result, unmount} = renderHook(() => useKeyboardHeight());
-    expect(result.current).toBe(300);
-    const guide = getKeyboardLayoutGuide(window);
-    const stopGuide = guide.subscribe(() => {});
-    expect(guide.inset).toBe(300);
-    report({height: window.innerHeight});
-    expect(result.current).toBe(0);
-    stopGuide();
+    expect(getKeyboardHeight(window)).toBe(300);
     unmount();
   });
 
@@ -462,11 +434,85 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     expect(removed.filter(type => type === 'resize').length).toBeGreaterThan(0);
     // Every add was matched by a remove.
     const add = vi.spyOn(viewport, 'addEventListener');
-    const stop = subscribeMobileKeyboard(window, () => {});
+    const stop = subscribeKeyboardHeight(window, () => {});
     expect(add).toHaveBeenCalledTimes(2);
     stop();
   });
 
+  it('reads a keyboard that is already up when the first component mounts, through useKeyboardHeight', () => {
+    // Nothing listens yet: the keyboard came up before any keyboard-aware
+    // component mounted (a sheet opened from a focused field).
+    viewport.height = window.innerHeight - 300;
+    const {result, unmount} = renderHook(() => useKeyboardHeight());
+    expect(result.current).toBe(300);
+    report({height: window.innerHeight});
+    expect(result.current).toBe(0);
+    unmount();
+  });
+
+  it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
+    // Count every read of the visual viewport's height: one per measurement.
+    let height = viewport.height;
+    let reads = 0;
+    Object.defineProperty(viewport, 'height', {
+      configurable: true,
+      get: () => {
+        reads += 1;
+        return height;
+      },
+      set: (value: number) => {
+        height = value;
+      },
+    });
+    const seen: number[] = [];
+    // Three readers, each reading the height again as it lays out.
+    const reader = () => (event: KeyboardHeightEvent) => {
+      if (event.type === 'viewport') {
+        seen.push(getKeyboardHeight(window), event.height);
+      }
+    };
+    // And the keyboard layout guide, whose rider reads the height again as
+    // it commits its layout.
+    const stopGuide = getKeyboardLayoutGuide(window).subscribe(transition => {
+      seen.push(getKeyboardHeight(window), transition.to);
+    });
+    const stops = [reader(), reader(), reader()].map(listener =>
+      subscribeKeyboardHeight(window, listener),
+    );
+    try {
+      reads = 0;
+      report({height: window.innerHeight - 300});
+      expect(seen).toHaveLength(8);
+      expect(seen.every(value => value === 300)).toBe(true);
+      expect(reads).toBe(1);
+    } finally {
+      for (const stop of stops) {
+        stop();
+      }
+      stopGuide();
+    }
+  });
+  it('reads a keyboard that is already up when the first subscriber attaches', () => {
+    // Nothing listens yet: the keyboard came up before any keyboard-aware
+    // component mounted (a sheet opened from a focused field).
+    viewport.height = window.innerHeight - 300;
+    expect(getKeyboardHeight(window)).toBe(300);
+    const heights: number[] = [];
+    const stop = subscribeKeyboardHeight(window, event => {
+      if (event.type === 'viewport') {
+        heights.push(event.height);
+      }
+    });
+    expect(getKeyboardHeight(window)).toBe(300);
+    // The guide reads it too.
+    const guide = getKeyboardLayoutGuide(window);
+    const stopGuide = guide.subscribe(() => {});
+    expect(guide.inset).toBe(300);
+    report({height: window.innerHeight});
+    expect(heights).toEqual([0]);
+    stopGuide();
+    stop();
+  });
   it('is the only visual viewport listener for the keyboard in core', () => {
     // Visible-viewport readers that place layers and scroll areas, not the
     // keyboard; the layer cap's keyboard is architecture:layer-runtime's.
@@ -496,7 +542,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
           /visualViewport\??\.addEventListener|viewport\??\.addEventListener\(\s*'(resize|scroll)'/.test(
             source,
           ) &&
-          relative !== 'keyboard/useMobileKeyboard.ts' &&
+          relative !== 'keyboard/keyboardHeight.ts' &&
           !visibleViewportReaders.has(relative)
         ) {
           offenders.push(relative);
@@ -628,6 +674,29 @@ describe('the browser\u2019s own reveal pan (FR4)', () => {
     const watch = watchRevealPan(window, {owns: () => true});
     expect(add.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
     watch.stop();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
+  });
+
+  it('shares one document touch listener among its watches (architecture INV13, spec:AST-094 FR24)', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const touched: string[] = [];
+    const first = watchRevealPan(window, {
+      owns: () => true,
+      onTouch: () => touched.push('first'),
+    });
+    const second = watchRevealPan(window, {
+      owns: () => true,
+      onTouch: () => touched.push('second'),
+    });
+    expect(add.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
+    document.dispatchEvent(new Event('touchstart'));
+    expect(touched).toEqual(['first', 'second']);
+    first.stop();
+    expect(remove).not.toHaveBeenCalled();
+    document.dispatchEvent(new Event('touchstart'));
+    expect(touched).toEqual(['first', 'second', 'second']);
+    second.stop();
     expect(remove.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
   });
 });

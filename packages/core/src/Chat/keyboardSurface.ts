@@ -5,7 +5,7 @@
 /**
  * @file keyboardSurface.ts
  * @input React context, the touch query (utils/touchPresentation.ts), where
- *   the keyboard is measured (keyboard/useMobileKeyboard.ts)
+ *   the keyboard is measured (keyboard/keyboardHeight.ts)
  * @output Exports KeyboardSurfaceContext and focusInKeyboardSurface: whether
  *   a composer sits in ChatLayout's keyboard-aware composer region, and the
  *   focus its routes deliver there
@@ -27,7 +27,7 @@
  */
 
 import {createContext} from 'react';
-import {isKeyboardMeasurable} from '../keyboard/useMobileKeyboard';
+import {isKeyboardMeasurable} from '../keyboard/keyboardHeight';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 export const KeyboardSurfaceContext = createContext(false);
