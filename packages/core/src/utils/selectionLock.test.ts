@@ -8,11 +8,11 @@
  *   callout included (`spec:AST-094` FR41, DEC-9). Where iOS WebKit runs the
  *   lock is a style; elsewhere `selectstart` is cancelled and no style is
  *   written
- * @position Unit tests for gestures/selectionLock.ts
+ * @position Unit tests for utils/selectionLock.ts
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {lockSelection} from '../selectionLock';
+import {lockSelection, locksSelectionFor} from './selectionLock';
 
 /** Make `CSS.supports` answer as iOS WebKit does for its touch callout. */
 function asIosWebKit(): () => void {
@@ -90,5 +90,17 @@ describe('lockSelection elsewhere', () => {
     expect(refuses(get('label'))).toBe(true);
     second();
     expect(refuses(get('label'))).toBe(false);
+  });
+});
+
+describe('locksSelectionFor', () => {
+  it('locks for a finger and a pen under any primary pointer, a touchscreen laptop’s included, and never for a mouse (spec:AST-094 FR41)', () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia');
+    expect(locksSelectionFor('touch')).toBe(true);
+    expect(locksSelectionFor('pen')).toBe(true);
+    expect(locksSelectionFor('mouse')).toBe(false);
+    // No pointer query decides it.
+    expect(matchMedia).not.toHaveBeenCalled();
+    matchMedia.mockRestore();
   });
 });
