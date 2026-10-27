@@ -441,8 +441,9 @@ test('a flick hands the row’s velocity to the settle', async ({
     // The row's tracking curve as the finger lifts, before the release
     // replaces it: its keyframes, points on the curve. And how long after
     // the last move the lift was stamped. The lift is the finger's first
-    // lift event: its pointerup comes before its touchend, and a gesture host
-    // may release on either; a move is either of its moves.
+    // lift event: its pointerup comes before its touchend, and the gesture
+    // host releases on whichever it reads first (it pairs a finger's pointer
+    // with its touch, `spec:AST-094` FR43); a move is either of its moves.
     await opened.row.evaluate(node => {
       let lastMove = Number.NaN;
       let firstMoveHandled = Number.NaN;
@@ -778,27 +779,33 @@ async function blockAfterLift(page: Page, ms: number) {
       });
     };
     // The release's own animations: the ones that did not exist at the lift.
-    addEventListener(
-      'touchend',
-      () => {
-        const before = new Set(document.getAnimations());
-        const watch = () => {
-          const fresh = document
-            .getAnimations()
-            .filter(animation => !before.has(animation));
-          if (fresh.length === 0) {
-            requestAnimationFrame(watch);
-            return;
-          }
-          void Promise.all(fresh.map(async animation => animation.ready)).then(
-            block,
-            block,
-          );
-        };
-        setTimeout(watch, 0);
-      },
-      {once: true, capture: true},
-    );
+    // The lift is the finger's first lift event: its pointerup comes before
+    // its touchend, and the gesture host releases on whichever it reads
+    // first (`spec:AST-094` FR43).
+    let lifted = false;
+    const onLift = () => {
+      if (lifted) {
+        return;
+      }
+      lifted = true;
+      const before = new Set(document.getAnimations());
+      const watch = () => {
+        const fresh = document
+          .getAnimations()
+          .filter(animation => !before.has(animation));
+        if (fresh.length === 0) {
+          requestAnimationFrame(watch);
+          return;
+        }
+        void Promise.all(fresh.map(async animation => animation.ready)).then(
+          block,
+          block,
+        );
+      };
+      setTimeout(watch, 0);
+    };
+    addEventListener('pointerup', onLift, {capture: true});
+    addEventListener('touchend', onLift, {capture: true});
   }, ms);
 }
 
