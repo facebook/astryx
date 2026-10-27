@@ -264,7 +264,7 @@ test.describe('with a mouse on a touch screen', () => {
     await expect(openDialogs(page)).toHaveCount(0);
   });
 
-  test('a mouse press with no movement first, on an action while the dialog enters, runs it, as before', async ({
+  test('while the dialog enters, a mouse press reaches its action once the mouse has moved; a press before any movement meets the hold', async ({
     page,
   }) => {
     // Under Reduce Motion the dialog only fades in, so its action stays where
@@ -301,17 +301,22 @@ test.describe('with a mouse on a touch screen', () => {
     await page.keyboard.press('Enter');
     await holdEntrance(page);
 
-    // A press where the mouse already is, with no movement first: it lands on
-    // the action (after the key's own click on the opener).
+    const clicks = async () =>
+      page.evaluate(() => (window as unknown as {__clicks: string[]}).__clicks);
+    // A press where the mouse already is, with no movement first: nothing
+    // listened before the hold began, so the hold cannot tell it from a
+    // finger's, and it meets the shield (after the key's own click on the
+    // opener).
     await page.mouse.down();
     await page.mouse.up();
-    await expect
-      .poll(async () =>
-        page.evaluate(
-          () => (window as unknown as {__clicks: string[]}).__clicks,
-        ),
-      )
-      .toEqual(['Open Info Modal', 'Got it']);
+    await frames(page);
+    expect(await clicks()).toEqual(['Open Info Modal', '']);
+    await expect(openDialogs(page)).toHaveCount(1);
+    // Once the mouse moves, its press reaches the action.
+    await page.mouse.move(action.x + 2, action.y, {steps: 2});
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect.poll(clicks).toEqual(['Open Info Modal', '', 'Got it']);
     await expect(openDialogs(page)).toHaveCount(0);
   });
 });
