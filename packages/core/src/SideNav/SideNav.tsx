@@ -23,9 +23,11 @@
  */
 
 import {
+  use,
   useCallback,
   useId,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from 'react';
@@ -52,6 +54,13 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
+import {
+  playRail,
+  snapshotRail,
+  SideNavShellContext,
+  type RailSnapshot,
+} from './railMotion';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -474,6 +483,27 @@ export function SideNav({
 
   const collapsed = resizableHook.isCollapsed;
 
+  // Every collapse or expand, whatever caused it, plays the rail's motion
+  // (`component:SideNav` FR6): measured in the commit before the DOM changes,
+  // played after it before paint. Inside AppShell the content column moves
+  // with it (`component:AppShell` FR17).
+  const shell = use(SideNavShellContext);
+  const railSnapshotRef = useRef<RailSnapshot | null>(null);
+  const railElement = useCallback(
+    () => shell?.rail() ?? navRef.current,
+    [shell],
+  );
+  const measureRail = useCallback(() => {
+    railSnapshotRef.current = snapshotRail(railElement(), shell);
+  }, [railElement, shell]);
+  useLayoutEffect(() => {
+    const snapshot = railSnapshotRef.current;
+    railSnapshotRef.current = null;
+    if (snapshot != null) {
+      playRail(snapshot, shell);
+    }
+  }, [collapsed, shell]);
+
   const toggle = useCallback(() => {
     const next = !collapsed;
 
@@ -673,8 +703,12 @@ export function SideNav({
   // Overlay drag handle inside the nav when resizable.
   // Uses ResizeHandle in overlay mode so the handle sits inside
   // the panel's overflow: clip bounds.
+  const railMotion = (
+    <LayoutChangeSnapshot value={collapsed} onBeforeChange={measureRail} />
+  );
   const content = showResizeHandle ? (
     <div {...stylex.props(styles.resizableContainer)}>
+      {railMotion}
       {navElement}
       <ResizeHandle
         data-testid="astryx-sidenav-resize-handle"
@@ -689,7 +723,10 @@ export function SideNav({
       />
     </div>
   ) : (
-    navElement
+    <>
+      {railMotion}
+      {navElement}
+    </>
   );
 
   if (isCollapsible) {

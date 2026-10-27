@@ -45,6 +45,7 @@ import {LayoutContent} from '../Layout/LayoutContent';
 import {MobileNavToggle} from '../MobileNav/MobileNavToggle';
 import {MAX_CLOSE_DELAY_MS as MOBILE_NAV_MAX_CLOSE_DELAY_MS} from '../MobileNav/MobileNav';
 import {SideNavRenderContext} from '../SideNav/SideNavRenderContext';
+import {SideNavShellContext, type SideNavShell} from '../SideNav/railMotion';
 import {TopNavRenderContext} from '../TopNav/TopNavRenderContext';
 import {TopNavMobileContentContext} from '../TopNav/TopNavMobileContentContext';
 import {AppShellMobileContext} from './AppShellMobileContext';
@@ -749,6 +750,26 @@ export function AppShell({
   ) : undefined;
 
   // =========================================================================
+  // The rail's collapse motion moves the content column beside the inline
+  // side nav on the rail's clock (`component:AppShell` FR17,
+  // `component:SideNav` FR6): the elevated layout's wrapper when it has a
+  // box, otherwise the main element.
+  const railRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const sideNavShell = useMemo<SideNavShell>(
+    () => ({
+      rail: () => railRef.current,
+      column: () =>
+        contentWrapperRef.current != null &&
+        getComputedStyle(contentWrapperRef.current).display !== 'contents'
+          ? contentWrapperRef.current
+          : mainRef.current,
+      content: () => mainRef.current,
+    }),
+    [],
+  );
+
   // Build sideNav content
   //
   // In auto mode, the sideNav panel is not internally scrollable (the page
@@ -758,6 +779,7 @@ export function AppShell({
   // =========================================================================
   const sideNavPanel = showSideNavInline ? (
     <LayoutPanel
+      ref={railRef}
       padding={0}
       hasDivider={navHasDividers}
       isScrollable={isFill}
@@ -767,7 +789,7 @@ export function AppShell({
         isAuto && stickyBgStyle,
         isAuto && styles.panelAutoFill,
       ]}>
-      {sideNav}
+      <SideNavShellContext value={sideNavShell}>{sideNav}</SideNavShellContext>
     </LayoutPanel>
   ) : undefined;
 
@@ -785,6 +807,7 @@ export function AppShell({
 
   const mainInner = (
     <LayoutContent
+      ref={mainRef}
       padding={contentPadding ?? 0}
       role="main"
       id={MAIN_CONTENT_ID}
@@ -801,6 +824,7 @@ export function AppShell({
   // the elevated desktop layout, the wrapper generates no layout box.
   const mainContent = (
     <div
+      ref={contentWrapperRef}
       {...stylex.props(
         shouldElevateWithCorner
           ? styles.elevatedContentWrapper
