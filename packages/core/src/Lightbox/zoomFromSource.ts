@@ -7,11 +7,12 @@
  * @input The viewer's container, its zoom stage, a source element (the
  *   thumbnail a photo came from) and the viewer's fading layers
  * @output Exports `zoomFromSource` (UIKit's zoom transition between a source
- *   element and the viewer's photo, opening or closing, on the compositor),
- *   `sourceBoxOf` and `showSourcePortal`
+ *   element and the viewer's photo, opening or closing, on the compositor)
+ *   and `sourceBoxOf`
  * @position Lightbox's transition driver (internal); the geometry is
- *   zoomTransition.ts, the motion the shared rect morph (motion/rectMorph.ts,
- *   architecture:layer-runtime INV15)
+ *   zoomTransition.ts, the motion the shared rect morph (motion/rectMorph.ts)
+ *   and the source's copy the shared lift module's `liftCopy`
+ *   (architecture:layer-runtime INV15)
  *
  * Two portals, as UIKit's `.zoom`: the photo itself (the detail) grows from
  * the source's width to its fitted box and fades in, while a copy of the
@@ -48,6 +49,7 @@ import {
   type Rect,
 } from './zoomTransition';
 import type {ZoomStage} from './useZoomCore';
+import {liftCopy} from '../liftFromTrigger/liftFromTrigger';
 
 /** The source's box in client px, or null when it is gone or off screen. */
 export function sourceBoxOf(source: HTMLElement | null): Rect | null {
@@ -68,92 +70,6 @@ export function sourceBoxOf(source: HTMLElement | null): Rect | null {
     return null;
   }
   return {x: rect.left, y: rect.top, width: rect.width, height: rect.height};
-}
-
-/** The picture a source shows: an image's own, or the first one inside it. */
-function pictureOf(source: HTMLElement, fallback: string): string {
-  const image =
-    source instanceof HTMLImageElement ? source : source.querySelector('img');
-  return image?.currentSrc || image?.src || fallback;
-}
-
-/**
- * Shows the source's picture in its box in the viewer, under the photo
- * (aspect fill, its corners): the portal a closing transition lands on and a
- * dismissed photo shrinks into. Returns it; the caller removes it.
- */
-export function showSourcePortal(
-  container: HTMLElement,
-  source: HTMLElement,
-  box: Rect,
-  fallbackSrc: string,
-): HTMLImageElement {
-  const portal = container.ownerDocument.createElement('img');
-  portal.src = pictureOf(source, fallbackSrc);
-  portal.alt = '';
-  portal.setAttribute('aria-hidden', 'true');
-  portal.setAttribute('data-lightbox-portal', '');
-  const origin = container.getBoundingClientRect();
-  const view = container.ownerDocument.defaultView;
-  const radius = view?.getComputedStyle(source).borderRadius ?? '0px';
-  Object.assign(portal.style, {
-    position: 'absolute',
-    left: `${box.x - origin.left}px`,
-    top: `${box.y - origin.top}px`,
-    width: `${box.width}px`,
-    height: `${box.height}px`,
-    margin: '0',
-    objectFit: 'cover',
-    borderRadius: radius,
-    transformOrigin: '0 0',
-    pointerEvents: 'none',
-    // Under the photo, as UIKit stacks the source's portal under the
-    // detail's: the photo fading in covers the picture fading out.
-    zIndex: '-1',
-  });
-  container.appendChild(portal);
-  return portal;
-}
-
-/**
- * Sources hidden by a running transition. A close that interrupts the
- * opening holds the same source while the opening lets go of it, so the
- * source shows again only when the last transition holding it ends, with the
- * visibility it had before the first one.
- */
-const hiddenSources = new WeakMap<
-  HTMLElement,
-  {holders: number; visibility: string}
->();
-
-/**
- * Hides the source while its picture flies (or a dismissed photo lies on
- * it); the returned call lets go.
- */
-export function hideSource(source: HTMLElement): () => void {
-  const held = hiddenSources.get(source);
-  if (held == null) {
-    hiddenSources.set(source, {
-      holders: 1,
-      visibility: source.style.visibility,
-    });
-    source.style.visibility = 'hidden';
-  } else {
-    held.holders += 1;
-  }
-  let released = false;
-  return () => {
-    const entry = hiddenSources.get(source);
-    if (released || entry == null) {
-      return;
-    }
-    released = true;
-    entry.holders -= 1;
-    if (entry.holders === 0) {
-      hiddenSources.delete(source);
-      source.style.visibility = entry.visibility;
-    }
-  };
 }
 
 export interface ZoomFromSourceOptions {
@@ -183,6 +99,8 @@ export interface ZoomFromSourceOptions {
 interface SourceCopy {
   portal: HTMLImageElement;
   morph: RectMorph;
+  /** Lets go of the copy: the source shows again once no copy holds it. */
+  drop: () => void;
 }
 
 /** Openings in flight, by container: a close turns them around. */
@@ -305,25 +223,43 @@ export function zoomFromSource({
       copyPath = opening.copyPath;
     }
     if (copy == null || copyPath == null) {
-      const portal = showSourcePortal(container, source, sourceBox, src);
-      copy = {
-        portal,
-        morph: createRectMorph(portal, {animator: animatorFor(portal)}),
-      };
-      copyPath = zoomPath(geometry, 'source', sourceBox);
-      if (kind === 'close') {
-        // A copy made for the close starts over the photo as it shows,
-        // unseen, and shrinks into the source as it fades in.
-        animatorFor(portal).set(valuesAt(copyPath, 1));
+      // The shared lift module's copy (architecture:layer-runtime INV15),
+      // in the viewer under the photo, as UIKit stacks the source's portal
+      // under the detail's: the photo fading in covers the picture fading
+      // out. The source hides while a copy of it shows.
+      const lifted = liftCopy(source, {
+        host: container,
+        src,
+        attribute: 'data-lightbox-portal',
+      });
+      if (lifted != null) {
+        lifted.element.style.zIndex = '-1';
+        copy = {
+          portal: lifted.element,
+          morph: createRectMorph(lifted.element, {
+            animator: animatorFor(lifted.element),
+          }),
+          drop: lifted.drop,
+        };
+        copyPath = zoomPath(geometry, 'source', sourceBox);
+        if (kind === 'close') {
+          // A copy made for the close starts over the photo as it shows,
+          // unseen, and shrinks into the source as it fades in.
+          animatorFor(lifted.element).set(valuesAt(copyPath, 1));
+        }
       }
     }
-    if (kind === 'open') {
-      copy.morph.present(copyPath, openSpring, {start});
-    } else {
-      copy.morph.dismiss(copyPath, closeSpring, {
-        target: copy.portal,
-        fadeSpring: closeFadeSpring,
-      });
+    // A source the lift module could not copy (gone, or with no box) leaves
+    // the photo's morph alone, and stays shown.
+    if (copy != null && copyPath != null) {
+      if (kind === 'open') {
+        copy.morph.present(copyPath, openSpring, {start});
+      } else {
+        copy.morph.dismiss(copyPath, closeSpring, {
+          target: copy.portal,
+          fadeSpring: closeFadeSpring,
+        });
+      }
     }
   }
   // The backdrop and the controls fade with the progress.
@@ -359,11 +295,9 @@ export function zoomFromSource({
   } else {
     openings.delete(container);
   }
-  // Under Reduce Motion the source stays shown.
-  const release = reduced ? null : hideSource(source);
+  // Under Reduce Motion there is no copy, and the source stays shown.
   const end = () => {
-    release?.();
-    owned.copy?.portal.remove();
+    owned.copy?.drop();
     if (openings.get(container)?.owned === owned) {
       openings.delete(container);
     }

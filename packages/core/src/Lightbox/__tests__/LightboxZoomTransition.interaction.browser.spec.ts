@@ -457,6 +457,22 @@ const backdropFilter = async (dialog: Locator) =>
     return style.backdropFilter || style.webkitBackdropFilter || 'none';
   });
 
+test("the thumbnail's copy is the shared lift module's: one inert element hidden from assistive technology while it flies, gone once the photo lands (architecture:layer-runtime INV15)", async ({
+  page,
+}) => {
+  const {dialog, photo} = await openHeldMidEntrance(page);
+  const copies = dialog.locator('[data-lightbox-portal]');
+  await expect(copies).toHaveCount(1);
+  expect(
+    await copies.first().evaluate(el => ({
+      inert: (el as HTMLElement).inert,
+      hidden: el.getAttribute('aria-hidden'),
+    })),
+  ).toEqual({inert: true, hidden: 'true'});
+  await expectEnteredAndOpen(page, dialog, photo);
+  await expect(copies).toHaveCount(0);
+});
+
 test('the backdrop fades in without its blur while the photo opens, and blurs once it lands', async ({
   page,
 }) => {

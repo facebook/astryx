@@ -76,13 +76,8 @@ import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {isCoarsePointer} from '../utils/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
-import {
-  hideSource,
-  showSourcePortal,
-  sourceBoxOf,
-  openingFadeStart,
-  zoomFromSource,
-} from './zoomFromSource';
+import {liftCopy, type LiftedCopy} from '../liftFromTrigger/liftFromTrigger';
+import {sourceBoxOf, openingFadeStart, zoomFromSource} from './zoomFromSource';
 import {dismissBackdropAlpha, dismissChromeAlpha} from './zoomStage';
 /**
  * Media type for lightbox items.
@@ -535,17 +530,13 @@ export function Lightbox({
    * A dismissed photo landed in its thumbnail: the picture over it, and the
    * hold that keeps the thumbnail hidden under it.
    */
-  const landedRef = useRef<{
-    portal: HTMLElement;
-    release: () => void;
-  } | null>(null);
+  const landedRef = useRef<LiftedCopy | null>(null);
   /** Lets go of a landed photo: the thumbnail shows again. */
   const restoreLanded = useCallback(() => {
     const landed = landedRef.current;
     if (landed != null) {
       landedRef.current = null;
-      landed.portal.remove();
-      landed.release();
+      landed.drop();
     }
   }, []);
 
@@ -922,14 +913,18 @@ export function Lightbox({
           const source = sourceElementFor(index);
           const box = sourceBoxOf(source);
           const container = containerRef.current;
-          if (source != null && box != null && container != null) {
-            const portal = showSourcePortal(
-              container,
-              source,
-              box,
-              currentItem?.src ?? '',
-            );
-            const portalAnimator = animatorFor(portal);
+          const lifted =
+            source != null && box != null && container != null
+              ? liftCopy(source, {
+                  host: container,
+                  src: currentItem?.src ?? '',
+                  attribute: 'data-lightbox-portal',
+                })
+              : null;
+          if (lifted != null) {
+            // Under the photo, as the transition's copy (zoomFromSource).
+            lifted.element.style.zIndex = '-1';
+            const portalAnimator = animatorFor(lifted.element);
             portalAnimator.set({opacity: 0});
             portalAnimator.animate(
               {opacity: 1},
@@ -937,7 +932,7 @@ export function Lightbox({
               {touchRelease: true},
             );
             restoreLanded();
-            landedRef.current = {portal, release: hideSource(source)};
+            landedRef.current = lifted;
           }
         }
         const {backdrop, chrome} = dismissFades();
