@@ -181,7 +181,7 @@ export const docs = {
       type: "'adaptive' | 'dialog'",
       default: "'adaptive'",
       description:
-        "How the alert presents under a finger. 'adaptive' gives a touch screen the native alert: it appears and leaves the way an iOS alert does, 320 wide on a phone, and a finger is tracked across both actions as one group and runs the action it lifts on. 'dialog' keeps the dialog a mouse gets on every device: the theme's motion, 400 wide, and each button's own press and click.",
+        "How the alert presents under a finger. 'adaptive' gives a touch screen the native alert: it appears and leaves the way an iOS alert does, and it is 320 wide on a phone. 'dialog' keeps the dialog a mouse gets on every device: the theme's motion, 400 wide. Either way the two actions are tracked as one group under every pointer.",
     },
     {
       name: 'isInline',

@@ -53,7 +53,8 @@ export const Delete: Story = {
 
 /**
  * The delete confirmation with `presentation="dialog"`: under a finger it
- * keeps the dialog a mouse gets, with each button's own press and click.
+ * keeps the dialog a mouse gets, with the theme's motion and Dialog's 400
+ * width; its actions are tracked as one group, as under every presentation.
  */
 export const DialogPresentation: Story = {
   render: () => {

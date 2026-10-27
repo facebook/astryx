@@ -53,6 +53,7 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
+import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
 import {useTouchPresentation} from '../utils/touchPresentation';
@@ -60,20 +61,16 @@ import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
-/** Marks the actions the touch tracking hit-tests. */
+/** Marks the actions the group tracking hit-tests. */
 const ACTION_ATTRIBUTE = 'data-astryx-alert-action';
 
 const styles = stylex.create({
-  // The action tracking claims a touch on the surface the moment it lands, as
+  // The group tracking claims a press on the actions the moment it lands, as
   // a long press does: the browser may pinch-zoom there but never pans (Chrome
   // on Android cancels a pointer it pans, which would cancel the group's
-  // touch), and a double tap zooms nothing. A long alert's content keeps its
-  // pan (see `isBodyScrollable`). The group's hold does something, so a held
-  // finger or pen starts no text selection and opens no callout there
-  // (`spec:AST-094` FR41; useActionGroupTracking); a mouse keeps selecting
-  // text, which is why the host's permanent long-press styles stay off
-  // (`manageStyle: false`).
-  trackingSurface: {
+  // press), and a double tap zooms nothing (`spec:AST-094` FR18: the gesture
+  // host never allows more than this).
+  trackingRow: {
     touchAction: 'pinch-zoom',
   },
   // UIKit's alert motion drives the dialog (useAlertMotion): the theme's
@@ -177,11 +174,10 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   width?: number | string;
   /**
    * How the alert presents under a finger. `'adaptive'` gives a touch screen
-   * the native alert: it appears and leaves the way an iOS alert does, 320
-   * wide on a phone, and a finger is tracked across both actions as one group and runs
-   * the action it lifts on. `'dialog'` keeps the dialog a mouse gets on every
-   * device: the theme's motion, 400 wide, and each button's own press and
-   * click.
+   * the native alert: it appears and leaves the way an iOS alert does, and
+   * it is 320 wide on a phone. `'dialog'` keeps the dialog a mouse gets on
+   * every device: the theme's motion, 400 wide. Either way the actions are
+   * tracked as one group under every pointer (`family:action-groups`).
    * @default 'adaptive'
    */
   presentation?: AlertDialogPresentation;
@@ -246,18 +242,13 @@ export function AlertDialog({
   // above Cancel, and that breakpoint follows the width alone.
   const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
-  // A finger is tracked across both actions as one group (UIKit's alert
-  // tracking, in the touch layer); the backdrop, where a touch targets the
-  // dialog itself, is not part of it. Each action opts out of its own press
-  // tracking while the group owns its touches, and runs through its own click
-  // at the lift. Under a finger the alert also appears and leaves the way
-  // UIKit's does (the touch layer's useAlertMotion): it stays presented while
-  // it fades out, and touches during either transition are taken and dropped.
+  // Under a finger the alert appears and leaves the way UIKit's does (the
+  // touch layer's useAlertMotion): it stays presented while it fades out.
   // Only under a touch presentation (a coarse primary pointer, after
-  // hydration): where the primary pointer is fine nothing attaches, and a
-  // finger keeps the browser's click (`spec:AST-094` FR13, FR19). A caller's
-  // `presentation="dialog"` keeps the fine-pointer dialog on every device
-  // (`architecture:public-component-api` INV16).
+  // hydration): where the primary pointer is fine nothing of it attaches
+  // (`spec:AST-094` FR13, FR19). A caller's `presentation="dialog"` keeps the
+  // fine-pointer dialog on every device (`architecture:public-component-api`
+  // INV16).
   const touch = useTouchPresentation();
   const isTouch = presentation !== 'dialog' && touch.isTouch;
   // UIKit's action layout needs both a finger and a compact viewport (the
@@ -267,23 +258,43 @@ export function AlertDialog({
   // every theme (alertController.width), so the presentation's 1.2 start
   // stays on screen; on a wider touch screen and with a mouse, Dialog's 400.
   const width = widthProp ?? (isCompactTouch ? alertController.width : 400);
-  const surfaceRef = useRef<HTMLDialogElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
+  // The actions' row: the action group's element and UIKit's layout's.
   const actionRowRef = useRef<HTMLElement>(null);
-  const {isTracking, isBodyScrollable, motion, actionLayout} =
-    useAlertDialogTouch(surfaceRef, {
-      isOpen,
-      isInline: isInline === true,
-      isTouch,
-      isCompactTouch,
-      itemSelector: `[${ACTION_ATTRIBUTE}]`,
-      bodyRef,
-      actionRowRef,
-      labels: [cancelLabel, actionLabel],
-    });
+  const {motion, actionLayout} = useAlertDialogTouch({
+    isOpen,
+    isInline: isInline === true,
+    isTouch,
+    isCompactTouch,
+    itemSelector: `[${ACTION_ATTRIBUTE}]`,
+    actionRowRef,
+    labels: [cancelLabel, actionLabel],
+  });
   const isStacked = isCompactTouch ? actionLayout === 'stack' : isSmallScreen;
   // The actions fill the footer: a stack, or UIKit's shared row.
   const isFullWidth = isCompactTouch || isSmallScreen;
+  // The two actions are an action group (`family:action-groups`): a held
+  // pointer, a finger, a pen or a mouse, is tracked across them the way UIKit
+  // tracks an alert's actions. The action under it highlights, the highlight
+  // follows it from one action to the other, and the lift runs the action
+  // under it, through its own click (none off both). Only the actions are
+  // tracked: a press on the title or the message is not part of the group,
+  // so their text stays selectable. Each action opts out of its own press
+  // tracking while the group owns it. The inline preview is not tracked.
+  // Tracked while presented, leaving included: a press during either
+  // transition is taken and dropped (`isInert`) rather than reaching the
+  // button under it.
+  const isTracking = motion.isPresented && isInline !== true;
+  useActionGroupTracking(actionRowRef, {
+    itemSelector: `[${ACTION_ATTRIBUTE}]`,
+    highlightOnsetMs: alertController.actions.highlightOnsetMs,
+    highlightExpansion: alertController.actions.highlightExpansion,
+    isInert: () => !motion.acceptsTouches(),
+    isEnabled: isTracking,
+    // The row's touch-action is its own style (trackingRow); a held finger
+    // or pen selects nothing while it holds (`spec:AST-094` FR41), and the
+    // actions keep their default styles otherwise.
+    manageStyle: false,
+  });
   // While the alert leaves (closed by the caller, still presented while it
   // fades out under a finger), UIKit delivers no input to it: a click, Enter
   // or an assistive-technology activation on an action, and Escape, do
@@ -308,7 +319,7 @@ export function AlertDialog({
     },
     [isLeaving, onOpenChange],
   );
-  const mergedRef = useMergedRefs(ref, surfaceRef, motion.ref);
+  const mergedRef = useMergedRefs(ref, motion.ref);
   const actionTrackingProps = {
     [ACTION_ATTRIBUTE]: '',
     // Overrides Button's own marker for the document press controller, which
@@ -365,17 +376,11 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={[
-        isTracking && styles.trackingSurface,
-        motion.isDriving && styles.uikitMotion,
-        xstyle,
-      ]}
+      xstyle={[motion.isDriving && styles.uikitMotion, xstyle]}
       data-testid={testId}>
       <Layout
         content={
-          <LayoutContent
-            ref={bodyRef}
-            xstyle={isTracking && !isBodyScrollable && styles.trackingSurface}>
+          <LayoutContent>
             <Heading level={2} id={titleId}>
               {title}
             </Heading>
@@ -393,6 +398,7 @@ export function AlertDialog({
                 confirmation actions have component-specific meaning here. */}
             <Stack
               ref={actionRowRef}
+              xstyle={isTracking && styles.trackingRow}
               direction={isStacked ? 'vertical' : 'horizontal'}
               gap={2}
               hAlign={isFullWidth ? 'stretch' : 'end'}
