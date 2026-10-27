@@ -145,16 +145,25 @@ onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
   `createReorderable`, and `useAnimatedLayout`), Core and Lab components MUST
   use it rather than the internals beneath it. A component reaches internals
   only for a job the public layer does not expose, and each such job is a
-  known public-API gap:
+  known public-API gap. `createReorderable`'s plain-element attach path covers
+  collections that are not List, such as Lab's TransferList and ListInput.
 
-  | Job the public layer does not expose     | Reached through internals for   |
-  | ---------------------------------------- | ------------------------------- |
-  | Which of two gestures wins a touch       | Recognizer relationships        |
-  | Keeping a layer's chosen presentation    | The presentation hold           |
-  | Absorbing input while a layer enters     | The input hold                  |
-  | Press feedback timing                    | Controls and cells              |
-  | Growing a layer out of its trigger       | Lift-from-trigger presentations |
-  | Press tracking across a group of actions | `family:action-groups` members  |
+  | Public-API gap                                                       | Used internally by                 |
+  | -------------------------------------------------------------------- | ---------------------------------- |
+  | Press feedback timing                                                | controls and cells                 |
+  | Reduced Motion cross-fade constants                                  | every Reduce Motion fade           |
+  | Press tracking across a group of actions (`actionGroupTracker`)      | `family:action-groups` members     |
+  | Selection lock during a gesture (`selectionLock`)                    | gestures that block text selection |
+  | Keeping a layer's chosen presentation (the presentation hold)        | layers                             |
+  | Absorbing input while a layer enters (the input hold)                | layers                             |
+  | Growing a layer out of its trigger (`liftFromTrigger`, `rectMorph`)  | lift-from-trigger presentations    |
+  | Which of two gestures wins a touch (custom recognizer relationships) | nested gestures                    |
+  | Gesture host, velocity tracking, rubber band, and haptics            | the gesture foundations            |
+  | Long press, which has no public factory yet                          | long-press surfaces                |
+  | Spring and curve helpers and UIKit's measured tables                 | motion foundations                 |
+  | The touch presentation query                                         | touch presentations                |
+  | Layout-change reporting, internal by `spec:AST-105` FR1              | animated layout                    |
+  | Touch hit-area expansion (`utils/hitArea`)                           | coarse-pointer targets             |
 
 - **FR5 — Each hook ships with docs and a playing-cards example.** Each public
   API here, factory and hook alike, and `createReorderable`'s `positions` (`spec:AST-103`), ships with
