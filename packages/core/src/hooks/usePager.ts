@@ -28,8 +28,9 @@
  *   (an enclosing vertical pan takes part in the touch), within
  *   atan(1 ÷ `paging.panAxisRatio`) of horizontal, and neither between that
  *   and 45°.
- * - At the lift the page is chosen with UIKit's rule (motion/paging.ts
- *   `selectPage`) and the track settles on UIKit's paging integrator from the
+ * - At the lift the page is chosen with UIKit's measured rule
+ *   (`pageForRelease`, on the release policy in motion/resolveSnapPoint.ts)
+ *   and the track settles on UIKit's paging integrator from the
  *   lift position and velocity (`solvePaging`), baked into keyframes.
  * - A finger landing on a settling pager catches it `paging.catchStopMs`
  *   after the touch (as UIKit does); dragging catches it at once from the
@@ -98,10 +99,10 @@ import {
 } from '../motion/animator';
 import {
   pagingSettleVelocity,
-  selectPage,
   solveAnimatedPageScroll,
   solvePaging,
 } from '../motion/paging';
+import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';
 import {paging} from '../motion/uikit/paging';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -109,6 +110,85 @@ import {TOUCH_QUERY} from '../utils/touchQueries';
 import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {useMediaQuery} from './useMediaQuery';
+
+/** A release the pager settles: where the content is, how fast, and the page it left. */
+export interface PageRelease {
+  /** Content offset at the lift, px, or pages for children pages (may be past either end). */
+  position: number;
+  /** Content velocity at the release, px/s (the shared release velocity). */
+  velocity: number;
+  /** Distance between consecutive pages: page width plus the gap, px (1 for children pages). */
+  stride: number;
+  /** Number of pages (at least 1). */
+  count: number;
+  /** The page the drag started on (its rest position when the finger landed). */
+  startIndex: number;
+  /** Wraps around: the target may leave [0, count - 1] (the owner wraps it). */
+  loop?: boolean;
+}
+
+/**
+ * The page a release settles on: UIKit's measured paging rule
+ * (uikit/paging.ts `release`), on the motion foundation's release policy
+ * (resolveSnapPoint.ts) with the pager's own pages and thresholds.
+ *
+ * - At least `advanceSpeed`, a flick: the next page in the direction of the
+ *   velocity from wherever the content is.
+ * - Slower, the page nearest the content: UIKit's measured `commitFraction`
+ *   is half a page, the policy's nearest snap point.
+ * - A release whose velocity points back toward the page the drag started on
+ *   settles there, whatever the travel (`spec:AST-094` FR37), through the
+ *   policy's `start`.
+ * - Never more than `maxPagesFromStart` from the start page (`maxSteps`),
+ *   and clamped to the pages unless looping: the policy sees only the pages
+ *   that reach allows around the start page, so a looping target may leave
+ *   the range and the owner wraps it.
+ *
+ * The velocity stays px/s for children pages (their positions are in pages):
+ * the policy reads it only against `advanceSpeed` and for its direction.
+ *
+ * @example
+ * ```
+ * // Released at rest 60 % of the way from page 1 to page 2: page 2.
+ * pageForRelease({position: 1.6 * 402, velocity: 0, stride: 402, count: 6, startIndex: 1});
+ * // Flicked forward at 600 px/s from 6 % past page 1: page 2.
+ * pageForRelease({position: 1.06 * 402, velocity: 600, stride: 402, count: 6, startIndex: 1});
+ * ```
+ */
+export function pageForRelease({
+  position,
+  velocity,
+  stride,
+  count,
+  startIndex,
+  loop = false,
+}: PageRelease): number {
+  if (!(stride > 0) || count < 1) {
+    return 0;
+  }
+  const reach = paging.release.maxPagesFromStart;
+  // A stale start page past either end (the count shrank, an overscrolled
+  // track) counts from the nearest real page.
+  const from = loop ? startIndex : Math.min(Math.max(startIndex, 0), count - 1);
+  const first = loop ? from - reach : Math.max(0, from - reach);
+  const last = loop ? from + reach : Math.min(count - 1, from + reach);
+  const points = Array.from(
+    {length: last - first + 1},
+    (_, i) => (first + i) * stride,
+  );
+  const {index} = resolveSnapPoint({
+    points,
+    position,
+    velocity,
+    flickThreshold: paging.release.advanceSpeed,
+    // A hair of tolerance so a release exactly on a page reads as on it.
+    tolerance: 1e-6 * stride,
+    start: from * stride,
+    fromIndex: from - first,
+    maxSteps: reach,
+  });
+  return first + index;
+}
 
 /** Why the target page changed. */
 export type PagerChangeReason = 'drag' | 'goTo' | 'controlled';
@@ -444,7 +524,7 @@ export function createPager(
 
   /**
    * The page a release from `position` at `velocity` settles on (UIKit's
-   * rule, motion/paging.ts), in children pages' own spacing.
+   * rule, pageForRelease), in children pages' own spacing.
    */
   function releasePage(
     position: number,
@@ -452,7 +532,7 @@ export function createPager(
     startIndex: number,
   ): number {
     const pages = isChildPages() && childOffsets != null;
-    return selectPage({
+    return pageForRelease({
       position: pages ? pageAt(position) : position,
       velocity,
       stride: pages ? 1 : stride(),
