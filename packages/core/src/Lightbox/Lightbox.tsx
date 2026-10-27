@@ -112,9 +112,10 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): on a touch screen, pinch or double-tap to
-   * zoom in at that point; a double-click or Enter/Space/`+`/`-` zooms 2×
-   * about the centre. When zoomed, drag or use arrow keys to pan.
+   * Enable zoom (images only): under a coarse primary pointer (a touch
+   * screen), pinch or double-tap to zoom in at that point; a double-click
+   * or Enter/Space/`+`/`-` zooms 2× about the centre. When zoomed, drag or
+   * use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
