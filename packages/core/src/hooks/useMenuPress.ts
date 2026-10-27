@@ -27,14 +27,26 @@
  *   tracked release and disarms at the next pointer press or after a short
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
- * - A mouse press on the trigger opens the menu at once; a finger held on the
- *   trigger opens it after the long-press delay. The settle rule decides
- *   whether the opening gesture's release may act (see menuPressGesture.ts).
+ * - A mouse press on the trigger opens the menu at once. A finger held for
+ *   `longPressDelayMs` opens it and the opening press follows the settle
+ *   rule (see menuPressGesture.ts). DropdownMenu's own entry
+ *   (`useDropdownMenuPress`, touch model `'uikit'`, `spec:AST-094` FR29)
+ *   instead opens it as a finger presses on a trigger in a fixed bar, and
+ *   inside a scroll view once the 150 ms content-touch delay has passed with
+ *   no scroll; the opening finger then travels UIMenu's handoff distance
+ *   before it picks.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
  *   the top or bottom edge scrolls the menu toward that edge (the shared
  *   timer of utils/edgeAutoscroll.ts).
+ * - Under the internal touch model `'uikit'` a finger that lands in the menu
+ *   is tracked as UIMenu's list tracks it instead (menuSelectionRecognizer.ts on the
+ *   gesture system, driving the shared action-group tracker): its row lights
+ *   after UIKit's content-touch delay, a tap acts at the lift, and in a menu
+ *   that scrolls a travelling finger scrolls it while a resting one near its
+ *   top or bottom edge autoscrolls it (`spec:AST-094` FR30), on every touch
+ *   device. A mouse keeps the pointer model.
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
@@ -60,13 +72,21 @@ import {
 import {currentGesture} from '../Layer/gestureCounter';
 import {
   IDLE_MENU_PRESS,
-  menuPressStep,
-  type MenuPressEffect,
-  type MenuPressEvent,
-  type MenuPressGesture,
+  menuPressTransition,
+  type MenuPressOutcome,
+  type MenuPressInput,
+  type MenuPressState,
   type MenuPressPointerType,
 } from './menuPressGesture';
-import {useLongPress, type UseLongPressHandlers} from './useLongPress';
+import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
+import type {UseLongPressHandlers} from './useLongPress';
+import {getGestureHost} from '../gestures/GestureHost';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {
+  createActionGroupTracker,
+  type ActionGroupTracker,
+} from './actionGroupTracker';
+import {MenuSelectionGestureRecognizer} from './menuSelectionRecognizer';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -85,8 +105,7 @@ export const MENU_PRESS_SURFACE_ATTR = 'data-astryx-menu-press-surface';
 
 /** How long after a tracked release the browser's click is still swallowed. */
 export const MENU_PRESS_STRAY_CLICK_MS = 400;
-/** How long a finger must rest on the trigger before the menu opens under it. */
-export const MENU_PRESS_LONG_PRESS_MS = 500;
+export {MENU_PRESS_LONG_PRESS_MS} from './menuTriggerPress';
 /** Distance from a scrolling menu's edge within which a resting pointer scrolls. */
 export const MENU_PRESS_AUTOSCROLL_ZONE_PX = 24;
 const AUTOSCROLL_STEP_PX = 6;
@@ -171,6 +190,27 @@ function armStrayClick(doc: Document): void {
   swallower.timer = setTimeout(disarmStrayClick, MENU_PRESS_STRAY_CLICK_MS);
 }
 
+/**
+ * A gesture the window's blur ended may still hold its pointer: the browser
+ * can keep a touch alive across the blur. That pointer's release is still the
+ * gesture's, so the click it reports is swallowed as a tracked release's is
+ * (FR5, `spec:AST-094` FR28): the swallower arms at that release.
+ */
+function armStrayClickAtRelease(doc: Document, pointerId: number): void {
+  const onRelease = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    doc.removeEventListener('pointerup', onRelease, true);
+    doc.removeEventListener('pointercancel', onRelease, true);
+    if (event.type === 'pointerup') {
+      armStrayClick(doc);
+    }
+  };
+  doc.addEventListener('pointerup', onRelease, true);
+  doc.addEventListener('pointercancel', onRelease, true);
+}
+
 /** Test-only: forget an armed swallower between cases. */
 export function __resetMenuPressForTest(): void {
   disarmStrayClick();
@@ -192,10 +232,10 @@ export interface UseMenuPressOptions {
   itemSelector: string;
   /**
    * A mouse pressed the trigger, or a finger has rested on it for the
-   * long-press delay: open the menu under the held pointer. Return whether
-   * it opened; a `false` (the press closed an open menu instead) ends the
-   * gesture. The click the trigger receives for this same gesture is reported
-   * by {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
+   * long-press delay: open the menu under the held pointer. Return whether it opened; a `false` (the
+   * press closed an open menu instead) ends the gesture. The click the
+   * trigger receives for this same gesture is reported by
+   * {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
    * leave it alone.
    */
   onTriggerPress?: (pointerType: MenuPressPointerType) => boolean;
@@ -212,7 +252,7 @@ export interface UseMenuPressOptions {
    * exactly as its own click would.
    */
   onActivate?: (row: HTMLElement, release: PointerEvent) => void;
-  /** A MOUSE was released outside the menu with nothing acting: close it. */
+  /** Close the menu: a MOUSE was released outside it with nothing acting. */
   onDismiss?: () => void;
   /**
    * The element to scroll while a tracked pointer rests near its edge.
@@ -225,10 +265,48 @@ export interface UseMenuPressOptions {
    * to the event target where the document lacks it (jsdom). A test seam.
    */
   hitTest?: (x: number, y: number) => Element | null;
-  /** @default 500 */
+  /**
+   * How long a finger rests on the trigger before the menu opens under it.
+   * @default 500
+   */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
   isEnabled?: boolean;
+}
+
+/**
+ * DropdownMenu's options for the press model: everything the public hook
+ * takes, plus its touch model. The touch mode stays internal
+ * (`architecture:public-component-api` INV16 reaches it through
+ * DropdownMenu's `presentation`), so it is not an option of the public hook.
+ *
+ * @internal
+ */
+export interface DropdownMenuPressOptions extends UseMenuPressOptions {
+  /**
+   * How a finger on the trigger opens the menu and picks from it.
+   * `'pointer'`: after `longPressDelayMs`, and the opening press follows the
+   * settle rule. `'uikit'` (`spec:AST-094` FR29): as the finger presses on a
+   * trigger in a fixed bar, and inside a scroll view once the content-touch
+   * delay has passed with no scroll; the opening finger picks only after
+   * UIMenu's handoff distance. `'uikit'` also tracks a finger that lands in
+   * the open menu as UIMenu's list tracks it (menuSelectionRecognizer.ts;
+   * `spec:AST-094` FR26 to FR30): its row lights after the content-touch
+   * delay, a tap acts at the lift, and in a menu that scrolls a travelling
+   * finger scrolls it while a resting one near an edge autoscrolls it. A
+   * menu with no trigger (a sub-menu) takes its root's, so a finger in it
+   * follows the root's rules: a cancelled touch clears its lit row
+   * (`spec:AST-094` FR28). A mouse is unaffected.
+   * @default 'pointer'
+   */
+  touchModel?: 'pointer' | 'uikit';
+  /**
+   * Whether the menu shows. Under the touch model `'uikit'` the finger
+   * tracking joins the gesture system only while it does, so a closed menu
+   * adds no listener anywhere. Without it, a menu in a popover follows the
+   * popover's own toggle.
+   */
+  isOpen?: boolean;
 }
 
 export interface UseMenuPressReturn {
@@ -252,12 +330,33 @@ export interface UseMenuPressReturn {
   cancel: () => void;
 }
 
+/**
+ * What core's own menus get from {@link useDropdownMenuPress}: the public
+ * return. Not exported from the hooks entry point.
+ *
+ * @internal
+ */
+export type DropdownMenuPressReturn = UseMenuPressReturn;
+
 // =============================================================================
 // Helpers
 // =============================================================================
 
 function normalizePointerType(type: string): MenuPressPointerType | null {
   return type === 'mouse' || type === 'touch' || type === 'pen' ? type : null;
+}
+
+/**
+ * Where a pointer is, for a finger's handoff distance: given with
+ * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
+ * opening finger (`spec:AST-094` FR29). Without
+ * it the machine keeps the settle rule.
+ */
+function handoffPosition(
+  event: PointerEvent,
+  hasHandoff: boolean,
+): {x?: number; y?: number} {
+  return hasHandoff ? {x: event.clientX, y: event.clientY} : {};
 }
 
 function isRowFocusable(row: HTMLElement): boolean {
@@ -306,6 +405,32 @@ function isInMenuTree(element: Element, root: HTMLElement): boolean {
   return owner != null && getOutermostRoot(owner) === root;
 }
 
+/**
+ * The release a finger's recognized press hands the activation: a primary
+ * button at the lift's position, with no modifiers.
+ */
+function syntheticRelease(
+  row: HTMLElement,
+  {x, y}: {x: number; y: number},
+): PointerEvent {
+  const view = row.ownerDocument.defaultView;
+  const init = {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    screenX: x,
+    screenY: y,
+  };
+  const PointerEventCtor = view?.PointerEvent;
+  return (
+    typeof PointerEventCtor === 'function'
+      ? new PointerEventCtor('pointerup', {...init, pointerType: 'touch'})
+      : new MouseEvent('pointerup', init)
+  ) as PointerEvent;
+}
+
 interface ResolvedPoint {
   row: HTMLElement | null;
   isInMenu: boolean;
@@ -315,6 +440,31 @@ interface ResolvedPoint {
 // =============================================================================
 // Hook
 // =============================================================================
+
+/**
+ * Whether the menu root is rendered: false inside a closed popover. An
+ * environment without `checkVisibility` counts it as showing.
+ */
+/**
+ * Follows a popover's `beforetoggle` (whether it is about to show); returns
+ * the function that stops following it.
+ */
+function watchToggle(
+  layer: Element,
+  onToggle: (isOpen: boolean) => void,
+): () => void {
+  const onBeforeToggle = (event: Event) => {
+    onToggle((event as ToggleEvent).newState === 'open');
+  };
+  layer.addEventListener('beforetoggle', onBeforeToggle);
+  return () => layer.removeEventListener('beforetoggle', onBeforeToggle);
+}
+
+function isShowing(element: Element): boolean {
+  return typeof element.checkVisibility === 'function'
+    ? element.checkVisibility()
+    : true;
+}
 
 /**
  * The press model for a menu: the row under the release acts, the highlight
@@ -337,13 +487,73 @@ interface ResolvedPoint {
  * ```
  */
 export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
+  // The touch model is DropdownMenu's alone; an untyped caller's
+  // `touchModel` does not reach the model.
+  const {touchModel: _touchModel, ...publicOptions} =
+    options as DropdownMenuPressOptions;
+  return useDropdownMenuPress({...publicOptions, touchModel: 'pointer'});
+}
+
+/**
+ * The press model with DropdownMenu's touch model
+ * ({@link DropdownMenuPressOptions.touchModel}). Not exported from the hooks
+ * entry point.
+ *
+ * @internal
+ */
+export function useDropdownMenuPress(
+  options: DropdownMenuPressOptions,
+): DropdownMenuPressReturn {
+  const {surface, triggerContext} = useMenuPressModel(options);
+  const trigger = useMenuTriggerPress(triggerContext, options);
+  return useMemo(
+    () => ({...surface, triggerProps: trigger}),
+    [surface, trigger],
+  );
+}
+
+/**
+ * What a menu that never presses a trigger gets from
+ * {@link useMenuSurfacePress}: everything but the trigger half. Not exported
+ * from the hooks entry point.
+ *
+ * @internal
+ */
+export type MenuSurfacePressReturn = Omit<
+  DropdownMenuPressReturn,
+  'triggerProps'
+>;
+
+/**
+ * The press model for a menu that never presses a trigger (a sub-menu, a
+ * context menu, a Selector's list, a sheet's action list): the menu half
+ * alone, so the trigger half's long-press detectors and scroll probe stay
+ * out of its bundle (menuTriggerPress.ts). A sub-menu passes its root
+ * menu's touch model. Not exported from the hooks entry point.
+ *
+ * @internal
+ */
+export function useMenuSurfacePress(
+  options: DropdownMenuPressOptions,
+): MenuSurfacePressReturn {
+  return useMenuPressModel(options).surface;
+}
+
+/**
+ * The shared model: the menu half, and the stable context the trigger half
+ * (menuTriggerPress.ts) drives it through.
+ */
+function useMenuPressModel(options: DropdownMenuPressOptions): {
+  surface: MenuSurfacePressReturn;
+  triggerContext: MenuTriggerContext;
+} {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   // The highlight, and the hover focus of the rows in this menu, follow the
   // last input, which this tracks for the document.
   useInteractionModalityTracking();
 
-  const gestureRef = useRef<MenuPressGesture<HTMLElement>>(IDLE_MENU_PRESS);
+  const gestureRef = useRef<MenuPressState<HTMLElement>>(IDLE_MENU_PRESS);
   const pointerIdRef = useRef<number | null>(null);
   const detachRef = useRef<(() => void) | null>(null);
   // The held finger is detected by `useLongPress`, the same hook ContextMenu
@@ -352,6 +562,8 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // callbacks and the hook is created further down, once `fireLongPress`
   // exists.
   const longPressApiRef = useRef<UseLongPressHandlers | null>(null);
+  // Which detector the live press uses: inside a scrolling region or not.
+  const holdKindRef = useRef<'plain' | 'scroller'>('plain');
   const touchMovePreventerRef = useRef<(() => void) | null>(null);
   // The edge autoscroll running now: its scroller, its direction, and the
   // re-read of the row under the resting pointer after each step.
@@ -371,6 +583,10 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
           return 0;
         }
         const before = running.scroller.scrollTop;
+        // The menu's own scroll, not the browser taking the finger.
+        getGestureHost(running.scroller.ownerDocument).ownScroll(
+          running.scroller,
+        );
         running.scroller.scrollTop = before + delta;
         const moved = running.scroller.scrollTop - before;
         if (moved === 0) {
@@ -514,13 +730,13 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
 
   // Declared before `step` so the mutual recursion through refs type-checks.
   const stepRef = useRef<
-    (event: MenuPressEvent<HTMLElement>, native?: PointerEvent) => void
+    (event: MenuPressInput<HTMLElement>, native?: PointerEvent) => void
   >(() => {});
 
   const applyEffect = useCallback(
     (
-      effect: MenuPressEffect<HTMLElement>,
-      gesture: MenuPressGesture<HTMLElement>,
+      effect: MenuPressOutcome<HTMLElement>,
+      gesture: MenuPressState<HTMLElement>,
       native: PointerEvent | undefined,
     ) => {
       const doc = getDocument();
@@ -554,6 +770,15 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
           return;
         }
         case 'settle': {
+          // A finger's lit row clears on a cancel only where the primary
+          // pointer is coarse (the 'uikit' touch model); elsewhere the
+          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
+            highlight(null);
+          }
           endGesture();
           if (effect.stray) {
             armStrayClick(doc);
@@ -569,8 +794,8 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   );
 
   const step = useCallback(
-    (event: MenuPressEvent<HTMLElement>, native?: PointerEvent) => {
-      const result = menuPressStep(gestureRef.current, event);
+    (event: MenuPressInput<HTMLElement>, native?: PointerEvent) => {
+      const result = menuPressTransition(gestureRef.current, event);
       gestureRef.current = result.gesture;
       applyEffect(result.effect, result.gesture, native);
     },
@@ -592,12 +817,12 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     return menu.scrollHeight > menu.clientHeight + 1 ? menu : null;
   }, []);
 
-  const updateAutoscroll = useCallback(
-    (event: PointerEvent) => {
-      if (gestureRef.current.phase !== 'tracking') {
-        stopAutoscroll();
-        return;
-      }
+  // Starts, turns or stops the edge autoscroll for a held pointer or finger
+  // at `clientY`: near the scroller's top or bottom edge the menu scrolls
+  // toward it, and `reread` re-resolves what is under the resting contact
+  // after each step (spec:AST-094 FR30).
+  const autoscrollAt = useCallback(
+    (clientY: number, reread: () => void) => {
       const scroller = getScroller();
       if (scroller == null) {
         stopAutoscroll();
@@ -609,9 +834,9 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         return;
       }
       let direction: 1 | -1 | 0 = 0;
-      if (event.clientY <= rect.top + MENU_PRESS_AUTOSCROLL_ZONE_PX) {
+      if (clientY <= rect.top + MENU_PRESS_AUTOSCROLL_ZONE_PX) {
         direction = -1;
-      } else if (event.clientY >= rect.bottom - MENU_PRESS_AUTOSCROLL_ZONE_PX) {
+      } else if (clientY >= rect.bottom - MENU_PRESS_AUTOSCROLL_ZONE_PX) {
         direction = 1;
       }
       if (direction === 0) {
@@ -622,29 +847,36 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         return;
       }
       stopAutoscroll();
-      autoscrollRef.current = {
-        scroller,
-        direction,
-        // The rows moved under the resting pointer: re-read the row under it.
-        reread: () => {
-          const last = lastPointerEventRef.current;
-          if (last != null) {
-            const point = resolvePoint(last);
-            stepRef.current(
-              {
-                type: 'move',
-                row: point.row,
-                isInMenu: point.isInMenu,
-                time: Date.now(),
-              },
-              last,
-            );
-          }
-        },
-      };
+      autoscrollRef.current = {scroller, direction, reread};
       autoscroll.update();
     },
-    [autoscroll, getScroller, resolvePoint, stopAutoscroll],
+    [autoscroll, getScroller, stopAutoscroll],
+  );
+
+  const updateAutoscroll = useCallback(
+    (event: PointerEvent) => {
+      if (gestureRef.current.phase !== 'tracking') {
+        stopAutoscroll();
+        return;
+      }
+      // The rows moved under the resting pointer: re-read the row under it.
+      autoscrollAt(event.clientY, () => {
+        const last = lastPointerEventRef.current;
+        if (last != null) {
+          const point = resolvePoint(last);
+          stepRef.current(
+            {
+              type: 'move',
+              row: point.row,
+              isInMenu: point.isInMenu,
+              time: Date.now(),
+            },
+            last,
+          );
+        }
+      });
+    },
+    [autoscrollAt, resolvePoint, stopAutoscroll],
   );
 
   // --- Document-level tracking ----------------------------------------------
@@ -681,6 +913,10 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
             row: point.row,
             isInMenu: point.isInMenu,
             time: Date.now(),
+            ...handoffPosition(
+              event,
+              optionsRef.current.touchModel === 'uikit',
+            ),
           },
           event,
         );
@@ -698,6 +934,10 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
             isInMenu: point.isInMenu,
             isOnTrigger: point.isOnTrigger,
             time: Date.now(),
+            ...handoffPosition(
+              event,
+              optionsRef.current.touchModel === 'uikit',
+            ),
           },
           event,
         );
@@ -717,7 +957,11 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         }
       };
       const onBlur = () => {
+        const blurredPointerId = pointerIdRef.current;
         stepRef.current({type: 'cancel'});
+        if (blurredPointerId != null) {
+          armStrayClickAtRelease(doc, blurredPointerId);
+        }
       };
 
       doc.addEventListener('pointermove', onMove, true);
@@ -738,20 +982,11 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
 
   // --- The held finger on the trigger ----------------------------
 
-  const fireLongPress = useCallback(() => {
-    const gesture = gestureRef.current;
-    if (gesture.phase !== 'triggerPress') {
-      return;
-    }
-    triggerGestureRef.current = currentGesture();
-    const didOpen =
-      optionsRef.current.onTriggerPress?.(gesture.pointerType) ?? false;
-    if (!didOpen) {
-      step({type: 'cancel'});
-      return;
-    }
-    // `touch-action` on the trigger was decided when the finger landed; the
-    // page must not scroll under a finger that is now driving a menu.
+  // `touch-action` was decided when the finger landed; the page must not
+  // scroll under a finger that is now driving a menu. Taken off when the
+  // gesture ends.
+  const installTouchMovePreventer = useCallback(() => {
+    touchMovePreventerRef.current?.();
     const doc = getDocument();
     const prevent = (event: TouchEvent) => {
       if (event.cancelable) {
@@ -762,17 +997,55 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     touchMovePreventerRef.current = () => {
       doc.removeEventListener('touchmove', prevent, true);
     };
-    step({type: 'opened', time: Date.now()});
-  }, [getDocument, step]);
+  }, [getDocument]);
 
-  // One long-press detector for the system: the same hook ContextMenu spreads
-  // onto its trigger, driven here from the pointer stream this model already
-  // observes. Its touch handlers go unused; the hold duration, the movement
-  // tolerance and the timer are what matter, and they now have one home.
-  longPressApiRef.current = useLongPress({
-    onLongPress: fireLongPress,
-    delayMs: options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS,
-  });
+  // The trigger half (menuTriggerPress.ts, or nothing for a menu with no
+  // trigger) drives the model through this stable context.
+  const installRef = useRef(installTouchMovePreventer);
+  installRef.current = installTouchMovePreventer;
+  const attachRef = useRef(attach);
+  attachRef.current = attach;
+  const holdDetectorsRef = useRef<{
+    plain: UseLongPressHandlers;
+    scroller: UseLongPressHandlers;
+  } | null>(null);
+  const [triggerContext] = useState<MenuTriggerContext>(() => ({
+    optionsRef,
+    gestureRef,
+    setTriggerGesture: gesture => {
+      triggerGestureRef.current = gesture;
+    },
+    setHoldDetectors: detectors => {
+      holdDetectorsRef.current = detectors;
+      longPressApiRef.current =
+        holdKindRef.current === 'scroller'
+          ? detectors.scroller
+          : detectors.plain;
+    },
+    startHold: (kind, at) => {
+      holdKindRef.current = kind;
+      const detectors = holdDetectorsRef.current;
+      if (detectors == null) {
+        return;
+      }
+      const hold = kind === 'scroller' ? detectors.scroller : detectors.plain;
+      longPressApiRef.current = hold;
+      hold.start(at);
+    },
+    setLastPointerEvent: event => {
+      lastPointerEventRef.current = event;
+    },
+    takeIgnoredPointer: pointerId => {
+      if (pointerId !== ignoredPointerIdRef.current) {
+        return false;
+      }
+      ignoredPointerIdRef.current = null;
+      return true;
+    },
+    installTouchMovePreventer: () => installRef.current(),
+    step: (event, native) => stepRef.current(event, native),
+    attach: pointerId => attachRef.current(pointerId),
+  }));
 
   // --- Handlers ------------------------------------------------------------
 
@@ -797,6 +1070,13 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         return;
       }
       if (pointerType === 'mouse' && event.button !== 0) {
+        return;
+      }
+      if (
+        pointerType !== 'mouse' &&
+        optionsRef.current.touchModel === 'uikit'
+      ) {
+        // The selection recognizer tracks fingers (see below).
         return;
       }
       // The innermost model owns the press: a flyout is a DOM descendant of
@@ -830,56 +1110,6 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     [attach, resolvePoint, step],
   );
 
-  const handleTriggerPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLElement>) => {
-      const {isEnabled = true} = optionsRef.current;
-      if (event.pointerId === ignoredPointerIdRef.current) {
-        ignoredPointerIdRef.current = null;
-        return;
-      }
-      if (!isEnabled || gestureRef.current.phase !== 'idle') {
-        return;
-      }
-      const pointerType = normalizePointerType(event.pointerType);
-      if (pointerType == null || event.button !== 0) {
-        return;
-      }
-      if (pointerType === 'mouse' && event.ctrlKey) {
-        // Control-click is the context menu's on macOS.
-        return;
-      }
-      const native = event.nativeEvent;
-      attach(native.pointerId);
-      lastPointerEventRef.current = native;
-      if (pointerType !== 'mouse') {
-        longPressApiRef.current?.start({x: native.clientX, y: native.clientY});
-      }
-      step(
-        {
-          type: 'down',
-          target: 'trigger',
-          pointerType,
-          row: null,
-          time: Date.now(),
-        },
-        native,
-      );
-    },
-    [attach, step],
-  );
-
-  const handleTriggerContextMenu = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      // A finger held on the trigger is opening the menu, not asking for the
-      // browser's own context menu.
-      const gesture = gestureRef.current;
-      if (gesture.phase !== 'idle' && gesture.pointerType !== 'mouse') {
-        event.preventDefault();
-      }
-    },
-    [],
-  );
-
   const isTriggerClickFromPress = useCallback((): boolean => {
     return (
       triggerGestureRef.current != null &&
@@ -887,12 +1117,239 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     );
   }, []);
 
-  const cancel = useCallback(() => {
-    if (gestureRef.current.phase !== 'idle') {
-      step({type: 'cancel'});
+  // --- A finger in the menu, as UIMenu's list tracks it ('uikit') ----------
+
+  // The shared action-group tracker: the rows' rects are read once when the
+  // press begins, the highlight is focus (DEC-6), the lift runs the row as
+  // its own click would. Rows of the open flyouts are part of the group.
+  const trackerRef = useRef<ActionGroupTracker | null>(null);
+  const releaseRef = useRef<{x: number; y: number}>({x: 0, y: 0});
+  trackerRef.current ??= createActionGroupTracker(() => ({
+    roots: () => {
+      const menu = optionsRef.current.menuRef.current;
+      if (menu == null) {
+        return [];
+      }
+      // The whole menu tree is one group: the outermost root holds the
+      // flyouts nested in it, but a menu the root renders beside itself (a
+      // sub-menu's dialog in the root's surface host) is not inside it.
+      const root = getOutermostRoot(menu);
+      return root.contains(menu) ? [root] : [root, menu];
+    },
+    itemSelector: optionsRef.current.itemSelector,
+    highlightExpansion: 0,
+    paintsHighlight: false,
+    onHighlightChange: row => highlightRef.current(row),
+    onActivate: row =>
+      activateRef.current(row, syntheticRelease(row, releaseRef.current)),
+  }));
+  useEffect(() => () => trackerRef.current?.dispose(), []);
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+  const activateRef = useRef(activate);
+  activateRef.current = activate;
+  const getScrollerRef = useRef(getScroller);
+  getScrollerRef.current = getScroller;
+
+  const [selection] = useState(
+    () =>
+      new MenuSelectionGestureRecognizer({
+        name: 'MenuSelection',
+        scrolls: () => getScrollerRef.current() != null,
+        // A menu that fits lights the row under a landing finger at once
+        // (spec:AST-094 FR11); the press joins it when it begins.
+        onLand: recognizer => {
+          const tracker = trackerRef.current;
+          if (tracker != null && !tracker.isTracking) {
+            const landing = recognizer.landingLocation();
+            tracker.begin(landing.x, landing.y);
+          }
+        },
+        // The rows' own press tracking never sees the finger; the browser's
+        // click for a recognized press is withheld (the row runs at the lift).
+        delaysTouchesBegan: true,
+        shouldReceiveTouch: (_recognizer, touch) => {
+          // The innermost menu owns the finger: a flyout tracks its own.
+          const target = touch.target;
+          return (
+            target instanceof Element &&
+            target.closest(MENU_PRESS_ROOT_SELECTOR) ===
+              optionsRef.current.menuRef.current
+          );
+        },
+      }),
+  );
+  // A finger held in a menu that scrolls, resting near its top or bottom
+  // edge, scrolls it toward that edge, and the lit row follows the row now
+  // under the finger (spec:AST-094 FR30). A finger that travels is the
+  // list's own scroll, which cancels the press and so the autoscroll.
+  const fingerAutoscroll = useCallback(
+    (clientY: number) => {
+      autoscrollAt(clientY, () => trackerRef.current?.remeasure());
+    },
+    [autoscrollAt],
+  );
+  const onSelection = useCallback(
+    (recognizer: MenuSelectionGestureRecognizer) => {
+      const tracker = trackerRef.current;
+      if (tracker == null) {
+        return;
+      }
+      switch (recognizer.state) {
+        case 'began': {
+          // The press begins where the finger landed (already lit there in
+          // a menu that fits), then follows it.
+          const landing = recognizer.landingLocation();
+          if (!tracker.isTracking) {
+            tracker.begin(landing.x, landing.y);
+          }
+          const {x, y} = recognizer.location();
+          if (x !== landing.x || y !== landing.y) {
+            tracker.move(x, y);
+          }
+          fingerAutoscroll(y);
+          break;
+        }
+        case 'changed': {
+          const {x, y} = recognizer.location();
+          tracker.move(x, y);
+          fingerAutoscroll(y);
+          break;
+        }
+        case 'ended': {
+          stopAutoscroll();
+          const {x, y} = recognizer.location();
+          if (tracker.isTracking) {
+            tracker.move(x, y);
+          } else {
+            // A tap: the row under it highlights and acts at the lift.
+            tracker.begin(x, y);
+          }
+          releaseRef.current = {x, y};
+          // The browser's own click for this finger is withheld by the
+          // gesture host; a late one (WebKit aims it at the row the finger
+          // landed on) is swallowed here too, as for every tracked press.
+          armStrayClick(getDocument());
+          tracker.end();
+          break;
+        }
+        case 'cancelled':
+          stopAutoscroll();
+          tracker.cancel();
+          if (recognizer.endedByAnotherFinger) {
+            // A click the browser still reports for the first finger acts
+            // on nothing (FR4, FR5).
+            armStrayClick(getDocument());
+          }
+          break;
+        case 'possible':
+        case 'failed':
+          break;
+      }
+    },
+    [fingerAutoscroll, getDocument, stopAutoscroll],
+  );
+  // Synchronizes with the selection recognizer (gesture system): its state
+  // changes drive the action-group tracker.
+  useEffect(() => selection.addListener(onSelection), [selection, onSelection]);
+  // Synchronizes with the selection recognizer's failures, which its action
+  // listeners do not hear: a row lit as the finger landed in a menu that
+  // fits goes dark when the press does not happen (a second finger before
+  // the onset, FR4).
+  useEffect(
+    () =>
+      selection.addTransitionListener((recognizer, _from, to) => {
+        const tracker = trackerRef.current;
+        if (to !== 'failed' || tracker == null || !tracker.isTracking) {
+          return;
+        }
+        tracker.cancel();
+        if (recognizer.endedByAnotherFinger) {
+          armStrayClick(getDocument());
+        }
+      }),
+    [selection, getDocument],
+  );
+  const isSelectionEnabled =
+    options.touchModel === 'uikit' && (options.isEnabled ?? true);
+  // Synchronizes the selection recognizer's enabled flag. Turning it off
+  // mid-press cancels the recognizer, whose listener cancels the tracker
+  // (a consumer's onHighlight(null)).
+  useIsomorphicLayoutEffect(() => {
+    selection.setEnabled(isSelectionEnabled);
+  }, [selection, isSelectionEnabled]);
+  // Synchronizes the gesture host: the recognizer is attached to the menu
+  // root only while the menu shows, so a closed menu adds no listeners to
+  // the page. A menu in a popover follows the popover's beforetoggle; one
+  // outside a popover is attached while it is in the document. The root is
+  // re-read on every commit: a layer mounts its content after the hook's
+  // first commit, and a flyout's on open.
+  const selectionHostRef = useRef<{
+    element: Element;
+    layer: Element | null;
+    detach: (() => void) | null;
+    stopWatching: () => void;
+  } | null>(null);
+  const isMenuOpen = options.isOpen;
+  useIsomorphicLayoutEffect(() => {
+    const element =
+      isSelectionEnabled && isMenuOpen !== false
+        ? options.menuRef.current
+        : null;
+    if (selectionHostRef.current?.element === element) {
+      return;
     }
+    const previous = selectionHostRef.current;
+    previous?.stopWatching();
+    previous?.detach?.();
+    if (element == null) {
+      selectionHostRef.current = null;
+      return;
+    }
+    const layer = element.closest('[popover]');
+    const entry: NonNullable<typeof selectionHostRef.current> = {
+      element,
+      layer,
+      detach: null,
+      stopWatching: () => {},
+    };
+    const setAttached = (attached: boolean) => {
+      if (attached && entry.detach == null) {
+        // The menu declares its own touch-action (FR4).
+        entry.detach = getGestureHost(element.ownerDocument).attach(
+          element,
+          selection,
+          {manageStyle: false},
+        );
+      } else if (!attached && entry.detach != null) {
+        entry.detach();
+        entry.detach = null;
+      }
+    };
+    if (layer == null || isMenuOpen === true) {
+      // The owner says it shows (or nothing else can tell).
+      setAttached(true);
+    } else {
+      setAttached(isShowing(element));
+      entry.stopWatching = watchToggle(layer, isOpen => setAttached(isOpen));
+    }
+    selectionHostRef.current = entry;
+  });
+  // Detaches from the gesture host on unmount.
+  useEffect(
+    () => () => {
+      selectionHostRef.current?.stopWatching();
+      selectionHostRef.current?.detach?.();
+      selectionHostRef.current = null;
+    },
+    [],
+  );
+
+  const cancel = useCallback(() => {
+    // The host closed the menu under the gesture: end it with no effect of
+    // its own.
     endGesture();
-  }, [endGesture, step]);
+  }, [endGesture]);
 
   useEffect(() => {
     // Install the gesture counter's listeners before the first press.
@@ -902,25 +1359,16 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     };
   }, [endGesture]);
 
-  return useMemo<UseMenuPressReturn>(
+  const surface = useMemo<MenuSurfacePressReturn>(
     () => ({
       menuProps: {
         onPointerDown: handleMenuPointerDown,
         [MENU_PRESS_MARKER]: '',
       },
-      triggerProps: {
-        onPointerDown: handleTriggerPointerDown,
-        onContextMenu: handleTriggerContextMenu,
-      },
       isTriggerClickFromPress,
       cancel,
     }),
-    [
-      handleMenuPointerDown,
-      handleTriggerPointerDown,
-      handleTriggerContextMenu,
-      isTriggerClickFromPress,
-      cancel,
-    ],
+    [handleMenuPointerDown, isTriggerClickFromPress, cancel],
   );
+  return {surface, triggerContext};
 }

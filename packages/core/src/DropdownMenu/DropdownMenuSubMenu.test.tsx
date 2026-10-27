@@ -22,12 +22,14 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {finger, place, placeRows, rowCenter} from './__tests__/fingerTouch';
 import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
 import {IconButton} from '../IconButton';
 import {RadioList, RadioListItem} from '../RadioList';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {Theme, defineTheme} from '../theme';
 import {rtlStyles} from '../utils';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
@@ -1114,7 +1116,84 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
 });
 
 describe('DropdownMenuSubMenu press model', () => {
+  // A finger on a phone or tablet: the touch modes track it through the
+  // gesture system, as the root does.
+  const originalMatchMedia = window.matchMedia;
+  const asFinger = () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === TOUCH_QUERY,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+  };
+  afterEach(() => {
+    vi.stubGlobal('matchMedia', originalMatchMedia);
+  });
+  // A touch pointer where the primary pointer is fine (jsdom's default): the
+  // menu keeps the pointer model, which tracks the finger's pointer events.
+  const touchPointer = (pointerId = 1) => ({pointerType: 'touch', pointerId});
+
+
+  it('a cancelled finger in a flyout clears its lit row where the root menu\u2019s touch modes apply, as the root\u2019s does (spec:AST-094 FR28); pinned to the pointer model, the row stays lit', async () => {
+    // A coarse primary pointer on a large screen: the root is an anchored
+    // popover, and its sub-menu flies out.
+    asFinger();
+    const openFlyout = async (presentation?: 'popover') => {
+      const user = userEvent.setup();
+      const view = render(
+        <DropdownMenu button={{label: 'Actions'}} presentation={presentation}>
+          <DropdownMenuItem label="Rename" onClick={() => {}} />
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+            <DropdownMenuItem label="Folder B" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: /Actions/}));
+      const trigger = screen.getByRole('menuitem', {
+        name: /Move to/,
+        hidden: true,
+      });
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      return {
+        view,
+        folderA: screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
+        folderB: screen.getByRole('menuitem', {name: 'Folder B', hidden: true}),
+      };
+    };
+    // In the touch modes the gesture system tracks the finger: it lands in
+    // the flyout and slides onto Folder B, which lights; then the browser
+    // takes the touch (a scroll, a system gesture).
+    const touch = await openFlyout();
+    placeRows([touch.folderA, touch.folderB], 300);
+    const contact = finger();
+    contact.down(touch.folderA, rowCenter(0, 300));
+    contact.move(touch.folderA, rowCenter(1, 300));
+    expect(touch.folderB).toHaveFocus();
+    contact.cancel(touch.folderA, rowCenter(1, 300));
+    expect(touch.folderB).not.toHaveFocus();
+    touch.view.unmount();
+    // Pinned to the pointer model, the finger's pointer events drive the
+    // press, and a cancel leaves the row lit, as the root's does.
+    const pinned = await openFlyout('popover');
+    fireEvent.pointerDown(pinned.folderA, touchPointer(2));
+    fireEvent.pointerMove(pinned.folderB, touchPointer(2));
+    expect(pinned.folderB).toHaveFocus();
+    fireEvent.pointerCancel(pinned.folderB, touchPointer(2));
+    expect(pinned.folderB).toHaveFocus();
+  });
+
   it('a press released on the sub-menu row opens it and keeps the menu', async () => {
+    asFinger();
     const user = userEvent.setup();
     render(<MoveMenu />);
     const root = screen.getByRole('button', {name: /Actions/});
@@ -1124,14 +1203,19 @@ describe('DropdownMenuSubMenu press model', () => {
       hidden: true,
     });
     const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
-    fireEvent.pointerDown(rename, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerMove(trigger, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerUp(trigger, {pointerType: 'touch', pointerId: 1});
+    // The finger is tracked by the gesture system: touch events over rows
+    // with a layout box.
+    placeRows([rename, trigger]);
+    const contact = finger();
+    contact.down(rename, rowCenter(0));
+    contact.move(rename, rowCenter(1));
+    contact.up(rename, rowCenter(1));
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(root).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('a release inside the flyout acts on the flyout row and closes the whole menu', async () => {
+    asFinger();
     const onMove = vi.fn();
     const user = userEvent.setup();
     render(<MoveMenu onMove={onMove} />);
@@ -1150,9 +1234,11 @@ describe('DropdownMenuSubMenu press model', () => {
       name: 'Folder A',
       hidden: true,
     });
-    fireEvent.pointerDown(folderA, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerMove(folderB, {pointerType: 'touch', pointerId: 1});
-    fireEvent.pointerUp(folderB, {pointerType: 'touch', pointerId: 1});
+    placeRows([folderA, folderB], 300);
+    const contact = finger();
+    contact.down(folderA, rowCenter(0, 300));
+    contact.move(folderA, rowCenter(1, 300));
+    contact.up(folderA, rowCenter(1, 300));
     fireEvent.click(folderA, {detail: 1});
     expect(onMove).toHaveBeenCalledTimes(1);
     expect(onMove).toHaveBeenCalledWith('b');
@@ -1287,6 +1373,49 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
 
   afterEach(() => {
     vi.stubGlobal('matchMedia', originalMatchMedia);
+  });
+
+  it('a finger tap on the Back row of a drilled-in view with a header pops it, though that view sits beside the root menu', async () => {
+    // A compact touch screen whose primary pointer is coarse.
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches:
+          query === COMPACT_TOUCH_PRESENTATION_QUERY ||
+          query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Labels"
+          header={<input aria-label="Filter labels" />}>
+          <DropdownMenuItem label="Bug" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+    fireEvent.click(row);
+    const back = await screen.findByRole('menuitem', {
+      name: 'Back to Actions',
+      hidden: true,
+    });
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    place(back, {left: 0, top: 0, width: 200, height: 40});
+    const contact = finger();
+    contact.down(back, {x: 100, y: 20});
+    contact.up(back, {x: 100, y: 20}, 40);
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
   });
 
   function PhoneMenu({onMove}: {onMove?: (folder: string) => void} = {}) {
