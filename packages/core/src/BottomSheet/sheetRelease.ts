@@ -192,9 +192,6 @@ export function resolveSheetRelease({
   };
 }
 
-/** Past this fraction of the shortest detent's height below it, the pointer presentation's dim is clear. */
-export const DEFAULT_DISMISS_OVERSHOOT_RATIO = 0.4;
-
 /**
  * The release velocity, scaled down if needed so `spring`, released at
  * `from` moving at `velocity`, rises above `to` by at most `limit` px

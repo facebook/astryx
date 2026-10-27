@@ -146,11 +146,7 @@ import {
   type ReleaseRule,
 } from '../motion/interactive';
 import {readReleaseMotion, type ReleaseMotion} from './releaseMotion';
-import {
-  DEFAULT_DISMISS_OVERSHOOT_RATIO,
-  limitOvershoot,
-  sheetReleaseRule,
-} from './sheetRelease';
+import {limitOvershoot, sheetReleaseRule} from './sheetRelease';
 import {
   computeDetentOffsets,
   peekOffsetFor,
@@ -201,18 +197,15 @@ function dismissedOffsetFor(
 ): number {
   return maxOffset + shortestDetentHeight;
 }
-// Where the scrim reaches clear. Under UIKit's presentation, gone: UIKit's dim
-// is linear from the shortest detent to the dismissed position. Under the
-// pointer presentation, DEFAULT_DISMISS_OVERSHOOT_RATIO of the shortest
-// detent's height below it.
+// Where the scrim reaches clear: gone, under every pointer. UIKit's dim is
+// linear from the shortest detent to the dismissed position, and one release
+// rule decides every drag (spec:AST-094 FR36), so a dim that cleared sooner
+// would let a sheet spring back under a clear backdrop.
 function scrimClearOffset(
   maxOffset: number,
   shortestDetentHeight: number,
-  isUIKit: boolean,
 ): number {
-  return isUIKit
-    ? dismissedOffsetFor(maxOffset, shortestDetentHeight)
-    : maxOffset + shortestDetentHeight * DEFAULT_DISMISS_OVERSHOOT_RATIO;
+  return dismissedOffsetFor(maxOffset, shortestDetentHeight);
 }
 // The pointer presentation's drag (a mouse anywhere, and anything where the
 // primary pointer is fine) keeps the sheet's pointer tracking (spec:AST-094
@@ -1168,11 +1161,7 @@ export function useSheetGestures({
       scrimOpacityForOffset(
         target,
         offsets,
-        scrimClearOffset(
-          maxOffset,
-          shortestDetentHeight,
-          readTouchPresentation().isTouch,
-        ),
+        scrimClearOffset(maxOffset, shortestDetentHeight),
         peekOffset,
       ),
     );
@@ -1388,7 +1377,6 @@ export function useSheetGestures({
             shortest,
             offscreenBlockEndInsetRef.current,
           ),
-          releaseMotionRef.current.kind === 'uikit',
         ),
         peek,
       );
@@ -1413,11 +1401,7 @@ export function useSheetGestures({
       maxOffset,
       offscreenBlockEndInsetRef.current,
     );
-    const clearOffset = scrimClearOffset(
-      maxOffset,
-      shortestDetentHeight,
-      releaseMotionRef.current.kind === 'uikit',
-    );
+    const clearOffset = scrimClearOffset(maxOffset, shortestDetentHeight);
     if (settlingLayoutOffsetRef.current == null) {
       endScrimTracking(
         scrimOpacityForOffset(
@@ -1465,18 +1449,13 @@ export function useSheetGestures({
         maxOffset,
         offscreenBlockEndInsetRef.current,
       );
-      const isUIKit = releaseMotionRef.current.kind === 'uikit';
       const dismissedOffset = dismissedOffsetFor(
         maxOffset,
         shortestDetentHeight,
       );
       // Where the scrim reaches clear, and the dim at any offset this release
       // passes through.
-      const clearOffset = scrimClearOffset(
-        maxOffset,
-        shortestDetentHeight,
-        isUIKit,
-      );
+      const clearOffset = scrimClearOffset(maxOffset, shortestDetentHeight);
       const dimFor = (o: number) =>
         scrimOpacityForOffset(o, offsets, clearOffset, peekOffset);
       lastDimForRef.current = dimFor;
@@ -1978,11 +1957,7 @@ export function useSheetGestures({
         scrimOpacityForOffset(
           next,
           offsets,
-          scrimClearOffset(
-            floorOffset,
-            shortestDetentHeight,
-            releaseMotionRef.current.kind === 'uikit',
-          ),
+          scrimClearOffset(floorOffset, shortestDetentHeight),
           peekOffset,
         ),
       );

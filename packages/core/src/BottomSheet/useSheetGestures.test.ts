@@ -3601,7 +3601,7 @@ describe('useSheetGestures: the dim follows the sheet', () => {
   });
 
   it.each([['a mouse', {coarse: false}]])(
-    "keeps today's dim under %s: the host eases it, clear 40 %% below the shortest detent",
+    "maps the dim under %s as a finger's, clear only once gone (one release rule, spec:AST-094 FR36); the host eases it",
     (_, {coarse}) => {
       vi.stubGlobal(
         'matchMedia',
@@ -3622,9 +3622,12 @@ describe('useSheetGestures: the dim follows the sheet', () => {
       const {dialog, target} = inDialog();
       const played = recordAnimations(dialog);
       down(hook, 0, 0, target);
-      // 40 px below the 200 px detent: today's dim clears 80 px below it.
+      // 40 px below the 200 px detent, of the 200 px to gone: the dim is
+      // 80 % there, as a finger's, since a still release dismisses only past
+      // halfway (a dim cleared 40 % below the detent let the sheet spring
+      // back under a clear backdrop).
       move(hook, 240, 500, target);
-      expect(onScrimOpacity).toHaveBeenLastCalledWith(expect.closeTo(0.5, 9));
+      expect(onScrimOpacity).toHaveBeenLastCalledWith(expect.closeTo(0.8, 9));
       restAt(hook, 240, 600, target);
       up(hook, 240, 1000, target);
       // Never pinned, and no dim played on the backdrop: the host's own
