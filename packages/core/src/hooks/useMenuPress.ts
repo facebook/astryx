@@ -28,14 +28,13 @@
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
  * - A mouse press on the trigger opens the menu at once. With
- *   `longPressDelayMs` unset, a finger on a touch screen (a coarse primary
- *   pointer: touch model `'uikit'`, `spec:AST-094` FR25, FR29) opens it as
- *   it presses on a trigger in a fixed bar, and inside a scroll view once the
- *   150 ms content-touch delay has passed with no scroll; the opening finger
- *   then travels UIMenu's handoff distance before it picks. Where the primary
- *   pointer is fine, or with a delay set, a finger held for that delay (500 ms
- *   unset) opens it and the opening press follows the settle rule (see
- *   menuPressGesture.ts). DropdownMenu's own entry (`useDropdownMenuPress`)
+ *   `longPressDelayMs` unset, a finger on every device (touch model
+ *   `'uikit'`, `spec:AST-094` FR25, FR29, FR43) opens it as it presses on a
+ *   trigger in a fixed bar, and inside a scroll view once the 150 ms
+ *   content-touch delay has passed with no scroll; the opening finger then
+ *   travels UIMenu's handoff distance before it picks. With a delay set, a
+ *   finger held for that delay opens it and the opening press follows the
+ *   settle rule (see menuPressGesture.ts). DropdownMenu's own entry (`useDropdownMenuPress`)
  *   passes its touch model itself.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
@@ -74,7 +73,6 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useMediaQuery} from './useMediaQuery';
 import type {UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
@@ -237,10 +235,10 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
-   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
-   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
-   * is that wait everywhere, as released (`spec:AST-094` FR25).
+   * Unset, the wait follows `spec:AST-094` FR29 on every device (FR43): none
+   * in a fixed bar, 150 ms in a scroll view, the opening finger picking after
+   * UIMenu's handoff. Set, it is that wait everywhere, as released
+   * (`spec:AST-094` FR25).
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -312,8 +310,8 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 
 /**
  * Where a pointer is, for a finger's handoff distance: given with
- * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
- * opening finger (`spec:AST-094` FR29). Without
+ * `touchModel: 'uikit'` (a finger on every device, `spec:AST-094` FR43), for
+ * the trigger's opening finger (`spec:AST-094` FR29). Without
  * it the machine keeps the settle rule.
  */
 function handoffPosition(
@@ -404,16 +402,12 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  // An unset delay follows FR29 where the primary pointer is coarse
-  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
-  // released wait.
-  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
+  // An unset delay follows FR29 for a finger on every device (spec:AST-094
+  // FR25, FR43); a set one keeps the released wait.
   return useDropdownMenuPress({
     ...publicOptions,
     touchModel:
-      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
-        ? 'uikit'
-        : 'pointer',
+      publicOptions.longPressDelayMs === undefined ? 'uikit' : 'pointer',
   });
 }
 
@@ -691,8 +685,8 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         case 'withdraw': {
           // The window's blur withdrew a finger's gesture: it stays tracked to
           // its release, but nothing drives the menu any more (the hold, the
-          // autoscroll, the page lock). A row it lit clears where the primary
-          // pointer is coarse (spec:AST-094 FR28, FR19).
+          // autoscroll, the page lock). A row it lit clears under the 'uikit'
+          // touch model, a finger's on every device (spec:AST-094 FR28, FR43).
           longPressApiRef.current?.cancel();
           stopAutoscroll();
           touchMovePreventerRef.current?.();
@@ -706,9 +700,10 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           return;
         }
         case 'settle': {
-          // A finger's lit row clears on a cancel only where the primary
-          // pointer is coarse (the 'uikit' touch model); elsewhere the
-          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          // A finger's lit row clears on a cancel under the 'uikit' touch
+          // model, on every device (spec:AST-094 FR28, FR43); the pointer
+          // model (a pinned `presentation="popover"`) keeps the released
+          // highlight (spec:AST-094 FR25).
           if (
             effect.clear === true &&
             optionsRef.current.touchModel === 'uikit'

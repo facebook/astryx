@@ -583,8 +583,8 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * Omitted, the menu is the anchored popover with the touch modes under a
-   * finger: its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * Omitted, the menu is the anchored popover, and under a finger, on every
+   * device, its trigger opens as UIMenu's pull-down button does. `'popover'`
    * pins the anchored popover with the pointer behavior on every device (a
    * finger held for 500 ms opens it, as before).
    */
@@ -1074,6 +1074,7 @@ function DropdownMenuPopover({
   alignment = 'start',
   presentation: _presentation,
   touchModes,
+  pressTouchModel = 'uikit',
   header,
   footer,
   className,
@@ -1084,6 +1085,11 @@ function DropdownMenuPopover({
 }: DropdownMenuProps & {
   /** Whether the touch input modes apply (the resolved presentation). */
   touchModes?: boolean;
+  /**
+   * How a finger's press runs on every device (`spec:AST-094` FR29, FR43):
+   * UIMenu's, unless the caller pins `presentation="popover"`.
+   */
+  pressTouchModel?: 'pointer' | 'uikit';
 }) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
@@ -1319,8 +1325,10 @@ function DropdownMenuPopover({
           };
         });
       } else if (surfaceMotionRef.current?.element === surface) {
-        // A mouse runs nothing touch-related (spec:AST-094 FR24): it creates
-        // no motion, and stops one a finger's open left.
+        // Out of the touch modes the menu keeps the layer's own entrance:
+        // the grow and the shrink are a finger's on a touch device
+        // (spec:AST-094 FR31). It creates no motion, and stops one an open in
+        // the touch modes left.
         surfaceMotionRef.current.motion.reset();
       }
     }
@@ -1718,9 +1726,10 @@ function DropdownMenuPopover({
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
-    // Under a finger the trigger is UIMenu's pull-down button (spec:AST-094);
-    // `presentation="popover"` pins the pointer model, today's included.
-    touchModel: touchModes ? 'uikit' : 'pointer',
+    // Under a finger, on every device, the trigger is UIMenu's pull-down
+    // button (spec:AST-094 FR29, FR43); `presentation="popover"` pins the
+    // pointer model, today's included.
+    touchModel: pressTouchModel,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -2170,6 +2179,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       {...sharedProps}
       presentation="popover"
       touchModes={touchModes}
+      pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
     />
   );
 }

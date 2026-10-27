@@ -1057,10 +1057,17 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
     );
   }
 
-  it('the opening finger keeps the settle rule, though an untyped caller passes the touch model', () => {
+  // A set delay keeps the released model (spec:AST-094 FR25); the passed
+  // touch model must not change that.
+  it('with a delay set, the opening finger keeps the settle rule, though an untyped caller passes the touch model', () => {
     vi.useFakeTimers();
     const onSelect = vi.fn();
-    render(<PublicHarness onSelect={onSelect} />);
+    render(
+      <PublicHarness
+        onSelect={onSelect}
+        longPressDelayMs={MENU_PRESS_LONG_PRESS_MS}
+      />,
+    );
     fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
       ...touch(),
       clientX: 0,
@@ -1075,9 +1082,14 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
     expect(onSelect).toHaveBeenCalledWith('A');
   });
 
-  it('a finger press on the trigger does not open the menu by itself, though an untyped caller passes the touch model', () => {
+  it('with a delay set, a finger press on the trigger does not open the menu by itself, though an untyped caller passes the touch model', () => {
     const onOpenChange = vi.fn();
-    render(<PublicHarness onOpenChange={onOpenChange} />);
+    render(
+      <PublicHarness
+        onOpenChange={onOpenChange}
+        longPressDelayMs={MENU_PRESS_LONG_PRESS_MS}
+      />,
+    );
     fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
       pointerType: 'touch',
       pointerId: 1,
