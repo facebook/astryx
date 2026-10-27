@@ -367,6 +367,68 @@ function touchTargetSize(row: HTMLElement): number {
   return Number.isFinite(size) && size > 0 ? size : MIN_TOUCH_TARGET;
 }
 
+/**
+ * The finite animations running or held in the row's list: its rows' motions
+ * (an update's slide, a swipe, edit mode's slide) and their parts'.
+ */
+function listAnimations(row: HTMLElement): Animation[] {
+  const list = row.parentElement ?? row;
+  if (typeof list.getAnimations !== 'function') {
+    return [];
+  }
+  return list.getAnimations({subtree: true}).filter(animation => {
+    if (animation.playState !== 'running' && animation.playState !== 'paused') {
+      return false;
+    }
+    const end = animation.effect?.getComputedTiming().endTime;
+    return typeof end === 'number' && Number.isFinite(end);
+  });
+}
+
+/**
+ * Keeps the row's hit insets live through the shared touch hit area. Rows
+ * move by transform, which the shared measurement reads as they stand in one
+ * frame: a measurement that arrives while the list moves is dropped, and once
+ * the motion ends the row is watched afresh, so its insets are taken at rest
+ * and no frame of a compositor motion lays out or paints for them.
+ */
+function watchRowHitArea(row: HTMLElement, minSize: number): () => void {
+  let stop = (): void => {};
+  let isStopped = false;
+  let isWaiting = false;
+  const watch = (): void => {
+    stop = watchHitArea(
+      row,
+      insets => {
+        const moving = listAnimations(row);
+        if (moving.length === 0) {
+          writeHitInsets(row, insets);
+          return;
+        }
+        if (isWaiting) {
+          return;
+        }
+        isWaiting = true;
+        void Promise.allSettled(
+          moving.map(async animation => animation.finished),
+        ).then(() => {
+          isWaiting = false;
+          if (!isStopped) {
+            stop();
+            watch();
+          }
+        });
+      },
+      minSize,
+    );
+  };
+  watch();
+  return () => {
+    isStopped = true;
+    stop();
+  };
+}
+
 export function ListItem({
   label,
   description,
@@ -400,11 +462,7 @@ export function ListItem({
     if (!isTouchTarget || row == null) {
       return undefined;
     }
-    return watchHitArea(
-      row,
-      insets => writeHitInsets(row, insets),
-      touchTargetSize(row),
-    );
+    return watchRowHitArea(row, touchTargetSize(row));
   }, [isTouchTarget]);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;

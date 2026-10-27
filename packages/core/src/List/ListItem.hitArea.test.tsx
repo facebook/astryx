@@ -7,7 +7,8 @@
  * @output Checks that ListItem keeps an interactive, enabled row's touch hit
  *   insets live through the shared utility (`component:List` FR10): which
  *   rows it watches, that the insets land on the row, the theme's touch
- *   target size under a finger, and that it stops when the row goes
+ *   target size under a finger, that a measurement taken mid-motion waits for
+ *   the motion to end, and that it stops when the row goes
  * @position Test for ListItem's hit area wiring (ListItem.tsx,
  *   listRow.stylex.ts); the layer's own CSS is checked in List.test.tsx, its
  *   hit testing in __tests__/ListTouchHitArea.interaction.browser.spec.ts
@@ -127,6 +128,37 @@ describe('ListItem touch hit area (component:List FR10)', () => {
       </List>,
     );
     expect(watches.map(watch => watch.minSize)).toEqual([48, 44]);
+  });
+
+  it('drops a measurement taken while the list moves, and watches the row afresh once the motion ends', async () => {
+    render(
+      <List>
+        <ListItem label="Pressable" onClick={() => {}} />
+      </List>,
+    );
+    const row = screen.getByText('Pressable').closest('li')!;
+    const list = row.parentElement!;
+    let finish = (): void => {};
+    const finished = new Promise<void>(resolve => {
+      finish = resolve;
+    });
+    const motion = {
+      playState: 'running',
+      effect: {getComputedTiming: () => ({endTime: 300})},
+      finished,
+    } as unknown as Animation;
+    list.getAnimations = () => [motion];
+    expect(watches).toHaveLength(1);
+    watches[0].onInsets({top: 3, right: 0, bottom: 1, left: 0});
+    // Mid-motion: nothing written.
+    expect(row.style.getPropertyValue('--astryx-hit-inset-top')).toBe('');
+    list.getAnimations = () => [];
+    finish();
+    await vi.waitFor(() => expect(watches).toHaveLength(2));
+    // The old watch stopped, and the fresh one measures the row at rest.
+    expect(watches[0].stop).toHaveBeenCalledTimes(1);
+    watches[1].onInsets({top: 4, right: 0, bottom: 1, left: 0});
+    expect(row.style.getPropertyValue('--astryx-hit-inset-top')).toBe('4px');
   });
 
   it('stops watching when the row goes or turns disabled', () => {

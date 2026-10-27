@@ -104,6 +104,15 @@ describe('clampedHitInsets', () => {
     expect(b.top).toBe(7);
   });
 
+  it('cuts a wide and a tall diagonal pair whose full areas would meet', () => {
+    const square = rect(100, 100, 32, 32);
+    // 4 px across and 12 px down.
+    const wide = rect(136, 144, 40, 24);
+    const a = clampedHitInsets(square, [wide]);
+    const b = clampedHitInsets(wide, [square]);
+    expect(square.bottom + a.bottom).toBeLessThanOrEqual(wide.top - b.top);
+  });
+
   it('ignores a neighbour that overlaps the target (an ancestor or an overlay)', () => {
     expect(
       clampedHitInsets(rect(100, 100, 24, 24), [rect(90, 90, 200, 60)]),
@@ -322,6 +331,34 @@ describe('watchHitArea', () => {
     stops.forEach(stop => stop());
   });
 
+  it('counts a neighbour up to 44 px away for a small target, so two 8 px dots 24 px apart meet in the middle', () => {
+    const control = byId('switch');
+    const other = byId('other');
+    place(control, rect(100, 100, 8, 8));
+    place(other, rect(132, 100, 8, 8));
+    place(byId('link'), rect(400, 400, 60, 24));
+    const heard: HitInsets[] = [];
+    const stop = watchHitArea(control, insets => heard.push(insets));
+    show(control);
+    flush();
+    expect(heard.at(-1)?.right).toBe(12);
+    stop();
+  });
+
+  it('gives a second watch of the same element its insets', () => {
+    const control = byId('switch');
+    place(control, rect(100, 100, 24, 24));
+    const first = watchHitArea(control, () => {});
+    show(control);
+    flush();
+    const heard: HitInsets[] = [];
+    const second = watchHitArea(control, insets => heard.push(insets));
+    flush();
+    expect(heard).toEqual([{top: 10, right: 10, bottom: 10, left: 10}]);
+    first();
+    second();
+  });
+
   it('carries controls past the frame budget to the next frame, measuring at least one a frame', () => {
     const controls = ['switch', 'other'].map(byId);
     place(controls[0], rect(100, 100, 24, 24));
@@ -405,7 +442,11 @@ describe('watchHitArea', () => {
       control.dispatchEvent(press);
     };
     const click = () => {
-      const event = new MouseEvent('click', {bubbles: true, cancelable: true});
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+      });
       control.dispatchEvent(event);
       return event.defaultPrevented;
     };
@@ -417,6 +458,19 @@ describe('watchHitArea', () => {
     // A touch with no click leaves nothing behind for the next touch.
     touch(130);
     touch(110);
+    expect(click()).toBe(false);
+    // A keyboard activation (detail 0) after a touch with no click goes
+    // through, and so does a click after the browser cancelled the touch.
+    touch(130);
+    const key = new MouseEvent('click', {bubbles: true, cancelable: true});
+    control.dispatchEvent(key);
+    expect(key.defaultPrevented).toBe(false);
+    touch(130);
+    control.dispatchEvent(new Event('pointercancel', {bubbles: true}));
+    expect(click()).toBe(false);
+    // A press elsewhere (the control's label) ends it before its click.
+    touch(130);
+    link.dispatchEvent(new Event('pointerdown', {bubbles: true}));
     expect(click()).toBe(false);
     stop();
   });
