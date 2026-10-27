@@ -469,6 +469,39 @@ describe('the focus refusal (FR4)', () => {
     first.remove();
     second.remove();
   });
+
+  it('shares one document blur listener among its callers, each still hearing every blur (spec:AST-094 FR24)', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const field = document.createElement('input');
+    const other = document.createElement('input');
+    document.body.append(field, other);
+    const heard: string[] = [];
+    const stopFirst = refuseFocusReveal(document, {
+      claim: () => {
+        heard.push('first');
+        return null;
+      },
+    });
+    const stopSecond = refuseFocusReveal(document, {
+      claim: () => {
+        heard.push('second');
+        return null;
+      },
+    });
+    expect(add.mock.calls.filter(([type]) => type === 'blur')).toHaveLength(1);
+    field.focus();
+    other.focus();
+    expect(heard).toEqual(['first', 'second']);
+    stopFirst();
+    expect(remove).not.toHaveBeenCalled();
+    field.focus();
+    expect(heard).toEqual(['first', 'second', 'second']);
+    stopSecond();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(['blur']);
+    field.remove();
+    other.remove();
+  });
 });
 
 describe('the browser\u2019s own reveal pan (FR4)', () => {

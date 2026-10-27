@@ -38,7 +38,9 @@ exported from the package entry.
   capture-phase `blur` before the browser's own focus step, so the browser
   never reveals a field by scrolling the document. Focus that leaves for
   nothing (the keyboard's Done) can be parked so the next tap is a transition
-  again.
+  again. Every caller in a document shares one listener, which lives only
+  while a caller does; BottomSheet's hook installs it only under a coarse
+  primary pointer.
 - **The browser's own reveal pan (FR4):** `watchRevealPan(window, {owns})`
   is the one building block every keyboard-aware surface uses for a browser
   that pans the visual viewport to a focused field after the keyboard's
