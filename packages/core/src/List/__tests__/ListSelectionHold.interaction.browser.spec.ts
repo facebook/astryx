@@ -115,19 +115,14 @@ test("a busy first frame delays the pop's deselect instead of skipping into it",
   page,
   browserName,
 }) => {
-  test.skip(
-    browserName !== 'chromium',
-    'WebKit starts an animation created just before a block at its last frame time (motion/animator.ts, known limits)',
-  );
   const {target} = await push(page);
   expect(await layerOpacity(target)).toBe(1);
   // Back's handler starts the deselect; 150 ms of script then hold the main
-  // thread before the first frame. The deselect starts when the browser
-  // commits it, so the first frame due after the block shows it at most one
-  // frame in.
-  const first = await target.evaluate(
+  // thread before the first frame. Every frame due after the block is read
+  // until the row rests.
+  const {first, frames} = await target.evaluate(
     async row =>
-      new Promise<number>(resolve => {
+      new Promise<{first: number; frames: [number, number][]}>(resolve => {
         document.addEventListener(
           'click',
           () => {
@@ -135,16 +130,25 @@ test("a busy first frame delays the pop's deselect instead of skipping into it",
             while (performance.now() < until) {
               // Busy: the main thread is held.
             }
-            // The first frame due after the block: a frame scheduled
-            // before it runs with that earlier time.
-            const read = () => {
-              if ((document.timeline.currentTime as number) < until) {
-                requestAnimationFrame(read);
+            const frames: [number, number][] = [];
+            const sample = (time: number) => {
+              const layer = getComputedStyle(row, '::before');
+              const strength =
+                layer.content === 'none' || layer.content === 'normal'
+                  ? 0
+                  : Number(layer.opacity);
+              // A frame scheduled before the block runs with that
+              // earlier time: only frames due after it count.
+              if ((document.timeline.currentTime as number) >= until) {
+                frames.push([time - until, strength]);
+              }
+              if (strength > 0 && frames.length < 60) {
+                requestAnimationFrame(sample);
                 return;
               }
-              resolve(Number(getComputedStyle(row, '::before').opacity));
+              resolve({first: frames[0]?.[1] ?? Number.NaN, frames});
             };
-            requestAnimationFrame(read);
+            requestAnimationFrame(sample);
           },
           {once: true},
         );
@@ -153,9 +157,29 @@ test("a busy first frame delays the pop's deselect instead of skipping into it",
           ?.click();
       }),
   );
-  // At most one frame into the 350 ms deselect (1 − 17/350 ≈ 0.95); a start
-  // pinned before the block would show it about half done.
-  expect(first).toBeGreaterThan(0.9);
+  if (browserName === 'webkit') {
+    // WebKit may pin a motion created just before a block to the last frame
+    // before it (in some runs it does, in others it starts at the commit),
+    // so the first frame after the 150 ms block can be up to about 150 ms
+    // into the 350 ms deselect (1 − 200/350 leaves one more frame).
+    // Chromium starts it at the commit after the block. Once the animator
+    // starts a motion at the next frame in WebKit too, this branch goes.
+    expect(first, JSON.stringify(frames)).toBeGreaterThan(1 - 200 / 350);
+  } else {
+    // At most one frame into the 350 ms deselect (1 − 17/350 ≈ 0.95).
+    expect(first, JSON.stringify(frames)).toBeGreaterThan(0.9);
+  }
+  // In both engines every later frame moves on toward rest, none skipped.
+  for (let i = 1; i < frames.length; i++) {
+    expect(frames[i][1], JSON.stringify(frames)).toBeLessThanOrEqual(
+      frames[i - 1][1] + 0.01,
+    );
+    expect(
+      frames[i][0] - frames[i - 1][0],
+      JSON.stringify(frames),
+    ).toBeLessThan(40);
+  }
+  expect(frames.at(-1)?.[1]).toBe(0);
   await expect.poll(async () => layerOpacity(target)).toBe(0);
 });
 
