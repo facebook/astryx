@@ -1593,9 +1593,10 @@ describe('useSheetGestures', () => {
   });
 
   describe('body overscroll', () => {
-    // A mouse on the scrolling body (the pointer path, spec:AST-017 FR59): a
-    // pull down where nothing under the pointer can scroll up drags the sheet
-    // once it is past 8 px, anchored at the press.
+    // A mouse on the scrolling body, through the body's pans (spec:AST-094
+    // FR19): a pull down where nothing under the pointer can scroll up, or up
+    // where nothing can scroll down while a taller detent exists, drags the
+    // sheet past the pan's 10 px.
     function makeBody(scrollTop: number) {
       return makeScroller({scrollTop, clientHeight: 200, scrollHeight: 800});
     }
@@ -1662,6 +1663,43 @@ describe('useSheetGestures', () => {
       bodyDown(hook, 100, 0, body);
       bodyMove(hook, 60, 100, body); // moving up = scrolling intent
       expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it("pulls the sheet up from the content's end while a taller detent exists, and leaves the pull to the content at the tallest (spec:AST-094 FR14, FR19)", () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      // The content at its end: scrollTop + clientHeight === scrollHeight.
+      const body = makeBody(600);
+      const sheet = sheetOf(body);
+      attach(hook, sheet);
+      // At the tallest detent an upward pull is the content's.
+      act(() => {
+        mouseEvent('pointerdown', body, 300, 0);
+        mouseEvent('pointermove', body, 250, 100);
+        mouseEvent('pointerup', body, 250, 120);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.settledOffset).toBe(0);
+      // Settled on the lower detent, the same pull drags the sheet up by its
+      // travel past the pan's 10 px, and a slow release lands on the taller
+      // detent nearest where it is.
+      down(hook, 0, 1000, sheet);
+      move(hook, 180, 1700, sheet);
+      up(hook, 180, 2100, sheet);
+      expect(hook.result.current.settledOffset).toBe(200);
+      act(() => {
+        mouseEvent('pointerdown', body, 300, 3000);
+        mouseEvent('pointermove', body, 250, 3400);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(liveOffset(hook)).toBe(200 - (50 - PAN_THRESHOLD));
+      // Held still 400 ms before the lift: no release speed (spec:AST-100
+      // FR2), so where it is decides.
+      act(() => {
+        mouseEvent('pointermove', body, 150, 3900);
+        mouseEvent('pointerup', body, 150, 4300);
+      });
+      land();
+      expect(hook.result.current.settledOffset).toBe(0);
     });
   });
 
