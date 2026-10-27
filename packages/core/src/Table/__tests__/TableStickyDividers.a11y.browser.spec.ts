@@ -410,15 +410,26 @@ test("a carried border follows a theme switched at the same mode between the hoo
   // Another theme in the same mode, from the Theme around the table: the
   // component that calls the hooks does not re-render.
   await page.getByRole('button', {name: 'Theme stone'}).click();
-  for (const left of [0, 150]) {
-    await scrollTo(page, left);
-    await expect
-      .poll(async () => {
-        const {pinned, unpinned} = await dividerPixels(page, 1);
-        return sameColumn(pinned, unpinned, 12);
-      }, `at ${left}px`)
-      .toBe(true);
-  }
+  // The two themes' border tokens are a few levels apart in pixels, so the
+  // pinned divider's computed colour is compared with the border it carries.
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const row = document.querySelectorAll<HTMLTableRowElement>(
+          '.astryx-table-scroll-wrapper tbody tr',
+        );
+        const pinned = row[1]?.querySelector('[data-astryx-table-pinned]');
+        const below = row[2]?.cells[row[2].cells.length - 2];
+        if (pinned == null || below == null) {
+          return false;
+        }
+        return (
+          getComputedStyle(pinned, '::before').borderBottomColor ===
+          getComputedStyle(below).borderTopColor
+        );
+      }),
+    )
+    .toBe(true);
 });
 
 test("an open panel's carried override follows an operating-system switch between light and dark", async ({
