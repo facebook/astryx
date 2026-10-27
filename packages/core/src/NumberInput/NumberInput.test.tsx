@@ -2456,6 +2456,37 @@ describe('NumberInput stepping', () => {
       },
     );
 
+    // Only a primary click presses a stepper (`spec:AST-094` FR43): a right
+    // click's press names no pointer, so the activation after it is judged
+    // on its own.
+    it('a right click on a stepper leaves the next activation with no pointer to focus the input where the primary pointer is fine', () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      fireEvent.pointerDown(increment, {
+        pointerType: 'mouse',
+        button: 2,
+        buttons: 2,
+      });
+      fireEvent.pointerUp(increment, {pointerType: 'mouse', button: 2});
+      fireEvent.contextMenu(increment);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('spinbutton')).not.toHaveFocus();
+      pressStepper(increment, null);
+      expect(onChange).toHaveBeenLastCalledWith(6);
+      expect(screen.getByRole('spinbutton')).toHaveFocus();
+    });
+
     // Where it is coarse (a phone, a tablet), focusing the field would bring
     // up the on-screen keyboard: a pen and an activation with no pointer step
     // without moving focus, as a finger does.
