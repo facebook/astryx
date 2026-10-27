@@ -61,6 +61,75 @@ describe('createReorderable attach', () => {
     listen.mockRestore();
   });
 
+  it('does no DOM work when its module is imported, as on a server', async () => {
+    vi.resetModules();
+    const create = vi.spyOn(document, 'createElement');
+    const listen = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const module = await import('../createReorderable');
+    module.createReorderable({onReorder: () => {}});
+    expect(create).not.toHaveBeenCalled();
+    expect(listen).not.toHaveBeenCalled();
+    create.mockRestore();
+    listen.mockRestore();
+  });
+
+  it('names handles from the shipped English catalog on a page in another language', () => {
+    document.documentElement.lang = 'fr';
+    try {
+      const {container, cards, items} = deck(['Lait', 'Oeufs']);
+      const {detach} = createReorderable({onReorder: () => {}}).attach(
+        container,
+        {items},
+      );
+      expect(cards[0].grip).toHaveAccessibleName('Reorder Lait');
+      detach();
+    } finally {
+      document.documentElement.lang = '';
+    }
+  });
+
+  it('warns in development about an item with no accessible name and no text', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {container, cards, items} = deck(['', 'Eggs']);
+    cards[0].el.replaceChildren(cards[0].grip);
+    const {detach} = createReorderable({onReorder: () => {}}).attach(
+      container,
+      {items},
+    );
+    expect(
+      warn.mock.calls.some(call =>
+        call.join(' ').includes('no accessible name'),
+      ),
+    ).toBe(true);
+    detach();
+    warn.mockRestore();
+  });
+
+  it('reorders two containers one object is attached to each on its own, and start warns, reaching the latest', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const first = deck(['Milk', 'Eggs']);
+    const second = deck(['Red', 'Blue']);
+    const onReorder = vi.fn();
+    const reorderable = createReorderable({onReorder});
+    const one = reorderable.attach(first.container, {items: first.items});
+    const two = reorderable.attach(second.container, {items: second.items});
+    act(() => {
+      reorderable.start('blue');
+    });
+    expect(second.cards[1].grip).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      warn.mock.calls.some(call => call.join(' ').includes('more than one')),
+    ).toBe(true);
+    // The first container's handles reorder its own items only.
+    first.cards[0].grip.focus();
+    fireEvent.keyDown(first.cards[0].grip, {key: 'Enter'});
+    fireEvent.keyDown(first.cards[0].grip, {key: 'ArrowDown'});
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'milk', to: 1});
+    one.detach();
+    two.detach();
+    warn.mockRestore();
+  });
+
   it("gives each handle reorder mode's toggle, named Reorder and the item's name, in the Tab order", () => {
     const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
     const {detach} = createReorderable({onReorder: () => {}}).attach(
@@ -191,6 +260,44 @@ describe('createReorderable attach', () => {
     expect(document.activeElement).toBe(cards[1].grip);
     detach();
     expect(cards[1].grip).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('ends a drag on detach, reporting nothing, and leaves no preview', () => {
+    const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
+    for (const card of cards) {
+      const place = () => Array.from(container.children).indexOf(card.el);
+      Object.defineProperty(card.el, 'offsetParent', {
+        configurable: true,
+        get: () => container,
+      });
+      Object.defineProperty(card.el, 'offsetTop', {
+        configurable: true,
+        get: () => place() * 44,
+      });
+      Object.defineProperty(card.el, 'offsetHeight', {
+        configurable: true,
+        value: 44,
+      });
+      card.el.getBoundingClientRect = () =>
+        DOMRect.fromRect({x: 0, y: 300 + place() * 44, width: 300, height: 44});
+    }
+    const onReorder = vi.fn();
+    const {detach} = createReorderable({onReorder}).attach(container, {
+      items,
+    });
+    const MOUSE = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 280};
+    const grip = cards[0].grip;
+    fireEvent.pointerDown(grip, {...MOUSE, clientY: 322});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 330});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 322 + 70});
+    expect(
+      document.querySelector('[data-astryx-reorder-preview]'),
+    ).not.toBeNull();
+    detach();
+    expect(document.querySelector('[data-astryx-reorder-preview]')).toBeNull();
+    fireEvent.pointerUp(grip, {...MOUSE, clientY: 322 + 70});
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(Array.from(container.children)).toEqual(cards.map(card => card.el));
   });
 
   it("refuses and announces a move whose order hasn't changed by the end of its task", async () => {
