@@ -28,6 +28,7 @@ import {
   useId,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   type ReactNode,
 } from 'react';
@@ -56,6 +57,7 @@ import {useTranslator} from '../i18n';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
 import {
+  createRailLayout,
   playRail,
   snapshotRail,
   SideNavShellContext,
@@ -485,27 +487,36 @@ export function SideNav({
 
   // Every collapse or expand, whatever caused it, plays the rail's motion
   // (`component:SideNav` FR6): measured in the commit before the DOM changes,
-  // played after it before paint. Inside AppShell the content column moves
-  // with it (`component:AppShell` FR17).
+  // played after it before paint. Inside AppShell the content area moves with
+  // it through AppShell's own handle (`component:AppShell` FR17); outside,
+  // SideNav holds its own over its parent.
   const shell = use(SideNavShellContext);
+  const ownLayout = useMemo(() => createRailLayout(() => navRef.current), []);
   const railSnapshotRef = useRef<RailSnapshot | null>(null);
-  const endRailRef = useRef<(() => void) | null>(null);
-  const railElement = useCallback(
-    () => shell?.rail() ?? navRef.current,
-    [shell],
-  );
+  const endMotionRef = useRef<(() => void) | null>(null);
   const measureRail = useCallback(() => {
-    railSnapshotRef.current = snapshotRail(railElement(), shell);
-  }, [railElement, shell]);
+    endMotionRef.current?.();
+    railSnapshotRef.current = snapshotRail(
+      shell?.rail() ?? navRef.current,
+      shell?.animatedLayout ?? ownLayout,
+    );
+    shell?.beforeRailChange();
+  }, [shell, ownLayout]);
   useLayoutEffect(() => {
     const snapshot = railSnapshotRef.current;
     railSnapshotRef.current = null;
-    if (snapshot != null) {
-      endRailRef.current = playRail(snapshot, shell);
+    if (snapshot == null) {
+      return;
     }
+    const endRail = playRail(snapshot);
+    const endContent = shell?.afterRailChange() ?? (() => {});
+    endMotionRef.current = () => {
+      endRail();
+      endContent();
+    };
   }, [collapsed, shell]);
-  // An unmount mid-motion removes the copies and restores the row at once.
-  useLayoutEffect(() => () => endRailRef.current?.(), []);
+  // An unmount mid-motion removes the copy at once.
+  useLayoutEffect(() => () => endMotionRef.current?.(), []);
 
   const toggle = useCallback(() => {
     const next = !collapsed;

@@ -46,6 +46,14 @@ import {MobileNavToggle} from '../MobileNav/MobileNavToggle';
 import {MAX_CLOSE_DELAY_MS as MOBILE_NAV_MAX_CLOSE_DELAY_MS} from '../MobileNav/MobileNav';
 import {SideNavRenderContext} from '../SideNav/SideNavRenderContext';
 import {SideNavShellContext, type SideNavShell} from '../SideNav/railMotion';
+import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
+import {
+  holdLayoutSwap,
+  playLayoutSwap,
+  reportLayoutChange,
+  type LayoutChange,
+  type LayoutSwap,
+} from '../motion/animatedLayout';
 import {TopNavRenderContext} from '../TopNav/TopNavRenderContext';
 import {TopNavMobileContentContext} from '../TopNav/TopNavMobileContentContext';
 import {AppShellMobileContext} from './AppShellMobileContext';
@@ -750,28 +758,72 @@ export function AppShell({
   ) : undefined;
 
   // =========================================================================
-  // The rail's collapse motion moves the content column beside the inline
-  // side nav on the rail's clock (`component:AppShell` FR17,
-  // `component:SideNav` FR6): the rail's sibling that holds the main element,
-  // so the main element's own clip moves with it.
+  // While the inline side nav collapses or expands, the content area holds
+  // its own animated layout handle (`component:AppShell` FR17): the column
+  // beside the rail glides from its old place, and the content swaps its old
+  // wrap for its new one in place (`spec:AST-105` FR8), on the rail's clock
+  // (`component:SideNav` FR6).
   const railRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const contentLayout = useAnimatedLayout({containerRef: shellRef});
+  const pendingContentRef = useRef<{
+    change: LayoutChange;
+    swap: LayoutSwap | null;
+    before: DOMRect;
+  } | null>(null);
   const sideNavShell = useMemo<SideNavShell>(
     () => ({
+      animatedLayout: contentLayout,
       rail: () => railRef.current,
-      column: () => {
-        let column: HTMLElement | null = mainRef.current;
+      beforeRailChange() {
+        const main = mainRef.current;
+        if (main == null) {
+          return;
+        }
+        const change = reportLayoutChange(contentLayout, railRef);
+        change.measureBefore();
+        pendingContentRef.current = {
+          change,
+          swap: holdLayoutSwap(contentLayout, main, {isVisiblePart: true}),
+          before: main.getBoundingClientRect(),
+        };
+      },
+      afterRailChange() {
+        const pending = pendingContentRef.current;
+        pendingContentRef.current = null;
+        const main = mainRef.current;
+        if (pending == null || main == null) {
+          return () => {};
+        }
+        pending.change.animate();
+        // The column beside the rail, which the glide moves: the copy rides
+        // beside it, in its parent, by the same travel.
+        let column: HTMLElement = main;
         while (
-          column?.parentElement != null &&
+          column.parentElement != null &&
           !column.parentElement.contains(railRef.current)
         ) {
           column = column.parentElement;
         }
-        return column;
+        if (pending.swap == null || column.parentElement == null) {
+          return () => {};
+        }
+        const after = main.getBoundingClientRect();
+        const travel =
+          getComputedStyle(main).direction === 'rtl'
+            ? pending.before.right - after.right
+            : pending.before.left - after.left;
+        return playLayoutSwap(pending.swap, {
+          host: column.parentElement,
+          copy: p => ({opacity: 1 - p, translate: `${-travel * p}px 0px`}),
+          incoming: Array.from(main.children, element => ({
+            element,
+            frames: (p: number) => ({opacity: p}),
+          })),
+        });
       },
-      content: () => mainRef.current,
     }),
-    [],
+    [contentLayout],
   );
 
   // Build sideNav content

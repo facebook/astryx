@@ -67,6 +67,9 @@ beforeEach(() => {
       if (this.closest('[inert]') != null) {
         return rect(0, 0);
       }
+      if (this.classList.contains('astryx-app-shell')) {
+        return rect(0, SHELL_WIDTH);
+      }
       const nav = realNav();
       if (nav != null && (this === nav || this.contains(nav))) {
         return rect(0, width);
@@ -142,9 +145,10 @@ function Shell({
   );
 }
 
-function toggle() {
+/** Collapse or expand, then let the glide's microtask run. */
+async function toggle() {
   const button = screen.getByRole('button', {name: /collapse|expand/i});
-  act(() => {
+  await act(async () => {
     fireEvent.click(button);
   });
 }
@@ -160,9 +164,9 @@ function copies(): Element[] {
 }
 
 describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)', () => {
-  it('collapses by covering the old rail with a clip while the content slides, never animating a width', () => {
+  it('collapses by covering the old rail with a clip while the content slides, never animating a width', async () => {
     render(<Shell />);
-    toggle();
+    await toggle();
 
     expect(railWidth()).toBe(COLLAPSED);
     expect(animated('width')).toEqual([]);
@@ -189,9 +193,9 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(durations.size).toBe(1);
   });
 
-  it('cross-fades the content: the old wrap fades out over the new one, which fades in', () => {
+  it('cross-fades the content: the old wrap fades out over the new one, which fades in', async () => {
     render(<Shell />);
-    toggle();
+    await toggle();
     const main = screen.getByRole('main');
     const copy = copies().find(element =>
       element.textContent?.includes('The page beside the rail.'),
@@ -214,12 +218,12 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(fadeIn?.keyframes.at(-1)?.opacity).toBe(1);
   });
 
-  it('expands by revealing the new rail with a clip, applied before the first frame paints', () => {
+  it('expands by revealing the new rail with a clip, applied before the first frame paints', async () => {
     render(<Shell />);
-    toggle();
+    await toggle();
     recorded.forEach(entry => entry.animation.finish());
     recorded = [];
-    toggle();
+    await toggle();
 
     expect(railWidth()).toBe(EXPANDED);
     // A copy of the new rail is clipped open; the real one waits under it.
@@ -238,9 +242,9 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(slide.keyframes[0].translate).toBe(`${COLLAPSED - EXPANDED}px 0px`);
   });
 
-  it('leaves the real collapsed rail and no copies once the motion ends', () => {
+  it('leaves the real collapsed rail and no copies once the motion ends', async () => {
     render(<Shell />);
-    toggle();
+    await toggle();
     expect(copies().length).toBeGreaterThan(0);
     act(() => {
       recorded.forEach(entry => entry.animation.finish());
@@ -249,19 +253,19 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(railWidth()).toBe(COLLAPSED);
   });
 
-  it('changes at once under Reduce Motion with a fine pointer (design:reduced-motion DR3)', () => {
+  it('changes at once under Reduce Motion with a fine pointer (design:reduced-motion DR3)', async () => {
     media['(prefers-reduced-motion: reduce)'] = true;
     render(<Shell />);
-    toggle();
+    await toggle();
     expect(recorded).toEqual([]);
     expect(copies()).toEqual([]);
   });
 
-  it('only cross-fades under Reduce Motion with a coarse pointer (design:reduced-motion DR2)', () => {
+  it('only cross-fades under Reduce Motion with a coarse pointer (design:reduced-motion DR2)', async () => {
     media['(prefers-reduced-motion: reduce)'] = true;
     media['(pointer: coarse)'] = true;
     render(<Shell />);
-    toggle();
+    await toggle();
     expect(recorded.length).toBeGreaterThan(0);
     for (const entry of recorded) {
       for (const frame of entry.keyframes) {
@@ -272,18 +276,18 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     }
   });
 
-  it('outside AppShell, moves only the rail', () => {
+  it('outside AppShell, moves only the rail', async () => {
     render(<Shell inShell={false} />);
-    toggle();
+    await toggle();
     expect(animated('clipPath').length).toBeGreaterThan(0);
     expect(animated('translate')).toEqual([]);
   });
 
-  it('leaves the page form state alone: a checked radio stays checked', () => {
+  it('leaves the page form state alone: a checked radio stays checked', async () => {
     render(<Shell />);
     const pro = screen.getByRole('radio', {name: 'Pro'});
     expect(pro).toBeChecked();
-    toggle();
+    await toggle();
     // The copied radio joins no group, so it cannot uncheck the live one.
     const [copied] = copies().flatMap(copy =>
       Array.from(copy.querySelectorAll('input[type="radio"]')),
@@ -297,16 +301,16 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(pro).toBeChecked();
   });
 
-  it('plays for a resizable rail too, whose resize wrapper comes and goes with the collapse', () => {
+  it('plays for a resizable rail too, whose resize wrapper comes and goes with the collapse', async () => {
     render(<Shell isResizable />);
-    toggle();
+    await toggle();
     expect(railWidth()).toBe(COLLAPSED);
     expect(animated('clipPath').length).toBeGreaterThan(0);
   });
 
-  it('removes its copies and restores the row when the rail unmounts mid-motion', () => {
+  it('removes its copies and restores the row when the rail unmounts mid-motion', async () => {
     const {rerender} = render(<Shell />);
-    toggle();
+    await toggle();
     expect(copies().length).toBeGreaterThan(0);
     rerender(<Shell hasNav={false} />);
     expect(copies()).toEqual([]);
@@ -316,10 +320,10 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(clipped).toEqual([]);
   });
 
-  it('changes at once without Web Animations', () => {
+  it('changes at once without Web Animations', async () => {
     delete (HTMLElement.prototype as unknown as {animate?: unknown}).animate;
     render(<Shell />);
-    toggle();
+    await toggle();
     expect(railWidth()).toBe(COLLAPSED);
     expect(copies()).toEqual([]);
   });

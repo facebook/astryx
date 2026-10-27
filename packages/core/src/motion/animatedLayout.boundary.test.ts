@@ -135,6 +135,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       .map(path => relative(coreSrc, path))
       .sort();
     expect(users).toEqual([
+      'AppShell/AppShell.tsx',
       'Collapsible/Collapsible.tsx',
       'SideNav/railMotion.ts',
       'TreeList/TreeList.tsx',
