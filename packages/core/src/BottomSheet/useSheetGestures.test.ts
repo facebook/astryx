@@ -4170,18 +4170,23 @@ describe("useSheetGestures: the handle's pan", () => {
 });
 
 describe("useSheetGestures: the body's pull at the content's edge", () => {
-  it('begins a slow pull at the pan\u2019s 10 px and leaves the moves before it to the browser', () => {
-    // A finger: a coarse primary pointer before the sheet mounts (the gesture
-    // host attaches its recognizers only there, spec:AST-094 FR19).
+  /** A finger on the body's list, scrolled to `scrollTop`, before the sheet mounts. */
+  function pullOn(scrollTop: number) {
+    // A coarse primary pointer before the sheet mounts (the gesture host
+    // attaches its recognizers only there, spec:AST-094 FR19).
     stubCoarsePointer();
     const {hook} = setup({snapHeights: () => [200]});
     const body = makeScroller({
-      scrollTop: 0,
+      scrollTop,
       clientHeight: 200,
       scrollHeight: 800,
     });
     attach(hook, sheetOf(body));
-    const touch = fingers();
+    return {hook, body, touch: fingers()};
+  }
+
+  it("holds a slow pull at the content's top from its first move, so the list never rubber-bands, and still begins the pan at 10 px (FR19, DEC-18)", () => {
+    const {hook, body, touch} = pullOn(0);
     let first: Event | undefined;
     let second: Event | undefined;
     let claim: Event | undefined;
@@ -4190,10 +4195,11 @@ describe("useSheetGestures: the body's pull at the content's edge", () => {
       first = touch(body, 'touchmove', 103);
       second = touch(body, 'touchmove', 106);
     });
-    // A pan starts at its 10 px threshold and nothing claims the touch earlier
-    // (cixzhang's #8060 ruling): the moves before it are the browser's.
-    expect(first?.defaultPrevented).toBe(false);
-    expect(second?.defaultPrevented).toBe(false);
+    // The list is at its top and the finger pulls away from it: the moves the
+    // browser would rubber-band are held from the first one, before the pan
+    // begins at its 10 px (FR17).
+    expect(first?.defaultPrevented).toBe(true);
+    expect(second?.defaultPrevented).toBe(true);
     expect(hook.result.current.isDragging).toBe(false);
     act(() => {
       claim = touch(body, 'touchmove', 115);
@@ -4203,6 +4209,41 @@ describe("useSheetGestures: the body's pull at the content's edge", () => {
     expect(liveOffset(hook)).toBe(15 - PAN_THRESHOLD);
     act(() => {
       touch(body, 'touchend', 115);
+    });
+  });
+
+  it('never holds a real scroll: a list that can still scroll that way keeps every move', () => {
+    const {hook, body, touch} = pullOn(120);
+    const moves: Array<Event | undefined> = [];
+    act(() => {
+      touch(body, 'touchstart', 100);
+      for (const y of [103, 106, 115, 130]) {
+        moves.push(touch(body, 'touchmove', y));
+      }
+    });
+    expect(moves.map(move => move?.defaultPrevented)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(hook.result.current.isDragging).toBe(false);
+    act(() => {
+      touch(body, 'touchend', 130);
+    });
+  });
+
+  it("leaves a first move toward the content to the browser, even at the list's top", () => {
+    const {hook, body, touch} = pullOn(0);
+    let first: Event | undefined;
+    act(() => {
+      touch(body, 'touchstart', 100);
+      first = touch(body, 'touchmove', 97);
+    });
+    expect(first?.defaultPrevented).toBe(false);
+    expect(hook.result.current.isDragging).toBe(false);
+    act(() => {
+      touch(body, 'touchend', 97);
     });
   });
 });

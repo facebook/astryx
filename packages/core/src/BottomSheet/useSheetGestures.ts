@@ -65,7 +65,11 @@
  * UIKit's filter over the events' own timestamps (spec:AST-100 FR4). A vertical pan on the handle; on the scrolling body, a
  * downward pan that begins only when nothing under the finger can scroll up
  * (`scrollEdge`, the scrollers nested in the body included), and an upward
- * one that does so at the bottom while a taller detent exists. Who gets a
+ * one that does so at the bottom while a taller detent exists. At that edge a
+ * pull away from it is the sheet's from its first move: the moves the browser
+ * would rubber-band are held before the pan begins at its 10 px, so a slow
+ * pull moves the sheet as on iOS; a real scroll is never held (spec:AST-094
+ * FR19, DEC-18). Who gets a
  * drag is decided once, when it begins (spec:AST-094 FR14): content scrolled
  * to its end mid-gesture keeps the drag and rubber-bands, and the sheet grows
  * only from a drag that begins at the edge. The host derives each surface's
