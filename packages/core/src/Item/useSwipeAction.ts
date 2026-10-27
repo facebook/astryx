@@ -19,10 +19,10 @@
  * row springs back, or holds out when the entry has `hasRemoval`. A release
  * short of the threshold springs back under both.
  *
- * Touch only (the recognizer's pointer types), by pointer type rather than by
- * breakpoint: a mouse has the row's own controls and a keyboard has the verb
- * already; the gesture is an accelerator for a verb the row exposes
- * elsewhere, never the only way to reach one.
+ * A finger or a pen, never a mouse (the recognizer's pointer types), by
+ * pointer type rather than by breakpoint: a mouse has the row's own controls
+ * and a keyboard has the verb already; the gesture is an accelerator for a
+ * verb the row exposes elsewhere, never the only way to reach one.
  *
  * The pan is the gesture foundation's, published as `Item.swipe` so an app
  * can relate its own recognizers to it. It claims the touch after 8 px of
@@ -31,15 +31,14 @@
  * browser commits to scrolling a touch at about 10 px, so the row must claim
  * before that. The swipe itself begins where UIKit's does, after 25 px, from
  * 0, and in between nothing moves. The pan reads each touch's pointer, as
- * `spec:AST-057` says: a finger swipes the row whatever the primary pointer
- * and a mouse never starts it, one rule on every device. The foundation tells
- * the browser
- * (`touch-action: pan-y pinch-zoom`, `touchmove` cancelled only while the pan
- * owns the touch, the click the browser synthesizes swallowed) and leaves a
- * pinch to the page: a second finger that lands before the claim fails the
- * one-finger pan and leaves its touch to the browser's pinch, and once the
- * row has claimed its finger a second finger leaves the swipe going
- * (spec:AST-094 FR10).
+ * `spec:AST-057` says: a finger or a pen swipes the row whatever the primary
+ * pointer and a mouse never starts it, one rule on every device. The
+ * foundation tells the browser (`touch-action: pan-y pinch-zoom`,
+ * `touchmove` cancelled only while the pan owns the touch, the click the
+ * browser synthesizes swallowed) and leaves a pinch to the page: a second
+ * finger that lands before the claim fails the one-finger pan and leaves its
+ * touch to the browser's pinch, and once the row has claimed its finger a
+ * second finger leaves the swipe going (spec:AST-094 FR10).
  *
  * The drag's travel is one custom property written on the root, coalesced to
  * one write per frame; the root's transform reads it and the panels'
@@ -178,6 +177,12 @@ function focusRowContent(root: HTMLElement): void {
     document.activeElement.blur();
   }
 }
+
+/**
+ * What swipes a row: a finger or a pen, never a mouse (a mouse has the row's
+ * own controls).
+ */
+const SWIPE_POINTER_TYPES = ['touch', 'pen'] as const;
 
 export function useSwipeAction({
   behavior,
@@ -534,7 +539,7 @@ export function useSwipeAction({
     gestureRootRef,
     () =>
       new PanGestureRecognizer({
-        allowedPointerTypes: ['touch'],
+        allowedPointerTypes: SWIPE_POINTER_TYPES,
         direction: 'horizontal',
         hysteresis: SWIPE.claim,
         maximumNumberOfTouches: 1,
@@ -572,9 +577,9 @@ export function useSwipeAction({
           break;
       }
     },
-    // `spec:AST-057` reads each event's pointer: a finger swipes the row on
-    // every device and a mouse never does, so the host's fine-pointer gate
-    // (`spec:AST-094` FR19) does not apply to it.
+    // `spec:AST-057` reads each event's pointer: a finger or a pen swipes the
+    // row on every device and a mouse never does, so the host's fine-pointer
+    // gate (`spec:AST-094` FR19) does not apply to it.
     {perEventPointer: true},
   );
 
