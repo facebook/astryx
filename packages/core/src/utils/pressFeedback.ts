@@ -6,7 +6,8 @@
  *   scroll and visibility events
  * @output Exports paintPress and readPressPaint (the one writer of the press
  *   attribute for every painter), PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE,
- *   pressableProps and installPressFeedback
+ *   pressableProps, the action-group item marker (PRESS_GROUP_ITEM_ATTRIBUTE,
+ *   pressGroupItemProps) and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -35,6 +36,13 @@
  *
  * Its one touch-only listener, `touchcancel`, is on only while the primary
  * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
+ *
+ * An action of a group whose own tracker follows a held pointer across its
+ * siblings (`family:action-groups`) carries {@link PRESS_GROUP_ITEM_ATTRIBUTE}:
+ * that tracker paints its press, so the controller leaves a pointer's press
+ * there alone, and the two never write the attribute over each other. A
+ * member the group's tracker skips (a field, a menu trigger) carries no
+ * marker and keeps the controller's press.
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
@@ -72,6 +80,18 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/**
+ * Marks an action whose group tracks a held pointer across its siblings
+ * (`family:action-groups`): the group's tracker paints a pointer's press on
+ * it, and the controller paints none there. The owner renders it on each
+ * action its tracker follows, so it is in place before the first press.
+ */
+export const PRESS_GROUP_ITEM_ATTRIBUTE = 'data-astryx-press-group-item';
+
+/** Spread onto each action a group's tracker follows. */
+export const pressGroupItemProps: {readonly [PRESS_GROUP_ITEM_ATTRIBUTE]: ''} =
+  {[PRESS_GROUP_ITEM_ATTRIBUTE]: ''};
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.
@@ -292,6 +312,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 }
 
 /**
+ * Whether a group's own tracker paints this surface's press
+ * ({@link PRESS_GROUP_ITEM_ATTRIBUTE}). The touch is still recorded, so a
+ * scroll it drives arms the brake as any finger's does.
+ */
+function trackedByGroup(element: HTMLElement): boolean {
+  return element.closest(`[${PRESS_GROUP_ITEM_ATTRIBUTE}]`) != null;
+}
+
+/**
  * Is this touch a BRAKE on a list the finger set moving, rather than a press?
  *
  * A native list highlights nothing for one, and nothing else would cancel it:
@@ -374,7 +403,7 @@ function onPointerDown(event: PointerEvent): void {
   const braking = element != null && scrollerIsBraking(element);
   lastTouchAt = Date.now();
   lastTouchTarget = event.target instanceof Node ? event.target : null;
-  if (element == null || braking) {
+  if (element == null || braking || trackedByGroup(element)) {
     return;
   }
   live = {
