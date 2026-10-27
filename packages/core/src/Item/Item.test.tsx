@@ -1297,6 +1297,43 @@ describe('swipeActions', () => {
       expect(onActivate).not.toHaveBeenCalled();
     });
 
+    it('closes a row a trackpad opened on a mouse click on its own content, which activates nothing, as a finger’s tap does (spec:AST-057 DEC-7)', async () => {
+      const onClick = vi.fn();
+      const {row} = renderRow({onClick});
+      Array.from({length: 12}, () => scroll(row, -7.5));
+      await settled();
+      expect(xOf(row)).toBe(72);
+      // A mouse press and its click on the row's content, as a browser sends
+      // them.
+      const content = screen.getByRole('button', {name: 'Conversation'});
+      const press = (type: string) => {
+        void act(() => vi.advanceTimersByTime(16));
+        act(() => {
+          content.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: 150,
+              clientY: 10,
+              pointerId: 1,
+              pointerType: 'mouse',
+            }),
+          );
+        });
+      };
+      press('pointerdown');
+      press('pointerup');
+      act(() => {
+        content.dispatchEvent(
+          new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+        );
+      });
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('leaves a vertical wheel to the page: the row stays shut', async () => {
       const {row} = renderRow();
       const events = Array.from({length: 6}, () => scroll(row, 0, 12));

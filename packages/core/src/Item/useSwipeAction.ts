@@ -1289,13 +1289,13 @@ export function useSwipeAction({
   // UIKit's dismissal does: the tap recognizes at the lift, and the host
   // keeps the click it would have made from the row (it cancels the touch,
   // or where the primary pointer is fine its click guard swallows the
-  // click). The panel's entries keep their own taps, and a closed row never
-  // offers this recognizer a touch.
+  // click). Any pointer's press dismisses, since a trackpad or a mouse wheel
+  // opens a row too (`spec:AST-057` DEC-7). The panel's entries keep their
+  // own taps, and a closed row never offers this recognizer a touch.
   useGestureRecognizer(
     rootRef,
     () =>
       new TapGestureRecognizer({
-        allowedPointerTypes: ['touch'],
         name: 'item-swipe-dismiss',
         shouldReceiveTouch: (_tap, touch) =>
           isOpen() &&

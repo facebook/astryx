@@ -1825,4 +1825,42 @@ test.describe('under a trackpad or a mouse wheel (a desktop context)', () => {
     await page.waitForTimeout(250);
     expect(await xOf(other)).toBeCloseTo(0, 0);
   });
+
+  test('a mouse click on the content of a row a trackpad opened closes it and reaches nothing, as a finger’s tap does (spec:AST-057 DEC-7)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-item--swipe-actions');
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const row = page.locator('.astryx-item').first();
+    const panel = row.locator('[data-swipe-panel="trailing"]');
+    await expect(panel).toBeAttached();
+    const openWidth = await openWidthOf(panel.locator(':scope > div').first());
+    const rest = await row.boundingBox();
+    if (rest == null) {
+      throw new Error('no row');
+    }
+    const at = {x: rest.x + rest.width / 2, y: rest.y + rest.height / 2};
+    for (let i = 0; i < 12; i += 1) {
+      await driver.wheel({...at, dx: 8});
+    }
+    await expect.poll(async () => xOf(row)).toBeCloseTo(-openWidth, 0);
+    // Count the clicks that reach the row.
+    await row.evaluate(node => {
+      const counted = node as HTMLElement & {clicks?: number};
+      counted.clicks = 0;
+      node.addEventListener('click', () => {
+        counted.clicks = (counted.clicks ?? 0) + 1;
+      });
+    });
+    // The row's content is still under the middle of where the row rested.
+    await page.mouse.click(at.x - openWidth, at.y);
+    await expect.poll(async () => xOf(row)).toBeCloseTo(0, 0);
+    await expect(panel).toHaveAttribute('inert', '');
+    expect(
+      await row.evaluate(
+        node => (node as HTMLElement & {clicks?: number}).clicks,
+      ),
+    ).toBe(0);
+  });
 });
