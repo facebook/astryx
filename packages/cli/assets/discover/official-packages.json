@@ -126,6 +126,10 @@
         },
         {
           "kind": "component",
+          "name": "DialogHeroHeader"
+        },
+        {
+          "kind": "component",
           "name": "DiffViewer"
         },
         {
@@ -235,6 +239,10 @@
         {
           "kind": "template",
           "name": "CommentThreadShowcase"
+        },
+        {
+          "kind": "template",
+          "name": "DialogHeroHeaderShowcase"
         },
         {
           "kind": "template",
