@@ -24,8 +24,8 @@
  * already; the gesture is an accelerator for a verb the row exposes
  * elsewhere, never the only way to reach one.
  *
- * The pan is the gesture foundation's, published as `Item.swipe` so an app
- * can relate its own recognizers to it. It claims the touch after 8 px of
+ * The pan is the gesture foundation's (named `Item.swipe`, a debugging
+ * label). It claims the touch after 8 px of
  * sideways travel (a drag more vertical than horizontal belongs to the
  * scroller and fails it), toward a side with entries or on a resting row: a
  * browser commits to scrolling a touch at about 10 px, so the row must claim
@@ -36,9 +36,10 @@
  * the browser
  * (`touch-action: pan-y pinch-zoom`, `touchmove` cancelled only while the pan
  * owns the touch, the click the browser synthesizes swallowed) and leaves a
- * pinch to the page: a second finger that lands before the claim fails the
- * one-finger pan and leaves its touch to the browser's pinch, and once the
- * row has claimed its finger a second finger leaves the swipe going
+ * pinch to the page: a finger that lands while another is down, on the row
+ * or anywhere else, never starts the pan, a second finger that lands before
+ * the claim fails it and leaves its touch to the browser's pinch, and once
+ * the row has claimed its finger a second finger leaves the swipe going
  * (spec:AST-094 FR10).
  *
  * The drag's travel is one custom property written on the root, coalesced to
@@ -58,7 +59,11 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
-import {PanGestureRecognizer, useGestureRecognizer} from '../gestures';
+import {
+  PanGestureRecognizer,
+  getGestureHost,
+  useGestureRecognizer,
+} from '../gestures';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {swipeActions as SWIPE} from '../motion/uikit/swipeActions';
 import {commitPoint, resistedTravel} from './swipeRelease';
@@ -540,6 +545,13 @@ export function useSwipeAction({
         maximumNumberOfTouches: 1,
         name: 'Item.swipe',
         shouldBegin: pan => {
+          // A finger that is not the only one down is part of a pinch, even
+          // when the first finger is off the row: the page zooms
+          // (spec:AST-094 FR10).
+          const doc = rootRef.current?.ownerDocument ?? document;
+          if (getGestureHost(doc).fingersDown() > 1) {
+            return false;
+          }
           const current = stateRef.current;
           if (current.phase === 'settling' || current.phase === 'held') {
             return false;
