@@ -460,6 +460,23 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'transparent',
     },
   },
+  // A variant added by module augmentation paints no header fill of its own
+  // with a mouse, as before; under a finger it is the same empty bar.
+  navAreaTouchBar: {
+    backgroundColor: {
+      default: null,
+      '@media (pointer: coarse)': 'transparent',
+    },
+  },
+  // The iOS 26 bar draws no hairline: the scroll edge effect separates the
+  // content instead. A coarse-pointer rule, not the resolver's guess, so a
+  // server render (`defaultIsMobile`) is right for either pointer.
+  headerDividerTouchBar: {
+    borderBlockEndWidth: {
+      default: 1,
+      '@media (pointer: coarse)': 0,
+    },
+  },
   // The scroll edge effect: a decorative layer behind the bar's content, as
   // tall as the bar plus `bars.scrollEdgeEffect.softExtentPt` (54.8px). It is
   // a veil of the bar's own colour over the content, never a blur: the mask
@@ -730,13 +747,16 @@ export function AppShell({
   // Section normally inherits the shell's surface background. Its auto-height
   // header needs to paint that surface itself while content scrolls beneath it.
   // On a touch screen the pinned header paints nothing (navArea*TouchBar) and
-  // the scroll edge effect fades the content under it into that same colour.
+  // the scroll edge effect fades the content under it into that same colour;
+  // with a mouse each variant keeps its own fill (none for an augmented one).
   const barFillsWithBody = variant === 'wash' || variant === 'elevated';
-  const headerAreaStyle = isAuto
-    ? barFillsWithBody
+  const headerAreaStyle = !isAuto
+    ? navAreaStyle
+    : barFillsWithBody
       ? styles.navAreaWashTouchBar
-      : styles.navAreaSurfaceTouchBar
-    : navAreaStyle;
+      : variant === 'surface' || variant === 'section'
+        ? styles.navAreaSurfaceTouchBar
+        : styles.navAreaTouchBar;
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
@@ -873,8 +893,9 @@ export function AppShell({
   ) : null;
 
   // The iOS 26 bar draws no hairline on a touch screen; the scroll edge
-  // effect separates the content instead.
-  const isTouchBar = isAuto && isTouch;
+  // effect separates the content instead (headerDividerTouchBar, a
+  // coarse-pointer rule on the divider a page-scrolling shell keeps).
+  const dividerTouchBarStyle = isAuto ? styles.headerDividerTouchBar : null;
   // A sidenav-only layout below the breakpoint renders its own top bar
   // (autoMobileTopBar below); the scroll edge effect then belongs to it.
   const shouldShowAutoToggle =
@@ -885,7 +906,8 @@ export function AppShell({
     hasTopNav || hasBanner ? (
       <LayoutHeader
         padding={0}
-        hasDivider={navHasDividers && hasTopNav && !isTouchBar}>
+        hasDivider={navHasDividers && hasTopNav}
+        xstyle={navHasDividers && hasTopNav ? dividerTouchBarStyle : null}>
         {hasBanner && (
           <div {...stylex.props(styles.banner, navAreaStyle)}>{banner}</div>
         )}
@@ -1004,7 +1026,10 @@ export function AppShell({
         stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
       )}>
       {scrollEdgeLayer}
-      <LayoutHeader padding={0} hasDivider={navHasDividers && !isTouchBar}>
+      <LayoutHeader
+        padding={0}
+        hasDivider={navHasDividers}
+        xstyle={navHasDividers ? dividerTouchBarStyle : null}>
         <div
           {...stylex.props(styles.autoMobileTopBar)}
           role="navigation"

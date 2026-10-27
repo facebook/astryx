@@ -20,9 +20,10 @@
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {act, render, screen} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {bars} from '../motion/uikit/bars';
-import {AppShell} from './AppShell';
+import {AppShell, type AppShellVariant} from './AppShell';
 
 const TOUCH = '(pointer: coarse)';
 
@@ -250,22 +251,66 @@ describe('AppShell scroll edge effect', () => {
     ).toBe('var(--color-background-surface)');
   });
 
-  it('the touch bar draws no hairline; a mouse keeps the section divider', () => {
+  it('the touch bar hides the section divider with a coarse-pointer rule; a mouse keeps it', () => {
     // LayoutHeader reflects its divider as `data-divider` (jsdom drops the
-    // logical border properties themselves).
-    const hasDivider = () =>
-      screen
-        .getByRole('banner')
-        .querySelector('.astryx-layout-header')
-        ?.hasAttribute('data-divider');
+    // logical border properties themselves). The divider stays in the
+    // markup, so a server render is right for either pointer; the rule under
+    // `(pointer: coarse)` takes its width away on the touch bar.
+    const header = () =>
+      screen.getByRole('banner').querySelector('.astryx-layout-header');
     stubPointer(true);
     const touch = renderShell({height: 'auto', variant: 'section'});
-    expect(hasDivider()).toBe(false);
+    expect(header()?.hasAttribute('data-divider')).toBe(true);
+    expect(rulesFor(header()!).some(rule => rule.where === 'touch')).toBe(
+      true,
+    );
     touch.unmount();
     stubPointer(false);
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     renderShell({height: 'auto', variant: 'section'});
-    expect(hasDivider()).toBe(true);
+    expect(header()?.hasAttribute('data-divider')).toBe(true);
+  });
+
+  it('a server render draws the same header whatever the pointer guess', () => {
+    const header = (defaultIsMobile: boolean) =>
+      /<[^>]*astryx-layout-header[^>]*>/.exec(
+        renderToString(
+          <AppShell
+            topNav={<div>Nav</div>}
+            height="auto"
+            variant="section"
+            mobileNav={{defaultIsMobile}}>
+            <div>Content</div>
+          </AppShell>,
+        ),
+      )?.[0];
+    expect(header(true)).toContain('data-divider');
+    expect(header(true)).toBe(header(false));
+  });
+
+  it('with a mouse each variant keeps its own header fill; under a finger the bar paints none', () => {
+    stubPointer(false);
+    const fills: Record<string, string> = {};
+    for (const variant of ['wash', 'elevated', 'surface', 'section', 'brand']) {
+      const {unmount} = renderShell({
+        height: 'auto',
+        variant: variant as AppShellVariant,
+      });
+      const banner = screen.getByRole('banner');
+      fills[variant] =
+        `${declared(banner, 'background-color')} / ` +
+        `${declared(banner, 'background-color', 'touch')}`;
+      unmount();
+    }
+    expect(fills).toEqual({
+      wash: 'var(--color-background-body) / transparent',
+      elevated: 'var(--color-background-body) / transparent',
+      surface: 'var(--color-background-surface) / transparent',
+      section: 'var(--color-background-surface) / transparent',
+      // A variant added by module augmentation: no fill of its own with a
+      // mouse, as before.
+      brand: 'undefined / transparent',
+    });
   });
 
   it('the header holding the veil owns its stacking (isolation: isolate)', () => {

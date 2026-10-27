@@ -56,7 +56,14 @@
  * finger's landing, so a fade that starts mid-drag finds its layer (on a
  * software rasterizer, creating it as the fade starts costs that frame),
  * until the finger's scroll has ended; the program's switch is written
- * without promotion. The fade is opacity only; under Reduce Motion the
+ * without promotion. Where the browser sends no `scrollend`, the
+ * finger-scroll watch ends a finger's scroll 150 ms after its last scroll
+ * event, and the promotion is checked again `PROMOTION_RECHECK_MS` (200 ms)
+ * after that event, so no fling leaves the layer promoted. The workaround
+ * goes once WebKit no longer drops a sticky header's items when the program
+ * scrolls over a composited layer: the plain-HTML repro above, re-run on
+ * each iOS release, shows when; the program's scroll then fades as UIKit's
+ * does. The fade is opacity only; under Reduce Motion the
  * animator plays its own cross-fade (design:reduced-motion DR2). The springs
  * are the bars table's measured `bars.scrollEdgeEffect.appear` and
  * `.disappear`, internal constants: touch motion stays internal until the
@@ -84,6 +91,15 @@ const NO_SCROLLER: RefObject<Element | null> = {current: null};
 export const SCROLL_EDGE_LAYER_PROMOTION = '--_scroll-edge-will-change';
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+
+/**
+ * Where the browser sends no `scrollend`, how long after the scroller's last
+ * scroll event the layer's promotion is checked again, in ms: past the
+ * finger-scroll watch's 150 ms spell (gestures/fingerScroll.ts), after which
+ * it reads the finger's scroll as ended, so a fling never leaves the layer
+ * promoted.
+ */
+const PROMOTION_RECHECK_MS = 200;
 
 export interface UseScrollEdgeEffectOptions {
   /**
@@ -234,14 +250,41 @@ export function useScrollEdgeEffect({
       }
     };
     const unsubscribeFingers = host.onFingersChange(updatePromotion);
-    // After the finger-scroll watch has heard the same `scrollend`.
-    const onScrollEnd = () => queueMicrotask(updatePromotion);
-    doc.addEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
+    // One document listener per effect; this base has no shared input
+    // stream. Its `scrollend` drops the layer once the finger's scroll has
+    // ended, after the finger-scroll watch has heard the same event. Where
+    // the browser sends no `scrollend`, the scroller's scroll events time a
+    // re-check PROMOTION_RECHECK_MS after the last one instead.
+    const view = doc.defaultView;
+    const hasScrollEnd = view != null && 'onscrollend' in view;
+    let recheck: ReturnType<typeof setTimeout> | null = null;
+    const clearRecheck = () => {
+      if (recheck != null) {
+        clearTimeout(recheck);
+        recheck = null;
+      }
+    };
+    const scrollType = hasScrollEnd ? 'scrollend' : 'scroll';
+    const onScrollEvent = hasScrollEnd
+      ? () => queueMicrotask(updatePromotion)
+      : (event: Event) => {
+          const target = event.target === doc ? doc : event.target;
+          if (target !== scroller) {
+            return;
+          }
+          clearRecheck();
+          recheck = setTimeout(() => {
+            recheck = null;
+            updatePromotion();
+          }, PROMOTION_RECHECK_MS);
+        };
+    doc.addEventListener(scrollType, onScrollEvent, PASSIVE_CAPTURE);
     return () => {
       observerRef.current = null;
       observer.disconnect();
       unsubscribeFingers();
-      doc.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
+      doc.removeEventListener(scrollType, onScrollEvent, PASSIVE_CAPTURE);
+      clearRecheck();
       releaseHost();
       animator.element?.style.removeProperty(SCROLL_EDGE_LAYER_PROMOTION);
       animator.set({opacity: 0}, {promote: false});
