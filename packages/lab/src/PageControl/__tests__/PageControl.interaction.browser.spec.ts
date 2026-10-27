@@ -629,6 +629,77 @@ test.describe('with a mouse', () => {
     expect(facts.width).toBeCloseTo(161.3, 0);
   });
 
+  // spec:AST-094 FR43: the tap and the scrub take every pointer; the touch
+  // presentation (the platter, the window, the fades) stays on a coarse one.
+  test('a click on the trailing side of the current indicator moves one page forward, the leading side one back, once each (spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    const {slider} = await open(page);
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    // aria-valuenow counts from 1; the dots from 0.
+    const start = (await valueNow(slider)) - 1;
+    const last = Number(await slider.getAttribute('aria-valuemax')) - 1;
+    const forward = start < last;
+    const from = await indicatorCenter(slider, start);
+    await page.mouse.click(from.x + (forward ? 12 : -12), from.y);
+    const next = start + (forward ? 1 : -1);
+    await expect.poll(() => valueNow(slider)).toBe(next + 1);
+    // The click the browser sends after the press pages nothing more.
+    await page.waitForTimeout(150);
+    expect(await valueNow(slider)).toBe(next + 1);
+    const back = await indicatorCenter(slider, next);
+    await page.mouse.click(back.x + (forward ? -12 : 12), back.y);
+    await expect.poll(() => valueNow(slider)).toBe(start + 1);
+  });
+
+  test('a drag across the dots scrubs: the page is the dot under the pointer (spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    const {slider} = await open(page);
+    // aria-valuenow counts from 1; the dots from 0.
+    const last = Number(await slider.getAttribute('aria-valuemax')) - 1;
+    expect(last).toBeGreaterThanOrEqual(2);
+    const mid = Math.floor(last / 2);
+    const first = await indicatorCenter(slider, 0);
+    const end = await indicatorCenter(slider, last);
+    const middle = await indicatorCenter(slider, mid);
+    await page.mouse.move(first.x, first.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, {steps: 12});
+    await expect.poll(() => valueNow(slider)).toBe(last + 1);
+    await page.mouse.move(middle.x, middle.y, {steps: 8});
+    await expect.poll(() => valueNow(slider)).toBe(mid + 1);
+    await page.mouse.up();
+    expect(
+      await slider.evaluate(el => el.hasAttribute('data-interacting')),
+    ).toBe(false);
+  });
+
+  test('a held press shows no platter and dims nothing: the held look is the touch presentation', async ({
+    page,
+  }) => {
+    const {slider} = await open(page);
+    const look = () =>
+      slider.evaluate(el => ({
+        interacting: el.hasAttribute('data-interacting'),
+        background: getComputedStyle(el).backgroundColor,
+        opacities: Array.from(
+          el.querySelectorAll<HTMLElement>('[data-page]'),
+        ).map(dot => getComputedStyle(dot).opacity),
+      }));
+    const before = await look();
+    const at = await indicatorCenter(slider, await valueNow(slider));
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    // Past UIPageControl's 155 ms interaction delay.
+    await page.waitForTimeout(400);
+    const held = await look();
+    await page.mouse.up();
+    expect(held).toEqual({...before, interacting: false});
+  });
+
   for (const [story, count] of [
     ['lab-pagecontrol--default', 5],
     ['lab-pagecontrol--many-pages', 9],

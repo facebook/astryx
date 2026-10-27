@@ -80,8 +80,10 @@ export interface PageControlTouch {
 }
 
 /**
- * PageControl's touch layer. Every recognizer and effect here is off unless
- * `isTouch`.
+ * PageControl's input and its touch presentation. The recognizers take every
+ * pointer (`spec:AST-094` FR43): a mouse taps and scrubs as a finger does,
+ * over the row it sees. The platter, the window's slide and the fades are the
+ * touch presentation, on only while `isTouch`.
  */
 export function usePageControlTouch({
   isTouch,
@@ -119,6 +121,23 @@ export function usePageControlTouch({
     return {along, past};
   };
 
+  /**
+   * With a mouse, the full row: each page's dot centre on screen, read when a
+   * scrub begins (the geometry above is the touch presentation's window).
+   */
+  const rowCentres = (): ReadonlyArray<{page: number; x: number}> => {
+    const strip = stripRef.current;
+    if (strip == null) {
+      return [];
+    }
+    return Array.from(strip.querySelectorAll<HTMLElement>('[data-page]')).map(
+      dot => {
+        const box = dot.getBoundingClientRect();
+        return {page: Number(dot.dataset.page), x: box.left + box.width / 2};
+      },
+    );
+  };
+
   const gestureRef = useRef({
     startX: 0,
     lastX: 0,
@@ -128,6 +147,8 @@ export function usePageControlTouch({
      * layout while the finger moves.
      */
     geo: null as ReturnType<typeof geometry>,
+    /** With a mouse, the row's dot centres, read once when the scrub begins. */
+    centres: [] as ReadonlyArray<{page: number; x: number}>,
     interactTimer: 0 as ReturnType<typeof setTimeout> | 0,
     jogTimer: 0 as ReturnType<typeof setTimeout> | 0,
     /** When the finger crossed the edge or the last jog step ran, ms. */
@@ -198,6 +219,23 @@ export function usePageControlTouch({
   const scrubTo = (x: number) => {
     const geo = gestureRef.current.geo;
     const latest = latestRef.current;
+    if (!isTouch) {
+      // With a mouse: the page whose dot is nearest the pointer, on the full
+      // row; nothing jogs past its ends.
+      let nearest: {page: number; x: number} | null = null;
+      for (const centre of gestureRef.current.centres) {
+        if (
+          nearest == null ||
+          Math.abs(centre.x - x) < Math.abs(nearest.x - x)
+        ) {
+          nearest = centre;
+        }
+      }
+      if (nearest != null) {
+        request(clampPage(nearest.page, latest.pages), 'other');
+      }
+      return;
+    }
     if (geo == null) {
       return;
     }
@@ -220,18 +258,26 @@ export function usePageControlTouch({
     stopJog();
     g.isScrubbing = false;
     g.geo = null;
+    g.centres = [];
     setInteracting(false);
   };
+  // The platter and the dimmed indicators are the touch presentation.
+  const showHeld = () => {
+    if (isTouch) {
+      setInteracting(true);
+    }
+  };
 
-  // A finger on the control (spec:AST-094 FR19: decided within 10 px, so a
-  // swipe that starts vertical stays the page's scroll):
-  // - a horizontal pan, from 10 px, scrubs once the finger is 16 px from
+  // A pointer on the control, a finger or a mouse (spec:AST-094 FR43),
+  // decided within 10 px (FR19), so a swipe that starts vertical stays the
+  // page's scroll:
+  // - a horizontal pan, from 10 px, scrubs once the pointer is 16 px from
   //   where it landed; a drag that starts vertical fails it;
-  // - a finger held still for 155 ms (UIPageControl's interaction delay)
-  //   shows the platter and scrubs the same way from there;
+  // - a pointer held still for 155 ms (UIPageControl's interaction delay)
+  //   scrubs the same way from there, under a finger on the platter;
   // - a tap steps one page.
-  // Whichever begins first holds the touch and fails the others. The scrub's
-  // 16 px count from where the finger landed, as UIKit counts them.
+  // Whichever begins first holds the press and fails the others. The scrub's
+  // 16 px count from where the pointer landed, as UIKit counts them.
   const landingX = (
     recognizer: {trackedTouches: ReadonlyArray<{startX: number}>},
     fallback: number,
@@ -252,7 +298,8 @@ export function usePageControlTouch({
     ) {
       g.isScrubbing = true;
       g.geo = geometry();
-      setInteracting(true);
+      g.centres = isTouch ? [] : rowCentres();
+      showHeld();
     }
     if (g.isScrubbing) {
       scrubTo(x);
@@ -261,8 +308,31 @@ export function usePageControlTouch({
   // A tap, or a pan or hold that lifts before it scrubs: one page toward the
   // finger's side of the current indicator.
   const step = (x: number) => {
-    const geo = geometry();
     const latest = latestRef.current;
+    if (!isTouch) {
+      // With a mouse: toward the pointer's side of the current dot, on the
+      // row as drawn.
+      const root = rootRef.current;
+      const dot = stripRef.current?.querySelector(
+        `[data-page="${latest.current}"]`,
+      );
+      if (root == null || dot == null || latest.pages < 2) {
+        return;
+      }
+      const box = dot.getBoundingClientRect();
+      request(
+        tapTarget(
+          x,
+          box.left + box.width / 2,
+          latest.current,
+          latest.pages,
+          isRtlElement(root),
+        ),
+        'tap',
+      );
+      return;
+    }
+    const geo = geometry();
     if (geo == null || latest.pages < 2) {
       return;
     }
@@ -298,7 +368,7 @@ export function usePageControlTouch({
           const g = gestureRef.current;
           g.interactTimer = setTimeout(() => {
             g.interactTimer = 0;
-            setInteracting(true);
+            showHeld();
           }, PC.interactionDelayMs);
           track(x);
           break;
@@ -317,7 +387,6 @@ export function usePageControlTouch({
           break;
       }
     },
-    {isEnabled: isTouch},
   );
 
   useGestureRecognizer(
@@ -331,7 +400,7 @@ export function usePageControlTouch({
       switch (hold.state) {
         case 'began':
           begin(landingX(hold, x));
-          setInteracting(true);
+          showHeld();
           break;
         case 'changed':
           track(x);
@@ -347,7 +416,6 @@ export function usePageControlTouch({
           break;
       }
     },
-    {isEnabled: isTouch},
   );
 
   useGestureRecognizer(
@@ -358,7 +426,6 @@ export function usePageControlTouch({
         step(tap.location().x);
       }
     },
-    {isEnabled: isTouch},
   );
 
   // Timers end with the control.

@@ -53,15 +53,17 @@
  *
  * TOUCH
  *
- * The scrub, the held platter, the shrinking window and the fades are the
- * touch presentation: a coarse primary pointer, on every touch device
+ * The tap and the scrub take every pointer (`spec:AST-094` FR43): a mouse
+ * taps to either side of the current dot and drags across the dots to scrub,
+ * as a finger does. The held platter, the shrinking window and the fades are
+ * the touch presentation: a coarse primary pointer, on every touch device
  * (`useTouchPresentation`; one touch model, no platform idiom). With a mouse
- * or a trackpad the control pages by tap (UIKit's tap rule: up to 45 px of
- * travel) and keys over a row cropped to the control, with instant opacity
+ * or a trackpad the row is cropped to the control, with instant opacity
  * changes. The motion values are the `pageControl` table's measured
  * constants: touch motion stays internal (no theme role).
  *
- * The touch presentation lives in PageControlTouch.ts, imported once here.
+ * The input and the touch presentation live in PageControlTouch.ts, imported
+ * once here.
  *
  * SYNC: When modified, update PageControl.doc.mjs, PageControl.test.tsx,
  * PageControlTouch.ts, pageControlModel.ts and
@@ -76,8 +78,6 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type MouseEvent,
-  type PointerEvent,
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -92,7 +92,7 @@ import {isRtlElement} from '@astryxdesign/core/internal/touch';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {animatorFor} from '@astryxdesign/core/internal/motion';
-import {UIKIT_TAP, pageControl} from '@astryxdesign/core/internal/motion';
+import {pageControl} from '@astryxdesign/core/internal/motion';
 import {usePageControlTouch} from './PageControlTouch';
 import {
   BOX,
@@ -102,7 +102,6 @@ import {
   croppedRowOffset,
   indicatorSize,
   pageControlLayout,
-  tapTarget,
   windowFor,
   type ChangeKind,
   type Latest,
@@ -254,9 +253,10 @@ function PageControlRow({
   const pages = Math.max(0, Math.floor(count));
   const current = pages === 0 ? 0 : clampPage(value, pages);
   const layout = pageControlLayout(pages);
-  // The scrub, held platter, shrinking window and fades are the touch
-  // presentation (a finger, on any touch device); with a mouse the control
-  // pages by tap and keys over a cropped row, without them.
+  // The held platter, shrinking window and fades are the touch presentation
+  // (a finger, on any touch device); with a mouse the control shows the full
+  // row, cropped, and takes the same taps and scrubs over it (spec:AST-094
+  // FR43).
   const {isTouch} = useTouchPresentation();
 
   // The window moves only when the current page would land in a shrunk
@@ -305,8 +305,9 @@ function PageControlRow({
     }, 0);
   };
 
-  // The touch layer (PageControlTouch.ts): the scrub, the held platter, the
-  // window's slide and the fades, on under a finger.
+  // The input (PageControlTouch.ts): the tap and the scrub for every pointer,
+  // and the touch presentation (the held platter, the window's slide, the
+  // fades) under a finger.
   usePageControlTouch({
     isTouch,
     rootRef,
@@ -320,50 +321,6 @@ function PageControlRow({
     windowStart,
     isInteracting,
   });
-
-  // With a mouse (a fine primary pointer, where the gesture host listens to
-  // nothing: spec:AST-094 FR19, FR24): the browser's click steps one page
-  // toward its side of the current indicator, by UIKit's tap rule, so a
-  // press that travels more than `UIKIT_TAP.allowableMovement` is a drag and
-  // pages nothing. Under a finger the touch layer reads the tap, and the click
-  // that follows it is ignored.
-  const pressRef = useRef<{x: number; y: number} | null>(null);
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    pressRef.current = {x: event.clientX, y: event.clientY};
-  };
-  const onClick = (event: MouseEvent<HTMLDivElement>) => {
-    const press = pressRef.current;
-    pressRef.current = null;
-    const root = rootRef.current;
-    const latest = latestRef.current;
-    if (isTouch || root == null || latest.pages < 2) {
-      return;
-    }
-    if (
-      press != null &&
-      Math.hypot(event.clientX - press.x, event.clientY - press.y) >
-        UIKIT_TAP.allowableMovement.value
-    ) {
-      return;
-    }
-    const dot = stripRef.current?.querySelector(
-      `[data-page="${latest.current}"]`,
-    );
-    if (dot == null) {
-      return;
-    }
-    const box = dot.getBoundingClientRect();
-    request(
-      tapTarget(
-        event.clientX,
-        box.left + box.width / 2,
-        latest.current,
-        latest.pages,
-        isRtlElement(root),
-      ),
-      'tap',
-    );
-  };
 
   // With a mouse: the cropped row, every page at full size, shifted at once to
   // keep the current indicator in view.
@@ -486,8 +443,8 @@ function PageControlRow({
       })}
       // The caller's handler first: its preventDefault keeps the page.
       onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}
-      onClick={composeEventHandlers(onClickProp, onClick)}
-      onPointerDown={composeEventHandlers(onPointerDownProp, onPointerDown)}>
+      onClick={onClickProp}
+      onPointerDown={onPointerDownProp}>
       <span
         ref={stripRef}
         aria-hidden="true"

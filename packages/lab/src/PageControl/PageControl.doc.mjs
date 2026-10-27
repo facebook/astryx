@@ -16,7 +16,7 @@ export const docs = {
     'paging',
   ],
   description:
-    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap to either side of the current dot (a click with a mouse) moves one page that way. Under a finger (any touch device, iOS and Android alike), sliding the finger across the dots scrubs straight to the page under it, and with more than ten pages the row is a window whose edge dots shrink to show there is more; with a mouse a long row is cropped to the control. Experimental: lands in lab first.',
+    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap or a click to either side of the current dot moves one page that way, and sliding a finger or dragging the mouse across the dots scrubs straight to the page under it. Under a finger (any touch device, iOS and Android alike), with more than ten pages the row is a window whose edge dots shrink to show there is more, and a held finger shows a platter behind the dots; with a mouse a long row is cropped to the control. Experimental: lands in lab first.',
   props: [
     {
       name: 'count',
@@ -34,7 +34,7 @@ export const docs = {
       name: 'onChange',
       type: '(page: number) => void',
       description:
-        'Called with the page a tap, a click, a scrub, an arrow key, Home, End or an assistive technology asks for; a scrub calls it each time the page under the finger changes, so a quick sweep can skip a page. Update the paging view and value together.',
+        'Called with the page a tap, a click, a scrub, an arrow key, Home, End or an assistive technology asks for; a scrub calls it each time the page under the pointer changes, so a quick sweep can skip a page. Update the paging view and value together.',
       required: true,
     },
     {
