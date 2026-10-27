@@ -181,13 +181,17 @@ export class WheelMotion {
     return this.motion != null;
   }
 
-  /** The offset on screen at `time` (document.timeline ms; default now). */
+  /**
+   * The offset on screen at `time` (document.timeline ms; default now). Until
+   * its animations start on screen (a busy main thread can hold their first
+   * frame), the screen shows the curve's start.
+   */
   offset(time: number = now()): number {
     const motion = this.motion;
     if (motion == null) {
       return this.restingOffset;
     }
-    const t = Math.max(0, (time - motion.origin) / 1000);
+    const t = this.elapsed(motion, time);
     return motion.curve.value(Math.min(t, motion.curve.duration));
   }
 
@@ -196,14 +200,23 @@ export class WheelMotion {
     return this.motion?.curve.to ?? this.restingOffset;
   }
 
-  /** The velocity on screen at `time`, px/s. */
+  /** The velocity on screen at `time`, px/s; the start's while pending. */
   velocity(time: number = now()): number {
     const motion = this.motion;
     if (motion == null) {
       return 0;
     }
-    const t = Math.max(0, (time - motion.origin) / 1000);
-    return motion.curve.velocity(t);
+    return motion.curve.velocity(this.elapsed(motion, time));
+  }
+
+  /**
+   * Seconds of `motion` shown at `time`: none while its animations wait for
+   * the frame that starts them (`followStart` then times it from there).
+   */
+  private elapsed(motion: RunningMotion, time: number): number {
+    return this.isPending(motion)
+      ? 0
+      : Math.max(0, (time - motion.origin) / 1000);
   }
 
   /** Show `offset` at once, stopping any motion. A drag frame. */
