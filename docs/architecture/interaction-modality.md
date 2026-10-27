@@ -170,9 +170,8 @@ work.
   against brush-over, which an owner's record may set to zero, an exit guard, and a
   group across which a pointer moving from one open trigger to the next shows
   the next at once. Keyboard focus shows at once, and a finger is never gated
-  or served by it: intent answers mouse and pen hover only. The hover recognizer attaches for hover-capable
-  pointers and registers no touch listener, the one exception to
-  `architecture:react-component-runtime` INV13's fine-pointer rule. `useTooltip`,
+  or served by it: intent answers mouse and pen hover only. The hover recognizer attaches only for hover-capable
+  pointers, since a finger cannot hover, and registers no touch listener. `useTooltip`,
   `useHoverCard`, `useMenuHover`, and `useContainerReveal` take their hover
   timing from it. Enter and exit animation, hover tint, and the default delay
   itself stay with their owners. The setting adds no module and is internal
