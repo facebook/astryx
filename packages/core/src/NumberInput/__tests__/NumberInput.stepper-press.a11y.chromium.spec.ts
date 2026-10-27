@@ -18,6 +18,7 @@
 
 import {expect, test, type Page} from '@playwright/test';
 import {holdMotionStill} from '@astryxdesign/a11y-spec/chromium';
+import {PEN_SKIP, webInputDriver} from '@astryxdesign/interaction-harness';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -118,6 +119,50 @@ test('under a fine pointer the stepper column takes touch-action manipulation to
     .getByRole('button', {name: 'Increment Quantity'})
     .locator('..');
   await expect(column).toHaveCSS('touch-action', 'manipulation');
+  await context.close();
+});
+
+test('under a fine pointer a pen presses a stepper as a mouse does: a tap steps once and focuses the field, a hold repeats and commits once (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: {width: 1024, height: 768},
+    hasTouch: false,
+    isMobile: false,
+  });
+  const page = await context.newPage();
+  await open(page);
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  // Trusted pen input through the engine, paced on the wall clock.
+  const driver = await webInputDriver(page);
+  test.skip(!driver.pens, PEN_SKIP);
+  const input = page.getByRole('spinbutton');
+  const box = await page
+    .getByRole('button', {name: 'Increment Quantity'})
+    .boundingBox();
+  if (box == null) {
+    throw new Error('the increment half is not laid out');
+  }
+  const at = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+  const before = Number(await input.inputValue());
+  // A tap steps once, on its click, and focuses the field where the primary
+  // pointer is fine (`component:NumberInput` FR5).
+  await driver.pen([
+    {...at, t: 0},
+    {...at, t: 80},
+  ]);
+  await expect(input).toHaveValue(String(before + 1));
+  await expect(input).toBeFocused();
+  // A hold repeats while the pen stays down and commits at the lift.
+  await driver.pen([
+    {...at, t: 0},
+    {...at, t: 1300},
+  ]);
+  await expect
+    .poll(async () => Number(await input.inputValue()))
+    .toBeGreaterThan(before + 3);
   await context.close();
 });
 
