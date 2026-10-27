@@ -622,6 +622,112 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(startOffset(after.first).y).toBeCloseTo(-160, 0);
   });
 
+  for (const row of [
+    {
+      name: 'a centered row',
+      justify: 'center',
+      items: ['before', 'changed', 'after'],
+      // The row grows by 80 px: an item before moves left by half of it.
+      expectX: 40,
+    },
+    {
+      name: 'a space-between row',
+      justify: 'space-between',
+      items: ['first', 'before', 'changed', 'last'],
+      // Four items: the gaps shrink by a third of the growth each.
+      expectX: 80 / 3,
+    },
+    {
+      name: 'an end-aligned row',
+      justify: 'flex-end',
+      items: ['before', 'changed'],
+      expectX: 80,
+    },
+  ]) {
+    test(`an earlier sibling ${row.name} moves glides from its old place (spec:AST-105 Coverage)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area"><div style="display: flex; justify-content: ${row.justify}; gap: 8px">
+          ${row.items
+            .map(
+              id =>
+                `<div id="${id}" style="width: 60px; height: 24px; flex: none; background: #ddd"></div>`,
+            )
+            .join('')}
+        </div></div>`,
+      );
+      await change(page, {
+        changed: '#changed',
+        mutate: `document.querySelector('#changed').style.width = '140px'`,
+      });
+      const [motion] = await page.evaluate(() => window.motionOf('#before'));
+      expect(motion).toBeDefined();
+      expect(startOffset(motion.first).x).toBeCloseTo(row.expectX, 0);
+    });
+  }
+
+  test('in a long list the walk reads only the rows near the visible part, and rows a tall collapse pulls up into view glide in (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area" style="overflow-anchor: none">
+        ${'<div class="row" style="margin: 0"></div>'.repeat(1000)}
+        <div id="tall" style="height: 1200px; background: #fd9"></div>
+        ${Array.from({length: 1000}, (_, i) => `<div id="r${i}" class="row" style="margin: 0"></div>`).join('')}
+      </div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area') as HTMLElement;
+      const tall = document.querySelector('#tall') as HTMLElement;
+      // The tall item's bottom part in view.
+      area.scrollTop = tall.offsetTop + 1000 - area.clientHeight / 2;
+      const prototype = Element.prototype;
+      const original = prototype.getBoundingClientRect;
+      let reads = 0;
+      prototype.getBoundingClientRect = function getBoundingClientRect(
+        this: Element,
+      ) {
+        reads += 1;
+        return original.call(this);
+      };
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const report = window.AnimatedLayout.reportLayoutChange(
+        layout,
+        () => tall,
+      );
+      report.measureBefore();
+      tall.style.height = '0px';
+      report.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      prototype.getBoundingClientRect = original;
+      // Rows now in view that were below the area's visible part plus one
+      // viewport before the collapse: the band reached them because the
+      // collapsing item is taller than a viewport.
+      const areaRect = area.getBoundingClientRect();
+      const inView = [
+        ...area.querySelectorAll<HTMLElement>('[id^="r"]'),
+      ].filter(row => {
+        const rect = row.getBoundingClientRect();
+        return rect.bottom > areaRect.top && rect.top < areaRect.bottom;
+      });
+      const lowest = inView.at(-1);
+      return {
+        reads,
+        rows: inView.length,
+        lowestGlides: lowest?.getAnimations().length ?? 0,
+      };
+    });
+    // Two thousand rows, but only those near the visible part are read.
+    expect(result.reads).toBeLessThan(200);
+    expect(result.rows).toBeGreaterThan(0);
+    expect(result.lowestGlides).toBe(1);
+  });
+
   test('the glide never scrolls the area (FR3)', async ({page}) => {
     // The same change with and without a handle, from the same scroll
     // position: the area's scroll (the browser's own scroll anchoring

@@ -67,9 +67,10 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
 - **FR3 — The content after a change glides within the area.** For any change
   a component holding the handle reports, such as a disclosure opening,
   content loading in, a message appearing, or an item inserted or removed,
-  the content after it inside the area moves from its old place to its new
-  one instead of jumping, at every ancestor level up to the area and never
-  past it. An element moves only when its layout rectangle changed and it is
+  the content it shifts inside the area moves from its old place to its new
+  one instead of jumping: the siblings after it, and the siblings before it
+  that its layout moves (a centered, end-aligned or space-between row, or
+  `order`), at every ancestor level up to the area and never past it. An element moves only when its layout rectangle changed and it is
   in the area's visible part. Which elements move is listed under Coverage.
   Shifted content may mix Astryx components and plain app elements, and none
   of it opts in. Several changes in one area, nested or not, compose: each
@@ -110,6 +111,7 @@ What moves inside an area, each case with its test:
 | Sticky elements                                                                             | In flow while unstuck, so moves when its rectangle changed; a stuck element takes its final place                       | A sticky header above and below its stuck point                      |
 | Floats                                                                                      | Moves when its rectangle changed                                                                                        | A float after the changed element                                    |
 | Flex and grid items after the changed element, including wrap and row direction             | Moves when its rectangle changed                                                                                        | A wrapping flex row and a row-direction neighbor that does not shift |
+| Siblings before the changed element, at each ancestor level                                 | Moves when its rectangle changed: a centered, end-aligned or space-between row, or `order`, moves them                  | A centered row, a space-between row and an end-aligned row           |
 | Hidden, `display: none`, or zero-size elements                                              | Skipped                                                                                                                 | One of each after the changed element                                |
 | Changed elements outside the area's visible part                                            | Take their final place without animation                                                                                | A long list with changed rows above and below the fold               |
 | Elements under a scaled or transformed ancestor                                             | Moves by its layout change, corrected for the ancestor's scale                                                          | A moving row inside a scaled panel                                   |
@@ -122,8 +124,6 @@ Out of coverage, each taking its final place at once:
 - content outside the area, and content in another document or an iframe;
 - inline text and other non-replaced inline content, which cannot take a
   transform;
-- flex or grid items earlier in the DOM that `order` places after the change,
-  since only content after the change in the DOM moves;
 - text reflowing inside a paragraph beside a float;
 - elements the app moves itself with its own transforms;
 - a closing element whose space no end margin frees (a grid item whose

@@ -6,8 +6,9 @@
  *   every core source file that imports the module
  * @output The source boundary check `architecture:react-component-runtime`
  *   INV12 asks for: the module animates no layout property, its walk reaches
- *   elements only through parentElement / nextElementSibling (and
- *   firstElementChild under `display: contents`), the reporting functions are
+ *   elements only through parentElement and the element siblings on either
+ *   side (and firstElementChild under `display: contents`), stopping at the
+ *   band around the visible part, the reporting functions are
  *   not public, and only the hook and the adopting components use it
  * @position Testing; the real-browser half of INV12's verification is in
  *   __tests__/animatedLayout.interaction.browser.spec.ts
@@ -64,7 +65,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
     ]);
   });
 
-  it('walks only through parentElement and nextElementSibling, entering display: contents alone', () => {
+  it('walks only through parentElement and the element siblings on either side, entering display: contents alone, and stops at the band', () => {
     const body = code(moduleSource);
     for (const forbidden of [
       'TreeWalker',
@@ -74,7 +75,6 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       '.children',
       'childNodes',
       'lastElementChild',
-      'previousElementSibling',
     ]) {
       expect(body, forbidden).not.toContain(forbidden);
     }
@@ -87,6 +87,13 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
         /display === 'contents'\)\s*\{\s*for\s*\(\s*let child = \w+\.firstElementChild/g,
       ) ?? [];
     expect(contentsDescents).toHaveLength(2);
+    // Each level's sibling walk ends at the first sibling past the band.
+    expect(body).toMatch(
+      /sibling != null && take\(sibling, true\);\s*sibling = sibling\.nextElementSibling/,
+    );
+    expect(body).toMatch(
+      /sibling != null && take\(sibling, false\);\s*sibling = sibling\.previousElementSibling/,
+    );
   });
 
   it('keeps the reporting functions out of every public entry point', () => {

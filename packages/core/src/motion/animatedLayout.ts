@@ -18,9 +18,15 @@
  * How it works:
  * - `measureBefore()` runs before the change commits: from the changed
  *   element it walks up to the handle's container and, at each level,
- *   records the rectangle of every following element sibling, through
- *   `parentElement` and `nextElementSibling`, descending only into an element
- *   with `display: contents` (it has no box).
+ *   records the rectangles of the element siblings after it and before it (a
+ *   centered, end-aligned or space-between row, or `order`, moves those too),
+ *   through `parentElement`, `nextElementSibling` and
+ *   `previousElementSibling`, descending only into an element with
+ *   `display: contents` (it has no box). Each level's walk stops at the first
+ *   sibling outside the band a change can move content into view from: the
+ *   area's visible part plus one viewport, or the changed element's size if
+ *   larger, above and below. So its cost grows with depth plus the siblings
+ *   near the visible part, never with a list's length.
  * - `animate()` runs after the commit (a layout effect). Every change in the
  *   same area reported in one frame is measured together after the commit,
  *   once, in a microtask, so each element moves once, by its total change.
@@ -315,17 +321,52 @@ function takesPart(element: Element, style: CSSStyleDeclaration): boolean {
 }
 
 /**
- * The elements that can shift when `changed` changes size: at each ancestor
- * level up to `area`, every following element sibling. `display: contents` is
- * replaced by its children.
+ * The band of the page a change can move content into or out of view: the
+ * area's visible part, extended above and below by one viewport or by the
+ * changed element's size, whichever is larger (a collapse pulls content up by
+ * at most that size). Content outside it before the change stays outside it,
+ * so the walk stops there.
  */
-function collectFollowers(changed: Element, area: Element): Element[] {
+interface Band {
+  /** Its top edge, in client px. */
+  readonly start: number;
+  /** Its bottom edge, in client px. */
+  readonly end: number;
+}
+
+function bandFor(changed: Element, area: Element): Band {
+  const visible = visibleRect(area);
+  const reach = Math.max(
+    visible.height,
+    changed.getBoundingClientRect().height,
+  );
+  const start = visible.top - reach;
+  const end = visible.bottom + reach;
+  return {start, end};
+}
+
+/**
+ * The elements a change can move, each with its rectangle before the change:
+ * at each ancestor level up to the area, the siblings after the changed
+ * element and the siblings before it (a centered, end-aligned or
+ * space-between row, or `order`, moves those too). A `display: contents`
+ * element has no box: its children stand in its place. At each level the
+ * walk stops at the first sibling past `band` (the siblings after it are
+ * further along), so its cost grows with depth plus the siblings near the
+ * visible part, never with the length of a list.
+ */
+function collectCandidates(
+  changed: Element,
+  area: Element,
+  band: Band,
+): Map<Element, DOMRect> {
   const view = changed.ownerDocument.defaultView;
-  const out: Element[] = [];
-  const take = (element: Element) => {
+  const out = new Map<Element, DOMRect>();
+  /** Takes `element`; returns false once it lies past the band. */
+  const take = (element: Element, isAfter: boolean): boolean => {
     const style = view?.getComputedStyle(element);
     if (style == null) {
-      return;
+      return true;
     }
     if (style.display === 'contents') {
       for (
@@ -333,13 +374,19 @@ function collectFollowers(changed: Element, area: Element): Element[] {
         child != null;
         child = child.nextElementSibling
       ) {
-        take(child);
+        take(child, isAfter);
       }
-      return;
+      return true;
     }
-    if (takesPart(element, style)) {
-      out.push(element);
+    if (!takesPart(element, style)) {
+      return true;
     }
+    const rect = element.getBoundingClientRect();
+    if (isAfter ? rect.top > band.end : rect.bottom < band.start) {
+      return false;
+    }
+    out.set(element, rect);
+    return true;
   };
   for (
     let node: Element | null = changed;
@@ -348,10 +395,17 @@ function collectFollowers(changed: Element, area: Element): Element[] {
   ) {
     for (
       let sibling = node.nextElementSibling;
-      sibling != null;
+      sibling != null && take(sibling, true);
       sibling = sibling.nextElementSibling
     ) {
-      take(sibling);
+      // The siblings after it, until one lies past the band.
+    }
+    for (
+      let sibling = node.previousElementSibling;
+      sibling != null && take(sibling, false);
+      sibling = sibling.previousElementSibling
+    ) {
+      // The siblings before it, until one lies before the band.
     }
   }
   return out;
@@ -365,6 +419,8 @@ interface Batch {
   readonly area: Element;
   readonly changed: Set<Element>;
   readonly before: Map<Element, DOMRect>;
+  /** What each changed element's walk found, so a dropped change moves none. */
+  readonly candidates: Map<Element, Element[]>;
   scheduled: boolean;
 }
 
@@ -377,6 +433,7 @@ function batchFor(area: Element): Batch {
       area,
       changed: new Set(),
       before: new Map(),
+      candidates: new Map(),
       scheduled: false,
     };
     batches.set(area, created);
@@ -445,13 +502,14 @@ function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
 
 function flush(batch: Batch): void {
   batches.delete(batch.area);
+  // What each change's walk measured before it: an element added by the
+  // change has no old place, and one it removed is gone.
   const followers = new Set<Element>();
   for (const changed of batch.changed) {
-    if (!changed.isConnected) {
-      continue;
-    }
-    for (const element of collectFollowers(changed, batch.area)) {
-      followers.add(element);
+    for (const element of batch.candidates.get(changed) ?? []) {
+      if (element.isConnected) {
+        followers.add(element);
+      }
     }
   }
   if (followers.size === 0) {
@@ -619,11 +677,17 @@ export function reportLayoutChange(
       }
       const batch = batchFor(area);
       batch.changed.add(element);
-      for (const follower of collectFollowers(element, area)) {
-        if (!batch.before.has(follower)) {
-          batch.before.set(follower, follower.getBoundingClientRect());
+      const candidates = collectCandidates(
+        element,
+        area,
+        bandFor(element, area),
+      );
+      for (const [candidate, rect] of candidates) {
+        if (!batch.before.has(candidate)) {
+          batch.before.set(candidate, rect);
         }
       }
+      batch.candidates.set(element, [...candidates.keys()]);
     },
     animate() {
       const element = resolve(target);
