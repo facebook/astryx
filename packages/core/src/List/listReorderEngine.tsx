@@ -87,7 +87,6 @@ import {colorVars, fontWeightVars, spacingVars} from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import type {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
 import {reorder} from '../motion/uikit/reorder';
-import type {DurationBounce} from '../motion/spring';
 import {
   animatorFor,
   isMoving,
@@ -118,7 +117,6 @@ import {
   clampTop,
   dropPosition,
   settleSpring,
-  slideSpring,
   type ReorderGeometry,
 } from './reorderModel';
 
@@ -218,8 +216,12 @@ export const PREVIEW_ATTRIBUTE = 'data-astryx-reorder-preview';
 /** Marks the insertion line at the drop position. */
 export const LINE_ATTRIBUTE = 'data-astryx-reorder-line';
 
-/** The dragged row's opacity in its place while its preview moves. */
-const SOURCE_OPACITY = '0.4';
+/**
+ * The temporary reduced emphasis the dragged row and its preview share
+ * (design:ordered-collection-reordering DR2): the same item, moving, and
+ * not raised.
+ */
+const MOVING_OPACITY = '0.6';
 /** The insertion line's thickness, px. */
 const LINE_THICKNESS = 2;
 
@@ -242,7 +244,10 @@ function overlay(element: HTMLElement, marker: string): HTMLElement {
   return element;
 }
 
-/** The preview: a copy of `row`, at its place, opaque and lifted. */
+/**
+ * The preview: a copy of `row` at its place, with the same reduced emphasis
+ * as the row and no elevation (DR2).
+ */
 function previewOf(row: HTMLElement, top: number, background: string | null) {
   const preview = row.cloneNode(true) as HTMLElement;
   preview.removeAttribute('id');
@@ -255,7 +260,8 @@ function previewOf(row: HTMLElement, top: number, background: string | null) {
     insetInlineStart: `${row.offsetLeft}px`,
     inlineSize: `${row.offsetWidth}px`,
     boxSizing: 'border-box',
-    boxShadow: 'var(--shadow-high)',
+    boxShadow: 'none',
+    opacity: MOVING_OPACITY,
   });
   if (background != null) {
     preview.style.backgroundColor = background;
@@ -406,11 +412,6 @@ interface DragSession {
   readonly edge: EdgeAutoscroll;
   /** Points per tick of the running autoscroll; 0 when none. */
   step: number;
-  /**
-   * The slides' spring under the list's theme, read at the begin; null with
-   * a mouse, whose rows take their places at once.
-   */
-  readonly slide: DurationBounce | null;
   /** The dragged row's inline stacking before the drag. */
   readonly restore: RowRestore;
   /** The copy of the dragged row that follows the pointer. */
@@ -1008,8 +1009,10 @@ export class ListReorderController implements ListReorderSession {
     if (list == null || this.session != null) {
       return false;
     }
-    // A drag ends reorder mode, keeping its moves.
-    this.setMode(null);
+    // A drag ends reorder mode, keeping its moves, and says so.
+    if (this.modeHandle != null) {
+      this.endMode();
+    }
     // A drop still waiting for its commit is settled where it is.
     this.flushPending();
     const rows = rowsOf(list);
@@ -1050,8 +1053,8 @@ export class ListReorderController implements ListReorderSession {
     // The rows stay where they are until the drop
     // (design:ordered-collection-reordering): the dragged row is dimmed in
     // its place, a preview of it follows the pointer, and an insertion line
-    // marks where it would land. The preview is opaque, as the row is: a row
-    // without its own background takes the surface's behind the list.
+    // marks where it would land. The preview has a background, as the row
+    // does: a row without its own takes the surface's behind the list.
     const background = isTransparent(getComputedStyle(row).backgroundColor)
       ? surfaceColor(list)
       : null;
@@ -1067,7 +1070,7 @@ export class ListReorderController implements ListReorderSession {
     const line = lineFor(row);
     list.append(preview, line);
     row.setAttribute(SOURCE_ATTRIBUTE, '');
-    row.style.opacity = SOURCE_OPACITY;
+    row.style.opacity = MOVING_OPACITY;
     list.setAttribute(REORDERING_ATTRIBUTE, '');
     const session: DragSession = {
       list,
@@ -1094,7 +1097,6 @@ export class ListReorderController implements ListReorderSession {
         apply: delta => this.scrollBy(session, delta),
       }),
       step: 0,
-      slide: this.animates ? touchMotion.slideBase(list) : null,
       restore,
       preview,
       line,
@@ -1333,7 +1335,7 @@ export class ListReorderController implements ListReorderSession {
       const spring =
         index === dragged
           ? settleSpring(value, element.offsetHeight)
-          : slideSpring(0, touchMotion.slideBase(list));
+          : touchMotion.glideBase(list);
       touchMotion.home(element, spring, at, index === dragged);
     }
     list.removeAttribute(REORDERING_ATTRIBUTE);
@@ -1472,12 +1474,7 @@ export class ListReorderController implements ListReorderSession {
       }
       // A row still sliding from the previous move goes on from where it is
       // shown, as a drop's rows do.
-      touchMotion.follow(
-        element,
-        shift,
-        slideSpring(0, touchMotion.slideBase(list)),
-        at,
-      );
+      touchMotion.follow(element, shift, touchMotion.glideBase(list), at);
     }
     list.removeAttribute(REORDERING_ATTRIBUTE);
   }
@@ -1507,12 +1504,7 @@ export class ListReorderController implements ListReorderSession {
         // Every row's place after the drop is its new layout place, so each
         // running spring (the drop's settle, a row's slide) goes on to 0 from
         // the shifted value.
-        touchMotion.follow(
-          element,
-          shift,
-          slideSpring(0, touchMotion.slideBase(list)),
-          at,
-        );
+        touchMotion.follow(element, shift, touchMotion.glideBase(list), at);
       } else {
         animatorFor(element).set({y: 0});
         releaseMotion(element, 'translate');
