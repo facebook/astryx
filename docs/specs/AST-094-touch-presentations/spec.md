@@ -322,7 +322,10 @@ FR31 and FR35 apply to anchored menus and to Popover under a finger; FR32 and
 FR33 apply to menus only. A mouse keeps today's behavior.
 
 FR26–FR28 are the shared rule of `family:action-groups`: every member, not
-only menus, follows them under the family's scope (DEC-17).
+only menus, follows them under the family's scope (DEC-17). Whether a menu
+stays open after a release outside it stays with the menu: FR28 keeps it open
+under a finger, and a mouse follows `module:DropdownMenu/useMenuPress` FR3 and
+`component:Selector` FR7.
 
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
   it, never because the press began on it; a press that never left its row is
@@ -498,7 +501,8 @@ only menus, follows them under the family's scope (DEC-17).
   unchanged until the public motion-token set is decided; then its roles join
   the motion configuration (FR4, DEC-11).
 - `architecture:interaction-modality`: the touch-presentation conditions
-  (FR13) sit beside the shared modality state; its invariants are unchanged.
+  (FR13) sit beside the shared modality state, and INV13 gives every action
+  group one press tracking (DEC-17).
 - `architecture:react-component-runtime`: FR24 states the caller-visible
   outcome of INV5 and INV7 for touch work; both are unchanged.
 - Under FR41: ContextMenu's trigger, DropdownMenu's built-in trigger and its menu, and

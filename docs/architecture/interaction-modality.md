@@ -168,8 +168,9 @@ work.
 - **INV13 — Press tracking across a group has one owner.** In
   `@astryxdesign/core`, one internal module, `actionGroupTracker`, tracks a
   held pointer across a group's actions for every `family:action-groups`
-  member, and `module:DropdownMenu/useMenuPress` converges onto it. No member
-  keeps its own copy of the tracking. It is not exported (`spec:AST-017`
+  member other than menus, whose tracking and public `menuPressStep` stay
+  with `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
+  of the tracking. It is not exported (`spec:AST-017`
   FR21).
 
 ## Allowed variation
@@ -235,14 +236,16 @@ is asked to carry a new decision.
   lifetimes, and focus-paint ownership.
 - `architecture:react-component-runtime` owns shared lifecycle and resource
   mechanisms. This record owns only the cross-cutting modality-path,
-  no-stale-interaction-outcome, and gesture-velocity-source requirements.
+  no-stale-interaction-outcome, gesture-velocity-source, and group
+  press-tracking (INV13) requirements.
 - The Core velocity tracker and its release filter (INV10) — the one source of
   gesture velocity for Core components; not exported.
 
 ## Deciding specs
 
-`spec:AST-100/DEC-1` decides one release velocity per kind of surface (INV10).
-Otherwise no separate specification changes this record. The last-input rule was approved as
+`spec:AST-100/DEC-1` decides one release velocity per kind of surface (INV10),
+and `spec:AST-094/DEC-17` decides one press tracking for every action group
+(INV13). Otherwise no separate specification changes this record. The last-input rule was approved as
 a system architecture decision by `cixzhang` on 2026-08-30. Essential-action
 reachability, newer-intent precedence, and the evidence/scope guard were approved by
 `cixzhang` on 2026-09-10.
