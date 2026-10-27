@@ -12,8 +12,9 @@
  *   off both; only the actions are tracked, so a touch that lands on the
  *   message runs nothing; a tap and a mouse click run their action once; a
  *   mouse is tracked too, so its slide from Delete to Cancel runs Cancel; a
- *   held finger starts no text selection (refused by style or by a cancelled
- *   selectstart); the tracking is the same under a finger in Chrome's engine;
+ *   press on the actions selects none of their labels while the title and
+ *   the message stay selectable; the tracking is the same under a finger in
+ *   Chrome's engine;
  *   a storyboard of the slide from Delete to Cancel.
  * @position Touch lane of AlertDialog, beside the accessibility bindings in
  *   this folder. Run with `pnpm test:interaction AlertDialog`.
@@ -226,43 +227,38 @@ test('a lift off both actions runs nothing and leaves the alert open', async ({
   expect((await readLog(page)).clicks).toEqual([]);
 });
 
-test('a held finger starts no text selection: a selection is refused while it is down, and allowed again after', async ({
+test('a press on the actions starts no text selection, by style, while the title and the message stay selectable (spec:AST-094 FR41)', async ({
   page,
 }) => {
   const {driver, dialog, del, centers, bottom} = await openAlert(page);
-  // The lock refuses a selection one of two ways (spec:AST-094 FR41): where
-  // iOS WebKit runs, `user-select: none` on the held group; elsewhere a
-  // cancelled `selectstart` on the text under the finger, with no style
-  // write. Either is a refusal; with neither, the text is selectable. The
-  // group is the actions' row, so that is where the lock applies.
-  const row = del.locator('..');
-  const refusesSelection = async () => {
-    const userSelect = await row.evaluate(element => {
+  const userSelect = async (locator: Locator) =>
+    locator.evaluate(element => {
       const style = getComputedStyle(element);
       return (
         style.getPropertyValue('user-select') ||
         style.getPropertyValue('-webkit-user-select')
       );
     });
-    const isCancelled = await del.evaluate(element => {
-      const start = new Event('selectstart', {bubbles: true, cancelable: true});
-      element.dispatchEvent(start);
-      return start.defaultPrevented;
-    });
-    return userSelect === 'none' || isCancelled;
-  };
-  expect(await refusesSelection()).toBe(false);
+  // The actions' row, the group: its labels are never selected by a press
+  // that slides across them, whatever the pointer.
+  expect(await userSelect(del.locator('..'))).toBe('none');
+  // The title and the message are outside the group: selectable.
+  expect(await userSelect(dialog.getByRole('heading'))).not.toBe('none');
+  const message = dialog.getByText('This action cannot be undone', {
+    exact: false,
+  });
+  expect(await userSelect(message)).not.toBe('none');
+  // A held finger on the actions changes nothing there.
   await driver.play(slide(centers.del, {x: centers.del.x, y: bottom + 60}), {
     onEvent: async (step, index) => {
       if (index !== 0) {
         return;
       }
       expect(step.type).toBe('touchStart');
-      expect(await refusesSelection()).toBe(true);
+      expect(await userSelect(message)).not.toBe('none');
     },
   });
   await expect(dialog).toBeVisible();
-  expect(await refusesSelection()).toBe(false);
 });
 
 test("no pan can take the group's press: the actions allow only pinch-zoom, and the rest of the alert keeps its pan", async ({
@@ -360,9 +356,8 @@ test.describe('with a mouse', () => {
   test('the dialog keeps its base styles: its text stays selectable', async ({
     page,
   }) => {
-    // A held finger's suppressed selection (`spec:AST-094` FR41) is a
-    // finger's or a pen's, never a mouse's: with a mouse the dialog keeps what
-    // it had before.
+    // Only the actions' row, the group, takes no text selection: with a
+    // mouse the dialog's title and message stay selectable.
     await openStory(page, storybook(), 'core-alertdialog--delete');
     // A fine pointer in this context, before anything is checked.
     expect(
