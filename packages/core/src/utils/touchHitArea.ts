@@ -12,7 +12,7 @@
  *   for its invisible layer (`touchHitAreaStyles.layer`,
  *   utils/touchHitArea.stylex.ts), and `touchTargetSize`
  * @position Core-internal hook for the coarse-only 44 px target
- *   (`spec:AST-094` FR43): List rows (ListItem) use it, and so can any
+ *   (`spec:AST-094` FR42): List rows (ListItem) use it, and so can any
  *   control whose target grows under a finger without growing its box
  *
  * Under a coarse primary pointer the shared utility measures how far the
@@ -37,8 +37,9 @@ import {useEffect, type RefObject} from 'react';
 import {MIN_TOUCH_TARGET, watchHitArea, writeHitInsets} from './hitArea';
 
 /**
- * The theme's touch target size in px (`--size-touch-target`), read under a
- * finger only; the 44 px minimum otherwise.
+ * The touch target size in px: 44 (`spec:AST-094` FR42), or more where the
+ * page sets `--size-touch-target` larger, read under a finger only. A smaller
+ * value never lowers the target below 44.
  */
 export function touchTargetSize(element: Element): number {
   const view = element.ownerDocument.defaultView;
@@ -50,7 +51,9 @@ export function touchTargetSize(element: Element): number {
     .getPropertyValue('--size-touch-target')
     .trim();
   const size = value.endsWith('px') ? Number.parseFloat(value) : Number.NaN;
-  return Number.isFinite(size) && size > 0 ? size : MIN_TOUCH_TARGET;
+  return Number.isFinite(size)
+    ? Math.max(MIN_TOUCH_TARGET, size)
+    : MIN_TOUCH_TARGET;
 }
 
 /**
