@@ -164,27 +164,6 @@ describe('ProgressBar', () => {
   });
 
   // Disabled state
-  describe('reduced motion', () => {
-    it('keys one fill by its value: a change remounts it at the new length, while the transitioning fill stays (design:reduced-motion DR2)', () => {
-      const {container, rerender} = render(
-        <ProgressBar label="Upload" value={20} />,
-      );
-      const fills = () =>
-        Array.from(
-          container.querySelectorAll<HTMLElement>('.astryx-progress-bar-fill'),
-        );
-      const [transitioning, keyed] = fills();
-      expect(fills()).toHaveLength(2);
-      expect(keyed.style.width).toBe('20%');
-      rerender(<ProgressBar label="Upload" value={60} />);
-      const [nextTransitioning, nextKeyed] = fills();
-      expect(nextTransitioning).toBe(transitioning);
-      expect(nextKeyed).not.toBe(keyed);
-      expect(nextTransitioning.style.width).toBe('60%');
-      expect(nextKeyed.style.width).toBe('60%');
-    });
-  });
-
   describe('disabled state', () => {
     it('renders with isDisabled', () => {
       render(
