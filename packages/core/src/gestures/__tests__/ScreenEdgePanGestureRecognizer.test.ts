@@ -118,6 +118,22 @@ describe('ScreenEdgePanGestureRecognizer', () => {
     expect(h.log[0]).toMatch(/^edge:began@/);
   });
 
+  it('takes a finger only: a mouse or a pen never starts an edge pan, whatever its options', () => {
+    for (const pointerType of ['mouse', 'pen'] as const) {
+      const h = createHarness();
+      const edge = new ScreenEdgePanGestureRecognizer({
+        name: 'edge',
+        allowedPointerTypes: ['touch', 'mouse', 'pen'],
+      });
+      h.environment.view = {width: edge.edgeRegion, height: 844};
+      h.finger(1)
+        .down(10, 300, 0, {recognizers: [edge], pointerType})
+        .drag(40, 0, 30);
+      expect(edge.state, pointerType).not.toBe('began');
+      expect(h.log, pointerType).toEqual([]);
+    }
+  });
+
   it('in the edge zone, still decides at its hysteresis', () => {
     const h = createHarness();
     const edge = new ScreenEdgePanGestureRecognizer({name: 'edge'});

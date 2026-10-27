@@ -32,6 +32,19 @@ describe('PinchGestureRecognizer', () => {
     expect(h.log).toContain('pinch:ended@170');
   });
 
+  it('never pinches with a pen, whatever its options', () => {
+    const h = createHarness();
+    const pinch = new PinchGestureRecognizer({
+      name: 'pinch',
+      allowedPointerTypes: ['touch', 'pen'],
+    });
+    h.finger(1).down(100, 100, 0, {recognizers: [pinch], pointerType: 'pen'});
+    h.finger(2).down(200, 100, 0, {recognizers: [pinch], pointerType: 'pen'});
+    h.finger(2).move(260, 100, 32);
+    expect(pinch.state).not.toBe('began');
+    expect(pinch.allowedPointerTypes?.has('pen')).toBe(false);
+  });
+
   it('ignores a third finger and can be re-based', () => {
     const h = createHarness();
     const pinch = new PinchGestureRecognizer({name: 'pinch'});

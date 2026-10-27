@@ -42,7 +42,14 @@ export class PinchGestureRecognizer extends GestureRecognizer {
   private lastTime = 0;
 
   constructor(options: PinchGestureRecognizerOptions = {}) {
-    super(options);
+    super({
+      ...options,
+      // Never a pen, which has one tip and is never half of a pinch
+      // (spec:AST-094, gestures for every pointer, with this exception).
+      allowedPointerTypes: (
+        options.allowedPointerTypes ?? ['touch', 'mouse']
+      ).filter(kind => kind !== 'pen'),
+    });
     this.hysteresis = options.hysteresis ?? UIKIT_PINCH.hysteresis.value;
   }
 

@@ -72,6 +72,10 @@ export class ScreenEdgePanGestureRecognizer extends PanGestureRecognizer {
       maximumNumberOfTouches: 1,
       hysteresis: UIKIT_SCREEN_EDGE_PAN.hysteresis.value,
       ...options,
+      // A finger only: an edge swipe is a touch gesture, so a mouse or a pen
+      // never starts one, whatever the options say (spec:AST-094, gestures
+      // for every pointer, with this exception).
+      allowedPointerTypes: ['touch'],
     });
     this.edges = options.edges ?? ['leading'];
     this.edgeRegion =
