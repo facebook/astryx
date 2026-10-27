@@ -383,6 +383,9 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await touch.tap(cdp, await center(page, TRIGGER));
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
+    // Under a finger the menu grows out of its trigger (spec:AST-094 FR31):
+    // measure its rows once it has landed.
+    await settled(page);
     const edit = await center(page, 'menuitem', 'Edit');
     await touch.start(cdp, edit);
     await expect.poll(async () => activeRowName(page)).toBe('Edit');
@@ -406,6 +409,9 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await touch.tap(cdp, await center(page, TRIGGER));
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
+    // Under a finger the menu grows out of its trigger (spec:AST-094 FR31):
+    // measure its rows once it has landed.
+    await settled(page);
     const edit = await center(page, 'menuitem', 'Edit');
     await touch.start(cdp, edit);
     await expect.poll(async () => activeRowName(page)).toBe('Edit');
