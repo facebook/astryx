@@ -58,7 +58,7 @@ export const docs = {
           ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
           ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
           ['typography, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
-          ['motion', 'Each knob the child sets wins and the knobs it leaves out carry over; a child duration scale replaces the base\'s durations.'],
+          ['motion', 'Merged field by field: each duration-scale field or knob the child sets wins, and the rest keep the base\'s values. Explicit tokens anywhere in the lineage still win.'],
           ['adaptations', 'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.'],
         ]},
         {type: 'prose', text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `{@command theme build}` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) throws when `defineTheme` runs, rather than producing a theme that silently inherits nothing."},

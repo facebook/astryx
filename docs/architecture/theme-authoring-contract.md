@@ -201,8 +201,9 @@ it, typed as that theme's listed names.
   scale. `tempo` scales every duration token and `character` sets
   `--ease-entrance` and `--ease-move`; with tempo 1 and `standard` the tokens
   are the defaults. A duration scale's durations win over `tempo`, and
-  explicit tokens win over both. A knob a theme sets is written even at its
-  default, and one it leaves out carries over from its base. Each duration's
+  explicit tokens win over both. An extending theme inherits motion field by
+  field: a duration-scale field or knob the child leaves unset keeps its
+  base's value, and an explicit token anywhere in the lineage still wins. Each duration's
   value before `tempo` is kept for busy-indicator loops, which never follow
   `tempo`. An adaptation rule may set `tempo` and `character`, never
   `reducedMotion`.

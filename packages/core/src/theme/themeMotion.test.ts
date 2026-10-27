@@ -280,3 +280,51 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
     );
   });
 });
+
+describe('an extending theme inherits motion field by field (spec:AST-108 FR5)', () => {
+  it('a base duration scale keeps winning over a child\u2019s tempo', () => {
+    const base = defineTheme({
+      name: 'ScaledBase',
+      motion: {fast: 100, medium: 250, slow: 800, ratio: 0.75},
+    });
+    const child = defineTheme({
+      name: 'ScaledChild',
+      extends: base,
+      motion: {tempo: 1.2},
+    });
+    for (const name of [
+      '--duration-fast',
+      '--duration-medium',
+      '--duration-slow',
+    ]) {
+      expect(child.tokens[name], name).toBe(base.tokens[name]);
+    }
+  });
+
+  it('a base\u2019s explicit duration keeps winning over a child\u2019s knobs', () => {
+    const base = defineTheme({
+      name: 'ExplicitBase',
+      motion: {tempo: 0.8},
+      tokens: {'--duration-medium': '300ms'},
+    });
+    const quicker = defineTheme({
+      name: 'ExplicitChild',
+      extends: base,
+      motion: {tempo: 1.2},
+    });
+    expect(quicker.tokens['--duration-medium']).toBe('300ms');
+    expect(quicker.tokens['--duration-fast']).toBe(
+      `${Math.round(175 * 1.2)}ms`,
+    );
+    const crisper = defineTheme({
+      name: 'ExplicitCrisp',
+      extends: base,
+      motion: {character: 'crisp'},
+    });
+    expect(crisper.tokens['--duration-medium']).toBe('300ms');
+    expect(crisper.tokens['--duration-fast']).toBe(
+      `${Math.round(175 * 0.8)}ms`,
+    );
+    expect(crisper.tokens['--ease-entrance']).toBe(CHARACTER_EASE.crisp);
+  });
+});

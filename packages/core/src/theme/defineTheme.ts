@@ -563,13 +563,35 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   // The theme's own value axes and the resolved base an `extends` supplies.
   // The same axis metadata is retained so adaptation rules can complete partial
   // configs without approximating values from unrelated built-in defaults.
+  //
+  // Motion inherits field by field (spec:AST-108 FR5): a duration-scale field
+  // or knob the child leaves unset keeps its base's value, so the child's
+  // motion tokens come from the merged configuration, and the lineage's
+  // explicit motion tokens keep winning over what that regenerates.
+  const baseMotion = base?.__axes?.motion;
+  const motion: ThemeMotionConfig | undefined =
+    input.motion != null && baseMotion != null
+      ? {...baseMotion, ...input.motion}
+      : input.motion;
+  const lineageMotionTokens =
+    input.motion != null && base?.__inputTokens != null
+      ? Object.fromEntries(
+          Object.entries(base.__inputTokens).filter(
+            ([name]) =>
+              name.startsWith('--duration-') || name.startsWith('--ease-'),
+          ),
+        )
+      : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
     color: input.color,
     radius: input.radius,
-    motion: input.motion,
+    motion,
     syntax: input.syntax,
-    tokens: input.tokens,
+    tokens:
+      lineageMotionTokens != null && Object.keys(lineageMotionTokens).length > 0
+        ? {...lineageMotionTokens, ...input.tokens}
+        : input.tokens,
     components: input.components,
   };
   const ownAxes: ThemeGenerativeAxes = {
