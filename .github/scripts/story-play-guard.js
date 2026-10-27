@@ -348,6 +348,13 @@ const TARGETS = [
       'the rendered RTL wrapper mirrors fixed-track item order while responsive and span geometry remain bounded',
   },
   {
+    component: 'DialogHeroHeader',
+    story: 'lab-dialogheroheader--media-bleed-geometry',
+    guards:
+      'media reaches the dialog edges at theme-default, 0/2/8 padding, a ' +
+      'theme override, and RTL while the title keeps the cancelled inset',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
