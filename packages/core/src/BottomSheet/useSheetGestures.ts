@@ -1917,10 +1917,17 @@ export function useSheetGestures({
       return startDismiss();
     }
     const base = travelBaseRef.current;
+    // The host asks for the exit once the sheet is closing.
+    const wasClosing = !isOpenRef.current;
     const queued: SheetGestureExit = {
       finished: entrance.then(async () => {
         if (gestureExitRef.current === queued) {
           gestureExitRef.current = null;
+        }
+        // Opened again before it landed: the newer intent owns the outcome
+        // (`architecture:interaction-modality` INV8), so the sheet stays.
+        if (wasClosing && isOpenRef.current) {
+          return false;
         }
         return startDismiss()?.finished ?? true;
       }),
