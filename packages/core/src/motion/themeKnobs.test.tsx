@@ -21,7 +21,7 @@ import {cleanup, render} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {defineTheme, type DefineThemeInput} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
-import {createAnimator} from './animator';
+import {createMotionAnimator} from './animator';
 import {reducedMotionFade} from './reducedMotion';
 import {CHARACTER_BOUNCE_STEP, resolveMotion} from './resolveMotion';
 import {durationBounceOf, toSpring, type SpringDescription} from './spring';
@@ -197,11 +197,11 @@ describe('a theme that reduces motion for everyone (FR6)', () => {
   it('counts as the Reduce Motion setting for the animator and the fade', () => {
     const still = inTheme('StillAnimator', {reducedMotion: 'always'});
     // A fine pointer: reduced motion lands at once.
-    expect(createAnimator(still).reducedMotion()).toBe('instant');
+    expect(createMotionAnimator(still).reducedMotion()).toBe('instant');
     expect(reducedMotionFade(still)).toEqual({duration: 0, easing: 'linear'});
     cleanup();
     const moving = inTheme('MovingAnimator');
-    expect(createAnimator(moving).reducedMotion()).toBe('off');
+    expect(createMotionAnimator(moving).reducedMotion()).toBe('off');
     expect(reducedMotionFade(moving)).toBeNull();
   });
 
@@ -227,7 +227,7 @@ describe('a theme that reduces motion for everyone (FR6)', () => {
     for (const id of ['system', 'plain']) {
       const element = getByTestId(id);
       expect(themeReducesMotion(element), id).toBe(true);
-      expect(createAnimator(element).reducedMotion(), id).toBe('instant');
+      expect(createMotionAnimator(element).reducedMotion(), id).toBe('instant');
       expect(reducedMotionFade(element), id).toEqual({
         duration: 0,
         easing: 'linear',
