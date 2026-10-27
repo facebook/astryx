@@ -148,10 +148,12 @@ export interface TransferListProps<T extends string = string> extends Omit<
 }
 
 const styles = stylex.create({
-  // Core List's reorder handle: a 44 px target overlapping the row's end
-  // padding by 8 px. A row without one keeps its end content clear of it.
+  // Core List's reorder handle: a small control (28 px, for every pointer;
+  // a finger's 44 px target is its invisible hit layer) overlapping the row's
+  // end padding by 8 px. A row without one keeps its end content clear of
+  // it, so every Remove sits in one column.
   clearsHandle: {
-    marginInlineEnd: 36,
+    marginInlineEnd: 20,
   },
   root: {
     display: 'flex',
