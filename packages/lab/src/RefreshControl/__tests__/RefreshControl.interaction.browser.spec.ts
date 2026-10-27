@@ -1426,15 +1426,26 @@ test('with a trackpad, a scroll down the page and back up short of its top stays
   }
 });
 
-test('with a mouse wheel, notches at the top pull nothing (spec:AST-094 FR43)', async ({
+test('with a mouse wheel, notches at the top pull through a finger’s mapping: on a 714 px page one notch reveals the indicator and three in one scroll refresh (spec:AST-094 FR43)', async ({
   browser,
 }) => {
   const {context, page, content} = await desktopPage(browser);
   try {
-    await scrollWheel(page, 3, -100);
-    await page.waitForTimeout(300);
-    expect(await shownPull(content)).toBe(0);
+    // One 100 px notch: about 76 px of overscroll, short of this page's
+    // trigger (19.8% of its height, 141 px). The scroll's gesture ends after
+    // the notch (#8676) and the content settles back.
+    await scrollWheel(page, 1, -100);
+    await waitForSettleStart(content);
+    await waitForContentRest(content);
     expect(await isBusy(content)).toBe(false);
+    expect(await shownPull(content)).toBe(0);
+    // Three notches in one scroll: 76, 125, then 167 px of overscroll, past
+    // the trigger, then onto the inset.
+    await scrollWheel(page, 3, -100);
+    await waitForSettleStart(content);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
   } finally {
     await context.close();
   }

@@ -586,18 +586,23 @@ describe('useRefreshControl', () => {
     expect(document.getSelection()?.isCollapsed).toBe(false);
   });
 
-  it('does not pull under a mouse wheel’s notches (spec:AST-094 FR43)', async () => {
+  it('pulls under a mouse wheel’s notches at the top, each through a finger’s mapping: on a scroll view as tall as UIKit’s measured one, one 100 px notch passes the trigger (spec:AST-094 FR43)', async () => {
     useTouchScreen(false);
-    const onRefresh = vi.fn();
+    const onRefresh = vi.fn(() => new Promise<void>(() => {}));
     render(
       <Refreshable data-testid="refresh" onRefresh={onRefresh}>
         <p>Inbox</p>
       </Refreshable>,
     );
-    wheel(content(), [-100, -100, -100]);
-    await new Promise(resolve => setTimeout(resolve, 150));
-    expect(onRefresh).not.toHaveBeenCalled();
-    expect(translateY(content())).toBe(0);
+    wheel(content(), [-100]);
+    // 100 px of travel, 10 of them the pan's hysteresis: 75.7 px of
+    // overscroll, past the trigger's 73 px floor (this page is 334 px tall).
+    expect(translateY(content())).toBeCloseTo(75.7, 1);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(content()).toHaveAttribute('aria-busy', 'true');
+    // The scroll ends 100 ms after its last notch: the content settles onto
+    // the inset.
+    await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
   });
 
   it.each(['pen', 'mouse'] as const)(
