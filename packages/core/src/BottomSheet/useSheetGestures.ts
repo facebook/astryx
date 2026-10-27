@@ -127,6 +127,8 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {playHaptic} from '../gestures/haptics';
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {readTouchPresentation} from './sheetTouch';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useMediaQuery} from '../hooks';
 import {lockSheetSelection} from './sheetSelectionLock';
 import {
   createAnimator,
@@ -337,6 +339,11 @@ function scrollChainUnder(
 /** Nothing in the chain can scroll up any further: a pull down is the sheet's. */
 function chainAtTop(chain: ReadonlyArray<HTMLElement>): boolean {
   return chain.every(element => element.scrollTop <= 0);
+}
+
+/** Whether a pointer-path event stands for a touch the body's touch listeners saw. */
+function isViaTouch(event: ReactPointerEvent): boolean {
+  return (event as {viaTouch?: boolean}).viaTouch === true;
 }
 
 function naturalEndGapFor(body: HTMLElement | null): number {
@@ -1280,6 +1287,10 @@ export function useSheetGestures({
     startCoord: number;
     tracker: VelocityTracker;
     captured: HTMLElement | null;
+    // A finger's pull from the body where the primary pointer is fine, which
+    // the body's touch listeners drive (see below): its pointer events are
+    // not the drag's.
+    viaTouch: boolean;
   } | null>(null);
 
   // Moves the sheet to `offset` on the travel channel, holding the layout
@@ -2362,6 +2373,7 @@ export function useSheetGestures({
         startCoord,
         tracker,
         captured: null,
+        viaTouch: isViaTouch(event),
       };
       // Never capture a finger: a touch drag keeps its own events.
       if (event.pointerType !== 'touch') {
@@ -2376,7 +2388,11 @@ export function useSheetGestures({
   const movePointerDrag = useCallback(
     (event: ReactPointerEvent) => {
       const drag = pointerDragRef.current;
-      if (drag == null || drag.pointerId !== event.pointerId) {
+      if (
+        drag == null ||
+        drag.pointerId !== event.pointerId ||
+        drag.viaTouch !== isViaTouch(event)
+      ) {
         return;
       }
       drag.tracker.add(0, event.clientY, event.timeStamp);
@@ -2387,7 +2403,11 @@ export function useSheetGestures({
   const endPointerDrag = useCallback(
     (event: ReactPointerEvent) => {
       const drag = pointerDragRef.current;
-      if (drag == null || drag.pointerId !== event.pointerId) {
+      if (
+        drag == null ||
+        drag.pointerId !== event.pointerId ||
+        drag.viaTouch !== isViaTouch(event)
+      ) {
         return;
       }
       if (drag.tracker.lastSample?.y !== event.clientY) {
@@ -2413,7 +2433,8 @@ export function useSheetGestures({
   }, [cancelDrag]);
   const handlePointerCancel = useCallback(
     (event: ReactPointerEvent) => {
-      if (pointerDragRef.current?.pointerId === event.pointerId) {
+      const drag = pointerDragRef.current;
+      if (drag?.pointerId === event.pointerId && !drag.viaTouch) {
         cancelPointerDrag();
       }
     },
@@ -2422,7 +2443,8 @@ export function useSheetGestures({
   // The browser or the page taking the pointer back mid-drag: not a release.
   const handleLostPointerCapture = useCallback(
     (event: ReactPointerEvent) => {
-      if (pointerDragRef.current?.pointerId === event.pointerId) {
+      const drag = pointerDragRef.current;
+      if (drag?.pointerId === event.pointerId && !drag.viaTouch) {
         cancelPointerDrag();
       }
     },
@@ -2561,9 +2583,126 @@ export function useSheetGestures({
   const handleRef = useCallback((node: HTMLElement | null) => {
     handleElRef.current = node;
   }, []);
+  const [bodyMounts, setBodyMounts] = useState(0);
   const bodyRef = useCallback((node: HTMLElement | null) => {
     bodyNodeRef.current = node;
+    setBodyMounts(mounts => mounts + 1);
   }, []);
+  // A finger where the primary pointer is fine (a touchscreen laptop): the
+  // gesture host listens for no touches there, and the browser takes the
+  // finger's pointer events for its scroll, so the body's own touch
+  // listeners serve it. A pull down from the content's top becomes the
+  // sheet's drag on the pointer path, as a mouse's does, decided when it
+  // begins (spec:AST-094 FR14). Under a fine pointer a component may listen
+  // on its own element (FR24); where the primary pointer is coarse the
+  // recognizers serve the finger instead.
+  const coarsePrimary = useMediaQuery(TOUCH_QUERY);
+  useEffect(() => {
+    const node = bodyNodeRef.current;
+    if (coarsePrimary || node == null) {
+      return;
+    }
+    let armed: {id: number; startY: number; scrollers: HTMLElement[]} | null =
+      null;
+    const asPointer = (touch: Touch, timeStamp: number) =>
+      ({
+        viaTouch: true,
+        pointerId: touch.identifier,
+        pointerType: 'touch',
+        clientY: touch.clientY,
+        timeStamp,
+        target: touch.target,
+        currentTarget: node,
+      }) as unknown as ReactPointerEvent;
+    const find = (list: TouchList, id: number): Touch | undefined =>
+      [...list].find(touch => touch.identifier === id);
+    const onStart = (event: TouchEvent) => {
+      armed = null;
+      if (event.touches.length > 1) {
+        // A second finger is a pinch, and pinch-zoom is the browser's.
+        if (pointerDragRef.current?.viaTouch === true) {
+          cancelPointerDrag();
+        }
+        return;
+      }
+      const touch = event.changedTouches[0];
+      const scrollers = scrollChainUnder(event.target, node);
+      if (touch == null || !chainAtTop(scrollers)) {
+        return;
+      }
+      armed = {id: touch.identifier, startY: touch.clientY, scrollers};
+    };
+    const onMove = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        armed = null;
+        if (pointerDragRef.current?.viaTouch === true) {
+          cancelPointerDrag();
+        }
+        return;
+      }
+      const drag = pointerDragRef.current;
+      if (drag?.viaTouch === true) {
+        const touch = find(event.changedTouches, drag.pointerId);
+        if (touch != null) {
+          event.preventDefault();
+          movePointerDrag(asPointer(touch, event.timeStamp));
+        }
+        return;
+      }
+      if (armed == null || drag != null) {
+        return;
+      }
+      const touch = find(event.changedTouches, armed.id);
+      if (touch == null) {
+        return;
+      }
+      const delta = touch.clientY - armed.startY;
+      if (delta > DRAG_PROMOTION_SLOP && chainAtTop(armed.scrollers)) {
+        event.preventDefault();
+        const {startY} = armed;
+        armed = null;
+        if (beginPointerDrag(asPointer(touch, event.timeStamp), startY)) {
+          movePointerDrag(asPointer(touch, event.timeStamp));
+        }
+      } else if (delta < 0) {
+        // A scroll of the content: its gesture to the end (FR14).
+        armed = null;
+      }
+    };
+    const onEnd = (event: TouchEvent) => {
+      armed = null;
+      const drag = pointerDragRef.current;
+      if (drag?.viaTouch !== true) {
+        return;
+      }
+      const touch = find(event.changedTouches, drag.pointerId);
+      if (touch == null) {
+        return;
+      }
+      if (event.type === 'touchcancel') {
+        cancelPointerDrag();
+      } else {
+        endPointerDrag(asPointer(touch, event.timeStamp));
+      }
+    };
+    node.addEventListener('touchstart', onStart, {passive: true});
+    node.addEventListener('touchmove', onMove, {passive: false});
+    node.addEventListener('touchend', onEnd, {passive: true});
+    node.addEventListener('touchcancel', onEnd, {passive: true});
+    return () => {
+      node.removeEventListener('touchstart', onStart);
+      node.removeEventListener('touchmove', onMove);
+      node.removeEventListener('touchend', onEnd);
+      node.removeEventListener('touchcancel', onEnd);
+    };
+  }, [
+    beginPointerDrag,
+    bodyMounts,
+    cancelPointerDrag,
+    coarsePrimary,
+    endPointerDrag,
+    movePointerDrag,
+  ]);
 
   const reconcileScrollPreservationInset = useCallback(
     (body: HTMLElement) => {

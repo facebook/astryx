@@ -1662,6 +1662,57 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
+    it('promotes a top pull-down from a finger where the primary pointer is fine (a touchscreen laptop), as on a phone', () => {
+      // A touchscreen laptop: a mouse is the primary pointer, and a finger on
+      // the screen sends touches, which the browser would scroll the content
+      // with. The gesture host listens for no touches there, so the body's
+      // own touch listeners serve that finger: under a fine pointer a
+      // component may listen on its own element (spec:AST-094 FR24).
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('any-pointer: coarse'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      attach(hook, sheetOf(el));
+      const touch = (type: string, y: number, time: number): Event => {
+        const event = new Event(type, {bubbles: true, cancelable: true});
+        const contact = {identifier: 7, clientX: 50, clientY: y, target: el};
+        Object.defineProperties(event, {
+          changedTouches: {value: [contact]},
+          touches: {value: type === 'touchend' ? [] : [contact]},
+          timeStamp: {value: time},
+        });
+        el.dispatchEvent(event);
+        return event;
+      };
+      let move: Event | undefined;
+      act(() => {
+        touch('touchstart', 0, 0);
+        move = touch('touchmove', 50, 16);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      // The pull is the sheet's, not the content's scroll.
+      expect(move?.defaultPrevented).toBe(true);
+      act(() => {
+        touch('touchmove', 100, 32);
+      });
+      expect(liveOffset(hook)).toBeGreaterThan(50);
+      act(() => {
+        touch('touchend', 100, 48);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
     it('promotes a bottom pull-up (touch) into a sheet drag that travels', () => {
       const {hook} = setup({snapHeights: () => [200]});
       // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
@@ -3041,29 +3092,6 @@ describe('useSheetGestures: the release on the compositor', () => {
     for (const animation of played) {
       expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
     }
-  });
-
-  it('leaves a finger on the body to the browser where the primary pointer is fine (spec:AST-094 FR19)', () => {
-    stubPointer({coarse: false});
-    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
-    const {hook} = setup({snapHeights: () => [200]});
-    const el = makeScroller({
-      scrollTop: 0,
-      clientHeight: 200,
-      scrollHeight: 800,
-    });
-    attach(hook, sheetOf(el));
-    act(() => {
-      touchEvent('touchstart', el, [{id: 1, x: 0, y: 0}], 0);
-      touchEvent('touchmove', el, [{id: 1, x: 0, y: 60}], 100);
-    });
-    // The sheet stays put; the page and the content keep the browser's own
-    // handling (the gesture host registers no touch listener there).
-    expect(hook.result.current.isDragging).toBe(false);
-    expect(liveOffset(hook)).toBe(0);
-    act(() => {
-      touchEvent('touchend', el, [{id: 1, x: 0, y: 60}], 120);
-    });
   });
 
   it('leaves a drag-dismissed sheet to the host exit under a mouse, from where it was', () => {
