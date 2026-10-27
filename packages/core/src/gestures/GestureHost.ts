@@ -136,7 +136,6 @@ import {
 } from './GestureArena';
 import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
 import type {PressBounds} from './PressTracker';
-import {HAPTIC_SWITCH_ATTRIBUTE} from '../utils/hapticSwitch';
 import type {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import type {PanGestureRecognizer} from './PanGestureRecognizer';
 import {createNativeScrollProbe, parentAcrossShadow} from './nativeScroll';
@@ -163,7 +162,11 @@ import {
 } from '../utils/clickGuard';
 import {subscribeInput} from '../utils/inputStream';
 import {isPrimaryClick} from '../utils/primaryClick';
-import {lockDragSelection, locksSelectionFor} from '../utils/selectionLock';
+import {
+  type DragSelectionReleaseOptions,
+  lockDragSelection,
+  locksSelectionFor,
+} from '../utils/selectionLock';
 import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
 import {gestureHosts} from './hostRegistry';
 import {
@@ -275,6 +278,16 @@ function claimsWhileMoving(recognizer: GestureRecognizer): boolean {
 }
 
 /**
+ * Whether a recognizer takes a contact that comes with Touch Events and a
+ * long press's contextmenu: a finger's or a pen's. A scroll-only recognizer
+ * (`allowedPointerTypes: []`) and a mouse-only one take neither.
+ */
+function takesTouchContacts(recognizer: GestureRecognizer): boolean {
+  const types = recognizer.allowedPointerTypes;
+  return types == null || types.has('touch') || types.has('pen');
+}
+
+/**
  * A hover recognizer, told apart by its family rather than its class, so a
  * page without one never ships HoverGestureRecognizer.
  */
@@ -352,6 +365,8 @@ const WHEEL_PINCH_SPAN = 100;
 /** A wheel gesture: the contacts it drives in the arena, or none where the page keeps it. */
 interface WheelGesture {
   readonly kind: 'pan' | 'pinch';
+  /** A mouse wheel's notches, or a trackpad's continuous scroll. */
+  readonly scrollType: ScrollType;
   readonly ids: ReadonlyArray<number>;
   /** A pan's contact, or a pinch's center. */
   x: number;
@@ -513,7 +528,10 @@ export class GestureHost {
   private readonly pendingCallerReads = new Set<HTMLElement>();
   private isCallerReadScheduled = false;
   /** The selection lock each contact holds, by host contact id. */
-  private readonly lockedBy = new Map<number, () => void>();
+  private readonly lockedBy = new Map<
+    number,
+    (options?: DragSelectionReleaseOptions) => void
+  >();
   private readonly presentedHitTesting: 'auto' | 'always' | 'never';
   /**
    * Contacts sent to what is drawn instead of what the engine hit, by host
@@ -1412,8 +1430,10 @@ export class GestureHost {
 
   /**
    * Whether an enabled participant could claim a touch or cancel a lift: a
-   * consumer, or a recognizer that claims touches. With only watchers
-   * attached, the host's listeners are all passive (`spec:AST-094` FR20).
+   * consumer, or a recognizer that claims touches and takes a finger or a
+   * pen. With only watchers, or only scroll-only recognizers
+   * (`allowedPointerTypes: []`), the host's listeners are all passive
+   * (`spec:AST-094` FR20, FR24).
    */
   private hasClaimer(): boolean {
     for (const registration of this.registry.values()) {
@@ -1421,7 +1441,10 @@ export class GestureHost {
       if (
         (consumer != null && consumer.isEnabled?.() !== false) ||
         registration.recognizers.some(
-          recognizer => recognizer.isEnabled && recognizer.claimsTouches,
+          recognizer =>
+            recognizer.isEnabled &&
+            recognizer.claimsTouches &&
+            takesTouchContacts(recognizer),
         )
       ) {
         return true;
@@ -1765,6 +1788,7 @@ export class GestureHost {
       this.endWheel();
       gesture = {
         kind,
+        scrollType: scrollTypeOf(wheel),
         ids: [],
         x: wheel.clientX,
         y: wheel.clientY,
@@ -1812,8 +1836,10 @@ export class GestureHost {
     dy: number,
     time: number,
   ): WheelGesture {
+    const type = scrollTypeOf(wheel);
     const kept: WheelGesture = {
       kind,
+      scrollType: type,
       ids: [],
       x: wheel.clientX,
       y: wheel.clientY,
@@ -1826,7 +1852,6 @@ export class GestureHost {
     if (this.arena.touches.length > 0 || (dx === 0 && dy === 0)) {
       return kept;
     }
-    const type = scrollTypeOf(wheel);
     const view = this.doc.defaultView;
     const isHorizontal = Math.abs(dx) > Math.abs(dy);
     // Every scroller under the pointer, the page included, as a finger's
@@ -1877,21 +1902,24 @@ export class GestureHost {
       recognizers: takers,
       consumer: null,
     };
-    if (kind === 'pan') {
-      const id = this.nextId++;
-      this.arena.began([
-        {...base, id, x: wheel.clientX, y: wheel.clientY, time},
-      ]);
-      return {...kept, ids: [id], takers};
-    }
-    const gesture: WheelGesture = {
-      ...kept,
-      ids: [this.nextId++, this.nextId++],
-      takers,
-    };
+    const ids =
+      kind === 'pan' ? [this.nextId++] : [this.nextId++, this.nextId++];
+    const gesture: WheelGesture = {...kept, ids, takers};
     this.arena.began(
-      this.pinchContacts(gesture, time).map(input => ({...base, ...input})),
+      kind === 'pan'
+        ? [{...base, id: ids[0], x: wheel.clientX, y: wheel.clientY, time}]
+        : this.pinchContacts(gesture, time).map(input => ({
+            ...base,
+            ...input,
+          })),
     );
+    // Every recognizer it was offered to may decline it (its own
+    // shouldReceiveTouch): then nobody took the wheel, and it scrolls the
+    // page from its first step, as with no gesture system.
+    if (ids.every(id => this.arena.participantsOf(id).length === 0)) {
+      this.arena.cancelled(ids, time);
+      return kept;
+    }
     return gesture;
   }
 
@@ -1976,16 +2004,27 @@ export class GestureHost {
     if (gesture.ids.length === 0) {
       return;
     }
+    // A trackpad's scroll releases at its last wheel, with its speed: its
+    // momentum arrives as more wheel. A mouse wheel's notches release still,
+    // past the velocity's stillness interval, so position alone decides
+    // where a pan settles (the coordinator's ruling; FR43 is silent).
+    const time =
+      gesture.scrollType === 'discrete'
+        ? gesture.last + WHEEL_END_MS
+        : gesture.last;
     this.arena.ended(
       gesture.kind === 'pan'
-        ? [{id: gesture.ids[0], x: gesture.x, y: gesture.y, time: gesture.last}]
-        : this.pinchContacts(gesture, gesture.last),
+        ? [{id: gesture.ids[0], x: gesture.x, y: gesture.y, time}]
+        : this.pinchContacts(gesture, time),
     );
   }
 
-  /** Undo `lockSelection` for a contact that ended; idempotent. */
-  private unlockSelection(id: number): void {
-    this.lockedBy.get(id)?.();
+  /**
+   * Undo `lockSelection` for a contact that ended, at once for a cancel;
+   * idempotent.
+   */
+  private unlockSelection(id: number, isCancel = false): void {
+    this.lockedBy.get(id)?.({isCancel});
     this.lockedBy.delete(id);
   }
 
@@ -2830,7 +2869,7 @@ export class GestureHost {
     const id = this.pointerIds.get(event.pointerId);
     if (id != null) {
       this.pointerIds.delete(event.pointerId);
-      this.unlockSelection(id);
+      this.unlockSelection(id, true);
       this.retargeted.delete(id);
       this.arena.cancelled([id], eventTime(event));
     }
@@ -3084,7 +3123,7 @@ export class GestureHost {
   private cancelEverything(time: number): void {
     const ids = [...this.pointerIds.values()];
     for (const id of ids) {
-      this.unlockSelection(id);
+      this.unlockSelection(id, true);
     }
     for (const identifier of [...this.touchIds.keys()]) {
       // The browser may keep the touch alive: its lift must not click.
