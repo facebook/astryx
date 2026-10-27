@@ -5,7 +5,7 @@
  * @input Vitest, Testing Library, and utils/hitArea.ts with `watchHitArea`
  *   spied (the rest real)
  * @output Checks that ListItem keeps an interactive, enabled row's touch hit
- *   insets live through the shared utility (`spec:AST-094` FR42; `component:List` FR10, #8571): which
+ *   insets live through the shared utility (`spec:AST-094` FR42; `component:List` FR10): which
  *   rows it watches, that the insets land on the row, the theme's touch
  *   target size under a finger, that a measurement taken mid-motion waits for
  *   the motion to end, and that it stops when the row goes

@@ -4,7 +4,7 @@
  * @file ListTouchHitArea.interaction.browser.spec.ts
  * @input The built List stories in the touch phone context (primary pointer
  *   coarse) and in a mouse context of the same viewport and scale
- * @output Proofs for `spec:AST-094` FR42 (`component:List` FR10, #8571) under a finger: an interactive
+ * @output Proofs for `spec:AST-094` FR42 (`component:List` FR10) under a finger: an interactive
  *   row's hit layer grows toward the touch target, taking half the gap to
  *   each neighboring row and growing further only where nothing is near; a
  *   tap in that growth activates the row and a tap past it does not; no two
