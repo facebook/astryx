@@ -1436,9 +1436,9 @@ for (const idiom of ['ios', 'android'] as const) {
   });
 }
 
-// On the web the body's pans also take wheel and trackpad scrolling, after
-// the content under the pointer has scrolled to its edge; the handle takes
-// none (spec:AST-094 FR43).
+// On the web the sheet's pans also take wheel and trackpad scrolling: the
+// handle's at once, the body's after the content under the pointer has
+// scrolled to its edge (spec:AST-094 FR43).
 test.describe('wheel and trackpad scrolling on the web (spec:AST-094 FR43)', () => {
   async function openWithMouse(page: Page): Promise<Locator> {
     await openStory(page, storybook(), 'core-bottomsheet--snap-points');
@@ -1483,7 +1483,7 @@ test.describe('wheel and trackpad scrolling on the web (spec:AST-094 FR43)', () 
     ).toBeLessThan(1);
   });
 
-  test('a wheel over the handle leaves the sheet where it is', async ({
+  test('a trackpad scrolling up over the handle pulls the sheet too, and it comes to rest on a detent', async ({
     page,
   }) => {
     const driver = await webInputDriver(page);
@@ -1498,7 +1498,16 @@ test.describe('wheel and trackpad scrolling on the web (spec:AST-094 FR43)', () 
     for (let step = 0; step < 6; step += 1) {
       await driver.wheel({...overHandle, dy: -15});
     }
-    await page.waitForTimeout(300);
-    expect(Math.abs((await sheetTop(sheet)) - top)).toBeLessThan(1);
+    expect(await sheetTop(sheet)).toBeGreaterThan(top + 20);
+    await page.waitForTimeout(200);
+    await waitForRest(sheet);
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
+    const rest = await sheetTop(sheet);
+    expect(
+      Math.min(Math.abs(rest - top), Math.abs(rest - viewport.height * 0.5)),
+    ).toBeLessThan(1);
   });
 });

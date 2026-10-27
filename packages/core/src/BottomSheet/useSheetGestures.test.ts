@@ -1639,11 +1639,16 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(false);
     });
 
-    it('takes no wheel on the handle', () => {
+    it('a trackpad scrolling up over the handle pulls the sheet too: every pan takes wheel and trackpad scrolling', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       attach(hook, t);
       scrollUp(handleOf(t));
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(liveOffset(hook)).toBeGreaterThan(0);
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
       expect(hook.result.current.isDragging).toBe(false);
     });
   });
