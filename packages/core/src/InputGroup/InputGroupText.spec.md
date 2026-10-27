@@ -120,10 +120,10 @@ No design record governs InputGroupText.
 
 ## Verification map
 
-| Contract | Verification                                                     | Representative states  | Mutation or failure expectation | Audit section                  |
-| -------- | ---------------------------------------------------------------- | ---------------------- | ------------------------------- | ------------------------------ |
-| FR1      | `InputGroup.test.tsx` addon and prefix/suffix cases              | Prefix and suffix text | Missing addon text fails.       | `audit:InputGroupText/anatomy` |
-| FR2–FR4  | Evidence gap: no assertion of cell paint, border join, or target | —                      | —                               | `audit:InputGroupText/layout`  |
+| Contract | Verification                                                     | Representative states  | Mutation or failure expectation                                                                                     | Audit section                  |
+| -------- | ---------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1      | `InputGroup.test.tsx` addon and prefix/suffix cases              | Prefix and suffix text | Missing addon text fails. Evidence gap: no test asserts the absent role or that `ref` and DOM props reach the cell. | `audit:InputGroupText/anatomy` |
+| FR2–FR4  | Evidence gap: no assertion of cell paint, border join, or target | —                      | —                                                                                                                   | `audit:InputGroupText/layout`  |
 
 ## Decision log
 
