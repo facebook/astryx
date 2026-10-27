@@ -482,6 +482,17 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       update();
       syncPinnedDividers(el);
     };
+    // The observer's first callback reports the size at observe time, which
+    // the after-commit read already covers: it updates the shadows only.
+    let hasObserved = false;
+    const onResize = () => {
+      if (hasObserved) {
+        resize();
+        return;
+      }
+      hasObserved = true;
+      update();
+    };
     el.addEventListener('scroll', update, {passive: true});
     // A row border can change by CSS state alone (`tr:hover`,
     // `:focus-within`): on pointer and focus changes, the rows they touch
@@ -524,7 +535,9 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       el.addEventListener(type, onStateChange, {passive: true});
     }
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(onResize)
+        : null;
     resizeObserver?.observe(el);
     // The table too: columns added or widened change what scrolls without
     // resizing the wrapper.
@@ -532,7 +545,9 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     if (table != null) {
       resizeObserver?.observe(table);
     }
-    resize();
+    // The pinned dividers are read after the commit that attached this
+    // (the refresh layout effect below), not here as well.
+    update();
     refreshRef.current = resize;
     detachRef.current = () => {
       el.removeEventListener('scroll', update);
@@ -640,9 +655,10 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         }
         // Compose with any ref a prior plugin (e.g. virtualization) set on the
         // scroll container. One merged ref per inner ref, so React does not
-        // re-attach it on every render: the scroll listeners, the resize
-        // observer and the pinned dividers' read (syncPinnedDividers, on
-        // mount and on resize) run once, not once per render.
+        // re-attach it on every render while the plugins composed with this
+        // one keep theirs stable too (column resize does): the scroll
+        // listeners and the resize observer attach once, and the pinned
+        // dividers are read after each commit (the refresh effect).
         const existingRef = props.htmlProps.ref ?? null;
         const cached = mergedScrollWrapperRef.current;
         const mergedRef =
