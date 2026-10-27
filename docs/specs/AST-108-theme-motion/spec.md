@@ -165,7 +165,8 @@ defineTheme({
 - `spec:AST-094` FR1, FR4, and DEC-15, `design:reduced-motion` DR2a,
   `spec:AST-012` FR4 (`reducedMotion` stays root-owned),
   `architecture:theme-application` INV1 (`'always'` reaches nested
-  providers), the draft `design:motion` DR3, and `spec:AST-090` are amended to
+  providers), `architecture:theme-authoring-contract` (the internal motion resolver),
+  `component:Button` FR15 (its release fade follows `tempo`), the draft `design:motion` DR3, and `spec:AST-090` are amended to
   match.
 
 ## Verification

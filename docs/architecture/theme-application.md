@@ -160,6 +160,8 @@ which component parts are public theme targets.
 - `spec:AST-012/DEC-1` owns the fixed width-point vocabulary AppShell consumes.
 - `spec:AST-087/DEC-2` makes theme icon entries functions, so a theme holding
   them reaches `Theme` from client code.
+- `spec:AST-108/DEC-1` lets a theme's `reducedMotion: 'always'` reach nested
+  providers (INV1).
 
 ## Verification
 
