@@ -298,6 +298,36 @@ function isPointerKind(type: string): type is PointerKind {
 }
 
 /**
+ * What an event, or one of its touches, landed on. Inside an open shadow root
+ * the document's listeners see the shadow host, in `event.target` and in a
+ * touch's `target` alike, while the composed path starts at the element
+ * itself. A touch whose target is not the event's (another finger) keeps its
+ * own.
+ */
+function landedOn(
+  event: Event,
+  retargeted: EventTarget | null = event.target,
+): EventTarget | null {
+  if (retargeted !== event.target) {
+    return retargeted;
+  }
+  return event.composedPath()[0] ?? retargeted;
+}
+
+/**
+ * Whether `node` is `ancestor` or below it along the flat tree: across an open
+ * shadow root to its host, which `Node.contains` does not follow.
+ */
+function containsAlongFlatTree(ancestor: Node, node: Node): boolean {
+  for (let at: Node | null = node; at != null; at = parentAcrossShadow(at)) {
+    if (at === ancestor) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * An event's time on the arena's clock (`performance.now()`). Some engines
  * and DOM emulators stamp events in epoch milliseconds instead.
  */
@@ -627,7 +657,7 @@ export class GestureHost {
     return (
       last != null &&
       this.arena.now() - last.time < window &&
-      last.scroller.contains(node)
+      containsAlongFlatTree(last.scroller, node)
     );
   }
 
@@ -1455,7 +1485,10 @@ export class GestureHost {
       if (previous != null) {
         stale.push(previous);
       }
-      const target = touch.target instanceof Node ? touch.target : event.target;
+      const target =
+        touch.target instanceof Node
+          ? landedOn(event, touch.target)
+          : landedOn(event);
       const {recognizers, consumer, consumerElement} = this.participantsAt(
         target,
         'touch',
@@ -1522,8 +1555,9 @@ export class GestureHost {
     }
     // Stamped after the consumers judged the touch: the brake asks whether
     // an EARLIER finger is still driving a scroll.
-    if (event.target instanceof Node) {
-      this.lastTouch = {target: event.target, time};
+    const landed = landedOn(event);
+    if (landed instanceof Node) {
+      this.lastTouch = {target: landed, time};
     }
   };
 
@@ -1644,9 +1678,9 @@ export class GestureHost {
     for (const touch of moved) {
       const id =
         this.touchIds.get(touch.identifier) ??
-        (this.inputMode === 'pointer-events'
-          ? this.pointerFingerAt(touch)
-          : undefined);
+        // Where fingers come from pointer events (inputMode 'pointer-events',
+        // or 'auto' with no ontouchstart), the touch is matched to its pointer.
+        (this.usesTouchEvents ? undefined : this.pointerFingerAt(touch));
       if (
         id != null &&
         (this.arena.isClaimed(id) ||
@@ -1702,8 +1736,9 @@ export class GestureHost {
       inputs.push({id, x: touch.clientX, y: touch.clientY, time});
     }
     // The lift is when momentum starts: the clock the brake wants most.
-    if (event.target instanceof Node) {
-      this.lastTouch = {target: event.target, time};
+    const landed = landedOn(event);
+    if (landed instanceof Node) {
+      this.lastTouch = {target: landed, time};
     }
     const dispositions =
       inputs.length > 0 ? this.arena.ended(inputs) : new Map();
@@ -2026,15 +2061,16 @@ export class GestureHost {
       this.pairPointer(event.pointerId, {
         x: event.clientX,
         y: event.clientY,
-        target: event.target,
+        target: landedOn(event),
       });
       return;
     }
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
+    const landed = landedOn(event);
     const {recognizers, consumer, consumerElement} = this.participantsAt(
-      event.target,
+      landed,
       event.pointerType,
     );
     if (recognizers.length === 0 && consumer == null) {
@@ -2049,8 +2085,8 @@ export class GestureHost {
         y: event.clientY,
         time: eventTime(event),
         pointerType: event.pointerType,
-        target: event.target,
-        scroll: createNativeScrollProbe(event.target),
+        target: landed,
+        scroll: createNativeScrollProbe(landed),
         recognizers,
         consumer,
         ...(this.isCoarse ? {} : {isFeedbackOnly: true}),
@@ -2321,7 +2357,7 @@ export class GestureHost {
         touch.pointerType !== 'touch' ||
         touch.phase === 'ended' ||
         touch.phase === 'cancelled' ||
-        touch.target !== event.target
+        touch.target !== landedOn(event)
       ) {
         continue;
       }
@@ -2343,7 +2379,7 @@ export class GestureHost {
     if (!isPointerKind(event.pointerType)) {
       return;
     }
-    const {hovers} = this.participantsAt(event.target, null);
+    const {hovers} = this.participantsAt(landedOn(event), null);
     const next = new Set(hovers.filter(hover => hover.isEnabled));
     const previous = this.hovered.get(event.pointerId) ?? new Set();
     if (next.size === 0 && previous.size === 0) {
@@ -2492,7 +2528,7 @@ export class GestureHost {
     if (
       last != null &&
       time - last.time < UIKIT_PRESS.momentumMemory.value &&
-      scroller.contains(last.target)
+      containsAlongFlatTree(scroller, last.target)
     ) {
       this.lastScroll = {scroller, time};
     }
@@ -2509,7 +2545,7 @@ export class GestureHost {
       }
       if (
         touch.target instanceof Node &&
-        scroller.contains(touch.target) &&
+        containsAlongFlatTree(scroller, touch.target) &&
         // Only a pan this finger drove takes the touch: the browser starts
         // one only once the finger has travelled its slop. A scroll under a
         // finger that has not (scrollIntoView, a transcript pinned to its
