@@ -701,6 +701,44 @@ describe('useActionGroupTracking', () => {
       expect(onCancel).not.toHaveBeenCalled();
     });
 
+    /** One pointer event from a mouse or a pen, on the test clock. */
+    function pointerEvent(
+      kind: 'mouse' | 'pen',
+      target: Element,
+      type: string,
+      point: {x: number; y: number},
+    ): void {
+      time += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: kind === 'pen' ? 41 : 1,
+        pointerType: kind,
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      target.dispatchEvent(event);
+    }
+
+    for (const kind of ['mouse', 'pen'] as const) {
+      it(`lights a ${kind}'s press at once: only a finger waits the content-touch delay (spec:AST-094 FR11)`, () => {
+        restorePointer();
+        restorePointer = pointerQuery(false).restore;
+        const {del, cancel, onCancel} = mountInScroller();
+        runAttachFrame();
+        pointerEvent(kind, del, 'pointerdown', centerOf(DELETE));
+        expect(paintOf(del)).toBe('on');
+        pointerEvent(kind, del, 'pointermove', centerOf(CANCEL));
+        expect(paintOf(cancel)).toBe('on');
+        pointerEvent(kind, cancel, 'pointerup', centerOf(CANCEL));
+        expect(onCancel).toHaveBeenCalledTimes(1);
+      });
+    }
+
     it('tracks once the finger has rested for the content-touch delay', () => {
       const {message, cancel, onCancel} = mountInScroller();
       const f = finger();
