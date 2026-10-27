@@ -260,6 +260,22 @@ async function expectCrossFade(
   ).toBe(1);
 }
 
+/** How many of the row's own animations (not its entries') dip its opacity. */
+async function rowDipsOf(row: Locator): Promise<number> {
+  return row.evaluate(
+    node =>
+      node
+        .getAnimations()
+        .filter(animation =>
+          (animation.effect as KeyframeEffect)
+            .getKeyframes()
+            .some(
+              frame => frame.opacity != null && Number(frame.opacity) < 0.05,
+            ),
+        ).length,
+  );
+}
+
 function heldDrag(from: {x: number; y: number}, dx: number) {
   const moving = drag(
     from,
@@ -1220,6 +1236,83 @@ test('backing out of a confirmed full swipe closes the row and fires nothing; th
   expect(crossed).toBeGreaterThan(0);
   await expect.poll(async () => xOf(row)).toBeCloseTo(0, 0);
   await expect(rows).toHaveCount(before);
+});
+
+test('under Reduce Motion a full swipe confirms with no travel: the row steps to the confirmation offset at the bottom of an opacity dip', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2: the finger's drag is direct manipulation, but
+  // a confirm is a change of state, so the row cross-fades to it.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, row, entries, rest, start} = await openRow(page);
+  const openWidth = await openWidthOf(entries);
+  const confirmAt = confirmPointOf(openWidth, rest.width);
+  const confirmedOffset = rest.width - swipeActions.confirmInset;
+  const h = swipeActions.hysteresis;
+  const script = drag(
+    start,
+    {x: start.x - (confirmAt + h + 4), y: start.y},
+    {durationMs: 900, hz: 60, restMs: 300},
+  );
+  let checked = false;
+  await driver.play(script, {
+    onEvent: async step => {
+      const swipe = start.x - (step.fingers[0]?.x ?? start.x) - h;
+      if (!checked && step.type === 'touchMove' && swipe >= confirmAt) {
+        // The move that confirms: the row is now fading out, to land at the
+        // confirmation offset while transparent and fade back in.
+        checked = true;
+        expect(await rowDipsOf(row)).toBeGreaterThan(0);
+        await expectCrossFade(page, row, -confirmedOffset);
+      }
+    },
+  });
+  expect(checked).toBe(true);
+});
+
+test('under Reduce Motion backing out of a confirmed full swipe returns to the finger with no travel, at the bottom of an opacity dip', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, row, entries, rest, start} = await openRow(page);
+  const openWidth = await openWidthOf(entries);
+  const confirmAt = confirmPointOf(openWidth, rest.width);
+  const h = swipeActions.hysteresis;
+  // Out past the confirm point and held there while the confirm's fade
+  // plays out, then back short of it, held, and lifted.
+  const out = drag(
+    start,
+    {x: start.x - (confirmAt + h + 20), y: start.y},
+    {durationMs: 900, hz: 60, restMs: 400},
+  ).slice(0, -1);
+  const last = out[out.length - 1];
+  const back = drag(
+    last.fingers[0],
+    {x: start.x - (confirmAt + h - 20), y: start.y},
+    {durationMs: 300, hz: 60, restMs: 300},
+  ).map(frame => ({...frame, t: frame.t + last.t + 16}));
+  let confirmed = false;
+  let checked = false;
+  await driver.play([...out, ...back.slice(1)], {
+    onEvent: async step => {
+      if (step.type !== 'touchMove' || checked) {
+        return;
+      }
+      const swipe = start.x - (step.fingers[0]?.x ?? start.x) - h;
+      if (swipe >= confirmAt) {
+        confirmed = true;
+      } else if (confirmed) {
+        // The move that backs out: the row fades out, lands under the
+        // finger while transparent and fades back in.
+        checked = true;
+        expect(await rowDipsOf(row)).toBeGreaterThan(0);
+        await expectCrossFade(page, row, -swipe);
+      }
+    },
+  });
+  expect(checked).toBe(true);
+  // Lifted backed out: the row closes and fires nothing.
+  await expect.poll(async () => xOf(row)).toBeCloseTo(0, 0);
 });
 
 test(
