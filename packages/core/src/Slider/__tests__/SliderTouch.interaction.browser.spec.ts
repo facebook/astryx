@@ -78,6 +78,16 @@ const UISLIDER = {
 } as const;
 /** Slider's thumb, px: its travel is the track minus one thumb. */
 const THUMB = 20;
+/**
+ * A point on a whole CSS pixel. WebKit reports touch and pointer coordinates
+ * in whole pixels (a tap scripted at x 50.42 arrives at 50; Chromium keeps
+ * the fraction), so a case that computes a value from where a tap lands taps
+ * a whole pixel, the coordinate every engine delivers as scripted.
+ */
+const onPixel = (point: {x: number; y: number}) => ({
+  x: Math.round(point.x),
+  y: Math.round(point.y),
+});
 
 interface Opened {
   driver: TouchDriver;
@@ -268,7 +278,7 @@ test('a tap on the track sets the value when it lifts and the thumb springs ther
   // Far on the track: nothing while the finger is down; on the lift the
   // value is the tap's and the thumb springs there (WCAG 2.5.7: a drag is
   // not the only pointer way; UISlider itself ignores the tap).
-  const far = {x: at.x + length * 0.3, y: at.y};
+  const far = onPixel({x: at.x + length * 0.3, y: at.y});
   const [held] = await playReading(
     page,
     driver,
@@ -683,7 +693,10 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
   if (box == null) {
     throw new Error('no control');
   }
-  const target = {x: box.x + box.width * 0.1, y: box.y + box.height / 2};
+  const target = onPixel({
+    x: box.x + box.width * 0.1,
+    y: box.y + box.height / 2,
+  });
   const tapScript = tap(target);
   const [tapped] = await playReading(
     page,
@@ -1101,7 +1114,10 @@ test('every touch screen gets the same touch model, whatever its engine: touch t
   if (box == null) {
     throw new Error('no control');
   }
-  const target = {x: box.x + box.width * 0.85, y: box.y + box.height / 2};
+  const target = onPixel({
+    x: box.x + box.width * 0.85,
+    y: box.y + box.height / 2,
+  });
   const [held] = await playReading(
     page,
     driver,
