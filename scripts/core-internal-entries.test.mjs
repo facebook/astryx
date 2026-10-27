@@ -66,7 +66,9 @@ const COVERED = [
   'gestures/PanGestureRecognizer',
   'gestures/types',
   'utils/touchPresentation',
+  'utils/coarsePointer',
   'motion/animator',
+  'motion/useAnimator',
   'motion/bezier',
   'motion/spring',
   'motion/rubberBand',
@@ -76,6 +78,8 @@ const COVERED = [
   'motion/uikit/scroll',
   'motion/uikit/springs',
   'motion/uikit/timing',
+  'motion/uikit/tabBar',
+  'hooks/isRtlElement',
 ];
 
 /** Every file under `dir` whose name matches `pattern`. */

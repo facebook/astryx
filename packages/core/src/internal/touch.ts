@@ -3,7 +3,8 @@
 /**
  * @file touch.ts
  * @input The gesture core: the arena, the recognizers and their geometry,
- *   the pan recognizer, the gesture types, and the touch presentation queries
+ *   the pan recognizer, the gesture types, the touch presentation queries,
+ *   the coarse-pointer query, and the element-direction read
  * @output `@astryxdesign/core/internal/touch`: the gesture core's primitives
  *   and the touch queries for Lab components, re-exported by name
  * @position An internal entry reserved for Astryx's own packages:
@@ -59,6 +60,8 @@ export type {
   TouchPhase,
   TouchSample,
 } from '../gestures/types';
+export {isRtlElement} from '../hooks/isRtlElement';
+export {COARSE_POINTER_QUERY} from '../utils/coarsePointer';
 export {
   COMPACT_QUERY,
   COMPACT_TOUCH_QUERY,

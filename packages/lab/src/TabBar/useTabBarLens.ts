@@ -28,9 +28,12 @@
  */
 
 import {useLayoutEffect, useRef, useState, type RefObject} from 'react';
-import {isRtlElement} from '../utils/isRtlElement';
-import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {isRtlElement} from '@astryxdesign/core/internal/touch';
+import {
+  registerTabBarTable,
+  tabBar,
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
 import {itemCenters} from './tabBarModel';
 
 export interface UseTabBarLensOptions {
