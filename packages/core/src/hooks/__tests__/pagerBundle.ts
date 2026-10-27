@@ -8,10 +8,9 @@
  * @position Test-only entry of usePager.interaction.browser.spec.ts
  */
 
-export {createPager} from '../usePager';
+export {createPager, pageForRelease} from '../usePager';
 export {
   pagingSettleVelocity,
-  selectPage,
   solveAnimatedPageScroll,
   solvePaging,
 } from '../../motion/paging';
