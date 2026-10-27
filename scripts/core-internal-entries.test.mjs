@@ -2,15 +2,13 @@
 
 /**
  * @file core-internal-entries.test.mjs
- * @input The repository's ESLint config and Lab's source
+ * @input The repository's ESLint config
  * @output Pins who may import Core's internal entries
  *   (`@astryxdesign/core/internal/*`, spec:AST-017 FR21,
  *   architecture:react-component-runtime INV13): only Core and Lab, through
- *   the shared `@astryx/no-core-internal-import` rule, and Lab takes the Core
- *   modules they cover through them, never by another path
- * @position Node test over the lint config and Lab's source, so it needs no
- *   build; the rule's own cases live beside it in
- *   internal/eslint-plugin-astryx
+ *   the shared `@astryx/no-core-internal-import` rule
+ * @position Node test over the lint config, so it needs no build; the rule's
+ *   own cases live beside it in internal/eslint-plugin-astryx
  */
 
 import fs from 'node:fs';
