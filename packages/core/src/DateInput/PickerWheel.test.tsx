@@ -561,6 +561,38 @@ describe('PickerWheel — a mouse', () => {
   });
 });
 
+describe('PickerWheel — a scroll wheel', () => {
+  /** One wheel event over the column; returns whether it was cancelled. */
+  function wheel(target: Element, deltaY: number, ctrlKey = false): boolean {
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY,
+      ctrlKey,
+    });
+    act(() => {
+      target.dispatchEvent(event);
+    });
+    return event.defaultPrevented;
+  }
+
+  it('turns with a scroll and rests on a row', () => {
+    const {column, onChange} = renderWheel();
+    // Two rows down.
+    expect(wheel(column, 64)).toBe(true);
+    advance(1000);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(12);
+  });
+
+  it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR43)', () => {
+    const {column, onChange} = renderWheel();
+    expect(wheel(column, 64, true)).toBe(false);
+    advance(1000);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
 describe('PickerWheel — under reduced motion', () => {
   const FADE_MS = timing.reducedMotionCrossFadeMs;
   /** Every animation the wheel started, with its keyframes and timing. */

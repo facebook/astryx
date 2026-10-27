@@ -34,6 +34,9 @@
  *   band's row does nothing. An end bounces on `scroll.bounce`. The curve
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
+ * - A scroll wheel turns the rows by its delta and snaps onto the nearest
+ *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is left to
+ *   the page's zoom (`spec:AST-094` FR43).
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A row `resolveRest` moves away from (by default, a
  *   disabled one: outside the bounds) is followed by a turn onto the row it
@@ -801,6 +804,11 @@ export function PickerWheel({
     }
     let idle: number | undefined;
     const onWheel = (event: WheelEvent) => {
+      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one): it zooms
+      // the page and never turns the wheel (`spec:AST-094` FR43).
+      if (event.ctrlKey) {
+        return;
+      }
       event.preventDefault();
       const currentLayout = latestRef.current.layout;
       const delta =
