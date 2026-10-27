@@ -1012,7 +1012,7 @@ export interface LayoutSwapMotion {
   readonly copy: (p: number) => Keyframe;
   /** Its text's opacity, on its own curve, when that differs from the copy's. */
   readonly copyText?: (p: number) => number;
-  /** The copy paints above its neighbours in the background it covers. */
+  /** The copy paints above its neighbours, in the background it shows. */
   readonly isOpaque?: boolean;
   /** Elements the page already renders, entering with the swap. */
   readonly incoming: ReadonlyArray<{
@@ -1071,7 +1071,7 @@ export function playLayoutSwap(
   placeOver(copy, how.host, swap.rect);
   if (how.isOpaque === true) {
     copy.style.zIndex = '1';
-    copy.style.backgroundColor = paintedBackground(how.host);
+    copy.style.backgroundColor = paintedBackground(copy);
   }
   const travels = motion.kind === 'spring';
   const options: KeyframeAnimationOptions = travels
