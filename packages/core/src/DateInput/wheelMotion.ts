@@ -208,6 +208,8 @@ function canAnimate(element: Element): boolean {
 export class WheelMotion {
   private layout: WheelLayout;
   private geometry: DrumGeometry;
+  /** The wheel's own drum, when it is not UIKit's scaled to its rows. */
+  private readonly drum: DrumGeometry | null;
   /**
    * The mounted rows by position along the wheel: an option index, or on a
    * looping wheel any integer, one row per copy (the Wheel mounts a window).
@@ -222,9 +224,16 @@ export class WheelMotion {
   /** Last offset a drag frame showed, for its ticks. */
   private dragPrevious: number | null = null;
 
-  constructor(layout: WheelLayout) {
+  /**
+   * `geometry` is the drum the rows are drawn on (their CSS cylinder); by
+   * default UIKit's, scaled to the layout's rows. A wheel that draws its rows
+   * on another cylinder passes it, so the angles it writes put each row
+   * where the row's own transform origin turns it.
+   */
+  constructor(layout: WheelLayout, geometry?: DrumGeometry) {
     this.layout = layout;
-    this.geometry = drumGeometry(layout.rowHeight);
+    this.drum = geometry ?? null;
+    this.geometry = geometry ?? drumGeometry(layout.rowHeight);
   }
 
   /**
@@ -298,7 +307,7 @@ export class WheelMotion {
       layout.rowHeight !== this.layout.rowHeight ||
       Boolean(layout.looping) !== Boolean(this.layout.looping);
     this.layout = layout;
-    this.geometry = drumGeometry(layout.rowHeight);
+    this.geometry = this.drum ?? drumGeometry(layout.rowHeight);
     if (changed) {
       this.written = new Map();
     }

@@ -62,7 +62,8 @@ const styles = stylex.create({
   /**
    * UIPickerView's band: one capsule across every column, inset from the
    * picker's sides, behind the rows. Decoration, so the frame's own
-   * `::before` draws it (minimal DOM, INV7). Its fill is the theme's neutral.
+   * `::before` draws it (minimal DOM, INV7). Its fill is the theme's neutral,
+   * and it is one row tall, the default look's (spec:AST-094 FR42).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, the band UIView of a `.time` `.wheels` UIDatePicker: its
    *   edge sits within 0.6 pt of a circle of radius h / 2 (a capsule, the

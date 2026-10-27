@@ -25,15 +25,21 @@ import {
   it,
   vi,
 } from 'vitest';
-import {timing} from '../motion/uikit';
+import {picker, timing} from '../motion/uikit';
 import {PickerWheel} from './PickerWheel';
 import {WheelGroup, useWheelGroup} from './WheelGroup';
 import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
 import {rowTransform} from './wheelDrum';
 import {timeColumns} from './wheelColumns';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 
-const ROW = 32;
-const RADIUS = 97.2;
+/** The default look's row (AST-094 FR42), on UIPickerView's cylinder. */
+const ROW = WHEEL_ROW_PITCH;
+const RADIUS = picker.geometry.cylinderRadius;
+/** Rows on the cylinder's front, each side of the band. */
+const FRONT_REACH = Math.floor(((Math.PI / 2) * RADIUS) / ROW);
+/** Rows the drum draws each side of the band: its front half and a buffer of 2. */
+const WINDOW_REACH = Math.ceil(((Math.PI / 2) * RADIUS) / ROW) + 2;
 /** The column is laid out 216 px tall, its band's centre 108 px down. */
 const CENTRE = 108;
 
@@ -918,10 +924,10 @@ describe('PickerWheel — a window of rows', () => {
   it('draws only the rows around the band, and lists every option', () => {
     const {column} = renderWheel({options: YEARS, value: 2000, label: 'Year'});
     const drawn = drumIndices(column);
-    // The cylinder's front half (5 rows each side) and a buffer of 2.
-    expect(drawn).toHaveLength(15);
-    expect(Math.min(...drawn)).toBe(93);
-    expect(Math.max(...drawn)).toBe(107);
+    // The cylinder's front half and a buffer of 2, each side.
+    expect(drawn).toHaveLength(2 * WINDOW_REACH + 1);
+    expect(Math.min(...drawn)).toBe(100 - WINDOW_REACH);
+    expect(Math.max(...drawn)).toBe(100 + WINDOW_REACH);
     // The band copy: the row under the band, one each side, and the buffer.
     expect(stripLabels(column)).toEqual([
       '1997',
@@ -941,7 +947,7 @@ describe('PickerWheel — a window of rows', () => {
   it('stops the window at the first and last rows', () => {
     const {column} = renderWheel({options: YEARS, value: 1900, label: 'Year'});
     expect(drumIndices(column)).toEqual(
-      Array.from({length: 8}, (_, index) => index),
+      Array.from({length: WINDOW_REACH + 1}, (_, index) => index),
     );
   });
 
@@ -962,8 +968,8 @@ describe('PickerWheel — a window of rows', () => {
     expect(Math.min(...during)).toBeLessThanOrEqual(104 - 5);
     expect(Math.max(...during)).toBeGreaterThanOrEqual(rest + 5);
     const after = drumIndices(column);
-    expect(after).toHaveLength(15);
-    expect(Math.min(...after)).toBe(rest - 7);
+    expect(after).toHaveLength(2 * WINDOW_REACH + 1);
+    expect(Math.min(...after)).toBe(rest - WINDOW_REACH);
   });
 
   it('moves the window through a drag without rendering the column (spec:AST-094 FR9)', () => {
@@ -1020,13 +1026,13 @@ describe('PickerWheel — a window of rows', () => {
       isLooping: true,
     });
     const drawn = drumIndices(column);
-    // 59 ± 7, wrapping: 52-59, then 00-06.
-    expect(drawn).toHaveLength(15);
+    // 59 ± the window, wrapping past 59 into 00, 01…
+    expect(drawn).toHaveLength(2 * WINDOW_REACH + 1);
     expect(drawn).toContain(0);
-    expect(drawn).toContain(6);
-    expect(drawn).toContain(52);
-    expect(drawn).not.toContain(7);
-    expect(drawn).not.toContain(51);
+    expect(drawn).toContain(WINDOW_REACH - 1);
+    expect(drawn).toContain(59 - WINDOW_REACH);
+    expect(drawn).not.toContain(WINDOW_REACH);
+    expect(drawn).not.toContain(59 - WINDOW_REACH - 1);
     // The band strip runs on past 59 into 00, 01…
     const labels = stripLabels(column);
     expect(labels.indexOf('00')).toBe(labels.indexOf('59') + 1);
@@ -1070,6 +1076,13 @@ describe('PickerWheel — a short looping list', () => {
       .map(({label}) => label);
   }
 
+  /** The front of the drum around `labels[at]`: the list run round it. */
+  const around = (labels: string[], at: number) =>
+    Array.from({length: 2 * FRONT_REACH + 1}, (_, index) => {
+      const n = labels.length;
+      return labels[(((at + index - FRONT_REACH) % n) + n) % n];
+    });
+
   /** The position of the copy under the band. */
   function bandPosition(column: HTMLElement): number {
     const row = drumRowsOf(column).find(
@@ -1085,18 +1098,9 @@ describe('PickerWheel — a short looping list', () => {
       label: 'Minute',
       isLooping: true,
     });
-    // UIKit at :45, top to bottom: 45 · 00 · 15 · 30 · 45 · 00 · 15 · 30 · 45.
-    expect(frontLabels(column)).toEqual([
-      '45',
-      '00',
-      '15',
-      '30',
-      '45',
-      '00',
-      '15',
-      '30',
-      '45',
-    ]);
+    // At :45, top to bottom, the list runs round the whole front:
+    // … 30 · 45 · 00 · 15 · 30 · 45 · 00 · 15 · 30 · 45 · 00 …
+    expect(frontLabels(column)).toEqual(around(['00', '15', '30', '45'], 3));
     // One option per value for assistive technology.
     expect(within(column).getAllByRole('option')).toHaveLength(4);
   });
@@ -1108,17 +1112,7 @@ describe('PickerWheel — a short looping list', () => {
       label: 'Minute',
       isLooping: true,
     });
-    expect(frontLabels(column)).toEqual([
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-    ]);
+    expect(frontLabels(column)).toEqual(around(['00', '30'], 1));
     const start = bandPosition(column);
     // Two rows below the band: the next copy of 30.
     const twoBelow = CENTRE + RADIUS * Math.sin((2 * ROW) / RADIUS);
@@ -1190,7 +1184,7 @@ describe('PickerWheel — a short looping list', () => {
     advance(4000);
     // More than one turn of the list past the seam, and a full cylinder.
     expect(bandPosition(column)).toBeGreaterThan(4);
-    expect(frontLabels(column)).toHaveLength(9);
+    expect(frontLabels(column)).toHaveLength(2 * FRONT_REACH + 1);
     const rested = QUARTERS[((bandPosition(column) % 4) + 4) % 4].value;
     if (rested === 0) {
       expect(onChange).not.toHaveBeenCalled();

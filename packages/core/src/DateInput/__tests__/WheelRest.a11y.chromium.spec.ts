@@ -25,6 +25,7 @@ import {
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
 import {picker, UIKIT_GESTURES} from '../../motion/uikit';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 
 let storybook: StaticServer;
 test.beforeAll(async () => {
@@ -98,8 +99,8 @@ async function drag(page: Page, wheel: Locator, dy: number, steps = 30) {
 const selectedHour = (hours: Locator) =>
   hours.locator('[role="option"][aria-selected="true"]');
 
-/** UIPickerView's row pitch: the touch column's. */
-const ROW = picker.geometry.rowHeight;
+/** The touch column's row pitch: the default look's row (AST-094 FR42). */
+const ROW = WHEEL_ROW_PITCH;
 /**
  * A drag begins only once the finger has travelled the pan's hysteresis,
  * which the rows never show, so each drag adds that and a little more and
@@ -358,3 +359,160 @@ test.describe('under a mouse', () => {
     expect(transform).toBe('none');
   });
 });
+
+test('the touch rows and the band keep the default look’s 28 px row (spec:AST-094 FR42, DEC-20)', async ({
+  page,
+}) => {
+  const {hours} = await openHourWheel(page);
+  const sizes = await hours.evaluate(column => {
+    const band = column.closest('[data-wheel-band]');
+    const row = column.querySelector('[data-wheel-drum] > *');
+    const stripRow = column.querySelector('[data-wheel-strip] > *');
+    return {
+      band: band == null ? null : getComputedStyle(band, '::before').height,
+      row: row == null ? null : getComputedStyle(row).height,
+      stripRow: stripRow == null ? null : getComputedStyle(stripRow).height,
+    };
+  });
+  expect(sizes).toEqual({band: '28px', row: '28px', stripRow: '28px'});
+  // On UIPickerView's cylinder the rows next to the band sit one 28 px row
+  // away: R sin(28 / R), seen through the picker's perspective.
+  const offsets = await hours.evaluate(column => {
+    const bounds = column.getBoundingClientRect();
+    const middle = bounds.top + bounds.height / 2;
+    return [...column.querySelectorAll('[data-wheel-drum] > *')]
+      .map(row => {
+        const box = row.getBoundingClientRect();
+        return box.top + box.height / 2 - middle;
+      })
+      .filter(offset => Math.abs(offset) > 14 && Math.abs(offset) < 45);
+  });
+  const {cylinderRadius: radius, perspective} = picker.geometry;
+  const angle = ROW / radius;
+  const expected =
+    (radius * Math.sin(angle) * perspective) /
+    (perspective + radius * (1 - Math.cos(angle)));
+  expect(offsets).toHaveLength(2);
+  for (const offset of offsets) {
+    expect(Math.abs(Math.abs(offset) - expected)).toBeLessThan(0.75);
+  }
+});
+
+interface Rgba {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
+/** WCAG contrast of `color` drawn at `opacity` over an opaque `back`. */
+function contrastOver(color: Rgba, opacity: number, back: Rgba): number {
+  const alpha = color.a * opacity;
+  const luminance = (channels: number[]) => {
+    const [r, g, b] = channels.map(channel => {
+      const value = channel / 255;
+      return value <= 0.04045
+        ? value / 12.92
+        : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const behind = [back.r, back.g, back.b];
+  const front = [color.r, color.g, color.b].map(
+    (channel, at) => channel * alpha + behind[at] * (1 - alpha),
+  );
+  const [light, dark] = [luminance(front), luminance(behind)].sort(
+    (a, b) => b - a,
+  );
+  return (light + 0.05) / (dark + 0.05);
+}
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`the rows above and below the band read at 4.5:1 or more on the sheet, ${mode} (spec:AST-020 FR9)`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-timeinput--bottom-sheet-with-min-max&viewMode=story&globals=colorMode:${mode};astryxTheme:neutral;direction:ltr`,
+    );
+    await page.waitForFunction(
+      expected =>
+        document.documentElement.getAttribute('data-theme') === expected,
+      mode,
+    );
+    const field = page.getByRole('combobox', {name: 'Appointment time'});
+    await expect(field).toHaveValue('10:00 AM');
+    await field.tap();
+    const hours = page.getByRole('listbox', {name: 'Hour'});
+    await expect(hours).toBeVisible();
+    await sleep(800);
+    const read = await hours.evaluate(column => {
+      const parse = (value: string) => {
+        const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
+        return {
+          r: channels[0],
+          g: channels[1],
+          b: channels[2],
+          a: channels[3] ?? 1,
+        };
+      };
+      // The sheet behind the wheel: the nearest ancestor that paints one.
+      let back = null;
+      for (let at = column.parentElement; at != null; at = at.parentElement) {
+        const color = parse(getComputedStyle(at).backgroundColor);
+        if (color.a > 0) {
+          back = color;
+          break;
+        }
+      }
+      const bounds = column.getBoundingClientRect();
+      const middle = bounds.top + bounds.height / 2;
+      const enabled = new Set(
+        [
+          ...column.querySelectorAll(
+            '[role="option"]:not([aria-disabled="true"])',
+          ),
+        ].map(option => option.textContent),
+      );
+      const drum = column.querySelector('[data-wheel-drum]');
+      const rows = [...(drum?.children ?? [])]
+        .map(row => {
+          const box = row.getBoundingClientRect();
+          let opacity = 1;
+          for (
+            let at: Element | null = row;
+            at != null;
+            at = at.parentElement
+          ) {
+            opacity *= Number(getComputedStyle(at).opacity);
+          }
+          return {
+            label: row.getAttribute('data-label'),
+            offset: box.top + box.height / 2 - middle,
+            color: parse(getComputedStyle(row).color),
+            opacity,
+          };
+        })
+        // The rows next to the band, above and below it.
+        .filter(
+          row =>
+            Math.abs(row.offset) > 14 &&
+            Math.abs(row.offset) < 50 &&
+            enabled.has(row.label ?? ''),
+        );
+      return {back, rows};
+    });
+    const back = read.back;
+    if (back == null) {
+      throw new Error('no painted background behind the wheel');
+    }
+    expect(
+      read.rows.map(row => row.label).sort((a, b) => Number(a) - Number(b)),
+    ).toEqual(['9', '11']);
+    for (const row of read.rows) {
+      expect(
+        contrastOver(row.color, row.opacity, back),
+        `row ${row.label}, ${mode}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+}

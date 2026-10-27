@@ -53,8 +53,9 @@
  *   travel: the rows cross-fade onto their row, opacity only, on the
  *   animator's Reduce Motion fade (`reducedMotionFade`).
  *
- * The rows are drawn twice, as UIKit draws them: dimmed on a cylinder seen
- * in perspective above and below the band (wheelDrum.ts), and flat and
+ * The rows are drawn twice, as UIKit draws them: dimmed, in the theme's
+ * secondary text colour (4.5:1 on the sheet, spec:AST-020 FR9), on a
+ * cylinder seen in perspective above and below the band (wheelDrum.ts), and flat and
  * magnified inside it, each label about its own centre, so the band's row
  * stays in line with its column. In a WheelGroup every column is drawn
  * towards the group's centre, and a column given its place (`column`,
@@ -118,7 +119,8 @@ import {wheelGeometry} from './wheelGeometry.stylex';
 import {lockSelection} from '../gestures/selectionLock';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useWheelListbox} from './useWheelListbox';
-import {drumGeometry, rowAtPoint} from './wheelDrum';
+import {drumGeometry, rowAtPoint, type DrumGeometry} from './wheelDrum';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
 import {WheelRows, type WheelRange, type WheelRowClasses} from './wheelRows';
 import {reducedMotionFade} from '../motion/reducedMotion';
@@ -141,9 +143,17 @@ import {
   type WheelSpinOptions,
 } from './wheelOptions';
 
-/** UIKit's row pitch, px: the wheel's geometry is UIPickerView's. */
-const ROW_HEIGHT = picker.geometry.rowHeight;
-const GEOMETRY = drumGeometry(ROW_HEIGHT);
+/**
+ * The rows' pitch, px: the default look's row (spec:AST-094 FR42), on
+ * UIPickerView's cylinder, perspective and height, which keep their size.
+ * The band is one row tall.
+ */
+const ROW_HEIGHT = WHEEL_ROW_PITCH;
+const GEOMETRY: DrumGeometry = {
+  ...drumGeometry(picker.geometry.rowHeight),
+  rowHeight: ROW_HEIGHT,
+  bandHeight: ROW_HEIGHT,
+};
 /** Wheel events stop moving the wheel after this long without one, ms. */
 const WHEEL_IDLE_MS = 160;
 const styles = stylex.create({
@@ -186,10 +196,10 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     transformOrigin: `50% 50% ${wheelGeometry.rowOriginDepth}`,
     backfaceVisibility: 'hidden',
-    opacity: wheelGeometry.outerOpacity,
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-primary'],
+    // Text read at rest: 4.5:1 on the sheet in every scheme (AST-020 FR9).
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
   },
@@ -393,7 +403,7 @@ export function PickerWheel({
     () => ({rowHeight: ROW_HEIGHT, rowCount, looping: loops}),
     [rowCount, loops],
   );
-  const [motion] = useState(() => new WheelMotion(layout));
+  const [motion] = useState(() => new WheelMotion(layout, GEOMETRY));
   const selectedIndex = Math.max(
     0,
     options.findIndex(option => option.value === value),
@@ -1044,8 +1054,11 @@ export function PickerWheel({
 
 PickerWheel.displayName = 'PickerWheel';
 
-/** wheelColumns.ts's pt, at this wheel's rows. */
-const PLACE_SCALE = ROW_HEIGHT / picker.geometry.rowHeight;
+/**
+ * wheelColumns.ts's pt, on this wheel's cylinder: UIKit's, so the places keep
+ * their size with the labels they sit by.
+ */
+const PLACE_SCALE = GEOMETRY.radius / picker.geometry.cylinderRadius;
 
 /** A placed column's flex basis: its span of the group (wheelColumns.ts). */
 function spanBasis(span: WheelColumn['span']): string {
