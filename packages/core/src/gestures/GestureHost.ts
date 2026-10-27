@@ -31,8 +31,9 @@
  *
  * - Fingers begin and end with Touch Events: they are the only cancelable
  *   channel (a pointer event's preventDefault cannot stop a scroll or a
- *   click), they keep arriving after the browser takes a pan (which a scroll
- *   handoff needs), and every event lists all the fingers at once. A
+ *   click), they keep arriving after the browser takes a pan (which a
+ *   watcher following the scroll to the lift needs, `spec:AST-094` FR20,
+ *   DEC-7), and every event lists all the fingers at once. A
  *   finger's movement is sampled from ONE channel: its `pointermove`s, once
  *   its pointerdown has paired with its touchstart (by target and
  *   position), since Chromium sends no `touchmove` until a finger has
@@ -51,6 +52,12 @@
  *   for its own pan or zoom; so is a `touchmove` that can no longer be
  *   cancelled where `touch-action` let the browser pan, and a scroll above
  *   the touch.
+ * - Where the primary pointer is fine the host listens for nothing
+ *   (`spec:AST-094` FR19, FR24) except an action group
+ *   (`AttachOptions.actionGroup`, `family:action-groups` FR5): one passive
+ *   `pointerdown` listener on the group, and document listeners only while
+ *   its press is held, removed at the release. Only the group's own
+ *   recognizers and consumer take that press.
  *
  * FINGERS
  *
@@ -59,15 +66,6 @@
  *   scroll lock's page hold (pageHold.ts) asks which touches a recognizer
  *   owns; both live in their own modules, so a page that needs neither
  *   never ships them.
- *
- * TOUCHES ON MOVING ELEMENTS
- *
- * - iOS WebKit hit-tests an element a compositor animation moves where the
- *   animation started. There, at touch-down, the host resolves the moving
- *   elements (motion/presentation.ts: one style write each) and asks the
- *   engine again, so a contact goes to what is drawn under it; press
- *   trackers read `presentedRect`, and a retargeted tap clicks what it
- *   touched once, with the engine's own click cancelled or swallowed.
  *
  * WHAT THE BROWSER IS TOLD
  *
@@ -106,6 +104,9 @@
  *   (`detail === 0`) always pass.
  * - A `contextmenu` while a recognizer owns a touch is cancelled, so a long
  *   press never also opens the browser's menu.
+ * - When the app loses focus (a window blur, a hidden page), every touch in
+ *   flight is cancelled, as in UIKit; a finger the browser keeps alive lifts
+ *   on nothing: its `touchend` is cancelled (`spec:AST-094` FR28).
  *
  * SSR-safe: nothing touches `window` or `document` until something attaches.
  *
@@ -113,13 +114,7 @@
  */
 
 import {isRtlElement} from '../hooks/isRtlElement';
-import {
-  presentedElements,
-  presentedOffsetOf,
-  resolvePresented,
-  watchPresentedElements,
-} from '../motion/presentation';
-import {UIKIT_CLICK, UIKIT_PRESS, UIKIT_TAP} from '../motion/uikit/gestures';
+import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
 import {
   browserClock,
   GestureArena,
@@ -129,7 +124,6 @@ import {
   type GestureClock,
 } from './GestureArena';
 import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
-import type {PressBounds} from './PressTracker';
 import {HAPTIC_SWITCH_ATTRIBUTE} from './hapticSwitch';
 import type {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import type {PanGestureRecognizer} from './PanGestureRecognizer';
@@ -174,6 +168,10 @@ interface Registration {
    */
   authorTouchAction: {derived: string; author: string | null} | null;
   manageStyle: boolean;
+  /** An action group (`family:action-groups` FR5). */
+  actionGroup: boolean;
+  /** The group's passive `pointerdown` listener under a fine pointer. */
+  groupDownListener: EventListener | null;
 }
 
 export interface GestureHostOptions {
@@ -187,15 +185,9 @@ export interface GestureHostOptions {
   /** Every recognizer transition, for debugging and tests. */
   onTransition?: GestureArenaOptions['onTransition'];
   /**
-   * Send a contact to what is drawn while a compositor animation moves an
-   * element (motion/presentation.ts): `auto` where the engine hit-tests such
-   * an element where its animation started (iOS WebKit); `always` or
-   * `never` for tests. @default 'auto'
-   */
-  presentedHitTesting?: 'auto' | 'always' | 'never';
-  /**
    * Whether the primary pointer is coarse (a phone, a tablet). Where it is
-   * fine, the host registers no listener at all (`spec:AST-094` FR19, FR24).
+   * fine, the host registers no listener at all (`spec:AST-094` FR19, FR24),
+   * except an action group's own (`AttachOptions.actionGroup`).
    * @default `(pointer: coarse)` on the document's window
    */
   isPrimaryPointerCoarse?: () => boolean;
@@ -218,6 +210,14 @@ export interface AttachOptions {
    * stays inactive there. @default false
    */
   perEventPointer?: boolean;
+  /**
+   * The element is an action group, sibling actions a held pointer slides
+   * across (`family:action-groups` FR5). Where the primary pointer is fine,
+   * the host still serves it, and nothing else: one passive `pointerdown`
+   * listener on the element, and document listeners only while a press is
+   * held (`spec:AST-094` FR19, FR24). @default false
+   */
+  actionGroup?: boolean;
 }
 
 const STYLE_PROPERTIES: Record<keyof GestureHostStyle, string> = {
@@ -322,26 +322,19 @@ export class GestureHost {
   readonly arena: GestureArena;
   private readonly doc: Document;
   private readonly registry = new Map<Element, Registration>();
-  /** Stops following the animator's moving elements (iOS WebKit only). */
-  private stopWatchingMovers: (() => void) | null = null;
-  /** Whether the document carries the blocking touchmove for a mover. */
-  private isBlockingForMovers = false;
   /** Elements whose caller touch-action waits for a read after paint. */
   private readonly pendingCallerReads = new Set<HTMLElement>();
   private isCallerReadScheduled = false;
   /** The selection lock each contact holds, by host contact id. */
   private readonly lockedBy = new Map<number, () => void>();
-  private readonly presentedHitTesting: 'auto' | 'always' | 'never';
-  /**
-   * Contacts sent to what is drawn instead of what the engine hit, by host
-   * contact id, with where they landed (for their click).
-   */
-  private readonly retargeted = new Map<
-    number,
-    {x: number; y: number; target: EventTarget}
-  >();
   /** Touch.identifier → arena id, for live fingers. */
   private readonly touchIds = new Map<number, number>();
+  /**
+   * Fingers cancelled because the app lost focus, kept until the browser
+   * ends them: a browser that keeps such a touch alive must not let its
+   * lift click (`spec:AST-094` FR28: nothing acts).
+   */
+  private readonly cancelledFingers = new Set<number>();
   /** Touch.identifier → the element the finger landed on. */
   private readonly touchTargets = new Map<number, EventTarget>();
   /** Finger targets with listeners of their own, and how many fingers each. */
@@ -352,10 +345,17 @@ export class GestureHost {
    */
   private readonly watched = new Map<
     EventTarget,
-    {count: number; blocking: number}
+    {count: number; blocking: number; claiming: number}
   >();
   /** Fingers whose target listener is the blocking one. */
   private readonly blockingFingers = new Set<number>();
+  /**
+   * Fingers a participant could claim (a recognizer that claims touches, or
+   * a press consumer): only their target's `touchend` may need cancelling,
+   * so a touch only watchers follow gets a passive one (`spec:AST-094`
+   * FR20).
+   */
+  private readonly claimingFingers = new Set<number>();
   /** Touch events already handled (the document's and the target's listeners both see one). */
   private readonly processed = new WeakSet<Event>();
   /** pointerId → arena id, for live mouse and pen contacts. */
@@ -395,7 +395,9 @@ export class GestureHost {
     null;
   /** The last scroll a finger drove, and when. */
   /** Scrollers a recognizer is scrolling itself this frame (ownScroll). */
-  private readonly ownedScrolls = new Set<Node>();
+  private readonly ownedScrolls = new Map<Node, number>();
+  /** Numbers each ownScroll call: only the newest one's timer clears it. */
+  private ownScrollCalls = 0;
   private lastScroll: {readonly scroller: Node; readonly time: number} | null =
     null;
   /** Predicates that hold a touch's target away from every participant. */
@@ -430,6 +432,12 @@ export class GestureHost {
    */
   private readonly armedElements = new Map<Element, () => void>();
   private isArmedPress = false;
+  /**
+   * Whether the installed listeners include the cancelable ones (the
+   * document's touchend, contextmenu and the window's click): only while a
+   * participant that can claim is attached (`spec:AST-094` FR20).
+   */
+  private isClaimingInstalled = false;
   private readonly inputMode: 'auto' | 'pointer-events';
   private usesTouchEvents = true;
   private swallowDeadline = Number.NEGATIVE_INFINITY;
@@ -437,7 +445,6 @@ export class GestureHost {
   constructor(doc: Document, options: GestureHostOptions = {}) {
     this.doc = doc;
     this.inputMode = options.inputMode ?? 'auto';
-    this.presentedHitTesting = options.presentedHitTesting ?? 'auto';
     const environment: GestureEnvironment = {
       viewportSize: () => ({
         width: doc.defaultView?.innerWidth ?? 0,
@@ -446,6 +453,15 @@ export class GestureHost {
       // The writing direction through core's one helper.
       isRtl: view =>
         view instanceof Element && isRtlElement(view as HTMLElement),
+      // A screen-edge pan tells its edge zone from a wider view by its size
+      // (spec:AST-094 FR18).
+      viewSize: view => {
+        if (!(view instanceof Element)) {
+          return null;
+        }
+        const {width, height} = view.getBoundingClientRect();
+        return {width, height};
+      },
     };
     this.arena = new GestureArena({
       clock: options.clock ?? browserClock,
@@ -471,6 +487,7 @@ export class GestureHost {
   ): () => void {
     const registration = this.registrationFor(element);
     registration.manageStyle = options.manageStyle ?? registration.manageStyle;
+    registration.actionGroup = options.actionGroup ?? registration.actionGroup;
     recognizer.view = element;
     if (options.perEventPointer === true) {
       this.perEventRecognizers.add(recognizer);
@@ -557,117 +574,6 @@ export class GestureHost {
   isTouchClaimed(identifier: number): boolean {
     const id = this.touchIds.get(identifier);
     return id != null && this.arena.isClaimed(id);
-  }
-
-  /**
-   * An element's box where it is drawn: the box the engine reports, moved
-   * by the compositor animations of it and its ancestors on engines that
-   * report and hit-test those where they started (iOS WebKit). Elsewhere
-   * `getBoundingClientRect` already reports the drawn box. Press trackers
-   * read their bounds through it.
-   */
-  presentedRect(element: Element): PressBounds {
-    const box = element.getBoundingClientRect();
-    if (!this.hitTestsLayout()) {
-      return box;
-    }
-    const {x, y} = presentedOffsetOf(element);
-    if (x === 0 && y === 0) {
-      return box;
-    }
-    return {
-      left: box.left + x,
-      top: box.top + y,
-      right: box.right + x,
-      bottom: box.bottom + y,
-    };
-  }
-
-  /** Whether this engine hit-tests a compositor-moved element at layout. */
-  private hitTestsLayout(): boolean {
-    return (
-      this.presentedHitTesting === 'always' ||
-      (this.presentedHitTesting === 'auto' && isIosWebKit(this.doc.defaultView))
-    );
-  }
-
-  /**
-   * Where a contact lands among what is drawn. iOS WebKit hit-tests an
-   * element that a compositor animation moves where the animation started:
-   * a finger on a settling sheet lands on whatever sat under the sheet's
-   * start (the scrim, which closes it), and a finger where the sheet was
-   * lands on the sheet. UIKit keeps an interruptible animation hit-testable
-   * where it is drawn (UIViewPropertyAnimator).
-   */
-  private presentedTarget(
-    native: EventTarget | null,
-    x: number,
-    y: number,
-  ): EventTarget | null {
-    if (!this.hitTestsLayout()) {
-      return native;
-    }
-    const movers = presentedElements().filter(element => {
-      if (!element.isConnected || element.ownerDocument !== this.doc) {
-        return false;
-      }
-      const {x: dx, y: dy} = presentedOffsetOf(element);
-      return Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5;
-    });
-    if (movers.length === 0) {
-      return native;
-    }
-    // One style write per mover makes the engine hit-test it where it is
-    // drawn now; the hit test below flushes them. The engine then gets
-    // z-order, pointer-events and clipping right, which no box math would.
-    resolvePresented(movers);
-    const hit = this.doc.elementFromPoint(x, y);
-    if (hit == null || hit === native) {
-      return native;
-    }
-    const node = native instanceof Node ? native : null;
-    const isAboutMover = movers.some(
-      mover => mover.contains(hit) || (node != null && mover.contains(node)),
-    );
-    return isAboutMover ? hit : native;
-  }
-
-  /** The browser took these touches (a scroll): no click of ours for them. */
-  private browserTook(ids: ReadonlyArray<number>, time: number): void {
-    for (const id of ids) {
-      this.retargeted.delete(id);
-    }
-    this.arena.browserTookOver(ids, time);
-  }
-
-  /**
-   * The click a retargeted tap earned, on what was drawn under the finger.
-   * The engine's own click would hit the start position, so the caller
-   * cancels it (or the swallower drops it, a late one included) and this one
-   * is the tap's single activation.
-   */
-  private clickRetargeted(target: EventTarget, x: number, y: number): void {
-    const view = this.doc.defaultView;
-    if (!(target instanceof Element) || !target.isConnected || view == null) {
-      return;
-    }
-    this.armSwallower();
-    if (
-      target instanceof view.HTMLElement &&
-      target.matches('input, textarea, select, [contenteditable]')
-    ) {
-      target.focus();
-    }
-    target.dispatchEvent(
-      new view.MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        detail: 1,
-        clientX: x,
-        clientY: y,
-      }),
-    );
   }
 
   /**
@@ -774,6 +680,8 @@ export class GestureHost {
         savedStyle: new Map(),
         authorTouchAction: null,
         manageStyle: true,
+        actionGroup: false,
+        groupDownListener: null,
       };
       this.registry.set(element, registration);
     }
@@ -834,6 +742,25 @@ export class GestureHost {
     } else if (!needsListener && registration.hasTouchMoveListener) {
       element.removeEventListener('touchmove', this.onBlockingTouchMove);
       registration.hasTouchMoveListener = false;
+    }
+    // An action group under a fine pointer: its one idle listener.
+    const needsGroupListener =
+      registration.actionGroup &&
+      !this.isPrimaryPointerCoarse() &&
+      (registration.recognizers.some(r => r.isEnabled) ||
+        (registration.consumer != null &&
+          registration.consumer.isEnabled?.() !== false));
+    if (needsGroupListener && registration.groupDownListener == null) {
+      const listener: EventListener = event =>
+        this.beginGroupPress(event as PointerEvent, registration);
+      registration.groupDownListener = listener;
+      element.addEventListener('pointerdown', listener, {passive: true});
+    } else if (!needsGroupListener && registration.groupDownListener != null) {
+      element.removeEventListener(
+        'pointerdown',
+        registration.groupDownListener,
+      );
+      registration.groupDownListener = null;
     }
   }
 
@@ -983,10 +910,19 @@ export class GestureHost {
       registration.hovers.length > 0 ||
       registration.consumer != null
     ) {
+      // What stays may take nothing (only disabled recognizers): FR24.
+      this.syncListeners();
       return;
     }
     if (registration.hasTouchMoveListener) {
       element.removeEventListener('touchmove', this.onBlockingTouchMove);
+    }
+    if (registration.groupDownListener != null) {
+      element.removeEventListener(
+        'pointerdown',
+        registration.groupDownListener,
+      );
+      registration.groupDownListener = null;
     }
     this.registry.delete(element);
     this.uninstallIfIdle();
@@ -1004,66 +940,10 @@ export class GestureHost {
     this.syncArmed();
     if (this.shouldListen()) {
       this.install();
+      this.syncClaimingListeners();
     } else {
       this.uninstall();
     }
-    this.syncMoverBlocking();
-  }
-
-  /**
-   * Safari honours a blocking `touchmove` only where it was registered before
-   * the touch began, on the engine's own target, and on iOS WebKit a finger
-   * on an element a compositor animation moves lands, for the engine, on
-   * whatever sits under the motion's start (see presentedTarget). So while an
-   * element a recognizer that claims moving touches lives in (or around) is
-   * moving, the document carries the blocking listener (`spec:AST-094`
-   * FR19), and it comes off when the motion ends: only then does a scroll
-   * starting anywhere wait on the main thread.
-   */
-  private syncMoverBlocking(): void {
-    const isWatching = this.isInstalled && this.hitTestsLayout();
-    if (isWatching && this.stopWatchingMovers == null) {
-      this.stopWatchingMovers = watchPresentedElements(() =>
-        this.syncMoverBlocking(),
-      );
-    } else if (!isWatching && this.stopWatchingMovers != null) {
-      this.stopWatchingMovers();
-      this.stopWatchingMovers = null;
-    }
-    const needed =
-      isWatching &&
-      presentedElements().some(mover =>
-        this.hasClaimingRecognizerAround(mover),
-      );
-    if (needed === this.isBlockingForMovers) {
-      return;
-    }
-    this.isBlockingForMovers = needed;
-    if (needed) {
-      this.doc.addEventListener('touchmove', this.onBlockingTouchMove, {
-        passive: false,
-      });
-    } else {
-      this.doc.removeEventListener('touchmove', this.onBlockingTouchMove);
-    }
-  }
-
-  /** Whether a recognizer that claims moving touches lives in or around `mover`. */
-  private hasClaimingRecognizerAround(mover: Element): boolean {
-    if (!mover.isConnected || mover.ownerDocument !== this.doc) {
-      return false;
-    }
-    for (const [element, registration] of this.registry) {
-      if (
-        (mover.contains(element) || element.contains(mover)) &&
-        registration.recognizers.some(
-          recognizer => recognizer.isEnabled && claimsWhileMoving(recognizer),
-        )
-      ) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**
@@ -1211,6 +1091,68 @@ export class GestureHost {
     }
   }
 
+  /**
+   * Whether an enabled participant could claim a touch or cancel a lift: a
+   * consumer, or a recognizer that claims touches. With only watchers
+   * attached, the host's listeners are all passive (`spec:AST-094` FR20).
+   */
+  private hasClaimer(): boolean {
+    for (const registration of this.registry.values()) {
+      const consumer = registration.consumer;
+      if (
+        (consumer != null &&
+          consumer.isEnabled?.() !== false &&
+          this.isConsumerActive(consumer)) ||
+        registration.recognizers.some(
+          recognizer =>
+            recognizer.isEnabled &&
+            recognizer.claimsTouches &&
+            this.isActive(recognizer),
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Keeps the document's touchend cancelable, and the contextmenu and click
+   * listeners on, only while a claimer is attached; with only watchers the
+   * touchend is passive and the other two are off.
+   */
+  private syncClaimingListeners(): void {
+    if (!this.isInstalled) {
+      return;
+    }
+    const isClaiming = this.hasClaimer();
+    if (isClaiming === this.isClaimingInstalled) {
+      return;
+    }
+    const doc = this.doc;
+    const view = doc.defaultView;
+    if (this.inputMode === 'auto') {
+      doc.removeEventListener('touchend', this.onTouchEnd, true);
+      doc.addEventListener(
+        'touchend',
+        this.onTouchEnd,
+        isClaiming ? ACTIVE_CAPTURE : PASSIVE_CAPTURE,
+      );
+    }
+    if (isClaiming) {
+      doc.addEventListener('contextmenu', this.onContextMenu, ACTIVE_CAPTURE);
+      view?.addEventListener('click', this.onClick, ACTIVE_CAPTURE);
+    } else {
+      doc.removeEventListener(
+        'contextmenu',
+        this.onContextMenu,
+        ACTIVE_CAPTURE,
+      );
+      view?.removeEventListener('click', this.onClick, ACTIVE_CAPTURE);
+    }
+    this.isClaimingInstalled = isClaiming;
+  }
+
   private shouldListen(): boolean {
     if (!this.needsInput()) {
       return false;
@@ -1263,10 +1205,16 @@ export class GestureHost {
     this.usesTouchEvents =
       this.inputMode === 'auto' && view != null && 'ontouchstart' in view;
     const doc = this.doc;
-    doc.addEventListener('touchstart', this.onTouchStart, PASSIVE_CAPTURE);
-    doc.addEventListener('touchmove', this.onTouchMove, PASSIVE_CAPTURE);
-    doc.addEventListener('touchend', this.onTouchEnd, ACTIVE_CAPTURE);
-    doc.addEventListener('touchcancel', this.onTouchCancel, PASSIVE_CAPTURE);
+    // Pointer Events only: a finger comes from its pointer events alone. A
+    // browser that has Touch Events still sends them for the same finger, and
+    // reading both would track it twice (a long press needs one touch).
+    if (this.inputMode === 'auto') {
+      doc.addEventListener('touchstart', this.onTouchStart, PASSIVE_CAPTURE);
+      doc.addEventListener('touchmove', this.onTouchMove, PASSIVE_CAPTURE);
+      // Passive until a claimer is attached (syncClaimingListeners).
+      doc.addEventListener('touchend', this.onTouchEnd, PASSIVE_CAPTURE);
+      doc.addEventListener('touchcancel', this.onTouchCancel, PASSIVE_CAPTURE);
+    }
     doc.addEventListener('pointerdown', this.onPointerDown, PASSIVE_CAPTURE);
     doc.addEventListener('pointermove', this.onPointerMove, PASSIVE_CAPTURE);
     doc.addEventListener('pointerup', this.onPointerUp, PASSIVE_CAPTURE);
@@ -1276,10 +1224,8 @@ export class GestureHost {
       PASSIVE_CAPTURE,
     );
     doc.addEventListener('pointerout', this.onPointerOut, PASSIVE_CAPTURE);
-    doc.addEventListener('contextmenu', this.onContextMenu, ACTIVE_CAPTURE);
     doc.addEventListener('scroll', this.onScroll, PASSIVE_CAPTURE);
     doc.addEventListener('visibilitychange', this.onVisibilityChange);
-    view?.addEventListener('click', this.onClick, ACTIVE_CAPTURE);
     view?.addEventListener('blur', this.onBlur);
   }
 
@@ -1290,11 +1236,12 @@ export class GestureHost {
     this.isInstalled = false;
     // Unheard from here on: no fingers to keep.
     this.fingerTargets = [];
+    this.isClaimingInstalled = false;
     const doc = this.doc;
     const view = doc.defaultView;
     doc.removeEventListener('touchstart', this.onTouchStart, PASSIVE_CAPTURE);
     doc.removeEventListener('touchmove', this.onTouchMove, PASSIVE_CAPTURE);
-    doc.removeEventListener('touchend', this.onTouchEnd, ACTIVE_CAPTURE);
+    doc.removeEventListener('touchend', this.onTouchEnd, true);
     doc.removeEventListener('touchcancel', this.onTouchCancel, PASSIVE_CAPTURE);
     doc.removeEventListener('pointerdown', this.onPointerDown, PASSIVE_CAPTURE);
     doc.removeEventListener('pointermove', this.onPointerMove, PASSIVE_CAPTURE);
@@ -1501,12 +1448,12 @@ export class GestureHost {
       }
       // A finger number still tracked here began again: the touch it named
       // ended where no listener of ours could hear it.
+      this.cancelledFingers.delete(touch.identifier);
       const previous = this.forgetFinger(touch.identifier);
       if (previous != null) {
         stale.push(previous);
       }
-      const native = touch.target instanceof Node ? touch.target : event.target;
-      const target = this.presentedTarget(native, touch.clientX, touch.clientY);
+      const target = touch.target instanceof Node ? touch.target : event.target;
       const {recognizers, consumer, consumerElement} = this.participantsAt(
         target,
         'touch',
@@ -1530,18 +1477,16 @@ export class GestureHost {
       if (locksSelectionFor('touch', this.doc.defaultView)) {
         toLock.push({id, target, consumerElement});
       }
-      // The finger's events keep going to what the engine hit.
       this.watchTarget(
         touch.identifier,
-        native,
+        target,
         recognizers.some(claimsWhileMoving) ||
           (this.isCoarse && consumer?.keepsTouch != null),
+        consumer != null ||
+          recognizers.some(recognizer => recognizer.claimsTouches),
       );
       this.lastFed.set(id, {x: touch.clientX, y: touch.clientY, time});
-      this.pairTouch(id, {x: touch.clientX, y: touch.clientY, target: native});
-      if (target !== native && target != null) {
-        this.retargeted.set(id, {x: touch.clientX, y: touch.clientY, target});
-      }
+      this.pairTouch(id, {x: touch.clientX, y: touch.clientY, target});
       inputs.push({
         id,
         x: touch.clientX,
@@ -1633,7 +1578,7 @@ export class GestureHost {
           : touch.scroll.canScroll(0, dy);
       });
       if (taken.length > 0) {
-        this.browserTook(taken, time);
+        this.arena.browserTookOver(taken, time);
       }
     }
     // A finger its pointer events sample is fed from there, never from here.
@@ -1648,8 +1593,43 @@ export class GestureHost {
   /**
    * Cancel a `touchmove` while a recognizer owns one of its fingers. A touch
    * no recognizer owns keeps its moves (`spec:AST-094` FR19): nothing is
-   * cancelled before a recognizer begins, or for a touch it does not track.
+   * cancelled before a recognizer begins, or for a touch it does not track,
+   * unless a recognizer holds that finger already (a scroll-edge pan pulling
+   * away from an edge every scroller under it is at; FR19, DEC-18).
    */
+  /**
+   * Under `inputMode: 'pointer-events'` a finger comes from its pointer
+   * events, so its touches carry no id of ours: the live finger it is, the
+   * nearest pointer-fed finger on the same target. Its touchmoves can then
+   * be cancelled once a recognizer claims it (`spec:AST-094` FR19, FR21).
+   */
+  private pointerFingerAt(touch: Touch): number | undefined {
+    let best: GestureTouch | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const finger of this.arena.touches) {
+      if (
+        finger.pointerType !== 'touch' ||
+        finger.phase === 'ended' ||
+        finger.phase === 'cancelled' ||
+        !(finger.target instanceof Node) ||
+        !(touch.target instanceof Node) ||
+        !(
+          finger.target === touch.target ||
+          finger.target.contains(touch.target) ||
+          touch.target.contains(finger.target)
+        )
+      ) {
+        continue;
+      }
+      const d = Math.hypot(finger.x - touch.clientX, finger.y - touch.clientY);
+      if (d < bestDistance) {
+        best = finger;
+        bestDistance = d;
+      }
+    }
+    return best?.id;
+  }
+
   private cancelIfClaimed(event: TouchEvent): void {
     if (!event.cancelable || event.defaultPrevented) {
       return;
@@ -1658,12 +1638,25 @@ export class GestureHost {
     // does not make this one its own.
     const moved = touchesOf(event.changedTouches);
     for (const touch of moved) {
-      const id = this.touchIds.get(touch.identifier);
+      const id =
+        this.touchIds.get(touch.identifier) ??
+        (this.inputMode === 'pointer-events'
+          ? this.pointerFingerAt(touch)
+          : undefined);
       if (
         id != null &&
         (this.arena.isClaimed(id) ||
           (this.isCoarse &&
-            this.arena.consumerOf(id)?.keepsTouch?.(id) === true))
+            this.arena.consumerOf(id)?.keepsTouch?.(id) === true) ||
+          // A recognizer that holds the finger before it begins: a
+          // scroll-edge pan pulling away from an edge (FR19, DEC-18), only
+          // while this is the one finger on the screen: with a second one
+          // down anywhere, even off the recognizer's element, the moves stay
+          // the browser's, for its pinch (FR10).
+          (event.touches.length === 1 &&
+            this.arena
+              .participantsOf(id)
+              .some(recognizer => internals(recognizer).keepsTouch(id))))
       ) {
         event.preventDefault();
         return;
@@ -1690,69 +1683,31 @@ export class GestureHost {
     this.dropFingersNotDown(event);
     const time = eventTime(event);
     const inputs: TouchInput[] = [];
-    const retargetedEnds: {
-      id: number;
-      landed: {x: number; y: number; target: EventTarget};
-      x: number;
-      y: number;
-    }[] = [];
+    let isRefused = false;
     for (const touch of touchesOf(event.changedTouches)) {
-      const tracked = this.touchIds.get(touch.identifier);
-      const landed = tracked == null ? undefined : this.retargeted.get(tracked);
+      if (this.cancelledFingers.delete(touch.identifier)) {
+        isRefused = true;
+        continue;
+      }
       const id = this.forgetFinger(touch.identifier);
       if (id == null) {
         continue;
       }
       inputs.push({id, x: touch.clientX, y: touch.clientY, time});
-      if (landed != null) {
-        retargetedEnds.push({id, landed, x: touch.clientX, y: touch.clientY});
-      }
     }
     // The lift is when momentum starts: the clock the brake wants most.
     if (event.target instanceof Node) {
       this.lastTouch = {target: event.target, time};
     }
-    if (inputs.length === 0) {
-      return;
-    }
-    const dispositions = this.arena.ended(inputs);
-    let cancelsClick = needsSuppression(dispositions);
-    // A tap sent to what is drawn: the engine's click would hit the layout
-    // position, so it is cancelled and the tap clicks what it touched.
-    for (const end of retargetedEnds) {
-      if (this.clickRetargetedTap(end.landed, end, dispositions.get(end.id))) {
-        cancelsClick = true;
-      }
-    }
-    if (cancelsClick) {
+    const dispositions =
+      inputs.length > 0 ? this.arena.ended(inputs) : new Map();
+    if (isRefused || needsSuppression(dispositions)) {
       if (event.cancelable) {
         event.preventDefault();
       }
       this.armSwallower();
     }
   };
-
-  /**
-   * Clicks what a retargeted contact touched if it ended as a tap the
-   * engine would click: nothing claimed it, the browser did not take it
-   * (a taken contact is no longer retargeted), and the finger stayed within
-   * a tap's movement. Returns whether it clicked.
-   */
-  private clickRetargetedTap(
-    landed: {x: number; y: number; target: EventTarget} | undefined,
-    end: {x: number; y: number},
-    disposition: ClickDisposition | undefined,
-  ): boolean {
-    if (landed == null || disposition !== 'allow') {
-      return false;
-    }
-    const moved = Math.hypot(end.x - landed.x, end.y - landed.y);
-    if (moved > UIKIT_TAP.allowableMovement.value) {
-      return false;
-    }
-    this.clickRetargeted(landed.target, end.x, end.y);
-    return true;
-  }
 
   private readonly onTouchCancel = (event: TouchEvent): void => {
     this.releaseArmedPress();
@@ -1766,6 +1721,12 @@ export class GestureHost {
       listed.length > 0
         ? listed.map(touch => touch.identifier)
         : [...this.touchIds.keys()];
+    if (listed.length === 0) {
+      this.cancelledFingers.clear();
+    }
+    for (const identifier of identifiers) {
+      this.cancelledFingers.delete(identifier);
+    }
     const ids: number[] = [];
     for (const identifier of identifiers) {
       const id = this.forgetFinger(identifier);
@@ -1793,6 +1754,11 @@ export class GestureHost {
     this.onTouchEnd(event as TouchEvent);
   };
 
+  /** The same, registered passively for a touch only watchers follow. */
+  private readonly onTargetTouchEndPassive = (event: Event): void => {
+    this.onTouchEnd(event as TouchEvent);
+  };
+
   private readonly onTargetTouchCancel = (event: Event): void => {
     this.onTouchCancel(event as TouchEvent);
   };
@@ -1803,7 +1769,10 @@ export class GestureHost {
    * in this very event) ended where we could not see it.
    */
   private dropFingersNotDown(event: TouchEvent): void {
-    if (event.touches == null || this.touchIds.size === 0) {
+    if (
+      event.touches == null ||
+      (this.touchIds.size === 0 && this.cancelledFingers.size === 0)
+    ) {
       return;
     }
     const down = new Set<number>();
@@ -1812,6 +1781,11 @@ export class GestureHost {
     }
     for (const touch of touchesOf(event.changedTouches)) {
       down.add(touch.identifier);
+    }
+    for (const identifier of [...this.cancelledFingers]) {
+      if (!down.has(identifier)) {
+        this.cancelledFingers.delete(identifier);
+      }
     }
     const gone = [...this.touchIds.keys()].filter(
       identifier => !down.has(identifier),
@@ -1832,6 +1806,7 @@ export class GestureHost {
     identifier: number,
     target: EventTarget | null,
     isBlocking: boolean,
+    isClaiming: boolean,
   ): void {
     if (target == null || typeof target.addEventListener !== 'function') {
       return;
@@ -1839,30 +1814,45 @@ export class GestureHost {
     this.touchTargets.set(identifier, target);
     const state = this.watched.get(target);
     if (state == null) {
-      this.watched.set(target, {count: 1, blocking: isBlocking ? 1 : 0});
+      this.watched.set(target, {
+        count: 1,
+        blocking: isBlocking ? 1 : 0,
+        claiming: isClaiming ? 1 : 0,
+      });
       if (isBlocking) {
         this.blockingFingers.add(identifier);
+      }
+      if (isClaiming) {
+        this.claimingFingers.add(identifier);
       }
       target.addEventListener(
         'touchmove',
         isBlocking ? this.onTargetTouchMove : this.onTargetTouchMovePassive,
         {passive: !isBlocking},
       );
-      target.addEventListener('touchend', this.onTargetTouchEnd, {
-        passive: false,
-      });
+      target.addEventListener(
+        'touchend',
+        isClaiming ? this.onTargetTouchEnd : this.onTargetTouchEndPassive,
+        {passive: !isClaiming},
+      );
       target.addEventListener('touchcancel', this.onTargetTouchCancel, {
         passive: true,
       });
       return;
     }
     const wasBlocking = state.blocking > 0;
+    const wasClaiming = state.claiming > 0;
     state.count += 1;
     if (isBlocking) {
       state.blocking += 1;
       this.blockingFingers.add(identifier);
     }
+    if (isClaiming) {
+      state.claiming += 1;
+      this.claimingFingers.add(identifier);
+    }
     this.swapTargetTouchMove(target, wasBlocking, state.blocking > 0);
+    this.swapTargetTouchEnd(target, wasClaiming, state.claiming > 0);
   }
 
   private unwatchTarget(identifier: number): void {
@@ -1876,12 +1866,17 @@ export class GestureHost {
       return;
     }
     const wasBlocking = state.blocking > 0;
+    const wasClaiming = state.claiming > 0;
     state.count -= 1;
     if (this.blockingFingers.delete(identifier)) {
       state.blocking -= 1;
     }
+    if (this.claimingFingers.delete(identifier)) {
+      state.claiming -= 1;
+    }
     if (state.count > 0) {
       this.swapTargetTouchMove(target, wasBlocking, state.blocking > 0);
+      this.swapTargetTouchEnd(target, wasClaiming, state.claiming > 0);
       return;
     }
     this.watched.delete(target);
@@ -1889,7 +1884,10 @@ export class GestureHost {
       'touchmove',
       wasBlocking ? this.onTargetTouchMove : this.onTargetTouchMovePassive,
     );
-    target.removeEventListener('touchend', this.onTargetTouchEnd);
+    target.removeEventListener(
+      'touchend',
+      wasClaiming ? this.onTargetTouchEnd : this.onTargetTouchEndPassive,
+    );
     target.removeEventListener('touchcancel', this.onTargetTouchCancel);
   }
 
@@ -1915,6 +1913,31 @@ export class GestureHost {
       'touchmove',
       isBlocking ? this.onTargetTouchMove : this.onTargetTouchMovePassive,
       {passive: !isBlocking},
+    );
+  }
+
+  /**
+   * Keeps one `touchend` listener on a watched target: the cancelable one
+   * while a finger on it has a participant that could claim (a lift whose
+   * click must not happen cancels its `touchend`), a passive one while only
+   * watchers follow its fingers (`spec:AST-094` FR20).
+   */
+  private swapTargetTouchEnd(
+    target: EventTarget,
+    wasClaiming: boolean,
+    isClaiming: boolean,
+  ): void {
+    if (wasClaiming === isClaiming) {
+      return;
+    }
+    target.removeEventListener(
+      'touchend',
+      wasClaiming ? this.onTargetTouchEnd : this.onTargetTouchEndPassive,
+    );
+    target.addEventListener(
+      'touchend',
+      isClaiming ? this.onTargetTouchEnd : this.onTargetTouchEndPassive,
+      {passive: !isClaiming},
     );
   }
 
@@ -1971,7 +1994,6 @@ export class GestureHost {
   /** Forget a contact's pairing and echo state. */
   private forgetContact(id: number): void {
     this.unlockSelection(id);
-    this.retargeted.delete(id);
     this.lastFed.delete(id);
     this.pointerFed.delete(id);
     this.judgedUncancelable.delete(id);
@@ -2003,13 +2025,8 @@ export class GestureHost {
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
-    const target = this.presentedTarget(
-      event.target,
-      event.clientX,
-      event.clientY,
-    );
     const {recognizers, consumer, consumerElement} = this.participantsAt(
-      target,
+      event.target,
       event.pointerType,
     );
     if (recognizers.length === 0 && consumer == null) {
@@ -2017,9 +2034,6 @@ export class GestureHost {
     }
     const id = this.nextId++;
     this.pointerIds.set(event.pointerId, id);
-    if (target !== event.target && target != null) {
-      this.retargeted.set(id, {x: event.clientX, y: event.clientY, target});
-    }
     this.arena.began([
       {
         id,
@@ -2027,25 +2041,182 @@ export class GestureHost {
         y: event.clientY,
         time: eventTime(event),
         pointerType: event.pointerType,
-        target,
-        scroll: createNativeScrollProbe(target),
+        target: event.target,
+        scroll: createNativeScrollProbe(event.target),
         recognizers,
         consumer,
         ...(this.isCoarse ? {} : {isFeedbackOnly: true}),
       },
     ]);
     if (locksSelectionFor(event.pointerType, this.doc.defaultView)) {
-      // The presented target: what the pen is on, where the engine's own
-      // hit test may still see the motion's start.
       this.lockSelection(
         id,
         this.arena.participantsOf(id),
-        target,
+        event.target,
         this.arena.consumerOf(id) ?? null,
         consumerElement,
       );
     }
   };
+
+  /** The pointer of the group press being served under a fine pointer. */
+  private groupPressPointer: number | null = null;
+
+  /**
+   * A press on an action group under a fine pointer (`family:action-groups`
+   * FR5): the group's recognizers and consumer take it, nothing else on the
+   * path does (`spec:AST-094` FR19), and the document listens only until it
+   * lifts (FR24). Where the primary pointer is coarse the host's own
+   * listeners serve the group, as every other recognizer.
+   */
+  private beginGroupPress(
+    event: PointerEvent,
+    registration: Registration,
+  ): void {
+    if (
+      this.isInstalled ||
+      this.groupPressPointer != null ||
+      !isPointerKind(event.pointerType) ||
+      (event.pointerType === 'mouse' && event.button !== 0)
+    ) {
+      return;
+    }
+    const recognizers = registration.recognizers.filter(
+      r => r.isEnabled && internals(r).acceptsTouchInput,
+    );
+    const consumer =
+      registration.consumer != null &&
+      registration.consumer.isEnabled?.() !== false
+        ? registration.consumer
+        : null;
+    if (recognizers.length === 0 && consumer == null) {
+      return;
+    }
+    this.disarmSwallower();
+    const id = this.nextId++;
+    this.pointerIds.set(event.pointerId, id);
+    this.groupPressPointer = event.pointerId;
+    this.listenForGroupPress(true);
+    this.arena.began([
+      {
+        id,
+        x: event.clientX,
+        y: event.clientY,
+        time: eventTime(event),
+        pointerType: event.pointerType,
+        target: event.target,
+        scroll: createNativeScrollProbe(event.target),
+        recognizers,
+        consumer,
+      },
+    ]);
+  }
+
+  /** The document listeners one group press needs while it is held. */
+  private listenForGroupPress(isListening: boolean): void {
+    const doc = this.doc;
+    const view = doc.defaultView;
+    if (isListening) {
+      doc.addEventListener('pointermove', this.onGroupPointer, PASSIVE_CAPTURE);
+      doc.addEventListener('pointerup', this.onGroupPointer, PASSIVE_CAPTURE);
+      doc.addEventListener(
+        'pointercancel',
+        this.onGroupPointer,
+        PASSIVE_CAPTURE,
+      );
+      view?.addEventListener('blur', this.onGroupBlur);
+      // The click a lift owes is the press's too: claimed presses swallow it.
+      view?.addEventListener('click', this.onClick, ACTIVE_CAPTURE);
+    } else {
+      doc.removeEventListener(
+        'pointermove',
+        this.onGroupPointer,
+        PASSIVE_CAPTURE,
+      );
+      doc.removeEventListener(
+        'pointerup',
+        this.onGroupPointer,
+        PASSIVE_CAPTURE,
+      );
+      doc.removeEventListener(
+        'pointercancel',
+        this.onGroupPointer,
+        PASSIVE_CAPTURE,
+      );
+      view?.removeEventListener('blur', this.onGroupBlur);
+    }
+  }
+
+  /**
+   * A group press's own events, finger, pen or mouse alike, through the
+   * pointer path: under a fine pointer the host reads no Touch Events, so
+   * the touch pairing the installed host does for a finger never applies.
+   */
+  private readonly onGroupPointer = (event: PointerEvent): void => {
+    if (event.pointerId !== this.groupPressPointer) {
+      return;
+    }
+    const id = this.pointerIds.get(event.pointerId);
+    if (event.type === 'pointermove') {
+      if (id != null) {
+        this.arena.moved([
+          {
+            id,
+            x: event.clientX,
+            y: event.clientY,
+            time: eventTime(event),
+            history: coalescedHistory(event),
+          },
+        ]);
+      }
+      return;
+    }
+    this.pointerIds.delete(event.pointerId);
+    if (id != null) {
+      if (event.type === 'pointerup') {
+        const dispositions = this.arena.ended([
+          {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
+        ]);
+        if (needsSuppression(dispositions)) {
+          this.armSwallower();
+        }
+      } else {
+        this.arena.cancelled([id], eventTime(event));
+      }
+    }
+    this.endGroupPress();
+  };
+
+  private readonly onGroupBlur = (): void => {
+    const pointer = this.groupPressPointer;
+    const id = pointer == null ? undefined : this.pointerIds.get(pointer);
+    if (pointer != null && id != null) {
+      this.pointerIds.delete(pointer);
+      this.arena.cancelled([id], this.arena.now());
+    }
+    this.endGroupPress();
+  };
+
+  /**
+   * The press lifted: its document listeners go now; the click listener stays
+   * for the click the lift dispatches in the same task, then goes too.
+   */
+  private endGroupPress(): void {
+    this.groupPressPointer = null;
+    this.listenForGroupPress(false);
+    const view = this.doc.defaultView;
+    const removeClick = () => {
+      // The click listener stays while a claimer keeps it installed.
+      if (!this.isClaimingInstalled) {
+        view?.removeEventListener('click', this.onClick, ACTIVE_CAPTURE);
+      }
+    };
+    if (view != null && typeof view.setTimeout === 'function') {
+      view.setTimeout(removeClick, 0);
+    } else {
+      removeClick();
+    }
+  }
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (event.pointerType === 'touch' && this.usesTouchEvents) {
@@ -2098,15 +2269,7 @@ export class GestureHost {
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
-    // A retargeted tap's own click arms the swallower for the engine's.
-    const landed = this.retargeted.get(id);
-    this.retargeted.delete(id);
-    const clicked = this.clickRetargetedTap(
-      landed,
-      {x: event.clientX, y: event.clientY},
-      dispositions.get(id),
-    );
-    if (!clicked && needsSuppression(dispositions)) {
+    if (needsSuppression(dispositions)) {
       this.armSwallower();
     }
   };
@@ -2122,9 +2285,9 @@ export class GestureHost {
       if (id != null) {
         // The pointer channel ends here while the finger keeps moving (the
         // browser scrolls with it): its touch events, now the only channel,
-        // sample it, as a scroll handoff needs.
+        // sample it, as a watcher following the scroll to the lift needs.
         this.pointerFed.delete(id);
-        this.browserTook([id], eventTime(event));
+        this.arena.browserTookOver([id], eventTime(event));
       }
       return;
     }
@@ -2132,7 +2295,6 @@ export class GestureHost {
     if (id != null) {
       this.pointerIds.delete(event.pointerId);
       this.unlockSelection(id);
-      this.retargeted.delete(id);
       this.arena.cancelled([id], eventTime(event));
     }
   };
@@ -2286,16 +2448,28 @@ export class GestureHost {
    * reports itself through pointercancel or touchcancel.
    */
   ownScroll(scroller: Node): void {
-    this.ownedScrolls.add(scroller);
+    const call = ++this.ownScrollCalls;
+    this.ownedScrolls.set(scroller, call);
     const view = this.doc.defaultView;
     if (view == null) {
       return;
     }
     view.requestAnimationFrame(() => {
       view.requestAnimationFrame(() => {
-        this.ownedScrolls.delete(scroller);
+        // A newer call keeps it until its own frame has passed.
+        if (this.ownedScrolls.get(scroller) === call) {
+          this.ownedScrolls.delete(scroller);
+        }
       });
     });
+  }
+
+  /**
+   * @internal Whether a recognizer is scrolling `scroller` itself now
+   * (ownScroll): that scroll is not a finger's (fingerScroll.ts reads it).
+   */
+  isOwnScroll(scroller: Node): boolean {
+    return this.ownedScrolls.has(scroller);
   }
 
   private readonly onScroll = (event: Event): void => {
@@ -2340,7 +2514,7 @@ export class GestureHost {
       }
     }
     if (taken.length > 0) {
-      this.browserTook(taken, time);
+      this.arena.browserTookOver(taken, time);
     }
   };
 
@@ -2401,13 +2575,14 @@ export class GestureHost {
       this.unlockSelection(id);
     }
     for (const identifier of [...this.touchIds.keys()]) {
+      // The browser may keep the touch alive: its lift must not click.
+      this.cancelledFingers.add(identifier);
       const id = this.forgetFinger(identifier);
       if (id != null) {
         ids.push(id);
       }
     }
     this.pointerIds.clear();
-    this.retargeted.clear();
     this.fingerPointers.clear();
     this.pendingPointers.clear();
     this.unpairedTouches.clear();
@@ -2443,17 +2618,6 @@ function coalescedHistory(event: PointerEvent): TouchSample[] {
     y: sample.clientY,
     time: eventTime(sample),
   }));
-}
-
-/**
- * iOS WebKit, by the one property only it implements (the engine check of
- * utils/touchPresentation.ts, which this module cannot import: it brings
- * React).
- */
-function isIosWebKit(
-  view: (Window & {CSS?: Partial<typeof CSS>}) | null,
-): boolean {
-  return view?.CSS?.supports?.('-webkit-touch-callout', 'none') === true;
 }
 
 /** The gesture host of a document, created on first use. */

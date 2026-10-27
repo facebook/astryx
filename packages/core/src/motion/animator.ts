@@ -153,7 +153,11 @@
  *
  * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
  * inline style: its end value is held by a static filling animation (after a
- * curve ends, and after `set`) until the next animation replaces it.
+ * curve ends, and after `set`) until the next animation replaces it, and for
+ * as long as the pseudo-element exists. The browser makes a `::backdrop`
+ * again each time its dialog opens, without the hold, so a presentation
+ * calls `set` with its starting value right after `showModal()`, in the same
+ * task: a `set` before it lands on the backdrop the open replaces.
  *
  * SSR-safe: nothing touches `window` or `document` at module scope, and an
  * animator created without an element only keeps state until one is attached.
@@ -515,7 +519,12 @@ interface HandleState {
  * dip, the fade back in.
  */
 interface Landing {
-  readonly owner: HandleState;
+  /**
+   * The call that settles when the landing (and its fade back in) ends; a
+   * call that joins the dip takes it over, and the call it replaces is
+   * carried.
+   */
+  owner: HandleState;
   /** ms after the call's start. */
   readonly at: number;
   readonly values: Map<MotionProperty, number>;
@@ -555,6 +564,8 @@ interface ReducedPlan {
   > | null;
   /** The stylesheet opacity a dip borrowed (no call owns opacity). */
   readonly borrowed?: number | null;
+  /** The call joins the waiting dip (see the planner's `joins`). */
+  readonly joins?: boolean;
 }
 
 const PROPERTIES: ReadonlyArray<MotionProperty> = [
@@ -874,6 +885,22 @@ export function createAnimator(
   const restWaits = new Set<RestWait>();
   /** A detach that settles as an unmount at the end of the task, unless an attach follows. */
   let unmountQueued = false;
+  /**
+   * The node the latest attach(null) detached, while its unmount is pending:
+   * a waiting Reduce Motion move lands there, so that node is left visible
+   * where it was going.
+   */
+  let lastDetached: HTMLElement | null = null;
+  /** Runs `write` with the pending unmount's node as the target. */
+  const onLastDetached = (write: () => void) => {
+    const current = target;
+    target = target ?? lastDetached;
+    try {
+      write();
+    } finally {
+      target = current;
+    }
+  };
   /** The call being committed, when it starts from rest. */
   let callGroup: StartGroup | null = null;
   /** The element reported to presentation.ts while translate moves. */
@@ -892,6 +919,15 @@ export function createAnimator(
   let ownWillChange: string | null = null;
   /** The stylesheet's will-change when there is no inline value. */
   let sheetWillChange = '';
+  /**
+   * Whether sheetWillChange holds a read of the element's current style: it
+   * is read in the task after the element is attached, and again after each
+   * demotion, so a promotion (a drag's first move) reads no style in its
+   * own task.
+   */
+  let sheetWillChangeRead = false;
+  /** The pending read of sheetWillChange, cancelled with its element. */
+  let sheetReadTimer: ReturnType<typeof setTimeout> | null = null;
   let demoteTimer: ReturnType<typeof setTimeout> | null = null;
   /** A pseudo-element is promoted through a custom property on its host. */
   const promotionProperty =
@@ -1575,13 +1611,12 @@ export function createAnimator(
     if (ownWillChange == null) {
       ownWillChange = element.style.willChange;
       // Without an inline value, the stylesheet's reasons stay alongside the
-      // promotion's (read once, as the promotion starts).
-      sheetWillChange =
-        ownWillChange === ''
-          ? (element.ownerDocument.defaultView
-              ?.getComputedStyle(element)
-              .getPropertyValue('will-change') ?? '')
-          : '';
+      // promotion's. They were read in the task after the element was
+      // attached; a promotion that comes first (an element attached in this
+      // task that moves at once) reads them now.
+      if (ownWillChange === '' && !sheetWillChangeRead) {
+        readSheetWillChange(element);
+      }
     }
     const base = ownWillChange !== '' ? ownWillChange : sheetWillChange;
     const own = base === 'auto' ? '' : base;
@@ -1590,6 +1625,48 @@ export function createAnimator(
       .map(reason => reason.trim())
       .filter(reason => reason !== '' && !promoted.has(reason as Channel));
     element.style.willChange = [...reasons, ...promoted].join(', ');
+  };
+
+  /** Reads the element's own will-change while no promotion of ours is written. */
+  const readSheetWillChange = (element: HTMLElement) => {
+    sheetWillChange =
+      element.ownerDocument.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue('will-change') ?? '';
+    sheetWillChangeRead = true;
+  };
+
+  /**
+   * Reads sheetWillChange in a task of its own, so a later promotion reads no
+   * style in its own task. Skipped while a promotion of ours is written,
+   * which the read would see (demote asks again), and for a node out of the
+   * document. A pseudo-element's promotion is its own property, with
+   * nothing to read.
+   */
+  const readSheetWillChangeLater = () => {
+    cancelSheetWillChangeRead();
+    sheetWillChangeRead = false;
+    if (target == null || promotionProperty != null) {
+      return;
+    }
+    const element = target;
+    sheetReadTimer = setTimeout(() => {
+      sheetReadTimer = null;
+      // A node out of the document has no style to read, and reading one
+      // still costs a style pass: a shared animator (animatorFor) is never
+      // detached, so its node can leave with this read waiting. Skipped, the
+      // read waits for a promotion that needs it.
+      if (target === element && promoted.size === 0 && element.isConnected) {
+        readSheetWillChange(element);
+      }
+    }, 0);
+  };
+
+  const cancelSheetWillChangeRead = () => {
+    if (sheetReadTimer != null) {
+      clearTimeout(sheetReadTimer);
+      sheetReadTimer = null;
+    }
   };
 
   /**
@@ -1646,6 +1723,8 @@ export function createAnimator(
     promoted.clear();
     if (target != null) {
       writePromotion(target);
+      // Its stylesheet may have changed its will-change since.
+      readSheetWillChangeLater();
     }
   };
 
@@ -2053,6 +2132,7 @@ export function createAnimator(
     finished: Promise<boolean>,
     time: number,
     group: StartGroup | null = null,
+    settlesWithLanding = false,
   ): MotionHandle => {
     const ends = properties.map(p => {
       const segment = segments.get(p);
@@ -2061,7 +2141,9 @@ export function createAnimator(
         : time;
     });
     const end = Math.max(time, ...ends);
-    if (properties.length === 0 || end <= time) {
+    if (settlesWithLanding) {
+      // The landing it joined settles it.
+    } else if (properties.length === 0 || end <= time) {
       settle(owner, true);
     } else {
       // Interruptions settle false as they happen (interrupt); reaching the
@@ -2384,6 +2466,27 @@ export function createAnimator(
     return {carried, owners};
   };
 
+  /**
+   * A call joins the newest waiting dip: it takes the landing over and
+   * settles when the dip ends, and the call it replaces lands with it. Each
+   * value keeps the call whose move it is.
+   */
+  const joinWaitingDip = (owner: HandleState) => {
+    const dip = [...landings].reverse().find(landing => landing.fadeIn != null);
+    if (dip == null) {
+      settle(owner, true);
+      return;
+    }
+    for (const property of dip.values.keys()) {
+      if (!dip.owners.has(property)) {
+        dip.owners.set(property, dip.owner);
+      }
+    }
+    dip.carried.push(dip.owner);
+    carriedOwners.add(dip.owner);
+    dip.owner = owner;
+  };
+
   /** Where opacity is heading: past a waiting landing's fade back in. */
   const opacityHeading = (): number => {
     let to = finalValue('opacity');
@@ -2600,6 +2703,9 @@ export function createAnimator(
     get hasPendingLanding() {
       return landings.size > 0;
     },
+    get hasWaitingDip() {
+      return [...landings].some(landing => landing.fadeIn != null);
+    },
   };
 
   /**
@@ -2639,6 +2745,7 @@ export function createAnimator(
       holds: plan.holds,
       landing: plan.landing,
       borrowed: plan.borrowed,
+      joins: plan.joins,
     };
   };
 
@@ -2670,6 +2777,7 @@ export function createAnimator(
         // completion timer outlives the element, as in dispose()
         // (architecture:react-component-runtime INV5). A replacement keeps
         // them all: the motion goes on on the new node.
+        lastDetached = target;
         if (!unmountQueued) {
           unmountQueued = true;
           queueMicrotask(() => {
@@ -2677,10 +2785,30 @@ export function createAnimator(
               return;
             }
             unmountQueued = false;
-            // A Reduce Motion move still waiting lands in the model where it
-            // was going, as in dispose(), so a later attach shows the element
-            // there and visible; its calls settle as interrupted.
-            landPending(false);
+            // A Reduce Motion move still waiting lands where it was going, as
+            // in dispose(), on the node just detached too: a dip's fade out
+            // left its low opacity inline there, so a later attach of that
+            // node (a Suspense or Activity reveal) shows it landed and
+            // visible. Its calls settle as interrupted.
+            onLastDetached(() => {
+              landPending(false);
+              // The landing's commit rebuilt every channel it touched on the
+              // detached node, any axis still moving included: leave that
+              // node with no animation, timer or promotion.
+              for (const animation of running.values()) {
+                animation.cancel();
+              }
+              running.clear();
+              for (const timer of retireTimers.values()) {
+                clearTimeout(timer);
+              }
+              retireTimers.clear();
+              demote();
+              // demote() asks for a fresh will-change read of the node it
+              // demotes; a detached node gets none.
+              cancelSheetWillChangeRead();
+            });
+            lastDetached = null;
             const time = now();
             for (const property of PROPERTIES) {
               interrupt(property, time);
@@ -2693,6 +2821,7 @@ export function createAnimator(
       } else {
         // A node in place of the one just detached: no unmount.
         unmountQueued = false;
+        lastDetached = null;
       }
       // After the landing's commit, which can promote the element again.
       demote();
@@ -2746,6 +2875,9 @@ export function createAnimator(
       }
       const held = heldIdentity;
       target = next;
+      // A new node: its own will-change is read again.
+      cancelSheetWillChangeRead();
+      sheetWillChangeRead = false;
       if (target == null) {
         return;
       }
@@ -2782,6 +2914,7 @@ export function createAnimator(
         }
       }
       flushReleases();
+      readSheetWillChangeLater();
     },
 
     get(property, time = now()) {
@@ -2909,7 +3042,13 @@ export function createAnimator(
         // The dip's own commit cleared it; the borrow lasts the dip.
         borrowedOpacity = plan.borrowed;
       }
-      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.joins === true) {
+        joinWaitingDip(owner);
+      }
+      const handle =
+        plan?.joins === true
+          ? makeHandle(owner, ['opacity'], finished, time, group, true)
+          : makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
         scheduleLanding(owner, handle.started, plan.landing, adopted);
       }
@@ -2924,10 +3063,14 @@ export function createAnimator(
       const time = playOptions.at ?? now();
       const {owner, finished} = newOwner();
       const byProperty: Partial<Record<MotionProperty, MotionCurve>> = {};
-      for (const [key, curve] of Object.entries(curves) as [
-        MotionProperty | 'scale',
-        MotionCurve | undefined,
-      ][]) {
+      // `scale` first, so an explicit `scaleX` or `scaleY` beside it wins.
+      const entries = (
+        Object.entries(curves) as [
+          MotionProperty | 'scale',
+          MotionCurve | undefined,
+        ][]
+      ).sort(([a], [b]) => Number(b === 'scale') - Number(a === 'scale'));
+      for (const [key, curve] of entries) {
         if (curve == null) {
           continue;
         }
@@ -3028,7 +3171,13 @@ export function createAnimator(
         // The dip's own commit cleared it; the borrow lasts the dip.
         borrowedOpacity = plan.borrowed;
       }
-      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.joins === true) {
+        joinWaitingDip(owner);
+      }
+      const handle =
+        plan?.joins === true
+          ? makeHandle(owner, ['opacity'], finished, time, group, true)
+          : makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
         scheduleLanding(owner, handle.started, plan.landing, adopted);
       }
@@ -3285,8 +3434,14 @@ export function createAnimator(
     dispose() {
       flushDeferred();
       // A Reduce Motion move still waiting to land is written at its end
-      // state, so the element is left visible where it was going; its call
-      // and the calls it carries settle as interrupted.
+      // state, so the element is left visible where it was going (the node
+      // just detached, when an unmount is pending); its call and the calls
+      // it carries settle as interrupted.
+      if (target == null && unmountQueued) {
+        target = lastDetached;
+      }
+      lastDetached = null;
+      unmountQueued = false;
       landPending(false);
       // Nothing moves any more: every atRest() wait settles.
       for (const wait of [...restWaits]) {
@@ -3307,6 +3462,7 @@ export function createAnimator(
       present(false);
       handBackBorrow();
       demote();
+      cancelSheetWillChangeRead();
       target = null;
     },
   };
