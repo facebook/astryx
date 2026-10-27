@@ -85,8 +85,9 @@ defineTheme({
   `tempo` and `character` at their source: a spring's duration scales by
   `tempo`, and `character` offsets the role's measured bounce by an amount
   times the role's fixed weight: `'standard'` adds nothing, and `'crisp'` and
-  `'expressive'` shift it down and up, so exits, fades, and full-screen moves,
-  whose weight is zero, never overshoot. With
+  `'expressive'` shift it down and up, so a role whose weight is zero, such as
+  an exit, a fade, or a full-screen move, keeps its measured bounce at every
+  character. With
   `tempo` 1 and `character` `'standard'`, every role plays its measured value
   exactly. A spring keeps its measured physics, scaled by `tempo` and shaped
   by `character`; it does not follow a CSS duration or easing twin. The roles
@@ -133,10 +134,9 @@ defineTheme({
   preference as set. The mark only adds: an ancestor's `'always'` reaches
   inside every nested theme, and a nested theme can add `'always'` but never
   removes an ancestor's, since nothing loosens `design:reduced-motion` DR1–DR3
-  (DR2a). An internal,
-  pure `resolveThemeMotion(theme)` returns the knobs, durations, easings, and
-  role tables for the animator and for server code; it touches no DOM and has
-  no import-time side effects. The animator reads a person's Reduce Motion
+  (DR2a). The server and the client resolve the same
+  motion values from a theme, and importing the theme and motion modules
+  touches no DOM (`architecture:theme-authoring-contract`). The animator reads a person's Reduce Motion
   setting only when an animation starts, on the client.
 - **FR7 — Docs ship with it.** The motion, duration-token, and easing-token
   docs, the theme template, the theme-authoring guide, and
@@ -157,7 +157,8 @@ defineTheme({
   (`spec:AST-012`).
 - `design:reduced-motion` gains DR2a: a theme may reduce motion for everyone.
 - Spinner and Skeleton read their loop durations before `tempo` scales them
-  (FR4), so their timing is unchanged under every existing theme.
+  (FR4), so their timing is unchanged under every existing theme;
+  `component:Spinner` FR3 and `component:Skeleton` FR4 say so.
 - BottomSheet's sheet and scrim share `--duration-medium`; when the
   sheet settles on `springs.settle`, its scrim's fade takes the spring's settle
   time (FR4a).
@@ -172,7 +173,7 @@ defineTheme({
 | Contract | Verification                                                                         | Representative states                                                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                                        |
 | -------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR1, FR2 | Theme unit tests over generated CSS                                                  | each `tempo` bound and 1; each `character`; `reducedMotion` both values; no `motion`                                                                                                                                          | a token off its formula, the released tokens changed at the defaults, an exit curve that changes, or a value outside a clamp fails                                                                                                                                                     |
-| FR3      | Tests that the CSS tokens and the animator's tables derive from the same knob values | each role at the defaults and at each knob value; an adaptation rule that sets `tempo` or `character`                                                                                                                         | a role off its measured value at the defaults, a role that ignores a knob it follows, or overshoot on a weight-0 role fails                                                                                                                                                            |
+| FR3      | Tests that the CSS tokens and the animator's tables derive from the same knob values | each role at the defaults and at each knob value; an adaptation rule that sets `tempo` or `character`                                                                                                                         | a role off its measured value at the defaults, a role that ignores a knob it follows, or a weight-0 role whose bounce changes with `character` fails                                                                                                                                   |
 | FR4a     | Browser tests of each paired animation at each knob value                            | an element and gliding siblings, a sheet and its scrim, a menu's grow and content, a CSS fade with a spring                                                                                                                   | paired animations that end more than one frame apart fail                                                                                                                                                                                                                              |
 | FR4      | Unit tests of each fixed item                                                        | finger tracking, momentum, rubber band, keyboard, press and hover clocks, loops, Reduce Motion cap; Spinner and Skeleton loops at each tempo                                                                                  | a fixed item that moves with `tempo` or `character`, or a cross-fade longer than 200 ms, fails                                                                                                                                                                                         |
 | FR5      | Theme tests with the released configurations                                         | a `MotionScaleConfig` theme, explicit tokens, an extending theme; an adaptation rule that sets `tempo` or `character`                                                                                                         | changed output for an existing theme, or a knob that beats an explicit field, fails                                                                                                                                                                                                    |
