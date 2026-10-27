@@ -41,8 +41,8 @@ internal.
   snap-point resolver as public API; they stay internal (`spec:AST-017` FR21).
 - Presses and long presses, which `useLongPress` owns.
 - Animating the layout of an area, which `spec:AST-105` owns.
-- Choosing a spring or curve, which lands with the public motion-token set
-  (`spec:AST-094` DEC-11).
+- Choosing a spring or curve beyond the theme's motion knobs
+  (`spec:AST-108`).
 
 ## Public contract
 
@@ -61,7 +61,7 @@ usePanGesture(ref, {
 const {settleTo} = useDragToSnapPoints(ref, {
   axis: 'y',
   snapPoints: [0, 240, 480],
-  flickThreshold: 500,
+  flickThreshold: 1008,
   onSettle: index => {},
 });
 
@@ -83,7 +83,7 @@ animator.animate({x: 120});
   unlike BottomSheet's `snapPoints`, they are not viewport fractions. At the
   release the element settles on the nearest snap point to where it is,
   except that a release faster than `flickThreshold`, in pixels per second
-  (default 500), carries to the next snap point in its direction, and a
+  (default 1008, the sheet's measured flick speed), carries to the next snap point in its direction, and a
   release whose velocity points back toward where the drag started returns to
   the snap point it started from (`spec:AST-094` FR37). It
   calls `onSettle(index)` once the element settles. It returns
@@ -98,9 +98,10 @@ animator.animate({x: 120});
   `set(values)` jumps them; `get()` and `getVelocity()` read them; and
   `stop()` halts them where they are. Reduce Motion is planned for every
   animation (`design:reduced-motion` DR1–DR3). Every `animate` plays on the
-  `springs.stateChange` motion role (`spec:AST-094` FR4), and `decay` on the
-  fixed momentum decay; choosing a spring or curve lands with the public
-  motion-token set.
+  `springs.stateChange` motion role (`spec:AST-094` FR4), which follows the
+  theme's tempo and character (`spec:AST-108` FR3), and `decay` on the fixed
+  momentum decay (`spec:AST-108` FR4); choosing any other spring or curve is
+  not offered.
 - **FR4 — One hook per job.** `usePanGesture` does not do presses or long
   presses, which `useLongPress` owns. `useAnimator` animates one element, and
   `useAnimatedLayout` animates an area (`spec:AST-105`). A component's own
@@ -125,13 +126,13 @@ animator.animate({x: 120});
 
 ## Verification
 
-| Contract | Verification                                                     | Representative states                                                                                                | Mutation or failure expectation                                                                                                                                  |
-| -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Unit and browser tests of `usePanGesture`                        | a drag on each axis, a cancel, a press, a long press                                                                 | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
-| FR2      | Unit and browser tests of `useDragToSnapPoints`                  | a slow release, a flick past `flickThreshold` and the 500 px/s default, a release moving back, `settleTo` from a key | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
-| FR3      | Unit and browser tests of `useAnimator`                          | each method, Reduce Motion, an unattached ref                                                                        | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
-| FR4      | Export check of `@astryxdesign/core` and its hooks               | the public exports                                                                                                   | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
-| FR5      | Docsite review of each hook's page and the playing-cards example | each hook's page; the playing-cards demo                                                                             | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
+| Contract | Verification                                                     | Representative states                                                                                                   | Mutation or failure expectation                                                                                                                                  |
+| -------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Unit and browser tests of `usePanGesture`                        | a drag on each axis, a cancel, a press, a long press                                                                    | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
+| FR2      | Unit and browser tests of `useDragToSnapPoints`                  | a slow release, a flick past `flickThreshold` and the default flick speed, a release moving back, `settleTo` from a key | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
+| FR3      | Unit and browser tests of `useAnimator`                          | each method, Reduce Motion, an unattached ref                                                                           | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
+| FR4      | Export check of `@astryxdesign/core` and its hooks               | the public exports                                                                                                      | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
+| FR5      | Docsite review of each hook's page and the playing-cards example | each hook's page; the playing-cards demo                                                                                | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
 
 ## Decision log
 
