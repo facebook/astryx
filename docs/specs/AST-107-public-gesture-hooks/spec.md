@@ -31,7 +31,8 @@ affects_consumer_docs: [usePanGesture, useDragToSnapPoints, useAnimator]
 ## Intent
 
 A product can follow a drag, settle an element on snap points, and animate one
-element with the same motion Core uses, through three public hooks. The hooks
+element with the same motion Core uses, through three public factories and the
+three React hooks over them. The hooks
 hand out values, never the gesture machinery behind them, which stays
 internal.
 
@@ -47,6 +48,11 @@ internal.
 ## Public contract
 
 ```tsx
+import {
+  createPanGesture,
+  createDragToSnapPoints,
+  createAnimator,
+} from '@astryxdesign/core';
 import {
   usePanGesture,
   useDragToSnapPoints,
@@ -67,6 +73,18 @@ const {settleTo} = useDragToSnapPoints(ref, {
 
 const {ref: animatedRef, animator} = useAnimator();
 animator.animate({x: 120});
+
+// Without React:
+const pan = createPanGesture(element, {axis: 'x', onPan: () => {}});
+const snap = createDragToSnapPoints(element, {
+  axis: 'y',
+  snapPoints: [0, 240, 480],
+  onSettle: index => {},
+});
+const animator2 = createAnimator(element);
+pan.destroy();
+snap.destroy();
+animator2.destroy();
 ```
 
 ## Requirements
@@ -109,30 +127,60 @@ animator.animate({x: 120});
   component path to the same behavior. Everything else in the gesture and
   motion modules stays internal (`architecture:public-component-api` INV21).
 
+- **FR6 — Each hook is a thin wrapper over a factory.** Each hook has a
+  non-React factory in the same `create…` family as `createReorderable`:
+  `createPanGesture(element, {axis?, onPan}) → {destroy}`,
+  `createDragToSnapPoints(element, {axis, snapPoints, flickThreshold?,
+onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
+{animate, decay, set, get, getVelocity, stop, destroy}`, with FR1–FR3's
+  behavior. A hook and its factory are one job at two layers
+  (`architecture:public-component-api` INV21): the hook delegates entirely to
+  its factory and has no behavior of its own. `destroy` removes every
+  listener the factory added, and importing a factory does no DOM work, so it
+  is safe on the server.
+- **FR7 — Core and Lab use the public layer.** Wherever a public gesture or
+  motion API covers a component's job (the factories and hooks here,
+  `createReorderable`, and `useAnimatedLayout`), Core and Lab components MUST
+  use it rather than the internals beneath it. A component reaches internals
+  only for a job the public layer does not expose, and each such job is a
+  known public-API gap:
+
+  | Job the public layer does not expose     | Reached through internals for   |
+  | ---------------------------------------- | ------------------------------- |
+  | Which of two gestures wins a touch       | Recognizer relationships        |
+  | Keeping a layer's chosen presentation    | The presentation hold           |
+  | Absorbing input while a layer enters     | The input hold                  |
+  | Press feedback timing                    | Controls and cells              |
+  | Growing a layer out of its trigger       | Lift-from-trigger presentations |
+  | Press tracking across a group of actions | `family:action-groups` members  |
+
 - **FR5 — Each hook ships with docs and a playing-cards example.** Each public
-  API here, and `createReorderable`'s `positions` (`spec:AST-103`), ships with
+  API here, factory and hook alike, and `createReorderable`'s `positions` (`spec:AST-103`), ships with
   docsite documentation: its usage, its options, its keyboard and
   assistive-technology path, its Reduce Motion behavior, a note saying when to
   use a component's own prop instead (FR4), and a live example. The flagship
-  example is a playing-cards demo built only on the public hooks: a card that
+  example is a playing-cards demo built only on the public layer, once in
+  plain JavaScript with the factories and once in React with the hooks: a card that
   flicks and snaps back, cards that reorder by drag and by keyboard reorder
   mode, a swipe that discards a card, and a fanned hand that uses custom
   `positions`.
 
 ## Current-state impact
 
-- Core gains the three hooks from `@astryxdesign/core/hooks`, their docsite
-  pages, and a playing-cards example.
+- Core gains the three factories and the three hooks over them, their docsite
+  pages, and a playing-cards example in plain JavaScript and in React.
 
 ## Verification
 
-| Contract | Verification                                                     | Representative states                                                                                                   | Mutation or failure expectation                                                                                                                                  |
-| -------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Unit and browser tests of `usePanGesture`                        | a drag on each axis, a cancel, a press, a long press                                                                    | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
-| FR2      | Unit and browser tests of `useDragToSnapPoints`                  | a slow release, a flick past `flickThreshold` and the default flick speed, a release moving back, `settleTo` from a key | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
-| FR3      | Unit and browser tests of `useAnimator`                          | each method, Reduce Motion, an unattached ref                                                                           | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
-| FR4      | Export check of `@astryxdesign/core` and its hooks               | the public exports                                                                                                      | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
-| FR5      | Docsite review of each hook's page and the playing-cards example | each hook's page; the playing-cards demo                                                                                | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
+| Contract | Verification                                                                                                  | Representative states                                                                                                   | Mutation or failure expectation                                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Unit and browser tests of `usePanGesture`                                                                     | a drag on each axis, a cancel, a press, a long press                                                                    | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
+| FR2      | Unit and browser tests of `useDragToSnapPoints`                                                               | a slow release, a flick past `flickThreshold` and the default flick speed, a release moving back, `settleTo` from a key | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
+| FR3      | Unit and browser tests of `useAnimator`                                                                       | each method, Reduce Motion, an unattached ref                                                                           | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
+| FR4      | Export check of `@astryxdesign/core` and its hooks                                                            | the public exports                                                                                                      | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
+| FR6      | Unit tests of each factory and its hook, server-render and import checks, and listener counts after `destroy` | each factory without React; each hook; a server import; `destroy` mid-drag                                              | a hook with behavior its factory lacks, a listener left after `destroy`, or DOM work at import fails                                                             |
+| FR7      | Source boundary check over Core and Lab against the gap table                                                 | every Core and Lab component that drags, snaps, animates one element, reorders, or animates layout                      | a component reaching internals for a job the public layer covers, or an internal use whose job is not in the gap table, fails                                    |
+| FR5      | Docsite review of each hook's page and the playing-cards example                                              | each hook's page; the playing-cards demo                                                                                | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
 
 ## Decision log
 
@@ -147,6 +195,19 @@ recognizers, the arena, and the animator stay internal, so Core can change
 them without breaking products.
 
 Rejected: exporting the recognizers and the animator.
+
+### DEC-2 — Factories under the hooks, and Core uses the public layer
+
+**Reference:** `spec:AST-107/DEC-2`
+**Decider:** `cixzhang`, `2026-10-26`
+
+A product without React, or one that manages its own elements, needs the same
+gestures, so each hook is a thin wrapper over a `create…` factory, the family
+`createReorderable` already uses. Core and Lab build on the same public layer
+wherever it covers their job, so its gaps are visible and listed rather than
+hidden behind internals.
+
+Rejected: hooks only, and components that bypass the public layer.
 
 ## Open questions
 

@@ -179,7 +179,11 @@ those contracts.
 - **INV13 — One shared set of internal touch modules.** Core's touch
   behavior comes from one always-present set of internal gesture and touch
   modules: the gesture core, the recognizers, the arena, the animator, and the
-  touch press recognizer. Components import them statically, and the bundler
+  touch press recognizer. The recognizer family (its base, the arena, and the
+  host) is the one place these modules use classes, and it uses no
+  inheritance checks: a recognizer is told apart by its `kind` field, never by
+  `instanceof`. Every other module, and every public layer, is built from
+  `create…` factories. Components import them statically, and the bundler
   keeps one copy per page however many components use them. There is no
   install call, no public entry, and no public installed check; tests reset
   the modules through an internal hook only. A component's own touch logic is
