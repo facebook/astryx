@@ -175,16 +175,49 @@ const state = async (page: Page) =>
     };
   });
 
+/**
+ * Attempts at the slide-out's midway probe. The probe looks at a fixed time
+ * after the tap; an engine that has not drawn the fade's first frame by then
+ * (WebKit compiling a newly animated layer's shaders on a cold cache, 450–700
+ * ms) still shows the scrim at full strength there. That probe missed its
+ * window rather than finding a scrim that does not fade, so it runs again on a
+ * fresh page, and fails only if it never lands inside the fade.
+ */
+const SLIDE_OUT_PROBE_ATTEMPTS = 3;
+
 test('the dialog stays modal while the drawer slides out, then closes and returns focus', async ({
   page,
 }) => {
-  const {durationMs, backdrop} = await openNav(page);
-  expect(durationMs).toBeGreaterThan(100);
+  let durationMs = 0;
+  let closeTapped = 0;
+  let midway: Awaited<ReturnType<typeof state>> | null = null;
+  for (
+    let attempt = 1;
+    attempt <= SLIDE_OUT_PROBE_ATTEMPTS && midway == null;
+    attempt++
+  ) {
+    const opened = await openNav(page);
+    durationMs = opened.durationMs;
+    expect(durationMs).toBeGreaterThan(100);
 
-  await page.touchscreen.tap(backdrop.x, backdrop.y);
-  const closeTapped = await now(page);
-  await page.waitForTimeout(durationMs * 0.5);
-  const midway = await state(page);
+    await page.touchscreen.tap(opened.backdrop.x, opened.backdrop.y);
+    closeTapped = await now(page);
+    await page.waitForTimeout(durationMs * 0.5);
+    const probe = await state(page);
+    // Still modal with the scrim untouched: the fade had not begun.
+    if (probe.modal && probe.scrim === 1) {
+      console.log(
+        `↻ the slide-out had not drawn its first frame at the midway probe (attempt ${attempt}); probing again`,
+      );
+      continue;
+    }
+    midway = probe;
+  }
+  if (midway == null) {
+    throw new Error(
+      `in ${SLIDE_OUT_PROBE_ATTEMPTS} attempts the midway probe never landed inside the slide-out`,
+    );
+  }
   await page.waitForTimeout(durationMs * 0.5 + 200);
 
   // Midway: still the modal dialog holding the page, the drawer inert, the
