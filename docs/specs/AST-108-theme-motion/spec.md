@@ -67,10 +67,10 @@ defineTheme({
 - **FR2 — The knobs generate the CSS motion tokens.** The theme's
   `--duration-*` tokens are their base values times `tempo`. `character` sets
   only the job-named `--ease-entrance` and `--ease-move` tokens, declared in
-  `tokens.stylex.ts`. `--ease-standard`, which today's exits read, and
+  `tokens.stylex.ts`. `--ease-standard`, which the existing exits read, and
   `--ease-exit`, whose default is `cubic-bezier(0.3, 0, 0.6, 0.6)`, are the same at every character, so exits stay
   quiet. With `tempo` 1 and `character`
-  `'standard'`, the tokens are today's: `--duration-*` 130, 175, 230, 310, 410,
+  `'standard'`, the tokens keep their released values: `--duration-*` 130, 175, 230, 310, 410,
   550, 730, 975 and 1300 ms, and `--ease-standard`
   `cubic-bezier(0.24, 1, 0.4, 1)`; `--ease-entrance` and `--ease-move` equal
   `--ease-standard` at `'standard'`. The curves at `'crisp'` and
@@ -113,17 +113,17 @@ defineTheme({
   unless the theme sets `tempo` itself, so an existing theme renders exactly as
   before, springs included. Explicit
   `MotionScaleConfig` fields and explicit `tokens` win over `tempo` and
-  `character`, and an extending theme's motion configuration replaces its
-  base's, as today. An adaptation rule may set `tempo` and `character` like
+  `character`, and an extending theme's motion configuration merges with its
+  base's field by field: a field or knob the child omits keeps its base's
+  value. An adaptation rule may set `tempo` and `character` like
   any other `motion` value (`spec:AST-012` FR4); `reducedMotion` is set on the
   theme itself, since its root mark has no conditional form.
 - **FR6 — Server rendering gets the same values.** A theme is plain data, and
-  the theme utilities run on the server. `'system'` is resolved by emitting
-  the reduced token set behind `prefers-reduced-motion` in the generated CSS,
-  so the server never guesses and nothing flashes at hydration. `'always'`
-  emits the reduced token set unconditionally and marks the theme's root, and
-  every component style that keys reduced motion on `prefers-reduced-motion`
-  also keys it on that mark; the animator treats the preference as set. An internal,
+  the theme utilities run on the server. `'system'` adds no theme CSS:
+  component styles already key reduced motion on `prefers-reduced-motion`, so
+  the server never guesses and nothing flashes at hydration. `'always'` marks
+  the theme's root, and every component style that keys reduced motion on
+  `prefers-reduced-motion` also keys it on that mark; the animator treats the preference as set. An internal,
   pure `resolveThemeMotion(theme)` returns the knobs, durations, easings, and
   role tables for the animator and for server code; it touches no DOM and has
   no import-time side effects. The animator reads a person's Reduce Motion
@@ -137,10 +137,13 @@ defineTheme({
 
 - `defineTheme`'s `motion` widens to accept the three knobs beside the existing
   `MotionScaleConfig`; existing themes render exactly as before.
-- Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`.
+- Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`, and a
+  theme-root mark for `reducedMotion: 'always'` that every component style
+  keying reduced motion on `prefers-reduced-motion` also keys on.
+- `design:reduced-motion` gains DR2a: a theme may reduce motion for everyone.
 - Spinner and Skeleton read their loop durations before `tempo` scales them
   (FR4), so their timing is unchanged under every existing theme.
-- BottomSheet's sheet and scrim share `--duration-medium` today; when the
+- BottomSheet's sheet and scrim share `--duration-medium`; when the
   sheet settles on `springs.settle`, its scrim's fade takes the spring's settle
   time (FR4a).
 - `spec:AST-094` FR4 and `design:reduced-motion` DR2 and the draft
@@ -150,11 +153,11 @@ defineTheme({
 
 | Contract | Verification                                                                         | Representative states                                                                                                                                                               | Mutation or failure expectation                                                                                                                       |
 | -------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR2 | Theme unit tests over generated CSS                                                  | each `tempo` bound and 1; each `character`; `reducedMotion` both values; no `motion`                                                                                                | a token off its formula, today's tokens changed at the defaults, an exit curve that changes, or a value outside a clamp fails                         |
-| FR3      | Tests that the CSS tokens and the animator's tables derive from the same knob values | each role at the defaults and at each knob value                                                                                                                                    | a role off its measured value at the defaults, a role that ignores a knob it follows, or overshoot on a weight-0 role fails                           |
+| FR1, FR2 | Theme unit tests over generated CSS                                                  | each `tempo` bound and 1; each `character`; `reducedMotion` both values; no `motion`                                                                                                | a token off its formula, the released tokens changed at the defaults, an exit curve that changes, or a value outside a clamp fails                    |
+| FR3      | Tests that the CSS tokens and the animator's tables derive from the same knob values | each role at the defaults and at each knob value; an adaptation rule that sets `tempo` or `character`                                                                               | a role off its measured value at the defaults, a role that ignores a knob it follows, or overshoot on a weight-0 role fails                           |
 | FR4a     | Browser tests of each paired animation at each knob value                            | an element and gliding siblings, a sheet and its scrim, a menu's grow and content, a CSS fade with a spring                                                                         | paired animations that end more than one frame apart fail                                                                                             |
 | FR4      | Unit tests of each fixed item                                                        | finger tracking, momentum, rubber band, keyboard, press and hover clocks, loops, Reduce Motion cap; Spinner and Skeleton loops at each tempo                                        | a fixed item that moves with a knob, or a cross-fade longer than 200 ms, fails                                                                        |
-| FR5      | Theme tests with today's configurations                                              | a `MotionScaleConfig` theme, explicit tokens, an extending theme                                                                                                                    | changed output for an existing theme, or a knob that beats an explicit field, fails                                                                   |
+| FR5      | Theme tests with the released configurations                                         | a `MotionScaleConfig` theme, explicit tokens, an extending theme; an adaptation rule that sets `tempo` or `character`                                                               | changed output for an existing theme, or a knob that beats an explicit field, fails                                                                   |
 | FR6      | Server-render tests and import checks                                                | a server render with each `reducedMotion`; importing the theme and motion modules; `'always'` with the person's setting off, across components that key on `prefers-reduced-motion` | a DOM access at import or on the server, a missing media-query set, or a hydration change or a component that keeps travelling under `'always'` fails |
 | FR7      | Docs review                                                                          | each listed doc                                                                                                                                                                     | a doc without the knobs, the fixed list, or the precedence fails                                                                                      |
 

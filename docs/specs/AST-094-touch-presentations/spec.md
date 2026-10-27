@@ -108,8 +108,8 @@ a measured, sourced difference exists.
   sources; further roles a component's own record measures join through the
   generated motion role table (DEC-5). With tempo 1 and character
   standard, every role plays its measured value exactly (FR1, FR2); a theme's
-  tempo scales durations and its character sets curves and bounce through
-  fixed per-role weights (`spec:AST-108`), and roles on the fixed list ignore
+  tempo scales durations and its character offsets bounce through fixed
+  per-role weights (`spec:AST-108` FR3), and roles on the fixed list ignore
   both: the on-screen keyboard (`spec:AST-099` FR8); gesture thresholds, the
   content-touch delay, and momentum (`spec:AST-002` FR3); finger tracking, the
   rubber band, press clocks, and busy loops; and the 200 ms Reduce Motion cap.
@@ -729,7 +729,7 @@ A theme reaches touch motion only through `spec:AST-108`'s three knobs, tempo,
 character, and reduced motion, which transform the measured roles; the
 per-role tables and weights stay internal. This supersedes DEC-11's "all
 internal" for exactly these three knobs, and DEC-1's and DEC-3's per-role
-retuning, which a theme now does through the knobs; DEC-11's rejected alternative, public
+retuning, which a theme does through the knobs; DEC-11's rejected alternative, public
 per-component roles, stays rejected.
 
 ### DEC-22 — An edge band claims only on an element within the band
