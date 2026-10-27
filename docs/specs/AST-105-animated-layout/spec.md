@@ -112,7 +112,8 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   assistive technology, while the new content enters, and removes it when the
   swap ends (`architecture:component-style-authoring` INV7); AppShell's
   content area does this during a side nav collapse (`component:AppShell`
-  FR17). The swap is internal; the hook's public contract is unchanged.
+  FR17), and the SideNav rail holds its old expanded state while a collapse's
+  clip closes (`component:SideNav` FR6). The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
 
