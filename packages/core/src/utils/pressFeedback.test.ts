@@ -577,9 +577,9 @@ function cssAnimation(
   element: Element,
   {
     target = element,
-    startTime = null,
+    playState = 'running',
     endTime = PRESS_FADE_MS,
-  }: {target?: Element; startTime?: number | null; endTime?: number} = {},
+  }: {target?: Element; playState?: string; endTime?: number} = {},
 ) {
   let end: () => void = () => undefined;
   let cancel: () => void = () => undefined;
@@ -591,7 +591,7 @@ function cssAnimation(
   return {
     animation: {
       animationName: 'release',
-      startTime,
+      playState,
       finished,
       effect: {
         target,
@@ -612,14 +612,6 @@ function animate(element: Element, animations: ReadonlyArray<object>): void {
   });
 }
 
-/** The document timeline's clock, which jsdom lacks, at `ms`. */
-function timelineAt(ms: number): void {
-  Object.defineProperty(document, 'timeline', {
-    configurable: true,
-    value: {currentTime: ms},
-  });
-}
-
 /** Let the callbacks a finished or cancelled animation queued run. */
 async function settled(): Promise<void> {
   for (let i = 0; i < 4; i += 1) {
@@ -636,16 +628,11 @@ function liftHeldPress(): void {
 }
 
 describe('the release ends with its animation, not its clock', () => {
-  afterEach(() => {
-    Reflect.deleteProperty(document, 'timeline');
-  });
-
   it('keeps `fading` until the release animation ends, however late a busy main thread let its first frame come', async () => {
-    timelineAt(1000);
     liftHeldPress();
     // 150 ms of script held the main thread after the lift: the release
-    // started at the first frame after it.
-    const release = cssAnimation(rows[0], {startTime: 1150});
+    // started at the first frame after it, and is still running.
+    const release = cssAnimation(rows[0]);
     animate(rows[0], [release.animation]);
     vi.advanceTimersByTime(PRESS_FADE_MS);
     await settled();
@@ -657,7 +644,7 @@ describe('the release ends with its animation, not its clock', () => {
 
   it('waits for a release still waiting for its first frame when the clock ran out', async () => {
     liftHeldPress();
-    const release = cssAnimation(rows[0]);
+    const release = cssAnimation(rows[0], {playState: 'pending'});
     animate(rows[0], [release.animation]);
     vi.advanceTimersByTime(PRESS_FADE_MS * 3);
     await settled();
@@ -685,14 +672,13 @@ describe('the release ends with its animation, not its clock', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('waits for no animation that is not its release: a descendant’s, an endless one, or one running before the lift', async () => {
-    timelineAt(1000);
+  it('waits for no animation that is not a running release: a descendant’s, an endless one, or one already finished', async () => {
     liftHeldPress();
     const label = rows[0].firstElementChild as Element;
     animate(rows[0], [
       cssAnimation(rows[0], {target: label}).animation,
-      cssAnimation(rows[0], {startTime: 1016, endTime: Infinity}).animation,
-      cssAnimation(rows[0], {startTime: 400}).animation,
+      cssAnimation(rows[0], {endTime: Infinity}).animation,
+      cssAnimation(rows[0], {playState: 'finished'}).animation,
     ]);
     vi.advanceTimersByTime(PRESS_FADE_MS);
     await settled();
