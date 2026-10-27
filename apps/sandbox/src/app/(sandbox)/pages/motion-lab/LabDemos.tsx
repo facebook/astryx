@@ -623,12 +623,21 @@ export function RailRig({mode}: {mode: Mode}) {
 
 // --- skeleton -> content -----------------------------------------------------
 
+// The skeleton stays up long enough to read as a loading state: a 420 ms
+// flash in a 3 s loop looked like static content with a blink, so the swap
+// itself was easy to miss.
+const SKELETON_MS = 1400;
+const SKELETON_LOOP_MS = 3600;
+
 export function SkeletonSwapRig({mode}: {mode: Mode}) {
   const [loaded, setLoaded] = useState(false);
+  const arrivalRef = useRef<number | undefined>(undefined);
   useLoop(() => {
+    window.clearTimeout(arrivalRef.current);
     setLoaded(false);
-    window.setTimeout(() => setLoaded(true), 420);
-  }, 3000);
+    arrivalRef.current = window.setTimeout(() => setLoaded(true), SKELETON_MS);
+  }, SKELETON_LOOP_MS);
+  useEffect(() => () => window.clearTimeout(arrivalRef.current), []);
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
