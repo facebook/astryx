@@ -67,6 +67,29 @@ describe('checkGhCli', () => {
     expect(checkGhCli({}, 'linux')).toBe(false);
   });
 
+  it('reads a PATH entry that does not exist, is a file, or cannot be searched as holding no gh', () => {
+    const missing = path.join(dirWith({}), 'missing');
+    const file = path.join(dirWith({tool: 0o644}), 'tool');
+    const locked = dirWith({gh: 0o755});
+    fs.chmodSync(locked, 0o000);
+    try {
+      expect(
+        checkGhCli(
+          {PATH: [missing, file, locked].join(path.delimiter)},
+          'linux',
+        ),
+      ).toBe(process.getuid?.() === 0);
+    } finally {
+      fs.chmodSync(locked, 0o755);
+    }
+  });
+
+  it('throws on a gh it cannot read for another reason, rather than read it as not there', () => {
+    const looped = dirWith({});
+    fs.symlinkSync('gh', path.join(looped, 'gh'));
+    expect(() => checkGhCli({PATH: looped}, 'linux')).toThrow(/ELOOP/);
+  });
+
   it('on Windows, finds gh with a PATHEXT extension', () => {
     const tools = dirWith({'gh.exe': 0o644});
     expect(checkGhCli({PATH: tools, PATHEXT: '.COM;.EXE'}, 'win32')).toBe(true);

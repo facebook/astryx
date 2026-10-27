@@ -36,8 +36,14 @@ export function checkGhCli(env = process.env, platform = process.platform) {
         if (stat.isFile() && (windows || (stat.mode & 0o111) !== 0)) {
           return true;
         }
-      } catch {
-        // Not here.
+      } catch (error) {
+        // Not here: no such file (ENOENT), a PATH entry that is not a
+        // directory (ENOTDIR), or one this user may not search (EACCES), as
+        // `which` reads them. Any other error is thrown.
+        const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+        if (code !== 'ENOENT' && code !== 'ENOTDIR' && code !== 'EACCES') {
+          throw error;
+        }
       }
     }
   }
