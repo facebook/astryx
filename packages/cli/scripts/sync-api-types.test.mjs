@@ -6,10 +6,11 @@
  * Two builds on one machine (two checkouts, or two jobs) each run the sync. A
  * shared output directory lets one run's cleanup delete the declarations the
  * other has just emitted, which then fails with "tsc produced nothing". This
- * runs a copy of the script twice in a scratch package, with `pnpm exec tsc`
- * replaced by a stand-in that emits a stub declaration per tree, and forces the
- * losing order: the second run starts after the first has emitted and before
- * the first reads its output.
+ * runs a copy of the script twice in a scratch package whose `typescript` is a
+ * stand-in `tsc` that emits a stub declaration per tree, with nothing on PATH
+ * (the script runs `tsc` through Node, so it needs no `pnpm` there), and forces
+ * the losing order: the second run starts after the first has emitted and
+ * before the first reads its output.
  */
 
 import {spawn} from 'node:child_process';
