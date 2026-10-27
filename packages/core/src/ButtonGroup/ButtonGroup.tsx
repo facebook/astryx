@@ -21,13 +21,21 @@
  * - /packages/cli/assets/templates/blocks/components/ButtonGroup/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ButtonSize} from '../Button';
 import {radiusVars, shadowVars} from '../theme/tokens.stylex';
 import type {Elevation} from '../utils/types';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
+import {
+  actionGroupHitAreaStyles,
+  isGroupLaidOut,
+  resolveGroupHitTarget,
+  useActionGroupHitArea,
+} from '../hooks/actionGroupHitArea';
+import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
+import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
 import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
@@ -121,6 +129,13 @@ const elevationStyles = stylex.create({
 });
 
 // =============================================================================
+// Press tracking
+// =============================================================================
+
+/** The buttons the group tracks: each carries the group item marker. */
+const TRACKED_BUTTON = `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`;
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -192,21 +207,45 @@ export function ButtonGroup({
     hasRovingTabIndex: true,
   });
 
+  // The buttons are an action group (`family:action-groups`): a held
+  // pointer, a finger, a pen or a mouse, is tracked across them. The button
+  // under it highlights at once, the highlight follows it from button to
+  // button, and the lift runs the button under it through its own click;
+  // nothing runs for a lift outside the group. Each tracked button carries
+  // the group item marker (Button reads `tracksPress`), so the document press
+  // controller leaves its press to the tracker. A disabled group tracks
+  // nothing. The keyboard and assistive technology are unchanged.
+  const tracksPress = !isDisabled;
+  const groupRef = useRef<HTMLDivElement>(null);
+  useActionGroupTracking(groupRef, {
+    itemSelector: TRACKED_BUTTON,
+    // At touch-down and with no margin, as UIKit's action rows (the
+    // tracker waits the content-touch delay inside a scroller).
+    highlightOnsetMs: 0,
+    highlightExpansion: 0,
+    resolveTarget: resolveGroupHitTarget,
+    shouldTrack: () => isGroupLaidOut(groupRef.current),
+    isEnabled: tracksPress,
+  });
+  // A finger's 44 px target, without the buttons growing (FR5).
+  useActionGroupHitArea(groupRef, tracksPress);
+
   const contextValue = useMemo(
-    () => ({orientation, isDisabled}),
-    [orientation, isDisabled],
+    () => ({orientation, isDisabled, tracksPress}),
+    [orientation, isDisabled, tracksPress],
   );
 
   return (
     <ButtonGroupContext value={contextValue}>
       <SizeProvider value={size}>
         <div
-          ref={useMergedRefs(ref, listRef)}
+          ref={useMergedRefs(ref, listRef, groupRef)}
           {...props}
           {...mergeProps(
             themeProps('button-group', {size, orientation, elevation}),
             stylex.props(
               styles.group,
+              tracksPress && actionGroupHitAreaStyles.hitArea,
               orientation === 'vertical' && styles.vertical,
               elevationStyles[elevation],
               xstyle,

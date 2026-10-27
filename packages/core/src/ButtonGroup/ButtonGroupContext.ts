@@ -6,7 +6,8 @@
  * @file ButtonGroupContext.ts
  * @input Layer-scoped React context
  * @output Exports ButtonGroup context and useButtonGroup hook
- * @position Shared context; consumed by Button for group-aware styling
+ * @position Shared context; consumed by Button for group-aware styling and
+ *   the group's press tracking
  */
 
 import {use} from 'react';
@@ -17,6 +18,12 @@ export type ButtonGroupOrientation = 'horizontal' | 'vertical';
 export interface ButtonGroupContextValue {
   orientation: ButtonGroupOrientation;
   isDisabled: boolean;
+  /**
+   * Whether the group tracks a held pointer across its buttons
+   * (`family:action-groups`): each button it tracks carries the group item
+   * marker (`utils/pressFeedback.ts` PRESS_GROUP_ITEM_ATTRIBUTE).
+   */
+  tracksPress: boolean;
 }
 
 export const ButtonGroupContext = createContext<ButtonGroupContextValue | null>(

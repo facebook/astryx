@@ -10,7 +10,7 @@
  * @position Internal hook (not exported from the hooks entry): the long
  *   press that drives the shared action-group tracker
  *   (`hooks/actionGroupTracker.ts`) for a group a held pointer slides
- *   across (`family:action-groups`); consumed by AlertDialog
+ *   across (`family:action-groups`); consumed by AlertDialog and ButtonGroup
  *
  * A group of sibling actions behaves like a menu under a press
  * (`family:action-groups` FR1–FR5, `spec:AST-094` FR26–FR28): the action
