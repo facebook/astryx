@@ -30,6 +30,7 @@ import {
 } from '../../../theme/tokens.stylex';
 import {tableRowMarker} from '../../table.stylex';
 import {panelDividerFor} from '../../rowDivider';
+import {useTheme} from '../../../theme/useTheme';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
@@ -357,6 +358,9 @@ function ExpansionPanelCell({
   const ctx = useTableContext();
   const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
   const cellRef = useRef<HTMLTableCellElement>(null);
+  // Re-rendered when the colour mode changes (a Theme's mode, or the
+  // operating system's under `system`), so the carried colour is read again.
+  useTheme();
   // The panel carries its row's divider (a theme's `table-cell` border or an
   // app's own never reach this cell, which is not one of the row's cells).
   // Read after each commit; written only when it differs.
