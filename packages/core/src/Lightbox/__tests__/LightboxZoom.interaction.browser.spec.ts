@@ -56,7 +56,7 @@ import {
   type TouchFrame,
   type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside} from './screenSignal';
+import {cadenceOutside, presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -767,7 +767,9 @@ test('the double-tap zoom keeps advancing every frame while the main thread is b
   expect(proof.medianFrameMs).toBeLessThanOrEqual(
     Math.max(20, cadence * (browserName === 'webkit' ? 1.5 : 1.15)),
   );
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.frames).toBeGreaterThanOrEqual(
+    presentedFramesExpected(proof) - 2,
+  );
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
   expect(proof.longestStallMs).toBeLessThan(cadence * 2.5);
   expect(proof.monotonic).toBe(true);
