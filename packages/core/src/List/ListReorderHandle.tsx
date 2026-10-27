@@ -131,13 +131,15 @@ const styles = stylex.create({
     // Where the primary pointer is coarse: until the hold claims the drag,
     // the page keeps its scrolling and its pinch-zoom (a flick on the handle
     // scrolls, as on iOS): `manipulation`, what a long press leaves the
-    // browser (spec:AST-094 FR18). No text selection under a held finger: the
-    // hold's selection lock holds it while the finger is down, so a mouse
-    // keeps the page's selection as it was. Where it is fine, a finger gets
-    // the browser's defaults.
+    // browser (spec:AST-094 FR18). Where it is fine, no pan: a pen drags the
+    // row at once, as a mouse does (FR43), and a pen that sends only pointer
+    // events would otherwise pan the page and cancel the drag. No text
+    // selection under a held finger: the hold's selection lock holds it while
+    // the finger is down, so a mouse keeps the page's selection as it was.
     touchAction: {
       default: null,
       '@media (pointer: coarse)': 'manipulation',
+      '@media (pointer: fine)': 'none',
     },
     WebkitTapHighlightColor: {
       default: null,

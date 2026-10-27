@@ -159,15 +159,18 @@ async function chromiumDriver(page: Page): Promise<TouchDriver> {
           // A start or move lists every finger down (CDP presses the new ones).
           // An end lists the fingers that lift: that releases exactly those
           // while the rest stay down and keep moving; the last lift lists none.
-          // (A move that omits a finger does not release it.)
+          // (A move that omits a finger does not release it.) A cancel takes
+          // every finger and lists none.
           await cdp.send('Input.dispatchTouchEvent', {
             type: step.type,
             touchPoints:
-              step.type !== 'touchEnd'
-                ? touchPoints(step.fingers)
-                : step.fingers.length > 0
-                  ? touchPoints(step.changed)
-                  : [],
+              step.type === 'touchCancel'
+                ? []
+                : step.type !== 'touchEnd'
+                  ? touchPoints(step.fingers)
+                  : step.fingers.length > 0
+                    ? touchPoints(step.changed)
+                    : [],
             timestamp: timestamp / 1000,
           });
         },
@@ -265,6 +268,13 @@ export interface InputRecord {
   readonly x?: number;
   readonly y?: number;
   readonly touches?: number;
+  /** A pointer event's pressure (a pen's, 0–1). */
+  readonly pressure?: number;
+  /** A wheel step's deltas, mode and Control key (webInput.ts). */
+  readonly deltaX?: number;
+  readonly deltaY?: number;
+  readonly deltaMode?: number;
+  readonly ctrlKey?: boolean;
   readonly target: string;
 }
 
@@ -276,20 +286,21 @@ const INPUT_LOG_SCRIPT = `(() => {
     ? node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + (node.getAttribute('aria-label') ? '[' + node.getAttribute('aria-label') + ']' : '')
     : String(node && node.nodeName);
   const types = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'touchstart', 'touchmove',
-    'touchend', 'touchcancel', 'click', 'contextmenu', 'gotpointercapture', 'lostpointercapture'];
+    'touchend', 'touchcancel', 'click', 'contextmenu', 'gotpointercapture', 'lostpointercapture', 'wheel'];
   for (const type of types) {
     // Bubble phase on window, so defaultPrevented reflects the page's own handlers.
     window.addEventListener(type, event => {
       const record = {type, timeStamp: event.timeStamp, isTrusted: event.isTrusted, cancelable: event.cancelable,
         defaultPrevented: event.defaultPrevented, target: describe(event.target)};
-      if ('pointerId' in event) Object.assign(record, {pointerId: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY});
+      if ('pointerId' in event) Object.assign(record, {pointerId: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY, pressure: event.pressure});
+      if (type === 'wheel') Object.assign(record, {deltaX: event.deltaX, deltaY: event.deltaY, deltaMode: event.deltaMode, ctrlKey: event.ctrlKey, x: event.clientX, y: event.clientY});
       if (event.touches) Object.assign(record, {touches: event.touches.length, x: event.changedTouches[0] && event.changedTouches[0].clientX, y: event.changedTouches[0] && event.changedTouches[0].clientY});
       log.push(record);
     }, {passive: true});
   }
 })()`;
 
-/** Records every pointer/touch/click the page receives (install before navigation). */
+/** Records every pointer, touch, click and wheel step the page receives (install before navigation). */
 export async function installInputLog(page: Page): Promise<void> {
   await page.addInitScript(INPUT_LOG_SCRIPT);
 }

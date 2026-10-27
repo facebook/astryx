@@ -50,20 +50,24 @@ import {
 
 /**
  * The list's hold: a finger held still for the content-touch delay on one of
- * its handles (a touch `receives` takes) picks up that handle's row.
- * Returns the detach.
+ * its handles (a touch `receives` takes) picks up that handle's row, and with
+ * `pens` a pen held still. Returns the detach.
  */
 export function attachTouchHold(
   list: HTMLElement,
   receives: (target: unknown) => boolean,
   onGesture: (recognizer: LongPressGestureRecognizer) => void,
+  pens: boolean,
 ): () => void {
   const host = getGestureHost(list.ownerDocument);
   const recognizer = new LongPressGestureRecognizer({
     name: 'List.reorder',
     minimumPressDuration: reorder.claim.delayMs,
     allowableMovement: reorder.claim.allowableMovement,
-    allowedPointerTypes: ['touch', 'pen'],
+    // A finger, and a pen where the primary pointer is coarse (the engine
+    // passes `pens`): where it is fine, a pen drags at once, as a mouse does
+    // (spec:AST-094 FR43).
+    allowedPointerTypes: pens ? ['touch', 'pen'] : ['touch'],
     // Only the touches that begin on a handle: the rest of the list's
     // touches never reach the hold.
     shouldReceiveTouch: (_recognizer, touch) => receives(touch.target),

@@ -25,7 +25,8 @@
  *   reorder adds one element to a row and no listener to a row or handle,
  *   and a List without it loads no reorder module
  * @position Tests for List/listReorderEngine.tsx, List/ListReorderHandle.tsx
- *   and reorderable/createReorderable.ts
+ *   and reorderable/createReorderable.ts; the touch and mouse drags are
+ *   proven in a real browser by ListReorder.interaction.browser.spec.ts
  */
 
 import {readFileSync} from 'node:fs';
@@ -1445,7 +1446,7 @@ describe('List reorderable', () => {
     add.mockRestore();
   });
 
-  it('attaches one hold to the list where the primary pointer is coarse, and none where it is fine', () => {
+  it('attaches one hold to the list for every pointer (spec:AST-094 FR43, FR19)', () => {
     const attached = (coarse: boolean) => {
       stubPrimaryPointer(coarse);
       const host = getGestureHost(document);
@@ -1461,10 +1462,11 @@ describe('List reorderable', () => {
     };
     const coarse = attached(true);
     expect(coarse.elements).toEqual([coarse.list]);
-    expect(attached(false).elements).toEqual([]);
+    const fine = attached(false);
+    expect(fine.elements).toEqual([fine.list]);
   });
 
-  it('listens for touches on the document only while the list is mounted', () => {
+  it('listens for presses on the document only while the list is mounted', () => {
     // A touch screen: the hold attaches where the primary pointer is coarse.
     stubPrimaryPointer(true);
     // A document of its own, so no earlier test has touched it, in a window
@@ -1476,7 +1478,10 @@ describe('List reorderable', () => {
       configurable: true,
       value: (query: string) => window.matchMedia(query),
     });
-    const touches = new Set(['touchstart', 'touchend', 'touchcancel']);
+    // The host takes a finger from pointer events where it can and from
+    // touch events where it must: either kind counts.
+    const isPress = (type: string) =>
+      type.startsWith('touch') || type.startsWith('pointer');
     const added = vi.spyOn(doc, 'addEventListener');
     const removed = vi.spyOn(doc, 'removeEventListener');
     const mount = () => {
@@ -1489,11 +1494,11 @@ describe('List reorderable', () => {
     };
     const first = mount();
     const second = mount();
-    const listeners = added.mock.calls.filter(([type]) => touches.has(type));
+    const listeners = added.mock.calls.filter(([type]) => isPress(type));
     expect(listeners.length).toBeGreaterThan(0);
     first.unmount();
     second.unmount();
-    // Every touch listener the lists put on the document went with them.
+    // Every press listener the lists put on the document went with them.
     for (const [type, listener, options] of listeners) {
       expect(
         removed.mock.calls.some(
@@ -1508,8 +1513,9 @@ describe('List reorderable', () => {
     frame.remove();
   });
 
-  it('with a fine primary pointer attaches no recognizer and registers no touch listener', () => {
-    // spec:AST-094 FR19, FR24: a finger there gets the browser's defaults.
+  it('with a fine primary pointer puts no touch listener on the page until a press', () => {
+    // spec:AST-094 FR43, FR24: the hold attaches, and the page listens only
+    // while a press on the list is down.
     stubPrimaryPointer(false);
     const doc = document.implementation.createHTMLDocument('fine');
     const added = vi.spyOn(doc, 'addEventListener');
@@ -1526,6 +1532,51 @@ describe('List reorderable', () => {
     added.mockRestore();
   });
 
+  it('a pen drags a handle at once where the primary pointer is fine, and holds where it is coarse (spec:AST-094 FR43)', () => {
+    const PEN = {...MOUSE, pointerType: 'pen'};
+    const drag = (coarse: boolean) => {
+      stubPrimaryPointer(coarse);
+      const onReorder = vi.fn();
+      const {unmount} = render(
+        <ReorderableRows initial={['A', 'B', 'C']} onReorder={onReorder} />,
+      );
+      const list = screen.getByRole('list');
+      layOut(list);
+      const handle = handleOf('A');
+      fireEvent.pointerDown(handle, {...PEN, clientY: 322});
+      fireEvent.pointerMove(handle, {...PEN, clientY: 322 + MOUSE_DRAG_SLOP});
+      fireEvent.pointerMove(handle, {...PEN, clientY: 322 + 70});
+      const picked =
+        list.querySelector('[data-astryx-reorder-preview]') != null;
+      act(() => {
+        fireEvent.pointerUp(handle, {...PEN, clientY: 322 + 70});
+      });
+      const moves = onReorder.mock.calls.length;
+      unmount();
+      return {picked, moves};
+    };
+    // Fine: the handle allows a pen no pan, so it drags as a mouse does.
+    expect(drag(false)).toEqual({picked: true, moves: 1});
+    // Coarse: the handle keeps the page's pan, so a pen holds first, as a
+    // finger does; one that moves at once picks nothing up.
+    expect(drag(true)).toEqual({picked: false, moves: 0});
+  });
+
+  it('starts no drag from a press that is no primary click (spec:AST-094 FR43)', () => {
+    stubPrimaryPointer(false);
+    const onReorder = vi.fn();
+    render(<ReorderableRows initial={['A', 'B', 'C']} onReorder={onReorder} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const handle = handleOf('A');
+    // A right click, as a pen's barrel button arrives.
+    const SECONDARY = {...MOUSE, button: 2};
+    fireEvent.pointerDown(handle, {...SECONDARY, clientY: 322});
+    fireEvent.pointerMove(handle, {...SECONDARY, clientY: 322 + 70});
+    expect(list.querySelector('[data-astryx-reorder-preview]')).toBeNull();
+    fireEvent.pointerUp(handle, {...SECONDARY, clientY: 322 + 70});
+    expect(onReorder).not.toHaveBeenCalled();
+  });
   it('a hold on the handle opens no row menu, and a hold elsewhere on the row opens it (spec:AST-103)', () => {
     vi.useFakeTimers();
     const show = vi.spyOn(HTMLElement.prototype, 'showPopover');

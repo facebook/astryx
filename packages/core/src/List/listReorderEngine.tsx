@@ -61,7 +61,8 @@
  * ListReorderTouch.ts, imported here alone.
  *
  * SYNC: When modified, update List/listReorderContext.ts, List/List.tsx,
- * List/ListReorderHandle.tsx and List/ListReorderTouch.ts.
+ * List/ListReorderHandle.tsx, List/ListReorderTouch.ts and
+ * List/__tests__/ListReorder.interaction.browser.spec.ts.
  */
 
 import {
@@ -96,6 +97,7 @@ import {
   releaseMotion,
 } from '../utils/rowMotion';
 import {edgeAutoscroll, type EdgeAutoscroll} from '../utils/edgeAutoscroll';
+import {isPrimaryClick} from '../utils/primaryClick';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {watchHitArea, writeHitInsets} from '../utils/hitArea';
 import {devWarn} from '../utils/devWarning';
@@ -911,19 +913,24 @@ export class ListReorderController implements ListReorderSession {
   }
 
   /**
-   * Lets a mouse drag rows by their handles: one pointerdown listener on the
-   * list, and while a press is down its move and lift listeners there too.
+   * Lets a mouse, and with `pens` a pen, drag rows by their handles at once,
+   * with no hold (spec:AST-094 FR43, spec:AST-103 FR3): one pointerdown
+   * listener on the list, and while a press is down its move and lift
+   * listeners there too. Only a primary click starts one: a right click, a
+   * pen's barrel button and a macOS ctrl-click open the row's menu instead.
    * The press is the handle's until it lifts (pointer capture), and drags
    * the row once it has moved MOUSE_DRAG_SLOP, from where it pressed.
    * Returns the detach.
    */
-  attachMouse(): () => void {
+  attachMouse(pens: boolean): () => void {
     const list = this.getList();
     if (list == null) {
       return () => {};
     }
     const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse' || event.button !== 0) {
+      const isPointer =
+        event.pointerType === 'mouse' || (pens && event.pointerType === 'pen');
+      if (!isPointer || !isPrimaryClick(event)) {
         return;
       }
       const handle = this.handleOf(event.target);
@@ -1011,12 +1018,12 @@ export class ListReorderController implements ListReorderSession {
   }
 
   /**
-   * Lets a finger held still on a handle pick up its row: one recognizer on
-   * the list, which receives only the touches that begin on its handles.
-   * Attached only where the primary pointer is coarse (spec:AST-094 FR19).
-   * Returns the detach.
+   * Lets a finger held still on a handle pick up its row, and with `pens` a
+   * pen: one recognizer on the list, which receives only the touches that
+   * begin on its handles. Attached for every pointer (spec:AST-094 FR43,
+   * FR19). Returns the detach.
    */
-  attachTouch(): () => void {
+  attachTouch(pens: boolean): () => void {
     const list = this.getList();
     if (list == null) {
       return () => {};
@@ -1060,6 +1067,7 @@ export class ListReorderController implements ListReorderSession {
           });
         }
       },
+      pens,
     );
   }
 
@@ -2023,7 +2031,14 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
       presentation: isTouch ? 'uikit' : 'theme',
     });
   });
-  useIsomorphicLayoutEffect(() => controller.attachMouse(), [controller]);
+  // A pen drags at once where the primary pointer is fine, as a mouse does,
+  // since the handle allows it no pan there; where it is coarse, the handle
+  // keeps the page's pan, so a pen holds as a finger does (an iPad Pencil's
+  // touches are claimable; spec:AST-094 FR43, FR18).
+  useIsomorphicLayoutEffect(
+    () => controller.attachMouse(!isTouch),
+    [controller, isTouch],
+  );
   // Where the object's `start` finds this list.
   useIsomorphicLayoutEffect(
     () => mountSession(options, controller),
@@ -2031,8 +2046,12 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
   );
   // The List stopped reordering, or unmounted: a drag goes home.
   useIsomorphicLayoutEffect(() => () => controller.dispose(), [controller]);
+  // The hold attaches for every pointer (spec:AST-094 FR43, FR19): a finger
+  // on a touch screen whose primary pointer is fine holds as it does on a
+  // phone; where the primary pointer is fine, the gesture host keeps one
+  // passive listener on the list until a press (FR24).
   useIsomorphicLayoutEffect(
-    () => (isTouch ? controller.attachTouch() : undefined),
+    () => controller.attachTouch(isTouch),
     [controller, isTouch],
   );
   return (
