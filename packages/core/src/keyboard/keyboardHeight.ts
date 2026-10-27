@@ -62,7 +62,7 @@
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {animatorFor, type Animator} from '../motion/animator';
-import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
+import {getKeyboardLayoutGuide, keyboardProfileOf} from './keyboardLayoutGuide';
 import {rideKeyboard} from './rideKeyboard';
 import type {KeyboardTransition} from './keyboardModel';
 import {
@@ -828,11 +828,17 @@ export function useSheetKeyboard({
     let roomRange = 0;
     // FR8: where the keyboard layout guide publishes the keyboard's own slide
     // (Gboard's, in Chrome on Android), the sheet's content rides it. Only
-    // under a coarse primary pointer: under a fine one nothing of the ride
-    // attaches, and the room follows the reports. The guide is subscribed
-    // before the keyboard module below, so a report's transition is
-    // published before the reveal reads it.
-    const guide = isTouch ? getKeyboardLayoutGuide(window) : null;
+    // under a coarse primary pointer and on Chrome's schedule: under a fine
+    // pointer nothing of the ride attaches, and on Safari's (iOS Safari,
+    // Firefox for Android) the keyboard moves on UIKit's spring, which the
+    // sheet does not ride, so the guide and its frame watch never start; the
+    // room follows the reports. The guide is subscribed before the keyboard
+    // module below, so a report's transition is published before the reveal
+    // reads it.
+    const guide =
+      isTouch && keyboardProfileOf(window) === 'chromium'
+        ? getKeyboardLayoutGuide(window)
+        : null;
     const contentAnimator = (): Animator | null => {
       const content = body.firstElementChild;
       return guide != null && content instanceof HTMLElement
