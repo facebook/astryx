@@ -2008,16 +2008,19 @@ test.describe('bottom accessory', () => {
     const moving = accessory(page);
     await markElement(moving);
     const cast = await startScreencast(page);
+    // Armed before the scroll, the page blocks itself in the frame that sees
+    // the move running: one evaluate sees it and blocks, so no runner latency
+    // between the two can eat the short move first. The judged part ends
+    // where the accessory settles (settledWithin).
+    const blocking = blockMainThread(page, 600, {during: moving});
     await scrollByFinger(page, driver, 100, {settle: false});
-    const [move] = await waitForAnimation(moving, {minProgressMs: 16});
-    // Blocked by the page itself in the frame that sees the move running.
-    const block = await blockMainThread(page, 600, {during: moving});
+    const block = await blocking;
     await page.waitForTimeout(150);
     const castFrames = await cast.stop();
     const tracked = await trackMarker(page, castFrames);
     const proof = busyWindowProof(
       tracked,
-      {from: block.from, to: Math.min(block.to, move.to)},
+      {from: block.from, to: block.to},
       {
         axis: 'y',
         settledWithin: 2,
