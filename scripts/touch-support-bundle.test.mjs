@@ -7,8 +7,9 @@
  *   the CLI's docs; core's and Lab's component source
  * @output Pins architecture:react-component-runtime INV13's bundle and
  *   boundary claims: a public import of Core (each subpath, and each hook on
- *   its own) carries none of the gesture code unless it uses a gesture itself,
- *   and a failure names the import chain that brings it; the root entry
+ *   its own) carries none of the gesture code unless it is listed as using a
+ *   gesture, Button and TextInput never do, and a failure names the import
+ *   chain that brings it; the root entry
  *   carries only the gesture code its touch components import; two components
  *   that import the touch module share one copy per page; only the internal
  *   `internal/touch` entry reaches it, and no consumer doc or component
@@ -112,11 +113,46 @@ function filesUnder(dir, pattern) {
 }
 
 /**
- * The public imports allowed to carry the gesture code: those that use a
- * gesture themselves. Each is named here, so an import that starts carrying
- * it shows up in review. Empty while no public import uses one.
+ * The public imports that may carry the gesture code: those that use a
+ * gesture, or reach one through a component that does. Each is named here, so
+ * an import that starts carrying it shows up in review. An entry only allows:
+ * one that carries nothing yet passes, so a component is listed before its
+ * touch work lands.
  */
-const GESTURE_USERS = new Set([]);
+const GESTURE_USERS = new Set([
+  // AppShell's scroll-edge bar.
+  'AppShell',
+  // Slider's thumb.
+  'Slider',
+  // The List reorder, through createReorderable.
+  'reorderable',
+  // DateInput's and TimeInput's wheel, and the imports that reach it.
+  'DateInput',
+  'DateTimeInput',
+  'PowerSearch',
+  'Table',
+  'TimeInput',
+  // useScrollLock's page hold, and the layered components that reach it.
+  'hooks: useScrollLock',
+  'Layer',
+  'AlertDialog',
+  'BottomSheet',
+  'CommandPalette',
+  'ContextMenu',
+  'Dialog',
+  'Drawer',
+  'DropdownMenu',
+  'Lightbox',
+  'Markdown',
+  'MoreMenu',
+  'MultiSelector',
+  'Pagination',
+  'Popover',
+  'Selector',
+]);
+
+/** Public imports that carry no gesture code, whatever the list above says. */
+const NEVER_GESTURE_USERS = ['Button', 'TextInput'];
 
 /**
  * Each public import of Core, built alone as the size report builds one:
@@ -248,6 +284,20 @@ describe('the touch module in bundles', () => {
                 `${input.replace('packages/core/src/', '')} ${size} B`,
             )
             .join(', ')} (via ${chain})`,
+      ),
+    ).toEqual([]);
+  }, 120_000);
+
+  it('is in none of the imports that never use a gesture', async () => {
+    const strict = publicImports().filter(({name}) =>
+      NEVER_GESTURE_USERS.includes(name),
+    );
+    expect(strict.map(({name}) => name).sort()).toEqual(
+      [...NEVER_GESTURE_USERS].sort(),
+    );
+    expect(
+      (await gestureCarriers(strict)).map(
+        ({name, chain}) => `${name} (via ${chain})`,
       ),
     ).toEqual([]);
   }, 120_000);
