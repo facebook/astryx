@@ -30,6 +30,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
+import {renderPage, renderUntilClean} from './lib/cdn-page-render.mjs';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
 const ROOT = path.resolve(
@@ -147,53 +148,14 @@ const server = http.createServer((req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
 
-/** Load the page once and report everything that went wrong. */
-async function render() {
-  const consoleErrors = [];
-  const pageErrors = [];
-  const failedRequests = [];
-
-  const browser = await chromium.launch();
-  try {
-    const page = await browser.newPage();
-    page.on('console', m => {
-      if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300));
-    });
-    page.on('pageerror', e => pageErrors.push(String(e).slice(0, 300)));
-    page.on('requestfailed', r =>
-      failedRequests.push(`${r.url()} :: ${r.failure()?.errorText}`),
-    );
-    page.on('response', r => {
-      if (r.status() >= 400) failedRequests.push(`${r.status()} ${r.url()}`);
-    });
-
-    await page.goto(url, {waitUntil: 'networkidle', timeout: 90_000});
-    // A page that throws during render still reaches networkidle with an empty
-    // root, so the render itself has to be asserted, not just the error streams.
-    const button = await page
-      .getByRole('button')
-      .first()
-      .textContent({timeout: 15_000})
-      .catch(() => null);
-
-    return {consoleErrors, pageErrors, failedRequests, button};
-  } finally {
-    await browser.close();
-  }
-}
-
 // ── 5. Render, retrying once so a blip at a CDN is not a red build ───────────
-let result;
-for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-  result = await render();
-  const clean =
-    result.consoleErrors.length === 0 &&
-    result.pageErrors.length === 0 &&
-    result.failedRequests.length === 0 &&
-    result.button;
-  if (clean) break;
-  if (attempt < ATTEMPTS) console.log(`  retry ${attempt} of ${ATTEMPTS - 1}`);
-}
+const result = await renderUntilClean(
+  () => renderPage(url, {launch: () => chromium.launch()}),
+  {
+    attempts: ATTEMPTS,
+    onRetry: attempt => console.log(`  retry ${attempt} of ${ATTEMPTS - 1}`),
+  },
+);
 server.close();
 
 // ── 6. Report ────────────────────────────────────────────────────────────────
