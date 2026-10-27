@@ -2286,6 +2286,43 @@ describe('BottomSheet', () => {
       });
     });
 
+    it('subscribes no keyboard layout guide where the keyboard moves on Safari\u2019s schedule, whose transitions the sheet never rides (spec:AST-099 FR8)', () => {
+      // iOS Safari and Firefox for Android have no VirtualKeyboard API, so the
+      // guide reads Safari's profile there: it would watch frames after each
+      // focus for transitions on UIKit's keyboard spring, which the sheet
+      // drops. Only a slide rides (Chrome's profile).
+      mockWindowHeight(800);
+      const viewport = mockVisualViewport(800);
+      mockIOSWebKit();
+      const guide = getKeyboardLayoutGuide(window);
+      const subscribe = vi.spyOn(guide, 'subscribe');
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 660, bottom: 700}),
+      );
+      act(() => input.focus());
+      viewport.height = 500;
+      void act(() => viewport.dispatchEvent(new Event('resize')));
+      // The room follows the keyboard's report (FR3)...
+      expect(keyboardInsetOf(body)).toBe(348);
+      // ...and nothing subscribed the guide, so no frame watch runs.
+      expect(subscribe).not.toHaveBeenCalled();
+      subscribe.mockRestore();
+    });
+
     it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {
       // WebKit reports innerWidth and innerHeight in the zoomed visual
       // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
