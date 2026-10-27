@@ -12,8 +12,10 @@
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
  *   zoom transition between a source, `sourceFor`, and the photo), zoomStage's chrome
- *   curves (a tap on the photo hides the controls, as Photos' chrome) and pinch-close
- *   fades (a pinch in from the fitted size closes the viewer)
+ *   curves (a tap on the photo hides the controls, as Photos' chrome), pinch-close
+ *   fades (a pinch in from the fitted size closes the viewer) and holdInput (the Layer
+ *   module's input hold: a touch opening holds taps and drags until it ends,
+ *   spec:AST-094 FR35)
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -62,6 +64,7 @@ import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {holdInput} from '../Layer/inputHold';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {useTranslator} from '../i18n';
 
@@ -1196,6 +1199,8 @@ export function Lightbox({
   const closeTokenRef = useRef(0);
   const openTokenRef = useRef(0);
   const openTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Ends the touch entrance's input hold (spec:AST-094 FR35) while one runs.
+  const endEntranceRef = useRef<(() => void) | null>(null);
   // Aborts the transition in flight: its thumbnail shows again and its
   // portal goes (an unmount mid-transition).
   const transitionAbortRef = useRef<AbortController | null>(null);
@@ -1207,6 +1212,7 @@ export function Lightbox({
       openTokenRef.current += 1;
       closeTokenRef.current += 1;
       clearTimeout(openTimerRef.current);
+      endEntranceRef.current?.();
       transitionAbortRef.current?.abort();
       restoreLanded();
     },
@@ -1289,6 +1295,17 @@ export function Lightbox({
         '[data-current] img, :scope > [data-lightbox-media] img',
       );
       if (source != null && container != null && img != null) {
+        // Under a finger, a tap or a drag that lands while the viewer
+        // enters is held until the opening ends, as UIKit delivers no touch
+        // while a presentation runs (spec:AST-094 FR35): the Layer module's
+        // hold, which leaves keys and assistive technology live.
+        endEntranceRef.current?.();
+        let endEntrance = () => {};
+        const entering = new Promise<void>(resolve => {
+          endEntrance = resolve;
+        });
+        endEntranceRef.current = endEntrance;
+        holdInput(dialog, {until: entering, scope: 'viewport'});
         const token = ++openTokenRef.current;
         const start = () => {
           if (openTokenRef.current !== token) {
@@ -1311,6 +1328,9 @@ export function Lightbox({
           next.release();
           if (opening != null) {
             markFaded(fades);
+            void opening.then(endEntrance, endEntrance);
+          } else {
+            endEntrance();
           }
         };
         if (img.complete && img.naturalWidth > 0) {
@@ -1327,9 +1347,12 @@ export function Lightbox({
       }
       return;
     }
-    // A zoom-in still waiting for its photo is called off.
+    // A zoom-in still waiting for its photo is called off, and so is the
+    // entrance's hold: a close (an Escape mid-opening) ends the entrance.
     openTokenRef.current += 1;
     clearTimeout(openTimerRef.current);
+    endEntranceRef.current?.();
+    endEntranceRef.current = null;
     if (!dialog.open) {
       return;
     }
