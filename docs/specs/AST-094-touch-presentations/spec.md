@@ -42,8 +42,9 @@ a measured, sourced difference exists.
 
 ## Non-goals
 
-- Pointer (desktop) presentations. Their timing and easing stay with the
-  theme's duration and easing tokens (`architecture:theme-tokens`).
+- Pointer (desktop) presentations' timing and easing, which stay with the
+  theme's duration and easing tokens (`architecture:theme-tokens`). Gestures
+  and press tracking themselves apply to every pointer (FR43).
 - Platform-matched look and feel: glass versus material surfaces, glyphs and
   chrome. This record governs behavior only.
 - WebKit embedded in a native app and the native Swift package. This record
@@ -186,6 +187,8 @@ a measured, sourced difference exists.
   views and activates by the browser's click on a lift inside. On the web a
   control's press ends when the browser takes the touch (FR20), and its
   activation stays the browser's click.
+  Under a fine pointer a control uses a third profile with no delay: its
+  press paints at press-down and clears at the release (DEC-21).
   A cell (a table or collection cell) highlights 150 ms after touch-down inside
   a scroll view, drops the highlight when the scroll wins (FR20), and activates on a
   lift inside it with no scroll taking the touch (FR20). A control is inside a scroll view when it sits in a scrollable container,
@@ -257,11 +260,8 @@ a measured, sourced difference exists.
   decides at 15 px of travel (UIKit's screen-edge hysteresis); outside the
   band the author's scrolling is untouched, and FR19's 10 px governs every
   other claim (DEC-13).
-- **FR19 — Claims are made in time and only by an owner.** Recognizers attach only where the primary pointer
-  is coarse (FR13, DEC-6). Where the primary pointer is fine, no recognizer
-  attaches and no touch listener is registered (FR24), so a finger on a
-  touchscreen whose primary pointer is fine gets the browser's defaults for
-  this record's behaviors (`spec:AST-017` FR59, DEC-25). This rule governs
+- **FR19 — Claims are made in time and only by an owner.** Recognizers attach for every pointer, with FR43's
+  exceptions. This rule governs
   this record's behaviors only; `spec:AST-057` keeps its per-event pointer
   read for the row swipe, as its record states. A recognizer that begins MUST claim its touches by cancelling
   `touchmove` through a non-passive listener on its element; a watcher,
@@ -307,13 +307,11 @@ a measured, sourced difference exists.
 
 FR26–FR28 and FR30 apply to every surface that carries the press model of
 `module:DropdownMenu/useMenuPress` (DropdownMenu, ContextMenu, their sub-menus,
-and Selector's listbox, whose options count as rows) when a finger or pen
-drives it and the primary pointer is coarse (FR19); where the primary pointer
-is fine, a finger in a menu keeps today's behavior (`spec:AST-017` FR59,
-DEC-25), and menus make no per-gesture pointer read; FR29 applies to DropdownMenu's trigger under the same
+and Selector's listbox, whose options count as rows) under every pointer
+(FR43); FR29 applies to DropdownMenu's trigger under the same
 condition; FR34 applies to menus;
 FR31 and FR35 apply to anchored menus and to Popover under a finger; FR32 and
-FR33 apply to menus only. A mouse keeps today's behavior.
+FR33 apply to menus only.
 
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
   it, never because the press began on it; a press that never left its row is
@@ -442,11 +440,11 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 
 ### Resources and compatibility
 
-- **FR24 — Touch work costs nothing where it is not used.** Where the
-  primary pointer is fine (FR19), and while a touch presentation is
-  disabled, no touch-only listener, observer or timer is active, except the
-  released `module:DropdownMenu/useMenuPress` behavior a finger keeps there
-  (its FR9). The number of `document`- or `window`-level
+- **FR24 — Gesture work costs nothing where it is not used.** A component
+  that uses no gesture registers no gesture listener, observer or timer, and
+  while a touch presentation is disabled none is active. Under a fine pointer
+  a component that uses a gesture keeps one listener on its element and adds
+  document listeners only during a press, removing them at the release (FR43). The number of `document`- or `window`-level
   touch listeners MUST NOT grow with the number of component instances, a
   repeated row or cell adds no touch observer of its own, and nothing
   touch-related remains after the last instance unmounts
@@ -463,6 +461,19 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   (FR29).
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
+
+- **FR43 — Gestures work on the web.** Gestures attach for every pointer, a
+  mouse, a pen, and a finger, not only a coarse primary pointer. These stay
+  off: swipe actions under a mouse, which would take the browser's text
+  selection and native drag (`spec:AST-057` AR2); a pinch under a pen; the
+  screen-edge pan on every web input; and the 44 px touch target, which stays
+  coarse-only and never overlaps a neighbor's target. On the web, a pan also
+  takes wheel and trackpad scrolling; a pinch takes a ctrl-wheel; one shared
+  context request answers a long press, a right click, and Shift+F10; the
+  press model has a fine-pointer profile with no delay (FR11); and a reorder
+  starts on a drag from its handle without a hold. Under a fine pointer only a
+  component that uses a gesture listens (FR24), and the change adds no
+  stylesheet bytes (`spec:AST-080` FR8) (DEC-21).
 
 ### Platform support
 
@@ -551,6 +562,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                                                                                                                                                                                                                                                                                                                                                                    | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a pinch blocked other than by the author's `touch-action`, or a changed mouse path fails                                                                                                                                                                                                                      |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                                                                                                                                                                                                                                                                                                                                                                          | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                                                                                                                                                                                                                                    |
 | FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a DropdownMenu trigger the caller renders, a row with a context menu, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                                                                                                                                                                                                                                                                                                                             | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                                                                                                                                                                     |
+| FR43            | Browser tests with a mouse, a trackpad, a pen, a finger, and the keyboard, and resource counts                                 | a pan by drag and by wheel; a ctrl-wheel pinch; a long press, a right click, and Shift+F10; a mouse press; a handle drag; a row swipe with a mouse and a trackpad; a component with no gesture                                                                                                                                                                                                                                                                                                                                                                                | a gesture missing under a mouse or pen, a mouse swipe action, a pen pinch, a web edge pan, a press delay under a fine pointer, an idle listener in a component with no gesture, or added stylesheet bytes, fails                                                                                                                                                                                                                                                                   |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ## Decision log
@@ -701,6 +713,21 @@ rows likewise highlight on touch-down is a guess until a short UIMenu on the
 iOS 26.2 simulator measures it.
 
 Rejected: the 150 ms delay on every menu row.
+
+### DEC-21 — Gestures work on the web, not only under a finger
+
+**Reference:** `spec:AST-094/DEC-21`
+**Decider:** `cixzhang`, `2026-10-26`
+
+Most of these gestures work as well with a mouse, a trackpad, or a pen, so
+they stay on for every pointer, with web inputs mapped in: wheel and trackpad
+scrolling for a pan, a ctrl-wheel for a pinch, and right click or Shift+F10
+for a long press. What would fight the browser stays off: a mouse's swipe
+actions, a pen's pinch, and the screen-edge pan. The 44 px target stays
+touch-only. This supersedes the coarse-only press controller: a mouse press
+now uses the press model with no delay instead of the browser's `:active`.
+
+Rejected: keeping gestures and press tracking touch-only.
 
 ## Open questions
 

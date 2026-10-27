@@ -247,9 +247,11 @@ constants.
   activate it; while closed the panel MUST be out of the accessibility tree
   and the tab order. Under `commit` the panel MUST be presentational
   (`aria-hidden`) at all times, because nothing in it is ever tappable.
-- **AR2 — The gesture touches nothing on a pointer that can hover.**
-  `swipeActions` MUST have no effect on the tab order, the accessible tree,
-  or the row's paint on such a pointer. Hover MUST NOT uncover the panel.
+- **AR2 — A mouse never swipes a row.** On a pointer that can hover,
+  `swipeActions` MUST have no effect on the tab order or the accessible tree,
+  a mouse drag MUST NOT reveal the panel, and hover MUST NOT uncover it. A
+  trackpad's horizontal scroll swipe MAY reveal the panel, as a pan that takes
+  trackpad scrolling (`spec:AST-094` FR43).
 - **AR3 — The row's primary stays one tab stop.** `swipeActions` MUST NOT
   change the primary element's role, name, or activation, and MUST add no
   stop while closed.

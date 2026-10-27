@@ -183,9 +183,10 @@ those contracts.
   keeps one copy per page however many components use them. There is no
   install call, no public entry, and no public installed check; tests reset
   the modules through an internal hook only. A component's own touch logic is
-  small glue in its own build over these modules. Where the primary pointer
-  is fine, no recognizer attaches and no touch listener is registered
-  (`spec:AST-094` FR19, FR24). The modules are not public exports and are not
+  small glue in its own build over these modules. The gesture host attaches for
+  every pointer, with no touch-only query, and pointer and hover queries live
+  with the environment queries; under a fine pointer only a component that
+  uses a gesture listens (`spec:AST-094` FR19, FR24, FR43). The modules are not public exports and are not
   documented for consumers; Core and Lab components reach them through
   `@astryxdesign/core/internal/touch`, a subpath reserved for Astryx's own
   packages: undocumented, outside the compatibility promise, versioned in
