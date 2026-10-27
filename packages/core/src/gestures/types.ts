@@ -21,6 +21,13 @@ export type GestureState =
 /** What made the contact. A pen on an iPad is `pen`, not `touch`. */
 export type PointerKind = 'touch' | 'mouse' | 'pen';
 
+/**
+ * Scroll input a recognizer can take, as UIKit's `UIScrollTypeMask`: a
+ * trackpad's two-finger scroll or pinch (`continuous`), or a mouse wheel's
+ * notches (`discrete`).
+ */
+export type ScrollType = 'continuous' | 'discrete';
+
 export interface Point {
   readonly x: number;
   readonly y: number;
@@ -85,15 +92,10 @@ export interface GestureTouch {
   readonly target: unknown;
   /** The native scrollers under the contact, when the host knows them. */
   readonly scroll: NativeScrollProbe | null;
+  /** Set for a wheel's or a trackpad's scroll input, which is no contact. */
+  readonly scrollType?: ScrollType;
   /** The browser took this contact for its own pan or zoom. */
   takenByBrowser: boolean;
-  /**
-   * A finger delivered where the primary pointer is fine, which only a
-   * per-event press tracker hears (an FR19 exception for press feedback
-   * only, pending in `spec:AST-094`'s amendment): the tracker paints its
-   * press and reports no control event.
-   */
-  readonly isFeedbackOnly?: boolean;
 }
 
 /** The input a host hands the arena for one contact in one event. */
@@ -111,8 +113,8 @@ export interface TouchBeganInput extends TouchInput {
   readonly pointerType: PointerKind;
   readonly target: unknown;
   readonly scroll?: NativeScrollProbe | null;
-  /** See GestureTouch.isFeedbackOnly. */
-  readonly isFeedbackOnly?: boolean;
+  /** Set for a wheel's or a trackpad's scroll input (FR43). */
+  readonly scrollType?: ScrollType;
 }
 
 /** What a recognizer is told alongside the touches that changed. */

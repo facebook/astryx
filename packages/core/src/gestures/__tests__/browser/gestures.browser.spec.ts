@@ -10,8 +10,9 @@
  *   owns the finger, native scrolling untouched otherwise, click suppression
  *   with no ghost click, a drag that began as a scroll staying the browser's, pinch-zoom
  *   left to the browser, a second finger that never breaks the first,
- *   timing taken from event timestamps under a blocked main thread, nothing
- *   attached where the primary pointer is fine or a recognizer is disabled,
+ *   timing taken from event timestamps under a blocked main thread, gestures
+ *   for every pointer with nothing listening while idle where the primary
+ *   pointer is fine, nothing for a disabled recognizer,
  *   and a held finger's selection lock only where the hold takes the touch
  * @position Browser tests of packages/core/src/gestures (see
  *   playwright.config.ts beside this file). WebKit's Linux build cannot
@@ -23,6 +24,7 @@
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
+import {webInputDriver, WHEEL_SKIP} from '@astryxdesign/interaction-harness';
 import {expect, test, type Page} from '@playwright/test';
 
 interface Entry {
@@ -686,7 +688,7 @@ test('a control that keeps its press through a drag holds the page still and sta
   expect(kept).not.toContain('touchCancel');
 });
 
-test('where the primary pointer is fine, the host writes no touch-action and registers no touch listener (spec:AST-094 FR19, FR24)', async ({
+test('where the primary pointer is fine, the host still writes touch-action, leaves the page no listener while idle, and pans with a mouse (spec:AST-094 FR43, FR24)', async ({
   browser,
 }) => {
   // A desktop: a mouse is the primary pointer.
@@ -705,20 +707,38 @@ test('where the primary pointer is fine, the host writes no touch-action and reg
         window.__api;
       document.body.innerHTML =
         '<div id="drag" style="height: 80px">drag</div><div id="hold" style="height: 80px">hold</div>';
-      host.attach(
-        document.getElementById('drag') as HTMLElement,
-        new PanGestureRecognizer({direction: 'horizontal'}),
-      );
+      const pan = new PanGestureRecognizer({direction: 'horizontal'});
+      const states: string[] = [];
+      (window as unknown as {__panStates: string[]}).__panStates = states;
+      pan.addTransitionListener((_current, _from, to) => states.push(to));
+      host.attach(document.getElementById('drag') as HTMLElement, pan);
       host.attach(
         document.getElementById('hold') as HTMLElement,
         new LongPressGestureRecognizer(),
       );
     });
+    // A touchscreen laptop's finger needs the same touch-action as a phone's.
     expect(await footprint(page, 'drag')).toEqual({
-      touchAction: '',
+      touchAction: 'pan-y pinch-zoom',
       pageTouchListeners: 0,
     });
-    expect((await footprint(page, 'hold')).touchAction).toBe('');
+    expect((await footprint(page, 'hold')).touchAction).toBe('manipulation');
+    // A real mouse drag pans; the page's listeners last only the press.
+    const box = await page.locator('#drag').boundingBox();
+    if (box == null) {
+      throw new Error('no box for #drag');
+    }
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + 20, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 100, y, {steps: 8});
+    await page.mouse.up();
+    const states = await page.evaluate(
+      () => (window as unknown as {__panStates: string[]}).__panStates,
+    );
+    expect(states[0]).toBe('began');
+    expect(states).toContain('ended');
+    expect((await footprint(page, 'drag')).pageTouchListeners).toBe(0);
   } finally {
     await context.close();
   }
@@ -1150,7 +1170,216 @@ test('a long press begins at touch-down + 500 ms on the event clock, even when t
 test.describe('where the primary pointer is fine', () => {
   test.use({hasTouch: false, isMobile: false});
 
-  test('the host registers no touch listener and writes no style, though the page attaches recognizers (spec:AST-094 FR19)', async ({
+  test("a mouse drag a pan claimed selects no page text, though it carries past the pan's element over text (spec:AST-094 FR43, FR41)", async ({
+    page,
+  }) => {
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bareBundle});
+    await page.evaluate(() => {
+      const {host, PanGestureRecognizer} = window.__api;
+      document.body.style.font = '16px sans-serif';
+      document.body.innerHTML =
+        '<h1 id="heading">A story heading with words</h1><p>A description with several words in it.</p><button>One</button><button>Two</button><div id="card" style="margin-top: 24px; width: 320px; height: 120px; background: #ccd">Card text a drag would select</div><p>Text below the card, with words.</p>';
+      host.attach(
+        document.getElementById('card') as HTMLElement,
+        new PanGestureRecognizer(),
+      );
+    });
+    const card = await page.locator('#card').boundingBox();
+    if (card == null) {
+      throw new Error('no box for #card');
+    }
+    const x = card.x + 40;
+    const y = card.y + card.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    // Past the pan's start, then up over the text above the card.
+    await page.mouse.move(x + 30, y - 10, {steps: 4});
+    await page.mouse.move(x + 60, card.y - 80, {steps: 12});
+    // selectionchange is dispatched as its own task: read the page once it
+    // has run, as the next frame would paint it.
+    const during = await page.evaluate(
+      async () =>
+        new Promise<string>(resolve => {
+          requestAnimationFrame(() =>
+            resolve(String(window.getSelection() ?? '').trim()),
+          );
+        }),
+    );
+    await page.mouse.up();
+    const after = await page.evaluate(() =>
+      String(window.getSelection() ?? '').trim(),
+    );
+    expect([during, after]).toEqual(['', '']);
+  });
+
+  test('a scroll-edge pan takes a trackpad scroll only at the top of the page that scrolls it, pulling the content down; mid-page the page scrolls (spec:AST-094 FR43, FR19)', async ({
+    page,
+  }) => {
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body style="margin: 0"></body>',
+    );
+    await page.addScriptTag({content: bareBundle});
+    await page.evaluate(() => {
+      const {host, PanGestureRecognizer} = window.__api;
+      document.body.innerHTML =
+        '<div id="content" style="height: 3000px; width: 300px">content</div>';
+      const pull = new PanGestureRecognizer({
+        direction: 'vertical',
+        scrollEdge: true,
+        allowedPointerTypes: [],
+        allowedScrollTypes: ['continuous'],
+      });
+      pull.addTransitionListener((_recognizer, _from, to) =>
+        window.__wheelLog.push(`pull:${to}`),
+      );
+      host.attach(document.getElementById('content') as HTMLElement, pull);
+    });
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const at = {x: 100, y: 200};
+    // Mid-page, a scroll up is the page's.
+    await page.evaluate(() => window.scrollTo(0, 400));
+    await page.waitForTimeout(100);
+    for (let step = 0; step < 4; step += 1) {
+      await driver.wheel({...at, dy: -16});
+    }
+    await page.waitForTimeout(250);
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThan(400);
+    expect(await page.evaluate(() => window.__wheelLog)).toEqual([]);
+    // At the top, scrolling down is the page's too.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(100);
+    await driver.wheel({...at, dy: 16});
+    await page.waitForTimeout(250);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__wheelLog)).toEqual([]);
+    // At the top, pulling the content down: the pan's, and the page holds.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(100);
+    for (let step = 0; step < 4; step += 1) {
+      await driver.wheel({...at, dy: -16});
+    }
+    await page.waitForTimeout(250);
+    const pull = await page.evaluate(() => window.__wheelLog);
+    expect(pull[0]).toBe('pull:began');
+    expect(pull).toContain('pull:ended');
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test('a wheel gesture stays with the pan that took it when the pan moves its element from under a still cursor, as a browser latches a scroller (spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bareBundle});
+    await page.evaluate(() => {
+      const {host, PanGestureRecognizer} = window.__api;
+      document.body.innerHTML =
+        '<div id="wrapper" style="height: 120px; width: 400px"><div id="card" style="height: 120px; width: 60px; background: #ccc">card</div></div><div style="height: 10px; width: 3000px"></div>';
+      const card = document.getElementById('card') as HTMLElement;
+      const pan = new PanGestureRecognizer({
+        direction: 'horizontal',
+        allowedScrollTypes: ['continuous'],
+      });
+      // The card follows the pan, as a swipe would move it.
+      pan.addTransitionListener((_recognizer, _from, to) => {
+        card.style.transform = `translateX(${pan.translation().x}px)`;
+        window.__wheelLog.push(`pan:${to}:${Math.round(pan.translation().x)}`);
+      });
+      host.attach(card, pan);
+    });
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const card = await center(page, 'card');
+    // Six 16 px steps at a still cursor: the card leaves it after two.
+    for (let step = 0; step < 6; step += 1) {
+      await driver.wheel({...card, dx: 16});
+    }
+    await page.waitForTimeout(250);
+    const pan = await page.evaluate(() =>
+      window.__wheelLog.filter(entry => entry.startsWith('pan:')),
+    );
+    const moved = pan.filter(entry => entry.startsWith('pan:changed:'));
+    // Every step after the first moved the card, and none scrolled the page.
+    expect(moved).toHaveLength(5);
+    expect(pan.slice(-2).map(entry => entry.split(':')[1])).toEqual([
+      'ended',
+      'possible',
+    ]);
+    expect(await page.evaluate(() => window.scrollX)).toBe(0);
+  });
+
+  test('a pan that allows scroll input follows a real wheel along its axis and keeps the page still, a wheel across it scrolls the page, and a pinch follows a ctrl-wheel (spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bareBundle});
+    await page.evaluate(() => {
+      const {host, PanGestureRecognizer, PinchGestureRecognizer} = window.__api;
+      document.body.innerHTML =
+        '<div id="strip" style="height: 120px; width: 300px">strip</div><div id="photo" style="height: 120px; width: 300px">photo</div><div style="height: 3000px; width: 3000px"></div>';
+      const pan = new PanGestureRecognizer({
+        direction: 'horizontal',
+        allowedScrollTypes: ['continuous', 'discrete'],
+      });
+      pan.addTransitionListener((_recognizer, _from, to) =>
+        window.__wheelLog.push(`pan:${to}:${Math.round(pan.translation().x)}`),
+      );
+      host.attach(document.getElementById('strip') as HTMLElement, pan);
+      const pinch = new PinchGestureRecognizer();
+      pinch.addTransitionListener((_recognizer, _from, to) =>
+        window.__wheelLog.push(`pinch:${to}:${pinch.scale.toFixed(2)}`),
+      );
+      host.attach(document.getElementById('photo') as HTMLElement, pinch);
+    });
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const strip = await center(page, 'strip');
+    for (let step = 0; step < 6; step += 1) {
+      await driver.wheel({...strip, dx: 8});
+    }
+    await page.waitForTimeout(250);
+    const pan = await page.evaluate(() =>
+      window.__wheelLog.filter(entry => entry.startsWith('pan:')),
+    );
+    expect(pan[0]).toMatch(/^pan:began:/);
+    expect(pan.some(entry => entry.startsWith('pan:ended:'))).toBe(true);
+    // The content moves the way the fingers do: a scroll right drags it left.
+    const moved = pan.filter(entry => entry.startsWith('pan:changed:'));
+    expect(Number(moved.at(-1)?.split(':')[2])).toBeLessThan(0);
+    expect(await page.evaluate(() => window.scrollX)).toBe(0);
+    // Across the pan's axis the wheel is the page's.
+    await driver.wheel({...strip, dy: 60});
+    await page.waitForTimeout(250);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(250);
+    const photo = await center(page, 'photo');
+    for (let step = 0; step < 5; step += 1) {
+      await driver.wheel({...photo, dy: -10, ctrl: true});
+    }
+    await page.waitForTimeout(250);
+    const pinch = await page.evaluate(() =>
+      window.__wheelLog.filter(entry => entry.startsWith('pinch:')),
+    );
+    expect(pinch[0]).toMatch(/^pinch:began:/);
+    expect(pinch.some(entry => entry.startsWith('pinch:ended:'))).toBe(true);
+    expect(
+      Math.max(...pinch.map(entry => Number(entry.split(':')[2]))),
+    ).toBeGreaterThan(1);
+  });
+
+  test("the host registers no page touch listener while idle and warns for nothing, though the page attaches recognizers: an element keeps only a claiming recognizer's blocking touchmove; a mouse drag pans (spec:AST-094 FR43, FR24, FR19)", async ({
     page,
   }) => {
     const warnings: string[] = [];
@@ -1167,7 +1396,9 @@ test.describe('where the primary pointer is fine', () => {
     const seen = await page.evaluate(() => ({
       isCoarse: matchMedia('(pointer: coarse)').matches,
       page: window.__pageTouchListenersAtLoad,
-      elements: window.__listeners.map(entry => entry.id),
+      elements: window.__listeners.map(
+        entry => `${entry.id}:${entry.type}:${String(entry.passive)}`,
+      ),
       // What the host would write: none of it, in any engine's spelling.
       styles: ['hpan', 'presser', 'slider', 'card'].map(id => {
         const style = document.getElementById(id)?.style;
@@ -1178,12 +1409,45 @@ test.describe('where the primary pointer is fine', () => {
     }));
     expect(seen.isCoarse).toBe(false);
     expect(seen.page).toEqual([]);
-    expect(seen.elements).toEqual([]);
+    // Only the elements whose recognizer claims a moving finger (or keeps
+    // its press) carry a touch listener: the blocking touchmove, which FR24
+    // counts outside the one-listener budget, so a touchscreen laptop's
+    // finger claims as on a phone (FR19).
+    expect(seen.elements).toEqual(
+      [
+        'hpan',
+        'presser',
+        'pinchable',
+        'sheetBody',
+        'card',
+        'slider',
+        'switchRow',
+        'onePan',
+        'kept',
+      ].map(id => `${id}:touchmove:false`),
+    );
     expect(seen.styles).toEqual(['||', '||', '||', '||']);
-    // The page's attaches are named once, in development.
+    // Gestures attach for every pointer: nothing to warn about.
     expect(
       warnings.filter(text => text.includes('primary pointer is fine')),
-    ).toHaveLength(1);
+    ).toEqual([]);
+    // A real mouse drag pans the horizontal pan.
+    const box = await page.locator('#hpan').boundingBox();
+    if (box == null) {
+      throw new Error('no box for #hpan');
+    }
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + 20, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 120, y, {steps: 8});
+    await page.mouse.up();
+    const hpan = await page.evaluate(() =>
+      window.__gestures
+        .filter(entry => entry.name === 'hpan')
+        .map(entry => entry.state),
+    );
+    expect(hpan[0]).toBe('began');
+    expect(hpan).toContain('ended');
   });
 });
 
