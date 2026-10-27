@@ -341,6 +341,9 @@ test('a carried border follows an operating-system switch between light and dark
   // The third row's wider top border, in the border token: the pinned cells
   // above it carry its colour as values, which the mode watch reads again.
   await page.getByRole('button', {name: 'Token top border'}).click();
+  // Let the resize read that follows the border land first, so the switch
+  // below is re-read by the mode watch alone.
+  await page.waitForTimeout(200);
   await page.emulateMedia({colorScheme: 'dark'});
   for (const left of [0, 150]) {
     await scrollTo(page, left);
@@ -392,6 +395,30 @@ test("an open panel's divider follows an operating-system switch between light a
       return dark.panel === dark.row && dark.panel !== light.panel;
     })
     .toBe(true);
+});
+
+test("a carried border follows a theme switched at the same mode between the hooks' owner and the table", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName === 'webkit', WEBKIT_DOUBLE_PAINT);
+  await page.emulateMedia({colorScheme: 'light'});
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'Token top border'}).click();
+  await page.waitForTimeout(200);
+  // Another theme in the same mode, from the Theme around the table: the
+  // component that calls the hooks does not re-render.
+  await page.getByRole('button', {name: 'Theme stone'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await expect
+      .poll(async () => {
+        const {pinned, unpinned} = await dividerPixels(page, 1);
+        return sameColumn(pinned, unpinned, 12);
+      }, `at ${left}px`)
+      .toBe(true);
+  }
 });
 
 test("an open panel's carried override follows an operating-system switch between light and dark", async ({

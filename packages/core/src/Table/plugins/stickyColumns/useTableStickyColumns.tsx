@@ -33,7 +33,7 @@ import type {
 } from '../../types';
 import {resolveColumnFloorWidths} from '../../columnUtils';
 import {collapsedBottom} from '../../rowDivider';
-import {useTheme} from '../../../theme/useTheme';
+import {useTheme, useThemeName} from '../../../theme/useTheme';
 
 // =============================================================================
 // Config
@@ -398,10 +398,11 @@ function syncPinnedDividers(
 }
 
 /**
- * Rendered inside the table: when the colour mode around it changes (a
- * Theme's mode, wherever that Theme sits above the table, or the operating
- * system's under `system`), the colours resolve again with no commit of the
- * hook's owner, so the pinned dividers' carried borders are read again.
+ * Rendered inside the table: when the colour mode or the theme around it
+ * changes (a Theme's, wherever that Theme sits above the table, or the
+ * operating system's mode under `system`), the colours resolve again with no
+ * commit of the hook's owner, so the pinned dividers' carried borders are
+ * read again.
  */
 function PinnedDividerModeWatch({
   refreshRef,
@@ -409,13 +410,15 @@ function PinnedDividerModeWatch({
   refreshRef: RefObject<(() => void) | null>;
 }) {
   const {mode} = useTheme();
-  const modeRef = useRef(mode);
+  const themeName = useThemeName();
+  const lastRef = useRef({mode, themeName});
   useLayoutEffect(() => {
-    if (modeRef.current !== mode) {
-      modeRef.current = mode;
+    const last = lastRef.current;
+    if (last.mode !== mode || last.themeName !== themeName) {
+      lastRef.current = {mode, themeName};
       refreshRef.current?.();
     }
-  }, [mode, refreshRef]);
+  }, [mode, themeName, refreshRef]);
   return null;
 }
 

@@ -11,6 +11,7 @@ import {
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {Theme} from '@astryxdesign/core/theme';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {stoneTheme} from '@astryxdesign/theme-stone';
 
 // =============================================================================
 // Sample Data — wide enough to require horizontal scroll
@@ -182,11 +183,17 @@ export const PinnedDividers: Story = {
  */
 function ThemeAroundTable({children}: {children: React.ReactNode}) {
   const [isDark, setIsDark] = useState(false);
+  const [isStone, setIsStone] = useState(false);
   return (
-    <Theme theme={neutralTheme} mode={isDark ? 'dark' : 'system'}>
+    <Theme
+      theme={isStone ? stoneTheme : neutralTheme}
+      mode={isDark ? 'dark' : 'system'}>
       <div style={{backgroundColor: 'var(--color-background-surface)'}}>
         <button type="button" onClick={() => setIsDark(on => !on)}>
           Theme dark
+        </button>
+        <button type="button" onClick={() => setIsStone(on => !on)}>
+          Theme stone
         </button>
         {children}
       </div>
