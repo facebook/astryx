@@ -57,7 +57,7 @@ export const docs = {
           ['icons', 'Shallow-merged: child icons override matching names from the base.'],
           ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
           ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
-          ['motion', "Field by field: the fields the child sets regenerate their tokens, and a field it leaves unset (`slow`, `easing`) keeps the base theme's value."],
+          ['motion', "Field by field: the child's `fast`, `medium` and `ratio` regenerate the fast and medium duration tokens; `slow` and `easing` left unset keep the base theme's tokens, so an inherited slow band stays at the base's ratio."],
           ['typography, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ['adaptations', 'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.'],
         ]},

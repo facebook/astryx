@@ -1568,7 +1568,8 @@ describe('defineTheme extends', () => {
     // The fields the child sets regenerate their tokens.
     expect(child.tokens['--duration-fast']).toBe('120ms');
     expect(child.tokens['--duration-medium-min']).toBe('190ms');
-    // `slow` and `easing`, left unset, keep the base's values.
+    // `slow` and `easing`, left unset, keep the base's tokens: the slow band
+    // stays at the base's ratio (400 × 0.75), not the child's.
     expect(child.tokens['--duration-slow']).toBe('400ms');
     expect(child.tokens['--duration-slow-min']).toBe('300ms');
     expect(child.tokens['--ease-standard']).toBe('cubic-bezier(0.2, 0, 0, 1)');
