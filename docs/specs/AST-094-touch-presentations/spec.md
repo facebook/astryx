@@ -709,7 +709,8 @@ Rejected: the 150 ms delay on every menu row.
 
 On a compact touch screen an anchored menu keeps the layer runtime's normal
 placement beside its trigger, inside the viewport gutter, so the trigger stays
-visible while the menu is open.
+visible while the menu is open wherever the menu fits beside it; a menu taller
+than the room on either side follows the layer runtime's own fallback.
 
 Rejected: covering the trigger, centered on it and aligned with its top or
 bottom, as UIKit's menu does.
