@@ -280,6 +280,68 @@ const crit = (response: number, ms: number) => {
   return 1 - (1 + u) * Math.exp(-u);
 };
 
+/** The incoming card's, the covered bar's and its cut box's x and boxes. */
+interface CutLayers {
+  card: number;
+  bar: number;
+  cut: number;
+  cardBox: {left: number; right: number};
+  cutBox: {left: number; right: number};
+}
+
+const cutLayers = (page: Page, covered: string, incoming: string) =>
+  page.evaluate(
+    ([coveredKey, incomingKey]): CutLayers | null => {
+      const x = (element: Element) => {
+        const value = getComputedStyle(element).translate;
+        return value === 'none' ? 0 : parseFloat(value);
+      };
+      const cardElement = document.querySelector(
+        `[data-navigation-screen="${incomingKey}"]`,
+      );
+      const barElement = document.querySelector(
+        `[data-navigation-bar="${coveredKey}"]`,
+      );
+      const cutElement = barElement?.firstElementChild;
+      if (cardElement == null || barElement == null || cutElement == null) {
+        return null;
+      }
+      const cardBox = cardElement.getBoundingClientRect();
+      const cutBox = cutElement.getBoundingClientRect();
+      return {
+        card: x(cardElement),
+        bar: x(barElement),
+        cut: x(cutElement),
+        cardBox: {left: cardBox.left, right: cardBox.right},
+        cutBox: {left: cutBox.left, right: cutBox.right},
+      };
+    },
+    [covered, incoming] as const,
+  );
+
+/**
+ * How far the covered bar's cut is from the incoming card's leading edge at
+ * `mid`, from the layers' animated `translate`, with each edge's static part
+ * read at `rest`, when box and translate agree. Mid-animation WebKit can hand
+ * back one layer's box a frame behind its animation and not the other's (in
+ * a burst of animation frames), so the boxes alone can disagree by a pixel
+ * or two while the layers move as one on the compositor.
+ */
+const cutGap = (
+  mid: CutLayers | null,
+  rest: CutLayers | null,
+  direction: 'ltr' | 'rtl',
+): number => {
+  if (mid == null || rest == null) {
+    return Infinity;
+  }
+  const cardEdge = direction === 'rtl' ? 'right' : 'left';
+  const cutEdge = direction === 'rtl' ? 'left' : 'right';
+  const cardStatic = rest.cardBox[cardEdge] - rest.card;
+  const cutStatic = rest.cutBox[cutEdge] - rest.bar - rest.cut;
+  return Math.abs(cutStatic + mid.bar + mid.cut - (cardStatic + mid.card));
+};
+
 const rowCenter = async (page: Page, name: string) => {
   const box = await page.getByRole('button', {name}).first().boundingBox();
   if (box == null) {
@@ -851,18 +913,6 @@ test('under a finger, the incoming screen cuts the old title while the main thre
   const cast = await startScreencast(page);
   await driver.tap(await rowCenter(page, 'General'));
   await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
-  // Mid-push the root's bar shows only left of the incoming card.
-  const mid = await page.evaluate(() => {
-    const cardBox = document
-      .querySelector('[data-navigation-screen="screen-General"]')
-      ?.getBoundingClientRect();
-    const clipBox = document
-      .querySelector('[data-navigation-bar="root"]')
-      ?.firstElementChild?.getBoundingClientRect();
-    return cardBox == null || clipBox == null
-      ? null
-      : Math.abs(clipBox.right - cardBox.left);
-  });
   const block = await blockMainThread(page, 900);
   await page.waitForTimeout(150);
   const frames = await cast.stop();
@@ -871,15 +921,30 @@ test('under a finger, the incoming screen cuts the old title while the main thre
     tracked.map(f => [Math.round(f.t - block.from), f.box?.x ?? null]),
   );
   const during = tracked.filter(f => f.t > block.from && f.t < block.to - 20);
-  // The cut follows the card's edge (the two move on one spring).
-  expect(mid).not.toBeNull();
-  expect(mid ?? Infinity).toBeLessThan(2);
   // Seen while blocked, then cut before the block ends.
   expect(
     during.some(f => f.box != null),
     trace,
   ).toBe(true);
   expect(during.at(-1)?.box ?? null, trace).toBeNull();
+});
+
+test('under a finger the cut rides the incoming card’s leading edge', async ({
+  page,
+}) => {
+  const {driver} = await openStack(page, 'settings');
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
+  // Mid-push the root's bar shows only left of the incoming card: the cut
+  // and the card's edge move on one spring.
+  const mid = await cutLayers(page, 'root', 'screen-General');
+  await waitForRest(card(page, 'screen-General'));
+  const rest = await cutLayers(page, 'root', 'screen-General');
+  expect(mid).not.toBeNull();
+  expect(rest).not.toBeNull();
+  expect(cutGap(mid, rest, 'ltr')).toBeLessThan(2);
+  expect(await readCut(page, 'root')).toEqual({shown: 0});
+  expect(await readCut(page, 'screen-General')).toEqual({shown: 1});
 });
 
 test('under a finger in a right-to-left stack, the cut mirrors', async ({
@@ -893,20 +958,12 @@ test('under a finger in a right-to-left stack, the cut mirrors', async ({
   await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
   // The incoming card enters from the left: the root's bar shows only right
   // of its trailing edge.
-  const mid = await page.evaluate(() => {
-    const cardBox = document
-      .querySelector('[data-navigation-screen="screen-General"]')
-      ?.getBoundingClientRect();
-    const clipBox = document
-      .querySelector('[data-navigation-bar="root"]')
-      ?.firstElementChild?.getBoundingClientRect();
-    return cardBox == null || clipBox == null
-      ? null
-      : Math.abs(clipBox.left - cardBox.right);
-  });
-  expect(mid).not.toBeNull();
-  expect(mid ?? Infinity).toBeLessThan(2);
+  const mid = await cutLayers(page, 'root', 'screen-General');
   await waitForRest(card(page, 'screen-General'));
+  const rest = await cutLayers(page, 'root', 'screen-General');
+  expect(mid).not.toBeNull();
+  expect(rest).not.toBeNull();
+  expect(cutGap(mid, rest, 'rtl')).toBeLessThan(2);
   expect(await readCut(page, 'root')).toEqual({shown: 0});
   expect(await readCut(page, 'screen-General')).toEqual({shown: 1});
 });
