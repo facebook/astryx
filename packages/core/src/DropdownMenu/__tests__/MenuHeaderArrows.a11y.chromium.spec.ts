@@ -4,7 +4,7 @@
  * @file MenuHeaderArrows.a11y.chromium.spec.ts
  * @input The built Storybook "Header And Footer" story (a filter field above
  *   the rows) and real Chromium with a real keyboard.
- * @output Evidence for component:DropdownMenu FR21: ArrowDown in the header's
+ * @output Evidence for component:DropdownMenu FR22: ArrowDown in the header's
  *   text field moves to the first row, and ArrowUp on the first row returns
  *   to the field, with what was typed and the filtered rows intact; before
  *   that hand-off ArrowUp on the first row wraps; Shift with an arrow stays
