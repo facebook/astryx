@@ -35,7 +35,9 @@ export const glidingDividerStyles = stylex.create({
   /** On every cell with a row divider: it goes transparent while the row moves. */
   cell: {
     borderBottomColor: {
-      default: colorVars['--color-border'],
+      // A detail panel's cell carries its row's divider color (see
+      // plugins/rowExpansion); every other cell reads the token.
+      default: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
       [stylex.when.ancestor(GLIDING, tableRowMarker)]: 'transparent',
     },
   },
@@ -127,6 +129,42 @@ export function collapsedBottom(cell: Element): BottomEdge {
 
 /** The batch that marked a row last: only that batch unmarks it. */
 const markedBy = new WeakMap<Element, symbol>();
+
+/**
+ * The divider a detail panel takes from its row: the row's cell color and
+ * style (a theme's `table-cell` styling or an app's own, which never reach
+ * the panel's cell), at the panel's own width, unless the row's own border
+ * wins the collapse (an app styling the `<tr>`). Read once per commit.
+ */
+export function panelDividerFor(
+  row: Element,
+  panelCell: Element,
+): BottomEdge | null {
+  const rowCell = row.lastElementChild;
+  if (rowCell == null) {
+    return null;
+  }
+  const cellStyle = getComputedStyle(rowCell);
+  const own: BottomEdge = {
+    width: parseFloat(getComputedStyle(panelCell).borderBottomWidth) || 0,
+    style: cellStyle.borderBottomStyle,
+    color: cellStyle.borderBottomColor,
+  };
+  const rowStyle = getComputedStyle(row);
+  if (rowStyle.borderBottomStyle === 'none') {
+    return own;
+  }
+  const other: BottomEdge = {
+    width: parseFloat(rowStyle.borderBottomWidth) || 0,
+    style: rowStyle.borderBottomStyle,
+    color: rowStyle.borderBottomColor,
+  };
+  return other.width > own.width ||
+    (other.width === own.width &&
+      STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style))
+    ? other
+    : own;
+}
 
 /**
  * A row's own bottom border, for its stand-in while it moves; null for a row

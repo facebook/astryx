@@ -129,6 +129,41 @@ describe('useTableRowExpansion adopts animatedLayout (spec:AST-105 FR1, FR2)', (
   });
 });
 
+describe('an open panel carries its row divider (Table FR14)', () => {
+  it("takes the row's own cell border, a theme's or an app's, and the row's own border where it wins", async () => {
+    const user = userEvent.setup();
+    render(<ExpandableTable withHandle={false} />);
+    const row = document.querySelector<HTMLElement>(
+      'tr[data-expansion-key="a"]',
+    )!;
+    // An app's (or a theme's) border on the row's cells.
+    for (const cell of row.querySelectorAll('td')) {
+      cell.style.borderBottomColor = 'rgb(255, 0, 0)';
+      cell.style.borderBottomStyle = 'dashed';
+    }
+    await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+    const panel = document.querySelector<HTMLElement>(
+      'tr[data-expansion-panel]',
+    )!;
+    expect(panel.style.getPropertyValue('--_table-panel-divider-color')).toBe(
+      'rgb(255, 0, 0)',
+    );
+    expect(panel.style.getPropertyValue('--_table-panel-divider-style')).toBe(
+      'dashed',
+    );
+    // An app's own border on the row wins the collapse when it is wider;
+    // the next commit (opening another row) reads it.
+    row.style.borderBottom = '3px solid rgb(0, 0, 255)';
+    await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+    expect(panel.style.getPropertyValue('--_table-panel-divider-width')).toBe(
+      '3px',
+    );
+    expect(panel.style.getPropertyValue('--_table-panel-divider-color')).toBe(
+      'rgb(0, 0, 255)',
+    );
+  });
+});
+
 describe('markGlidingRows', () => {
   it('marks the moving rows and carries their divider while they move, and clears both after', async () => {
     const body = document.createElement('tbody');

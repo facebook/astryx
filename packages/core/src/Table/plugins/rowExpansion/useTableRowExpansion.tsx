@@ -65,6 +65,7 @@ import {
 import {
   glidingDividerStyles,
   markGlidingRows,
+  panelDividerFor,
   rowEdge,
   type BottomEdge,
 } from '../../glidingDivider';
@@ -246,21 +247,24 @@ const dividerStyles = stylex.create({
     '--_table-row-divider-width': '0px',
     borderBottomWidth: 0,
   },
+  // The row's divider, carried down: its row's themed or app-set border
+  // reaches the panel through `--_table-panel-divider-*` on the panel row
+  // (set after each commit), the tokens otherwise.
   panelCell: {
     // The width this divider draws, for its stand-in during a glide.
     '--_table-row-divider-width': {
-      default: borderVars['--border-width'],
+      default: `var(--_table-panel-divider-width, ${borderVars['--border-width']})`,
       [stylex.when.ancestor(':last-child', tableRowMarker)]: '0px',
     },
     borderBottomWidth: {
-      default: borderVars['--border-width'],
+      default: `var(--_table-panel-divider-width, ${borderVars['--border-width']})`,
       // Same rule TableCell uses: no trailing line under the last row of the
       // table. Scoped to the marker so <tbody>, also a :last-child, does not
       // match and suppress every panel's border.
       [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
     },
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
+    borderBottomStyle: 'var(--_table-panel-divider-style, solid)',
+    borderBottomColor: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
   },
 });
 
@@ -513,6 +517,39 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     },
     [animatedLayout, expandedKeys, rowFor],
   );
+  // Each open panel carries its row's divider (a theme's `table-cell` border
+  // or an app's own never reach the panel's cell, which is not a table cell
+  // of the row). Written only when it differs, so a commit that changes
+  // nothing writes nothing.
+  useLayoutEffect(() => {
+    const wrapper = scrollWrapperRef.current;
+    if (wrapper == null) {
+      return;
+    }
+    const carried: [HTMLElement, BottomEdge][] = [];
+    for (const panel of wrapper.querySelectorAll<HTMLElement>(
+      'tr[data-expansion-panel]',
+    )) {
+      const row = panel.previousElementSibling;
+      const cell = panel.firstElementChild;
+      const edge =
+        row == null || cell == null ? null : panelDividerFor(row, cell);
+      if (edge != null) {
+        carried.push([panel, edge]);
+      }
+    }
+    for (const [panel, edge] of carried) {
+      const set = (name: string, value: string) => {
+        if (panel.style.getPropertyValue(name) !== value) {
+          panel.style.setProperty(name, value);
+        }
+      };
+      set('--_table-panel-divider-width', `${edge.width}px`);
+      set('--_table-panel-divider-style', edge.style);
+      set('--_table-panel-divider-color', edge.color);
+    }
+  });
+
   useLayoutEffect(() => {
     const pendings = pendingLayoutRef.current;
     pendingLayoutRef.current = [];
