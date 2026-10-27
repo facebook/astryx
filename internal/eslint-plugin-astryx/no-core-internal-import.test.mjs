@@ -21,7 +21,7 @@ const ruleTester = new RuleTester({
 const message = source =>
   `'${source}' is one of Core's internal subpaths, reserved for Astryx's own packages (Core and Lab) and outside the compatibility promise. Use Core's public API instead.`;
 const deep = source =>
-  `'${source}' reaches into Core's gesture, motion or touch-support source, which has no entry of its own and is for Core and Lab only (architecture:react-component-runtime INV13). Use Core's public API instead.`;
+  `'${source}' reaches into Core's internal, gesture, motion or touch-support source, which is for Core and Lab only (architecture:react-component-runtime INV13). Use Core's public API instead.`;
 
 ruleTester.run('no-core-internal-import', rule, {
   valid: [
@@ -40,6 +40,7 @@ ruleTester.run('no-core-internal-import', rule, {
     {code: `import {x} from '@astryxdesign/core/motionless';`},
     {code: `import {x} from '@astryxdesign/core/gesturesKit';`},
     {code: `import {x} from '../core/src/gesturesKit/x';`},
+    {code: `import {x} from '../core/src/internals/x';`},
     // A code sample in a string is not an import.
     {
       code: "const sample = `import {duration} from '@astryxdesign/core/motion';`;",
@@ -107,6 +108,20 @@ ruleTester.run('no-core-internal-import', rule, {
       errors: [
         {message: deep('../../packages/core/src/touch-support/touchModule')},
       ],
+    },
+    {
+      code: `import {GestureArena} from '../../../packages/core/src/internal/touch';`,
+      errors: [{message: deep('../../../packages/core/src/internal/touch')}],
+    },
+    // A template literal with no expressions names the module as a string
+    // does.
+    {
+      code: 'const t = import(`@astryxdesign/core/internal/touch`);',
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
+    },
+    {
+      code: 'const t = require(`@astryxdesign/core/internal/touch`);',
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
     },
     {
       code: `const g = require('../core/src/gestures/GestureArena');`,
