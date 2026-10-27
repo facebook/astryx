@@ -540,6 +540,60 @@ describe('ToastViewport keyboard reach + focus', () => {
   });
 });
 
+describe('Toast pause sources are independent', () => {
+  it('keeps the timer paused while focus stays inside after the pointer leaves', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      renderViewport(
+        <ShowToastButton
+          options={{body: 'Held', autoHideDuration: 3000, onHide}}
+          triggerLabel="Show"
+        />,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      // The hover and focus handlers live on the toast surface itself (the
+      // role="status" element), not on the viewport's slot wrapper.
+      const dismiss = screen.getByRole('button', {
+        name: 'Dismiss notification',
+      });
+      const toast = dismiss.closest<HTMLElement>('[role="status"]');
+      if (!toast) {throw new Error('toast surface did not render');}
+
+      // Hover pauses; focus moving inside is a second, independent reason.
+      act(() => {
+        fireEvent.mouseEnter(toast);
+      });
+      act(() => {
+        fireEvent.focus(dismiss);
+      });
+      // The pointer leaves, but keyboard focus is still inside the toast:
+      // the countdown must not restart out from under the focused user.
+      act(() => {
+        fireEvent.mouseLeave(toast);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+
+      // Focus leaving is the last reason; now the timer runs out.
+      act(() => {
+        fireEvent.blur(dismiss);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledTimes(1);
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('Toast blur timer pause', () => {
   it('pauses the auto-hide timer while the window is blurred', () => {
     vi.useFakeTimers();
