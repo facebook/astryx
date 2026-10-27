@@ -175,13 +175,21 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     render(<Shell />);
     toggle();
     const main = screen.getByRole('main');
-    const copy = Array.from(main.children).find(child =>
-      child.hasAttribute('inert'),
+    const copy = copies().find(element =>
+      element.textContent?.includes('The page beside the rail.'),
     );
-    expect(copy?.textContent).toContain('The page beside the rail.');
+    // Beside the content, which clips, not inside it: no line is cut.
+    expect(main.contains(copy ?? null)).toBe(false);
     const fadeOut = recorded.find(entry => entry.element === copy);
-    expect(fadeOut?.keyframes[0].opacity).toBe(1);
-    expect(fadeOut?.keyframes.at(-1)?.opacity).toBe(0);
+    expect(fadeOut?.keyframes[0]).toMatchObject({
+      opacity: 1,
+      translate: '0px 0px',
+    });
+    // It moves with the column: from where it was by the column's travel.
+    expect(fadeOut?.keyframes.at(-1)).toMatchObject({
+      opacity: 0,
+      translate: `${COLLAPSED - EXPANDED}px 0px`,
+    });
     const heading = screen.getByRole('heading', {name: 'Projects page'});
     const fadeIn = recorded.find(entry => entry.element === heading);
     expect(fadeIn?.keyframes[0].opacity).toBe(0);

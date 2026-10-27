@@ -60,7 +60,9 @@ export interface RailSnapshot {
   readonly railRect: DOMRect;
   readonly railCopy: HTMLElement;
   readonly columnRect: DOMRect | null;
+  /** The old wrap, and the content's visible part it filled. */
   readonly wrapCopy: HTMLElement | null;
+  readonly wrapRect: DOMRect | null;
 }
 
 /** A copy that takes no part: hidden from assistive technology, inert, no ids. */
@@ -91,6 +93,37 @@ function paintedBackground(element: HTMLElement): string {
   return 'Canvas';
 }
 
+/**
+ * Lay `element` over `rect` (viewport coordinates), absolutely, as the last
+ * child of `parent`, wherever its containing block is.
+ */
+function placeOver(element: HTMLElement, parent: Element, rect: DOMRect) {
+  Object.assign(element.style, {
+    position: 'absolute',
+    margin: '0px',
+    left: '0px',
+    top: '0px',
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+  });
+  parent.appendChild(element);
+  const origin = element.getBoundingClientRect();
+  element.style.left = `${rect.left - origin.left}px`;
+  element.style.top = `${rect.top - origin.top}px`;
+}
+
+/** The nearest ancestor of `element` that generates a box. */
+function boxParent(element: HTMLElement): HTMLElement {
+  let parent = element.parentElement ?? element.ownerDocument.body;
+  while (
+    parent.parentElement != null &&
+    getComputedStyle(parent).display === 'contents'
+  ) {
+    parent = parent.parentElement;
+  }
+  return parent;
+}
+
 const running = new WeakMap<HTMLElement, () => void>();
 
 /** Before the change commits: the old rail and wrap, and where they were. */
@@ -105,22 +138,32 @@ export function snapshotRail(
   const column = shell?.column() ?? null;
   const content = shell?.content() ?? null;
   let wrapCopy: HTMLElement | null = null;
+  let wrapRect: DOMRect | null = null;
   if (
     content != null &&
     content.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS
   ) {
-    // The old wrap at the old width, scrolled as it was, inside a holder the
-    // size of the content's visible part, so it adds no scrollable overflow.
+    // The old wrap at the old width, scrolled as it was, in a holder the size
+    // of the content's visible part. The holder rides beside the column, not
+    // inside the content, which clips.
     const style = getComputedStyle(content);
+    const box = content.getBoundingClientRect();
+    wrapRect = DOMRect.fromRect({
+      x: box.left + content.clientLeft,
+      y: box.top + content.clientTop,
+      width: content.clientWidth,
+      height: content.clientHeight,
+    });
     const copy = copyOf(content);
     copy.removeAttribute('role');
     copy.removeAttribute('tabindex');
     Object.assign(copy.style, {
       position: 'absolute',
-      insetBlockStart: `${-content.scrollTop}px`,
-      insetInlineStart: '0px',
+      top: `${-content.scrollTop}px`,
+      left: '0px',
       boxSizing: 'border-box',
       width: `${content.clientWidth}px`,
+      height: 'auto',
       padding: style.padding,
       margin: '0px',
       overflow: 'visible',
@@ -129,12 +172,7 @@ export function snapshotRail(
     wrapCopy = content.ownerDocument.createElement('div');
     wrapCopy.setAttribute('aria-hidden', 'true');
     wrapCopy.setAttribute('inert', '');
-    Object.assign(wrapCopy.style, {
-      position: 'absolute',
-      insetInlineStart: '0px',
-      overflow: 'hidden',
-      pointerEvents: 'none',
-    });
+    Object.assign(wrapCopy.style, {overflow: 'hidden', pointerEvents: 'none'});
     wrapCopy.appendChild(copy);
   }
   return {
@@ -143,6 +181,7 @@ export function snapshotRail(
     railCopy: copyOf(rail),
     columnRect: column?.getBoundingClientRect() ?? null,
     wrapCopy,
+    wrapRect,
   };
 }
 
@@ -153,7 +192,7 @@ export function playRail(
   snapshot: RailSnapshot,
   shell: SideNavShell | null,
 ): void {
-  const {rail, railRect, railCopy, columnRect, wrapCopy} = snapshot;
+  const {rail, railRect, railCopy, columnRect, wrapCopy, wrapRect} = snapshot;
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
   const delta = next.width - railRect.width;
@@ -201,25 +240,10 @@ export function playRail(
   const expands = delta > 0;
   const copy = travels && expands ? copyOf(rail) : railCopy;
   const copyRect = copy === railCopy ? railRect : next;
-  const parent = rail.parentElement ?? rail.ownerDocument.body;
-  const parentRect = parent.getBoundingClientRect();
-  Object.assign(copy.style, {
-    position: 'absolute',
-    zIndex: '1',
-    margin: '0px',
-    insetBlockStart: `${copyRect.top - parentRect.top + parent.scrollTop}px`,
-    insetInlineStart: `${rtl ? parentRect.right - copyRect.right : copyRect.left - parentRect.left}px`,
-    width: `${copyRect.width}px`,
-    height: `${copyRect.height}px`,
-    // Opaque, so what is under the copy never shows through its text.
-    backgroundColor: paintedBackground(rail),
-  });
-  if (getComputedStyle(parent).position === 'static') {
-    const previous = parent.style.position;
-    parent.style.position = 'relative';
-    restore.push(() => (parent.style.position = previous));
-  }
-  parent.appendChild(copy);
+  placeOver(copy, rail.parentElement ?? rail.ownerDocument.body, copyRect);
+  // Opaque, so what is under the copy never shows through its text.
+  copy.style.zIndex = '1';
+  copy.style.backgroundColor = paintedBackground(rail);
   added.push(copy);
   // The copy's text, so no label shows in the collapsed width.
   const fadeText = (opacity: (p: number) => number) => {
@@ -285,7 +309,13 @@ export function playRail(
     const travel = rtl
       ? columnRect.right - nextColumn.right
       : columnRect.left - nextColumn.left;
-    if (travels && Math.abs(travel) >= 0.5) {
+    const slides = travels && Math.abs(travel) >= 0.5;
+    const host = boxParent(column);
+    if (slides) {
+      // Nothing the slide carries past the column's edges scrolls the page.
+      const previous = host.style.overflow;
+      host.style.overflow = 'clip';
+      restore.push(() => (host.style.overflow = previous));
       const background = getComputedStyle(column).backgroundColor;
       const reach =
         travel < 0 && !/rgba\(.*,\s*0\)|transparent/.test(background);
@@ -306,22 +336,16 @@ export function playRail(
           frames(p => ({opacity: p})),
         );
       }
-      if (wrapCopy != null) {
-        if (getComputedStyle(content).position === 'static') {
-          const previous = content.style.position;
-          content.style.position = 'relative';
-          restore.push(() => (content.style.position = previous));
-        }
-        Object.assign(wrapCopy.style, {
-          insetBlockStart: `${content.scrollTop}px`,
-          width: `${content.clientWidth}px`,
-          height: `${content.clientHeight}px`,
-        });
-        content.appendChild(wrapCopy);
+      if (wrapCopy != null && wrapRect != null) {
+        // The old wrap starts where it was and moves with the column.
+        placeOver(wrapCopy, host, wrapRect);
         added.push(wrapCopy);
         play(
           wrapCopy,
-          frames(p => ({opacity: 1 - p})),
+          frames(p => ({
+            opacity: 1 - p,
+            ...(slides && {translate: `${-travel * p}px 0px`}),
+          })),
         );
       }
     }
