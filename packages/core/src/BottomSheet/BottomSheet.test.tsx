@@ -25,7 +25,10 @@ import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {resetBottomSheetStackForTests} from './bottomSheetStack';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
-import {__resetRevealsAtReportForTest} from '../keyboard/keyboardHeight';
+import {
+  __focusTakeoverCallersForTest,
+  __resetRevealsAtReportForTest,
+} from '../keyboard/keyboardHeight';
 import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
 
 // A sheet has no stops unless its host asks for them, so the tests that
@@ -1796,6 +1799,50 @@ describe('BottomSheet', () => {
       );
       expect(screen.getByRole('textbox', {name: 'Comment'})).toBeVisible();
       expect(mostTouchListeners()).toBe(0);
+    });
+
+    it('installs no focus takeover for a presented Tall sheet under a fine pointer (architecture INV13, spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('fine');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      expect(screen.getByRole('textbox', {name: 'Comment'})).toBeVisible();
+      expect(__focusTakeoverCallersForTest(document)).toBe(0);
+    });
+
+    it('installs the focus takeover for each presented Tall sheet under a coarse pointer, through the one shared listener (spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('coarse');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      render(
+        <>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a note"
+            height="tall">
+            <input aria-label="Note" />
+          </BottomSheet>
+        </>,
+      );
+      // Both sheets claim focus moves through the keyboard module's one
+      // document listener (its own test counts that listener).
+      expect(__focusTakeoverCallersForTest(document)).toBe(2);
     });
 
     it('registers one document touch listener for two presented Tall sheets under a coarse pointer (spec:AST-094 FR24)', () => {

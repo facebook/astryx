@@ -42,7 +42,10 @@ exported from the package entry.
   capture-phase `blur` before the browser's own focus step, so the browser
   never reveals a field by scrolling the document. Focus that leaves for
   nothing (the keyboard's Done) can be parked so the next tap is a transition
-  again. A tap on a field when nothing has focus raises no blur:
+  again. Every caller in a document shares one listener, which lives only
+  while a caller does; BottomSheet's hook installs it only under a coarse
+  primary pointer.
+  A tap on a field when nothing has focus raises no blur:
   `claimTapFocus(region, {claim, deliver})` is that route. It follows one
   finger with listeners on the region, only while the touch is down, and on a
   tap (within 10 px) prevents the touch's default and delivers the focus
