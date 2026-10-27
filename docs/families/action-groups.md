@@ -33,6 +33,7 @@ members:
     component:Toast,
     component:TopNavMenu,
     component:SideNavHeading,
+    component:TopNavHeading,
     component:NavHeadingMenu,
     component:BreadcrumbItem,
   ]
@@ -69,7 +70,8 @@ momentary, toggle, or option actions that a person chooses one of. Members
 today:
 
 - menus: DropdownMenu, ContextMenu, and their sub-menus, the navigation
-  menus of TopNav (TopNavMenu), SideNavHeading, and NavHeadingMenu; and
+  menus of TopNav (TopNavMenu), SideNavHeading, TopNavHeading, and
+  NavHeadingMenu; and
   BreadcrumbItem's `menu`, which renders DropdownMenu items;
 - option lists: Selector's and MultiSelector's options, and the wheels of
   DateInput, DateTimeInput, and TimeInput;
@@ -95,6 +97,8 @@ These are not members:
   views;
 - Pagination and Stepper, inline page controls in the page flow rather than a
   menu;
+- TopNavMegaMenu's panel, a browsing grid of links in a `role="group"`, not a
+  menu (`component:TopNavMegaMenu` FR5);
 - Calendar's day grid, a two-dimensional date grid with its own keyboard and
   range-selection model, which a slide to commit would break;
 - RadioList, CheckboxList, and SelectableCard, whose rows and cards sit in
@@ -165,16 +169,16 @@ Selector's and MultiSelector's options FR1–FR5
 
 ## Adoption and exceptions
 
-| Components or surface                                                    | Required adoption                                                     |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| Menus and Selector's and MultiSelector's options                         | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
-| TopNav's, SideNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
-| Date and time wheels                                                     | Follow FR1–FR5 through the shared implementation.                     |
-| AlertDialog's actions                                                    | Track the actions only.                                               |
-| ButtonGroup, ToggleButtonGroup, Toolbar                                  | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
-| Banner and Toast action rows                                             | Track only a row with two or more sibling actions.                    |
+| Components or surface                                                                     | Required adoption                                                     |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Menus and Selector's and MultiSelector's options                                          | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
+| TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
+| Date and time wheels                                                                      | Follow FR1–FR5 through the shared implementation.                     |
+| AlertDialog's actions                                                                     | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar                                                   | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| Banner and Toast action rows                                                              | Track only a row with two or more sibling actions.                    |
 
-TopNav's, SideNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus act on
+TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's, and BreadcrumbItem's menus act on
 the browser's click today and track no held pointer across their rows; their
 adoption of the menu press model is an implementation gap.
 
