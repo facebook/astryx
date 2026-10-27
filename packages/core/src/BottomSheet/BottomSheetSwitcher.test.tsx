@@ -24,6 +24,7 @@ import {
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {Dialog} from '../Dialog';
 import {hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
@@ -1314,6 +1315,44 @@ describe('BottomSheetSwitcher', () => {
       expect(confirmDialog).toContainElement(
         screen.getByTestId('confirm-sheet'),
       );
+    });
+
+    it('under a finger, holds pointer input while each sheet enters the flow, and releases it as the entrance ends (FR35)', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          // A finger without Reduce Motion.
+          matches:
+            query.includes('pointer: coarse') &&
+            !query.includes('prefers-reduced-motion'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      const details = getSheetLayer('details-sheet');
+      // Entering: its dialog is a held layer.
+      expect(isInHeldLayer(details)).toBe(true);
+      finishSheetTransition(details, 'transform');
+      expect(isInHeldLayer(details)).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      const confirm = getSheetLayer('confirm-sheet');
+      expect(isInHeldLayer(confirm)).toBe(true);
+      finishSheetTransition(confirm, 'transform');
+      expect(isInHeldLayer(confirm)).toBe(false);
+    });
+
+    it('with a mouse, holds nothing while a sheet enters the flow (FR35, DEC-16)', () => {
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      expect(isInHeldLayer(getSheetLayer('details-sheet'))).toBe(false);
     });
 
     it('presents the entering dialog once and closes the retained dialog only after it fades', () => {
