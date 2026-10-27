@@ -36,9 +36,8 @@
  * Every pointer pulls, under any primary pointer (`spec:AST-094` FR43): a
  * drag at the top, with the same mapping, trigger, settle and drawing; a pen
  * or a mouse pull clears the text selection its drag started. A trackpad's
- * two-finger scroll toward the top pulls once the content is at its top, as a
- * finger does, and keeps the page's text selection; a mouse wheel's notches
- * do not pull (one would cross the trigger at once). The top edge follows the touch presentation
+ * or a wheel's scroll toward the top pulls once the content is at its top, as
+ * a finger does, and keeps the page's text selection. The top edge follows the touch presentation
  * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
  * and Android alike): only there does the pull take the page's overscroll
  * near the top and replace the browser's own pull to refresh (Safari's and
@@ -839,16 +838,19 @@ export function useRefreshTouchController({
     releaseSelection();
     dispatch({type: pan.state === 'ended' ? 'pullEnd' : 'pullCancel'});
   };
+  // The touch pull takes no scrolling: a pan takes a trackpad's and a wheel's
+  // by default (spec:AST-094 FR43), and this one watches a contact from the
+  // start of a drag, so it would take a scroll mid-page.
   const recognizer = useGestureRecognizer(
     contentElement,
-    () => new RefreshPullRecognizer(),
+    () => new RefreshPullRecognizer({allowedScrollTypes: []}),
     onPull,
   );
-  // A trackpad's two-finger scroll pulls through a second pan that takes only
-  // that scroll (spec:AST-094 FR43). As a scroll-edge pan it takes a scroll
-  // only where nothing under the pointer could scroll for it: the owner at
-  // its top and the content moving down. Every other scroll stays the
-  // page's, and a mouse wheel's notches are never taken.
+  // A trackpad's or a wheel's scroll pulls through a second pan that takes
+  // only scrolling, both kinds as a pan does by default (spec:AST-094 FR43).
+  // As a scroll-edge pan it takes a scroll only where nothing under the
+  // pointer could scroll for it: the owner at its top and the content moving
+  // down. Every other scroll stays the page's.
   const scrollRecognizer = useGestureRecognizer(
     contentElement,
     () =>
@@ -856,7 +858,6 @@ export function useRefreshTouchController({
         name: 'RefreshScrollPull',
         scrollEdge: true,
         allowedPointerTypes: [],
-        allowedScrollTypes: ['continuous'],
       }),
     onPull,
   );

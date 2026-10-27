@@ -17,8 +17,8 @@
  * Every pointer pulls, under any primary pointer (`spec:AST-094` FR43): a
  * drag at the top, with the same mapping, trigger, settle and drawing; a pen
  * or a mouse pull clears the text selection its drag started. A trackpad's
- * two-finger scroll toward the top pulls once the content is at its top, as a
- * finger does; a mouse wheel's notches do not. The top edge follows the touch presentation
+ * or a wheel's scroll toward the top pulls once the content is at its top,
+ * as a finger does. The top edge follows the touch presentation
  * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
  * and Android alike): only there does the pull take the page's overscroll
  * near the top and replace the browser's own pull to refresh (Safari's and
