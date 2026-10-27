@@ -143,6 +143,25 @@ test.describe('with a mouse or a pen', () => {
     await page.keyboard.press('Escape');
     await expect(grip).toHaveAttribute('aria-pressed', 'false');
   });
+
+  test('in reorder mode the arrows move a card along its row: Right moves it a place, Down does nothing', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), STORY);
+    const before = await moves(page);
+    const grip = page.getByRole('button', {name: 'Reorder Card A'});
+    await grip.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'A', 'Q', 'J', '10']);
+    expect(await moves(page)).toBe(before + 1);
+    await expect(grip).toBeFocused();
+    await expect(page.getByRole('button', {name: 'Move right'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Move down'})).toHaveCount(0);
+  });
 });
 
 test('a finger holds a grip, then drags: one report, and the card glides into its slot on both axes', async ({

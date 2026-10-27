@@ -180,6 +180,19 @@ describe('createReorderable attach', () => {
     detach();
   });
 
+  it('starts reorder mode on an attached item with start(key) (spec:AST-103 FR4a)', () => {
+    const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
+    const reorderable = createReorderable({onReorder: () => {}});
+    const {detach} = reorderable.attach(container, {items});
+    act(() => {
+      reorderable.start('eggs');
+    });
+    expect(cards[1].grip).toHaveAttribute('aria-pressed', 'true');
+    expect(document.activeElement).toBe(cards[1].grip);
+    detach();
+    expect(cards[1].grip).not.toHaveAttribute('aria-pressed');
+  });
+
   it("refuses and announces a move whose order hasn't changed by the end of its task", async () => {
     const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
     const onReorder = vi.fn();
