@@ -54,9 +54,9 @@ deciding_specs: [spec:AST-094/DEC-17]
 
 A person can press one action in a group of sibling actions, slide across the
 others while the highlight follows, and act on the one they lift on, the same
-way in every group, with SegmentedControl's richer model as the one named
-exception. One internal module, `actionGroupTracker`, gives every
-member the same behavior, so no member builds its own.
+way in every group, with SegmentedControl as the one named exception. Every
+member gets the behavior from one shared implementation, so no member builds
+its own.
 
 ## Membership rule
 
@@ -79,9 +79,7 @@ the behavior by composing ButtonGroup.
 A component built later that matches the rule joins by the rule, including an
 action sheet, a tab bar or navigation bar, a filter-chip group, and a rating.
 
-SegmentedControl is a named exception: its thumb follows the finger and moves
-the selection, a richer model that `component:SegmentedControl` governs. It may
-use `actionGroupTracker` internally, but this family's rule does not bind it.
+SegmentedControl is a named exception: this family's rule does not bind it.
 
 These are not members:
 
@@ -95,9 +93,8 @@ These are not members:
 
 ## Shared owner
 
-`actionGroupTracker` is the one internal module that tracks a held pointer
-across a group's actions. `module:DropdownMenu/useMenuPress` converges onto
-it. It is internal and unexported (`spec:AST-017` FR21).
+One shared, internal implementation gives every member FR1–FR5
+(`architecture:interaction-modality` INV13); no member keeps its own copy.
 
 ## Canonical concepts
 
@@ -154,7 +151,7 @@ it. It is internal and unexported (`spec:AST-017` FR21).
 
 | Components or surface                       | Required adoption                                                     |
 | ------------------------------------------- | --------------------------------------------------------------------- |
-| Menus, Selector, MultiSelector, date wheels | Track through `actionGroupTracker`; `useMenuPress` converges onto it. |
+| Menus, Selector, MultiSelector, date wheels | Follow FR1–FR5 through the shared implementation.                     |
 | AlertDialog's actions                       | Track the actions only.                                               |
 | ButtonGroup, ToggleButtonGroup, Toolbar     | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
 | Banner and Toast action rows                | Track only a row with two or more sibling actions.                    |
@@ -167,7 +164,7 @@ they are outside the family.
 
 | Contract | Verification                                                                  | Representative members and states                                                      |
 | -------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| FR1–FR3  | `actionGroupTracker` tests and each member's pointer-stream tests             | a slide across a menu, AlertDialog's actions, a ButtonGroup; a lift outside            |
+| FR1–FR3  | Shared-implementation tests and each member's pointer-stream tests            | a slide across a menu, AlertDialog's actions, a ButtonGroup; a lift outside            |
 | FR4      | ToggleButtonGroup pointer-stream tests                                        | a slide across three toggles; only the lifted one toggles                              |
 | FR5      | Member tests with a mouse, a pen, a finger, the keyboard, and a screen reader | a 44 px target under a coarse pointer only; unchanged keyboard and screen-reader paths |
 
@@ -184,4 +181,4 @@ None.
 
 This file owns action-group membership and the shared press, slide, and lift
 behavior. It does not duplicate component prop tables, what each action does,
-menu opening, or the tracker's thresholds.
+menu opening, or the shared implementation's thresholds.
