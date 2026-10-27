@@ -271,6 +271,39 @@ describe('NavHeadingMenuItem', () => {
     expect(other).toHaveFocus();
   });
 
+  it('does not take focus on reveal when isDisabled flipped while hidden', () => {
+    const tree = (mode: 'visible' | 'hidden', isDisabled: boolean) => (
+      <>
+        <button type="button">Elsewhere</button>
+        <Activity mode={mode}>
+          <NavHeadingMenu>
+            <NavHeadingMenuItem
+              label="Billing"
+              href="/billing"
+              isDisabled={isDisabled}
+            />
+          </NavHeadingMenu>
+        </Activity>
+      </>
+    );
+    const {rerender} = render(tree('visible', false));
+    screen.getByRole('menuitem').focus();
+    expect(screen.getByRole('menuitem')).toHaveFocus();
+
+    // Hide while focused, swap the row's element type while hidden, then move
+    // focus to another control.
+    rerender(tree('hidden', false));
+    rerender(tree('hidden', true));
+    const other = screen.getByRole('button', {name: 'Elsewhere'});
+    other.focus();
+    expect(other).toHaveFocus();
+
+    // The swapped-in node attaches only now and must not take focus.
+    rerender(tree('visible', true));
+    expect(screen.getByRole('menuitem')).not.toHaveAttribute('href');
+    expect(other).toHaveFocus();
+  });
+
   it('renders description text', () => {
     render(
       <NavHeadingMenu>

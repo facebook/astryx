@@ -156,9 +156,10 @@ export function NavHeadingMenuItem({
   // the row. Carry focus over to the replacement when the outgoing node held it
   // (spec:AST-085 FR4). The ref cleanup runs before the old node is removed, so
   // `activeElement` is still readable there. Only a different node replacing a
-  // removed one takes focus: React also detaches and re-attaches the same node
-  // (for example when an <Activity> boundary hides and reveals the row), and
-  // that must not pull focus back after the person has moved elsewhere.
+  // removed one takes focus, and only if focus has fallen to the page: React
+  // also detaches and re-attaches the same node (for example when an <Activity>
+  // boundary hides and reveals the row), and neither case may pull focus back
+  // after the person has moved elsewhere.
   const focusedNodeRef = useRef<HTMLElement | null>(null);
   const itemRef = useCallback(
     (node: HTMLElement | null) => {
@@ -167,7 +168,18 @@ export function NavHeadingMenuItem({
       }
       const outgoing = focusedNodeRef.current;
       focusedNodeRef.current = null;
-      if (outgoing !== null && outgoing !== node && !outgoing.isConnected) {
+      // Focus only follows the swap when it has fallen to the page. If the
+      // person moved focus elsewhere in the meantime (for example while an
+      // <Activity> boundary kept the row hidden), leave it alone.
+      const focusFell =
+        document.activeElement === null ||
+        document.activeElement === document.body;
+      if (
+        outgoing !== null &&
+        outgoing !== node &&
+        !outgoing.isConnected &&
+        focusFell
+      ) {
         node.focus();
       }
       const release = mergeRefs<HTMLElement>(ref)(node);
