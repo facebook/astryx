@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import type {KeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {LinkProvider} from '../Link';
 import {NavHeadingMenu} from './NavHeadingMenu';
 import {NavHeadingMenuItem} from './NavHeadingMenuItem';
 import {NavHeadingCloseContext} from './NavMenuContext';
@@ -126,6 +127,122 @@ describe('NavHeadingMenuItem', () => {
       'aria-disabled',
       'true',
     );
+  });
+
+  it('exposes no destination on a disabled link item', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" isDisabled />
+      </NavHeadingMenu>,
+    );
+    const item = screen.getByRole('menuitem');
+    // No href means no navigation path at all: not a pointer click, a
+    // middle-click, an assistive-technology activation, or Enter.
+    expect(item).not.toHaveAttribute('href');
+    // The row keeps its shape and still reports the disabled state.
+    expect(item.tagName).toBe('A');
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not reach a custom link component when a link item is disabled', () => {
+    function CustomLink({
+      children,
+      ref,
+      ...props
+    }: React.ComponentPropsWithRef<'a'>) {
+      return (
+        <a ref={ref} data-custom-link {...props}>
+          {children}
+        </a>
+      );
+    }
+    render(
+      <LinkProvider component={CustomLink}>
+        <NavHeadingMenu>
+          <NavHeadingMenuItem label="Docs" href="/docs" isDisabled />
+        </NavHeadingMenu>
+      </LinkProvider>,
+    );
+    const item = screen.getByRole('menuitem');
+    expect(item).not.toHaveAttribute('data-custom-link');
+    expect(item).not.toHaveAttribute('href');
+  });
+
+  it('keeps an enabled link item on the custom link component', () => {
+    function CustomLink({
+      children,
+      ref,
+      ...props
+    }: React.ComponentPropsWithRef<'a'>) {
+      return (
+        <a ref={ref} data-custom-link {...props}>
+          {children}
+        </a>
+      );
+    }
+    render(
+      <LinkProvider component={CustomLink}>
+        <NavHeadingMenu>
+          <NavHeadingMenuItem label="Docs" href="/docs" />
+        </NavHeadingMenu>
+      </LinkProvider>,
+    );
+    const item = screen.getByRole('menuitem');
+    expect(item).toHaveAttribute('data-custom-link');
+    expect(item).toHaveAttribute('href', '/docs');
+  });
+
+  it('keeps a disabled link item focusable but out of the Tab order', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" isDisabled />
+      </NavHeadingMenu>,
+    );
+    const item = screen.getByRole('menuitem');
+    // No href and no tabindex would make the anchor unfocusable.
+    expect(item).toHaveAttribute('tabindex', '-1');
+    item.focus();
+    expect(item).toHaveFocus();
+  });
+
+  it('keeps focus on a link item that becomes disabled while focused', () => {
+    const {rerender} = render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" />
+      </NavHeadingMenu>,
+    );
+    screen.getByRole('menuitem').focus();
+    expect(screen.getByRole('menuitem')).toHaveFocus();
+
+    rerender(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" isDisabled />
+      </NavHeadingMenu>,
+    );
+    const disabled = screen.getByRole('menuitem');
+    expect(disabled).not.toHaveAttribute('href');
+    expect(disabled).toHaveFocus();
+
+    rerender(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" />
+      </NavHeadingMenu>,
+    );
+    expect(screen.getByRole('menuitem')).toHaveFocus();
+  });
+
+  it('does not steal focus when an unfocused link item toggles disabled', () => {
+    const {rerender} = render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" />
+      </NavHeadingMenu>,
+    );
+    rerender(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" isDisabled />
+      </NavHeadingMenu>,
+    );
+    expect(screen.getByRole('menuitem')).not.toHaveFocus();
   });
 
   it('renders description text', () => {
