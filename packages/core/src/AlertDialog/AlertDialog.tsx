@@ -31,7 +31,7 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
 import alertDialogMessages from '../i18n/generated-locales/en/alertDialog.generated';
-import {useMediaQuery} from '../hooks';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 

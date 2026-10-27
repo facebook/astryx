@@ -33,7 +33,7 @@ import {Tooltip} from '../Tooltip';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
 import fieldMessages from '../i18n/generated-locales/en/field.generated';
 import {themeProps} from '../utils/themeProps';
-import {useInputContainer} from '../hooks';
+import {useInputContainer} from '../hooks/useInputContainer';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 
 const styles = stylex.create({
