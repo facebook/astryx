@@ -240,7 +240,7 @@ presses nothing.
   disabled recognizer or consumer, registers nothing; after a consumer's
   `isEnabled()` changes, `host.update(element)` re-syncs. The screen-edge
   pan stays off under a mouse, a trackpad and a pen (its recognizer allows
-  touches only, unless the caller allows another pointer), and a pinch
+  touches only; it takes no `allowedPointerTypes`), and a pinch
   never mixes a pen with a finger (a recognizer takes one kind of pointer
   at a time) (FR43). A press tracker takes a mouse press as a press, with
   the fine-pointer profile: it paints at once, inside a scroller too, and
@@ -430,6 +430,40 @@ ignores touches beyond its maximum. Before any claim, a second finger landing
 anywhere (often on a plain row no recognizer is on) fails a pan limited to
 one finger, so the two fingers zoom the page (WCAG 1.4.4) instead of the pan
 claiming them midway.
+
+## Wheel and trackpad
+
+A recognizer takes scroll input only where it allows that scroll type
+(`allowedScrollTypes`, UIKit's `allowedScrollTypesMask`): `continuous`
+for a trackpad's two-finger scroll, `discrete` for a mouse wheel's notches
+(`spec:AST-094` FR43). On the web a pan also takes wheel and trackpad
+scrolling (FR43), so a pan and a pinch allow both by default and their
+element gets the one wheel listener; a pan whose caller passes
+`allowedScrollTypes: []` opts out, and the screen-edge pan takes none, as
+it takes no mouse, trackpad or pen (FR43). A control's thumb, a slider's or
+a switch's, tracks as a control, not a pan, and takes no wheel, so a page
+scroll over it never changes its value. The web reports no wheel phases or
+device:
+a line- or page-mode delta, or a whole 100 or 120 px notch on one axis, reads
+as a mouse wheel, anything else as a trackpad.
+
+A wheel gesture drives a pan as a contact moving with the content, along the
+pan's own axis, and only once every scroller between the pointer and the
+pan's element is at its edge that way, decided at the gesture's first wheel:
+a wheel the pan does not take is never prevented. A scroll-edge pan (a pull to
+refresh) takes one only if no scroller under the pointer could scroll for it,
+its own scroll owner and the page included, as its finger's rule reads them
+(`spec:AST-094` FR19); `touch-action` narrows only a finger's pan, so a wheel
+reads every scroller past it. A ctrl-wheel (a trackpad
+pinch, or Control and a mouse wheel) drives a pinch, whose scale follows
+`exp(-deltaY / 100)`; a pinch takes it by default. A wheel gesture ends
+100 ms after its last wheel (provisional, an owner question), at that wheel's
+time, so its release keeps its velocity; macOS's momentum wheels arrive as
+more wheel, and the gesture follows them. A finger, mouse or pen that comes
+down ends it, and a wheel claim keeps the page's text selection. A gesture a
+recognizer took is latched to it, as a browser latches a scroller: while it
+lasts, a document `wheel` listener routes every step to it wherever it lands,
+so a pan whose element moves from under a still pointer keeps the gesture.
 
 ## Time
 
