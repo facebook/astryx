@@ -153,6 +153,7 @@ const styles = stylex.create({
         },
         {
           type: 'list',
+          style: 'unordered',
           items: [
             "`tempo` scales every motion duration: 1 is Astryx's own, 0.75 the quickest and 1.5 the slowest (values outside are clamped).",
             "`character` sets how lively motion is: `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own, and `'expressive'` overshoots slightly on entrances and moves. Exits and fades never overshoot.",

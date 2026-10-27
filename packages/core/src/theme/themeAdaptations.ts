@@ -578,19 +578,17 @@ function completeMotion(
   rule: Partial<MotionScaleConfig> & ThemeMotionKnobs,
   path: string,
 ): ThemeMotionConfig {
-  if ((rule as ThemeMotionKnobs).reducedMotion !== undefined) {
+  if (rule.reducedMotion !== undefined) {
     throw new Error(
       `${path}.reducedMotion is a theme-wide setting: set it on the theme's own ` +
         `motion, not in an adaptation rule.`,
     );
   }
+  const tempo = rule.tempo ?? root?.tempo;
+  const character = rule.character ?? root?.character;
   const knobs: ThemeMotionKnobs = {
-    ...((rule.tempo ?? root?.tempo) !== undefined
-      ? {tempo: (rule.tempo ?? root?.tempo) as number}
-      : {}),
-    ...((rule.character ?? root?.character) !== undefined
-      ? {character: rule.character ?? root?.character}
-      : {}),
+    ...(tempo !== undefined ? {tempo} : {}),
+    ...(character !== undefined ? {character} : {}),
   };
   if (knobs.tempo !== undefined) {
     assertFiniteNumber(knobs.tempo, `${path}.tempo`);
