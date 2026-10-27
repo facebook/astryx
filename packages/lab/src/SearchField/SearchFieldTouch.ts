@@ -493,12 +493,18 @@ export function useSearchFieldMotion({
   // INV5): any other field keeps the browser's own touch-action and tap.
   // It takes a finger and a pen, which Safari reveals a field for alike
   // (spec:AST-094 FR43); a mouse press stays the browser's, which places the
-  // caret and selects text where it lands.
+  // caret and selects text where it lands (DEC-21). The claim is touch work:
+  // it attaches only where the primary pointer is coarse, so under a fine one
+  // (desktop Safari or Firefox, where no software keyboard rises) a mouse or
+  // a pen tablet keeps the browser's own focus and click (spec:AST-017
+  // FR59).
   const [claimsTap, setClaimsTap] = useState(false);
   useLayoutEffect(() => {
     const win = rootAnimator.animator.element?.ownerDocument.defaultView;
-    setClaimsTap(!isStacked && win != null && keyboardCoversPage(win));
-  }, [isStacked, rootAnimator]);
+    setClaimsTap(
+      !isStacked && isTouch && win != null && keyboardCoversPage(win),
+    );
+  }, [isStacked, isTouch, rootAnimator]);
   const noClaimTarget = useRef<HTMLElement | null>(null);
   // A tap held a while still gets its mouse events a few ms after its
   // cancelled touchend, aimed at whatever is under the finger by then (the
