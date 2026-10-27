@@ -553,6 +553,13 @@ export interface UseSheetGesturesResult {
    */
   present: () => boolean;
   /**
+   * Calls `callback` once the entrance `present` started has landed or
+   * ended, at once when none is running; returns its cancel. A sheet that
+   * replaces another under a finger arrives on the present spring, and the
+   * handoff waits for it here before the replaced sheet fades.
+   */
+  afterEntrance: (callback: () => void) => () => void;
+  /**
    * Dismisses the sheet the way UIKit does under a finger: off screen on
    * `SHEET_DISMISS_SPRING`, the dim on the same curve. During the entrance it
    * waits for the sheet to land, then runs from the detent, as UIKit queues
@@ -862,13 +869,32 @@ export function useSheetGestures({
   // input, and a close waits for it (see `dismiss`).
   const presentingRef = useRef(false);
   const entranceRef = useRef<Promise<boolean> | null>(null);
+  const [entranceWaiters] = useState(() => new Set<() => void>());
   const endPresenting = useCallback(() => {
     entranceRef.current = null;
     if (presentingRef.current) {
       presentingRef.current = false;
       onPresentingChangeRef.current?.(false);
     }
-  }, []);
+    const waiters = [...entranceWaiters];
+    entranceWaiters.clear();
+    for (const waiter of waiters) {
+      waiter();
+    }
+  }, [entranceWaiters]);
+  const afterEntrance = useCallback(
+    (callback: () => void) => {
+      if (!presentingRef.current) {
+        callback();
+        return () => {};
+      }
+      entranceWaiters.add(callback);
+      return () => {
+        entranceWaiters.delete(callback);
+      };
+    },
+    [entranceWaiters],
+  );
 
   // Live drag bookkeeping (refs so pointermove doesn't churn renders).
   const dragStateRef = useRef<{
@@ -1700,6 +1726,10 @@ export function useSheetGestures({
   const present = useCallback((): boolean => {
     if (!readTouchPresentation().isTouch) {
       return false;
+    }
+    // One entrance at a time: a second call while it runs joins it.
+    if (presentingRef.current) {
+      return true;
     }
     // Input is held from now until the sheet lands (F4 b59).
     presentingRef.current = true;
@@ -2861,6 +2891,7 @@ export function useSheetGestures({
     gestureExitRef,
     resetTravel,
     present,
+    afterEntrance,
     dismiss,
   };
 }

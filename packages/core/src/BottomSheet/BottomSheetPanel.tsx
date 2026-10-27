@@ -634,6 +634,7 @@ export function BottomSheetPanel({
     gestureExitRef,
     resetTravel,
     present,
+    afterEntrance,
     dismiss,
   } = useSheetGestures({
     isOpen: isInteractive,
@@ -718,6 +719,15 @@ export function BottomSheetPanel({
         pendingMotionCompleteRef.current = motion;
       }
     };
+    // Under a finger a sheet that replaces another arrives on UIKit's present
+    // spring, as any sheet it opens does: its entrance is over when the spring
+    // lands, and only then does the replaced sheet fade. It is entering from
+    // its first commit, so the spring starts here rather than in the effect
+    // that presents a lone sheet.
+    if (motion === 'entering' && springsPresentation) {
+      present();
+      return afterEntrance(complete);
+    }
     // A sheet dismissed by a drag leaves on its release spring (the gesture
     // hook carries it off screen), not on the exit transition: its exit is
     // over when that spring lands. Under a finger any other close leaves on
@@ -749,7 +759,15 @@ export function BottomSheetPanel({
       motion === 'fading' || crossFadeMotion ? 'opacity' : 'transform',
       complete,
     );
-  }, [dismiss, gestureExitRef, isCrossFade, motion, springsPresentation]);
+  }, [
+    afterEntrance,
+    dismiss,
+    gestureExitRef,
+    isCrossFade,
+    motion,
+    present,
+    springsPresentation,
+  ]);
   // Under a finger the sheet arrives on UIKit's present spring. From an
   // effect, so the dim is taken over before the host shows the dialog (a
   // child's effects run before its host's).
@@ -930,7 +948,8 @@ export function BottomSheetPanel({
           isClosing && styles.sheetClosing,
           isClosing && isCrossFade && styles.sheetClosingCrossFade,
           isFading && styles.sheetFading,
-          springsPresentation && styles.sheetSprung,
+          // A replaced sheet aligns and fades on its stylesheet.
+          springsPresentation && !isRetained && styles.sheetSprung,
           isInactive && styles.sheetInactive,
           xstyle,
         ),

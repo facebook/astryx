@@ -28,6 +28,8 @@ import {
   resetBottomSheetStackForTests,
 } from './bottomSheetStack';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {isInHeldLayer} from '../Layer/inputHold';
+import {TOUCH_QUERY} from '../utils/touchQueries';
 
 let nativeLog: {
   call: 'showModal' | 'show' | 'close' | 'showPopover' | 'hidePopover';
@@ -928,6 +930,97 @@ function stubMedia(matching: ReadonlyArray<string>): void {
     })),
   );
 }
+
+describe('BottomSheet replace: under a finger (the touch layer)', () => {
+  // A finger: a coarse primary pointer, no Reduce Motion. Every standalone
+  // sheet arrives on UIKit's present spring, the replacing one too; the
+  // replaced sheet aligns and fades on its stylesheet once that spring lands.
+  beforeEach(() => {
+    stubMedia([TOUCH_QUERY]);
+    vi.useFakeTimers({toFake: ['performance', 'setTimeout', 'clearTimeout']});
+    // Frames on the faked clock; jsdom has no Web Animations, so the
+    // animator's curves end on its timers.
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(performance.now()), 16),
+    );
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id));
+    Object.defineProperty(Element.prototype, 'animate', {
+      configurable: true,
+      writable: true,
+      value: () => ({cancel: vi.fn(), startTime: 0}) as unknown as Animation,
+    });
+  });
+  afterEach(() => {
+    delete (Element.prototype as {animate?: unknown}).animate;
+    vi.useRealTimers();
+  });
+  async function land() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+  }
+
+  it('the replacing sheet arrives on the present spring, and the replaced sheet fades only once it lands', async () => {
+    render(<Flow />);
+    openFlow();
+    await land();
+    // The box the browser would give step two: the spring travels its height.
+    layout(getPanel(getDialog('Two')), 444, 400);
+    fireEvent.click(screen.getByRole('button', {name: 'Continue to two'}));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const one = getDialog('One');
+    const two = getDialog('Two');
+    expect(summary()).toEqual(['One:replaced-covered:0', 'Two:replacing:0']);
+    // A transform end is not the spring's landing.
+    endMotion(two, 'transform');
+    expect(summary()).toEqual(['One:replaced-covered:0', 'Two:replacing:0']);
+    await land();
+    expect(summary()).toEqual(['One:replaced-fading:0', 'Two:replacing:0']);
+    endMotion(one, 'opacity');
+    expect(summary()).toEqual(['Two:top:0']);
+  });
+
+  it('a taller replaced sheet aligns down on its stylesheet transform', async () => {
+    render(<Flow />);
+    openFlow();
+    await land();
+    const one = getDialog('One');
+    const two = getDialog('Two');
+    layout(getPanel(one), 444, 400);
+    layout(getPanel(two).parentElement as HTMLElement, 604, 240);
+    fireEvent.click(screen.getByRole('button', {name: 'Continue to two'}));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(summary()).toEqual(['One:replaced-aligning:0', 'Two:replacing:0']);
+    expect(getPanel(one).style.transform).toBe('translateY(160px)');
+    expect(getComputedStyle(getPanel(one)).transitionProperty).toContain(
+      'transform',
+    );
+    await land();
+    expect(summary()).toEqual(['One:replaced-aligning:0', 'Two:replacing:0']);
+    endMotion(one, 'transform');
+    expect(summary()).toEqual(['One:replaced-fading:0', 'Two:replacing:0']);
+  });
+
+  it('holds pointer input while the replacing sheet enters, and releases it as it lands (spec:AST-094 FR35)', async () => {
+    render(<Flow />);
+    openFlow();
+    await land();
+    // The box the browser would give step two: the spring travels its height.
+    layout(getPanel(getDialog('Two')), 444, 400);
+    fireEvent.click(screen.getByRole('button', {name: 'Continue to two'}));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const two = getDialog('Two');
+    expect(isInHeldLayer(getPanel(two))).toBe(true);
+    await land();
+    expect(isInHeldLayer(getPanel(two))).toBe(false);
+  });
+});
 
 describe('BottomSheet replace: reduced motion (design:reduced-motion)', () => {
   // The CSS itself (no transform travel, an opacity-only cross-fade of at
