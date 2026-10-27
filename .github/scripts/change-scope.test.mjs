@@ -398,6 +398,8 @@ describe('full-suite scope', () => {
       'packages/core/src/__mocks__/matchMedia.ts',
       'packages/core/src/setupTests.ts',
       'packages/lab/src/vitest.setup.ts',
+      'packages/core/babel-plugin-add-extensions.cjs',
+      'packages/lab/babel-plugin-add-extensions.cjs',
       'apps/storybook/.storybook/preview.tsx',
       // Node tooling keeps its whole Node project (FR8), internal/ included.
       'internal/scripts/lib/a-future-strategy.mjs',

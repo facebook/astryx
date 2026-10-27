@@ -794,18 +794,25 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
     expect(analyze.run).toContain('"${FORCE_FULL[@]}"');
   });
 
-  it('hands the visual gate the reverse dependents and the changed families, and the whole plan when analysis asks for it', () => {
+  it('hands the visual gate the folder-level reverse dependents RTL audits, and the whole plan when analysis or the gate asks for it', () => {
     const visual = stepNamed('Run the visual gate for the touched components');
     expect(visual.run).toContain(
-      '(.newComponents + .modifiedComponents + (.dependentComponents // []))',
+      `DEPENDENTS=$(jq -r '[(.dependentComponentOwners // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)`,
     );
     expect(visual.run).toContain(
-      '[(.familyComponents // [])[] | select(.package == "@astryxdesign/core") | .name]',
+      'if [ -n "$DEPENDENTS" ]; then DEPENDENT_ARGS=(--dependents "$DEPENDENTS"); fi',
+    );
+    expect(visual.run).toContain(
+      'SCOPE_ARGS=(--tiers component --components "$COMPONENTS" "${DEPENDENT_ARGS[@]}" --no-scout)',
     );
     expect(visual.run).toContain(
       "FORCE_FULL_AUDITS=$(jq -r '.forceFullComponentAudits == true' analysis.json)",
     );
     expect(visual.run).toContain('[ "$FORCE_FULL_AUDITS" = \'true\' ]');
+    // The gate's broaden exit runs the whole plan instead of skipping.
+    expect(visual.run).toMatch(
+      /if \[ "\$code" = 3 \]; then[\s\S]*?COMMAND=release\s+SCOPE_ARGS=\(\)\s+run_gate/,
+    );
   });
 
   it('scopes the visual classification only on a pull request check-scope scoped', () => {

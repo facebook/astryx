@@ -891,38 +891,29 @@ function analyze() {
   const unreachedSources = unresolvedComponentSources.filter((source) =>
     unresolvedFiles.some((entry) => entry.source === source && !isDecided(entry.file)),
   );
+  // One folder-level affected set, which visual and RTL both audit
+  // (spec:AST-030 FR13): each reverse dependent by the component folder it
+  // lives in, so a family member is its folder (Dialog, not DialogHeader),
+  // and each changed multi-component folder that documents components.
+  const folderOf = (target) => target.distModule.split('/')[0].replace(/\.(tsx?|jsx?|mjs)$/, '');
   const dependentComponentOwners = [];
-  const dependentComponents = [];
   if (!baseOnly) {
-    for (const target of headTargets) {
-      const owner = `${target.pkg.packageName}/${target.name}`;
-      if (newComponentOwners.includes(owner) || modifiedComponentOwners.includes(owner)) continue;
-      if (dependentComponentOwners.includes(owner)) continue;
-      dependentComponentOwners.push(owner);
-      // The legacy bare-name lists carry component folders only, as above.
+    const add = (owner) => {
       if (
-        componentStats[target.name] ||
-        !getComponentNames(target.pkg).includes(target.name) ||
-        !componentExistsInBase(target.pkg, target.name)
+        !newComponentOwners.includes(owner) &&
+        !modifiedComponentOwners.includes(owner) &&
+        !dependentComponentOwners.includes(owner)
       ) {
-        continue;
+        dependentComponentOwners.push(owner);
       }
-      componentStats[target.name] = getComponentStats(target.pkg, target.name);
-      dependentComponents.push(target.name);
+    };
+    for (const target of headTargets) add(`${target.pkg.packageName}/${folderOf(target)}`);
+    for (const source of unresolvedComponentSources) {
+      const [packageName, folder] = source.split('/');
+      const pkg = PACKAGES.find((candidate) => candidate.packageName === packageName);
+      if (pkg != null && pkg.layout !== 'flat' && familyMembers(pkg, folder).length > 0) add(source);
     }
     console.log(`Reverse dependents: ${dependentComponentOwners.join(', ') || 'none'}`);
-  }
-
-  // The components each changed multi-component folder implements: visual
-  // audits them by name, whatever their bundles say.
-  const familyComponents = [];
-  for (const source of baseOnly ? [] : unresolvedComponentSources) {
-    const [packageName, folder] = source.split('/');
-    const pkg = PACKAGES.find((candidate) => candidate.packageName === packageName);
-    if (pkg == null || pkg.layout === 'flat') continue;
-    for (const name of familyMembers(pkg, folder)) {
-      familyComponents.push({ package: pkg.name, name });
-    }
   }
 
   if (baseOnly) {
@@ -944,9 +935,7 @@ function analyze() {
     modifiedComponents,
     newComponentOwners,
     modifiedComponentOwners,
-    dependentComponents,
     dependentComponentOwners,
-    familyComponents,
     // Every changed multi-component folder stays listed: PR accessibility
     // expands it to its members (spec:AST-030 FR12, DEC-5). Only the sources
     // no bundle decided ask for full audits.

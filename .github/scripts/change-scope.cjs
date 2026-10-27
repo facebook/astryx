@@ -72,6 +72,8 @@ const PACKAGE_INFRA_PATTERNS = [
   /^packages\/[^/]+\/src\/[^/]*setup[^/]*\.[^/]+$/i,
   /^apps\/storybook\/\.storybook\//,
   /^internal\//,
+  // A package's root scripts are build configuration (its Babel plugins).
+  /^packages\/[^/]+\/[^/]+\.(?:c|m)?js$/,
 ];
 
 // Surfaces a pull request's tests can be scoped to by the import graph (the

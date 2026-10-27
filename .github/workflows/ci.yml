@@ -2132,7 +2132,13 @@ jobs:
         run: |
           set -eu
           # Component names are not globally unique; use their package identity.
-          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents + (.dependentComponents // []))[] | select($root.componentStats[.].package == "@astryxdesign/core")] + [(.familyComponents // [])[] | select(.package == "@astryxdesign/core") | .name] | unique | join(",")' analysis.json)
+          TOUCHED=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          # Reverse dependents by folder: the same affected set RTL audits
+          # (spec:AST-030 FR13).
+          DEPENDENTS=$(jq -r '[(.dependentComponentOwners // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)
+          COMPONENTS="$TOUCHED"
+          DEPENDENT_ARGS=()
+          if [ -n "$DEPENDENTS" ]; then DEPENDENT_ARGS=(--dependents "$DEPENDENTS"); fi
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
           COMMAND=check
           # Sources no build decided, or a full-suite change, audit the whole
@@ -2141,10 +2147,10 @@ jobs:
           if [ "$BROAD_STABLE_VISUAL" = 'true' ] || [ "$FORCE_FULL_AUDITS" = 'true' ]; then
             COMMAND=release
             SCOPE_ARGS=()
-          elif [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
-            SCOPE_ARGS=(--tiers 'component,theme-matrix' --components "$COMPONENTS" --themes "$THEMES")
-          elif [ -n "$COMPONENTS" ]; then
-            SCOPE_ARGS=(--tiers component --components "$COMPONENTS" --no-scout)
+          elif [ -n "$COMPONENTS$DEPENDENTS" ] && [ -n "$THEMES" ]; then
+            SCOPE_ARGS=(--tiers 'component,theme-matrix' --components "$COMPONENTS" "${DEPENDENT_ARGS[@]}" --themes "$THEMES")
+          elif [ -n "$COMPONENTS$DEPENDENTS" ]; then
+            SCOPE_ARGS=(--tiers component --components "$COMPONENTS" "${DEPENDENT_ARGS[@]}" --no-scout)
           elif [ -n "$THEMES" ]; then
             SCOPE_ARGS=(--tiers theme-matrix --themes "$THEMES")
           else
@@ -2155,18 +2161,30 @@ jobs:
           fi
 
           echo "Stable Core components: ${COMPONENTS:-none}"
+          echo "Stable Core reverse dependents: ${DEPENDENTS:-none}"
           echo "Stable themes: ${THEMES:-none}"
           OBS_ARGS=()
           if [ -d .visual-scout ]; then OBS_ARGS=(--observation-shards .visual-scout); fi
+          run_gate() {
+            node .github/scripts/visual-gate/gate.mjs "$COMMAND" \
+              --storybook-dir apps/storybook/dist \
+              --baseline .github/visual-baseline \
+              --out .visual-run \
+              "${SCOPE_ARGS[@]}" \
+              "${OBS_ARGS[@]}" \
+              --summary-output visual-summary.md
+          }
           set +e
-          node .github/scripts/visual-gate/gate.mjs "$COMMAND" \
-            --storybook-dir apps/storybook/dist \
-            --baseline .github/visual-baseline \
-            --out .visual-run \
-            "${SCOPE_ARGS[@]}" \
-            "${OBS_ARGS[@]}" \
-            --summary-output visual-summary.md
+          run_gate
           code=$?
+          if [ "$code" = 3 ]; then
+            # Reverse dependents too many for a focused review, or none with
+            # a stable story: the whole plan runs instead (spec:AST-030 FR13).
+            COMMAND=release
+            SCOPE_ARGS=()
+            run_gate
+            code=$?
+          fi
           set -e
           # Exit 2 is a visual change for review; every other nonzero exit is
           # an infrastructure failure, not a successful evidence receipt.
