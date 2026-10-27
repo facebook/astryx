@@ -316,6 +316,41 @@ describe('useTableRowExpansion (detail panel)', () => {
       );
     });
 
+    it('reads the colour mode once per table, however many panels are open', () => {
+      const original = window.matchMedia;
+      const listeners = (open: Set<string>) => {
+        let count = 0;
+        window.matchMedia = (query: string) => {
+          const list = original
+            ? original(query)
+            : ({matches: false, media: query} as MediaQueryList);
+          return {
+            ...list,
+            matches: list.matches,
+            media: query,
+            addEventListener: () => {
+              count += 1;
+            },
+            removeEventListener: () => {},
+            addListener: () => {
+              count += 1;
+            },
+            removeListener: () => {},
+          } as MediaQueryList;
+        };
+        const {unmount} = render(<Harness initialExpanded={open} />);
+        unmount();
+        return count;
+      };
+      try {
+        expect(listeners(new Set(['a', 'b', 'c']))).toBe(
+          listeners(new Set(['a'])),
+        );
+      } finally {
+        window.matchMedia = original;
+      }
+    });
+
     it("carries the row's own divider onto the panel (Table FR14)", () => {
       render(<Harness />);
       const row = cellsOf('Ada')[0].parentElement as HTMLTableRowElement;
