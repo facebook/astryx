@@ -242,7 +242,14 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // The release scales by the theme's tempo; it reads at tempo 1
+      // (`calc(<ms> * var(--_astryx-motion-tempo, 1))`, spec:AST-108 FR4).
+      const match =
+        value
+          .trim()
+          .match(
+            /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)$/,
+          ) ?? value.trim().match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);

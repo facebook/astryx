@@ -179,7 +179,14 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  // A clock scaled by the theme's tempo reads at tempo 1: the press release
+  // is `calc(<ms> * var(--_astryx-motion-tempo, 1))` (`spec:AST-108` FR4).
+  const scaled = value
+    .trim()
+    .match(
+      /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)$/,
+    );
+  const match = scaled ?? value.trim().match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }

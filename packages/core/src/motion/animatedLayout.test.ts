@@ -290,9 +290,9 @@ describe('the walk (spec:AST-105 FR3, Coverage)', () => {
 });
 
 describe('one shared motion (spec:AST-105 FR4)', () => {
-  async function changeOnce(style = '') {
+  async function changeOnce(style = '', attributes = '') {
     const {area, changed, phase} = setUp(
-      `<div id="area" style="${style}"><div id="changed"></div><div id="a"></div></div>`,
+      `<div id="area" style="${style}" ${attributes}><div id="changed"></div><div id="a"></div></div>`,
     );
     placeAt(
       document.getElementById('a') as HTMLElement,
@@ -316,6 +316,23 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     // SwiftUI's smooth spring (0.5 s, no bounce) settles in about 0.6 s.
     expect(Number(follower?.options.duration)).toBeGreaterThan(400);
     expect(Number(follower?.options.duration)).toBeLessThan(900);
+  });
+
+  it('follows the theme the area is in (a tempo of 1.5 here), with one duration for every part (spec:AST-108 FR3, FR4a)', async () => {
+    await changeOnce();
+    const plain = Number(
+      played.find(p => (p.element as HTMLElement).id === 'a')?.options.duration,
+    );
+    played = [];
+    document.body.innerHTML = '';
+    await changeOnce(
+      '',
+      'data-astryx-theme="slow" data-astryx-motion-tempo="1.5"',
+    );
+    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
+    const own = played.find(p => (p.element as HTMLElement).id === 'changed');
+    expect(own?.options.duration).toBe(follower?.options.duration);
+    expect(Number(follower?.options.duration)).toBeCloseTo(plain * 1.5, -1);
   });
 
   it("ignores a scope's --motion-springs-settle: the role is internal", async () => {
