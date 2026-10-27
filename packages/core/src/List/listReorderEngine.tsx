@@ -2329,28 +2329,30 @@ export function ListReorderModeHint({
     onDismiss: () => controller.endMode(),
     getContainer: () => hintRef.current,
   });
+  // No row in the mode: the layer stays, empty and hidden.
+  if (target === null) {
+    return renderAnchoredHint(layer, null, {isInteractive: true});
+  }
   return renderAnchoredHint(
     layer,
-    target == null ? null : (
-      <span
-        ref={element => {
-          hintRef.current = element;
-          controller.setHintElement(element);
-        }}
-        {...stylex.props(anchoredHintStyles.keys)}>
-        {controller.arrowsFor(target).map(arrow => (
-          <HintButton
-            key={arrow}
-            label={t(HINT_MOVES[arrow].label)}
-            onPress={() => controller.moveByArrow(target, arrow)}>
-            <Kbd keys={HINT_MOVES[arrow].keys} aria-hidden />
-          </HintButton>
-        ))}
-        <HintButton isText onPress={() => controller.endMode()}>
-          {t('@astryx.list.reorderDone')}
+    <span
+      ref={element => {
+        hintRef.current = element;
+        controller.setHintElement(element);
+      }}
+      {...stylex.props(anchoredHintStyles.keys)}>
+      {controller.arrowsFor(target).map(arrow => (
+        <HintButton
+          key={arrow}
+          label={t(HINT_MOVES[arrow].label)}
+          onPress={() => controller.moveByArrow(target, arrow)}>
+          <Kbd keys={HINT_MOVES[arrow].keys} aria-hidden />
         </HintButton>
-      </span>
-    ),
+      ))}
+      <HintButton isText onPress={() => controller.endMode()}>
+        {t('@astryx.list.reorderDone')}
+      </HintButton>
+    </span>,
     {isInteractive: true},
   );
 }
