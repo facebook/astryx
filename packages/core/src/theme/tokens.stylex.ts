@@ -218,8 +218,9 @@ export const sizeDefaults = {
   // RadioList option reaches 32 px at the default 8 px gap). Rows and
   // controls keep their drawn size. 44 px, the platform's control size:
   // Apple's Human Interface Guidelines give iOS controls a hit target of at
-  // least 44 × 44 pt. A larger value raises the reach; a smaller one never
-  // lowers it.
+  // least 44 × 44 pt. A larger value, in px, rem or em, raises the reach; a
+  // smaller one never lowers it. It is read again when the pointer or the
+  // theme changes.
   '--size-touch-target': '44px',
 } as const;
 
