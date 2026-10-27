@@ -29,9 +29,10 @@
  *   press.
  * - Only a row of two or more actions tracks (family:action-groups adoption
  *   table); a single action keeps the browser's own click.
- * - Under a coarse pointer each action's hit area grows to at least 44px
- *   (FR5): 8px past a 28px Button on every side. Nothing changes visually,
- *   and a fine pointer keeps the actions' own bounds.
+ * - Under a coarse pointer each action's hit area grows toward 44px (FR5),
+ *   each side capped at half the gap to its neighbour so no area takes from
+ *   another (utils/hitArea.ts). Nothing changes visually, and a fine pointer
+ *   keeps the actions' own bounds.
  *
  * SYNC: When modified, update useSiblingActionTracking.test.tsx
  */
@@ -39,6 +40,8 @@
 import type {RefObject} from 'react';
 import {stableClassName} from '../naming';
 import {COARSE_POINTER_QUERY} from '../utils/coarsePointer';
+import {resolveHitTarget} from '../utils/hitArea';
+import type {ActionGroupTarget} from './actionGroupTracker';
 import {useActionGroupTracking} from './useActionGroupTracking';
 import {useMediaQuery} from './useMediaQuery';
 
@@ -55,14 +58,18 @@ export const SIBLING_ACTION_SELECTOR = `${BUTTON}:not(:scope [popover] *), ${TOG
 const NOT_THE_ROW =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"], [popover]';
 
-/** The smallest hit target a coarse pointer gets, px (family:action-groups FR5). */
-const COARSE_TARGET = 44;
-
-/** The smallest action in a row: a small Button, px. */
-const SMALLEST_ACTION = 28;
-
-/** How far past each action a coarse pointer still hits it, px. */
-export const COARSE_HIT_EXPANSION = (COARSE_TARGET - SMALLEST_ACTION) / 2;
+/**
+ * Which action a coarse pointer's point is on: each action's hit area grows
+ * toward 44 px, each side capped at half the gap to its neighbour, so no area
+ * takes from another (utils/hitArea.ts, family:action-groups FR5).
+ */
+function coarseTarget(
+  x: number,
+  y: number,
+  actions: ReadonlyArray<ActionGroupTarget>,
+): HTMLElement | null {
+  return actions[resolveHitTarget(x, y, actions)]?.element ?? null;
+}
 
 export interface SiblingActionTrackingOptions {
   /** Off, nothing is attached. @default true */
@@ -96,7 +103,9 @@ export function useSiblingActionTracking(
     itemSelector: SIBLING_ACTION_SELECTOR,
     // A plain row has no measured onset or margin: the action lands lit.
     highlightOnsetMs: 0,
-    highlightExpansion: isCoarse ? COARSE_HIT_EXPANSION : 0,
+    highlightExpansion: 0,
+    // A fine pointer keeps the actions' own bounds.
+    resolveTarget: isCoarse ? coarseTarget : undefined,
     pointerTypes: ['touch', 'pen', 'mouse'],
     shouldTrack: target => shouldTrackRow(ref.current, target),
     isInert,

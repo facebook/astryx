@@ -57,6 +57,7 @@ import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {
   createActionGroupTracker,
   type ActionGroupTracker,
+  type ActionGroupTrackerOptions,
 } from './actionGroupTracker';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
@@ -93,6 +94,12 @@ export interface ActionGroupTrackingOptions {
   manageStyle?: boolean;
   /** Runs the action under the finger at the lift. @default its own click */
   onActivate?: (item: HTMLElement) => void;
+  /**
+   * Which action a point is on, from the rects measured at press start
+   * (the tracker's `resolveTarget`), read at each press. @default the
+   * action whose rect, grown by `highlightExpansion`, holds the point
+   */
+  resolveTarget?: ActionGroupTrackerOptions['resolveTarget'];
 }
 
 const PRESS = UIKIT_PRESS;
@@ -120,6 +127,7 @@ export function useActionGroupTracking(
     itemSelector: optionsRef.current.itemSelector,
     highlightExpansion: optionsRef.current.highlightExpansion,
     onActivate: optionsRef.current.onActivate,
+    resolveTarget: optionsRef.current.resolveTarget,
   }));
   const tracker = trackerRef.current;
   const isEnabled = options.isEnabled ?? true;

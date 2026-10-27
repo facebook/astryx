@@ -18,10 +18,7 @@ import {Button} from '../Button';
 import {TextInput} from '../TextInput';
 import {Toolbar} from '../Toolbar';
 import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
-import {
-  COARSE_HIT_EXPANSION,
-  SIBLING_ACTION_SELECTOR,
-} from './useSiblingActionTracking';
+import {SIBLING_ACTION_SELECTOR} from './useSiblingActionTracking';
 
 interface Point {
   x: number;
@@ -158,14 +155,26 @@ describe('useSiblingActionTracking', () => {
     ]);
   });
 
-  it('reaches 44px under a coarse pointer: a press just outside a button lights it (FR5)', () => {
-    const {cut, onCut} = mountToolbar();
-    const f = finger(cut);
-    const justOutside = {x: -COARSE_HIT_EXPANSION + 2, y: 16};
-    f.down(justOutside);
+  it('grows each button toward 44px under a coarse pointer without taking from its neighbour (FR5)', () => {
+    const {cut, copy, onCut, onCopy} = mountToolbar();
+    // Cut is 32px wide at 0, Copy at 40: Cut reaches 6px out on its open
+    // side, and the 8px gap splits at its middle.
+    const outside = {x: -4, y: 16};
+    const first = finger(cut);
+    first.down(outside);
     expect(paintOf(cut)).toBe('on');
-    f.up(justOutside);
+    first.up(outside);
     expect(onCut).toHaveBeenCalledTimes(1);
+    const nearCut = {x: 35, y: 16};
+    const f = finger(cut);
+    f.down(nearCut);
+    expect(paintOf(cut)).toBe('on');
+    expect(paintOf(copy)).toBeNull();
+    f.move({x: 37, y: 16});
+    expect(paintOf(cut)).toBeNull();
+    expect(paintOf(copy)).toBe('on');
+    f.up({x: 37, y: 16});
+    expect(onCopy).toHaveBeenCalledTimes(1);
   });
 
   it("tracks a Banner's end area only when it holds two or more actions", () => {
