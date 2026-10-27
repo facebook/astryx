@@ -117,12 +117,38 @@ function formatChange(value: number | null, base: number | null): string {
   return `${change >= 0 ? '+' : ''}${change.toFixed(0)}%`;
 }
 
+/** The median: with an even count, the mean of the two middle values. */
 function median(values: number[]): number | null {
   if (values.length === 0) {
     return null;
   }
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)] ?? null;
+  const half = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1
+    ? sorted[half]
+    : (sorted[half - 1] + sorted[half]) / 2;
+}
+
+/** Saved baselines outlive a reload, so a build change can be compared. */
+const BASELINES_KEY = 'astryx-sandbox:animated-layout-perf:baselines';
+
+function loadBaselines(): Record<string, RunMetrics> {
+  try {
+    const saved = window.localStorage.getItem(BASELINES_KEY);
+    return saved == null
+      ? {}
+      : (JSON.parse(saved) as Record<string, RunMetrics>);
+  } catch {
+    return {};
+  }
+}
+
+function storeBaselines(baselines: Record<string, RunMetrics>): void {
+  try {
+    window.localStorage.setItem(BASELINES_KEY, JSON.stringify(baselines));
+  } catch {
+    // Storage unavailable (private mode): baselines last this session.
+  }
 }
 
 const nextFrame = async (): Promise<number> =>
@@ -165,11 +191,11 @@ const MiddleItem = memo(function MiddleItem({
         animatedLayout={animatedLayout}>
         <VStack gap={1}>
           <Text type="supporting">
-            Expanding this item glides every row after it in the list.
+            Expanding this item moves the rows after it that are in view.
           </Text>
           <Text type="supporting">
-            The walk visits the rows around it, at each level up to the list,
-            and moves only those whose rectangle changed and that are in view.
+            The page counts the rectangles read to find them, and times the work
+            until they start to move.
           </Text>
           <Text type="supporting">
             Closing it plays its exit while the rows below glide up.
@@ -188,6 +214,10 @@ export default function AnimatedLayoutPerfPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [metrics, setMetrics] = useState<RunMetrics>(EMPTY_METRICS);
   const [baselines, setBaselines] = useState<Record<string, RunMetrics>>({});
+  // Read after hydration: the prerendered page has none.
+  useEffect(() => {
+    setBaselines(loadBaselines());
+  }, []);
   const [scrollTop, setScrollTop] = useState(0);
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -314,6 +344,13 @@ export default function AnimatedLayoutPerfPage() {
       observer?.disconnect();
       cancelAnimationFrame(frameId);
     }
+    // A stopped run publishes nothing: its totals would read as a full run's.
+    if (walks.length < TOGGLES) {
+      setMetrics(EMPTY_METRICS);
+      runningRef.current = false;
+      setIsRunning(false);
+      return;
+    }
     const next: RunMetrics = {
       walkMs: median(walks),
       rectsRead: median(reads),
@@ -334,7 +371,11 @@ export default function AnimatedLayoutPerfPage() {
   }, []);
 
   const saveBaseline = useCallback(() => {
-    setBaselines(current => ({...current, [key]: metrics}));
+    setBaselines(current => {
+      const next = {...current, [key]: metrics};
+      storeBaselines(next);
+      return next;
+    });
   }, [key, metrics]);
 
   // The rows, built once per list and window: a toggle re-renders only the
@@ -472,9 +513,10 @@ export default function AnimatedLayoutPerfPage() {
                 the glide starting: React&apos;s commit of the item, then the
                 walk and its reads. Run No handle for the same list to see what
                 the browser&apos;s own layout costs without the walk. A dropped
-                frame is a measured animation frame gap over 20 ms. Save a
-                baseline, change the build or the CPU throttle in DevTools, and
-                run again to compare.
+                frame is a measured animation frame gap over 20 ms. A stopped
+                run reports nothing. Save a baseline (it is kept across reloads
+                in this browser), change the build or the CPU throttle in
+                DevTools, and run again to compare.
               </Text>
             </VStack>
           </Card>
