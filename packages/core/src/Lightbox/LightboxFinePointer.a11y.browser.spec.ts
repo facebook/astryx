@@ -196,9 +196,10 @@ for (const via of ['the Next button', 'the arrow key'] as const) {
     const {dialog} = await openGallery(page);
     // The track's place every frame from the press on: under a finger the
     // pager slides; with a mouse or the keyboard the new photo shows at once,
-    // as it always has.
-    const sampling = page.evaluate(
-      async () =>
+    // as it always has. The sampler is in place before the press (an awaited
+    // install): one the page gets first would leave it waiting.
+    await page.evaluate(() => {
+      (window as unknown as {__places: Promise<number[]>}).__places =
         new Promise<number[]>(resolve => {
           const track = document.querySelector(
             'dialog [data-lightbox-page]',
@@ -224,14 +225,16 @@ for (const via of ['the Next button', 'the arrow key'] as const) {
             }
           };
           requestAnimationFrame(tick);
-        }),
-    );
+        });
+    });
     if (via === 'the Next button') {
       await dialog.getByRole('button', {name: 'Next'}).click();
     } else {
       await page.keyboard.press('ArrowRight');
     }
-    const places = await sampling;
+    const places = await page.evaluate(
+      () => (window as unknown as {__places: Promise<number[]>}).__places,
+    );
     await expect(dialog).toContainText('2 / 4');
     expect(places.length).toBeGreaterThan(10);
     // One place from the first frame after the press: no frame in between.
