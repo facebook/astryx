@@ -323,9 +323,7 @@ test.describe('with a mouse', () => {
       document.addEventListener(
         'click',
         event => {
-          const action = (event.target as Element).closest(
-            '[data-astryx-press-group-item]',
-          );
+          const action = (event.target as Element).closest('dialog button');
           if (action != null) {
             (
               window as unknown as {__alertClick: (label: string) => void}
@@ -396,13 +394,10 @@ test(
   async ({page}, testInfo) => {
     const {driver, dialog, centers} = await openAlert(page);
     // CSS locators rather than roles: they still resolve once the alert has
-    // closed, so Cancel's paint can be read after the lift.
-    const cancel = page.locator('[data-astryx-press-group-item]', {
-      hasText: 'Cancel',
-    });
-    const del = page.locator('[data-astryx-press-group-item]', {
-      hasText: 'Delete',
-    });
+    // closed, so Cancel's paint can be read after the lift (the group item
+    // marker leaves with the tracking).
+    const cancel = page.locator('dialog button', {hasText: 'Cancel'});
+    const del = page.locator('dialog button', {hasText: 'Delete'});
     const box = await dialog.boundingBox();
     if (box == null) {
       throw new Error('no dialog box');
