@@ -65,13 +65,14 @@ const RUNNERS = {
     sites: ['importThemeArtifact'],
   },
   'api/theme/build/build.mjs': {
-    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core",
+    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core; Core's root entry, only when a theme module requires it",
     sites: [
       '.evalModule() ×2',
       '.import()',
       'createJiti ×5',
       'eval ×2',
-      'import(<computed>) ×3',
+      'import(<computed>) ×2',
+      'require(<computed>)',
     ],
   },
   'api/theme/build/core-interception.mjs': {

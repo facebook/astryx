@@ -236,7 +236,9 @@ function mergeGenerativeAxes(inherited, own) {
  * standalone builds with current Core do not.
  *
  * @param {any} coreThemeModule - The installed `@astryxdesign/core/theme` namespace.
- * @param {any} [coreRootModule] - The installed `@astryxdesign/core` namespace.
+ * @param {any} [coreRootModule] - The installed `@astryxdesign/core` namespace,
+ *   or a function that loads it, called the first time a theme module
+ *   requires the root.
  * @returns {CoreInterception}
  */
 export function interceptCore(coreThemeModule, coreRootModule) {
@@ -287,14 +289,35 @@ export function interceptCore(coreThemeModule, coreRootModule) {
     };
   };
 
-  return {
-    modules: {
-      '@astryxdesign/core/theme': wrapNamespace(coreThemeModule),
-      // Falls back to the theme namespace only when the root could not be
-      // imported at all; a partial root is better than none, and a core
-      // missing its own root entry is already broken.
-      '@astryxdesign/core': wrapNamespace(coreRootModule ?? coreThemeModule),
+  /** @type {Record<string, any>} */
+  const modules = {
+    '@astryxdesign/core/theme': wrapNamespace(coreThemeModule),
+  };
+  // The root loads all of Core and React, so it is read only when a theme
+  // module requires it: jiti reads a virtual module when the specifier is
+  // required, not before. Falls back to the theme namespace only when the
+  // root could not be loaded at all; a partial root is better than none, and
+  // a core missing its own root entry is already broken.
+  /** @type {any} */
+  let rootNamespace;
+  let rootRead = false;
+  Object.defineProperty(modules, '@astryxdesign/core', {
+    enumerable: true,
+    get() {
+      if (!rootRead) {
+        rootRead = true;
+        const root =
+          typeof coreRootModule === 'function'
+            ? coreRootModule()
+            : coreRootModule;
+        rootNamespace = wrapNamespace(root ?? coreThemeModule);
+      }
+      return rootNamespace;
     },
+  });
+
+  return {
+    modules,
 
     // prettier-ignore
     observed(theme) { return wasObserved(theme, byReference); },

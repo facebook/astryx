@@ -93,7 +93,8 @@ describe('theme build generates with the Core the project installed', () => {
     const app = makeDir();
     installCore(app);
     await themeBuild('ocean.mjs', {}, {cwd: app});
-    expect(globalThis.__astryxProjectCoreLoads).toEqual(['theme', 'root']);
+    // The root loads all of Core, and this theme never imports it.
+    expect(globalThis.__astryxProjectCoreLoads).toEqual(['theme']);
     // The same Core, re-exported, emits the same CSS as the CLI's own. The
     // generated header differs only in the Core version it records.
     const bare = makeDir();
@@ -105,6 +106,20 @@ describe('theme build generates with the Core the project installed', () => {
         .replace(/^\/\*[\s\S]*?\*\/\n/, '');
     expect(rules(app)).toBe(rules(bare));
     expect(rules(app)).toContain('#0a0a0a');
+  });
+
+  it('loads the app’s installed root only for a theme that imports it', async () => {
+    const app = makeDir();
+    installCore(app);
+    fs.writeFileSync(
+      path.join(app, 'harbor.mjs'),
+      "import {defineTheme} from '@astryxdesign/core';\nexport default defineTheme({name: 'harbor', tokens: {'--color-bg': '#0b0b0b'}});\n",
+    );
+    await themeBuild('harbor.mjs', {}, {cwd: app});
+    expect(globalThis.__astryxProjectCoreLoads).toEqual(['theme', 'root']);
+    expect(fs.readFileSync(path.join(app, 'harbor.css'), 'utf-8')).toContain(
+      '#0b0b0b',
+    );
   });
 
   it('keeps the CLI’s own Core when the project has none', async () => {
