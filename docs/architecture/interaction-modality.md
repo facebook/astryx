@@ -172,8 +172,9 @@ work.
   the next at once. Keyboard focus shows at once, and a finger is never gated
   or served by it: intent answers mouse and pen hover only. The hover recognizer attaches only for hover-capable
   pointers, since a finger cannot hover, and registers no touch listener. `useTooltip`,
-  `useHoverCard`, `useMenuHover`, and `useContainerReveal` take their hover
-  timing from it. Enter and exit animation, hover tint, and the default delay
+  `useHoverCard`, and `useMenuHover` take their hover timing from it;
+  `useContainerReveal` keeps its CSS-only dwell (`component:Thumbnail` PR1) and
+  takes only its delay values from the owner's intent. Enter and exit animation, hover tint, and the default delay
   itself stay with their owners. The setting adds no module and is internal
   (`spec:AST-017` FR21).
 
