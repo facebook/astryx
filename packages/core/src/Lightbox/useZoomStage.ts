@@ -129,7 +129,6 @@ export function useZoomStage(
   const {
     animator,
     geometryRef,
-    targetRef,
     measure,
     toStage,
     current,
