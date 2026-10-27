@@ -42,6 +42,7 @@ beforeEach(() => {
     return {
       cancel() {},
       addEventListener() {},
+      finished: Promise.resolve(),
     } as unknown as Animation;
   };
 });
@@ -167,12 +168,25 @@ describe('an open panel carries its row divider (Table FR14)', () => {
 describe('markGlidingRows', () => {
   it('marks the moving rows and carries their divider while they move, and clears both after', async () => {
     const body = document.createElement('tbody');
+    // Each row: a pinned cell, then two that scroll with it.
     const rows = [0, 1, 2, 3, 4].map(() => {
       const row = document.createElement('tr');
-      row.append(document.createElement('td'));
+      const pinned = document.createElement('td');
+      pinned.setAttribute('data-astryx-table-pinned', '');
+      row.append(
+        pinned,
+        document.createElement('td'),
+        document.createElement('td'),
+      );
       body.append(row);
       return row;
     });
+    // A table nested in a moving row keeps its own dividers.
+    const nested = document.createElement('table');
+    nested.innerHTML = '<tbody><tr><td></td></tr></tbody>';
+    rows[2].cells[1].append(nested);
+    const cellMarks = (row: HTMLTableRowElement) =>
+      [...row.cells].map(cell => cell.getAttribute('data-astryx-cell-gliding'));
     document.body.append(body);
     let finish = () => {};
     const glide = {
@@ -193,6 +207,13 @@ describe('markGlidingRows', () => {
     expect(
       rows[2].style.getPropertyValue('--_table-row-divider-app-width'),
     ).toBe('0px');
+    // The first cell that scrolls draws the line; the pinned one draws its
+    // own; the nested table's cell is not marked.
+    expect(cellMarks(rows[2])).toEqual(['', 'line', '']);
+    expect(cellMarks(rows[4])).toEqual([null, null, null]);
+    expect(
+      nested.querySelector('td')?.hasAttribute('data-astryx-cell-gliding'),
+    ).toBe(false);
 
     finish();
     await done;
@@ -202,6 +223,7 @@ describe('markGlidingRows', () => {
     expect(
       rows[2].style.getPropertyValue('--_table-row-divider-app-width'),
     ).toBe('');
+    expect(cellMarks(rows[2])).toEqual([null, null, null]);
     body.remove();
   });
 });

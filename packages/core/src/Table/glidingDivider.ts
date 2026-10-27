@@ -9,9 +9,10 @@
  *   carries each row's own border onto the stand-in) and `collapsedBottom`
  * @position Table internals. With collapsed borders the table paints every
  *   border at its cell's static place, so a row that moves leaves its divider
- *   behind. For the glide only, the cells' borders go transparent (their width
- *   stays, so nothing reflows) and the row's ::after draws the same divider,
- *   which moves with the row. A pinned cell draws its own over it
+ *   behind. For the glide only, the moving row's cells are marked: their
+ *   borders go transparent (their width stays, so nothing reflows) and one of
+ *   them draws the same divider across the whole row in its ::after, which
+ *   moves with the row. A pinned cell draws its own over it
  *   (plugins/stickyColumns).
  *
  * SYNC: When modified, update TableCell.tsx, plugins/rowExpansion and
@@ -20,11 +21,21 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {tableRowMarker} from './table.stylex';
 
 /** On a row while a glide moves it. */
 export const GLIDING_ATTRIBUTE = 'data-astryx-row-gliding';
 const GLIDING = '[data-astryx-row-gliding]';
+/**
+ * On each cell of a moving row; `line` on the one that draws the row's
+ * divider. On the cells themselves, so a table nested in a moving row keeps
+ * its own dividers.
+ */
+const CELL_ATTRIBUTE = 'data-astryx-cell-gliding';
+const CELL_GLIDING = '[data-astryx-cell-gliding]';
+const CELL_LINE = '[data-astryx-cell-gliding="line"]';
+
+/** On a pinned (sticky) cell: plugins/stickyColumns. */
+const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 
 /** A row's own divider, carried for the glide (or a pinned cell's). */
 export const APP_DIVIDER_WIDTH = '--_table-row-divider-app-width';
@@ -32,40 +43,53 @@ export const APP_DIVIDER_STYLE = '--_table-row-divider-app-style';
 export const APP_DIVIDER_COLOR = '--_table-row-divider-app-color';
 
 export const glidingDividerStyles = stylex.create({
-  /** On every cell with a row divider: it goes transparent while the row moves. */
+  /**
+   * On every cell with a row divider: it goes transparent while the row
+   * moves, and the row's line cell draws the divider across the row's bottom
+   * edge, where the collapsed border sits. The line is positioned against the
+   * row (the cell is not positioned), so the cell's own overflow does not clip
+   * it, and it is a box inside a cell, not a box in the row, so the table's
+   * column widths do not change.
+   */
   cell: {
     borderBottomColor: {
       // A detail panel's cell carries its row's divider color (see
       // plugins/rowExpansion); every other cell reads the token.
       default: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
-      [stylex.when.ancestor(GLIDING, tableRowMarker)]: 'transparent',
+      [CELL_GLIDING]: 'transparent',
+    },
+    // Every declaration only on the line cell: a pinned cell's own ::after
+    // (its scroll shadow) stays untouched.
+    '::after': {
+      content: {default: null, [CELL_LINE]: '""'},
+      position: {default: null, [CELL_LINE]: 'absolute'},
+      insetInline: {default: null, [CELL_LINE]: 0},
+      bottom: {default: null, [CELL_LINE]: 0},
+      height: {default: null, [CELL_LINE]: 0},
+      borderBottomWidth: {
+        default: null,
+        [CELL_LINE]: `var(${APP_DIVIDER_WIDTH}, 0px)`,
+      },
+      borderBottomStyle: {
+        default: null,
+        [CELL_LINE]: `var(${APP_DIVIDER_STYLE}, solid)`,
+      },
+      borderBottomColor: {
+        default: null,
+        [CELL_LINE]: `var(${APP_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+      },
+      pointerEvents: {default: null, [CELL_LINE]: 'none'},
     },
   },
   /**
-   * On every row: while it moves, its ::after draws the divider across the
-   * row's bottom edge, where the collapsed border sits, and moves with it. A
-   * cell's ::before or ::after is clipped by the cell's own overflow; the
-   * row's is not. The row's motion (a `translate`) makes it the line's
-   * containing block, and `position: relative` keeps it so.
+   * On every row: while it moves it is the line's containing block. Its
+   * motion (a `translate`) makes it one; `position: relative` keeps it so
+   * for a panel playing in, which does not move.
    */
   row: {
     position: {
       default: null,
       [GLIDING]: 'relative',
-    },
-    '::after': {
-      content: {
-        default: null,
-        [GLIDING]: '""',
-      },
-      position: 'absolute',
-      insetInline: 0,
-      bottom: 0,
-      height: 0,
-      borderBottomWidth: `var(${APP_DIVIDER_WIDTH}, 0px)`,
-      borderBottomStyle: `var(${APP_DIVIDER_STYLE}, solid)`,
-      borderBottomColor: `var(${APP_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
-      pointerEvents: 'none',
     },
   },
 });
@@ -232,6 +256,15 @@ export async function markGlidingRows(
       row.style.setProperty(APP_DIVIDER_STYLE, edge.style);
       row.style.setProperty(APP_DIVIDER_COLOR, edge.color);
       row.setAttribute(GLIDING_ATTRIBUTE, '');
+      // The first cell that scrolls with the row draws the line; a pinned
+      // cell is positioned (the line would be its width) and draws its own.
+      let hasLine = false;
+      for (const cell of row.children) {
+        const isLine: boolean =
+          !hasLine && !cell.hasAttribute(PINNED_ATTRIBUTE);
+        cell.setAttribute(CELL_ATTRIBUTE, isLine ? 'line' : '');
+        hasLine ||= isLine;
+      }
     }
     markedBy.set(row, batch);
   }
@@ -247,6 +280,9 @@ export async function markGlidingRows(
     }
     markedBy.delete(row);
     row.removeAttribute(GLIDING_ATTRIBUTE);
+    for (const cell of row.children) {
+      cell.removeAttribute(CELL_ATTRIBUTE);
+    }
     row.style.removeProperty(APP_DIVIDER_WIDTH);
     row.style.removeProperty(APP_DIVIDER_STYLE);
     row.style.removeProperty(APP_DIVIDER_COLOR);
