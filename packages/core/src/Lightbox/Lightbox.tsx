@@ -869,7 +869,8 @@ export function Lightbox({
   // Which input came last decides whether a zoom hides the controls (only
   // touch does, as Photos); a keyboard focus on a hidden control shows them.
   // Attached with the dialog node itself (a callback ref): a viewer whose
-  // first render had no item mounts its dialog later.
+  // first render had no item mounts its dialog later. They listen for every
+  // pointer, on the dialog itself (spec:AST-094 FR24, FR43).
   const inputListenersRef = useRef<(() => void) | null>(null);
   const attachInputListeners = useCallback(
     (dialog: HTMLDialogElement | null) => {
@@ -894,13 +895,49 @@ export function Lightbox({
           setChrome({hidden: false, immersive: immersiveRef.current});
         }
       };
+      // With the controls hidden, a tap where a gallery's caption sits
+      // brings them back, as a tap beside the photo does (`onTapOutside`):
+      // the caption sits below the photo's box, out of the stage's reach.
+      // The tap's click never comes (the gesture layer takes the touch's
+      // default), so the press itself decides: down and up on a caption
+      // within a tap's movement.
+      let captionPress: {id: number; x: number; y: number} | null = null;
+      const onCaptionPress = (event: PointerEvent) => {
+        const target = event.target instanceof Element ? event.target : null;
+        captionPress =
+          chromeHiddenRef.current &&
+          target?.closest('[data-lightbox-caption]') != null
+            ? {id: event.pointerId, x: event.clientX, y: event.clientY}
+            : null;
+      };
+      const onCaptionLift = (event: PointerEvent) => {
+        const press = captionPress;
+        captionPress = null;
+        if (
+          press == null ||
+          press.id !== event.pointerId ||
+          !chromeHiddenRef.current ||
+          Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+            UIKIT_TAP.allowableMovement.value
+        ) {
+          return;
+        }
+        setChrome({
+          hidden: false,
+          immersive: stageApiRef.current?.isZoomed() === true,
+        });
+      };
       dialog.addEventListener('pointerdown', onPointerDown, true);
       dialog.addEventListener('keydown', onKeyDown, true);
       dialog.addEventListener('focusin', onFocusIn);
+      dialog.addEventListener('pointerdown', onCaptionPress, true);
+      dialog.addEventListener('pointerup', onCaptionLift, true);
       inputListenersRef.current = () => {
         dialog.removeEventListener('pointerdown', onPointerDown, true);
         dialog.removeEventListener('keydown', onKeyDown, true);
         dialog.removeEventListener('focusin', onFocusIn);
+        dialog.removeEventListener('pointerdown', onCaptionPress, true);
+        dialog.removeEventListener('pointerup', onCaptionLift, true);
       };
     },
     [setChrome],

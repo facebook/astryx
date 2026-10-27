@@ -272,11 +272,13 @@ export const zoomMedia = {
      */
     fadeSeconds: 0.2,
     /**
-     * The chrome fade's timing function: easeInEaseOut.
+     * The chrome fade's timing function: easeInEaseOut, the
+     * `timing.curves.move` leaf itself, so the fade plays that role
+     * (spec:AST-094 FR4).
      * @source measured: Photos, iOS 26.2 simulator, iPhone 17 Pro, the same
      *   CAAnimations (timing function control points), Oct 24 2026
      */
-    fadeCurve: [0.42, 0, 0.58, 1],
+    fadeCurve: reducedMotionCrossFade.curve,
     /**
      * The viewer's background turns black as the chrome hides and back as
      * it shows, over this long, s, easeInEaseOut (`fadeCurve`).

@@ -165,6 +165,14 @@ describe('the settle (UIScrollView zoom animation)', () => {
     expect(motionRoleOf(zoomMedia.settle.curve)?.id).toBe('timing.curves.move');
   });
 
+  it('fades the chrome on the timing.curves.move role: the leaf, not a copy (spec:AST-094 FR4)', () => {
+    registerReducedMotionCrossFade();
+    expect(zoomMedia.chrome.fadeCurve).toBe(reducedMotionCrossFade.curve);
+    expect(motionRoleOf(zoomMedia.chrome.fadeCurve)?.id).toBe(
+      'timing.curves.move',
+    );
+  });
+
   it('moves zoom and offset together on easeInEaseOut', () => {
     const from: ZoomTransform = {x: 0, y: 0, scale: 1};
     const to: ZoomTransform = {x: -400, y: -100, scale: 3};

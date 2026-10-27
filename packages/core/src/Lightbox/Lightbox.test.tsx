@@ -1511,3 +1511,34 @@ describe('Lightbox opener fallback listener (spec:AST-094 FR24)', () => {
     restorePointer();
   });
 });
+
+describe('Lightbox chrome toggle listeners', () => {
+  it('listen on the viewer itself for every pointer (spec:AST-094 FR24, FR43)', () => {
+    const added = vi.spyOn(HTMLDialogElement.prototype, 'addEventListener');
+    const viewer = (
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />
+    );
+    const focusIns = () =>
+      added.mock.calls.filter(([type]) => type === 'focusin').length;
+    try {
+      const fine = render(viewer);
+      expect(focusIns()).toBe(1);
+      fine.unmount();
+      added.mockClear();
+      const restore = stubCoarsePointer();
+      try {
+        render(viewer);
+        expect(focusIns()).toBe(1);
+      } finally {
+        restore();
+      }
+    } finally {
+      added.mockRestore();
+    }
+  });
+});
