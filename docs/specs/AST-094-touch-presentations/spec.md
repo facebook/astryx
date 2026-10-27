@@ -112,7 +112,8 @@ a measured, sourced difference exists.
   per-role weights (`spec:AST-108` FR3), and roles on the fixed list ignore
   both: the on-screen keyboard (`spec:AST-099` FR8); gesture thresholds, the
   content-touch delay, and momentum (`spec:AST-002` FR3); finger tracking, the
-  rubber band, press clocks, and busy loops; and the 200 ms Reduce Motion cap.
+  rubber band, the press model's onset delay, cancel distance, and tap flash
+  (`spec:AST-108` FR4), and busy loops; and the 200 ms Reduce Motion cap.
   The per-role tables stay internal (DEC-15). A component MUST read touch motion through these roles
   and MUST NOT play a literal. A theme's knob values MUST reach the motion at its
   start, without changing how the motion runs (FR5, FR6). Motion that
@@ -732,6 +733,19 @@ internal" for exactly these three knobs, and DEC-1's and DEC-3's per-role
 retuning, which a theme does through the knobs; DEC-11's rejected alternative, public
 per-component roles, stays rejected.
 
+### DEC-19 — A phone menu stays beside its trigger
+
+**Reference:** `spec:AST-094/DEC-19`
+**Decider:** `cixzhang`, `2026-10-26`
+
+On a compact touch screen an anchored menu keeps the layer runtime's normal
+placement beside its trigger, inside the viewport gutter, so the trigger stays
+visible while the menu is open wherever the menu fits beside it; a menu taller
+than the room on either side follows the layer runtime's own fallback.
+
+Rejected: covering the trigger, centered on it and aligned with its top or
+bottom, as UIKit's menu does.
+
 ### DEC-22 — An edge band claims only on an element within the band
 
 **Reference:** `spec:AST-094/DEC-22`
@@ -780,12 +794,6 @@ Rejected: cancelling moves only after the pan begins.
 - **OQ8 — Withdrawing a tentative open.** Resolved by
   `module:DropdownMenu/useMenuPress` DEC-8: nothing withdraws an open, so a
   screen reader hears one open and one close (its AR5).
-- **OQ9 — Where a menu sits on a compact touch screen.** Should an anchored
-  menu on a compact touch screen (`spec:AST-012` FR9) cover its trigger,
-  centered on it and top-aligned with it, or bottom-aligned with it when the
-  trigger's center is below the middle of the viewport, inside a fixed margin
-  from the sides, as UIKit's menu does? `component:DropdownMenu` places the
-  menu beside its trigger today. (`owner decision`)
 - **OQ10 — A sub-menu with its parent visible.** Should a drilled-in sub-menu
   open in place, the menu's box growing to it with the parent menu visible
   behind it, as UIKit's menu does? This is look and feel; today the sub-menu's
