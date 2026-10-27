@@ -4,8 +4,7 @@
 
 /**
  * @file CheckboxInput.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip,
- *   the touch target floor (Indicator/touchTarget.stylex.ts)
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, useTouchHitArea
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
  *
@@ -25,6 +24,7 @@ import {
   useTransition,
   type ChangeEvent,
   type FocusEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -53,10 +53,11 @@ import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
-import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useTouchHitArea} from '../utils/touchHitArea';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -72,6 +73,10 @@ const styles = stylex.create({
   },
   containerLabelHidden: {
     gap: 0,
+  },
+  // The touch hit layer's containing block, only where the layer exists.
+  hitAreaHost: {
+    position: {default: null, '@media (pointer: coarse)': 'relative'},
   },
   checkboxWrapper: {
     position: 'relative',
@@ -265,13 +270,10 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
   width?: SizeValue;
   /**
    * The size of the checkbox box: 20 px for 'sm', 24 px for 'md'. The row is
-   * as tall as its label. Under a coarse pointer a labelled checkbox's row is
-   * at least the theme's touch target tall (`--size-touch-target`, 44 px by
-   * default) and its target at least that square, centred on the box; a
-   * label-hidden checkbox (a marker in another component's row) keeps its
-   * size.
-   * - 'sm': Compact size
-   * - 'md': Default size
+   * as tall as its label. Under a coarse pointer a labelled checkbox's target
+   * reaches the theme's touch target (`--size-touch-target`, 44 px by
+   * default) through an invisible hit area that stops at half the gap to
+   * each neighbour; nothing changes size.
    * @default 'md'
    */
   size?: CheckboxInputSize;
@@ -348,6 +350,32 @@ export function CheckboxInput({
   // The row is the pressable: the overlay's pressed arm reads the row's
   // scope marker, the way the indicator's hover tint does.
   const pressable = usePressFeedback();
+  // Under a finger a labelled checkbox's target reaches the touch target
+  // through an invisible hit area that stops at half the gap to each
+  // neighbour, and nothing changes size (spec:AST-094 FR42). A label-hidden
+  // checkbox is a marker in another component's row, which keeps its pitch.
+  const hasHitArea = !isLabelHidden && !isDisabled && !isReadOnly;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  useTouchHitArea(containerRef, hasHitArea);
+  // The hit layer is the container's own ::after, so a tap on it lands on
+  // the container outside its box, where nothing else answers: it toggles
+  // the checkbox, as a tap on the box does. A click inside the box (the gap
+  // between box and label) stays as it was.
+  const handleHitAreaClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    const box = event.currentTarget.getBoundingClientRect();
+    const isInside =
+      event.clientX >= box.left &&
+      event.clientX <= box.right &&
+      event.clientY >= box.top &&
+      event.clientY <= box.bottom;
+    if (!isInside) {
+      inputRef.current?.click();
+    }
+  };
   const generatedId = useId();
   const id = idProp || generatedId;
   const descriptionID = useId();
@@ -442,16 +470,15 @@ export function CheckboxInput({
           // Handlers are gated internally by isEnabled, so attaching
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
+          containerRef.current = el;
         }}
         {...(isDisabled ? undefined : pressable)}
+        onClick={hasHitArea ? handleHitAreaClick : undefined}
         {...stylex.props(
-          // Under a finger the row is at least as tall as an iOS control,
-          // when the checkbox is its own labelled row. A label-hidden
-          // checkbox is a marker in a composer's row (a MultiSelector option,
-          // a table's selection cell, a task item), which keeps its height.
-          !isLabelHidden && touchTargetStyles.row,
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
+          hasHitArea && styles.hitAreaHost,
+          hasHitArea && touchHitAreaStyles.layer,
           // Hover and focus reach the checkbox visual through this ancestor
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
@@ -471,6 +498,7 @@ export function CheckboxInput({
             {...rest}
             ref={useMergedRefs(
               ref,
+              inputRef,
               indeterminateRef,
               disabledMessageTooltip.positionRef,
             )}
@@ -515,11 +543,7 @@ export function CheckboxInput({
             {...stylex.props(
               styles.input,
               rtlStyles.centerInline('-50%'),
-              // Under a finger the input is the control's whole target, 44
-              // pt each way like an iOS control, centred on the box. A
-              // label-hidden marker keeps its 24 px target: in a composer's
-              // shorter row a 44 px one would reach into the next row.
-              isLabelHidden ? styles.inputCoarse : touchTargetStyles.control,
+              styles.inputCoarse,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}

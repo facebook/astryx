@@ -4,8 +4,7 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item, the touch
- *   target floor (Indicator/touchTarget.stylex.ts)
+ * @input Uses React use, useId, useRef, RadioListContext, Item, useTouchHitArea
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -29,13 +28,13 @@ import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useTouchHitArea} from '../utils/touchHitArea';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
-import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
-import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {RadioListOrientationContext} from './RadioListOrientationContext';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -132,17 +131,6 @@ const wrapperSizeStyles = stylex.create({
 });
 
 const rowStyles = stylex.create({
-  // A vertical list's row under a finger: half the list's gap above and
-  // below is padding, inside the row's target (RadioList drops the gap).
-  // Restates root's padding for every other
-  // case, since a later style replaces the whole property.
-  // SYNC: RadioList.tsx styles.vertical
-  stackedTouch: {
-    paddingBlock: {
-      default: 0,
-      '@media (pointer: coarse)': `calc(${spacingVars['--spacing-2']} / 2)`,
-    },
-  },
   // The row's default appearance is a bare surface: no density padding, no
   // radius, and no full-row background — only the indicator tints on hover
   // (via `indicatorScope`). Item paints padding/radius/hover as an interactive
@@ -285,7 +273,6 @@ export function RadioListItem({
   // the touch press controller (pressableCoverage.test.ts).
   const pressable = usePressFeedback();
   const context = use(RadioListContext);
-  const orientation = use(RadioListOrientationContext);
   if (!context) {
     throw new Error('RadioListItem must be used within an RadioList');
   }
@@ -294,6 +281,14 @@ export function RadioListItem({
   const labelID = useId();
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
+  // Under a finger an option's target reaches the touch target through an
+  // invisible hit area that stops at half the gap to each neighbour, and the
+  // row keeps its size (spec:AST-094 FR42). A tap on the area lands on the
+  // row, which hands it to the radio.
+  const hasHitArea = !isDisabled;
+  const rowRef = useRef<HTMLElement | null>(null);
+  const mergedRowRef = useMergedRefs(ref, rowRef);
+  useTouchHitArea(rowRef, hasHitArea);
   // When the whole group is disabled with a disabledMessage, radios stay
   // focusable via aria-disabled (instead of native `disabled`) so the group's
   // reason tooltip is keyboard-discoverable. Per-item disabling is unaffected
@@ -393,7 +388,7 @@ export function RadioListItem({
 
   return (
     <Item
-      ref={ref}
+      ref={mergedRowRef}
       {...(isDisabled ? undefined : pressable)}
       startContent={mediaContent}
       // Delegate row-surface clicks (label text, description, and the empty
@@ -426,13 +421,8 @@ export function RadioListItem({
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
           !isDisabled && rowStyles.press,
-          // Under a finger each option's row is at least the theme's touch
-          // target tall. In a vertical list the row also takes half the
-          // list's gap above and below as its own (RadioList drops the gap),
-          // so the rows touch, the whole column is target, and a row grows
-          // only by what the gap does not already give it.
-          touchTargetStyles.row,
-          orientation !== 'horizontal' && rowStyles.stackedTouch,
+          // Item's row is positioned, so it holds the layer.
+          hasHitArea && touchHitAreaStyles.layer,
           xstyle,
         ] as StyleXStyles
       }

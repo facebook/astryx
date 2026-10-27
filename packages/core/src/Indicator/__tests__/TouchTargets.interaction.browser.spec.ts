@@ -2,25 +2,30 @@
 
 /**
  * @file TouchTargets.interaction.browser.spec.ts
- * @input The built CheckboxInput and RadioList Default stories, real touch
- *   input (Chromium CDP / WebKit's tap) and the interaction harness
- * @output Proofs that on a touch screen a checkbox and a radio option are as
- *   easy to hit as an iOS control (the theme's `--size-touch-target`, 44 pt
- *   by default, Apple's control size): the checkbox's input is at least
- *   44 × 44 px and centred on its box, its row at least 44 px; a
- *   CheckboxList's rows that toggle are at least 44 px in every density
- *   (balanced ones keep 52 px and take a larger theme target); each radio row
- *   is at least 44 px and the rows touch; a tap at the edge of those targets
- *   picks the option; a theme's value tunes every target, and 24px keeps
- *   the old touch layout; a list whose gap already gives each option 44 px
- *   keeps its spacing; a composer's rows (a
- *   Markdown task list, a table's selection column, a MultiSelector option)
- *   keep their pitch; a mouse keeps the drawn sizes (the control)
- * @position Real-engine layer of Indicator/touchTarget.stylex.ts; the
- *   stylesheet layer is Indicator/touchTarget.test.tsx
+ * @input The built CheckboxInput, RadioList, CheckboxList, Markdown,
+ *   TableSelection and MultiSelector stories, real touch input (Chromium CDP /
+ *   WebKit's tap) and the interaction harness
+ * @output Proofs that on a touch screen a checkbox, a radio option and a
+ *   CheckboxList row are as easy to hit as an iOS control without growing
+ *   (spec:AST-094 FR42, List FR10): their boxes match a mouse page's, each
+ *   offers an invisible hit area (the theme's `--size-touch-target`, 44 px by
+ *   default) that stops at half the gap to a neighbour, the point just
+ *   outside a control's box belongs to it and a tap there picks it, a
+ *   theme's larger value reaches further, a composer's rows (a Markdown task
+ *   list, a table's selection column, a MultiSelector option) keep their
+ *   pitch, and a mouse gets no hit area
+ * @position Real-engine layer of the touch hit areas on CheckboxInput,
+ *   RadioListItem and ListItem (utils/touchHitArea.ts); the stylesheet layer
+ *   is Indicator/touchTarget.test.tsx
  */
 
-import {expect, test, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type Page,
+  type TestInfo,
+} from '@playwright/test';
 import {
   openStory,
   touchDriver,
@@ -74,12 +79,124 @@ async function radioRows(page: Page): Promise<Rect[]> {
 
 const centre = (r: Rect) => ({x: r.x + r.width / 2, y: r.y + r.height / 2});
 
+/** A hit area's insets on an element, px, as `watchHitArea` writes them. */
+async function hitInsets(page: Page, selector: string, index = 0) {
+  return page
+    .locator(selector)
+    .nth(index)
+    .evaluate(el => {
+      const style = getComputedStyle(el);
+      const read = (side: string) =>
+        parseFloat(style.getPropertyValue(`--astryx-hit-inset-${side}`)) || 0;
+      return {
+        top: read('top'),
+        right: read('right'),
+        bottom: read('bottom'),
+        left: read('left'),
+      };
+    });
+}
+
+/** The insets once the hit area's first measurement has landed. */
+async function measuredInsets(page: Page, selector: string, index = 0) {
+  await expect
+    .poll(async () => {
+      const insets = await hitInsets(page, selector, index);
+      return insets.top + insets.right + insets.bottom + insets.left;
+    })
+    .toBeGreaterThan(0);
+  return hitInsets(page, selector, index);
+}
+
+/** Whether the element under a point is inside `selector`'s nth match. */
+async function ownsPoint(
+  page: Page,
+  selector: string,
+  index: number,
+  point: {x: number; y: number},
+) {
+  return page.evaluate(
+    ({css, n, x, y}) => {
+      const host = document.querySelectorAll(css)[n];
+      const hit = document.elementFromPoint(x, y);
+      return host != null && hit != null && host.contains(hit);
+    },
+    {css: selector, n: index, ...point},
+  );
+}
+
+/** The same story with a mouse: the phone's viewport and scale, a fine pointer. */
+async function withMouse<T>(
+  browser: Browser,
+  testInfo: TestInfo,
+  run: (mousePage: Page) => Promise<T>,
+): Promise<T> {
+  const {viewport, deviceScaleFactor} = testInfo.project.use;
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor,
+    hasTouch: false,
+    isMobile: false,
+  });
+  try {
+    return await run(await context.newPage());
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * Measures with the hit layer on every `selector` match taken away, then
+ * gives it back: the same page, so the same text and scale.
+ */
+async function withoutLayer<T>(
+  page: Page,
+  selector: string,
+  measure: () => Promise<T>,
+): Promise<T> {
+  const style = await page.addStyleTag({
+    content: `${selector}::after { display: none !important; }`,
+  });
+  try {
+    return await measure();
+  } finally {
+    await style.evaluate(async el => {
+      (el as Element).remove();
+    });
+  }
+}
+
+/** A theme that sets the touch target size, in place before the story renders. */
+async function themeTouchTarget(page: Page, size: string): Promise<void> {
+  // Storybook rewrites the root element's style attribute, so a stylesheet.
+  await page.addInitScript(value => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const style = document.createElement('style');
+      style.textContent = `:root { --size-touch-target: ${value}; }`;
+      document.head.append(style);
+    });
+  }, size);
+}
+
+/** The rows of the story's CheckboxList, as boxes. */
+async function checkboxListRows(page: Page): Promise<Rect[]> {
+  return page.locator(LIST_ROW).evaluateAll(rows =>
+    rows.map(row => {
+      const r = row.getBoundingClientRect();
+      return {x: r.x, y: r.y, width: r.width, height: r.height};
+    }),
+  );
+}
+
+const CHECKBOX_ROW = '#storybook-root [data-astryx-pressable]';
+const RADIO_ROW = '#storybook-root .astryx-item';
+const LIST_ROW = '#storybook-root li:has(input[type="checkbox"])';
+
 test.describe('selection controls under a finger', () => {
-  test('a checkbox’s target is at least 44 × 44 px, centred on its box, in a row at least 44 px tall', async ({
+  test('a labelled checkbox keeps its size under a finger, and a tap just outside its box toggles it (FR42)', async ({
     page,
   }) => {
     await openStory(page, storybook(), 'core-checkboxinput--default');
-    // The page resolves the token to its default.
     expect(
       await page.evaluate(() =>
         getComputedStyle(document.documentElement)
@@ -87,42 +204,112 @@ test.describe('selection controls under a finger', () => {
           .trim(),
       ),
     ).toBe(`${SIZE}px`);
-    const {input, box, row} = await checkboxGeometry(page);
-    expect(input.width).toBeGreaterThanOrEqual(SIZE);
-    expect(input.height).toBeGreaterThanOrEqual(SIZE);
-    // Centred on the box, as the RTL audit's coarse-hit check (D7) holds in
-    // both directions: on the box's inline-start side the target reaches
-    // 10 px past the row (the decision's requirement 5, noted).
-    expect(Math.abs(centre(input).x - centre(box).x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(centre(input).y - centre(box).y)).toBeLessThanOrEqual(1);
-    expect(row.height).toBeGreaterThanOrEqual(SIZE);
-    // A finger 9 px above the 24 px box still lands on the checkbox.
+    const insets = await measuredInsets(page, CHECKBOX_ROW);
+    const finger = await checkboxGeometry(page);
+    // The layer adds no layout: the same boxes without it.
+    expect(finger).toEqual(
+      await withoutLayer(page, CHECKBOX_ROW, async () =>
+        checkboxGeometry(page),
+      ),
+    );
+    // The input keeps its drawn size, centred on the box, as the RTL audit's
+    // coarse-hit check (D7) holds in both directions.
+    expect(finger.input.width).toBeLessThanOrEqual(24.5);
+    expect(
+      Math.abs(centre(finger.input).x - centre(finger.box).x),
+    ).toBeLessThanOrEqual(1);
+    // The target reaches the touch target through the invisible hit area.
+    expect(
+      finger.row.height + insets.top + insets.bottom,
+    ).toBeGreaterThanOrEqual(SIZE - 0.5);
+    const point = {
+      x: Math.round(centre(finger.box).x),
+      y: Math.floor(finger.row.y - insets.top / 2),
+    };
+    expect(point.y).toBeLessThan(finger.row.y);
+    expect(await ownsPoint(page, CHECKBOX_ROW, 0, point)).toBe(true);
+    const checkbox = page.getByRole('checkbox').first();
+    const before = await checkbox.isChecked();
     const driver = await touchDriver(page);
-    await driver.tap({x: Math.round(centre(box).x), y: Math.round(box.y - 9)});
-    await expect(page.getByRole('checkbox').first()).toBeChecked();
+    await driver.tap(point);
+    await expect(checkbox).toBeChecked({checked: !before});
   });
 
-  test('each radio row is at least 44 px tall and the rows touch', async ({
+  test('RadioList rows keep their geometry under a finger, and a tap in a row’s half of the gap selects it (FR42)', async ({
     page,
   }) => {
+    for (const orientation of ['vertical', 'horizontal']) {
+      await openStory(page, storybook(), 'core-radiolist--default', {
+        orientation,
+      });
+      await measuredInsets(page, RADIO_ROW);
+      const finger = await radioRows(page);
+      expect(finger.length).toBeGreaterThan(1);
+      expect(finger).toEqual(
+        await withoutLayer(page, RADIO_ROW, async () => radioRows(page)),
+      );
+    }
     await openStory(page, storybook(), 'core-radiolist--default');
-    const rows = await radioRows(page);
-    expect(rows.length).toBeGreaterThan(1);
-    for (const row of rows) {
-      expect(row.height).toBeGreaterThanOrEqual(SIZE);
-    }
-    for (let i = 1; i < rows.length; i++) {
-      expect(
-        Math.abs(rows[i].y - (rows[i - 1].y + rows[i - 1].height)),
-      ).toBeLessThanOrEqual(0.5);
-    }
-    // A finger 3 px inside the top of the second row picks that option.
+    const [first, second] = await radioRows(page);
+    const gap = second.y - (first.y + first.height);
+    expect(gap).toBeGreaterThan(0);
+    const insets = await measuredInsets(page, RADIO_ROW, 1);
+    // The two areas meet in the middle of the gap and never overlap.
+    expect(insets.top).toBeGreaterThan(0);
+    expect(insets.top).toBeLessThanOrEqual(gap / 2 + 0.5);
+    const point = {
+      x: Math.round(second.x + second.width / 2),
+      y: Math.floor(second.y - insets.top / 2),
+    };
+    expect(await ownsPoint(page, RADIO_ROW, 1, point)).toBe(true);
+    // The other half of the gap belongs to the first row.
+    expect(
+      await ownsPoint(page, RADIO_ROW, 0, {
+        x: point.x,
+        y: Math.ceil(first.y + first.height + 0.5),
+      }),
+    ).toBe(true);
     const driver = await touchDriver(page);
-    await driver.tap({
-      x: Math.round(rows[1].x + rows[1].width / 2),
-      y: Math.round(rows[1].y + 3),
-    });
+    await driver.tap(point);
     await expect(page.getByRole('radio').nth(1)).toBeChecked();
+  });
+
+  test('a CheckboxList’s rows keep their geometry under a finger at every density (List FR10)', async ({
+    page,
+  }) => {
+    for (const density of ['compact', 'balanced', 'spacious']) {
+      await openStory(page, storybook(), 'core-checkboxlist--default', {
+        density,
+      });
+      const finger = await checkboxListRows(page);
+      expect(finger.length).toBeGreaterThan(1);
+      expect(finger).toEqual(
+        await withoutLayer(page, LIST_ROW, async () => checkboxListRows(page)),
+      );
+    }
+  });
+
+  test('a tap just outside a compact CheckboxList row toggles that row (List FR10’s hit area)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-checkboxlist--default', {
+      density: 'compact',
+    });
+    const [first] = await checkboxListRows(page);
+    const insets = await measuredInsets(page, LIST_ROW, 0);
+    expect(first.height + insets.top + insets.bottom).toBeGreaterThan(
+      first.height,
+    );
+    const point = {
+      x: Math.round(first.x + first.width / 2),
+      y: Math.floor(first.y - Math.max(insets.top, 1) / 2),
+    };
+    expect(await ownsPoint(page, LIST_ROW, 0, point)).toBe(true);
+    const checkbox = page.getByRole('checkbox').first();
+    const before = await checkbox.isChecked();
+    const driver = await touchDriver(page);
+    await driver.tap(point);
+    await expect(checkbox).toBeChecked({checked: !before});
   });
 
   // A label-hidden checkbox is a marker in a composer's row: the composer
@@ -222,223 +409,43 @@ test.describe('selection controls under a finger', () => {
     expect(marker.input.height).toBeLessThanOrEqual(24.5);
   });
 
-  test('the theme’s touch target size tunes every target', async ({page}) => {
-    // A dense theme lowers the metric; it is set here on the controls'
-    // container, which every target inherits it from.
+  test('a theme’s touch target size changes how far the hit area reaches', async ({
+    page,
+  }) => {
     await openStory(page, storybook(), 'core-checkboxinput--default');
-    await page
-      .getByRole('checkbox')
-      .first()
-      .evaluate(input =>
-        input
-          .closest('[data-astryx-pressable]')
-          ?.parentElement?.style.setProperty('--size-touch-target', '36px'),
-      );
-    const checkbox = await checkboxGeometry(page);
-    expect(checkbox.input.width).toBeCloseTo(36, 0);
-    expect(checkbox.input.height).toBeCloseTo(36, 0);
-    expect(checkbox.row.height).toBeCloseTo(36, 0);
-    await openStory(page, storybook(), 'core-radiolist--default');
-    await page
-      .getByRole('radiogroup')
-      .evaluate(group =>
-        group.parentElement?.style.setProperty('--size-touch-target', '36px'),
-      );
-    for (const row of await radioRows(page)) {
-      expect(row.height).toBeCloseTo(36, 0);
-    }
+    const today = await measuredInsets(page, CHECKBOX_ROW);
+    // A theme's value, in place before the control mounts and measures.
+    await themeTouchTarget(page, '60px');
+    await openStory(page, storybook(), 'core-checkboxinput--default');
+    const tuned = await measuredInsets(page, CHECKBOX_ROW);
+    expect(tuned.top).toBeGreaterThan(today.top);
+    expect(tuned.bottom).toBeGreaterThan(today.bottom);
   });
 
-  test('a compact CheckboxList’s rows are at least the touch target under a finger, and a mouse keeps them compact', async ({
-    page,
+  test('a mouse gets no hit area and keeps the drawn sizes (negative control)', async ({
     browser,
-  }) => {
-    // A standalone CheckboxList is a touch target whatever its density
-    // (requirement 2 of the target-size decision).
-    const rowHeights = async (target: Page) =>
-      target
-        .locator('#storybook-root li')
-        .evaluateAll(rows =>
-          rows.map(row => row.getBoundingClientRect().height),
-        );
-    await openStory(page, storybook(), 'core-checkboxlist--default', {
-      density: 'compact',
-    });
-    const finger = await rowHeights(page);
-    expect(finger.length).toBeGreaterThan(1);
-    for (const height of finger) {
-      expect(height).toBeGreaterThanOrEqual(SIZE - 0.5);
-    }
-    const context = await browser.newContext({
-      viewport: {width: 1024, height: 768},
-      hasTouch: false,
-      isMobile: false,
-    });
-    try {
-      const mousePage = await context.newPage();
-      await openStory(mousePage, storybook(), 'core-checkboxlist--default', {
-        density: 'compact',
+  }, testInfo) => {
+    await withMouse(browser, testInfo, async mousePage => {
+      await openStory(mousePage, storybook(), 'core-checkboxinput--default');
+      expect(
+        await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const {input, box, row} = await checkboxGeometry(mousePage);
+      expect(input.width).toBeCloseTo(box.width, 0);
+      expect(row.height).toBeLessThan(SIZE);
+      await mousePage.waitForTimeout(100);
+      expect(await hitInsets(mousePage, CHECKBOX_ROW)).toEqual({
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
       });
       expect(
-        await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
-      ).toBe(false);
-      for (const height of await rowHeights(mousePage)) {
-        expect(height).toBeLessThan(SIZE);
-      }
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('a balanced CheckboxList’s rows keep 52 px under a finger and take a larger theme touch target', async ({
-    page,
-  }) => {
-    // Every density is a touch target (requirement 2); the size is the
-    // theme's (requirement 4), and List's 52 px row holds at the default.
-    const rowHeights = async () =>
-      page
-        .locator('#storybook-root li')
-        .evaluateAll(rows =>
-          rows.map(row => row.getBoundingClientRect().height),
-        );
-    await openStory(page, storybook(), 'core-checkboxlist--default');
-    const atDefault = await rowHeights();
-    expect(atDefault.length).toBeGreaterThan(1);
-    for (const height of atDefault) {
-      expect(height).toBeGreaterThanOrEqual(52 - 0.5);
-    }
-    await page
-      .locator('#storybook-root ul')
-      .first()
-      .evaluate(list =>
-        list.parentElement?.style.setProperty('--size-touch-target', '60px'),
-      );
-    for (const height of await rowHeights()) {
-      expect(height).toBeGreaterThanOrEqual(60 - 0.5);
-    }
-  });
-
-  test('a theme that sets the touch target to 24px keeps the old touch layout', async ({
-    page,
-  }) => {
-    // The escape the changeset names (spec:AST-017 FR3): a labelled checkbox
-    // is back to a 24 px row and target with its box at the row's top, and
-    // a vertical RadioList keeps its 32 px pitch (24 px rows, 8 px gap).
-    const applyOldSize = async () =>
-      page.evaluate(() =>
-        document.documentElement.style.setProperty(
-          '--size-touch-target',
-          '24px',
-        ),
-      );
-    await openStory(page, storybook(), 'core-checkboxinput--default');
-    await applyOldSize();
-    const checkbox = await checkboxGeometry(page);
-    expect(checkbox.input.width).toBeCloseTo(24, 0);
-    expect(checkbox.input.height).toBeCloseTo(24, 0);
-    expect(checkbox.row.height).toBeCloseTo(24, 0);
-    await openStory(page, storybook(), 'core-radiolist--default');
-    await applyOldSize();
-    const centers = await page.getByRole('radio').evaluateAll(inputs =>
-      inputs.map(input => {
-        const circle = input.parentElement?.querySelector(
-          '.astryx-radio-indicator',
-        );
-        if (circle == null) {
-          throw new Error('no radio circle');
-        }
-        const r = circle.getBoundingClientRect();
-        return r.y + r.height / 2;
-      }),
-    );
-    expect(centers.length).toBeGreaterThan(2);
-    for (let i = 1; i < centers.length; i++) {
-      expect(centers[i] - centers[i - 1]).toBeCloseTo(32, 0);
-    }
-  });
-
-  test('a list whose gap already gives each option 44 px keeps its spacing under a finger', async ({
-    page,
-    browser,
-  }) => {
-    // A theme with a wide gap: a 24 px option and a 24 px gap already make a
-    // 48 px pitch. Under a finger each row takes half the gap above and below
-    // as its target, so the options keep the spacing a mouse sees (the list
-    // adds half a gap at each end, keeping its first and last targets inside
-    // it).
-    const circles = async (target: Page) => {
-      await openStory(target, storybook(), 'core-radiolist--default');
-      await target
-        .getByRole('radiogroup')
-        .evaluate(group =>
-          group.parentElement?.style.setProperty('--spacing-2', '24px'),
-        );
-      return target.getByRole('radio').evaluateAll(inputs =>
-        inputs.map(input => {
-          const circle = input.parentElement?.querySelector(
-            '.astryx-radio-indicator',
-          );
-          if (circle == null) {
-            throw new Error('no radio circle');
-          }
-          const r = circle.getBoundingClientRect();
-          return Math.round((r.y + r.height / 2) * 2) / 2;
-        }),
-      );
-    };
-    const context = await browser.newContext({
-      viewport: page.viewportSize() ?? {width: 402, height: 874},
-      hasTouch: false,
-      isMobile: false,
+        await mousePage
+          .locator(CHECKBOX_ROW)
+          .first()
+          .evaluate(el => getComputedStyle(el, '::after').content),
+      ).toMatch(/^(none|normal)$/);
     });
-    try {
-      const mousePage = await context.newPage();
-      await openStory(mousePage, storybook(), 'core-radiolist--default');
-      expect(
-        await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
-      ).toBe(false);
-      const pitches = (ys: number[]) => ys.slice(1).map((y, i) => y - ys[i]);
-      const mouse = await circles(mousePage);
-      const finger = await circles(page);
-      expect(mouse.length).toBeGreaterThan(2);
-      expect(pitches(finger)).toEqual(pitches(mouse));
-      const rows = await radioRows(page);
-      for (let i = 1; i < rows.length; i++) {
-        expect(rows[i].height).toBeGreaterThanOrEqual(SIZE);
-        expect(
-          Math.abs(rows[i].y - (rows[i - 1].y + rows[i - 1].height)),
-        ).toBeLessThanOrEqual(0.5);
-      }
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('a mouse keeps the drawn sizes (negative control)', async ({
-    browser,
-  }) => {
-    const context = await browser.newContext({
-      viewport: {width: 1024, height: 768},
-      hasTouch: false,
-      isMobile: false,
-    });
-    const page = await context.newPage();
-    try {
-      await openStory(page, storybook(), 'core-checkboxinput--default');
-      // A fine-pointer case proves nothing under a coarse primary pointer.
-      expect(
-        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
-      ).toBe(false);
-      const {input, box, row} = await checkboxGeometry(page);
-      expect(input.width).toBeCloseTo(box.width, 0);
-      expect(input.height).toBeCloseTo(box.height, 0);
-      expect(row.height).toBeLessThan(SIZE);
-      await openStory(page, storybook(), 'core-radiolist--default');
-      const rows = await radioRows(page);
-      expect(rows[0].height).toBeLessThan(SIZE);
-      expect(rows[1].y - (rows[0].y + rows[0].height)).toBeGreaterThan(0);
-    } finally {
-      await context.close();
-    }
   });
 });

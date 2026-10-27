@@ -109,7 +109,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md'",
       description:
-        'The size of the checkbox: a 20 px box for sm (compact layouts), 24 px for md (default). Under a coarse pointer a labelled checkbox’s row is at least the theme’s touch target tall (`--size-touch-target`, 44 px by default) and its target at least that square; a label-hidden checkbox (a marker in another component’s row) keeps its size.',
+        'The size of the checkbox: a 20 px box for sm (compact layouts), 24 px for md (default). The row is as tall as its label. Under a coarse pointer a labelled checkbox’s target reaches the theme’s touch target (`--size-touch-target`, 44 px by default) through an invisible hit area that stops at half the gap to each neighbour; nothing changes size.',
       default: "'md'",
     },
     {
@@ -352,8 +352,7 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md'",
-      description:
-        '复选框尺寸：sm 为 20 px 的方框（紧凑布局），md 为 24 px（默认）。在粗指针（触摸）下，带可见标签的复选框行高至少为主题的触摸目标尺寸（`--size-touch-target`，默认 44 px），点击区域至少为该尺寸的正方形；隐藏标签的复选框（其他组件行内的标记）保持原尺寸。',
+      description: '复选框尺寸：sm 为 20 px 的方框（紧凑布局），md 为 24 px（默认）。行高与标签一致。在粗指针（触摸）下，带可见标签的复选框通过不可见的点击区域将目标扩展到主题的触摸目标尺寸（`--size-touch-target`，默认 44 px），该区域最多延伸到与相邻控件间距的一半；尺寸不变。',
       default: "'md'",
     },
     {
