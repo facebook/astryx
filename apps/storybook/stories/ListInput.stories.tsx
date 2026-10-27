@@ -14,7 +14,6 @@ import {
   useMemo,
   useState,
   type Dispatch,
-  type Key,
   type SetStateAction,
 } from 'react';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
@@ -207,7 +206,7 @@ function useRecordReorder<T extends {id: string}>(
   return useMemo(
     () =>
       createReorderable({
-        onReorder: ({key, to}: {key: Key; to: number}) =>
+        onReorder: ({key, to}: {key: string | number; to: number}) =>
           setRecords(current => {
             const moved = current.find(record => record.id === key);
             if (moved == null) {
