@@ -512,6 +512,9 @@ describe('isKnowledgeRecord', () => {
     expect(
       isKnowledgeRecord('packages/core/src/Chat/.hidden/ChatLayout.spec.md'),
     ).toBe(false);
+    expect(
+      isKnowledgeRecord('packages/core/src/Collapsible/.Collapsible.spec.md'),
+    ).toBe(false);
     expect(isKnowledgeRecord('packages/core/src/Chat/ChatLayout.tsx')).toBe(
       false,
     );

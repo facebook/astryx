@@ -309,9 +309,9 @@ export const IGNORED_RECORD_SEGMENTS = new Set([
 
 /**
  * Whether a changed path is a knowledge record: Markdown, never rendered. A
- * `*.spec.md` under a hidden, fixture, test, generated, build-output,
- * coverage, or dependency folder, or named `*.generated.spec.md`, is not a
- * record (`architecture:knowledge-contracts` INV27), so it still selects specs.
+ * hidden `*.spec.md`, one under a hidden, fixture, test, generated,
+ * build-output, coverage, or dependency folder, or one named
+ * `*.generated.spec.md`, is not a record (`architecture:knowledge-contracts` INV27), so it still selects specs.
  * @param {string} file
  */
 export function isKnowledgeRecord(file) {
@@ -320,7 +320,6 @@ export function isKnowledgeRecord(file) {
   }
   return !file
     .split('/')
-    .slice(0, -1)
     .some(
       segment =>
         segment.startsWith('.') || IGNORED_RECORD_SEGMENTS.has(segment),
