@@ -26,6 +26,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {Button} from '../Button';
 import {SideNav} from './SideNav';
+import {__resetMenuPressForTest} from '../hooks/useMenuPress';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
@@ -1017,6 +1018,34 @@ describe('SideNavItem', () => {
     expect(indentOf(screen.getByRole('link', {name: 'General'}))).toBe(
       'calc(var(--spacing-1) + 1 * var(--spacing-6))',
     );
+  });
+
+  it('in a collapsed rail flyout, a press slid across the rows acts on the row it lifts on, once (family:action-groups FR1, FR2, FR5)', async () => {
+    __resetMenuPressForTest();
+    const user = userEvent.setup();
+    const onGeneral = vi.fn();
+    const onSecurity = vi.fn();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon}>
+        <SideNavItem label="General" onClick={onGeneral} />
+        <SideNavItem label="Security" onClick={onSecurity} />
+      </SideNavItem>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+    const row = (name: string) =>
+      screen.getByRole('button', {name, hidden: true});
+    for (const pointer of [
+      {pointerType: 'touch', pointerId: 1},
+      {pointerType: 'mouse', pointerId: 2, button: 0},
+    ]) {
+      onGeneral.mockClear();
+      onSecurity.mockClear();
+      fireEvent.pointerDown(row('General'), pointer);
+      fireEvent.pointerMove(row('Security'), pointer);
+      fireEvent.pointerUp(row('Security'), pointer);
+      expect(onSecurity).toHaveBeenCalledTimes(1);
+      expect(onGeneral).not.toHaveBeenCalled();
+    }
   });
 
   it('does not indent the first level of a collapsed rail flyout', async () => {
