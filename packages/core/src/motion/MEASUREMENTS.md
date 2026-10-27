@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -254,18 +255,20 @@ match the probe.
 ## Context menu (UIContextMenuInteraction)
 
 Values the context menu reads from its own table, which lands with the
-context menu; its springs are `springs.contextMenuLift` and
-`springs.contextMenuDismiss`.
+context menu; its springs are the motion roles `springs.contextMenuLift`,
+`springs.contextMenuDismiss` and `springs.contextMenuMorph`.
 
 Captured (iOS 26.2 simulator, Oct 23 2026; the values land with the context
 menu's table): M-CM4.
 Under Reduce Motion the pressed copy does not grow at all and only its shadow
 fades in, with Prefer Cross-Fade Transitions on or off.
 
-| ID    | What                            | App and gesture                                                                                                             | Extract                                                                                                                                                                                   | Method |
-| ----- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| M-CM2 | Press feedback by size          | Probe app: context-menu interactions on views of several sizes (60 × 60, 200 × 120, 400 × 300 pt); long press               | the platter's target scale ramp (per second) before and after the commit, by size, and the spring its presentation follows                                                                | A, C   |
-| M-CM3 | Click-driver movement allowance | Probe app: long presses that drift N pt before the commit; binary search                                                    | the largest drift that still commits                                                                                                                                                      | C      |
-| M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
-| M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
-| M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+| ID     | What                            | App and gesture                                                                                                             | Extract                                                                                                                                                                                   | Method |
+| ------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-CM2  | Press feedback by size          | Probe app: context-menu interactions on views of several sizes (60 × 60, 200 × 120, 400 × 300 pt); long press               | the platter's target scale ramp (per second) before and after the commit, by size, and the spring its presentation follows                                                                | A, C   |
+| M-CM3  | Click-driver movement allowance | Probe app: long presses that drift N pt before the commit; binary search                                                    | the largest drift that still commits                                                                                                                                                      | C      |
+| M-CM4  | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
+| M-CM5  | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
+| M-CM6  | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+| M-CM9  | Lifted preview shape            | Probe app: long press on a portrait view (120 × 200 pt) and a landscape one (200 × 120 pt)                                  | where the lift's +26 pt goes (the longer side, or always the width)                                                                                                                       | A      |
+| M-CM10 | Menu start by menu size         | Probe app: long press with menus of 1, 3, 6 and 10 actions, held in the middle                                              | the morph container's first frames and least-squares start size for each menu height (one start fits 3 actions to 1.2 pt rms but 6 actions only to 6 pt)                                  | A      |
