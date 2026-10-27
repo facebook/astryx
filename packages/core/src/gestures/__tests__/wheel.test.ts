@@ -77,6 +77,17 @@ function scrollableX(
   }
 }
 
+/** jsdom has no layout: give a scroller its vertical metrics. */
+function scrollableY(
+  element: HTMLElement,
+  metrics: {scrollTop: number; scrollHeight: number; clientHeight: number},
+): void {
+  element.style.overflowY = 'auto';
+  for (const [key, value] of Object.entries(metrics)) {
+    Object.defineProperty(element, key, {configurable: true, value});
+  }
+}
+
 beforeEach(() => {
   clock = new ManualClock();
   host = new GestureHost(document, {
@@ -95,6 +106,48 @@ afterEach(() => {
 });
 
 describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
+  it("takes a wheel on a scroll-edge pan only while no scroller under the pointer could scroll for it, its own scroll owner above it included, as a finger's (FR19)", () => {
+    const {owner, content} = mount(
+      '<div id="owner"><div id="content"></div></div>',
+    );
+    const pull = new PanGestureRecognizer({
+      direction: 'vertical',
+      scrollEdge: true,
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pull);
+    detachers.push(host.attach(content, pull));
+    // Mid-scroll: a scroll up is the owner's.
+    scrollableY(owner, {scrollTop: 50, scrollHeight: 300, clientHeight: 200});
+    expect(wheel(content, {dy: -20, time: 0}).defaultPrevented).toBe(false);
+    expect(wheel(content, {dy: -20, time: 16}).defaultPrevented).toBe(false);
+    // At the top, a scroll down is the owner's too.
+    scrollableY(owner, {scrollTop: 0, scrollHeight: 300, clientHeight: 200});
+    expect(wheel(content, {dy: 20, time: 200}).defaultPrevented).toBe(false);
+    expect(states).toEqual([]);
+    // At the top, pulling the content down: the pan's.
+    expect(wheel(content, {dy: -20, time: 400}).defaultPrevented).toBe(true);
+    expect(wheel(content, {dy: -20, time: 416}).defaultPrevented).toBe(true);
+    expect(states).toEqual(['began', 'changed']);
+  });
+
+  it("reads a wheel's scrollers past touch-action, which only narrows a finger's pan: content with touch-action none still leaves a mid-scroll wheel to its owner", () => {
+    const {owner, content} = mount(
+      '<div id="owner"><div id="content" style="touch-action: none"></div></div>',
+    );
+    const pull = new PanGestureRecognizer({
+      direction: 'vertical',
+      scrollEdge: true,
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pull);
+    detachers.push(host.attach(content, pull));
+    scrollableY(owner, {scrollTop: 50, scrollHeight: 300, clientHeight: 200});
+    expect(wheel(content, {dy: -20, time: 0}).defaultPrevented).toBe(false);
+    expect(wheel(content, {dy: -20, time: 16}).defaultPrevented).toBe(false);
+    expect(states).toEqual([]);
+  });
+
   it('latches a wheel gesture to the pan that took it, as a browser latches a scroller: a step that lands outside the moved element still drives the pan and is prevented, until the gesture ends', () => {
     const {wrapper, card} = mount(
       '<div id="wrapper"><div id="card"></div></div>',
@@ -148,6 +201,43 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
     expect(wheel(document.body, {dx: 16, time: 32}).defaultPrevented).toBe(
       false,
     );
+  });
+
+  it('arms nothing else for a recognizer that takes only scroll input (no pointer types): where the primary pointer is fine its element gets the wheel listener alone, and no finger, mouse or pen starts it', () => {
+    const {content} = mount('<div id="content"></div>');
+    const added = vi.spyOn(content, 'addEventListener');
+    const pan = new PanGestureRecognizer({
+      direction: 'vertical',
+      allowedPointerTypes: [],
+      allowedScrollTypes: ['continuous'],
+    });
+    const states = statesOf(pan);
+    detachers.push(host.attach(content, pan));
+    expect(
+      (added.mock.calls as unknown[][]).map(call => String(call[0])),
+    ).toEqual(['wheel']);
+    for (const pointerType of ['mouse', 'pen', 'touch']) {
+      for (const [type, y] of [
+        ['pointerdown', 10],
+        ['pointermove', 40],
+        ['pointermove', 80],
+        ['pointerup', 80],
+      ] as const) {
+        content.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            pointerId: 7,
+            pointerType,
+            clientX: 10,
+            clientY: y,
+            buttons: type === 'pointerup' ? 0 : 1,
+          }),
+        );
+      }
+    }
+    expect(states).toEqual([]);
   });
 
   it("takes no wheel for a pan that allows no scroll type, UIKit's default: its element gets no wheel listener, and the page scrolls", () => {
