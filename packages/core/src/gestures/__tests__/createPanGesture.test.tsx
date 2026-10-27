@@ -72,6 +72,35 @@ function drag(
   return start;
 }
 
+/** A drag through Pointer Events only, as a mouse or a pen makes it. */
+function pointerDrag(
+  target: Element,
+  pointerType: 'mouse' | 'pen',
+  dx: number,
+): void {
+  const start = later();
+  const send = (type: string, x: number, time: number, buttons: number) => {
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 7,
+      pointerType,
+      clientX: x,
+      clientY: 10,
+      button: 0,
+      buttons,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: time});
+    target.dispatchEvent(event);
+  };
+  send('pointerdown', 10, start, 1);
+  for (let step = 1; step <= 4; step++) {
+    send('pointermove', 10 + (dx * step) / 4, start + step * 16, 1);
+  }
+  send('pointerup', 10 + dx, start + 80, 0);
+}
+
 /** The states in order, a run of 'changed' counted once. */
 function phases(events: PanGestureEvent[]): string[] {
   return events
@@ -200,6 +229,25 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(events[0].translation.x).toBe(0);
     expect(events.at(-1)?.translation.x).toBe(30);
     expect(events.at(-1)?.velocity.x).toBeGreaterThan(0);
+  });
+
+  it('says which pointer drove the drag: a finger, a mouse or a pen', () => {
+    const element = surface();
+    const events: PanGestureEvent[] = [];
+    pan(element, {axis: 'x', onPan: event => events.push(event)});
+    drag(element, 60, 0);
+    expect(phases(events)).toEqual(['began', 'changed', 'ended']);
+    expect(new Set(events.map(event => event.pointerType))).toEqual(
+      new Set(['touch']),
+    );
+    for (const pointerType of ['mouse', 'pen'] as const) {
+      events.length = 0;
+      pointerDrag(element, pointerType, 60);
+      expect(phases(events)).toEqual(['began', 'changed', 'ended']);
+      expect(new Set(events.map(event => event.pointerType))).toEqual(
+        new Set([pointerType]),
+      );
+    }
   });
 
   it('reports a vertical drag on the y axis, with nothing across it', () => {
