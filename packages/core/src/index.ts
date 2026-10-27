@@ -175,6 +175,9 @@ export * from './OverflowList';
 // Animating one element (spec:AST-107 FR3)
 export * from './animator';
 
+// Settling an element on snap points (spec:AST-107 FR2)
+export * from './dragToSnapPoints';
+
 // Hooks
 export * from './hooks';
 

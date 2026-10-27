@@ -704,6 +704,11 @@
       "types": "./dist/animator/index.d.ts",
       "default": "./dist/animator/index.js"
     },
+    "./dragToSnapPoints": {
+      "source": "./src/dragToSnapPoints/index.ts",
+      "types": "./dist/dragToSnapPoints/index.d.ts",
+      "default": "./dist/dragToSnapPoints/index.js"
+    },
     "./hooks": {
       "source": "./src/hooks/index.ts",
       "types": "./dist/hooks/index.d.ts",
