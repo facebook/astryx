@@ -20,6 +20,8 @@ import {
   releaseLayoutExit,
   reportLayoutChange,
 } from './animatedLayout';
+import {resolveSettleMs} from './resolveMotion';
+import {springs} from './uikit/springs';
 
 interface Played {
   element: Element;
@@ -333,6 +335,19 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     const own = played.find(p => (p.element as HTMLElement).id === 'changed');
     expect(own?.options.duration).toBe(follower?.options.duration);
     expect(Number(follower?.options.duration)).toBeCloseTo(plain * 1.5, -1);
+  });
+
+  it('lasts what a CSS part timed from springs.settle lasts in the same theme, so the two land together (spec:AST-108 FR4a)', async () => {
+    await changeOnce(
+      '',
+      'data-astryx-theme="lively" data-astryx-motion-tempo="1.2" data-astryx-motion-character="expressive"',
+    );
+    const area = document.getElementById('area') as HTMLElement;
+    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
+    expect(Number(follower?.options.duration)).toBeCloseTo(
+      resolveSettleMs(area, springs.settle),
+      6,
+    );
   });
 
   it("ignores a scope's --motion-springs-settle: the role is internal", async () => {

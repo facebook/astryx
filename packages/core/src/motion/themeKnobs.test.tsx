@@ -23,8 +23,17 @@ import {defineTheme, type DefineThemeInput} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {createAnimator} from './animator';
 import {reducedMotionFade} from './reducedMotion';
-import {CHARACTER_BOUNCE_STEP, resolveMotion} from './resolveMotion';
-import {durationBounceOf, toSpring, type SpringDescription} from './spring';
+import {
+  CHARACTER_BOUNCE_STEP,
+  resolveMotion,
+  resolveSettleMs,
+} from './resolveMotion';
+import {
+  durationBounceOf,
+  settlingDuration,
+  toSpring,
+  type SpringDescription,
+} from './spring';
 import {themeMotionKnobs, themeReducesMotion} from './themeKnobs';
 import {registerSpringsTable, springs} from './uikit/springs';
 import {registerTimingTable, timing} from './uikit/timing';
@@ -203,5 +212,46 @@ describe('a theme that reduces motion for everyone (FR6)', () => {
     const moving = inTheme('MovingAnimator');
     expect(createAnimator(moving).reducedMotion()).toBe('off');
     expect(reducedMotionFade(moving)).toBeNull();
+  });
+});
+
+describe('a CSS part timed from its spring (FR4a)', () => {
+  const settleMs = (spring: SpringDescription) =>
+    settlingDuration(toSpring(spring)) * 1000;
+
+  it('lasts the role’s settling duration at Astryx’s own knobs', () => {
+    const element = inTheme('PlainClock');
+    expect(resolveSettleMs(element, springs.settle)).toBeCloseTo(
+      settleMs(springs.settle),
+      6,
+    );
+    // SwiftUI's smooth spring (0.5 s, no bounce) settles in about 0.6 s.
+    expect(resolveSettleMs(element, springs.settle)).toBeGreaterThan(400);
+    expect(resolveSettleMs(element, springs.settle)).toBeLessThan(900);
+  });
+
+  it('follows the theme’s tempo and character with the spring it plays with', () => {
+    const plain = resolveSettleMs(inTheme('PlainPair'), springs.settle);
+    cleanup();
+    const slow = inTheme('SlowPair', {tempo: 1.5});
+    expect(resolveSettleMs(slow, springs.settle)).toBeCloseTo(plain * 1.5, 6);
+    cleanup();
+    const lively = inTheme('LivelyPair', {character: 'expressive'});
+    const livelySpring = resolveMotion(lively, springs.settle);
+    expect(livelySpring).not.toBe(springs.settle);
+    expect(resolveSettleMs(lively, springs.settle)).toBeCloseTo(
+      settleMs(livelySpring),
+      6,
+    );
+  });
+
+  it('stays fixed for finger-following motion, and plays a spring that is no role as given', () => {
+    const slow = inTheme('SlowFixed', {tempo: 1.5});
+    expect(resolveSettleMs(slow, springs.fingerTracking)).toBeCloseTo(
+      settleMs(springs.fingerTracking),
+      6,
+    );
+    const inline = {response: 0.4, dampingRatio: 0.9};
+    expect(resolveSettleMs(slow, inline)).toBeCloseTo(settleMs(inline), 6);
   });
 });

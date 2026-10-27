@@ -5,7 +5,9 @@
  * @input A motion role: a spring or curve of a registered motion table, or a
  *   table group and the key of one of its values; the element the motion
  *   plays on, for its theme's motion knobs (themeKnobs.ts)
- * @output resolveMotion: the role's value at the theme's knobs
+ * @output resolveMotion: the role's value at the theme's knobs;
+ *   resolveSettleMs: how long a spring role takes to settle there, for a CSS
+ *   part that plays with it
  * @position Motion foundation; the animator resolves every spring and curve
  *   it is handed with it, and components resolve the durations they time
  *   with it
@@ -15,7 +17,7 @@
  * the element is in (`spec:AST-108` FR3): `tempo` scales a spring's duration
  * and a role's duration, and `character` moves a spring's bounce by its
  * role's weight (1 for entrances and presentations, 0.5 for state changes, 0
- * for exits, which never overshoot). The theme's `MotionScaleConfig` alone
+ * for exits, which keep their measured bounce). The theme's `MotionScaleConfig` alone
  * leaves the springs at tempo 1 (FR5). Finger-following motion never follows
  * the knobs (FR4), and a curve plays as measured: the theme's character
  * reaches CSS curves through its easing tokens. With Astryx's own knobs every
@@ -35,6 +37,7 @@ import {isSpring} from './roleValue';
 import type {MotionCurvePoints} from './roles';
 import {
   durationBounceOf,
+  settlingDuration,
   toSpring,
   type DurationBounce,
   type SpringDescription,
@@ -175,4 +178,24 @@ export function resolveMotion(
       : springAt(value, tempo, bounceShift);
   }
   return value;
+}
+
+/**
+ * How long `spring` takes to settle, in milliseconds, at the knobs of the
+ * theme `element` is in: the duration of a CSS part that plays with it, such
+ * as a scrim's fade under a sheet, so the two start and land together on one
+ * clock (`spec:AST-108` FR4a). It is the resolved spring's settling duration
+ * (Core Animation's epsilon), the length the layout glide plays the same role
+ * for, so a fixed role or a spring that is no role gives its own.
+ *
+ * @example
+ * ```
+ * scrim.style.transitionDuration = `${resolveSettleMs(sheet, springs.settle)}ms`;
+ * ```
+ */
+export function resolveSettleMs(
+  element: Element | null | undefined,
+  spring: SpringDescription,
+): number {
+  return settlingDuration(toSpring(resolveMotion(element, spring))) * 1000;
 }
