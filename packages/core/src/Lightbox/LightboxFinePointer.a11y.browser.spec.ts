@@ -333,7 +333,7 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
   });
   await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
   const samples = await page.evaluate(
-    () =>
+    async () =>
       (window as unknown as {__samples: Promise<[number, number][]>}).__samples,
   );
   const to = fitted.width * 2;
