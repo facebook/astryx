@@ -24,7 +24,9 @@ import {
 import {useTouchLayer} from './useTouchLayer';
 
 /** Stands in for `matchMedia('(pointer: coarse)')`; returns the switch. */
-function primaryPointer(initiallyCoarse: boolean): (isCoarse: boolean) => void {
+function primaryPointer(
+  initiallyCoarse: boolean,
+): ((isCoarse: boolean) => void) & {listenerCount: () => number} {
   let matches = initiallyCoarse;
   const listeners = new Set<() => void>();
   vi.stubGlobal(
@@ -43,12 +45,15 @@ function primaryPointer(initiallyCoarse: boolean): (isCoarse: boolean) => void {
     })),
   );
   resetTouchSupportForTests();
-  return isCoarse => {
-    matches = isCoarse;
-    for (const listener of [...listeners]) {
-      listener();
-    }
-  };
+  return Object.assign(
+    (isCoarse: boolean) => {
+      matches = isCoarse;
+      for (const listener of [...listeners]) {
+        listener();
+      }
+    },
+    {listenerCount: () => listeners.size},
+  );
 }
 
 /** A layer that records each setup and cleanup. */
@@ -174,6 +179,45 @@ describe('useTouchLayer', () => {
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(setup).toHaveBeenCalledTimes(2);
     expect(setup).toHaveBeenLastCalledWith(screen.getByTestId('layer'));
+  });
+
+  it('cleans the old element up before it sets the new one up (react-component-runtime INV6)', () => {
+    primaryPointer(true);
+    const calls: string[] = [];
+    function Layer({tag}: {tag: 'div' | 'span'}) {
+      const ref = useRef<HTMLElement>(null);
+      useTouchLayer(ref, element => {
+        calls.push(`setup ${element.tagName}`);
+        return () => calls.push(`cleanup ${element.tagName}`);
+      });
+      const Tag = tag;
+      return <Tag ref={ref as never} />;
+    }
+    const view = render(<Layer tag="div" />);
+    view.rerender(<Layer tag="span" />);
+    expect(calls).toEqual(['setup DIV', 'cleanup DIV', 'setup SPAN']);
+  });
+
+  it('follows the pointer once for any number of layers, keeps following after one leaves, and stops after the last', () => {
+    const turn = primaryPointer(false);
+    const first = recorder();
+    const second = recorder();
+    function Host({hasFirst}: {hasFirst: boolean}) {
+      return (
+        <>
+          {hasFirst && <first.Layer />}
+          <second.Layer />
+        </>
+      );
+    }
+    const view = render(<Host hasFirst />);
+    expect(turn.listenerCount()).toBe(1);
+    view.rerender(<Host hasFirst={false} />);
+    expect(turn.listenerCount()).toBe(1);
+    act(() => turn(true));
+    expect(second.setup).toHaveBeenCalledTimes(1);
+    view.unmount();
+    expect(turn.listenerCount()).toBe(0);
   });
 
   it('keeps one layer attached under StrictMode', () => {
