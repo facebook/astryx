@@ -17,7 +17,13 @@ verified_by:
     internal/eslint-plugin-astryx/no-stylex-null-override.test.mjs,
     internal/eslint-plugin-astryx/no-style-only-wrapper.test.mjs,
   ]
-deciding_specs: [spec:AST-080/DEC-4, spec:AST-017/DEC-26, spec:AST-017/DEC-29]
+deciding_specs:
+  [
+    spec:AST-080/DEC-4,
+    spec:AST-080/DEC-5,
+    spec:AST-017/DEC-26,
+    spec:AST-017/DEC-29,
+  ]
 ---
 
 # Component style authoring architecture
@@ -101,9 +107,10 @@ not evidence of conformance or violation.
   in, including its transitive modules, and that component's gzip CSS delta in
   its package stylesheet (`spec:AST-080` FR8). A feature that runs only on a
   coarse pointer and adds more than 2 KB gzip of JavaScript or 1 KB gzip of CSS
-  to one component is flagged. Its pull request either loads that JavaScript
-  lazily, only when a coarse pointer needs it, so the component's import does
-  not carry it, or justifies the cost. For flagged CSS, its pull request
+  to one component is flagged. Its pull request either takes that JavaScript
+  from the shared internal touch modules (`architecture:react-component-runtime`
+  INV13), which a page carries once however many components use them, or
+  justifies the cost. For flagged CSS, its pull request
   justifies the cost, because that CSS stays in the package stylesheet
   (`spec:AST-080` FR1, FR8). Sizes are gzip at the default compression level,
   and 1 KB is 1,024 bytes; measured as `spec:AST-080` FR8 measures CSS, a
@@ -128,7 +135,8 @@ not evidence of conformance or violation.
   twin to measure or reserve space, because CSS can size and reserve it on the
   element that shows it (INV2). A layer mounts exactly one presentation. The
   only second copy is one transient copy during an exit, a presentation
-  switch, or a handoff between sheets, such as the cross-fade
+  switch, a lift from the trigger (`architecture:layer-runtime` INV15), or a
+  handoff between sheets, such as the cross-fade
   `design:reduced-motion` DR2 requires; it is made by one Core mechanism that
   every layer uses, rather than by each component, and is removed within 1
   second of the transition ending. Until that shared mechanism exists, a
@@ -273,6 +281,8 @@ before assigning a verdict.
 - `spec:AST-080/DEC-4` — every pull request reports component JavaScript and
   CSS size; touch-only JavaScript over 2 KB or CSS over 1 KB is flagged, and
   shared value tables ship only the rows a component uses (INV6).
+- `spec:AST-080/DEC-5` — touch primitives come from the shared internal touch
+  modules, or the cost is justified; no component lazy-loads its own (INV6).
 - `spec:AST-017/DEC-26` — components are built from minimal DOM, with two
   budgets and an owner-recorded exception path; reducing DOM is compatible
   (INV7).
