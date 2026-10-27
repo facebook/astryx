@@ -252,7 +252,8 @@ const trackedStyles = stylex.create({
         },
         '@media (hover: hover)': {
           default: null,
-          ':hover': TRACKED_HOVER_IMAGE,
+          ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+            TRACKED_HOVER_IMAGE,
           ':active:focus-visible': TRACKED_PRESSED_IMAGE,
         },
         '[data-astryx-press="on"]': 'var(--_press-paint-image)',

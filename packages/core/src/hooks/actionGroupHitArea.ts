@@ -107,10 +107,9 @@ export const actionGroupHitAreaStyles = stylex.create({
     '::after': {
       content: {default: null, '@media (pointer: coarse)': '""'},
       position: 'absolute',
-      top: 'calc(var(--astryx-hit-inset-top, 0px) * -1)',
-      right: 'calc(var(--astryx-hit-inset-right, 0px) * -1)',
-      bottom: 'calc(var(--astryx-hit-inset-bottom, 0px) * -1)',
-      left: 'calc(var(--astryx-hit-inset-left, 0px) * -1)',
+      // Physical sides, as hitArea.ts measures them in client pixels.
+      inset:
+        'calc(var(--astryx-hit-inset-top, 0px) * -1) calc(var(--astryx-hit-inset-right, 0px) * -1) calc(var(--astryx-hit-inset-bottom, 0px) * -1) calc(var(--astryx-hit-inset-left, 0px) * -1)',
       zIndex: -1,
     },
   },

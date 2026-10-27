@@ -69,7 +69,7 @@ async function justBelow(button: Locator): Promise<Point> {
 }
 
 /** The accessible name of the group the topmost element at `point` is in. */
-const groupAt = (page: Page, point: Point) =>
+const groupAt = async (page: Page, point: Point) =>
   page.evaluate(({x, y}) => {
     const element = document.elementFromPoint(x, y);
     return (
@@ -111,7 +111,7 @@ test("under a finger a small button's target reaches 44 px: the point just below
   const {cut, log} = await open(page);
   const below = await justBelow(cut);
   // The hit layer's insets are measured in the frame after the group shows.
-  await expect.poll(() => groupAt(page, below)).toBe('Edit actions');
+  await expect.poll(async () => groupAt(page, below)).toBe('Edit actions');
   const driver = await touchDriver(page);
   await driver.play(tap(below));
   await expect(log).toHaveText('Pressed: Cut');
