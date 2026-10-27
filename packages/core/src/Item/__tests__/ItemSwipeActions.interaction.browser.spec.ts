@@ -63,6 +63,8 @@ import {
   withStorybook,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
+  WHEEL_SKIP,
   writeEvidence,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
@@ -1778,3 +1780,49 @@ test(
     expect(Math.max(...steps)).toBeLessThan(35);
   },
 );
+
+test.describe('under a trackpad or a mouse wheel (a desktop context)', () => {
+  // A desktop context: no touchscreen, a fine primary pointer, and real wheel
+  // input in both engines (WebKit's mobile emulation has none).
+  test.use({hasTouch: false, isMobile: false});
+
+  test('a trackpad’s horizontal scroll opens a row as a finger does, and a vertical one leaves it shut (spec:AST-057 FR4, DEC-7)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-item--swipe-actions');
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const rows = page.locator('.astryx-item');
+    const row = rows.first();
+    const panel = row.locator('[data-swipe-panel="trailing"]');
+    await expect(panel).toBeAttached();
+    const openWidth = await openWidthOf(panel.locator(':scope > div').first());
+    const rest = await row.boundingBox();
+    if (rest == null) {
+      throw new Error('no row');
+    }
+    const at = {x: rest.x + rest.width / 2, y: rest.y + rest.height / 2};
+    // A scroll toward the inline end drags the content toward the inline
+    // start, as two fingers do: the trailing side uncovers.
+    for (let i = 0; i < 12; i += 1) {
+      await driver.wheel({...at, dx: 8});
+    }
+    await expect.poll(async () => xOf(row)).toBeCloseTo(-openWidth, 0);
+    await expect(panel).not.toHaveAttribute('inert', '');
+    // A vertical scroll over another row is the page's: that row stays shut.
+    const other = rows.nth(1);
+    const box = await other.boundingBox();
+    if (box == null) {
+      throw new Error('no second row');
+    }
+    for (let i = 0; i < 6; i += 1) {
+      await driver.wheel({
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2,
+        dy: 12,
+      });
+    }
+    await page.waitForTimeout(250);
+    expect(await xOf(other)).toBeCloseTo(0, 0);
+  });
+});

@@ -1255,6 +1255,56 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
       expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     });
+
+    /** A wheel event as a browser sends it, stamped with the document clock. */
+    const scroll = (target: Element, dx: number, dy = 0) => {
+      void act(() => vi.advanceTimersByTime(16));
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 150,
+        clientY: 10,
+        composed: true,
+        deltaX: dx,
+        deltaY: dy,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+      act(() => {
+        target.dispatchEvent(event);
+      });
+      return event;
+    };
+
+    it('opens under a trackpad’s horizontal scroll as under a finger: the scroll is the row’s, and the row rests open (spec:AST-057 FR4, DEC-7)', async () => {
+      const {row} = renderRow();
+      // A scroll toward the inline start drags the content toward the inline
+      // end, as two fingers do: the leading side uncovers.
+      const events = Array.from({length: 12}, () => scroll(row, -7.5));
+      expect(events.every(event => event.defaultPrevented)).toBe(true);
+      expect(xOf(row)).toBeGreaterThan(0);
+      // The gesture ends 100 ms after its last wheel; the row then settles.
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    it('opens under a mouse wheel’s horizontal notch the same way, and fires nothing (spec:AST-057 DEC-7)', async () => {
+      const onActivate = vi.fn();
+      const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
+      expect(scroll(row, -100).defaultPrevented).toBe(true);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it('leaves a vertical wheel to the page: the row stays shut', async () => {
+      const {row} = renderRow();
+      const events = Array.from({length: 6}, () => scroll(row, 0, 12));
+      expect(events.some(event => event.defaultPrevented)).toBe(false);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+    });
   });
 
   it('leaves the row as it was when a claimed touch lifts before the swipe begins', async () => {

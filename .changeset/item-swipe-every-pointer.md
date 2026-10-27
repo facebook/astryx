@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[chore] Internal: with gestures attached for every pointer, a swipe-action row (`Item`, `ListItem`) still swipes only under a finger: a mouse or a pen never starts it, and the dismissing tap's click goes to the gesture host's click guard where the primary pointer is fine. Tests only otherwise; no API change.
+[feat] A trackpad's horizontal scroll swipes an `Item` or `ListItem` swipe-action row as a finger does, and so does a mouse wheel's horizontal notch. With gestures attached for every pointer, a mouse or a pen drag still never swipes a row.
 
 @vjeux

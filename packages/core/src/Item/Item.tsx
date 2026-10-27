@@ -272,9 +272,10 @@ export interface ItemProps extends BaseProps<HTMLElement> {
 
   /**
    * Swipe actions for touch: the verbs a sideways drag uncovers on each side,
-   * declared as data so the row paints the panel from them. A coarse pointer
-   * drags the row aside and uncovers the side's panel; a mouse never starts
-   * the drag, and a mostly vertical drag stays the scroller's. The gesture is
+   * declared as data so the row paints the panel from them. A finger, or a
+   * trackpad's horizontal scroll, drags the row aside and uncovers the side's
+   * panel; a mouse never starts the drag, and a mostly vertical drag stays
+   * the scroller's. The gesture is
    * a touch accelerator and never a row's only path to a verb: a verb
    * reachable only by swipe is unreachable by keyboard and by mouse, so every
    * entry must also be reachable through the row's own content (a menu or a
@@ -288,9 +289,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * radio). The element containing the rows clips in the inline axis
    * (`overflow-inline: clip`): `List` does; any other host does it once.
    *
-   * The swipe is a touch behaviour, the same on every device: the gesture
-   * reads each touch's pointer, so a finger swipes the row whatever the
-   * primary pointer (a touchscreen laptop's included) and a mouse never does.
+   * The swipe is the same on every device: a finger swipes the row whatever
+   * the primary pointer (a touchscreen laptop's included), and so does a
+   * trackpad's or a mouse wheel's horizontal scroll; a mouse drag never does.
    * The gesture and its panels load with the row, so its first swipe never
    * waits for a chunk.
    */
@@ -634,9 +635,9 @@ export function Item({
     !isDelegate &&
     !isLinkRoot &&
     (role == null || SWIPE_ROLES.has(role));
-  // The swipe is a touch behaviour, the same on every device: the gesture
-  // reads each touch's pointer (`spec:AST-057`), so a finger swipes whatever
-  // the primary pointer and a mouse never starts the drag.
+  // The swipe is the same on every device (`spec:AST-057` DEC-7): a finger or
+  // a horizontal scroll swipes whatever the primary pointer, and a mouse drag
+  // never does.
   const hasSwipe = isSwipeServed;
   useDevWarning(
     'Item',

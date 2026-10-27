@@ -79,8 +79,9 @@
  * busy. A drag costs no React render; the
  * claim, the confirming and the landing each cost one.
  *
- * Only a finger swipes the row: on every device, whatever the primary
- * pointer; a mouse or a pen never does.
+ * A finger swipes the row on every device, whatever the primary pointer, and
+ * so does a trackpad's or a mouse wheel's horizontal scroll (`spec:AST-057`
+ * DEC-7); a mouse or a pen drag never does.
  *
  * Under Reduce Motion (`design:reduced-motion`) the finger's own drag is
  * direct manipulation and follows it one for one, but nothing a release or
@@ -1234,6 +1235,10 @@ export function useSwipeAction({
         // finger drags the row: a mouse and a pen never start the swipe
         // (`spec:AST-057` FR6, AR2).
         allowedPointerTypes: ['touch'],
+        // A trackpad's horizontal scroll swipes the row as a finger does, and
+        // a mouse wheel's horizontal notches the same way (`spec:AST-057`
+        // DEC-7): the same contact, moving with the content.
+        allowedScrollTypes: ['continuous', 'discrete'],
         direction: 'horizontal',
         hysteresis: SWIPE.claim,
         maximumNumberOfTouches: 1,
