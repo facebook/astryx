@@ -206,13 +206,13 @@ export const docs = {
           name: 'onActiveChange',
           type: '(isActive: boolean) => void',
           description:
-            "Called with true when the tap that chooses the search tab activates its field. Set isActive false on cancel, and return to the tab it was chosen from in onChange's state if you want to leave search.",
+            'Called with true when the tap that chooses the search tab activates its field, and with false when another tab is chosen while the search tab is selected (a tap on it, the leading circle, or Escape under a mouse) and when Cancel ends search for a field without a cancel method. Under a mouse, a Cancel button you draw sets isActive false itself.',
         },
         {
           name: 'fieldRef',
-          type: 'RefObject<{focus(): void; blur(): void; cancel?(): void} | null>',
+          type: 'RefObject<{focus(options?: FocusOptions): void; blur(): void; cancel?(): void} | null>',
           description:
-            "The field's handle, focused by the tap that activates it, and cancelled by the cancel button when it has a cancel method (SearchField's handle does); without one the cancel button calls onActiveChange(false). An input element works.",
+            "The field's handle, focused by the tap that activates it (with preventScroll: the field rises above the keyboard itself), and cancelled by the cancel button when it has a cancel method (SearchField's handle does); without one the cancel button calls onActiveChange(false). An input element works.",
         },
         {
           name: 'automaticallyActivates',
