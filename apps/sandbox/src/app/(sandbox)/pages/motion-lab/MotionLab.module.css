@@ -749,7 +749,7 @@
 }
 
 .tintRow:hover {
-  background: var(--color-background-hover, var(--color-background-elevated));
+  background-color: var(--color-overlay-hover);
 }
 
 /* NavItem's hover tint (NavTintRig). Before: as shipped, it snaps on where
@@ -783,8 +783,11 @@
   transition-property: background-color;
 }
 
+/* The hover overlay token Astryx ships: the rule used to read two names no
+   theme defines, so the row never tinted and the pane showed nothing to
+   compare. */
 .noopRow:hover {
-  background: var(--color-background-hover, var(--color-background-elevated));
+  background-color: var(--color-overlay-hover);
 }
 
 /* ------------------------------------------------------------- origin ----- */
