@@ -519,3 +519,81 @@ test('a new query is announced once, through the shared live region', async ({
     );
   expect(regions.every(region => region != null)).toBe(true);
 });
+
+test('in the dialog, a new query is announced in the dialog’s own live region, never the page body’s', async ({
+  page,
+}) => {
+  // Every non-empty text written to a polite region, by where the region is:
+  // the page body's shared region, or the open dialog's own (spec:AST-086
+  // FR14 routes an announcement by where the hook is called).
+  type RegionWrites = {body: string[]; dialog: string[]};
+  await page.addInitScript(() => {
+    const writes: RegionWrites = {body: [], dialog: []};
+    (window as unknown as {__regionWrites: RegionWrites}).__regionWrites =
+      writes;
+    new MutationObserver(records => {
+      for (const record of records) {
+        const target = record.target;
+        if (!(target instanceof Element)) {
+          continue;
+        }
+        const where = target.matches('[data-astryx-live-region="polite"]')
+          ? 'body'
+          : target.matches('[data-astryx-modal-live-region="polite"]')
+            ? 'dialog'
+            : null;
+        if (where == null) {
+          continue;
+        }
+        for (const node of record.addedNodes) {
+          if (node.textContent) {
+            writes[where].push(node.textContent);
+          }
+        }
+      }
+    }).observe(document, {childList: true, subtree: true});
+  });
+  await openStory(page, STORY.dialog);
+  const dialog = page.getByRole('dialog', {name: 'Share'});
+  const field = page.getByRole('combobox', {name: 'Add people'});
+  await field.click();
+  const regionWrites = async () =>
+    page.evaluate(() => {
+      const writes = (window as unknown as {__regionWrites: RegionWrites})
+        .__regionWrites;
+      return {body: [...writes.body], dialog: [...writes.dialog]};
+    });
+
+  // One key at a time. A dialog's region joins a message written up to one
+  // frame after it shows the previous one (spec:AST-086 FR9), so each key
+  // also waits two frames after its count appears.
+  const expected: string[] = [];
+  for (const [key, announcement] of [
+    ['a', '7 results'],
+    ['l', '1 result'],
+    ['z', 'No results found'],
+  ] as const) {
+    await page.keyboard.press(key);
+    expected.push(announcement);
+    await expect.poll(regionWrites).toEqual({body: [], dialog: expected});
+    await page.evaluate(
+      async () =>
+        new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  }
+  await page.waitForTimeout(500);
+  expect(await regionWrites()).toEqual({body: [], dialog: expected});
+  // The region the words went to sits inside the open dialog.
+  expect(
+    await dialog.evaluate(
+      el =>
+        el
+          .closest('dialog')
+          ?.querySelector(
+            ':scope > [data-astryx-modal-live-region="polite"]',
+          ) != null,
+    ),
+  ).toBe(true);
+});

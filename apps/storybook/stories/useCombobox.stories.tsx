@@ -466,9 +466,13 @@ export const EditableField: Story = {
 // A field inside a dialog: Escape hides the list before it closes the dialog.
 // ---------------------------------------------------------------------------
 
-function InDialogExample() {
+/**
+ * The dialog's field. It calls `useCombobox` from inside the Dialog: an
+ * announcement follows where the hook is called, and the open modal hides the
+ * page body, so the result count has to come from within the dialog.
+ */
+function SharePeopleField() {
   const listboxId = useId();
-  const [isDialogOpen, setIsDialogOpen] = useState(true);
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [shared, setShared] = useState<string[]>([]);
@@ -498,6 +502,45 @@ function InDialogExample() {
   });
 
   return (
+    <div {...stylex.props(styles.stack)}>
+      <input
+        aria-label="Add people"
+        type="text"
+        value={query}
+        onChange={event => {
+          const next = event.currentTarget.value;
+          setQuery(next);
+          setIsOpen(true);
+          combobox.setHighlightedIndex(firstEnabled(matching(PEOPLE, next)));
+        }}
+        {...combobox.getFieldProps()}
+        {...stylex.props(styles.field)}
+      />
+      {isShown ? (
+        options.length > 0 ? (
+          <div
+            aria-label="People"
+            {...combobox.getListboxProps()}
+            {...stylex.props(styles.listbox)}>
+            <Rows combobox={combobox} options={options} />
+          </div>
+        ) : (
+          <p {...stylex.props(styles.muted)}>No one matches</p>
+        )
+      ) : null}
+      <p {...stylex.props(styles.muted)}>
+        {shared.length > 0
+          ? `Shared with ${shared.join(', ')}`
+          : 'Not shared yet'}
+      </p>
+    </div>
+  );
+}
+
+function InDialogExample() {
+  const [isDialogOpen, setIsDialogOpen] = useState(true);
+
+  return (
     <>
       <Button
         label="Share"
@@ -509,40 +552,7 @@ function InDialogExample() {
           header={<DialogHeader title="Share" onOpenChange={setIsDialogOpen} />}
           content={
             <LayoutContent>
-              <div {...stylex.props(styles.stack)}>
-                <input
-                  aria-label="Add people"
-                  type="text"
-                  value={query}
-                  onChange={event => {
-                    const next = event.currentTarget.value;
-                    setQuery(next);
-                    setIsOpen(true);
-                    combobox.setHighlightedIndex(
-                      firstEnabled(matching(PEOPLE, next)),
-                    );
-                  }}
-                  {...combobox.getFieldProps()}
-                  {...stylex.props(styles.field)}
-                />
-                {isShown ? (
-                  options.length > 0 ? (
-                    <div
-                      aria-label="People"
-                      {...combobox.getListboxProps()}
-                      {...stylex.props(styles.listbox)}>
-                      <Rows combobox={combobox} options={options} />
-                    </div>
-                  ) : (
-                    <p {...stylex.props(styles.muted)}>No one matches</p>
-                  )
-                ) : null}
-                <p {...stylex.props(styles.muted)}>
-                  {shared.length > 0
-                    ? `Shared with ${shared.join(', ')}`
-                    : 'Not shared yet'}
-                </p>
-              </div>
+              <SharePeopleField />
             </LayoutContent>
           }
         />
@@ -555,6 +565,8 @@ function InDialogExample() {
  * A field inside a dialog, its matches listed in the dialog's flow and an
  * empty message shown when nothing matches. With either shown, the first
  * Escape hides it and the dialog stays; the next Escape closes the dialog.
+ * The field calls `useCombobox` inside the dialog, so its result count is
+ * announced in the dialog's own live region.
  */
 export const InDialog: Story = {
   render: () => <InDialogExample />,

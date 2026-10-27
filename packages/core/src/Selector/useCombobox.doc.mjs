@@ -113,7 +113,7 @@ export const docs = {
       name: 'options.query',
       type: 'string',
       description:
-        'The query the current options answer, for a field that filters them. When it changes to a non-empty value while the list is shown, the number of options, or that there are none, is announced politely through the shared announcer, never a live region of the field\u2019s own. Update it together with the options it produced. The query a field mounts with is not announced.',
+        'The query the current options answer, for a field that filters them. When it changes to a non-empty value while the list is open (`isOpen`), the number of options, or that there are none, is announced politely through the shared announcer, never a live region of the field\u2019s own. Update it together with the options it produced. The query a field mounts with is not announced. The announcement follows where `useCombobox` is called: a field inside a modal, such as a Dialog, needs the call in a component rendered inside that modal.',
     },
   ],
   returns: [
@@ -296,7 +296,7 @@ export const docsDense = {
     'options.field':
       "field getFieldProps wires (you render + keep focused): 'input' single-line, 'textarea' / 'contenteditable' multi-line. sets role + whether ArrowDown shows hidden list. onKeyDown ignores it.",
     'options.query':
-      'query current options answer; change to non-empty while shown -> count (or none) announced politely via shared announcer, no own live region. update w/ its options. mount query not announced.',
+      'query current options answer; change to non-empty while open (isOpen) -> count (or none) announced politely via shared announcer, no own live region. update w/ its options. mount query not announced. announcement follows where useCombobox is called: a field in a modal (Dialog) needs the call inside it.',
   },
   returnDescriptions: {
     highlightedIndex:

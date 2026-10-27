@@ -212,8 +212,10 @@ interface UseComboboxOptions<T extends ComboboxOption> {
   field?: ComboboxField;
   /**
    * The query the current options answer. When it changes to a non-empty value
-   * while the list is shown, the number of options, or that there are none, is
-   * announced politely through the shared announcer (spec:AST-075 FR7).
+   * while the list is open (`isOpen`), the number of options, or that there are
+   * none, is announced politely through the shared announcer (spec:AST-075
+   * FR7). The announcement follows where the hook is called (spec:AST-086
+   * FR14): inside a modal, call it from a component rendered inside it.
    */
   query?: string;
 }
