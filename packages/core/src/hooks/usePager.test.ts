@@ -1034,14 +1034,18 @@ describe('createPager', () => {
     pager.dispose();
   });
 
-  it("takes a mouse wheel's notches as well (spec:AST-094 FR43)", async () => {
+  it("takes a mouse wheel's notches as well (spec:AST-094 FR43): past half a page they land on the next one", async () => {
     const {f, pager} = await wheelPager(1);
     // Whole 100 px notches on the horizontal axis (a tilt wheel, or Shift
-    // with a wheel): discrete scrolling.
-    expect(wheel(f.page, {dx: 100, time: now}).defaultPrevented).toBe(true);
-    await advance(30, f.clock);
-    wheel(f.page, {dx: 100, time: now});
-    await advance(8, f.clock);
+    // with a wheel): discrete scrolling. Three carry the track past half a
+    // page, so the release lands on the next page whatever its velocity.
+    const events: WheelEvent[] = [];
+    for (let i = 0; i < 3; i++) {
+      events.push(wheel(f.page, {dx: 100, time: now}));
+      await advance(30, f.clock);
+    }
+    expect(events.every(event => event.defaultPrevented)).toBe(true);
+    expect(f.x()).toBeLessThan(-1.5 * WIDTH);
     await endWheel(f);
     expect(pager.index).toBe(2);
     pager.dispose();

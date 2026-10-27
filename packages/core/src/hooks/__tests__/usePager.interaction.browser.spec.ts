@@ -39,6 +39,7 @@ import {
   trackMarker,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -51,6 +52,8 @@ declare global {
     pager: ReturnType<typeof PagerBundle.createPager>;
     pagerLog: string[];
     cancelledMoves: boolean[];
+    cancelledWheels: boolean[];
+    minTrackX: number;
     /** Each move's position, and where the touch started (CSS px). */
     moves: [number, number][];
     touchStart: [number, number];
@@ -77,10 +80,10 @@ const COUNT = 5;
 const TOP = 80;
 const HEIGHT = 300;
 
-async function open(
+async function serve(
   page: Page,
   {rtl = false, startIndex = 1, tall = false} = {},
-) {
+): Promise<void> {
   const pages = Array.from(
     {length: COUNT},
     (_, i) =>
@@ -100,6 +103,9 @@ async function open(
   window.pagerLog = [];
   // Whether each move reached the page cancelled (read after every listener).
   window.cancelledMoves = [];
+  // Whether each wheel reached the page cancelled (read after every listener).
+  window.cancelledWheels = [];
+  addEventListener('wheel', e => { window.cancelledWheels.push(e.defaultPrevented); }, {passive: true});
   window.moves = [];
   addEventListener('touchstart', e => { window.touchStart = [e.touches[0].clientX, e.touches[0].clientY]; }, {passive: true});
   addEventListener('touchmove', e => { window.cancelledMoves.push(e.defaultPrevented); window.moves.push([e.touches[0].clientX, e.touches[0].clientY]); }, {passive: true});
@@ -118,10 +124,20 @@ async function open(
     route.fulfill({contentType: 'text/html', body: html}),
   );
   await page.goto('http://pager.test/');
-  return {
-    track: page.locator('#track'),
-    driver: await touchDriver(page),
-  };
+}
+
+async function open(page: Page, options: Parameters<typeof serve>[1] = {}) {
+  await serve(page, options);
+  return {track: page.locator('#track'), driver: await touchDriver(page)};
+}
+
+/**
+ * The fixture under a fine primary pointer: a real mouse and real wheel
+ * input, no touch emulation (`spec:AST-094` FR43).
+ */
+async function openFine(page: Page, options: Parameters<typeof serve>[1] = {}) {
+  await serve(page, options);
+  return {track: page.locator('#track'), input: await webInputDriver(page)};
 }
 
 const log = async (page: Page) => page.evaluate(() => window.pagerLog);
@@ -852,3 +868,97 @@ for (const [name, run] of [
     await releaseAnimations(page);
   });
 }
+
+// spec:AST-094 FR43: gestures work on the web for every pointer. A desktop
+// context: a fine primary pointer, a real mouse and real wheel input.
+test.describe('under a fine primary pointer (spec:AST-094 FR43)', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('a mouse drag pages the pager like a finger', async ({page}) => {
+    const {track} = await openFine(page);
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const y = TOP + HEIGHT / 2;
+    await page.mouse.move(340, y);
+    await page.mouse.down();
+    // 250 px toward the start, past half a page whatever the release speed.
+    for (let i = 1; i <= 25; i++) {
+      await page.mouse.move(340 - 10 * i, y);
+    }
+    await page.mouse.up();
+    await waitForRest(track);
+    expect(await page.evaluate(() => window.pager.index)).toBe(2);
+    expect(await trackX(track)).toBeCloseTo(-2 * PAGE, 0);
+  });
+
+  test("a trackpad's horizontal scroll pages the pager, and the page keeps none of it", async ({
+    page,
+  }) => {
+    const {track, input} = await openFine(page);
+    // 40 steps of 6.5 px (a trackpad's continuous scroll): 260 px toward the
+    // next page, past half of it whatever the release speed.
+    for (let i = 0; i < 40; i++) {
+      await input.wheel({x: 200, y: TOP + HEIGHT / 2, dx: 6.5});
+    }
+    // The scroll ends 100 ms after its last wheel.
+    await page.waitForTimeout(200);
+    await waitForRest(track);
+    expect(await page.evaluate(() => window.pager.index)).toBe(2);
+    expect(await trackX(track)).toBeCloseTo(-2 * PAGE, 0);
+    const cancelled = await page.evaluate(() => window.cancelledWheels);
+    expect(cancelled.length).toBeGreaterThan(0);
+    expect(cancelled.every(Boolean)).toBe(true);
+  });
+
+  test("a trackpad scroll that carries the track past a page stays the pager's while the next page moves under the still cursor, and pages one page", async ({
+    page,
+  }) => {
+    const {track, input} = await openFine(page);
+    // The furthest the track gets, sampled every frame.
+    await page.evaluate(() => {
+      window.minTrackX = 0;
+      const el = document.getElementById('track') as HTMLElement;
+      const sample = () => {
+        const value = getComputedStyle(el).translate;
+        const x = value === 'none' ? 0 : parseFloat(value);
+        window.minTrackX = Math.min(window.minTrackX, x);
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    // 30 steps of 17.5 px: 525 px, more than a page. The cursor stays put
+    // while page 2, then page 3's edge, slide under it.
+    for (let i = 0; i < 30; i++) {
+      await input.wheel({x: 200, y: TOP + HEIGHT / 2, dx: 17.5});
+    }
+    await page.waitForTimeout(200);
+    await waitForRest(track);
+    expect(await page.evaluate(() => window.minTrackX)).toBeLessThan(-2 * PAGE);
+    const cancelled = await page.evaluate(() => window.cancelledWheels);
+    expect(cancelled.length).toBeGreaterThan(0);
+    expect(cancelled.every(Boolean)).toBe(true);
+    // One page per release, as UIKit pages.
+    expect(await page.evaluate(() => window.pager.index)).toBe(2);
+    expect(await trackX(track)).toBeCloseTo(-2 * PAGE, 0);
+  });
+
+  test("a vertical wheel over the pager is the page's: the pager stays and takes none of it", async ({
+    page,
+    browserName,
+  }) => {
+    const {track, input} = await openFine(page, {tall: true});
+    for (let i = 0; i < 10; i++) {
+      await input.wheel({x: 200, y: TOP + HEIGHT / 2, dy: 40.5});
+    }
+    await page.waitForTimeout(200);
+    expect(await page.evaluate(() => window.pager.index)).toBe(1);
+    expect(await trackX(track)).toBeCloseTo(-PAGE, 0);
+    const cancelled = await page.evaluate(() => window.cancelledWheels);
+    expect(cancelled.length).toBeGreaterThan(0);
+    expect(cancelled.some(Boolean)).toBe(false);
+    if (browserName === 'chromium') {
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    }
+  });
+});
