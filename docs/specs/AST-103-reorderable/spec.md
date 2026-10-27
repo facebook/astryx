@@ -136,7 +136,8 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     for it; a cancelled drag calls nothing;
   - under Reduce Motion the moving preview still follows the finger or pointer,
     and the other rows and the drop take their places without travel
-    (`design:reduced-motion` DR1–DR3; a mouse drop follows DR3).
+    (`design:reduced-motion` DR1–DR3; a mouse drop follows DR2 on a coarse primary pointer and DR3
+    otherwise).
 - **FR4 — Reorder mode is the one path without a drag.** Each reorderable
   row's handle is a toggle button named "Reorder" and the row's label, with
   `aria-pressed`. Activating it, by click, Enter, or Space, enters reorder
