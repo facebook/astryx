@@ -11,7 +11,8 @@
  *   on the shared release clock; inside one it waits UIScrollView's content-touch
  *   delay, a flick paints nothing, and a scroll that takes a held press
  *   cancels it with no fade and no click; a quick tap highlights at the lift;
- *   the engine's own tap paints and activates once; a storyboard of a press,
+ *   the engine's own tap paints and activates once; a second tap 70 ms after
+ *   the first leaves nothing pressed; a storyboard of a press,
  *   its trace asserted
  * @position Interaction evidence for the press model's control profile
  *   (gestures/PressTracker.ts, gestures/delegatedPress.ts as installed by
@@ -206,6 +207,22 @@ test('a tap through the engine’s own tap path paints the press and activates o
   expect(first(entries, 'press', 'on'), JSON.stringify(entries)).toBeTruthy();
   expect(first(entries, 'press', 'fading')).toBeTruthy();
   expect(entries.filter(([k]) => k === 'click')).toHaveLength(1);
+});
+
+test('a second tap 70 ms after the first leaves nothing pressed', async ({
+  page,
+}) => {
+  const opened = await openSurface(page, BUTTONS, secondaryButton);
+  // Two quick taps, the second while the first one's release still runs:
+  // the second press is lifted too, so its release runs and the press goes.
+  await page.touchscreen.tap(opened.center.x, opened.center.y);
+  await page.waitForTimeout(70);
+  await page.touchscreen.tap(opened.center.x, opened.center.y);
+  await expect
+    .poll(async () => opened.surface.getAttribute('data-astryx-press'), {
+      timeout: 2000,
+    })
+    .toBeNull();
 });
 
 test('inside a scroller, a flick scrolls the list and paints nothing', async ({
