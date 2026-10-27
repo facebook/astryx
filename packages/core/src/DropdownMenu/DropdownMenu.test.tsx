@@ -3146,7 +3146,70 @@ describe('DropdownMenu press model', () => {
     }
   });
 
-  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms and its opening press follows the settle rule', () => {
+  it('under a coarse pointer the finger that opened the menu picks only once it travels the handoff (spec:AST-094 FR29)', () => {
+    stubCoarsePointer();
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      // A still lift picks nothing, however long the finger rested.
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+      });
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      expect(item('Delete')).not.toHaveFocus();
+      // UIMenu's handoff: the finger picks once it travels from the first
+      // sample the menu saw.
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(item('Delete')).toHaveFocus();
+      fireEvent.pointerUp(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('presentation="popover" pins the settle rule under a finger: once the opening press has settled, a still lift picks the row under it', () => {
+    // spec:AST-094 FR25: a moved touch default comes back through
+    // `presentation`, never through a public threshold.
+    stubCoarsePointer();
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn<(label: string) => void>();
+      render(
+        <DropdownMenu button={{label: 'Pinned'}} presentation="popover">
+          <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+          <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: /Pinned/});
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS + MENU_PRESS_SETTLE_MS);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms, not on the press', () => {
     // spec:AST-094 FR25: a moved touch default comes back through
     // `presentation`, never through a public threshold.
     stubCoarsePointer();
@@ -3172,14 +3235,6 @@ describe('DropdownMenu press model', () => {
       });
       expect(MENU_PRESS_LONG_PRESS_MS).toBe(500);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      // No handoff distance: once the press has settled, a finger that barely
-      // moved picks the row under it, as before.
-      act(() => {
-        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
-      });
-      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      expect(onPick).toHaveBeenCalledWith('Delete');
     } finally {
       vi.useRealTimers();
     }
