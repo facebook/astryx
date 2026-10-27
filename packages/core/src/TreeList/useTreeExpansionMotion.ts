@@ -107,8 +107,11 @@ function chevronOf(group: HTMLElement): HTMLElement | null {
 
 export function useTreeExpansionMotion(
   isExpanded: boolean,
+  {isEnabled = true}: {isEnabled?: boolean} = {},
 ): TreeExpansionMotion {
-  const animates = useTouchPresentation().isTouch;
+  // Off while the tree holds an animated-layout handle: the handle then
+  // plays the group's motion under every pointer (`component:TreeList` FR8).
+  const animates = useTouchPresentation().isTouch && isEnabled;
   const [shown, setShown] = useState(isExpanded);
   if (isExpanded && !shown) {
     setShown(true);
