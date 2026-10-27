@@ -477,6 +477,33 @@ describe('resolveSheetRelease', () => {
     ).toMatchObject({kind: 'dismiss'});
   });
 
+  it('cancels to a detent, never to gone: a drag begun where a finger caught the sheet near gone (spec:AST-094 FR37)', () => {
+    // Caught at 720 pt, past the midpoint from medium to gone, dragged up to
+    // 600 and let go moving back down: a cancel commits nothing, so the sheet
+    // goes to the detent nearest the start, medium, where the same lift from
+    // a drag begun on medium settles too.
+    for (const velocity of [60, 400, 1500]) {
+      expect(
+        resolveSheetRelease({
+          detents: [LARGE, MEDIUM],
+          dismissedOffset: GONE,
+          position: 600,
+          velocity,
+          start: 720,
+        }),
+      ).toMatchObject({kind: 'detent', index: 1, offset: MEDIUM});
+    }
+    expect(
+      resolveSheetRelease({
+        detents: [LARGE, MEDIUM],
+        dismissedOffset: GONE,
+        position: 600,
+        velocity: 60,
+        start: MEDIUM,
+      }),
+    ).toMatchObject({kind: 'detent', index: 1, offset: MEDIUM});
+  });
+
   it('never dismisses a sheet a drag may not dismiss', () => {
     const release = resolveSheetRelease({
       detents: [0, 300],
