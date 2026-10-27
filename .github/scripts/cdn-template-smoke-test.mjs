@@ -160,6 +160,16 @@ server.close();
 
 // ── 6. Report ────────────────────────────────────────────────────────────────
 console.log(`\n${PAGE} @ ${rendered}`);
+if (result.timedOut) {
+  fail(
+    'the page never went idle, so its navigation timed out',
+    result.pendingRequests.length === 0
+      ? '        no request was in flight when the wait gave up'
+      : result.pendingRequests
+          .map(entry => `        still in flight: ${entry}`)
+          .join('\n'),
+  );
+}
 for (const [label, entries] of [
   ['console error', result.consoleErrors],
   ['page error', result.pageErrors],
@@ -176,7 +186,7 @@ for (const [label, entries] of [
 }
 if (result.button) {
   console.log(`  ok    rendered a button: "${result.button.trim()}"`);
-} else {
+} else if (!result.timedOut) {
   fail('the page loaded but rendered no button');
 }
 
