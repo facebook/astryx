@@ -242,14 +242,14 @@ export const docs = {
       name: 'placement',
       type: "'above' | 'below' | 'start' | 'end'",
       description:
-        "Popover placement relative to the trigger. Ignored by the bottom-sheet presentation, and on a compact touch screen under the touch modes (unless presentation is 'popover'), where the menu sits over its trigger as UIMenu does. Logical: start/end resolve against the menu's own inherited direction (RTL mirrors).",
+        "Popover placement relative to the trigger. Ignored by the bottom-sheet presentation. Logical: start/end resolve against the menu's own inherited direction (RTL mirrors).",
       default: "'below'",
     },
     {
       name: 'alignment',
       type: "'start' | 'center' | 'end'",
       description:
-        "Popover alignment along the placement axis. Ignored by the bottom-sheet presentation, and on a compact touch screen under the touch modes (unless presentation is 'popover'), where the menu is centered on its trigger as UIMenu is. Logical: start/end follow the menu's own inherited direction (RTL mirrors).",
+        "Popover alignment along the placement axis. Ignored by the bottom-sheet presentation. Logical: start/end follow the menu's own inherited direction (RTL mirrors).",
       default: "'start'",
     },
     {
@@ -276,7 +276,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down. Under a finger it behaves like UIMenu on iOS: the menu opens as the finger presses the trigger (inside a scroll view, once the 150 ms content-touch delay passes with no scroll), the finger that opened it picks a row only once it has moved 10 px (so the row that appears under it is never picked by accident), the menu grows out of its trigger and collapses back into it on UIKit\u2019s springs, and a pan that starts outside it dismisses it as the page scrolls. On a phone the popover menu sits over its trigger as UIMenu does: centered on it, top-aligned with it (bottom-aligned when the trigger is in the lower half of the viewport), 8 px from the viewport\u2019s sides.',
+      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down. Under a finger it behaves like UIMenu on iOS: the menu opens as the finger presses the trigger (inside a scroll view, once the 150 ms content-touch delay passes with no scroll), the finger that opened it picks a row only once it has moved 10 px (so the row that appears under it is never picked by accident), the menu grows out of its trigger and collapses back into it on UIKit\u2019s springs, and a pan that starts outside it dismisses it as the page scrolls. On a phone, as on a larger screen, the popover menu opens beside its trigger.',
     bestPractices: [
       {
         guidance: true,
