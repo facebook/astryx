@@ -26,7 +26,9 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `decay.ts`                                       | UIScrollView's momentum coast.                                                                                                                                       |
 | `coast.ts`                                       | A release's momentum curves for `animator.decay`: the coast, the edge spring, a release past an edge.                                                                |
 | `rubberBand.ts`                                  | UIScrollView's resistance past an edge, and its inverse.                                                                                                             |
-| `projection.ts`                                  | Release targets: the rest point nearest the projected coast; paging.                                                                                                 |
+| `projection.ts`                                  | Release targets: the rest point nearest the projected coast.                                                                                                         |
+| `resolveSnapPoint.ts`                            | Release policy: the snap point a release lands on (flick, back-out cancel, step limit), on `selectSnapPoint`. Internal.                                              |
+| `selectPage.ts`                                  | Paging: at most one page per release, on `resolveSnapPoint`.                                                                                                         |
 | `bezier.ts`                                      | Cubic-bézier timing functions (Core Animation's named curves).                                                                                                       |
 | `animator.ts`                                    | Compositor animator: springs, coasts and any closed-form curve compiled to Web Animations, read back analytically.                                                   |
 | `reducedMotionPlan.ts`                           | The animator's Reduce Motion planner: what one call becomes, a cross-fade whose travel lands while transparent or at once.                                           |
@@ -145,7 +147,8 @@ await handle.finished; // true if it ran to the end, false if interrupted
   continues a throw is direct movement (DR2, DEC-2). A curve marked
   `isTransition` (a coast's spring back from past an edge), like a spring a
   component starts on release toward a target it picks, plays through the
-  Reduce Motion policy: a cross-fade on a coarse pointer, at once elsewhere.
+  Reduce Motion policy: a cross-fade on a coarse pointer or after a touch
+  release (`decay(curves, {touchRelease: true})`), at once elsewhere.
 - `animatorFor(element)` returns the one animator for an element, so code
   that animates it from several places (a swipe on x, a removal on y)
   composes in one `translate` track.

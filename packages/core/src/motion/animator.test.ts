@@ -1377,6 +1377,68 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     next.remove();
   });
 
+  it('a node detached mid-dip and attached again in a later task shows the move landed and visible', async () => {
+    const {animator, element} = reduced();
+    // The call owns its opacity: its dip writes the low opacity inline.
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    expect(Number(element.style.opacity)).toBeLessThan(1);
+    animator.attach(null);
+    await advance(100);
+    animator.attach(element);
+    expect(animator.get('x')).toBe(240);
+    expect(animator.get('opacity')).toBe(1);
+    expect(element.style.opacity).not.toBe('0');
+    expect(Number(element.style.opacity || '1')).toBe(1);
+  });
+
+  it('a node detached mid-dip while another axis moves is left with no animation or promotion', async () => {
+    const {animator, element} = reduced();
+    animator.set({x: 0, y: 0});
+    // y coasts (momentum keeps its motion) while x waits in a dip.
+    const start = clock;
+    animator.decay(coast(animator, {y: 800}, {at: start}), {at: start});
+    animator.animate({x: 240}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    await advance(1);
+    expect(
+      recorded.filter(
+        animation =>
+          animation.element === element &&
+          !animation.cancelled &&
+          animation.playState !== 'finished',
+      ),
+    ).toEqual([]);
+    expect(element.style.willChange).toBe('');
+  });
+
+  it('lands a waiting move on the latest node detached in the task, after a replacement too', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    const next = document.createElement('div');
+    document.body.append(next);
+    animator.attach(null);
+    animator.attach(next);
+    animator.attach(null);
+    await advance(100);
+    // The node attached last, then detached, is the one left visible.
+    expect(Number(next.style.opacity || '1')).toBe(1);
+    next.remove();
+  });
+
+  it('a dispose right after a detach lands the waiting move on that node', async () => {
+    const {animator, element} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    animator.dispose();
+    await advance(100);
+    expect(Number(element.style.opacity || '1')).toBe(1);
+    expect(element.style.willChange).toBe('');
+  });
+
   it('an identity held over a differing stylesheet follows a node replacement', () => {
     const {animator, element} = reduced();
     stylesheet = {opacity: '0'};
@@ -1473,6 +1535,28 @@ describe('Reduced Motion (design:reduced-motion)', () => {
       {at: start},
     );
     // The plan lands by timer: step the clock; it moves only while invisible.
+    let moved = false;
+    while (clock <= start + fade) {
+      await advance(2);
+      if (!moved && animator.get('x') !== -80) {
+        moved = true;
+        expect(animator.get('opacity')).toBeLessThan(0.1);
+      }
+    }
+    expect(moved).toBe(true);
+    expect(animator.get('x')).toBe(0);
+  });
+
+  it('a spring back a touch release starts cross-fades on a fine pointer too (DR2)', async () => {
+    const {animator} = reduced(false);
+    animator.set({x: -80});
+    const start = clock;
+    animator.decay(
+      coast(animator, {x: 0}, {bounds: {x: {min: 0, max: 100}}, at: start}),
+      {at: start, touchRelease: true},
+    );
+    // Not at once: it moves only while invisible.
+    expect(animator.get('x')).toBe(-80);
     let moved = false;
     while (clock <= start + fade) {
       await advance(2);
@@ -1601,6 +1685,50 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     expect(animator.get('opacity')).toBe(1);
     await expect(dismiss.finished).resolves.toBe(false);
     await expect(show.finished).resolves.toBe(true);
+  });
+
+  it('a move taken back mid-dip fades straight back up instead of finishing the dip', async () => {
+    const {animator} = reduced();
+    const move = animator.animate({x: 100}, {spring: springs.navigationPush});
+    await advance(fade / 4);
+    const shown = animator.get('opacity');
+    expect(shown).toBeLessThan(1);
+    const back = animator.animate({x: 0}, {spring: springs.navigationPush});
+    let lowest = shown;
+    for (let step = 0; step < 12; step++) {
+      await advance(fade / 8);
+      lowest = Math.min(lowest, animator.get('opacity'));
+    }
+    expect(lowest).toBeGreaterThanOrEqual(shown - 1e-6);
+    expect(animator.get('x')).toBe(0);
+    expect(animator.get('opacity')).toBe(1);
+    await expect(move.finished).resolves.toBe(false);
+    await expect(back.finished).resolves.toBe(true);
+  });
+
+  it('an entrance by role caught mid-exit fades in from where the exit has it', async () => {
+    const {animator} = reduced();
+    animator.animate(
+      {y: 40},
+      {spring: springs.navigationPush},
+      {crossfadeAs: 'exit'},
+    );
+    await advance(fade / 4);
+    const shown = animator.get('opacity');
+    expect(shown).toBeLessThan(1);
+    animator.animate(
+      {y: 0},
+      {spring: springs.navigationPush},
+      {crossfadeAs: 'entrance'},
+    );
+    let lowest = shown;
+    for (let step = 0; step < 12; step++) {
+      await advance(fade / 8);
+      lowest = Math.min(lowest, animator.get('opacity'));
+    }
+    expect(lowest).toBeGreaterThanOrEqual(shown - 1e-6);
+    expect(animator.get('y')).toBe(0);
+    expect(animator.get('opacity')).toBe(1);
   });
 
   it('a caught dismissal fades straight back up: a call that sets every waiting value takes it over', async () => {
@@ -1800,7 +1928,10 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await commitFrame(clock);
     await advance(20);
     animator.attach(null);
+    // The unmount is deferred to a microtask: read once it has run.
+    await Promise.resolve();
     expect(element.style.willChange).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("a new element taking over an exit by role leaves the stylesheet's opacity on the outgoing one", async () => {
