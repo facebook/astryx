@@ -523,6 +523,27 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     expect(content.style.pointerEvents).toBe('');
   });
 
+  it('reads where the content after it goes once, where no other margin collapses with its end margin', () => {
+    const {content, after, layout} = exitSetUp();
+    const reads = vi.mocked(after.getBoundingClientRect);
+    reads.mockClear();
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
+    // Where it is now and where it goes: no guess and no check, so a long
+    // page is laid out twice fewer.
+    expect(reads).toHaveBeenCalledTimes(2);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
+  });
+
+  it('guesses and checks where a negative margin would collapse with its end margin', () => {
+    const {content, after, layout} = exitSetUp();
+    after.style.marginTop = '-4px';
+    const reads = vi.mocked(after.getBoundingClientRect);
+    reads.mockClear();
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
+    expect(reads.mock.calls.length).toBeGreaterThan(2);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
+  });
+
   it('stops an exit when the content opens again', () => {
     const {content, layout} = exitSetUp();
     const done = vi.fn();
@@ -545,7 +566,8 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
   });
 
   it('lands at once where no end margin frees its space (a grid track)', () => {
-    const {content, after, layout} = exitSetUp();
+    const {area, content, after, layout} = exitSetUp();
+    area.style.display = 'grid';
     // The row after it ignores the margin: it moves only when the content
     // is hidden.
     vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
@@ -567,7 +589,9 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
   });
 
   it("a refused hold keeps the element's own end margin and lets the content after it take its place at once", async () => {
-    const {content, after, layout} = exitSetUp();
+    const {area, content, after, layout} = exitSetUp();
+    // A grid track, which no end margin frees.
+    area.style.display = 'grid';
     content.style.setProperty('margin-block-end', '12px');
     vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
       () =>

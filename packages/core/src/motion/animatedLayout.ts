@@ -815,6 +815,74 @@ function placeOf(
 }
 
 /**
+ * A computed length in px; NaN for anything else (`auto`). An unset value
+ * reads as 0: an engine without layout reports nothing for a margin.
+ */
+function lengthOf(value: string): number {
+  if (value === '') {
+    return 0;
+  }
+  return value.endsWith('px') ? Number.parseFloat(value) : Number.NaN;
+}
+
+/** A computed keyword, with an engine's empty value read as its initial one. */
+function keywordOf(value: string, initial: string): string {
+  return value === '' ? initial : value;
+}
+
+/**
+ * Whether a block-end margin on `element` moves `next` by exactly the
+ * margin: the element has no block margins of its own and does not float,
+ * and the margins it would collapse with (the next box's start, and its
+ * parent's end when it is the parent's last box) are not negative, so its
+ * own negative margin is the only negative one in the collapse. Its parent
+ * lays it out in block flow or a column flex box (where margins do not
+ * collapse). Style reads only: no layout.
+ */
+function endMarginMovesLinearly(
+  element: Element,
+  next: Element,
+  view: Window | null,
+): boolean {
+  const parentElement = element.parentElement;
+  if (view == null || parentElement == null) {
+    return false;
+  }
+  const style = view.getComputedStyle(element);
+  const parent = view.getComputedStyle(parentElement);
+  const isColumn =
+    parent.display.includes('flex') && parent.flexDirection === 'column';
+  const isBlockFlow =
+    parent.display === 'block' ||
+    parent.display === 'flow-root' ||
+    parent.display === 'list-item';
+  if (
+    (!isColumn && !isBlockFlow) ||
+    keywordOf(style.float, 'none') !== 'none' ||
+    keywordOf(style.writingMode, 'horizontal-tb') !== 'horizontal-tb' ||
+    lengthOf(style.marginTop) !== 0 ||
+    lengthOf(style.marginBottom) !== 0
+  ) {
+    return false;
+  }
+  if (isColumn) {
+    return true;
+  }
+  const nextStyle = view.getComputedStyle(next);
+  if (
+    keywordOf(nextStyle.float, 'none') !== 'none' ||
+    keywordOf(nextStyle.clear, 'none') !== 'none' ||
+    !(lengthOf(nextStyle.marginTop) >= 0)
+  ) {
+    return false;
+  }
+  // The last box of its parent: the parent's end margin joins the collapse.
+  return (
+    next.parentElement === parentElement || lengthOf(parent.marginBottom) >= 0
+  );
+}
+
+/**
  * Keeps `element` where it is, in flow (so it scrolls and clips with its
  * container), while the content after it takes the place it takes once the
  * element is hidden: a negative end margin measured against that content,
@@ -850,6 +918,10 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
       ? null
       : nextInFlow(element.parentElement, area);
   const checked = afterParent == null ? [next] : [next, afterParent];
+  // Where the content after it is now, and the element's scale, read in the
+  // layout the caller's visibility check already laid out.
+  const current = placeOf(next, rtl);
+  const scale = scaleOf(element, element.getBoundingClientRect());
   // Where the content after it goes once it is hidden, read with it taken
   // out of flow (not `display: none`, which would restart the CSS animations
   // inside it).
@@ -863,14 +935,24 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
   } else {
     element.style.setProperty('position', position, positionPriority);
   }
+  // The reading is in screen px, the margin in the element's own: under a
+  // scaled ancestor a distance is divided by the scale on this axis.
+  const perPx = isRow ? scale.x : scale.y;
+  if (!isRow && endMarginMovesLinearly(element, next, view)) {
+    // The end margin moves the content after it by exactly its own change
+    // (no other margin collapses with it), so one reading of where that
+    // content goes is enough: no guess and no check, two layouts fewer.
+    element.style.setProperty(
+      property,
+      `${(target.block - current.block) / perPx}px`,
+    );
+    return true;
+  }
   // A first guess (its box), then one correction from the measured result:
   // a gap, a collapsed margin or the element's own margins.
   element.style.setProperty(property, `${-size}px`);
   const guess = placeOf(next, rtl)[axis];
-  // The reading is in screen px, the margin in the element's own: under a
-  // scaled ancestor the correction is divided by the scale on this axis.
-  const scale = scaleOf(element, element.getBoundingClientRect());
-  const correction = (target[axis] - guess) / (isRow ? scale.x : scale.y);
+  const correction = (target[axis] - guess) / perPx;
   element.style.setProperty(property, `${-size + correction}px`);
   // Everything checked must land on both axes: a flex-row item that sets
   // its row's height frees no block space with an inline margin.

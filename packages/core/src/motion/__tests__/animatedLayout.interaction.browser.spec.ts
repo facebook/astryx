@@ -776,6 +776,63 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(follower[0].duration).toBeLessThan(1200);
   });
 
+  for (const parent of [
+    {name: 'block flow', style: 'display: block'},
+    {
+      name: 'a column flex box with a gap',
+      style: 'display: flex; flex-direction: column; gap: 12px',
+    },
+  ]) {
+    test(`an exit in ${parent.name} reads where the content after it goes once, and lands it exactly (FR4)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area"><div style="${parent.style}">
+          <div id="content" style="height: 80px; background: #fd9">Details</div>
+          <div id="a" class="row" style="margin: 0"></div></div><div id="b" class="row"></div></div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area');
+        const content = document.querySelector('#content') as HTMLElement;
+        const a = document.querySelector('#a') as HTMLElement;
+        const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+        const report = window.AnimatedLayout.reportLayoutChange(
+          layout,
+          () => content,
+        );
+        report.measureBefore();
+        report.animate();
+        // Where the row lands once the content is gone.
+        content.style.display = 'none';
+        const target = a.getBoundingClientRect().top;
+        content.style.display = '';
+        const original = a.getBoundingClientRect;
+        let reads = 0;
+        a.getBoundingClientRect = function getBoundingClientRect() {
+          reads += 1;
+          return original.call(this);
+        };
+        const held = window.AnimatedLayout.holdLayoutExit(
+          layout,
+          content,
+          () => {},
+        );
+        const holdReads = reads;
+        a.getBoundingClientRect = original;
+        await new Promise<void>(resolve => {
+          queueMicrotask(resolve);
+        });
+        a.getAnimations().forEach(animation => animation.finish());
+        return {held, holdReads, landed: a.getBoundingClientRect().top, target};
+      });
+      expect(result.held).toBe(true);
+      // Where it is and where it goes: no guess and no check.
+      expect(result.holdReads).toBe(2);
+      expect(Math.abs(result.landed - result.target)).toBeLessThan(0.5);
+    });
+  }
+
   test('a closing element exits on the same motion while the content after it glides up at once (FR4)', async ({
     page,
   }) => {
