@@ -266,7 +266,7 @@ in all, and lists each retake under `recaptures` in the trace.
 | Sub-pixel touch positions                              | yes                                                                                                                                      | no: integer CSS px                                                                                                                                 |
 | Native scroll, fling, pinch-zoom from injected touches | yes                                                                                                                                      | no                                                                                                                                                 |
 | Lifting one finger while others stay down              | yes                                                                                                                                      | pointer events right, but that `touchend` lists no remaining `touches`: skip with `PARTIAL_LIFT_SKIP`                                              |
-| Click synthesised from a touch                         | yes                                                                                                                                      | only from `driver.tap` (WebKit's tap gesture), not from a raw touch sequence                                                                       |
+| Click synthesised from a touch                         | yes                                                                                                                                      | only from `driver.tap` (WebKit's tap gesture), not from a raw touch sequence: skip with `SCRIPTED_CLICK_SKIP`                                      |
 | Curve sampling, storyboards, input log                 | yes                                                                                                                                      | yes                                                                                                                                                |
 | Screencast frame evidence (busy main thread)           | yes                                                                                                                                      | yes (WebKit's own screencast; frames keep coming while the main thread is blocked)                                                                 |
 | Rendering trace, long tasks                            | yes                                                                                                                                      | no (Playwright exposes neither)                                                                                                                    |
@@ -279,7 +279,9 @@ What WebKit cannot show here — native scroll hand-off, flings, a finger
 lifting while another stays down, finger tracking under a busy main thread, and
 anything iOS-only — needs Mobile Safari itself, on a device or the iOS
 simulator. Skip such a proof on the driver's flag, citing the reason:
-`test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`.
+`test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`. A tap that must click
+uses `driver.tap` in both engines; a proof that needs the click of a scripted
+touch skips with `test.skip(!driver.synthesizesClicks, SCRIPTED_CLICK_SKIP)`. WebKit sends injected touches the pointer events but neither the compatibility mouse events nor the click, and its tap path is a whole tap of its own (its own `touchstart` and `touchend`), so a scripted sequence cannot end through it.
 
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.

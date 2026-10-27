@@ -66,6 +66,7 @@ import {
   merge,
   parseTransform,
   PARTIAL_LIFT_SKIP,
+  SCRIPTED_CLICK_SKIP,
   pinch,
   readInputLog,
   readLongTasks,
@@ -145,6 +146,38 @@ async function fixture(page: Page) {
 }
 
 test.describe('touch input', () => {
+  test('a scripted tap clicks where the driver says it does, and driver.tap clicks in both engines', async ({
+    page,
+  }) => {
+    await page.route('http://tap.test/', route =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0"><button id=b style="position:absolute;left:40px;top:40px;width:200px;height:80px">tap</button><script>window.__seen={click:0,touchend:0,pointerup:0};for(const type of Object.keys(window.__seen))b.addEventListener(type,()=>window.__seen[type]++);</script>`,
+      }),
+    );
+    await page.goto('http://tap.test/');
+    const seen = () =>
+      page.evaluate(() => ({
+        ...(window as unknown as {__seen: Record<string, number>}).__seen,
+      }));
+    const driver = await touchDriver(page);
+
+    await driver.play(tap({x: 140, y: 80}));
+    // Give a synthesised click its task.
+    await page.evaluate(() => new Promise(r => setTimeout(r, 300)));
+    expect(await seen()).toEqual({
+      click: driver.synthesizesClicks ? 1 : 0,
+      touchend: 1,
+      pointerup: 1,
+    });
+    expect(SCRIPTED_CLICK_SKIP).toContain('driver.tap');
+
+    await driver.tap({x: 140, y: 80});
+    await expect
+      .poll(async () => (await seen()).click)
+      .toBe(driver.synthesizesClicks ? 2 : 1);
+  });
+
   test('the page receives trusted touches and pointers at the scripted positions and times', async ({
     page,
     browserName,
