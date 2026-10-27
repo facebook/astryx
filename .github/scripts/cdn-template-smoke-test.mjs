@@ -30,7 +30,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
-import {renderPage, renderUntilClean} from './lib/cdn-page-render.mjs';
+import {
+  renderPage,
+  renderUntilClean,
+  uncleanFindings,
+} from './lib/cdn-page-render.mjs';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
 const ROOT = path.resolve(
@@ -160,10 +164,17 @@ const result = await renderUntilClean(
   {
     attempts: ATTEMPTS,
     deadline: Date.now() + RENDER_BUDGET_MS,
-    onRetry: (attempt, leftMs) =>
+    // The attempt a retry replaces is printed in full: a CDN blip that clears
+    // on the retry still shows in the log, rather than vanishing behind a
+    // green run.
+    onRetry: (attempt, leftMs, discarded) => {
       console.log(
-        `  retry ${attempt} of ${ATTEMPTS - 1}, ${Math.round(leftMs / 1000)} s left`,
-      ),
+        `  retry ${attempt} of ${ATTEMPTS - 1}, ${Math.round(leftMs / 1000)} s left, after:`,
+      );
+      for (const finding of uncleanFindings(discarded)) {
+        console.log(`        ${finding}`);
+      }
+    },
   },
 );
 server.close();

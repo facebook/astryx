@@ -12,7 +12,11 @@
  * hung instead of ending the run on a stack trace. renderUntilClean retries
  * an unclean render once, so a blip at a CDN is not a red build, and fits
  * every attempt inside one deadline, so a page that hangs on each attempt
- * still gets its report printed before the job running it is stopped.
+ * still gets its report printed before the job running it is stopped. It
+ * hands every retry the attempt it discards, and uncleanFindings names what
+ * made that attempt unclean, so a blip that clears on the retry still shows
+ * in the log. Only an expected absence (a wait that ran out) becomes a value;
+ * every other error throws.
  */
 
 /** Playwright's error for a navigation whose wait condition never came. */
@@ -98,11 +102,19 @@ export async function renderPage(
         button: null,
       };
     }
-    const button = await page
-      .getByRole('button')
-      .first()
-      .textContent({timeout: withinBudget(buttonTimeoutMs)})
-      .catch(() => null);
+    let button;
+    try {
+      button = await page
+        .getByRole('button')
+        .first()
+        .textContent({timeout: withinBudget(buttonTimeoutMs)});
+    } catch (error) {
+      if (!isTimeout(error)) {
+        throw error;
+      }
+      // No button within the wait: the page rendered nothing to press.
+      button = null;
+    }
 
     return {
       consoleErrors,
@@ -115,6 +127,23 @@ export async function renderPage(
   } finally {
     await browser.close();
   }
+}
+
+/**
+ * Everything that made `result` unclean, one line each: the timeout and the
+ * requests still in flight, each console error, page error and failed
+ * request, and a missing button on a page that finished loading. Empty for a
+ * clean render.
+ */
+export function uncleanFindings(result) {
+  return [
+    ...(result.timedOut ? ['navigation timed out'] : []),
+    ...result.pendingRequests.map(url => `still in flight: ${url}`),
+    ...result.consoleErrors.map(entry => `console error: ${entry}`),
+    ...result.pageErrors.map(entry => `page error: ${entry}`),
+    ...result.failedRequests.map(entry => `failed request: ${entry}`),
+    ...(!result.timedOut && !result.button ? ['rendered no button'] : []),
+  ];
 }
 
 /** Whether a render went idle with nothing wrong and a button on the page. */
@@ -133,7 +162,8 @@ export function isCleanRender(result) {
  * return the last result. With a `deadline` (in `now()`'s clock), each attempt
  * is handed `budgetMs`, an equal share of the time left (so the retry gets
  * whatever the first attempt left unused), and no attempt starts once the
- * deadline has passed. `onRetry(attempt, leftMs)` hears each retry.
+ * deadline has passed. `onRetry(attempt, leftMs, discarded)` hears each
+ * retry, with the unclean attempt it replaces.
  *
  * @template {{timedOut: boolean, consoleErrors: string[], pageErrors: string[], failedRequests: string[], button: string | null}} R
  * @param {(attempt: {budgetMs?: number}) => Promise<R>} render
@@ -141,7 +171,7 @@ export function isCleanRender(result) {
  *   attempts?: number,
  *   deadline?: number,
  *   now?: () => number,
- *   onRetry?: (attempt: number, leftMs?: number) => void,
+ *   onRetry?: (attempt: number, leftMs: number | undefined, discarded: R) => void,
  * }} [options]
  * @returns {Promise<R>}
  */
@@ -160,7 +190,7 @@ export async function renderUntilClean(
     if (isCleanRender(result) || attempt === attempts) break;
     const remaining = leftMs();
     if (remaining != null && remaining <= 0) break;
-    onRetry?.(attempt, remaining);
+    onRetry?.(attempt, remaining, result);
   }
   return result;
 }
