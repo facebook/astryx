@@ -38,8 +38,8 @@ import {
 import {
   isScrollLockActive,
   subscribeScrollLock,
-} from '@astryxdesign/core/gestures';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/touch';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {useAnnounce} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {

@@ -131,3 +131,5 @@ export type {
   GestureConstantUnit,
   HapticFeedbackKind,
 } from '../motion/uikit';
+export {resolveMotion} from '../motion/resolveMotion';
+export {useAnimator} from '../motion/useAnimator';

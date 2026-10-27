@@ -35,11 +35,11 @@
 import {
   PanGestureRecognizer,
   type PanGestureRecognizerOptions,
-} from '@astryxdesign/core/gestures/PanGestureRecognizer';
+} from '@astryxdesign/core/internal/touch';
 import type {
   GestureEventContext,
   GestureTouch,
-} from '@astryxdesign/core/gestures/types';
+} from '@astryxdesign/core/internal/touch';
 
 export class RefreshPullRecognizer extends PanGestureRecognizer {
   /** Called when the first finger of a gesture lands, with its timestamp. */

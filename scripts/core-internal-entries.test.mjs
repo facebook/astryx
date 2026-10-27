@@ -65,6 +65,7 @@ describe('core internal entries in lint', () => {
 const COVERED = [
   'gestures/PanGestureRecognizer',
   'gestures/types',
+  'gestures/useGestureRecognizer',
   'utils/touchPresentation',
   'motion/animator',
   'motion/bezier',
@@ -77,6 +78,9 @@ const COVERED = [
   'motion/uikit/springs',
   'motion/uikit/timing',
   'motion/uikit/refresh',
+  'motion/resolveMotion',
+  'motion/useAnimator',
+  'hooks/rootScrollStyles',
 ];
 
 /** Every file under `dir` whose name matches `pattern`. */
