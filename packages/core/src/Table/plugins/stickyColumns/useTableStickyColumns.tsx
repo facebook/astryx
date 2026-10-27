@@ -19,6 +19,8 @@ import {
   useMemo,
   useRef,
   type CSSProperties,
+  type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
@@ -371,6 +373,28 @@ function syncPinnedDividers(
   }
 }
 
+/**
+ * Rendered inside the table: when the colour mode around it changes (a
+ * Theme's mode, wherever that Theme sits above the table, or the operating
+ * system's under `system`), the colours resolve again with no commit of the
+ * hook's owner, so the pinned dividers' carried borders are read again.
+ */
+function PinnedDividerModeWatch({
+  refreshRef,
+}: {
+  refreshRef: RefObject<(() => void) | null>;
+}) {
+  const {mode} = useTheme();
+  const modeRef = useRef(mode);
+  useLayoutEffect(() => {
+    if (modeRef.current !== mode) {
+      modeRef.current = mode;
+      refreshRef.current?.();
+    }
+  }, [mode, refreshRef]);
+  return null;
+}
+
 // Stable empty default so an unset start/end doesn't allocate a fresh array
 // (and bust the memo) on every render.
 const EMPTY: string[] = [];
@@ -487,15 +511,6 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     for (const type of stateEvents) {
       el.addEventListener(type, onStateChange, {passive: true});
     }
-    // A theme in `system` mode re-resolves its colors when the operating
-    // system switches between light and dark, with no commit: a carried
-    // border is read again then.
-    const scheme =
-      typeof window.matchMedia === 'function'
-        ? window.matchMedia('(prefers-color-scheme: dark)')
-        : null;
-    const onSchemeChange = () => syncPinnedDividers(el);
-    scheme?.addEventListener('change', onSchemeChange);
     const resizeObserver =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
@@ -512,17 +527,11 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       for (const type of stateEvents) {
         el.removeEventListener(type, onStateChange);
       }
-      scheme?.removeEventListener('change', onSchemeChange);
       cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
   }, []);
 
-  // Re-rendered when the colour mode changes (a Theme's mode, or the
-  // operating system's under `system`), so a carried border is read again
-  // after it; a Theme nested below this hook's owner is covered by the
-  // scheme listener in attachScrollShadow.
-  useTheme();
   // After each commit: a border that changed with the render (a row
   // highlighted on click) reaches the pinned divider, and the edge shadows
   // follow content that changed without a resize.
@@ -532,6 +541,14 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      transformTableContext(children: ReactNode): ReactNode {
+        return (
+          <>
+            {children}
+            <PinnedDividerModeWatch refreshRef={refreshRef} />
+          </>
+        );
+      },
       transformHeaderCell(
         props: HeaderCellRenderProps,
         column: TableColumn<T>,
