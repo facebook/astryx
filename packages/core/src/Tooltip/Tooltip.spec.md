@@ -44,8 +44,8 @@ system_specs: []
 | Behavior                | A `role="tooltip"` layer that describes its trigger. It opens on hover after `delay`, on keyboard focus, and on a qualifying tap; it stays open while the pointer moves onto it, and closes on leave, Escape, or pressing the trigger.                                                    |
 | End-user impact         | Mouse, keyboard, and touch users can each reveal the hint, move onto it, and dismiss it; screen-reader users hear it as the trigger's description.                                                                                                                                        |
 | Builder impact          | None.                                                                                                                                                                                                                                                                                     |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                                                                                                               |
-| Review checks           | Reject a tooltip that cannot be hovered or dismissed (WCAG 1.4.13), one that opens on pointer or programmatic focus, a lost `aria-describedby` link, or Escape that also closes a layer underneath.                                                                                       |
+| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap (see Current-state impact).                                                                                                                                                                                            |
+| Review checks           | Reject a tooltip that cannot be hovered or dismissed (WCAG 1.4.13), one that opens on a tap's focus or on pointer focus of a trigger that is not a text field, a lost `aria-describedby` link, or Escape that also closes a layer underneath.                                             |
 | Governing rules         | WCAG 1.4.13; `family:overlay-dismissal`; `architecture:layer-runtime`; `architecture:interaction-modality`; `architecture:component-theming-surface`.                                                                                                                                     |
 
 This table is a review projection; the body below is authoritative.
@@ -68,6 +68,13 @@ in `Tooltip.doc.mjs`.
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **A held-closed tooltip still opens on keyboard focus.** With
+  `isOpen={false}`, the hover path stays shut but keyboard focus opens the
+  tooltip and reports `onOpenChange(true)`, so a caller cannot hold it closed
+  (FR7).
 
 ## Ownership boundary
 
@@ -96,16 +103,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                | Basis                           |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1 | The rendered tooltip contains one owned surface, `role="tooltip"`, carrying the `tooltip` target, at most 300 px wide, with the supplied `content` inside; content has no separate target and there is no arrow.                                                                                                                         | Current source, docs, and tests |
-| FR2 | Trigger wiring: text-only `children` are wrapped in a focusable inline span; element `children` attach to their first element; `anchorRef` attaches to that element. The trigger's `aria-describedby` gains the tooltip id, merged with and later restored to any existing value.                                                        | Current source and tests        |
-| FR3 | On a hover-capable pointer, entering the trigger opens after `delay` ms; leaving closes after `hideDelay` ms. With `hideDelay` 0 a short bridge lets the pointer move onto the surface without closing it, and the surface stays open while hovered.                                                                                     | WCAG 1.4.13; tests              |
-| FR4 | Keyboard focus that matches `:focus-visible` opens the tooltip per `focusTrigger`; pointer, programmatic, and tap-induced focus do not.                                                                                                                                                                                                  | Current source and tests        |
-| FR5 | On touch, a completed tap opens per `touchTrigger` when the finger lifts; a touch that becomes a scroll, or a press the browser does not count as a tap, does not open it. A second tap on the trigger, a tap outside, or a scroll starting outside closes it.                                                                           | Current source and tests        |
-| FR6 | Escape closes a visible tooltip through the shared dismissal stack when it is the topmost layer and is consumed there, so a layer underneath stays open; Escape during text composition is ignored. Pressing an uncontrolled tooltip's trigger closes it.                                                                                | WCAG 1.4.13; tests              |
-| FR7 | `isOpen` forces the tooltip shown or hidden and suppresses hover and focus hiding; a controlled tooltip answers Escape by calling `onOpenChange(false)` without hiding, and is not closed by pressing the trigger. `isDefaultOpen` opens it on mount, still dismissible. `isEnabled={false}` disables triggers and drops a pending open. | Current source and tests        |
-| FR8 | `onOpenChange` reports each show and hide. `hasHoverIndication` (`auto`: text-only children) adds a hover cue to the inline trigger.                                                                                                                                                                                                     | Current source and tests        |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Basis                           |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1 | The rendered tooltip contains one owned surface, `role="tooltip"`, carrying the `tooltip` target, at most 300 px wide, with the supplied `content` inside; content has no separate target and there is no arrow.                                                                                                                                                                                                                                                                    | Current source, docs, and tests |
+| FR2 | Trigger wiring: text-only `children` are wrapped in a focusable inline span; element `children` attach to their first element; `anchorRef` attaches to that element. The trigger's `aria-describedby` gains the tooltip id, merged with and later restored to any existing value.                                                                                                                                                                                                   | Current source and tests        |
+| FR3 | On a hover-capable pointer, entering the trigger opens after `delay` ms; leaving closes after `hideDelay` ms. With `hideDelay` 0 a short bridge lets the pointer move onto the surface without closing it, and the surface stays open while hovered.                                                                                                                                                                                                                                | WCAG 1.4.13; tests              |
+| FR4 | Focus that matches `:focus-visible` opens the tooltip per `focusTrigger`: keyboard focus, programmatic focus that follows keyboard input (AR4), and pointer focus on a text-entry trigger, which browsers mark focus-visible. Focus a tap leaves behind, and other pointer or programmatic focus, does not. Focus leaving the trigger schedules the hide as a pointer leave does.                                                                                                   | Current source and tests        |
+| FR5 | On touch, a completed tap opens per `touchTrigger` when the finger lifts; a touch that becomes a scroll, or a press the browser does not count as a tap, does not open it. A second tap on the trigger, a tap outside, or a scroll starting outside closes it.                                                                                                                                                                                                                      | Current source and tests        |
+| FR6 | Escape closes a visible tooltip through the shared dismissal stack when it is the topmost layer and is consumed there, so a layer underneath stays open; Escape during text composition is ignored. Pressing an uncontrolled tooltip's trigger closes it.                                                                                                                                                                                                                           | WCAG 1.4.13; tests              |
+| FR7 | `isOpen` forces the tooltip shown or hidden and suppresses hover and focus hiding; a controlled tooltip answers Escape by calling `onOpenChange(false)` without hiding, and is not closed by pressing the trigger. `isDefaultOpen` opens it on mount, still dismissible. Implementation gap: with `isOpen={false}`, keyboard focus still opens the tooltip and reports `onOpenChange(true)` (Current-state impact). `isEnabled={false}` disables triggers and drops a pending open. | Current source and tests        |
+| FR8 | `onOpenChange` reports each show and hide. `hasHoverIndication` (`auto`: text-only children) adds a hover cue to the inline trigger.                                                                                                                                                                                                                                                                                                                                                | Current source and tests        |
 
 ### Allowed variation
 
@@ -118,7 +125,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Transformation and precedence order
 
-- **ORD1 — Open state.** `isOpen`, then the input triggers.
+- **ORD1 — Open state.** `isOpen`, then the input triggers, apart from FR7's
+  keyboard-focus gap.
 
 ### Performance and resources
 
@@ -131,10 +139,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   (FR2).
 - **AR2 — Content on hover or focus.** The tooltip is hoverable, dismissible,
   and persistent per WCAG 1.4.13 (FR3, FR6).
-- **AR3 — Focus modality.** Only keyboard focus opens it (FR4).
+- **AR3 — Focus modality.** Only `:focus-visible` focus opens it (FR4).
 - **AR4 — Focus return.** When closing a popover from the keyboard returns
   focus to a trigger that carries a tooltip, the tooltip shows for that focus
   without an error.
+- **AR5 — Tooltip pattern.** The record adopts the APG tooltip pattern's parts:
+  `role="tooltip"`, the trigger's `aria-describedby`, showing on keyboard focus
+  and hiding when focus leaves, Escape dismissal, and showing on hover and
+  hiding on leave (FR1–FR4, FR6).
 
 ## Design relationships
 
@@ -177,8 +189,8 @@ Read from source, with no focused test yet:
 
 - FR1: the 300 px maximum width, the `tooltip` target, and the absence of an
   arrow.
-- FR4: `focusTrigger="always"` and `"never"`, and programmatic focus not
-  opening the tooltip.
+- FR4: `focusTrigger="always"` and `"never"`, pointer focus on a text field
+  opening the tooltip, and focus leaving the trigger hiding it.
 - FR8: `hasHoverIndication`.
 
 ## Decision log
