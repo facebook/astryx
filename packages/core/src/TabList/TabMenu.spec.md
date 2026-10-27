@@ -100,14 +100,14 @@ No component-local concept beyond the consumer props.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Basis                    |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1 | The trigger is a `<button>` with `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls` naming the menu; its props type omits `role`, and caller props cannot set its tab index or popup attributes. It carries `tab-menu` and forwards `ref` and other DOM props.                                                                                                                                                                                               | Current source and tests |
-| FR2 | The trigger shows the label of the option whose value is selected, else `label`, reserving semibold width; when an option is selected it uses selected styling and shows the selected indicator. It takes part in the strip's single tab stop like a Tab (`component:Tab` FR3): it starts as the stop when one of its options is selected, or when nothing in the strip is selected and it comes first among enabled entries, and the stop moves with arrow-key focus. | Current source and tests |
-| FR3 | Clicking the trigger toggles a non-modal popover below it and, on open, focuses the first option; a caller `onClick` runs after the toggle.                                                                                                                                                                                                                                                                                                                            | Current source and tests |
-| FR4 | The menu is a `role="menu"` named by `label`, carrying `tab-menu-dropdown`, with a presentational heading repeating `label`, then one `role="menuitemradio"` per option with `aria-checked` for the selected value, an optional icon, and a check mark when selected.                                                                                                                                                                                                  | Current source and tests |
-| FR5 | Inside the menu one option is a tab stop, and ArrowUp, ArrowDown, Home, and End move it; ArrowLeft and ArrowRight are left to the strip; Enter, Space, or click on an option selects its value through the TabList and closes the menu; Escape and Tab close it. Closing returns focus to the trigger.                                                                                                                                                                 | Current source and tests |
-| FR6 | The trigger and options paint the shared focus outline.                                                                                                                                                                                                                                                                                                                                                                                                                | Current source           |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Basis                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | The trigger is a `<button>` with `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls` naming the menu; its props type omits `role`, and caller props cannot set its tab index or popup attributes. It carries `tab-menu` and forwards `ref` and other DOM props.                                                                                                                                                                                                                                   | Current source and tests |
+| FR2 | The trigger shows the label of the option whose value is selected, else `label`, reserving semibold width; when an option is selected it uses selected styling and shows the selected indicator. It takes part in the strip's single tab stop like a Tab (`component:Tab` FR3): it starts as the stop when one of its options is selected, or when nothing in the strip is selected, or the selected entry is disabled, and it comes first among enabled entries, and the stop moves with arrow-key focus. | Current source and tests |
+| FR3 | Clicking the trigger toggles a non-modal popover below it and, on open, focuses the first option; a caller `onClick` runs after the toggle.                                                                                                                                                                                                                                                                                                                                                                | Current source and tests |
+| FR4 | The menu is a `role="menu"` named by `label`, carrying `tab-menu-dropdown`, with a presentational heading repeating `label`, then one `role="menuitemradio"` per option with `aria-checked` for the selected value, an optional icon, and a check mark when selected.                                                                                                                                                                                                                                      | Current source and tests |
+| FR5 | Inside the menu one option is a tab stop, and ArrowUp, ArrowDown, Home, and End move it; ArrowLeft and ArrowRight are left to the strip; Enter, Space, or click on an option selects its value through the TabList and closes the menu; Escape and Tab close it. Closing returns focus to the trigger.                                                                                                                                                                                                     | Current source and tests |
+| FR6 | The trigger and options paint the shared focus outline.                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Current source           |
 
 ### Allowed variation
 
@@ -115,11 +115,11 @@ No component-local concept beyond the consumer props.
 
 ### Representative states
 
-| State              | Required invariant                                                                                                                | Allowed variation |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| No option selected | Trigger shows `label`; it starts as the stop only when nothing in the strip is selected and it comes first among enabled entries. | —                 |
-| Option selected    | Trigger shows that option's label and indicator.                                                                                  | —                 |
-| Open               | Named menu; first option focused; one tab stop.                                                                                   | —                 |
+| State              | Required invariant                                                                                                                                                    | Allowed variation |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| No option selected | Trigger shows `label`; it starts as the stop only when nothing in the strip is selected, or the selected entry is disabled, and it comes first among enabled entries. | —                 |
+| Option selected    | Trigger shows that option's label and indicator.                                                                                                                      | —                 |
+| Open               | Named menu; first option focused; one tab stop.                                                                                                                       | —                 |
 
 ### Transformation and precedence order
 
@@ -152,11 +152,11 @@ recorded.
 
 ## Verification map
 
-| Contract | Verification                                                       | Representative states                                 | Mutation or failure expectation              | Audit section                 |
-| -------- | ------------------------------------------------------------------ | ----------------------------------------------------- | -------------------------------------------- | ----------------------------- |
-| FR1, FR3 | `TabList.test.tsx` TabMenu and host-attribute tests                | Closed, open                                          | Lost popup attributes fail.                  | `audit:TabMenu/accessibility` |
-| FR2, FR4 | `TabList.test.tsx` TabMenu label, heading, and menuitemradio tests | Selected and unselected                               | Wrong label or missing `aria-checked` fails. | `audit:TabMenu/behavior`      |
-| FR5      | `TabList.test.tsx` TabMenu keyboard navigation tests               | ArrowUp, ArrowDown, Home, End, Tab, Escape, selection | Extra tab stops or a menu left open fails.   | `audit:TabMenu/accessibility` |
+| Contract | Verification                                                       | Representative states                             | Mutation or failure expectation              | Audit section                 |
+| -------- | ------------------------------------------------------------------ | ------------------------------------------------- | -------------------------------------------- | ----------------------------- |
+| FR1, FR3 | `TabList.test.tsx` TabMenu and host-attribute tests                | Closed, open                                      | Lost popup attributes fail.                  | `audit:TabMenu/accessibility` |
+| FR2, FR4 | `TabList.test.tsx` TabMenu label, heading, and menuitemradio tests | Selected and unselected                           | Wrong label or missing `aria-checked` fails. | `audit:TabMenu/behavior`      |
+| FR5      | `TabList.test.tsx` TabMenu keyboard navigation tests               | ArrowUp, ArrowDown, Home, End, Tab, Escape, Enter | Extra tab stops or a menu left open fails.   | `audit:TabMenu/accessibility` |
 
 Read from source, with no focused test yet:
 
@@ -168,7 +168,9 @@ Read from source, with no focused test yet:
   the caller `onClick` running after the toggle.
 - FR4: the `tab-menu-dropdown` and `tab-menu-item` targets, option icons, and
   the check mark.
-- FR5: focus returning to the trigger on close.
+- FR3: a second click closing the menu.
+- FR5: Space selecting, the menu closing on selection, ArrowLeft and ArrowRight
+  left to the strip, and focus returning to the trigger on close.
 - FR6.
 
 ## Decision log
