@@ -29,6 +29,7 @@ apple/
 │   │   ├── Icon/          # Icon, Icon.spec.md
 │   │   ├── Avatar/        # Avatar, Avatar.spec.md
 │   │   ├── Item/          # Item, Item.spec.md
+│   │   ├── List/          # ListItem, ListItem.spec.md
 │   │   ├── Text/          # Text
 │   │   ├── Heading/       # Heading
 │   │   ├── Button/        # Button
