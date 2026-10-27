@@ -142,7 +142,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **PR1 — Tab-stop repair.** The group repairs the Tab stop after each of its
   own renders and when focus enters a member; it adds no global listener
-  beyond the press-time listeners `family:action-groups` FR5 gives it.
+  beyond the press tracking `family:action-groups` FR5 gives it.
 
 ## Accessibility contract
 
