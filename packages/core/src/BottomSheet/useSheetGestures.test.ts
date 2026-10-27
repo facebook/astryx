@@ -2468,6 +2468,52 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(t.style.getPropertyValue('user-select')).toBe('text');
   });
 
+  it('on iOS, also locks a checkbox, radio or switch input under the finger that drags or catches the sheet (spec:AST-094 FR41)', () => {
+    // WebKit's own stylesheet makes every input selectable, out of reach of
+    // the sheet's lock, so the input under the finger is locked itself.
+    stubIosIdiom();
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    handleOf(t).appendChild(toggle);
+    attach(hook, t);
+    // A drag that begins on it.
+    act(() => touchEvent('touchstart', toggle, [{id: 901, x: 50, y: 0}], 0));
+    for (let i = 1; i <= 6; i += 1) {
+      act(() =>
+        touchEvent('touchmove', toggle, [{id: 901, x: 50, y: i * 10}], i * 16),
+      );
+    }
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(toggle.style.getPropertyValue('user-select')).toBe('none');
+    act(() => touchEvent('touchend', toggle, [{id: 901, x: 50, y: 60}], 100));
+    expect(toggle.style.getPropertyValue('user-select')).toBe('');
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    // A finger that lands on it and catches the settling sheet.
+    act(() =>
+      touchEvent('touchstart', toggle, [{id: 902, x: 50, y: 500}], 1000),
+    );
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(toggle.style.getPropertyValue('user-select')).toBe('none');
+    // And it stays locked as that finger drags the sheet on.
+    for (let i = 1; i <= 6; i += 1) {
+      act(() =>
+        touchEvent(
+          'touchmove',
+          toggle,
+          [{id: 902, x: 50, y: 500 + i * 10}],
+          1000 + i * 16,
+        ),
+      );
+      expect(toggle.style.getPropertyValue('user-select')).toBe('none');
+    }
+    act(() => touchEvent('touchend', toggle, [{id: 902, x: 50, y: 560}], 1600));
+    expect(toggle.style.getPropertyValue('user-select')).toBe('');
+  });
+
   it('elsewhere, cancels the selection a finger holding or dragging the sheet would start, and changes no style', () => {
     stubCoarsePointer();
     vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
