@@ -9,7 +9,15 @@
  * SYNC: When AlertDialog.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {
   act,
   cleanup,
@@ -21,9 +29,27 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {StrictMode} from 'react';
+import {getGestureHost} from '../gestures/GestureHost';
 import {alertController} from '../motion/uikit/alert';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
+
+// The gesture host reads `(pointer: coarse)` once per document and keeps that
+// query for the document's life: it gets this live one (see beforeAll), whose
+// answer each test's media stub sets.
+let isCoarsePrimaryPointer = false;
+const hostCoarseQuery = {
+  get matches() {
+    return isCoarsePrimaryPointer;
+  },
+  media: '(pointer: coarse)',
+  onchange: null,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+  dispatchEvent: () => false,
+};
 
 /** Stubs the media queries AlertDialog reads. */
 function stubAlertDialogMedia({
@@ -37,6 +63,7 @@ function stubAlertDialogMedia({
   noHover: boolean;
   reduceMotion?: boolean;
 }): void {
+  isCoarsePrimaryPointer = coarsePointer;
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => {
@@ -76,6 +103,15 @@ function stubAlertDialogMedia({
   );
 }
 
+beforeAll(() => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => hostCoarseQuery),
+  );
+  getGestureHost(document);
+  vi.unstubAllGlobals();
+});
+
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
@@ -89,6 +125,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  isCoarsePrimaryPointer = false;
 });
 
 describe('AlertDialog', () => {
@@ -451,7 +488,7 @@ describe('AlertDialog', () => {
  * own contract is covered in hooks/useActionGroupTracking.test.tsx; these
  * cover AlertDialog's wiring of it.
  */
-describe('AlertDialog touch tracking', () => {
+describe('AlertDialog action tracking', () => {
   let touchClock = 10_000;
   let touchId = 500;
 
@@ -693,33 +730,72 @@ describe('AlertDialog touch tracking', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('keeps each button its own press under a finger with presentation="dialog": no group, and a slide from the action to Cancel cancels nothing', () => {
+  it('tracks the actions with presentation="dialog" too: a slide from the action to Cancel cancels', () => {
     const {onOpenChange, onAction, cancel, action} = renderOpen({
       presentation: 'dialog',
     });
-    // The document press controller keeps each button, as with a mouse.
+    // The group owns both actions, as under every presentation.
     for (const button of [cancel, action]) {
-      expect(button).toHaveAttribute('data-astryx-pressable');
+      expect(button).not.toHaveAttribute('data-astryx-pressable');
     }
     const id = touchId++;
     touch('touchstart', action, {x: 60, y: 116}, id);
     touch('touchmove', action, {x: 60, y: 156}, id);
-    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
     touch('touchend', action, {x: 60, y: 156}, id);
-    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onAction).not.toHaveBeenCalled();
   });
 
-  it('does not track a touch that starts on the backdrop', async () => {
+  it('tracks a mouse too (family:action-groups FR5): a press on the action slid to Cancel cancels, once', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen({
+      touch: false,
+    });
+    // A fine primary pointer, before the mouse is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const mouse = (target: Element, type: string, y: number) => {
+      touchClock += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: 60,
+        clientY: y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: touchClock});
+      target.dispatchEvent(event);
+    };
+    mouse(action, 'pointerdown', 116);
+    expect(action).toHaveAttribute('data-astryx-press', 'on');
+    mouse(action, 'pointermove', 156);
+    expect(action).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
+    mouse(cancel, 'pointerup', 156);
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('tracks only the actions: a press that lands on the title, the message or the backdrop and slides onto an action runs nothing', async () => {
     const {onOpenChange, onAction, cancel} = renderOpen();
     await completePresentation();
     const dialog = screen.getByRole('alertdialog');
-    const id = touchId++;
     // A touch on ::backdrop targets the dialog element itself.
-    touch('touchstart', dialog, {x: 60, y: 400}, id);
-    touch('touchmove', dialog, {x: 60, y: 156}, id);
-    expect(cancel).not.toHaveAttribute('data-astryx-press');
-    touch('touchend', dialog, {x: 60, y: 156}, id);
+    for (const start of [
+      screen.getByText('Delete item?'),
+      screen.getByText('This cannot be undone.'),
+      dialog,
+    ]) {
+      const id = touchId++;
+      touch('touchstart', start, {x: 60, y: 40}, id);
+      touch('touchmove', start, {x: 60, y: 156}, id);
+      expect(cancel).not.toHaveAttribute('data-astryx-press');
+      touch('touchend', start, {x: 60, y: 156}, id);
+    }
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(onAction).not.toHaveBeenCalled();
   });
@@ -784,7 +860,9 @@ describe('useImperativeAlertDialog', () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', {name: 'Open'}));
-    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    // An activation with no pointer: jsdom lays nothing out, so a pointer
+    // press on the alert's action group would hit-test empty rects.
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('is-open')).toHaveTextContent('false');
   });
@@ -794,7 +872,8 @@ describe('useImperativeAlertDialog', () => {
     const onAction = vi.fn();
     render(<Harness onAction={onAction} />);
     await user.click(screen.getByRole('button', {name: 'Open'}));
-    await user.click(screen.getByRole('button', {name: 'Delete'}));
+    // An activation with no pointer (see "closes when the dialog cancels").
+    fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
