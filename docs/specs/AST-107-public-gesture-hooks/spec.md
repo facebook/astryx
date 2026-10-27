@@ -137,7 +137,9 @@ onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
   (`architecture:public-component-api` INV21): the hook delegates entirely to
   its factory and has no behavior of its own. `destroy` removes every
   listener the factory added, and importing a factory does no DOM work, so it
-  is safe on the server.
+  is safe on the server. The public `createAnimator` is Core's one
+  animator factory: Core's internal animator either is this factory or takes
+  another name, and no internal factory shares a public factory's name.
 - **FR7 — Core and Lab use the public layer.** Wherever a public gesture or
   motion API covers a component's job (the factories and hooks here,
   `createReorderable`, and `useAnimatedLayout`), Core and Lab components MUST
