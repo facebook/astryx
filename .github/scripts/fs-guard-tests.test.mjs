@@ -32,6 +32,15 @@ const sources = {
   'scripts/glob.test.ts':
     "const stories = import.meta.glob('./stories/*.tsx');",
   'scripts/named-like.test.mjs': "import {fsLike} from 'fs-extra-like';",
+  'packages/cli/api/search/search-return-type.test.mjs':
+    "import ts from 'typescript';\nconst program = ts.createProgram([path.join(here, 'search.mjs')], {});",
+  'scripts/loader.test.mjs':
+    "import {createRequire} from 'node:module';\nconst load = createRequire(import.meta.url);\nconst mod = load(computed);",
+  'scripts/bundled.test.mjs': "const {buildSync} = require('esbuild');",
+  'scripts/morph.test.ts': "import {Project} from 'ts-morph';",
+  'scripts/babel.test.mjs': "import {transformFileSync} from '@babel/core';",
+  'scripts/lint.test.mjs': "const {ESLint} = await import('eslint');",
+  'scripts/plugin.test.mjs': "import plugin from 'eslint-plugin-local';",
 };
 
 const guards = () =>
@@ -65,12 +74,19 @@ describe('fsGuardTests', () => {
     'scripts/create-require.test.mjs',
     'scripts/actual.test.ts',
     'scripts/glob.test.ts',
+    'packages/cli/api/search/search-return-type.test.mjs',
+    'scripts/loader.test.mjs',
+    'scripts/bundled.test.mjs',
+    'scripts/morph.test.ts',
+    'scripts/babel.test.mjs',
+    'scripts/lint.test.mjs',
   ])('lists %s, which names a file module in another spelling', file => {
     expect(guards()).toContain(file);
   });
 
   it('leaves out tests whose imports read no files', () => {
     expect(guards()).not.toContain('scripts/named-like.test.mjs');
+    expect(guards()).not.toContain('scripts/plugin.test.mjs');
     expect(guards()).not.toContain('packages/core/src/Button/Button.test.tsx');
     expect(guards()).not.toContain('scripts/plain.test.mjs');
     expect(guards()).not.toContain('scripts/literal.test.mjs');

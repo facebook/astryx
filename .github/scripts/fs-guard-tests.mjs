@@ -2,11 +2,12 @@
 // Lists the tests that read repository sources through the file system,
 // directly or through a module they import: guards over every component's
 // files see changes no import reaches, so a scoped pull request runs them all
-// (spec:AST-030 FR13). Any spelling of the `fs`, `fs/promises` or
-// `child_process` modules counts (`node:` or bare; `from`, `require`, a
-// `createRequire` require, `import()`, `vi.importActual`), as do a computed
-// `import()` and `import.meta.glob`: a child process's script reads what it
-// likes, and a glob or computed import reads what it lists.
+// (spec:AST-030 FR13). Any spelling of a module that reads files counts:
+// `fs`, `fs/promises`, `child_process` (`node:` or bare), and the libraries
+// that read sources for the test (the TypeScript compiler and ts-morph,
+// Babel, bundlers, ESLint and Prettier, globs, process runners), through `from`, `require`, `import()` or
+// `vi.importActual`. So do `createRequire`, a computed `import()` and
+// `import.meta.glob`: each loads what it computes or lists.
 //
 // Usage: node .github/scripts/fs-guard-tests.mjs  (newline-separated paths)
 
@@ -16,7 +17,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const TEST_FILE = /\.test\.(?:tsx?|mjs|cjs|js)$/;
-const FILE_MODULE = String.raw`(?:fs|fs\/promises|child_process)`;
+const FILE_MODULE = String.raw`(?:fs|fs\/promises|fs-extra|child_process|typescript|ts-morph|@babel\/core|esbuild|vite|rollup|eslint|prettier|glob|fast-glob|tinyglobby|globby|execa|cross-spawn)`;
 const READS_FILES = new RegExp(
   [
     String.raw`\bnode:${FILE_MODULE}\b`,
@@ -25,6 +26,7 @@ const READS_FILES = new RegExp(
     // import(), vi.importActual.
     String.raw`\(\s*['"]${FILE_MODULE}['"]\s*[,)]`,
     String.raw`\bimport\.meta\.glob\b`,
+    String.raw`\bcreateRequire\b`,
     String.raw`\bimport\(\s*[^'"\s)]`,
   ].join('|'),
 );
