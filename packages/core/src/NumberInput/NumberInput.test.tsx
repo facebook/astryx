@@ -40,6 +40,38 @@ const RING = stylex
   .className!.split(' ')
   .pop()!;
 
+/**
+ * Press a stepper as `pointerType` does: a pointer press and its click, or,
+ * with no pointer (a screen reader, a programmatic `click()`), a click of
+ * detail 0 alone.
+ */
+function pressStepper(button: HTMLElement, pointerType: string | null): void {
+  if (pointerType == null) {
+    fireEvent.click(button);
+    return;
+  }
+  fireEvent.pointerDown(button, {pointerType});
+  fireEvent.click(button, {detail: 1});
+}
+
+/** The primary pointer is coarse (a phone, a tablet) until the restore runs. */
+function coarsePrimaryPointer(): () => void {
+  const matchMedia = window.matchMedia.bind(window);
+  const spy = vi
+    .spyOn(window, 'matchMedia')
+    .mockImplementation((query: string): MediaQueryList => ({
+      media: query,
+      matches: query.includes('(pointer: coarse)') || matchMedia(query).matches,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }));
+  return () => spy.mockRestore();
+}
+
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
 // file never match a leftover region.
@@ -2368,41 +2400,7 @@ describe('NumberInput stepping', () => {
     // phone brings up the on-screen keyboard. A tracked finger or pen steps
     // through the gesture system (NumberInput.stepperTouch.test.tsx); a touch
     // click the steppers did not track still steps, without focus.
-    it.each(['touch'])(
-      'steps the value without focusing the input on an untracked %s click',
-      pointerType => {
-        const onChange = vi.fn();
-        render(
-          <NumberInput
-            label="Quantity"
-            value={5}
-            onChange={onChange}
-            hasNumberSteppers
-          />,
-        );
-        const input = screen.getByRole('spinbutton');
-        const increment = screen.getByRole('button', {
-          name: 'Increment Quantity',
-        });
-        const decrement = screen.getByRole('button', {
-          name: 'Decrement Quantity',
-        });
-
-        fireEvent.pointerDown(increment, {pointerType});
-        fireEvent.click(increment, {detail: 1});
-        expect(onChange).toHaveBeenLastCalledWith(6);
-        expect(input).not.toHaveFocus();
-
-        fireEvent.pointerDown(decrement, {pointerType});
-        fireEvent.click(decrement, {detail: 1});
-        expect(onChange).toHaveBeenLastCalledWith(4);
-        expect(input).not.toHaveFocus();
-      },
-    );
-
-    it('steps without focusing the input when activated with no pointer', () => {
-      // Assistive technology activates a button with a click of detail 0 and
-      // no pointer press before it.
+    it('steps the value without focusing the input on a touch tap', () => {
       const onChange = vi.fn();
       render(
         <NumberInput
@@ -2412,10 +2410,83 @@ describe('NumberInput stepping', () => {
           hasNumberSteppers
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Increment Quantity'}));
+      const input = screen.getByRole('spinbutton');
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      const decrement = screen.getByRole('button', {
+        name: 'Decrement Quantity',
+      });
+
+      pressStepper(increment, 'touch');
       expect(onChange).toHaveBeenLastCalledWith(6);
-      expect(screen.getByRole('spinbutton')).not.toHaveFocus();
+      expect(input).not.toHaveFocus();
+
+      pressStepper(decrement, 'touch');
+      expect(onChange).toHaveBeenLastCalledWith(4);
+      expect(input).not.toHaveFocus();
     });
+
+    // Where the primary pointer is fine no on-screen keyboard comes up, so a
+    // pen (a desktop tablet's) and an activation with no pointer (a desktop
+    // screen reader's) focus the field as a mouse click does, and the arrow
+    // keys and the wheel keep stepping.
+    it.each([
+      ['a pen tap', 'pen'],
+      ['an activation with no pointer', null],
+    ] as const)(
+      '%s steps the value and focuses the input where the primary pointer is fine',
+      (_, pointerType) => {
+        expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+        const onChange = vi.fn();
+        render(
+          <NumberInput
+            label="Quantity"
+            value={5}
+            onChange={onChange}
+            hasNumberSteppers
+          />,
+        );
+        pressStepper(
+          screen.getByRole('button', {name: 'Increment Quantity'}),
+          pointerType,
+        );
+        expect(onChange).toHaveBeenLastCalledWith(6);
+        expect(screen.getByRole('spinbutton')).toHaveFocus();
+      },
+    );
+
+    // Where it is coarse (a phone, a tablet), focusing the field would bring
+    // up the on-screen keyboard: a pen and an activation with no pointer step
+    // without moving focus, as a finger does.
+    it.each([
+      ['a pen tap', 'pen'],
+      ['an activation with no pointer', null],
+    ] as const)(
+      '%s steps the value without focusing the input where the primary pointer is coarse',
+      (_, pointerType) => {
+        const restore = coarsePrimaryPointer();
+        try {
+          const onChange = vi.fn();
+          render(
+            <NumberInput
+              label="Quantity"
+              value={5}
+              onChange={onChange}
+              hasNumberSteppers
+            />,
+          );
+          pressStepper(
+            screen.getByRole('button', {name: 'Increment Quantity'}),
+            pointerType,
+          );
+          expect(onChange).toHaveBeenLastCalledWith(6);
+          expect(screen.getByRole('spinbutton')).not.toHaveFocus();
+        } finally {
+          restore();
+        }
+      },
+    );
 
     it('keeps an editing field focused and steps from its draft on a tap', async () => {
       const user = userEvent.setup();
