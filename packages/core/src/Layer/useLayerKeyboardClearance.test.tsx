@@ -63,7 +63,7 @@ const guide = {
 vi.mock('../keyboard', () => ({
   getKeyboardLayoutGuide: () => guide,
   // The keyboard module's one height.
-  getMobileKeyboardHeight: () => guide.inset,
+  getKeyboardHeight: () => guide.inset,
 }));
 
 // The layout viewport of an iPhone 17 Pro in Safari, and the cover the

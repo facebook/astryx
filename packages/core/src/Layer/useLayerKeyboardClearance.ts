@@ -54,7 +54,7 @@
 import {useRef, useState, type RefObject} from 'react';
 import {flushSync} from 'react-dom';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {getKeyboardLayoutGuide, getMobileKeyboardHeight} from '../keyboard';
+import {getKeyboardLayoutGuide, getKeyboardHeight} from '../keyboard';
 import {keyboard} from '../motion/uikit/keyboard';
 import {timing} from '../motion/uikit/timing';
 import {
@@ -262,7 +262,7 @@ export function useLayerKeyboardClearance(
             ),
           ).then(() => {
             if (!isDisposed) {
-              capFor(getMobileKeyboardHeight(win));
+              capFor(getKeyboardHeight(win));
             }
           });
         }
@@ -358,10 +358,10 @@ export function useLayerKeyboardClearance(
     // unplaced: Chromium places a just-shown anchored layer in that frame.
     // With no keyboard up nothing is scheduled.
     const opening =
-      getMobileKeyboardHeight(win) > 0
+      getKeyboardHeight(win) > 0
         ? win.requestAnimationFrame(() => {
             if (!isDisposed) {
-              avoid(getMobileKeyboardHeight(win));
+              avoid(getKeyboardHeight(win));
             }
           })
         : null;
