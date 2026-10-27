@@ -157,9 +157,11 @@ import {resolveIconImports} from './icon-imports.mjs';
  * Core's root entry, loaded once, the first time a theme module requires
  * `@astryxdesign/core`. The root loads all of Core and React (thousands of
  * modules), and most themes import only the theme subpath, so nothing loads
- * it before a theme asks. jiti asks for a virtual module synchronously, so it
- * loads through `require` of an ES module, which the CLI's Node floor
- * supports. Null when it does not load: the theme namespace stands in for it.
+ * it before a theme asks (the CommonJS patch for a theme's `.cjs` dependencies
+ * wraps an installed root only when the load requires it, too). jiti asks for
+ * a virtual module synchronously, so it loads through `require` of an ES
+ * module, which the CLI's Node floor supports. Null when it does not load:
+ * the theme namespace stands in for it.
  * @param {string} from - The file or URL that resolves `specifier`
  * @param {string} specifier
  * @returns {() => any}
@@ -1828,7 +1830,6 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
     // A frozen require(esm) namespace cannot be patched, so retain that gap and
     // let the selected lineage decide whether it matters.
     const commonJsPatch = interception.patchCommonJs(filePath);
-    degraded.commonJs = !commonJsPatch.covered;
     try {
       try {
         mod = jiti(filePath);
@@ -1850,6 +1851,8 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
         });
       }
     } finally {
+      // Read after the load: the root is wrapped when the load requires it.
+      degraded.commonJs = !commonJsPatch.covered;
       commonJsPatch.undo();
     }
   } else {

@@ -15,7 +15,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {coreUnavailableMessage, themeBuild} from './build.mjs';
+import {
+  coreUnavailableMessage,
+  themeBuild,
+  validateThemePrivateInputs,
+} from './build.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '../../../../..');
@@ -120,6 +124,17 @@ describe('theme build generates with the Core the project installed', () => {
     expect(fs.readFileSync(path.join(app, 'harbor.css'), 'utf-8')).toContain(
       '#0b0b0b',
     );
+  });
+
+  it('checks a theme’s private inputs without loading the app’s installed root when the theme does not import it', async () => {
+    // The doctor's check: the CommonJS patch wraps the installed Core for a
+    // `.cjs` dependency, and wraps its root only if something requires it.
+    const app = makeDir();
+    installCore(app);
+    expect(await validateThemePrivateInputs('ocean.mjs', {cwd: app})).toEqual(
+      [],
+    );
+    expect(globalThis.__astryxProjectCoreLoads).toEqual(['theme']);
   });
 
   it('keeps the CLI’s own Core when the project has none', async () => {

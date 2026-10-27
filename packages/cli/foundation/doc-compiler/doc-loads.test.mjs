@@ -76,8 +76,8 @@ const RUNNERS = {
     ],
   },
   'api/theme/build/core-interception.mjs': {
-    runs: "@astryxdesign/core as a theme's CommonJS dependencies require it, to wrap defineTheme",
-    sites: ['require(<computed>)'],
+    runs: '@astryxdesign/core/theme beside a theme whose CommonJS dependencies may require Core, to wrap defineTheme; Module._load is watched during the load so the root is wrapped only as the load requires it',
+    sites: ['module', 'require(@astryxdesign/core/theme)'],
   },
   'api/upgrade/_adapter.mjs': {
     runs: 'the commands a codemod declares as its post-codemod hooks',
@@ -219,10 +219,7 @@ const RUNNERS = {
   },
   'clients/cli/commands/hook.mjs': {
     runs: SELF_DOCS,
-    sites: [
-      'import ../../../api/hook/hook.doc.mjs',
-      'import ./hook.doc.mjs',
-    ],
+    sites: ['import ../../../api/hook/hook.doc.mjs', 'import ./hook.doc.mjs'],
   },
   'clients/cli/commands/init.mjs': {
     runs: SELF_DOCS,

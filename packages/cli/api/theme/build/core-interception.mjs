@@ -67,7 +67,7 @@
  * SYNC: packages/cli/api/theme/build/build.mjs (importThemeModule)
  */
 
-import {createRequire} from 'node:module';
+import Module, {createRequire} from 'node:module';
 import * as path from 'node:path';
 
 import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
@@ -474,28 +474,19 @@ export function interceptCore(coreThemeModule, coreRootModule) {
         return {covered, undo: () => {}};
       }
 
-      for (const specifier of [
-        '@astryxdesign/core/theme',
-        '@astryxdesign/core',
-      ]) {
-        /** @type {any} */
-        let cjs;
-        try {
-          cjs = createRequire(fromFile)(specifier);
-        } catch {
-          // A specifier that CommonJS cannot resolve cannot be used by a `.cjs`
-          // source dependency either, so it creates no unobserved path.
-          continue;
-        }
-
+      const requireFromTheme = createRequire(fromFile);
+      /**
+       * Wraps `defineTheme` on a CommonJS exports object in place, so a call
+       * from a `.cjs` dependency is recorded. False when it cannot be wrapped.
+       * @param {any} cjs
+       */
+      const wrap = cjs => {
         const real = cjs?.defineTheme;
-        if (typeof real !== 'function') continue;
+        if (typeof real !== 'function') return true;
         const descriptor = Object.getOwnPropertyDescriptor(cjs, 'defineTheme');
         if (!descriptor || !(descriptor.writable || descriptor.configurable)) {
-          covered = false;
-          continue;
+          return false;
         }
-
         try {
           Object.defineProperty(cjs, 'defineTheme', {
             ...descriptor,
@@ -508,16 +499,79 @@ export function interceptCore(coreThemeModule, coreRootModule) {
           undo.push(() =>
             Object.defineProperty(cjs, 'defineTheme', descriptor),
           );
+          return true;
         } catch {
           // ESM namespace exotic objects may report a writable descriptor but
           // still reject redefinition. This is a real coverage failure, not an
           // absent CommonJS entry: a `.cjs` dependency can call the function
           // while the recorder cannot wrap it.
-          covered = false;
+          return false;
         }
+      };
+
+      // The theme subpath is small, so it is wrapped now. A specifier that
+      // CommonJS cannot resolve cannot be used by a `.cjs` source dependency
+      // either, so it creates no unobserved path.
+      /** @type {any} */
+      let themeExports;
+      try {
+        themeExports = requireFromTheme('@astryxdesign/core/theme');
+      } catch {
+        themeExports = undefined;
+      }
+      if (themeExports !== undefined && !wrap(themeExports)) covered = false;
+
+      // The root loads all of Core, so it is wrapped when this load first
+      // requires it (a `.cjs` dependency, or the virtual module's own loader),
+      // not before: every CommonJS require goes through `Module._load`, which
+      // is watched for the load's duration. A load that never requires the
+      // root leaves no path through it to observe.
+      /** @type {string | null} */
+      let rootFile;
+      try {
+        rootFile = requireFromTheme.resolve('@astryxdesign/core');
+      } catch {
+        rootFile = null;
+      }
+      if (rootFile) {
+        /** @type {any} */
+        const loader = Module;
+        const load = loader._load;
+        let seen = false;
+        loader._load = function (
+          /** @type {string} */ request,
+          /** @type {any} */ parent,
+          /** @type {boolean} */ isMain,
+        ) {
+          const exports = load.apply(this, arguments);
+          if (
+            !seen &&
+            typeof request === 'string' &&
+            request.includes('@astryxdesign/core')
+          ) {
+            /** @type {string | null} */
+            let resolved;
+            try {
+              resolved = loader._resolveFilename(request, parent, isMain);
+            } catch {
+              resolved = null;
+            }
+            if (resolved === rootFile) {
+              seen = true;
+              if (!wrap(exports)) covered = false;
+            }
+          }
+          return exports;
+        };
+        undo.push(() => {
+          loader._load = load;
+        });
       }
       return {
-        covered,
+        /** Read after the load: a root required during it counts. */
+        get covered() {
+          return covered;
+        },
         undo() {
           for (const restore of undo.reverse()) {
             try {
