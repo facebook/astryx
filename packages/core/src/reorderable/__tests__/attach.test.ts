@@ -199,4 +199,79 @@ describe('createReorderable attach', () => {
     expect(document.body).not.toHaveTextContent('position 2 of 3');
     detach();
   });
+
+  it('lets a mouse drag an item by its handle, with one report at the drop (spec:AST-103 FR3, FR4b)', async () => {
+    const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
+    // jsdom lays nothing out: 44 px items from 300 px down the viewport.
+    for (const card of cards) {
+      const place = () => Array.from(container.children).indexOf(card.el);
+      Object.defineProperty(card.el, 'offsetParent', {
+        configurable: true,
+        get: () => container,
+      });
+      Object.defineProperty(card.el, 'offsetTop', {
+        configurable: true,
+        get: () => place() * 44,
+      });
+      Object.defineProperty(card.el, 'offsetHeight', {
+        configurable: true,
+        value: 44,
+      });
+      card.el.getBoundingClientRect = () =>
+        DOMRect.fromRect({x: 0, y: 300 + place() * 44, width: 300, height: 44});
+    }
+    const onReorder = vi.fn(({key, to}: {key: string | number; to: number}) =>
+      move(String(key), to),
+    );
+    const {detach} = createReorderable({onReorder}).attach(container, {
+      items,
+    });
+    const MOUSE = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 280};
+    const grip = cards[0].grip;
+    fireEvent.pointerDown(grip, {...MOUSE, clientY: 322});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 330});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 322 + 70});
+    // A preview follows; the items stay where they are.
+    expect(
+      document.querySelector('[data-astryx-reorder-preview]'),
+    ).not.toBeNull();
+    expect(onReorder).not.toHaveBeenCalled();
+    act(() => {
+      fireEvent.pointerUp(grip, {...MOUSE, clientY: 322 + 70});
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenCalledWith({key: 'milk', to: 2});
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-astryx-reorder-preview]'),
+      ).toBeNull(),
+    );
+    expect(cards.map(card => card.id)).toEqual(['eggs', 'bread', 'milk']);
+    detach();
+  });
+
+  it('announces inside the modal dialog that encloses the container (spec:AST-086 FR14)', async () => {
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    document.body.append(dialog);
+    const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
+    dialog.append(container);
+    const {detach} = createReorderable({
+      onReorder: ({key, to}) => move(String(key), to),
+    }).attach(container, {items});
+    const milk = cards[0].grip;
+    milk.focus();
+    fireEvent.keyDown(milk, {key: 'Enter'});
+    fireEvent.keyDown(milk, {key: 'ArrowDown'});
+    await waitFor(() =>
+      expect(dialog).toHaveTextContent(
+        'Milk, position 2 of 3, after Eggs, before Bread',
+      ),
+    );
+    const live = dialog.querySelector('[aria-live="polite"]');
+    expect(live).not.toBeNull();
+    detach();
+    expect(dialog.querySelector('[aria-live="polite"]')).toBeNull();
+  });
 });
