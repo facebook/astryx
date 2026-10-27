@@ -668,6 +668,47 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
+  test('an earlier sibling that order places after the change glides from its old place (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; gap: 8px">
+        <div id="ordered" style="order: 1; width: 60px; height: 24px; flex: none; background: #ddd"></div>
+        <div id="changed" style="width: 60px; height: 24px; flex: none; background: #ddd"></div>
+      </div></div>`,
+    );
+    await change(page, {
+      changed: '#changed',
+      mutate: `document.querySelector('#changed').style.width = '140px'`,
+    });
+    const [motion] = await page.evaluate(() => window.motionOf('#ordered'));
+    expect(motion).toBeDefined();
+    // First in the DOM, laid out after the change: it starts 80 px back.
+    expect(startOffset(motion.first).x).toBeCloseTo(-80, 0);
+  });
+
+  for (const position of ['absolute', 'fixed']) {
+    test(`a ${position} ancestor of the change takes its final place (spec:AST-105 Coverage)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area">
+          <div id="anchored" style="position: ${position}; left: 0; bottom: 0; width: 300px">
+            <div id="grow" class="grow"></div><div class="row"></div>
+          </div>
+        </div>`,
+      );
+      await change(page);
+      // Anchored at its bottom, it grows upward: its top moves, yet it never
+      // glides.
+      expect(await page.evaluate(() => window.motionOf('#anchored'))).toEqual(
+        [],
+      );
+    });
+  }
+
   test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
     page,
   }) => {
