@@ -97,7 +97,7 @@ describe('ListItem touch hit area (spec:AST-094 FR42; component:List FR10)', () 
     expect(style.getPropertyValue('--astryx-hit-inset-left')).toBe('0px');
   });
 
-  it('grows toward 44px, whatever a page sets for `--size-touch-target`, which no token admits yet (spec:AST-094 FR42)', () => {
+  it('grows toward the theme’s touch target under a finger, and 44px otherwise', () => {
     const {unmount} = render(
       <List>
         <ListItem
@@ -107,7 +107,7 @@ describe('ListItem touch hit area (spec:AST-094 FR42; component:List FR10)', () 
         />
       </List>,
     );
-    // No coarse pointer: 44px.
+    // No coarse pointer: the 44px minimum, whatever the theme says.
     expect(watches.map(watch => watch.minSize)).toEqual([44]);
     unmount();
     watches.length = 0;
@@ -127,8 +127,7 @@ describe('ListItem touch hit area (spec:AST-094 FR42; component:List FR10)', () 
         <ListItem label="Default" onClick={() => {}} />
       </List>,
     );
-    // Under a finger too: the page's value is not read.
-    expect(watches.map(watch => watch.minSize)).toEqual([44, 44]);
+    expect(watches.map(watch => watch.minSize)).toEqual([48, 44]);
   });
 
   it('drops a measurement taken while the list moves, and watches the row afresh once the motion ends', async () => {
