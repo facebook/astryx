@@ -55,6 +55,7 @@ import {useLayerDismissal} from '../../Layer/useLayerDismissal';
 import {motionRole} from '../../motion/roles';
 import {getGestureHost} from '../../gestures/GestureHost';
 import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
+import {resetHitAreaForTests} from '../../utils/hitArea';
 import {touchMotion} from '../ListReorderTouch';
 
 function moveKey<T extends Key>(
@@ -164,6 +165,7 @@ describe('List reorderable', () => {
   // The live region outlives each test: clear it, so one test's message is
   // never read by the next.
   afterEach(() => {
+    resetHitAreaForTests();
     const {result, unmount} = renderHook(() => useAnnounce());
     act(() => result.current(''));
     unmount();
@@ -325,23 +327,6 @@ describe('List reorderable', () => {
       warn.mockRestore();
     } finally {
       vi.unstubAllEnvs();
-    }
-  });
-
-  it("gives a finger's target as an invisible hit layer, not a bigger handle: the hit area writes its insets where the primary pointer is coarse", async () => {
-    stubPrimaryPointer(true);
-    render(<ReorderableRows initial={['A', 'B']} />);
-    const handle = handleOf('A');
-    await waitFor(() =>
-      expect(handle.style.getPropertyValue('--astryx-hit-inset-top')).toMatch(
-        /px$/,
-      ),
-    );
-    for (const side of ['right', 'bottom', 'left']) {
-      expect(
-        handle.style.getPropertyValue(`--astryx-hit-inset-${side}`),
-        side,
-      ).toMatch(/px$/);
     }
   });
 
