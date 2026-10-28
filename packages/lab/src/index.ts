@@ -24,6 +24,17 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// NavigationStack — push/pop drill-down navigation with UIKit's transitions
+// and back swipes
+export {
+  NavigationScreen,
+  NavigationStack,
+  useNavigationStack,
+  type NavigationScreenProps,
+  type NavigationStackApi,
+  type NavigationStackProps,
+} from './NavigationStack';
+
 // EmojiPicker — standalone searchable emoji panel
 export {
   EmojiPicker,
@@ -332,6 +343,15 @@ export {
   MobilePowerSearch,
   type MobilePowerSearchProps,
 } from './MobilePowerSearch';
+
+// SearchField — the phone search field of iOS 26's UISearchController: it
+// activates into its host's bar with a glass close button, on UIKit's clock,
+// read from core's internal motion modules.
+export {
+  SearchField,
+  type SearchFieldHandle,
+  type SearchFieldProps,
+} from './SearchField';
 
 // RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
 // its own package, @astryxdesign/richtext. Import it from there:
