@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Contract: required lint takes its documentation, spec and tooling fast
- *   paths.
+ * @file Contract: required lint takes its documentation and spec fast paths.
  *
  * lint.yml classifies a pull request's files with the trusted classifier from
- * the base branch and skips full ESLint for a spec-only, docsite-only or
- * tooling-only change. Its checkout was depth 1, where the merge commit never
- * reaches its merge base with the base branch, so the classifier was never fed
- * and every pull request ran full lint. These cases run the real step script
+ * the base branch and skips full ESLint for a spec-only or docsite-only change;
+ * a tooling-only change still runs it (spec:AST-030 FR8). Its checkout was
+ * depth 1, where the merge commit never reaches its merge base with the base
+ * branch, so the classifier was never fed and every pull request ran full lint.
+ * These cases run the real step script
  * and the real classifier with real git, checked out the way the workflow
  * checks out.
  */
@@ -158,6 +158,8 @@ describe('required lint routing', () => {
       spec_only: 'false',
       docsite_only: 'false',
       tooling_only: 'false',
+      // Only the classifier writes full_suite, so the classifier answered.
+      full_suite: 'false',
     });
   });
 });
