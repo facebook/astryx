@@ -18,7 +18,7 @@
  *   viewer finishes opening and stays, while keys stay live (spec:AST-094
  *   FR35); Reduce Motion (design:reduced-motion) fades in
  *   place in 200 ms or less on a touch screen, shows at once with a mouse,
- *   and never
+ *   lands a mouse's drag down in the thumbnail at once, and never
  *   hides the thumbnail; a close during the opening turns it around from
  *   where it shows; while the photo lands an Escape stays the viewer's;
  *   a viewer unmounted on close gives the thumbnail back; a plain image
@@ -889,6 +889,62 @@ test('under Reduce Motion with a mouse the photo shows at once', async ({
     expect(now.running).toBe(0);
     expect(now.opacity).toBe(1);
     expect(await page.locator('[data-lightbox-portal]').count()).toBe(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion a mouse’s drag down lands in the thumbnail at once where the primary pointer is fine (design:reduced-motion DR3)', async ({
+  browser,
+}) => {
+  // The drag to dismiss takes every pointer (spec:AST-094 FR43), and its
+  // release follows the pointer that began it: a finger's cross-fades (DR2),
+  // a mouse's lands at once, the photo's way into its thumbnail and the
+  // thumbnail's picture alike.
+  const context = await browser.newContext({
+    viewport: {width: 1280, height: 800},
+    hasTouch: false,
+    isMobile: false,
+    reducedMotion: 'reduce',
+  });
+  try {
+    const page = await context.newPage();
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    await page.route('https://picsum.photos/**', async route => {
+      const id = /\/id\/(\d+)\//.exec(route.request().url())?.[1] ?? '10';
+      await route.fulfill({
+        contentType: 'image/svg+xml',
+        body: photoSvg(COLORS[id] ?? '#888'),
+      });
+    });
+    await openStory(page, storybook(), 'core-lightbox--zoom-from-thumbnails');
+    const thumbnail = page.locator('#storybook-root button img').first();
+    await expect
+      .poll(async () =>
+        thumbnail.evaluate(el => (el as HTMLImageElement).naturalWidth),
+      )
+      .toBe(3000);
+    await thumbnail.click();
+    const dialog = page.getByRole('dialog');
+    const photo = dialog.locator('[data-current] img');
+    await expect(photo).toBeVisible();
+    await waitForRest(photo);
+    const start = await photoBox(photo);
+    const centre = {
+      x: start.x + start.width / 2,
+      y: start.y + start.height / 2,
+    };
+    await page.mouse.move(centre.x, centre.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(centre.x, centre.y + 15 * i);
+      await page.waitForTimeout(16);
+    }
+    await page.mouse.up();
+    // At once: no fade (DR2 is a coarse pointer's or a finger's release).
+    await expect(dialog).toBeHidden({timeout: 150});
   } finally {
     await context.close();
   }

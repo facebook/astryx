@@ -858,8 +858,9 @@ export function Lightbox({
   // The zoom stage: the keyboard's zoom and pan, and the gestures of every
   // pointer, a mouse, a pen and a finger alike (spec:AST-094 FR43), whose
   // pinch (a ctrl-wheel's too) and pan (a wheel's too) give past their
-  // limits and bounce back. The touch presentation, which the gallery's
-  // buttons and arrow keys read, is the shared touch resolver's.
+  // limits and bounce back. The touch presentation, which the zoom
+  // transition, the opener record and the gallery's buttons and arrow keys
+  // read, is the shared touch resolver's.
   const {isTouch} = useTouchPresentation();
   // The opener is the element the viewer was opened from: a click or tap on
   // it (which a plain image, or a button in Safari, does not focus), else
@@ -937,7 +938,7 @@ export function Lightbox({
             portalAnimator.animate(
               {opacity: 1},
               {spring: zoomMedia.dismiss.dismissSizeSpring},
-              {touchRelease: true},
+              {touchRelease: touch},
             );
             restoreLanded();
             landedRef.current = lifted;

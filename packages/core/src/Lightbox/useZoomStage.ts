@@ -626,7 +626,7 @@ export function useZoomStage(
           animator.animate(
             {scale: to.scale, opacity: 0},
             {spring: zoomMedia.dismiss.dismissSizeSpring},
-            {crossfadeAs: 'exit', touchRelease: true},
+            {crossfadeAs: 'exit', touchRelease: fingerRef.current.dismiss},
           );
           done(
             animator.animate(
@@ -635,7 +635,7 @@ export function useZoomStage(
                 spring: zoomMedia.dismiss.dismissPositionSpring,
                 velocity: {x: velocity.x, y: velocity.y},
               },
-              {crossfadeAs: 'exit', touchRelease: true},
+              {crossfadeAs: 'exit', touchRelease: fingerRef.current.dismiss},
             ),
           );
           return;
