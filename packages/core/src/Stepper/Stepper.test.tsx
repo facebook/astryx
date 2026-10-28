@@ -185,17 +185,44 @@ describe('Stepper', () => {
     expect(handleClick).toHaveBeenCalledWith(2);
   });
 
-  it('does not render buttons for disabled steps', () => {
+  it('keeps a disabled step focusable and aria-disabled, and never activates it (spec:AST-085 FR1, FR2, FR5)', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
     render(
-      <Stepper activeStep={2} onStepClick={() => {}}>
+      <Stepper activeStep={2} onStepClick={handleClick}>
         <Step step={0} label="Step 1" isDisabled />
         <Step step={1} label="Step 2" />
         <Step step={2} label="Step 3" />
       </Stepper>,
     );
-    expect(
-      screen.queryByRole('button', {name: /Go to step 1: Step 1/}),
-    ).not.toBeInTheDocument();
+    const disabled = screen.getByRole('button', {name: /Go to step 1: Step 1/});
+    expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    expect(disabled).not.toHaveAttribute('disabled');
+    await user.click(disabled);
+    disabled.focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('keeps focus on a step that becomes disabled while focused (spec:AST-085 FR4)', () => {
+    const {rerender} = render(
+      <Stepper activeStep={2} onStepClick={() => {}}>
+        <Step step={0} label="Step 1" />
+        <Step step={1} label="Step 2" />
+      </Stepper>,
+    );
+    const step = screen.getByRole('button', {name: /Go to step 1: Step 1/});
+    step.focus();
+    rerender(
+      <Stepper activeStep={2} onStepClick={() => {}}>
+        <Step step={0} label="Step 1" isDisabled />
+        <Step step={1} label="Step 2" />
+      </Stepper>,
+    );
+    const after = screen.getByRole('button', {name: /Go to step 1: Step 1/});
+    expect(after).toHaveFocus();
+    expect(after).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('does not render buttons when onStepClick is not provided', () => {
@@ -610,7 +637,7 @@ describe('Stepper', () => {
       expect(handleClick).toHaveBeenCalledWith(0);
     });
 
-    it('tabs through steps in document order, skipping disabled ones', async () => {
+    it('tabs through steps in document order, disabled ones included', async () => {
       const user = userEvent.setup();
       render(
         <Stepper activeStep={3} onStepClick={() => {}}>
@@ -623,7 +650,11 @@ describe('Stepper', () => {
       expect(
         screen.getByRole('button', {name: 'Go to step 1: One, completed'}),
       ).toHaveFocus();
-      // The disabled step renders no button, so Tab lands on step 3 next.
+      // The disabled step keeps its tab stop (spec:AST-085 FR1).
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 2: Two, completed'}),
+      ).toHaveFocus();
       await user.tab();
       expect(
         screen.getByRole('button', {name: 'Go to step 3: Three, completed'}),

@@ -1072,7 +1072,12 @@ export function Step({
   // A compact horizontal stepper moves navigation to the named controls in its
   // summary row. Its track — including the on-track indicators — stays purely
   // presentational so it does not expose a second, denser set of click targets.
-  const isClickable = !isDisabled && onStepClick != null && !isCompact;
+  const hasButton = onStepClick != null && !isCompact;
+  // A disabled step keeps its button, focusable and aria-disabled, so it
+  // keeps its tab stop, is announced as unavailable, and keeps focus when it
+  // becomes disabled while focused (`spec:AST-085` FR1, FR4, FR5); only
+  // activation is withheld.
+  const isClickable = hasButton && !isDisabled;
 
   const handleClick = () => {
     if (isClickable && onStepClick) {
@@ -1610,11 +1615,12 @@ export function Step({
           aria-current={isActive ? 'step' : undefined}
           data-testid={dataTestId}
           {...rest}>
-          {isClickable ? (
+          {hasButton ? (
             <button
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
                 styles.otInteractive,
@@ -1702,11 +1708,12 @@ export function Step({
         aria-current={isActive ? 'step' : undefined}
         data-testid={dataTestId}
         {...rest}>
-        {isClickable ? (
+        {hasButton ? (
           <button
             type="button"
             onClick={handleClick}
             aria-label={stepAriaLabel}
+            aria-disabled={isDisabled || undefined}
             {...pressable}
             {...stylex.props(
               styles.otInteractive,
@@ -1762,11 +1769,12 @@ export function Step({
         />
         {/* Body: button wraps only label area, children render outside */}
         <div {...stylex.props(styles.verticalBody)}>
-          {isClickable ? (
+          {hasButton ? (
             <button
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
                 styles.buttonReset,
@@ -1830,11 +1838,12 @@ export function Step({
           under the track instead. */}
       {isCompact ? (
         compactNameNode
-      ) : isClickable ? (
+      ) : hasButton ? (
         <button
           type="button"
           onClick={handleClick}
           aria-label={stepAriaLabel}
+          aria-disabled={isDisabled || undefined}
           {...stylex.props(
             styles.buttonReset,
             interactionOverlayStyles.backgroundColor,
