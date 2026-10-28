@@ -7,7 +7,8 @@
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists). Number markers stay on one line in the List's shared column,
+ *   lists), and Item's private exact-marker formatting scope for numbered
+ *   rows. Number markers stay on one line in the List's shared column,
  *   keeping every sibling's text and nested list on the same start line;
  *   they end on one line too, right-aligned with tabular figures, and hang
  *   into the row's inline inset before they widen that column. Markdown's
@@ -27,7 +28,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -41,6 +42,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {ItemMarkerColumnsContext} from '../Item/ItemMarkerColumnsContext';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
@@ -388,42 +390,46 @@ export function ListItem({
   // A task item in a list with markers shows its checkbox instead.
   const task = markerKind == null ? undefined : ctx?.task;
 
-  const marker =
-    task != null ? (
-      <span {...stylex.props(taskMarkerStyles.container)}>
-        <CheckboxInput
-          size="sm"
-          value={task.isChecked}
-          label={task.label}
-          isLabelHidden
-          isReadOnly
-        />
-      </span>
-    ) : markerKind === 'disc' ||
-      markerKind === 'circle' ||
-      markerKind === 'square' ? (
-      <span {...stylex.props(markerStyles.container)}>
+  const hasMarkerGutter = ctx?.hasMarkerGutter === true;
+  const marker = useMemo(
+    () =>
+      task != null ? (
+        <span {...stylex.props(taskMarkerStyles.container)}>
+          <CheckboxInput
+            size="sm"
+            value={task.isChecked}
+            label={task.label}
+            isLabelHidden
+            isReadOnly
+          />
+        </span>
+      ) : markerKind === 'disc' ||
+        markerKind === 'circle' ||
+        markerKind === 'square' ? (
+        <span {...stylex.props(markerStyles.container)}>
+          <span
+            {...stylex.props(
+              markerKind === 'disc'
+                ? markerStyles.dot
+                : markerKind === 'circle'
+                  ? markerStyles.circle
+                  : markerStyles.square,
+            )}
+          />
+        </span>
+      ) : markerKind != null ? (
         <span
           {...stylex.props(
-            markerKind === 'disc'
-              ? markerStyles.dot
-              : markerKind === 'circle'
-                ? markerStyles.circle
-                : markerStyles.square,
+            markerStyles.number,
+            NUMBER_STYLES[markerKind],
+            hasMarkerGutter && markerStyles.gutterHang,
           )}
         />
-      </span>
-    ) : markerKind != null ? (
-      <span
-        {...stylex.props(
-          markerStyles.number,
-          NUMBER_STYLES[markerKind],
-          ctx?.hasMarkerGutter === true && markerStyles.gutterHang,
-        )}
-      />
-    ) : null;
+      ) : null,
+    [task, markerKind, hasMarkerGutter],
+  );
 
-  return (
+  const item = (
     <Item
       as="li"
       ref={ref}
@@ -456,6 +462,13 @@ export function ListItem({
       {...mergeProps(themeProps('list-item'), {className, style})}
       {...restProps}
     />
+  );
+  // Only numbered rows contribute two cells to List's shared counter grid.
+  // Passing the marker identity keeps this request off unrelated Items in slots.
+  return listStyle === 'decimal' ? (
+    <ItemMarkerColumnsContext value={marker}>{item}</ItemMarkerColumnsContext>
+  ) : (
+    item
   );
 }
 

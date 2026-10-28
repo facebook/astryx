@@ -6,8 +6,10 @@
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
  * @output Exports Item component, ItemProps type; publishes the shared inline inset.
- *   Marked rows keep their start/label/end slots in one flex group, allowing
- *   List to share a marker track without changing those slots' own layout.
+ *   Only numbered composing rows keep their start/label/end slots in one flex
+ *   group, through Item's private exact-marker scope; other marked rows keep
+ *   their flat children. This lets List share a counter track without changing
+ *   those slots' own layout.
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
@@ -30,6 +32,7 @@
 import {
   lazy,
   Suspense,
+  use,
   useCallback,
   useId,
   useRef,
@@ -47,6 +50,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {ItemMarkerColumnsContext} from './ItemMarkerColumnsContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -604,6 +608,7 @@ export function Item({
   ...restProps
 }: ItemProps) {
   const pressable = usePressFeedback();
+  const columnMarker = use(ItemMarkerColumnsContext);
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -917,17 +922,15 @@ export function Item({
       onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {isRenderable(marker) ? (
-          <>
-            {marker}
-            <span
-              {...stylex.props(
-                styles.markerContent,
-                align === 'first-line' && styles.markerContentFirstLine,
-              )}>
-              {content}
-            </span>
-          </>
+        {isRenderable(marker) && marker}
+        {isRenderable(marker) && columnMarker === marker ? (
+          <span
+            {...stylex.props(
+              styles.markerContent,
+              align === 'first-line' && styles.markerContentFirstLine,
+            )}>
+            {content}
+          </span>
         ) : (
           content
         )}
