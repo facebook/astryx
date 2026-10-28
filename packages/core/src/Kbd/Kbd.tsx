@@ -19,7 +19,9 @@ import {mergeProps} from '../utils';
 import {isApplePlatform} from '../utils/isApplePlatform';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, type TranslatorFn} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import kbdMessages from '../i18n/generated-locales/en/kbd.generated';
+import type {TranslatorFn} from '../i18n';
 import {
   colorVars,
   spacingVars,
@@ -166,7 +168,7 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
  * ```
  */
 export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(kbdMessages);
   const isMac = useSyncExternalStore(
     subscribeToPlatformChanges,
     isApplePlatform,
