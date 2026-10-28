@@ -211,9 +211,9 @@ const styles = stylex.create({
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },
-  // In a gallery the stage's touches go to the track instead, under the
-  // touch layer only (as imageWrapperZoomTarget): the pager's pan manages
-  // the stage's own `touch-action`.
+  // In a gallery the stage's touches go to the track instead, for every
+  // pointer (as imageWrapperZoomTarget): the pager's pan manages the stage's
+  // own `touch-action`.
   trackZoomTarget: {
     touchAction: 'none',
   },
@@ -758,8 +758,9 @@ export function Lightbox({
     }
   });
 
-  // Gallery navigation. Under a finger the pager slides to the new page (a
-  // paging scroll view's setContentOffset). Where the primary pointer is
+  // Gallery navigation. On a touch screen (the touch presentation) the
+  // buttons and the arrow keys slide the pager to the new page (a paging
+  // scroll view's setContentOffset). Where the primary pointer is
   // fine, the buttons and the arrow keys show the new item at once, as they
   // always have (spec:AST-017 FR59): the pager moves there first, so the
   // controlled sync finds nothing to animate, and it returns to `index` if

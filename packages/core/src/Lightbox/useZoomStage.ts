@@ -45,7 +45,7 @@
  * - a zero-duration press beside them all (UIKit's touch-down idiom): a
  *   press landing on a moving photo stops it where it shows, as a scroll
  *   view stops its deceleration, and a lift with no drag lets it settle. It
- *   only claims a touch on a moving photo, so a still one leaves the touch
+ *   only claims a press on a moving photo, so a still one leaves the press
  *   to an outer pager's own catch.
  * The stage's `touch-action` is the caller's (none while zoom is on), since
  * a disabled recognizer would still claim it.
