@@ -77,6 +77,19 @@
         ]
       },
       {
+        "domain": "doc",
+        "name": "icons",
+        "package": "@astryxdesign/cli",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "section": "<text>",
+        "title": "<text>",
+        "command": "astryx docs icons icon-variants",
+        "parent": "astryx docs icons --index",
+        "mentions": []
+      },
+      {
         "domain": "template",
         "name": "BaseTypeaheadCustomSearch",
         "package": "@astryxdesign/core",
@@ -230,18 +243,6 @@
         "displayName": "<text>",
         "kind": "block",
         "command": "astryx template ChatComposerFullFeatured --type block",
-        "mentions": []
-      },
-      {
-        "domain": "template",
-        "name": "ChatMessageBubbleMetadata",
-        "package": "@astryxdesign/core",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "displayName": "<text>",
-        "kind": "block",
-        "command": "astryx template ChatMessageBubbleMetadata --type block",
         "mentions": []
       }
     ]

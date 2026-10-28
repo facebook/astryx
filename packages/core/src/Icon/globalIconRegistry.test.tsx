@@ -520,6 +520,75 @@ describe('iconRegistry (global, RSC-compatible)', () => {
         });
       });
 
+      it('passes a listed variant to theme and process-wide entries only', () => {
+        const themeInfo = vi.fn(
+          ({variant}: IconRequest) => `theme-${variant ?? 'normal'}`,
+        );
+        const globalClose = vi.fn(
+          ({variant}: IconRequest) => `global-${variant ?? 'normal'}`,
+        );
+        registerIcons({close: globalClose});
+        const theme = defineTheme({
+          name: 'resolve-listed',
+          iconVariants: ['filled'],
+          icons: {info: themeInfo},
+        });
+
+        expect(
+          resolveIcon('info', theme, {size: 'sm', variant: 'filled'}),
+        ).toBe('theme-filled');
+        expect(
+          resolveIcon('close', theme, {size: 'sm', variant: 'filled'}),
+        ).toBe('global-filled');
+        expect(
+          resolveIcon('info', theme, {size: 'sm', variant: 'outline'}),
+        ).toBe('theme-normal');
+        expect(
+          resolveIcon('close', null, {size: 'sm', variant: 'filled'}),
+        ).toBe('global-normal');
+        expect(
+          resolveIcon('check', theme, {size: 'sm', variant: 'filled'}),
+        ).toBe(defaultIcons.check);
+      });
+
+      it('keeps the defining list through more than one extends', () => {
+        const grandparent = defineTheme({
+          name: 'resolve-grandparent',
+          iconVariants: ['outline'],
+          icons: {info: ({variant}) => `info-${variant ?? 'normal'}`},
+        });
+        const parent = defineTheme({
+          name: 'resolve-parent',
+          extends: grandparent,
+          iconVariants: ['outline', 'filled'],
+        });
+        const child = defineTheme({name: 'resolve-child', extends: parent});
+
+        expect(child.iconVariants).toEqual(['outline', 'filled']);
+        expect(
+          resolveIcon('info', child, {size: 'md', variant: 'filled'}),
+        ).toBe('info-normal');
+        expect(
+          resolveIcon('info', child, {size: 'md', variant: 'outline'}),
+        ).toBe('info-outline');
+      });
+
+      it('never passes a variant through public reads', () => {
+        const info = vi.fn(
+          ({variant}: IconRequest) => `info-${variant ?? 'normal'}`,
+        );
+        const theme = defineTheme({
+          name: 'resolve-public-reads',
+          iconVariants: ['outline', 'filled'],
+          icons: {info},
+        });
+
+        expect(getIcon('info', theme)).toBe('info-normal');
+        expect(getIconRegistry(theme).info).toBe('info-normal');
+        expect(getExtendedIcon('info', 'fallback', theme)).toBe('info-normal');
+        expect(theme.icons?.info).toBe('info-normal');
+      });
+
       it('passes no variant to an entry, so it draws its normal artwork', () => {
         const info = vi.fn(({variant}: IconRequest) =>
           variant === 'filled' ? 'filled-info' : 'normal-info',
