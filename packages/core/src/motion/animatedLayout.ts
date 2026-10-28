@@ -6,8 +6,9 @@
  *   internal `springs.settle` motion role (motion/roles.ts) and the Reduce Motion
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
- *   handle, `reportLayoutChange`, `playLayoutChange` and `holdLayoutExit` /
- *   `releaseLayoutExit`: the one module that produces the
+ *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
+ *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module
+ *   that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
  * @position Motion foundation, internal to core. A handle comes from the
@@ -17,9 +18,15 @@
  * How it works:
  * - `measureBefore()` runs before the change commits: from the changed
  *   element it walks up to the handle's container and, at each level,
- *   records the rectangle of every following element sibling, through
- *   `parentElement` and `nextElementSibling`, descending only into an element
- *   with `display: contents` (it has no box).
+ *   records the rectangles of the element siblings after it and before it (a
+ *   centered, end-aligned or space-between row, or `order`, moves those too),
+ *   through `parentElement`, `nextElementSibling` and
+ *   `previousElementSibling`, descending only into an element with
+ *   `display: contents` (it has no box). Each level's walk stops at the first
+ *   sibling outside the band a change can move content into view from: the
+ *   area's visible part plus one viewport, or the changed element's size if
+ *   larger, above and below. So its cost grows with depth plus the siblings
+ *   near the visible part, never with a list's length.
  * - `animate()` runs after the commit (a layout effect). Every change in the
  *   same area reported in one frame is measured together after the commit,
  *   once, in a microtask, so each element moves once, by its total change.
@@ -36,7 +43,8 @@
  * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
  *   the same frame (`playLayoutChange`), or its exit: kept where it is while
- *   it gives up its space and conceals (`holdLayoutExit`).
+ *   it gives up its space and conceals (`holdLayoutExit`). A disclosure's
+ *   indicator turns on the same motion (`applyLayoutChangeTransition`).
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -149,6 +157,18 @@ function sampleKeyframes(
   frame: (remaining: number) => Keyframe,
 ): Keyframe[] {
   return sampleOver(progress.durationMs, t => frame(progress.remaining(t)));
+}
+
+/** The spring as a CSS `linear()` easing, for a CSS transition. */
+function linearEasing(progress: SpringProgress): string {
+  const stops: string[] = [];
+  const count = 24;
+  for (let i = 0; i <= count; i++) {
+    const fraction = i / count;
+    const value = 1 - progress.remaining(fraction * progress.durationMs);
+    stops.push(`${round(value)} ${round(fraction * 100)}%`);
+  }
+  return `linear(${stops.join(', ')})`;
 }
 
 function round(value: number): number {
@@ -301,43 +321,256 @@ function takesPart(element: Element, style: CSSStyleDeclaration): boolean {
 }
 
 /**
- * The elements that can shift when `changed` changes size: at each ancestor
- * level up to `area`, every following element sibling. `display: contents` is
- * replaced by its children.
+ * The band of the page a change can move content into or out of view: the
+ * area's visible part, extended above and below by one viewport or by the
+ * size of every element changing in the frame, whichever is larger (a
+ * collapse pulls content up by at most its size, and changes in one frame
+ * add up). Content outside it before the change stays outside it, so the
+ * walk stops there.
  */
-function collectFollowers(changed: Element, area: Element): Element[] {
-  const view = changed.ownerDocument.defaultView;
-  const out: Element[] = [];
-  const take = (element: Element) => {
-    const style = view?.getComputedStyle(element);
-    if (style == null) {
-      return;
+interface Band {
+  /** Its top edge, in client px. */
+  readonly start: number;
+  /** Its bottom edge, in client px. */
+  readonly end: number;
+}
+
+function bandFor(visible: DOMRect, reach: number): Band {
+  return {start: visible.top - reach, end: visible.bottom + reach};
+}
+
+/**
+ * What one frame's walks read, kept so a level two changes share, or a walk
+ * repeated when the band grows, reads each element once.
+ */
+interface WalkCache {
+  readonly rects: Map<Element, DOMRect>;
+  /** Whether the element takes part, or `contents` for a boxless element. */
+  readonly parts: Map<Element, boolean | 'contents'>;
+}
+
+function partOf(element: Element, cache: WalkCache): boolean | 'contents' {
+  let part = cache.parts.get(element);
+  if (part === undefined) {
+    const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+    part =
+      style == null
+        ? false
+        : style.display === 'contents'
+          ? 'contents'
+          : takesPart(element, style);
+    cache.parts.set(element, part);
+  }
+  return part;
+}
+
+/**
+ * Whether a container lays its children out across the block direction, so
+ * DOM order does not run down the page: multi-column, a wrapping column flex
+ * box, or a grid that flows by column. The band says nothing about where its
+ * later children sit, so a walk there runs through the level.
+ */
+function flowsAcross(container: Element | null): boolean {
+  if (container == null) {
+    return false;
+  }
+  const style =
+    container.ownerDocument.defaultView?.getComputedStyle(container);
+  if (style == null) {
+    return false;
+  }
+  const count = style.getPropertyValue('column-count');
+  const width = style.getPropertyValue('column-width');
+  return (
+    (count !== '' && count !== 'auto') ||
+    (width !== '' && width !== 'auto') ||
+    (style.display.includes('flex') &&
+      style.flexDirection.startsWith('column') &&
+      style.flexWrap.startsWith('wrap')) ||
+    (style.display.includes('grid') &&
+      style.getPropertyValue('grid-auto-flow').startsWith('column'))
+  );
+}
+
+/**
+ * The box a sticky element sticks to: its nearest scrolling ancestor's, or
+ * the viewport.
+ */
+function scrollportOf(element: Element): {start: number; end: number} {
+  const view = element.ownerDocument.defaultView;
+  for (
+    let node = element.parentElement;
+    node != null && node !== element.ownerDocument.documentElement;
+    node = node.parentElement
+  ) {
+    const overflow = view?.getComputedStyle(node).overflowY ?? 'visible';
+    if (
+      node === element.ownerDocument.body &&
+      view?.getComputedStyle(element.ownerDocument.documentElement)
+        .overflowY === 'visible'
+    ) {
+      // The body's overflow applies to the viewport while the root's is
+      // visible: the body is no scroller of its own.
+      continue;
     }
-    if (style.display === 'contents') {
+    if (overflow !== 'visible' && overflow !== 'clip') {
+      const box = node.getBoundingClientRect();
+      return {
+        start: box.top + node.clientTop,
+        end: box.top + node.clientTop + node.clientHeight,
+      };
+    }
+  }
+  return {start: 0, end: view?.innerHeight ?? 0};
+}
+
+/**
+ * Whether a sticky element is stuck: resting against its scrollport's edge
+ * at its inset. A stuck element takes its final place; an unstuck one is in
+ * flow.
+ */
+function isStuck(element: Element, cache: WalkCache): boolean {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (style?.position !== 'sticky') {
+    return false;
+  }
+  const rect = rectOf(element, cache);
+  const edge = scrollportOf(element);
+  const top = Number.parseFloat(style.top);
+  const bottom = Number.parseFloat(style.bottom);
+  return (
+    (Number.isFinite(top) && Math.abs(rect.top - (edge.start + top)) < 1) ||
+    (Number.isFinite(bottom) && Math.abs(rect.bottom - (edge.end - bottom)) < 1)
+  );
+}
+
+function rectOf(element: Element, cache: WalkCache): DOMRect {
+  let rect = cache.rects.get(element);
+  if (rect === undefined) {
+    rect = element.getBoundingClientRect();
+    cache.rects.set(element, rect);
+  }
+  return rect;
+}
+
+/**
+ * The elements a change can move, each with its rectangle before the change:
+ * the changed element's ancestors up to the area (a centered column moves
+ * the card around the change), and at each of their levels the siblings
+ * after and before (a centered, end-aligned or space-between row, or
+ * `order`, moves those too). A `display: contents` element has no box: its
+ * children stand in its place, walked in the same direction. At each level
+ * the walk stops at the first sibling outside `band`, so its cost grows with
+ * depth plus the siblings near the visible part, never with the length of a
+ * list; where the area opts out of scroll anchoring (`walksToBand`), the walk
+ * after a change above the band goes on to the band, a cost that grows with
+ * that distance. Inside a positioned, stuck sticky or top-layer ancestor only the
+ * content after the change is taken.
+ */
+function collectCandidates(
+  changed: Element,
+  area: Element,
+  band: Band,
+  cache: WalkCache,
+  walksToBand: boolean,
+  ancestors: Set<Element>,
+  befores: Set<Element>,
+): Map<Element, DOMRect> {
+  const out = new Map<Element, DOMRect>();
+  /** Takes `element`; returns false once it lies outside the band. */
+  /** The current level runs through its siblings, ignoring the band. */
+  let runsThrough = false;
+  const take = (element: Element, isAfter: boolean): boolean => {
+    const part = partOf(element, cache);
+    if (part === 'contents') {
       for (
-        let child = element.firstElementChild;
+        let child = isAfter
+          ? element.firstElementChild
+          : element.lastElementChild;
         child != null;
-        child = child.nextElementSibling
+        child = isAfter
+          ? child.nextElementSibling
+          : child.previousElementSibling
       ) {
-        take(child);
+        if (!take(child, isAfter)) {
+          return false;
+        }
       }
-      return;
+      return true;
     }
-    if (takesPart(element, style)) {
-      out.push(element);
+    if (!part) {
+      return true;
     }
+    const rect = rectOf(element, cache);
+    if (runsThrough) {
+      out.set(element, rect);
+      return true;
+    }
+    if (rect.top > band.end) {
+      return false;
+    }
+    if (rect.bottom < band.start) {
+      // Above the band. Where the scroller opts out of scroll anchoring, the
+      // content after a change above the band shifts the rows in view, so
+      // the walk after it goes on to the band; with anchoring, it stops.
+      return isAfter && walksToBand;
+    }
+    out.set(element, rect);
+    if (!isAfter) {
+      befores.add(element);
+    }
+    return true;
   };
+  // The change's chain up to the area, and from where it is inside a
+  // positioned, stuck sticky or top-layer ancestor: that ancestor takes its final
+  // place, so inside it only the content after the change moves; the
+  // ancestors and the siblings before the change stay with it.
+  const chain: Element[] = [];
   for (
     let node: Element | null = changed;
     node != null && node !== area;
     node = node.parentElement
   ) {
+    chain.push(node);
+  }
+  // The levels below this index are inside a positioned ancestor.
+  let positionedFrom = 0;
+  for (let index = chain.length - 1; index > 0; index -= 1) {
+    if (partOf(chain[index], cache) === false || isStuck(chain[index], cache)) {
+      positionedFrom = index;
+      break;
+    }
+  }
+  for (const [level, node] of chain.entries()) {
+    runsThrough = flowsAcross(node.parentElement);
+    if (
+      node !== changed &&
+      level > positionedFrom &&
+      partOf(node, cache) === true
+    ) {
+      // An ancestor of the change in flow: where its layout moves it (a
+      // centered column), it glides, and what is inside moves only by its own
+      // change. A positioned, stuck sticky or top-layer ancestor, and every
+      // ancestor inside it, takes its final place.
+      out.set(node, rectOf(node, cache));
+      ancestors.add(node);
+    }
     for (
       let sibling = node.nextElementSibling;
-      sibling != null;
+      sibling != null && take(sibling, true);
       sibling = sibling.nextElementSibling
     ) {
-      take(sibling);
+      // The siblings after it, until one lies past the band.
+    }
+    if (level < positionedFrom) {
+      continue;
+    }
+    for (
+      let sibling = node.previousElementSibling;
+      sibling != null && take(sibling, false);
+      sibling = sibling.previousElementSibling
+    ) {
+      // The siblings before it, until one lies before the band.
     }
   }
   return out;
@@ -351,6 +584,27 @@ interface Batch {
   readonly area: Element;
   readonly changed: Set<Element>;
   readonly before: Map<Element, DOMRect>;
+  /** What each changed element's walk found, so a dropped change moves none. */
+  readonly candidates: Map<Element, Element[]>;
+  /** The changed elements' sizes before the change, added up. */
+  changedSize: number;
+  /** How far past the visible part the walks reach (0 before the first). */
+  reach: number;
+  /** The area's visible part, read once per frame. */
+  visible: DOMRect | null;
+  /** Whether the area opts out of scroll anchoring, read once per frame. */
+  walksToBand: boolean | null;
+  /** The change's ancestors among the candidates. */
+  readonly ancestors: Set<Element>;
+  /** The siblings before the change among the candidates. */
+  readonly befores: Set<Element>;
+  /**
+   * Where the area's content sat before the change, read once per frame: the
+   * area's place in view less its scroll offset, so a scroll of the area, an
+   * outer scroller or the page shows up as a change of it.
+   */
+  originBefore: {readonly x: number; readonly y: number} | null;
+  readonly cache: WalkCache;
   scheduled: boolean;
 }
 
@@ -363,6 +617,15 @@ function batchFor(area: Element): Batch {
       area,
       changed: new Set(),
       before: new Map(),
+      candidates: new Map(),
+      changedSize: 0,
+      reach: 0,
+      visible: null,
+      walksToBand: null,
+      ancestors: new Set(),
+      befores: new Set(),
+      originBefore: null,
+      cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
     batches.set(area, created);
@@ -397,6 +660,12 @@ function intersects(a: DOMRect, b: DOMRect): boolean {
 }
 
 /** The part of the area the person can see: its box within the viewport. */
+/** Where the area's scrolled content starts, in client px. */
+function originOf(area: Element): {x: number; y: number} {
+  const box = area.getBoundingClientRect();
+  return {x: box.left - area.scrollLeft, y: box.top - area.scrollTop};
+}
+
 function visibleRect(area: Element): DOMRect {
   const box = area.getBoundingClientRect();
   const view = area.ownerDocument.defaultView;
@@ -431,13 +700,14 @@ function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
 
 function flush(batch: Batch): void {
   batches.delete(batch.area);
+  // What each change's walk measured before it: an element added by the
+  // change has no old place, and one it removed is gone.
   const followers = new Set<Element>();
   for (const changed of batch.changed) {
-    if (!changed.isConnected) {
-      continue;
-    }
-    for (const element of collectFollowers(changed, batch.area)) {
-      followers.add(element);
+    for (const element of batch.candidates.get(changed) ?? []) {
+      if (element.isConnected) {
+        followers.add(element);
+      }
     }
   }
   if (followers.size === 0) {
@@ -487,10 +757,28 @@ function flush(batch: Batch): void {
     entries.push({element, before, carried, carriedMs});
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
+  // An ancestor of the change, and a sibling before it, move by their layout
+  // change alone: when scroll anchoring re-scrolls the area, an outer
+  // scroller or the page (a change above the visible part), or the area
+  // itself moves as its content grows (a dialog re-centered), their place in
+  // view shifts by that while their place in the area stays.
+  const origin = originOf(batch.area);
+  const scrolledX = origin.x - (batch.originBefore?.x ?? origin.x);
+  const scrolledY = origin.y - (batch.originBefore?.y ?? origin.y);
+  // Netted only where that makes the move smaller: an element the browser
+  // kept in place (scroll anchoring for another change in the same frame)
+  // stays where it is.
+  const nearer = (raw: number, shift: number) =>
+    Math.abs(raw + shift) < Math.abs(raw) ? raw + shift : raw;
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    entry.rawX = entry.before.left - entry.after.left;
-    entry.rawY = entry.before.top - entry.after.top;
+    const rawX = entry.before.left - entry.after.left;
+    const rawY = entry.before.top - entry.after.top;
+    // The siblings before the change stay with the ancestors around them.
+    const isAncestor =
+      batch.ancestors.has(entry.element) || batch.befores.has(entry.element);
+    entry.rawX = isAncestor ? nearer(rawX, scrolledX) : rawX;
+    entry.rawY = isAncestor ? nearer(rawY, scrolledY) : rawY;
     byElement.set(entry.element, entry);
   }
   for (const entry of entries) {
@@ -604,11 +892,44 @@ export function reportLayoutChange(
         return;
       }
       const batch = batchFor(area);
+      if (batch.changed.has(element)) {
+        return;
+      }
       batch.changed.add(element);
-      for (const follower of collectFollowers(element, area)) {
-        if (!batch.before.has(follower)) {
-          batch.before.set(follower, follower.getBoundingClientRect());
+      batch.changedSize += rectOf(element, batch.cache).height;
+      batch.visible ??= visibleRect(area);
+      batch.originBefore ??= originOf(area);
+      batch.walksToBand ??=
+        area.ownerDocument.defaultView
+          ?.getComputedStyle(area)
+          .getPropertyValue('overflow-anchor') === 'none';
+      // Changes in one frame add up: every change's walk reaches the band
+      // their summed size can pull into view. When that outgrows the band
+      // walked so far, the band at least doubles and every change is walked
+      // again (from the cache), so a frame of many changes re-walks a few
+      // times, not once per change.
+      const needed = Math.max(batch.visible.height, batch.changedSize);
+      const walks = needed > batch.reach ? [...batch.changed] : [element];
+      if (needed > batch.reach) {
+        batch.reach = Math.max(needed, batch.reach * 2);
+      }
+      const band = bandFor(batch.visible, batch.reach);
+      for (const changed of walks) {
+        const candidates = collectCandidates(
+          changed,
+          area,
+          band,
+          batch.cache,
+          batch.walksToBand,
+          batch.ancestors,
+          batch.befores,
+        );
+        for (const [candidate, rect] of candidates) {
+          if (!batch.before.has(candidate)) {
+            batch.before.set(candidate, rect);
+          }
         }
+        batch.candidates.set(changed, [...candidates.keys()]);
       }
     },
     animate() {
@@ -957,6 +1278,42 @@ export function releaseLayoutExit(element: HTMLElement): void {
       element.style.setProperty(property, value, priority);
     }
   }
+}
+
+/**
+ * A disclosure's indicator (its chevron) turns on the same motion as the
+ * glide: its CSS transition takes the spring as a `linear()` easing, and an
+ * immediate change under Reduce Motion. Without a handle the inline values are
+ * cleared, so the component's own transition applies. An engine without
+ * `linear()` drops that value and keeps the component's easing.
+ */
+export function applyLayoutChangeTransition(
+  handle: AnimatedLayout | null | undefined,
+  element: HTMLElement | SVGElement | null,
+): void {
+  if (element == null) {
+    return;
+  }
+  const area = handle == null ? null : areaOf(handle, element);
+  if (area == null) {
+    element.style.removeProperty('transition-duration');
+    element.style.removeProperty('transition-timing-function');
+    return;
+  }
+  const motion = layoutMotion(area);
+  if (motion.kind !== 'spring') {
+    element.style.setProperty('transition-duration', '0s');
+    element.style.removeProperty('transition-timing-function');
+    return;
+  }
+  element.style.setProperty(
+    'transition-duration',
+    `${Math.round(motion.progress.durationMs)}ms`,
+  );
+  element.style.setProperty(
+    'transition-timing-function',
+    linearEasing(motion.progress),
+  );
 }
 
 /** @internal For tests: the motion a change in `area` plays. */
