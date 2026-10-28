@@ -146,9 +146,10 @@ Out of coverage, each taking its final place at once:
   takes its final place at once, other than a table detail row (Coverage);
 - an anchored popover tied to a moving element, which layer anchoring keeps
   in place (`architecture:layer-runtime`);
-- an item that `order` brings into view from beyond the area's visible part
-  plus one viewport (or the changes' size, if larger) in document order,
-  which the walk does not reach.
+- an item that `order`, or a grid placement (`grid-row`, `grid-column`, a
+  named area or dense packing), brings into view from beyond the area's
+  visible part plus one viewport (or the changes' size, if larger) in
+  document order, which the walk does not reach.
 
 ## Current-state impact
 

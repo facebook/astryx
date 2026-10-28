@@ -765,15 +765,20 @@ function flush(batch: Batch): void {
   const origin = originOf(batch.area);
   const scrolledX = origin.x - (batch.originBefore?.x ?? origin.x);
   const scrolledY = origin.y - (batch.originBefore?.y ?? origin.y);
+  // Netted only where that makes the move smaller: an element the browser
+  // kept in place (scroll anchoring for another change in the same frame)
+  // stays where it is.
+  const nearer = (raw: number, shift: number) =>
+    Math.abs(raw + shift) < Math.abs(raw) ? raw + shift : raw;
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
+    const rawX = entry.before.left - entry.after.left;
+    const rawY = entry.before.top - entry.after.top;
     // The siblings before the change stay with the ancestors around them.
     const isAncestor =
       batch.ancestors.has(entry.element) || batch.befores.has(entry.element);
-    entry.rawX =
-      entry.before.left - entry.after.left + (isAncestor ? scrolledX : 0);
-    entry.rawY =
-      entry.before.top - entry.after.top + (isAncestor ? scrolledY : 0);
+    entry.rawX = isAncestor ? nearer(rawX, scrolledX) : rawX;
+    entry.rawY = isAncestor ? nearer(rawY, scrolledY) : rawY;
     byElement.set(entry.element, entry);
   }
   for (const entry of entries) {

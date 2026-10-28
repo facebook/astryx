@@ -903,6 +903,46 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
   });
 
+  test('closing an item above the view while opening one in view, in one frame: the rows the browser keeps in place stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="shut" style="height: 344px; overflow: hidden; background: #fd9"></div>${Array.from(
+        {length: 30},
+        (_, i) =>
+          i === 14
+            ? '<div id="grow" class="grow"></div>'
+            : `<div id="q${i}" class="row"></div>`,
+      ).join('')}</div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area') as HTMLElement;
+      area.scrollTop = 395;
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const shut = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#shut'),
+      );
+      const grow = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#grow'),
+      );
+      shut.measureBefore();
+      grow.measureBefore();
+      (document.querySelector('#shut') as HTMLElement).style.height = '0px';
+      document.querySelector('#grow')?.classList.add('open');
+      shut.animate();
+      grow.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      // The rows in view before the opening one: anchoring keeps them still.
+      return [5, 6, 7, 8, 9].map(
+        i => document.querySelector(`#q${i}`)?.getAnimations().length ?? -1,
+      );
+    });
+    expect(result).toEqual([0, 0, 0, 0, 0]);
+  });
+
   for (const anchoring of ['auto', 'none']) {
     test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
       page,
