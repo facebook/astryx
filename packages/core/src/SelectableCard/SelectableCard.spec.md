@@ -112,8 +112,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Basis                    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1 | SelectableCard renders `component:Card` with the given `variant`, `elevation`, `padding`, and sizing. The root also carries the `selectable-card` target reflecting `variant` and `selected`, and the first child is a visually hidden native `input type="checkbox"` named by `label` with `checked` equal to `isSelected`.                                                                                                                                                                                                                                                                            | Current source and tests |
-| FR2 | While enabled, a click on the card surface, a click or Space on the checkbox, or Enter on the checkbox calls `onChange(!isSelected)` exactly once. A click that belongs to nested interactive content or selected text does not toggle. A caller `onClick` and `onMouseUp` run after the card's own handling, including for clicks that do not toggle.                                                                                                                                                                                                                                                  | Current source and tests |
-| FR3 | Selection adds a 2px inset ring through Card's ring variable, so layout does not move, and composes with any elevation shadow. `default`, `transparent`, and `muted` ring and border in `--color-accent`; each palette variant rings and borders in its `--color-border-<name>`; a theme-added variant rings in `--selectable-card-ring-color`.                                                                                                                                                                                                                                                         | Current source and tests |
+| FR2 | While enabled, a click on the card surface, a click or Space on the checkbox, or Enter on the checkbox calls `onChange(!isSelected)` exactly once. A click that belongs to nested interactive content or selected text does not toggle. A caller `onClick` runs after the toggle for a surface click, before it for a click or Space on the checkbox, and not at all for Enter; it also runs for clicks that do not toggle. A caller `onMouseUp` runs after the card's own handling.                                                                                                                    | Current source and tests |
+| FR3 | Selection adds a 2px inset ring through Card's ring variable, so layout does not move, and composes with any elevation shadow. `default`, `transparent`, and `muted` ring in `--color-accent`; each palette variant rings in its `--color-border-<name>`; a theme-added variant rings in `--selectable-card-ring-color`. Selection also colors the border in the ring color where Card draws one, which is only the `default` variant.                                                                                                                                                                  | Current source and tests |
 | FR4 | While enabled, the surface paints the shared hover overlay under a hover-capable pointer and the pressed overlay for mouse and touch presses. Keyboard focus on the hidden checkbox shows one indicator on the card root (`architecture:interaction-modality` INV3). Implementation gap: the root outlines while any descendant has `:focus-visible`, so focusing a nested control draws both the card outline and the control's own (Current-state impact).                                                                                                                                            | Current source and tests |
 | FR5 | `isDisabled` dims the card to half opacity, removes the card's own click and mouseup handling and the caller's `onClick` and `onMouseUp` (other caller event props still reach the root) and the hover and pressed overlays (`spec:AST-085` FR6), and keeps the checkbox focusable with `aria-disabled="true"`; no click, Space, or Enter calls `onChange`. The disabled state is reflected on the owning target (`architecture:component-theming-surface` INV6). Implementation gap: the `selectable-card` target reflects `variant` and `selected` but not the disabled state (Current-state impact). | Current source and tests |
 | FR6 | `ref` reaches the Card root. Supported DOM, ARIA, data, and event props reach the root; `xstyle`, `className`, and `style` merge after the component's interactive styles.                                                                                                                                                                                                                                                                                                                                                                                                                              | Current source and tests |
@@ -127,20 +127,21 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State          | Required invariant                                                       | Allowed variation |
-| -------------- | ------------------------------------------------------------------------ | ----------------- |
-| Unselected     | Unchecked named checkbox; no ring.                                       | Variant.          |
-| Selected       | Checked; inset ring and border in the variant's color; layout unchanged. | Elevation.        |
-| Keyboard focus | Focus outline on the card root.                                          | —                 |
-| Disabled       | Focusable checkbox with `aria-disabled`; no toggle; half opacity.        | Selection.        |
-| Nested control | Activating the nested control does not toggle the card.                  | Control type.     |
+| State          | Required invariant                                                                                | Allowed variation |
+| -------------- | ------------------------------------------------------------------------------------------------- | ----------------- |
+| Unselected     | Unchecked named checkbox; no ring.                                                                | Variant.          |
+| Selected       | Checked; inset ring in the variant's color, and a matching border on `default`; layout unchanged. | Elevation.        |
+| Keyboard focus | Focus outline on the card root.                                                                   | —                 |
+| Disabled       | Focusable checkbox with `aria-disabled`; no toggle; half opacity.                                 | Selection.        |
+| Nested control | Activating the nested control does not toggle the card.                                           | Control type.     |
 
 ### Transformation and precedence order
 
 - **ORD1 — Toggle.** Disabled → nothing runs, caller `onClick` and
   `onMouseUp` included; nested interactive target or selection → no toggle,
-  caller handlers still run; otherwise one `onChange(!isSelected)`, then
-  caller `onClick`.
+  caller handlers still run; otherwise one `onChange(!isSelected)`, with a
+  caller `onClick` after it for a surface click, before it for a click or
+  Space on the checkbox, and not at all for Enter.
 - **ORD2 — Ring color.** Built-in variant mapping → `--selectable-card-ring-color`
   for a theme-added variant.
 
@@ -153,15 +154,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Accessibility contract
 
 - **AR1 — Native checkbox.** The hidden checkbox supplies the role, name, and
-  checked state; the card root adds no role or tab stop of its own.
+  checked state; the card root adds no role or tab stop of its own, except
+  that a fixed-height card whose content overflows is a scroll container that
+  browsers may make an unnamed tab stop (`component:Card` AR1).
 - **AR2 — Delegated focus indicator.** Keyboard focus on the hidden checkbox is
   shown on the visible card root (`architecture:interaction-modality` INV3).
   Implementation gap: a focused nested control shows a second outline.
 - **AR3 — Focusable disabled.** A disabled card keeps its tab stop, exposes
   `aria-disabled`, and blocks every toggle path (`spec:AST-085` FR1, FR2, FR5).
 - **AR4 — Persistent selection.** Selection changes the
-  checked state for assistive technology and draws a ring and border that
-  persist under hover and press, which still paint their overlays.
+  checked state for assistive technology and draws a ring (and, on `default`,
+  a border) that persists under hover and press, which still paint their
+  overlays.
 - **AR5 — Pointer cancellation.** A press that slides off the card before the
   lift does not toggle it (`spec:AST-020` FR9; WCAG 2.2 2.5.2).
 
