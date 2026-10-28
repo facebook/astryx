@@ -49,6 +49,7 @@ import {
   castStoryboard,
   blockMainThread,
   busyWindowProof,
+  pooledBusyProof,
   compareCurve,
   CONTROL_RGB,
   countBetween,
@@ -445,6 +446,84 @@ test.describe('frame evidence', () => {
     expect(slow.verdict.failures, slow.summary).toEqual([]);
     const slowRaf = await run('raf', 6);
     expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
+    await control.remove();
+  });
+
+  test('a block too short to judge alone is judged over pooled runs: a compositor animation passes and a rAF one fails', async ({
+    page,
+  }, testInfo) => {
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const control = await startBusyControl(page);
+
+    // Six 70 ms blocks: each judged part (20 ms margins, 30 ms) holds at most
+    // three frames even at WebKit's 14 ms cast, under the four one window
+    // needs, as a short fade's does.
+    const runs = async (driver: 'compositor' | 'raf') => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {
+              duration: 1600,
+              easing: 'linear',
+              iterations: Infinity,
+              direction: 'alternate',
+            },
+          );
+        } else {
+          const start = performance.now();
+          // The same back-and-forth on the main thread.
+          const step = (now: number) => {
+            const p = ((now - start) / 1600) % 2;
+            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page);
+      await page.waitForTimeout(200);
+      const windows = [];
+      for (let i = 0; i < 6; i += 1) {
+        windows.push(await blockMainThread(page, 70));
+        await page.waitForTimeout(150);
+      }
+      const frames = await cast.stop();
+      const tracked = await trackMarker(page, frames);
+      const controlFrames = await trackMarker(page, frames, {rgb: CONTROL_RGB});
+      return windows.map(window => ({tracked, control: controlFrames, window}));
+    };
+
+    const compositor = await runs('compositor');
+    const single = busyWindowProof(
+      compositor[0].tracked,
+      compositor[0].window,
+      {axis: 'y', control: compositor[0].control},
+    );
+    expect(single.verdict.failures.join('\n'), single.summary).toMatch(
+      /too little in this window to judge/,
+    );
+    const pooled = pooledBusyProof(compositor, {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-pooled compositor',
+      description: pooled.summary,
+    });
+    expect(pooled.verdict.failures, pooled.summary).toEqual([]);
+
+    // The mutant: a main-thread animation freezes in every block.
+    const raf = pooledBusyProof(await runs('raf'), {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-pooled raf',
+      description: raf.summary,
+    });
+    expect(raf.verdict.pass, raf.summary).toBe(false);
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /moved on \d+ of the \d+ frames the control moved over 6 runs/,
+    );
     await control.remove();
   });
 
