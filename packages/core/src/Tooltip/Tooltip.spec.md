@@ -196,8 +196,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 | Anatomy or state | Design requirement                                  | Representation authority       | Hierarchy role | Component contract |
 | ---------------- | --------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Tooltip surface  | Presents the current painted overlay surface.       | Current source and public docs | Supporting     | FR1, FR2           |
-| Tooltip text     | Presents supplied content within the owned surface. | Current source and public docs | Prominent      | FR1, FR2           |
+| Tooltip surface  | Presents the current painted overlay surface.       | Current source and public docs | Supporting     | FR1                |
+| Tooltip text     | Presents supplied content within the owned surface. | Current source and public docs | Prominent      | FR1                |
 
 The trigger is caller-owned and outside this anatomy. The current implementation
 has no arrow element.
