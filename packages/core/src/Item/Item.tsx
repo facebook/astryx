@@ -51,7 +51,10 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  FOCUS_OWNER_ATTRIBUTE,
+  focusOutlineProps,
+} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
@@ -770,6 +773,7 @@ export function Item({
           rel={rel}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
+          {...{[FOCUS_OWNER_ATTRIBUTE]: ''}}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
@@ -782,6 +786,7 @@ export function Item({
           type="button"
           onClick={onClick}
           disabled={isDisabled}
+          {...{[FOCUS_OWNER_ATTRIBUTE]: ''}}
           {...stylex.props(
             styles.invisibleButton,
             isInline && styles.inlineContent,
@@ -879,7 +884,13 @@ export function Item({
       {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
-        focusOutlineProps.focusWithin(
+        // The row rings for its own primary only: its invisible button or
+        // link, or in delegation mode the nested control that is its sole tab
+        // stop. Any other control in it (a start or end slot) rings itself
+        // (`architecture:interaction-modality` INV3).
+        (isDelegate
+          ? focusOutlineProps.focusWithin
+          : focusOutlineProps.focusWithinOwner)(
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
