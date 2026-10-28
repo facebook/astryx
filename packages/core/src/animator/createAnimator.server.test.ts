@@ -35,8 +35,11 @@ function importOnServer(entry: string): string[] {
 
 describe('the public animator on the server', () => {
   it('the factory imports with no window or document', () => {
-    expect(importOnServer(path.join(__dirname, 'index.ts'))).toEqual([
+    // The module also hands the hook its construction; the package root
+    // re-exports `createAnimator` alone (publicSurface.test.ts).
+    expect(importOnServer(path.join(__dirname, 'createAnimator.ts'))).toEqual([
       'createAnimator',
+      'createAttachableAnimator',
     ]);
   });
 
