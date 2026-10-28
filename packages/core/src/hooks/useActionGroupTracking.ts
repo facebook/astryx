@@ -25,8 +25,9 @@
  * One recognizer drives it: a long press with no minimum duration and no
  * movement limit, so it begins on the press, claims it (nothing under the
  * finger scrolls) and swallows the browser's click for it. Inside a scroller
- * it first waits the scroll view's content-touch delay without travelling
- * past the press slop, so a flick still scrolls. The actions' own press
+ * a finger first waits the scroll view's content-touch delay without
+ * travelling past the press slop, so a flick still scrolls; a mouse or a pen
+ * does not wait. The actions' own press
  * tracking never sees the press (`delaysTouchesBegan`). Every pointer is
  * tracked, a mouse and a pen as well as a finger (FR5): where the primary
  * pointer is fine the gesture host serves the group with one passive
@@ -221,9 +222,10 @@ export function useActionGroupTracking(
 
 /**
  * The recognizer's should-receive delegate. It also picks the clock for the
- * finger that starts a press: inside a scroller the press waits the scroll
+ * pointer that starts a press: a finger inside a scroller waits the scroll
  * view's content-touch delay and fails past the press slop, so the scroller
- * takes a flick; anywhere else it begins on the touch with no movement limit.
+ * takes a flick; a mouse or a pen, and a finger anywhere else, begins at once
+ * with no movement limit (`spec:AST-094` FR11: the wait is a finger's).
  */
 function receiveTouch(
   recognizer: LongPressGestureRecognizer,
@@ -234,7 +236,8 @@ function receiveTouch(
     return false;
   }
   if (recognizer.numberOfTouches === 0) {
-    const isInsideScroller = touch.scroll?.isInsideScroller === true;
+    const isInsideScroller =
+      touch.pointerType === 'touch' && touch.scroll?.isInsideScroller === true;
     recognizer.minimumPressDuration = isInsideScroller
       ? PRESS.contentTouchDelay.value
       : options.highlightOnsetMs;
