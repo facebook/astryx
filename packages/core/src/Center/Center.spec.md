@@ -12,6 +12,7 @@ owners: [cixzhang]
 review_triggers: [public-api, layout, theming, accessibility]
 verified_by:
   [
+    packages/core/src/serverSafeComponents.test.ts,
     .github/visual-baseline/manifest.json,
     packages/core/src/Center/Center.test.tsx,
     packages/core/src/theme/themingTargets.test.ts,
@@ -119,14 +120,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                      | Required invariant                                                    | Allowed variation |
-| -------------------------- | --------------------------------------------------------------------- | ----------------- |
-| Both axes                  | Main- and cross-axis centering.                                       | Box size.         |
-| Horizontal only            | Main-axis centering only.                                             | Height.           |
-| Vertical only              | Cross-axis centering only.                                            | Width.            |
-| Vertical writing           | Single-axis values center the opposite physical axis (FR2 gap).       | —                 |
-| Inline                     | `inline-flex` with the selected axis.                                 | —                 |
-| Asymmetric logical padding | Start and end keep their meaning; physical edges swap with direction. | —                 |
+| State                      | Required invariant                                                                             | Allowed variation |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | ----------------- |
+| Both axes                  | Main- and cross-axis centering.                                                                | Box size.         |
+| Horizontal only            | The physical horizontal axis is centered; no physical vertical centering is added.             | Height.           |
+| Vertical only              | The physical vertical axis is centered; no physical horizontal centering is added.             | Width.            |
+| Vertical writing           | Single-axis values still name physical axes (today they center the opposite one, the FR2 gap). | —                 |
+| Inline                     | `inline-flex` with the selected axis.                                                          | —                 |
+| Asymmetric logical padding | Start and end keep their meaning; physical edges swap with direction.                          | —                 |
 
 ### Transformation and precedence order
 
@@ -180,15 +181,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Verification map
 
-| Contract            | Verification                                                                                                       | Representative states                       | Mutation or failure expectation                                                                                                                                                                                        | Audit section           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| FR1, FR2            | `Center.test.tsx` axis and inline tests; stable visual baselines `core-center--default` (neutral and probe themes) | Both, horizontal, vertical; inline; default | A wrong computed display, `align-items`, or `justify-content` fails; a changed default centering comes back changed for review. Gap: no automated check runs a vertical writing mode or asserts child order.           | `audit:Center/behavior` |
-| FR3                 | `Center.test.tsx` sizing tests                                                                                     | Width, height, both                         | Gap: the sizing tests assert only that the element renders, so the pixel conversion and string pass-through have no automated check.                                                                                   | `audit:Center/layout`   |
-| FR4                 | `Center.test.tsx` padding-precedence suite; `@astryx/no-physical-properties` lint rule; `targets.json` RTL entry   | Uniform, axis, edge, zero, all four edges   | Precedence drift fails; a physical left/right padding property fails the `@astryx/no-physical-properties` lint rule. Gap: no browser right-to-left check covers the edges; the RTL audit entry only lists the fixture. | `audit:Center/layout`   |
-| FR5, FR7            | `Center.test.tsx` server-render test; source review                                                                | Padded container                            | A client boundary fails the server render. Gap: publishing container-padding variables, or adding a breakpoint, overflow rule, gap, or region, has no automated check.                                                 | `audit:Center/layout`   |
-| FR6                 | `Center.test.tsx` ref, passthrough, xstyle, and owned-attribute tests; `themingTargets.test.ts`                    | Every axis; colliding `data-axis`           | A lost target or a caller `data-axis` winning fails. Gap: the ref test accepts any `div`, so a ref on a wrapper passes, and the styling-input merge order has no check.                                                | `audit:Center/theming`  |
-| AR1, AR2, PR1       | Source review                                                                                                      | Multiple children                           | Gap: no automated check fails if Center adds semantics, state, or reordering.                                                                                                                                          | `audit:Center/a11y`     |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                      | Consumer anatomy and current target         | Missing, extra, or stale mappings fail repository validation.                                                                                                                                                          | `audit:Center/theming`  |
+| Contract            | Verification                                                                                                                                      | Representative states                                  | Mutation or failure expectation                                                                                                                                                                                                  | Audit section           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| FR1, FR2            | `Center.test.tsx` axis and inline tests; stable visual baselines `core-center--default` (neutral and probe themes)                                | Both, horizontal, vertical; inline; default            | A wrong computed display, `align-items`, or `justify-content` fails; a changed default centering comes back changed for review. Gap: no automated check runs a vertical writing mode or asserts child order.                     | `audit:Center/behavior` |
+| FR3                 | `Center.test.tsx` sizing tests                                                                                                                    | Width, height, both                                    | Gap: the sizing tests assert only that the element renders, so the pixel conversion and string pass-through have no automated check.                                                                                             | `audit:Center/layout`   |
+| FR4                 | `Center.test.tsx` padding-precedence suite; `@astryx/no-physical-properties` lint rule; RTL audit dimension D8 on `core-center--padding-per-edge` | Uniform, axis, edge, zero, all four edges; LTR and RTL | Precedence drift fails; a physical left/right padding property fails lint; the RTL audit fails unless logical start and end padding swap physical sides. Gap: CI keeps RTL audit findings non-blocking.                          | `audit:Center/layout`   |
+| FR5, FR7            | `serverSafeComponents.test.ts`; `Center.test.tsx` server-render test; source review                                                               | Padded container                                       | A client boundary fails `serverSafeComponents.test.ts`; a server-render error fails the Center test. Gap: publishing container-padding variables, or adding a breakpoint, overflow rule, gap, or region, has no automated check. | `audit:Center/layout`   |
+| FR6                 | `Center.test.tsx` ref, passthrough, xstyle, and owned-attribute tests; `themingTargets.test.ts`                                                   | Every axis; colliding `data-axis`                      | A lost target or a caller `data-axis` winning fails. Gap: the ref test accepts any `div`, so a ref on a wrapper passes, and the styling-input merge order has no check.                                                          | `audit:Center/theming`  |
+| AR1, AR2, PR1       | `serverSafeComponents.test.ts`; source review                                                                                                     | Multiple children                                      | A hook added without a client directive fails `serverSafeComponents.test.ts`. Gap: no automated check fails if Center adds semantics or reorders children.                                                                       | `audit:Center/a11y`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                     | Consumer anatomy and current target                    | Missing, extra, or stale mappings fail repository validation.                                                                                                                                                                    | `audit:Center/theming`  |
 
 ## Decision log
 
