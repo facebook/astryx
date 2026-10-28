@@ -4,8 +4,9 @@
  * @file types.ts
  * @input Nothing
  * @output Exports the data the gesture system passes around: recognizer
- *   states, pointer kinds, touches (UITouch), the per-event context, the
- *   environment a host provides, and the view-level touch consumer contract
+ *   states, pointer kinds, touches (UITouch) with the modifier keys each
+ *   began with, the per-event context, the environment a host provides, and
+ *   the view-level touch consumer contract
  * @position Shared vocabulary of packages/core/src/gestures; no runtime code
  */
 
