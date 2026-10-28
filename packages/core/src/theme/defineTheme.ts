@@ -49,11 +49,47 @@ import type {
 /**
  * Icon overrides a theme may declare: any built-in semantic name, plus the
  * namespaced keys components and libraries own (`'richtext:bold'`). Each entry
- * is a React node or a pure synchronous function of `{size, variant}`.
+ * is a React node or a pure synchronous function of `{size, variant}`, where
+ * `variant` is one of `Variant` or `undefined`.
  */
-type ThemeIconEntries = Partial<
-  Record<IconName | NamespacedIconName, IconEntry>
+type ThemeIconEntries<Variant extends string> = Partial<
+  Record<IconName | NamespacedIconName, IconEntry<Variant>>
 >;
+
+/**
+ * The variant names a base theme lists: exact for a theme from `defineTheme`,
+ * any string for another `DefinedTheme`, none without a base.
+ */
+type BaseThemeIconVariant<Base> = Base extends DefinedTheme
+  ? '__iconVariant' extends keyof Base
+    ? Base extends {name: string; __iconVariant?(variant: infer Variant): void}
+      ? Extract<Variant, string>
+      : string
+    : string
+  : never;
+
+/**
+ * The variant names a theme lists: its own `iconVariants` when it sets the
+ * field, otherwise the list it inherits from `extends`.
+ */
+type ThemeIconVariant<
+  IconVariants extends ReadonlyArray<string> | undefined,
+  Base,
+> = [IconVariants] extends [ReadonlyArray<infer Variant extends string>]
+  ? Variant
+  : BaseThemeIconVariant<Base>;
+
+/**
+ * The same names, as a type `defineTheme` does not infer from: only
+ * `iconVariants` and `extends` decide a theme's names, never the parameter
+ * types of its icon entry functions.
+ */
+type ThemeIconEntryVariant<
+  IconVariants extends ReadonlyArray<string> | undefined,
+  Base,
+> = [ThemeIconVariant<IconVariants, Base>][IconVariants extends unknown
+  ? 0
+  : never];
 
 /** The node-valued view of a theme's icons that public reads return. */
 type ThemeIconOverrides = Partial<
@@ -192,8 +228,18 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
  */
 export type ComponentStyleMap = Record<string, Record<string, StyleOverrides>>;
 
-/** Input to defineTheme */
-export interface DefineThemeInput {
+/**
+ * Input to defineTheme.
+ *
+ * `IconVariants` is the theme's own `iconVariants` list and `Base` its
+ * `extends` theme; together they type the `variant` an icon entry function
+ * receives. `defineTheme` infers both.
+ */
+export interface DefineThemeInput<
+  IconVariants extends ReadonlyArray<string> | undefined =
+    ReadonlyArray<string> | undefined,
+  Base extends DefinedTheme | undefined = DefinedTheme | undefined,
+> {
   /** Theme name — used for data-astryx-theme attribute and identification */
   name: string;
 
@@ -222,7 +268,7 @@ export interface DefineThemeInput {
    * });
    * ```
    */
-  extends?: DefinedTheme;
+  extends?: Base;
   /**
    * Unified typography configuration — fonts, scale, and weights.
    *
@@ -366,8 +412,27 @@ export interface DefineThemeInput {
    *   info: ({size}) => <InfoIcon weight={size === 'sm' ? 'bold' : 'regular'} />,
    * }
    * ```
+   *
+   * `variant` is typed as the names in `iconVariants` (or the inherited list).
    */
-  icons?: ThemeIconEntries;
+  icons?: ThemeIconEntries<ThemeIconEntryVariant<IconVariants, Base>>;
+  /**
+   * The icon variant names this theme supports, listed once for the whole
+   * theme — never per icon. Icon entry functions receive `variant` typed as
+   * these names.
+   *
+   * A theme that sets `iconVariants` replaces the list it would inherit from
+   * `extends`; a theme that omits it inherits the base's list.
+   *
+   * @example
+   * ```
+   * iconVariants: ['outline', 'filled'],
+   * icons: {
+   *   info: ({variant}) => (variant === 'filled' ? <InfoFilled /> : <InfoOutline />),
+   * },
+   * ```
+   */
+  iconVariants?: IconVariants;
   /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
@@ -467,7 +532,19 @@ export interface DefinedTheme {
    * Only Astryx icon resolution reads it.
    * @internal
    */
-  __icons?: ThemeIconEntries;
+  __icons?: ThemeIconEntries<never>;
+  /**
+   * The icon variant names this theme supports: its own `iconVariants`, or
+   * the list it inherited. Absent when no theme in its lineage lists any.
+   */
+  iconVariants?: ReadonlyArray<string>;
+  /**
+   * The variant list of the theme that defined each inherited function entry,
+   * kept where it differs from `iconVariants`, so the entry receives only
+   * variants its defining theme lists. Only Astryx icon resolution reads it.
+   * @internal
+   */
+  __iconEntryVariants?: Record<string, ReadonlyArray<string> | undefined>;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -507,11 +584,23 @@ export interface DefinedTheme {
   __axes?: ThemeGenerativeAxes;
 }
 
-/** A theme produced by the current defineTheme implementation. */
-export type ResolvedDefinedTheme = DefinedTheme & {
-  __adaptations: NormalizedThemeAdaptations;
-  __axes: ThemeGenerativeAxes;
-};
+/**
+ * A theme produced by the current defineTheme implementation. `IconVariant`
+ * is the names in its `iconVariants` list.
+ */
+export type ResolvedDefinedTheme<IconVariant extends string = string> =
+  DefinedTheme & {
+    __adaptations: NormalizedThemeAdaptations;
+    __axes: ThemeGenerativeAxes;
+    /**
+     * Type-only: the names in `iconVariants`, so a theme that `extends` this
+     * one types its icon entries by the list it inherits. Never set. Method
+     * syntax keeps resolved themes with different lists assignable to each
+     * other, as they were before the list existed.
+     * @internal
+     */
+    __iconVariant?(variant: IconVariant): void;
+  };
 
 // =============================================================================
 // All defaults merged into a single flat map
@@ -567,7 +656,12 @@ function describeBadBase(value: unknown): string {
  * that are merged into the token map. Explicit `tokens` entries take
  * precedence over generated values.
  */
-export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
+export function defineTheme<
+  const IconVariants extends ReadonlyArray<string> | undefined = undefined,
+  Base extends DefinedTheme | undefined = undefined,
+>(
+  input: DefineThemeInput<IconVariants, Base>,
+): ResolvedDefinedTheme<ThemeIconVariant<IconVariants, Base>> {
   // Pre-seed from the base theme when `extends` is provided (lowest precedence).
   // A base that is not a theme is refused rather than ignored: `extends` used
   // to inherit nothing when its value was undefined, which is what a named
@@ -647,6 +741,22 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       : (input.icons ?? baseIcons);
   const icons = readThemeIconNodes(iconEntries);
 
+  // The variant list is theme-level: a list this theme sets replaces the
+  // inherited one; an omitted list is inherited.
+  const iconVariants: ReadonlyArray<string> | undefined =
+    input.iconVariants !== undefined
+      ? [...input.iconVariants]
+      : base?.iconVariants;
+
+  // An inherited function entry keeps the list of the theme that defined it,
+  // so it receives a variant only when both lists contain it.
+  const iconEntryVariants = resolveIconEntryVariants(
+    iconEntries,
+    input.icons,
+    base,
+    iconVariants,
+  );
+
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
   const indicators =
@@ -667,6 +777,10 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     components,
     icons,
     ...(icons !== iconEntries ? {__icons: iconEntries} : {}),
+    ...(iconVariants !== undefined ? {iconVariants} : {}),
+    ...(iconEntryVariants !== undefined
+      ? {__iconEntryVariants: iconEntryVariants}
+      : {}),
     indicators,
     __inputTokens:
       base?.__inputTokens || input.tokens
@@ -684,11 +798,46 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
 }
 
 /**
+ * For each function entry this theme inherits, the variant list of the theme
+ * that defined it, where that list is not this theme's own. Entries this theme
+ * defines use its own list, so they need no record.
+ */
+function resolveIconEntryVariants(
+  entries: ThemeIconEntries<never> | undefined,
+  ownEntries: Readonly<Record<string, unknown>> | undefined,
+  base: DefinedTheme | undefined,
+  iconVariants: ReadonlyArray<string> | undefined,
+): Record<string, ReadonlyArray<string> | undefined> | undefined {
+  if (entries == null || base == null) {
+    return undefined;
+  }
+  const baseRecord = base.__iconEntryVariants;
+  let record: Record<string, ReadonlyArray<string> | undefined> | undefined;
+  for (const [name, entry] of Object.entries(entries)) {
+    if (
+      typeof entry !== 'function' ||
+      (ownEntries != null && Object.hasOwn(ownEntries, name))
+    ) {
+      continue;
+    }
+    const definingVariants =
+      baseRecord != null && Object.hasOwn(baseRecord, name)
+        ? baseRecord[name]
+        : base.iconVariants;
+    if (definingVariants !== iconVariants) {
+      record ??= {};
+      record[name] = definingVariants;
+    }
+  }
+  return record;
+}
+
+/**
  * The node-valued view of a theme's icon entries: each function entry read at
  * `{size: 'md'}`. Entries without a function are returned as the same object.
  */
 function readThemeIconNodes(
-  entries: ThemeIconEntries | undefined,
+  entries: ThemeIconEntries<never> | undefined,
 ): ThemeIconOverrides | undefined {
   if (
     entries == null ||

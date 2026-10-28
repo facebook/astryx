@@ -55,6 +55,7 @@ export const docs = {
           ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
           ['components', 'Deep-merged: child component rules override matching keys from the base.'],
           ['icons', 'Shallow-merged: child icons override matching names from the base.'],
+          ['iconVariants', 'Replaced, never merged: a child that sets iconVariants replaces the base list; a child that omits it inherits the list.'],
           ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
           ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
           ['motion', "Field by field: the child's `fast`, `medium` and `ratio` regenerate the fast and medium duration tokens; `slow` and `easing` left unset keep the base theme's tokens, so an inherited slow band stays at the base's ratio."],

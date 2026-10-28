@@ -16,12 +16,15 @@
  * {@link IconRequest}. Resolution picks one source — theme entry, then
  * process-wide registration, then built-in default; a nullish static entry
  * falls through — and a selected function's result is final. `Icon` passes
- * its resolved size; the public reads below pass `{size: 'md'}`.
+ * its resolved size and a variant the entry can receive (listed by the active
+ * theme and, for a theme entry, by the theme that defined it), otherwise
+ * `undefined`; the public reads below pass `{size: 'md'}`.
  */
 
 import type {ReactNode} from 'react';
 import {defaultIcons} from './defaultIcons';
 import type {IconSize} from './IconSize.stylex';
+import type {IconVariant} from './index';
 import type {DefinedTheme} from '../theme/defineTheme';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
@@ -100,13 +103,15 @@ export type IconRegistry = Record<IconName, ReactNode>;
 
 /**
  * What `Icon` asks a function icon entry for: the final Icon size, resolved
- * explicit `size` → owning component's default → `'md'`.
+ * explicit `size` → owning component's default → `'md'`, and a variant name
+ * or `undefined`.
  *
- * `variant` is always `undefined` here.
+ * Inside `defineTheme`, `Variant` is the theme's listed `iconVariants`; a
+ * process-wide registration receives {@link IconVariant}.
  */
-export type IconRequest = Readonly<{
+export type IconRequest<Variant extends string = IconVariant> = Readonly<{
   size: IconSize;
-  variant?: undefined;
+  variant?: Variant;
 }>;
 
 /**
@@ -128,18 +133,25 @@ export type IconRequest = Readonly<{
  * });
  * ```
  */
-export type IconEntry = ReactNode | ((request: IconRequest) => ReactNode);
+export type IconEntry<Variant extends string = IconVariant> =
+  ReactNode | ((request: IconRequest<Variant>) => ReactNode);
+
+/**
+ * How resolution holds any entry: an entry typed for some variant names
+ * accepts a request with none of them.
+ */
+type StoredIconEntry = IconEntry<never>;
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 /** The request every public, one-argument read uses. */
-const PUBLIC_READ_REQUEST: IconRequest = {size: 'md'};
+const PUBLIC_READ_REQUEST: IconRequest<never> = {size: 'md'};
 
 // =============================================================================
 // Global Registry
 // =============================================================================
 
-let globalRegistry: Record<string, IconEntry> = {};
+let globalRegistry: Record<string, StoredIconEntry> = {};
 
 /**
  * A key is namespaced when it carries a `<namespace>:` prefix — the runtime
@@ -151,16 +163,20 @@ function isNamespacedKey(name: string): boolean {
   return name.includes(':');
 }
 
+function getTheme(source: IconRegistrySource): DefinedTheme | null {
+  return typeof source === 'string'
+    ? getRegisteredTheme(source)
+    : (source ?? null);
+}
+
 /**
  * The theme's icon entries, functions included. A theme from `defineTheme`
  * keeps them in `__icons` when any entry is a function (its public `icons`
  * is the node view); otherwise `icons` already holds them.
  */
 function getThemeIconEntries(
-  source: IconRegistrySource,
-): Readonly<Record<string, IconEntry>> | null {
-  const theme =
-    typeof source === 'string' ? getRegisteredTheme(source) : source;
+  theme: DefinedTheme | null,
+): Readonly<Record<string, StoredIconEntry>> | null {
   if (theme == null) {
     return null;
   }
@@ -168,38 +184,82 @@ function getThemeIconEntries(
 }
 
 /**
+ * The selected entry, with every variant list a requested variant must be in
+ * for the entry to receive it. No lists: the entry receives no variant.
+ */
+interface IconSelection {
+  entry: StoredIconEntry;
+  variantLists: ReadonlyArray<ReadonlyArray<string> | undefined>;
+}
+
+/**
  * Pick the one source that answers `name`: the theme entry, then the
  * process-wide registration, then the built-in default, then `fallback`. A
  * nullish static entry falls through; a function is returned as-is, because
  * its result is final.
+ *
+ * A theme entry may receive a variant listed by the active theme and by the
+ * theme that defined the entry (an inherited entry keeps its defining
+ * theme's list). A process-wide registration may receive a variant the
+ * active theme lists.
  */
 function selectIconEntry(
   name: string,
   source: IconRegistrySource,
   fallback?: ReactNode,
-): IconEntry {
-  return (
-    getThemeIconEntries(source)?.[name] ??
-    globalRegistry[name] ??
-    defaultIcons[name as IconName] ??
-    fallback
-  );
+): IconSelection {
+  const theme = getTheme(source);
+  const activeVariants = theme?.iconVariants;
+  const themeEntry = getThemeIconEntries(theme)?.[name];
+  if (theme != null && themeEntry != null) {
+    const definingVariants =
+      theme.__iconEntryVariants != null &&
+      Object.hasOwn(theme.__iconEntryVariants, name)
+        ? theme.__iconEntryVariants[name]
+        : activeVariants;
+    return {
+      entry: themeEntry,
+      variantLists: [activeVariants, definingVariants],
+    };
+  }
+  const globalEntry = globalRegistry[name];
+  if (globalEntry != null) {
+    return {entry: globalEntry, variantLists: [activeVariants]};
+  }
+  return {entry: defaultIcons[name as IconName] ?? fallback, variantLists: []};
 }
 
-/** Read an entry for a request: call a function, return a node as-is. */
-function readIconEntry(entry: IconEntry, request: IconRequest): ReactNode {
-  return typeof entry === 'function' ? entry(request) : entry;
+/**
+ * Read a selected entry for a request: call a function, return a node as-is.
+ * The function receives the requested variant only when every list of the
+ * selection contains it; otherwise it receives `undefined`.
+ */
+function readIconEntry(
+  {entry, variantLists}: IconSelection,
+  {size, variant}: IconRequest<string>,
+): ReactNode {
+  if (typeof entry !== 'function') {
+    return entry;
+  }
+  const receivable =
+    variant !== undefined &&
+    variantLists.length > 0 &&
+    variantLists.every(list => list?.includes(variant) === true);
+  // A receivable variant is one the entry's theme lists, which is the type
+  // the entry was written against.
+  return entry((receivable ? {size, variant} : {size}) as IconRequest<never>);
 }
 
 /**
  * Resolve a key for an Icon request. `Icon` is the caller: it passes the size
- * it resolved. Public reads use {@link getIcon} instead.
+ * it resolved and the variant it was asked for. Public reads use
+ * {@link getIcon} instead.
  * @internal
  */
 export function resolveIcon(
   name: ExtendedIconName,
   source: IconRegistrySource,
-  request: IconRequest,
+  request: IconRequest<string>,
 ): ReactNode {
   return readIconEntry(selectIconEntry(name, source), request);
 }
@@ -266,7 +326,7 @@ export function getIconRegistry(
   // resolved via getIcon/getExtendedIcon and intentionally kept out of the
   // typed IconRegistry snapshot.
   const names = new Set(Object.keys(defaultIcons));
-  for (const name of Object.keys(getThemeIconEntries(source) ?? {})) {
+  for (const name of Object.keys(getThemeIconEntries(getTheme(source)) ?? {})) {
     names.add(name);
   }
   for (const name of names) {
