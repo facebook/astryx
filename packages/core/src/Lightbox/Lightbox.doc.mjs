@@ -98,7 +98,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan.',
+        'Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or double-click to zoom in at that point and back; Enter/Space/+/- zoom 2× about the centre and back. When zoomed, drag or scroll to pan, with momentum, or use arrow keys.',
       default: 'false',
     },
     {
@@ -212,7 +212,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。',
+        '启用缩放（仅图片）：双指捏合（或按住 Ctrl 滚动滚轮），或双点按、双击在该处放大并还原；Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动或滚动平移（带惯性），或用方向键平移。',
       default: 'false',
     },
     {
@@ -297,7 +297,7 @@ export const docsDense = {
     index: 'Current index in gallery mode.',
     onIndexChange: 'Callback when gallery index changes.',
     hasZoom:
-      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
+      'Enable zoom (pinch or ctrl-wheel, double-tap or double-click, Enter/Space, or +/-) and pan (drag, scroll or arrow keys) for images.',
     xstyle: 'StyleX styles for layout customization.',
   },
 };
