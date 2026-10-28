@@ -826,8 +826,12 @@ jobs:
           echo "Change scope could not be classified; refusing to skip required work."
           exit 1
 
+      # The PR head (or the queued merge), not a PR merge commit, so the
+      # helper measures the PR's own diff (see interaction-scope).
       - uses: actions/checkout@v7
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # The helper comes from the base, since an older head lacks it. Exit 1
       # means out of scope; 0 in scope; 2 unknown, so the Swift work runs.
@@ -1861,8 +1865,13 @@ jobs:
           echo "Change scope could not be classified; refusing to skip required work."
           exit 1
 
+      # The PR head, not the merge commit: the helper diffs HEAD against its
+      # merge base with the PR's base, and a merge commit would count main's
+      # own changes since that base as the PR's.
       - uses: actions/checkout@v7
         if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # The helper comes from the base, since an older head lacks it. Exit 1
       # means out of scope; 0 in scope; 2 unknown, so the proofs run.
