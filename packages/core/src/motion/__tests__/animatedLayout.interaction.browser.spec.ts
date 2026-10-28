@@ -785,6 +785,83 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
+  test('a change above the view in a panel the page scrolls: with the page anchoring its scroll, the rows in view and their wrapper stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+        {length: 1000},
+        (_, i) => `<div id="r${i}" class="row"></div>`,
+      ).join('')}</div></div>`,
+    );
+    const result = await page.evaluate(async () => {
+      window.scrollTo(0, 4200);
+      const inView = document.querySelector('#r95') as HTMLElement;
+      const before = inView.getBoundingClientRect().top;
+      await window.change({
+        changed: '#grow',
+        mutate: `document.querySelector('#grow').classList.add('open')`,
+      });
+      const wrapper = document.querySelector('#wrapper') as HTMLElement;
+      const moving = [wrapper, ...wrapper.children].filter(
+        element => element.getAnimations().length > 0,
+      ).length;
+      const shown = inView.getBoundingClientRect().top;
+      document.getAnimations().forEach(animation => animation.finish());
+      return {moving, before, shown};
+    });
+    expect(result.moving).toBe(0);
+    expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+  });
+
+  test('a sticky footer stuck to the viewport in a panel the page scrolls stays at the edge (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  test('in a multi-column list the rows of a later column glide too (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="list" style="columns: 2; column-gap: 8px">${[
+        '<div id="grow" class="grow"></div>',
+        ...Array.from(
+          {length: 120},
+          (_, i) =>
+            `<div id="c${i}" class="row" style="break-inside: avoid"></div>`,
+        ),
+      ].join('')}</div></div>`,
+    );
+    await change(page);
+    const moving = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('#list > .row')].filter(
+          row => row.getAnimations().length > 0,
+        ).length,
+    );
+    // Every row shifts one slot along the columns; the rows in view glide,
+    // the second column's included, though they come past the band in DOM
+    // order.
+    expect(moving).toBeGreaterThanOrEqual(20);
+  });
+
   for (const anchoring of ['auto', 'none']) {
     test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
       page,

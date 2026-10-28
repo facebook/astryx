@@ -183,7 +183,10 @@ those contracts.
   if larger, above and below), so its cost grows with depth plus the
   siblings near the visible part, never with the length of a list. Where the
   scroll container opts out of scroll anchoring, a change above the band
-  walks forward to the band; that cost grows with the distance. Changes in
+  walks forward to the band; that cost grows with the distance. In a
+  container whose children run across the block direction (multi-column, a
+  wrapping column flex box, or a column-flow grid), the walk runs through
+  that level, a cost that grows with its children. Changes in
   one area in the same frame are measured together. A
   component reports a change through an internal, non-exported function that
   takes the `useAnimatedLayout` handle, so the handle stays member-free, and

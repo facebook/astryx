@@ -365,22 +365,73 @@ function partOf(element: Element, cache: WalkCache): boolean | 'contents' {
 }
 
 /**
- * Whether a sticky element is stuck: resting against the area's edge at its
- * inset. A stuck element takes its final place; an unstuck one is in flow.
+ * Whether a container lays its children out across the block direction, so
+ * DOM order does not run down the page: multi-column, a wrapping column flex
+ * box, or a grid that flows by column. The band says nothing about where its
+ * later children sit, so a walk there runs through the level.
  */
-function isStuck(element: Element, area: Element, cache: WalkCache): boolean {
+function flowsAcross(container: Element | null): boolean {
+  if (container == null) {
+    return false;
+  }
+  const style =
+    container.ownerDocument.defaultView?.getComputedStyle(container);
+  if (style == null) {
+    return false;
+  }
+  const count = style.getPropertyValue('column-count');
+  const width = style.getPropertyValue('column-width');
+  return (
+    (count !== '' && count !== 'auto') ||
+    (width !== '' && width !== 'auto') ||
+    (style.display.includes('flex') &&
+      style.flexDirection.startsWith('column') &&
+      style.flexWrap.startsWith('wrap')) ||
+    (style.display.includes('grid') &&
+      style.getPropertyValue('grid-auto-flow').startsWith('column'))
+  );
+}
+
+/**
+ * The box a sticky element sticks to: its nearest scrolling ancestor's, or
+ * the viewport.
+ */
+function scrollportOf(element: Element): {start: number; end: number} {
+  const view = element.ownerDocument.defaultView;
+  for (
+    let node = element.parentElement;
+    node != null && node !== element.ownerDocument.documentElement;
+    node = node.parentElement
+  ) {
+    const overflow = view?.getComputedStyle(node).overflowY ?? 'visible';
+    if (overflow !== 'visible' && overflow !== 'clip') {
+      const box = node.getBoundingClientRect();
+      return {
+        start: box.top + node.clientTop,
+        end: box.top + node.clientTop + node.clientHeight,
+      };
+    }
+  }
+  return {start: 0, end: view?.innerHeight ?? 0};
+}
+
+/**
+ * Whether a sticky element is stuck: resting against its scrollport's edge
+ * at its inset. A stuck element takes its final place; an unstuck one is in
+ * flow.
+ */
+function isStuck(element: Element, cache: WalkCache): boolean {
   const style = element.ownerDocument.defaultView?.getComputedStyle(element);
   if (style?.position !== 'sticky') {
     return false;
   }
   const rect = rectOf(element, cache);
-  const edge = rectOf(area, cache);
+  const edge = scrollportOf(element);
   const top = Number.parseFloat(style.top);
   const bottom = Number.parseFloat(style.bottom);
   return (
-    (Number.isFinite(top) && Math.abs(rect.top - (edge.top + top)) < 1) ||
-    (Number.isFinite(bottom) &&
-      Math.abs(rect.bottom - (edge.bottom - bottom)) < 1)
+    (Number.isFinite(top) && Math.abs(rect.top - (edge.start + top)) < 1) ||
+    (Number.isFinite(bottom) && Math.abs(rect.bottom - (edge.end - bottom)) < 1)
   );
 }
 
@@ -417,6 +468,8 @@ function collectCandidates(
 ): Map<Element, DOMRect> {
   const out = new Map<Element, DOMRect>();
   /** Takes `element`; returns false once it lies outside the band. */
+  /** The current level runs through its siblings, ignoring the band. */
+  let runsThrough = false;
   const take = (element: Element, isAfter: boolean): boolean => {
     const part = partOf(element, cache);
     if (part === 'contents') {
@@ -439,6 +492,10 @@ function collectCandidates(
       return true;
     }
     const rect = rectOf(element, cache);
+    if (runsThrough) {
+      out.set(element, rect);
+      return true;
+    }
     if (rect.top > band.end) {
       return false;
     }
@@ -466,15 +523,13 @@ function collectCandidates(
   // The levels below this index are inside a positioned ancestor.
   let positionedFrom = 0;
   for (let index = chain.length - 1; index > 0; index -= 1) {
-    if (
-      partOf(chain[index], cache) === false ||
-      isStuck(chain[index], area, cache)
-    ) {
+    if (partOf(chain[index], cache) === false || isStuck(chain[index], cache)) {
       positionedFrom = index;
       break;
     }
   }
   for (const [level, node] of chain.entries()) {
+    runsThrough = flowsAcross(node.parentElement);
     if (
       node !== changed &&
       level > positionedFrom &&
@@ -528,8 +583,12 @@ interface Batch {
   walksToBand: boolean | null;
   /** The change's ancestors among the candidates. */
   readonly ancestors: Set<Element>;
-  /** The area's scroll offset before the change, read once per frame. */
-  scrollBefore: {readonly x: number; readonly y: number} | null;
+  /**
+   * Where the area's content sat before the change, read once per frame: the
+   * area's place in view less its scroll offset, so a scroll of the area, an
+   * outer scroller or the page shows up as a change of it.
+   */
+  originBefore: {readonly x: number; readonly y: number} | null;
   readonly cache: WalkCache;
   scheduled: boolean;
 }
@@ -549,7 +608,7 @@ function batchFor(area: Element): Batch {
       visible: null,
       walksToBand: null,
       ancestors: new Set(),
-      scrollBefore: null,
+      originBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
@@ -585,6 +644,12 @@ function intersects(a: DOMRect, b: DOMRect): boolean {
 }
 
 /** The part of the area the person can see: its box within the viewport. */
+/** Where the area's scrolled content starts, in client px. */
+function originOf(area: Element): {x: number; y: number} {
+  const box = area.getBoundingClientRect();
+  return {x: box.left - area.scrollLeft, y: box.top - area.scrollTop};
+}
+
 function visibleRect(area: Element): DOMRect {
   const box = area.getBoundingClientRect();
   const view = area.ownerDocument.defaultView;
@@ -677,10 +742,12 @@ function flush(batch: Batch): void {
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
   // An ancestor of the change moves by its layout change alone: when scroll
-  // anchoring re-scrolls the area (a change above the visible part), its
-  // place in view shifts by the scroll while the content in view stays.
-  const scrolledX = (batch.scrollBefore?.x ?? 0) - batch.area.scrollLeft;
-  const scrolledY = (batch.scrollBefore?.y ?? 0) - batch.area.scrollTop;
+  // anchoring re-scrolls the area, an outer scroller or the page (a change
+  // above the visible part), its place in view shifts by the scroll while
+  // the content in view stays.
+  const origin = originOf(batch.area);
+  const scrolledX = origin.x - (batch.originBefore?.x ?? origin.x);
+  const scrolledY = origin.y - (batch.originBefore?.y ?? origin.y);
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
     const isAncestor = batch.ancestors.has(entry.element);
@@ -807,7 +874,7 @@ export function reportLayoutChange(
       batch.changed.add(element);
       batch.changedSize += rectOf(element, batch.cache).height;
       batch.visible ??= visibleRect(area);
-      batch.scrollBefore ??= {x: area.scrollLeft, y: area.scrollTop};
+      batch.originBefore ??= originOf(area);
       batch.walksToBand ??=
         area.ownerDocument.defaultView
           ?.getComputedStyle(area)
