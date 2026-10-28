@@ -15,8 +15,8 @@
  *   tokens, a Filters sheet with editable rows and direct remove actions, Add
  *   filter and sticky Clear all / Done, and a field → operator → value
  *   drill-down whose edit sheet holds Cancel / Apply; forward navigation stacks each step
- *   above the one that opened it, and Back closes the current sheet to reveal
- *   the retained previous step
+ *   above the one that opened it, and dismissing the current sheet reveals the
+ *   retained previous step
  * @position Lab (canary) stack layer 1: validates the touch design before any
  *   Core promotion. The caller chooses it explicitly
  *   (`isTouch ? MobilePowerSearch : PowerSearch`); there is no pointer
@@ -50,6 +50,13 @@
  *   remains a row list;
  * - Clear all asks for confirmation, removes editable filters while preserving
  *   read-only ones, and keeps the Filters sheet open for continued editing;
+ * - every removable Filters row, including one-tap boolean filters, uses the
+ *   same trailing remove button instead of a selected-state indicator; when
+ *   no filters exist, the centered Add filter is the only visible action;
+ * - Add filter leaves its search input unfocused until the user chooses it, so
+ *   opening the sheet does not summon the software keyboard;
+ * - a value editor that is the sheet's only section sits directly on the sheet
+ *   surface; muted section containers distinguish only multi-section editors;
  * - a filter whose field or operator the config no longer knows lists by its
  *   raw keys and remains directly removable from the Filters row; rows and
  *   tokens are keyed by filter identity, so controlled reorder and removal
@@ -101,7 +108,6 @@ import {Heading} from '@astryxdesign/core/Heading';
 import {Icon, renderIconSlot, type IconType} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Layout, LayoutContent, LayoutFooter} from '@astryxdesign/core/Layout';
-import {CheckboxIndicator} from '@astryxdesign/core/Indicator';
 import {containerPaddingInlineVarStyles} from '@astryxdesign/core/Layout/padding.stylex';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {resolveOperatorLabel} from '@astryxdesign/core/PowerSearch';
@@ -234,22 +240,6 @@ export interface MobilePowerSearchProps extends Omit<
 // =============================================================================
 // Styles
 // =============================================================================
-
-function BackArrowIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}>
-      <path d="M19 12H5" />
-      <path d="m12 19-7-7 7-7" />
-    </svg>
-  );
-}
 
 function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -985,7 +975,7 @@ export function MobilePowerSearch({
     // Add filter's fallback: a controlled update may have removed the field
     // whose row opened the step, or the content-search field itself; the
     // sheet's first focusable control then takes focus — the search field
-    // when one shows, else the first field row, else Back.
+    // when one shows, else the first field row, else the first button.
     const firstFieldsControl = () => {
       const panel = fieldsSheetRef.current;
       return (
@@ -1181,9 +1171,7 @@ export function MobilePowerSearch({
       fieldPickerOriginRef.current = 'trigger';
       setFieldQuery('');
       setContentQuery('');
-      pendingSheetFocusRef.current = hasContentSearch
-        ? {type: 'content-search'}
-        : null;
+      pendingSheetFocusRef.current = null;
       setStep('fields');
       return;
     }
@@ -1215,11 +1203,9 @@ export function MobilePowerSearch({
     fieldPickerOriginRef.current = 'manage';
     setFieldQuery('');
     setContentQuery('');
-    pendingSheetFocusRef.current = hasContentSearch
-      ? {type: 'content-search'}
-      : null;
+    pendingSheetFocusRef.current = null;
     setStep('fields');
-  }, [hasContentSearch, isInteractive]);
+  }, [isInteractive]);
 
   const queueManagerAddFocus = useCallback(() => {
     pendingSheetFocusRef.current = {type: 'manager-add'};
@@ -1960,7 +1946,7 @@ export function MobilePowerSearch({
               <div {...stylex.props(styles.headerText)}>
                 <Heading level={3}>Filters</Heading>
               </div>
-              {isInteractive && (
+              {isInteractive && filterRows.length > 0 && (
                 <Button
                   ref={managerAddButtonRef}
                   label="Add filter"
@@ -1986,6 +1972,7 @@ export function MobilePowerSearch({
                     actions={
                       isInteractive ? (
                         <Button
+                          ref={managerAddButtonRef}
                           label="Add filter"
                           icon={<Icon icon={PlusIcon} size="sm" />}
                           variant="primary"
@@ -2028,21 +2015,17 @@ export function MobilePowerSearch({
                         }
                         endContent={
                           canEdit ? (
-                            isImmediateToggle ? (
-                              <CheckboxIndicator state="checked" />
-                            ) : (
-                              <IconButton
-                                label={`Remove ${fieldLabel} filter`}
-                                tooltip={`Remove ${fieldLabel} filter`}
-                                icon={<Icon icon="close" size="sm" />}
-                                variant="ghost"
-                                size="md"
-                                onClick={event => {
-                                  event.stopPropagation();
-                                  handleRemoveFilter(row.index);
-                                }}
-                              />
-                            )
+                            <IconButton
+                              label={`Remove ${fieldLabel} filter`}
+                              tooltip={`Remove ${fieldLabel} filter`}
+                              icon={<Icon icon="close" size="sm" />}
+                              variant="ghost"
+                              size="md"
+                              onClick={event => {
+                                event.stopPropagation();
+                                handleRemoveFilter(row.index);
+                              }}
+                            />
                           ) : undefined
                         }
                       />
@@ -2052,29 +2035,31 @@ export function MobilePowerSearch({
               )}
             </div>
           </div>
-          <div {...stylex.props(styles.footer, styles.fixedFooter)}>
-            {isClearAllShown && (
+          {filterRows.length > 0 && (
+            <div {...stylex.props(styles.footer, styles.fixedFooter)}>
+              {isClearAllShown && (
+                <Button
+                  label="Clear all"
+                  variant="secondary"
+                  size="lg"
+                  xstyle={styles.footerEqualAction}
+                  onClick={() => setIsClearConfirmationOpen(true)}
+                />
+              )}
               <Button
-                label="Clear all"
-                variant="secondary"
+                label="Done"
+                variant="primary"
                 size="lg"
-                xstyle={styles.footerEqualAction}
-                onClick={() => setIsClearConfirmationOpen(true)}
+                xstyle={
+                  isClearAllShown
+                    ? styles.footerEqualAction
+                    : styles.footerSoleAction
+                }
+                onClick={closeSheet}
+                width={isClearAllShown ? undefined : '100%'}
               />
-            )}
-            <Button
-              label="Done"
-              variant="primary"
-              size="lg"
-              xstyle={
-                isClearAllShown
-                  ? styles.footerEqualAction
-                  : styles.footerSoleAction
-              }
-              onClick={closeSheet}
-              width={isClearAllShown ? undefined : '100%'}
-            />
-          </div>
+            </div>
+          )}
         </div>
       </BottomSheet>
 
@@ -2094,25 +2079,6 @@ export function MobilePowerSearch({
           )}
           <div {...stylex.props(styles.header)}>
             <div {...stylex.props(styles.headerRow)}>
-              {!isFieldPickerDirectEntry && (
-                <Button
-                  label="Back"
-                  icon={
-                    <Icon
-                      icon={BackArrowIcon}
-                      size="sm"
-                      xstyle={rtlStyles.mirror}
-                    />
-                  }
-                  isIconOnly
-                  variant="ghost"
-                  size="md"
-                  onClick={() => {
-                    queueManagerAddFocus();
-                    setStep('manage');
-                  }}
-                />
-              )}
               <div {...stylex.props(styles.headerText)}>
                 <Heading level={3}>Add filter</Heading>
               </div>
@@ -2158,7 +2124,6 @@ export function MobilePowerSearch({
                   placeholder="Search filters…"
                   value={fieldQuery}
                   onChange={setFieldQuery}
-                  hasAutoFocus
                   startIcon={<Icon icon="search" size="sm" color="secondary" />}
                   isDisabled={!isInteractive}
                   size="lg"
@@ -2386,7 +2351,20 @@ export function MobilePowerSearch({
                         </RadioList>
                       </div>
                     )}
-                    <div {...stylex.props(styles.controlSection)}>
+                    {draftOperators.length > 1 ? (
+                      <div {...stylex.props(styles.controlSection)}>
+                        <MobilePowerSearchValueEditor
+                          key={`${draft.field}-${draft.operator}`}
+                          operatorValue={draftOperator.value}
+                          filterValue={draft.value}
+                          onChange={handleDraftValueChange}
+                          label={draftField.label}
+                          isDisabled={isEditorDisabled}
+                          maxMenuItems={maxOperatorMenuItems}
+                          timezoneID={timezoneID}
+                        />
+                      </div>
+                    ) : (
                       <MobilePowerSearchValueEditor
                         key={`${draft.field}-${draft.operator}`}
                         operatorValue={draftOperator.value}
@@ -2397,7 +2375,7 @@ export function MobilePowerSearch({
                         maxMenuItems={maxOperatorMenuItems}
                         timezoneID={timezoneID}
                       />
-                    </div>
+                    )}
                   </>
                 ) : (
                   // A controlled config update removed the field or operator

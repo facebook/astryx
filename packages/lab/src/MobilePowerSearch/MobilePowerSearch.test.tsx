@@ -193,6 +193,12 @@ const authorFilter: PowerSearchFilter = {
   value: {type: 'string', value: 'Ada'},
 };
 
+const unassignedFilter: PowerSearchFilter = {
+  field: 'unassigned',
+  operator: 'isTrue',
+  value: {type: 'empty'},
+};
+
 const people: SearchableItem[] = [
   {id: 'p1', label: 'Ada Lovelace'},
   {id: 'p2', label: 'Grace Hopper'},
@@ -698,6 +704,46 @@ describe('MobilePowerSearch Filters sheet', () => {
     ).toBeTruthy();
   });
 
+  it('uses a direct remove button for an applied one-tap filter instead of a checked indicator', () => {
+    const {onChange} = setup({filters: [unassignedFilter]});
+    openSheet();
+    const remove = within(sheet()).getByRole('button', {
+      name: 'Remove Unassigned filter',
+    });
+    expect(remove.querySelector('svg')).toBeTruthy();
+    expect(within(sheet()).queryByText('Unassigned, selected')).toBeNull();
+    fireEvent.click(remove);
+    expect(onChange).toHaveBeenCalledWith([], 'remove', 0);
+  });
+
+  it('shows only the centered Add filter action when no filters are applied', () => {
+    function EmptyStateHarness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+      ]);
+      return (
+        <MobilePowerSearch
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+        />
+      );
+    }
+    render(<EmptyStateHarness />);
+    openSheet();
+    fireEvent.click(
+      within(sheet()).getByRole('button', {name: 'Remove Status filter'}),
+    );
+    const addActions = within(sheet()).getAllByRole('button', {
+      name: 'Add filter',
+    });
+    expect(addActions).toHaveLength(1);
+    expect(within(sheet()).queryByRole('button', {name: 'Done'})).toBeNull();
+    expect(
+      within(sheet()).queryByRole('button', {name: 'Clear all'}),
+    ).toBeNull();
+  });
+
   it('places the Add filter icon in the header and full-width Clear all plus Done in the fixed footer', () => {
     setup({filters: [openFilter]});
     openSheet();
@@ -907,10 +953,11 @@ describe('MobilePowerSearch Add filter', () => {
     expect(trigger()).toHaveFocus();
   });
 
-  it('returns to Filters and focuses Add filter when Back is pressed from management', () => {
+  it('returns to Filters and focuses Add filter when Add filter is dismissed from management', () => {
     setup({filters: [openFilter]});
     openAddFlow();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    expect(within(sheet()).queryByRole('button', {name: 'Back'})).toBeNull();
+    fireEvent.keyDown(sheet(), {key: 'Escape'});
     expect(
       within(sheet()).getByRole('heading', {name: 'Filters'}),
     ).toBeTruthy();
@@ -956,7 +1003,8 @@ describe('MobilePowerSearch Add filter', () => {
     const search = within(sheet()).getByRole('textbox', {
       name: 'Search filters',
     });
-    expect(search).toHaveFocus();
+    expect(search).not.toHaveFocus();
+    search.focus();
     const scrollBody = Array.from(
       sheet().querySelectorAll<HTMLElement>('div'),
     ).find(element => getComputedStyle(element).overflowY === 'auto')!;
@@ -1548,10 +1596,10 @@ describe('MobilePowerSearch value sheet', () => {
 // =============================================================================
 
 describe('MobilePowerSearch step sheets (retained stack)', () => {
-  // Each forward step remains open beneath the next standalone BottomSheet.
-  // Back closes only the top sheet, so the prior step returns through the
-  // stack's reveal motion instead of reopening above the current one. These
-  // assertions read only what a person or assistive technology can observe.
+  // Dismissing the top step closes only that sheet, so the prior step returns
+  // through the stack's reveal motion instead of reopening above the current
+  // one. These assertions read only what a person or assistive technology can
+  // observe.
   function stepDialogs(): HTMLElement[] {
     return Array.from(document.querySelectorAll<HTMLElement>('dialog[open]'));
   }
@@ -1566,7 +1614,7 @@ describe('MobilePowerSearch step sheets (retained stack)', () => {
     expect(sheet()).toHaveAttribute('aria-modal', 'true');
   });
 
-  it('pushes Add filter above Filters and Back dismisses it to reveal the retained Filters sheet', () => {
+  it('pushes Add filter above Filters without a Back button and dismisses it to reveal Filters', () => {
     setup({filters: [openFilter]});
     openSheet();
     const filters = sheet();
@@ -1587,7 +1635,8 @@ describe('MobilePowerSearch step sheets (retained stack)', () => {
       'Add filter',
     ]);
 
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    expect(within(sheet()).queryByRole('button', {name: 'Back'})).toBeNull();
+    fireEvent.keyDown(sheet(), {key: 'Escape'});
     settleSheets();
     expect(stepDialogs().map(d => d.getAttribute('aria-label'))).toEqual([
       'Filters',
@@ -1618,11 +1667,12 @@ describe('MobilePowerSearch step sheets (retained stack)', () => {
       'aria-label',
       expect.stringContaining('Status'),
     );
-    // Back from the value step, Back from Add filter, Done from Filters.
+    // Cancel from the value step, dismiss Add filter, Done from Filters.
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Cancel'}));
     settleSheets();
     expect(sheet()).toHaveAttribute('aria-label', 'Add filter');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    expect(within(sheet()).queryByRole('button', {name: 'Back'})).toBeNull();
+    fireEvent.keyDown(sheet(), {key: 'Escape'});
     settleSheets();
     expect(sheet()).toHaveAttribute('aria-label', 'Filters');
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Done'}));
@@ -1726,7 +1776,7 @@ describe('MobilePowerSearch step sheets (retained stack)', () => {
 });
 
 describe('MobilePowerSearch content search', () => {
-  it('opens empty content-search configurations directly to Add filter with focus in the search', () => {
+  it('opens empty content-search configurations directly to Add filter without focusing the search', () => {
     setup({config: contentSearchConfig, placeholder: 'Search content…'});
     openSheet();
     expect(
@@ -1734,7 +1784,7 @@ describe('MobilePowerSearch content search', () => {
     ).toBeTruthy();
     const input = within(sheet()).getByRole('searchbox', {name: 'Search'});
     expect(input).toHaveAttribute('placeholder', 'Search content…');
-    expect(input).toHaveFocus();
+    expect(input).not.toHaveFocus();
   });
 
   it('lists suggestions inline below the search, reachable with ArrowDown', () => {
@@ -1956,13 +2006,17 @@ describe('MobilePowerSearch value types', () => {
     tapRow('ID');
     const input = within(sheet()).getByRole('textbox', {name: 'Search ID'});
     fireEvent.change(input, {target: {value: 'ABC-1'}});
-    fireEvent.click(
-      await within(sheet()).findByRole(
-        'button',
-        {name: 'Add ABC-1'},
-        {timeout: 15000},
-      ),
+    const result = await within(sheet()).findByRole(
+      'button',
+      {name: 'Add ABC-1'},
+      {timeout: 15000},
     );
+    const resultList = result.closest('[role="list"]') as HTMLElement;
+    expect(
+      getComputedStyle(resultList.parentElement!.parentElement!)
+        .backgroundColor,
+    ).not.toBe('var(--color-background-muted)');
+    fireEvent.click(result);
     expect(
       within(sheet()).getByRole('button', {name: 'Add ABC-1, selected'}),
     ).toBeTruthy();
@@ -2328,7 +2382,7 @@ describe('MobilePowerSearch Core parity', () => {
       const addFilterButtons = within(sheet()).getAllByRole('button', {
         name: 'Add filter',
       });
-      expect(addFilterButtons).toHaveLength(2);
+      expect(addFilterButtons).toHaveLength(1);
       expect(addFilterButtons[0]).toHaveFocus();
     });
 
@@ -2603,7 +2657,8 @@ describe('MobilePowerSearch Core parity', () => {
       // Back to Filters: the Add filter sheet's body stays mounted, its
       // results list emptied by the step change — no empty-result message is
       // spoken, not on the page and not in the Filters dialog.
-      fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+      expect(within(sheet()).queryByRole('button', {name: 'Back'})).toBeNull();
+      fireEvent.keyDown(sheet(), {key: 'Escape'});
       expect(
         within(sheet()).getByRole('heading', {name: 'Filters'}),
       ).toBeTruthy();
