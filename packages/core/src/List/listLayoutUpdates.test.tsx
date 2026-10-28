@@ -153,10 +153,12 @@ function Demo({
   initial,
   withHandle = true,
   keyed = true,
+  listStyle,
 }: {
   initial: string[];
   withHandle?: boolean;
   keyed?: boolean;
+  listStyle?: React.CSSProperties;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animatedLayout = useAnimatedLayout({containerRef});
@@ -164,7 +166,9 @@ function Demo({
   setRows = set;
   return (
     <div id="area" ref={containerRef}>
-      <List animatedLayout={withHandle ? animatedLayout : undefined}>
+      <List
+        animatedLayout={withHandle ? animatedLayout : undefined}
+        style={listStyle}>
         {rows.map(label => (
           <ListItem
             key={label}
@@ -249,6 +253,23 @@ describe('List row updates through animatedLayout (component:List FR12)', () => 
     expect(moved.get('Drafts')).toBe(ROW);
     expect(moved.get('after')).toBe(ROW);
     expect(moved.has('Inbox')).toBe(false);
+  });
+
+  it("keeps a caller's inline overflow-y, while a removal exits and after it", async () => {
+    render(
+      <Demo
+        initial={['Inbox', 'Sent', 'Drafts']}
+        listStyle={{overflowY: 'auto'}}
+      />,
+    );
+    const list = () => document.querySelector('ul') as HTMLElement;
+    expect(list().style.overflowY).toBe('auto');
+    await change(['Inbox', 'Drafts']);
+    // The removed row's exit is under way.
+    expect(document.querySelector('li[data-astryx-leaving]')).not.toBeNull();
+    expect(list().style.overflowY).toBe('auto');
+    await change(['New', 'Inbox', 'Drafts']);
+    expect(list().style.overflowY).toBe('auto');
   });
 
   it('a re-render with the same rows in the same order plays nothing', async () => {

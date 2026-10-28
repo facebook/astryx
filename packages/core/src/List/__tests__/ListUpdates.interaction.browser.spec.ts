@@ -12,7 +12,9 @@
  *   one included) glide up from their old places; an inserted row enters in
  *   the same frame the rows after it start gliding down; a row moved to the top glides up from its old place riding
  *   above the rows it crosses; a mouse gets the same motion; Reduce Motion
- *   cross-fades under a finger and changes at once with a mouse; the glides
+ *   cross-fades under a finger and changes at once with a mouse, an inserted
+ *   row fading in where it lands; removing the last row never paints its
+ *   exit over the content after the list; the glides
  *   do no Layout or Paint per frame; a row swiped away with a removal action
  *   exits as it was on screen
  * @position Interaction evidence for List/listLayoutUpdates.ts; the module's
@@ -285,6 +287,147 @@ test('under Reduce Motion: a finger cross-fades with no travel, a mouse changes 
     await expect(leaving(mouse)).toHaveCount(0);
     expect(await mouse.evaluate(() => document.getAnimations().length)).toBe(0);
   });
+});
+
+test('under Reduce Motion, an inserted row fades in where it lands under a finger, and lands at once with a mouse', async ({
+  page,
+  browser,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await open(page);
+  await press(page, 'Insert a row second');
+  const fades = await page.evaluate(() => {
+    const inserted = [...document.querySelectorAll('#storybook-root li')].find(
+      li => li.textContent?.trim() === 'Folder 1',
+    );
+    return (inserted?.getAnimations() ?? []).map(animation => {
+      const frames = (animation.effect as KeyframeEffect).getKeyframes();
+      return {
+        from: Number(frames[0]?.opacity ?? 1),
+        to: Number(frames.at(-1)?.opacity ?? 1),
+        travels: frames.some(
+          frame =>
+            frame.translate != null ||
+            frame.transform != null ||
+            frame.clipPath != null,
+        ),
+      };
+    });
+  });
+  // The row's own fade, from transparent to opaque, with no travel.
+  expect(fades.length, JSON.stringify(fades)).toBeGreaterThan(0);
+  for (const fade of fades) {
+    expect(fade.travels, JSON.stringify(fades)).toBe(false);
+    expect(fade.from, JSON.stringify(fades)).toBeLessThan(1);
+    expect(fade.to, JSON.stringify(fades)).toBeCloseTo(1, 2);
+  }
+  await withMouse(browser, async mouse => {
+    await mouse.emulateMedia({reducedMotion: 'reduce'});
+    await open(mouse);
+    await press(mouse, 'Insert a row second');
+    await expect(row(mouse, 'Folder 1')).toBeVisible();
+    expect(await mouse.evaluate(() => document.getAnimations().length)).toBe(0);
+  });
+});
+
+test('removing the last row: its exit never paints over the content after the list', async ({
+  page,
+}) => {
+  await open(page);
+  // Removing the second row three times leaves the second row the last one.
+  for (let i = 0; i < 3; i++) {
+    await press(page, 'Remove the second row');
+    await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
+  }
+  await press(page, 'Remove the second row');
+  const samples = await page.evaluate(() => {
+    const animations = document.getAnimations();
+    for (const animation of animations) {
+      animation.pause();
+    }
+    const duration = Math.max(
+      ...animations.map(animation =>
+        Number(animation.effect?.getComputedTiming().endTime ?? 0),
+      ),
+    );
+    const exit = document.querySelector<HTMLElement>(
+      '#storybook-root li[data-astryx-leaving]',
+    );
+    const after = document.querySelector<HTMLElement>('#storybook-root ul + *');
+    if (exit == null || after == null) {
+      return {duration, rows: [] as {t: number; exit: number; after: number}[]};
+    }
+    // The element a positioned or in-flow box is clipped by: its containing
+    // blocks, up the page.
+    const containingBlock = (node: Element): Element | null => {
+      const position = getComputedStyle(node).position;
+      if (position === 'fixed') {
+        return null;
+      }
+      let parent = node.parentElement;
+      if (position === 'absolute') {
+        while (
+          parent != null &&
+          getComputedStyle(parent).position === 'static' &&
+          getComputedStyle(parent).transform === 'none'
+        ) {
+          parent = parent.parentElement;
+        }
+      }
+      return parent;
+    };
+    // Where the exit's painted part ends: its box, less its clip-path inset,
+    // within the boxes that clip it.
+    const paintedBottom = (element: HTMLElement): number => {
+      const rect = element.getBoundingClientRect();
+      let bottom = rect.bottom;
+      const inset = /^inset\(([^)]*)\)/.exec(
+        getComputedStyle(element).clipPath,
+      );
+      if (inset != null) {
+        const parts = inset[1]
+          .replace(/round.*$/, '')
+          .trim()
+          .split(/\s+/);
+        const value = parts.length >= 3 ? parts[2] : parts[0];
+        bottom -= value.endsWith('%')
+          ? (rect.height * Number.parseFloat(value)) / 100
+          : Number.parseFloat(value);
+      }
+      for (
+        let block = containingBlock(element);
+        block != null && block !== document.body;
+        block = containingBlock(block)
+      ) {
+        if (getComputedStyle(block).overflowY !== 'visible') {
+          bottom = Math.min(bottom, block.getBoundingClientRect().bottom);
+        }
+      }
+      return bottom;
+    };
+    const rows = [0, 0.1, 0.25, 0.5, 0.75, 0.95].map(fraction => {
+      const t = duration * fraction;
+      for (const animation of animations) {
+        animation.currentTime = t;
+      }
+      return {
+        t,
+        exit: paintedBottom(exit),
+        after: after.getBoundingClientRect().top,
+      };
+    });
+    for (const animation of animations) {
+      animation.play();
+    }
+    return {duration, rows};
+  });
+  expect(samples.rows.length, JSON.stringify(samples)).toBe(6);
+  for (const sample of samples.rows) {
+    expect(sample.exit, JSON.stringify(samples)).toBeLessThanOrEqual(
+      sample.after + 1,
+    );
+  }
+  await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
 });
 
 test('the glides do no Layout or Paint per frame', async ({
