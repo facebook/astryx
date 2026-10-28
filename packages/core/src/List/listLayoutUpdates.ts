@@ -66,18 +66,29 @@ export const TRAVELLING_ATTRIBUTE = 'data-astryx-travelling';
 /** Marks a row put back for its exit: not a row any more. */
 export const LEAVING_ATTRIBUTE = 'data-astryx-leaving';
 
+/**
+ * The lists under an animated layout handle at their last commit, so a row
+ * leaving one keeps what it showed on screen for its exit
+ * (`keepPresentation`) without reading the list's props.
+ */
+const animatedLists = new WeakSet<Element>();
+
+/** Whether `row` is in a list under an animated layout handle. */
+export function isInAnimatedList(row: Element): boolean {
+  const list = row.parentElement;
+  return list != null && animatedLists.has(list);
+}
+
 /** A list root a reorder is dragging: its rows are the reorder's. */
 const REORDERING_ATTRIBUTE = 'data-astryx-reordering';
 
 /** Moves under half a pixel are layout noise, not updates. */
 const MIN_MOVE_PX = 0.5;
 
-/** A row before the commit: where it was, and what followed it. */
+/** A row before the commit: where it was. */
 interface RowBefore {
   readonly element: HTMLElement;
   readonly top: number;
-  /** The rows after it, nearest first, so it can come back before them. */
-  readonly after: ReadonlyArray<HTMLElement>;
 }
 
 /** What `measure` saw, for the layout effect of the same commit. */
@@ -85,6 +96,8 @@ interface Measured {
   readonly rows: ReadonlyMap<string, RowBefore>;
   readonly order: ReadonlyArray<string>;
   readonly changes: ReadonlyArray<LayoutChange>;
+  /** Rows whose translation moved onto their children for the commit. */
+  readonly settled: ReadonlyArray<Settled>;
 }
 
 /**
@@ -154,19 +167,18 @@ export function keepPresentation(row: HTMLElement): void {
 }
 
 /**
- * Puts a row that left back where it was, for its exit: before the first
- * row that followed it and is still in the list, showing what it showed as
- * it left. Returns what exits: the row, or, for a row a swipe carried out of
- * the list's box (its action showing in its place), a box in its place
- * holding it, since the exit plays on what shows in the list. The exit makes
- * it inert; until then it is marked as leaving and hidden from assistive
- * technology, so no later commit counts it as a row.
+ * Puts a row that left back where it was, for its exit, before `anchor` (the
+ * nearest later row in the list), showing what it showed as it left. The
+ * exit makes it inert; until then it is marked as leaving and hidden from
+ * assistive technology, so no later commit counts it as a row.
  */
-function putBack(row: RowBefore, list: HTMLElement): HTMLElement {
-  const {element} = row;
+function putBack(
+  element: HTMLElement,
+  list: HTMLElement,
+  anchor: HTMLElement | null,
+): void {
   element.setAttribute(LEAVING_ATTRIBUTE, '');
   element.setAttribute('aria-hidden', 'true');
-  const anchor = row.after.find(next => next.parentElement === list) ?? null;
   list.insertBefore(element, anchor);
   // Back in the document, its parts' animations would apply again over what
   // they showed as it left: stop them, and show what was on screen.
@@ -179,32 +191,87 @@ function putBack(row: RowBefore, list: HTMLElement): HTMLElement {
     part.style.cssText = cssText;
   }
   keptStyles.delete(element);
-  const box = list.getBoundingClientRect();
-  const shown = element.getBoundingClientRect();
-  if (shown.right > box.left && shown.left < box.right) {
-    return element;
+}
+
+/** A row whose own translation moved onto its children, and what it replaced. */
+interface Settled {
+  readonly row: HTMLElement;
+  readonly prior: ReadonlyArray<
+    readonly [HTMLElement | SVGElement, string, string]
+  >;
+}
+
+/**
+ * Moves a row's own translation (a swipe's) onto its children, so the row's
+ * box lies where the row lies in the list while it shows the same thing.
+ * Done for every translated row as a change is measured, and undone after
+ * the commit for each row that stays: a row that leaves then exits on its
+ * own box, in view, its exit's clip keeping the action the swipe uncovered
+ * and cutting the content the swipe carried away, and the box is the same
+ * before and after the commit, so nothing glides it. (With the translation
+ * on the row, a row a swipe carried out of the list's box would lie out of
+ * view, and its exit would clip the action.) Only a translation moves.
+ * Returns what to undo, or null when the row has no translation of its own.
+ */
+function settleTranslation(row: HTMLElement): Settled | null {
+  const view = row.ownerDocument.defaultView;
+  if (view == null || typeof view.DOMMatrix !== 'function') {
+    return null;
   }
-  // Swiped out of the list's box: a box in its place, the row's own size,
-  // clipping it, exits instead.
-  const holder = element.ownerDocument.createElement('li');
-  holder.setAttribute(LEAVING_ATTRIBUTE, '');
-  holder.setAttribute('aria-hidden', 'true');
-  for (const [property, value] of [
-    ['display', 'block'],
-    ['list-style', 'none'],
-    ['margin', '0'],
-    ['padding', '0'],
-    ['overflow', 'clip'],
-  ]) {
-    holder.style.setProperty(property, value);
+  const transform = view.getComputedStyle(row).transform;
+  if (transform === '' || transform === 'none') {
+    return null;
   }
-  list.insertBefore(holder, element);
-  holder.append(element);
-  // The row stays a row that is not the last, and keeps its divider.
-  const tail = element.ownerDocument.createElement('span');
-  tail.hidden = true;
-  holder.append(tail);
-  return holder;
+  const own = new view.DOMMatrix(transform);
+  if (
+    !own.is2D ||
+    own.a !== 1 ||
+    own.b !== 0 ||
+    own.c !== 0 ||
+    own.d !== 1 ||
+    (own.e === 0 && own.f === 0)
+  ) {
+    return null;
+  }
+  const children = [...row.children].filter(
+    (child): child is HTMLElement | SVGElement =>
+      child instanceof view.HTMLElement || child instanceof view.SVGElement,
+  );
+  // Every transform is read before any is written. A translation composes
+  // the same way whatever a child's transform origin.
+  const transforms = children.map(
+    child => view.getComputedStyle(child).transform,
+  );
+  const prior = [row, ...children].map(
+    element =>
+      [
+        element,
+        element.style.getPropertyValue('transform'),
+        element.style.getPropertyPriority('transform'),
+      ] as const,
+  );
+  row.style.setProperty('transform', 'none');
+  children.forEach((child, index) => {
+    const current = transforms[index];
+    const shift = new view.DOMMatrix().translate(own.e, own.f);
+    const moved =
+      current === '' || current === 'none'
+        ? shift
+        : shift.multiply(new view.DOMMatrix(current));
+    child.style.setProperty('transform', moved.toString());
+  });
+  return {row, prior};
+}
+
+/** Puts back what `settleTranslation` replaced on a row that stays. */
+function unsettle({prior}: Settled): void {
+  for (const [element, value, priority] of prior) {
+    if (value === '') {
+      element.style.removeProperty('transform');
+    } else {
+      element.style.setProperty('transform', value, priority);
+    }
+  }
 }
 
 /**
@@ -282,14 +349,17 @@ export function useListLayoutUpdates(
       return;
     }
     const ordered = [...rows];
+    const settled: Settled[] = [];
+    for (const [, element] of ordered) {
+      const done = settleTranslation(element);
+      if (done != null) {
+        settled.push(done);
+      }
+    }
     const before = new Map<string, RowBefore>();
-    ordered.forEach(([key, element], index) => {
-      before.set(key, {
-        element,
-        top: element.getBoundingClientRect().top,
-        after: ordered.slice(index + 1).map(([, next]) => next),
-      });
-    });
+    for (const [key, element] of ordered) {
+      before.set(key, {element, top: element.getBoundingClientRect().top});
+    }
     // The list (the content after it glides, and any row inside it can
     // exit), and its first and last rows, each of which carries the other
     // and every row between them.
@@ -306,20 +376,36 @@ export function useListLayoutUpdates(
       rows: before,
       order: ordered.map(([key]) => key),
       changes,
+      settled,
     };
   }, [animatedLayout, listRef]);
 
-  // External system (`architecture:react-component-runtime` INV3): the
+  // External systems (`architecture:react-component-runtime` INV3): the
   // shared size-change module's batch for the handle's area, measured before
-  // this commit; this plays it.
+  // this commit, which this plays; and the set of lists under a handle, which
+  // a leaving row reads as it unmounts.
   useIsomorphicLayoutEffect(() => {
     const measured = measuredRef.current;
     measuredRef.current = null;
     const list = listRef.current;
+    if (list != null) {
+      if (animatedLayout != null) {
+        animatedLists.add(list);
+      } else {
+        animatedLists.delete(list);
+      }
+    }
     if (measured == null || list == null || animatedLayout == null) {
       return;
     }
     const now = keyedRows(list);
+    // A row that stays shows its translation on itself again; a row that
+    // left exits settled (what it kept as it left already holds it).
+    for (const done of measured.settled) {
+      if (done.row.parentElement === list) {
+        unsettle(done);
+      }
+    }
     const order = [...now.keys()];
     if (
       order.length === measured.order.length &&
@@ -329,10 +415,23 @@ export function useListLayoutUpdates(
       // is dropped by the next frame).
       return;
     }
+    // Each row that left comes back before the nearest later row in the
+    // list: one pass from the end, a row put back being the next one's
+    // anchor.
     const leaving: HTMLElement[] = [];
-    for (const [key, row] of measured.rows) {
-      if (!now.has(key)) {
-        leaving.push(putBack(row, list));
+    let anchor: HTMLElement | null = null;
+    for (let index = measured.order.length - 1; index >= 0; index--) {
+      const key = measured.order[index];
+      const staying = now.get(key);
+      if (staying != null) {
+        anchor = staying;
+        continue;
+      }
+      const row = measured.rows.get(key);
+      if (row != null) {
+        putBack(row.element, list, anchor);
+        leaving.push(row.element);
+        anchor = row.element;
       }
     }
     for (const change of measured.changes) {

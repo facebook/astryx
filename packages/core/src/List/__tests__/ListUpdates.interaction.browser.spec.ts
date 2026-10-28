@@ -16,7 +16,8 @@
  *   row fading in where it lands; removing the last row never paints its
  *   exit over the content after the list; the glides
  *   do no Layout or Paint per frame; a row swiped away with a removal action
- *   exits as it was on screen
+ *   exits as it was on screen, as itself; a row still moving under its swipe
+ *   as another row leaves keeps no transform the list wrote
  * @position Interaction evidence for List/listLayoutUpdates.ts; the module's
  *   own proofs are motion/__tests__/animatedLayout*.browser.spec.ts
  *
@@ -454,7 +455,7 @@ test('the glides do no Layout or Paint per frame', async ({
   expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
 });
 
-test('a row swiped away with a removal action exits in place as it was on screen, while the rows after it glide up', async ({
+test('a row swiped away with a removal action exits in place as it was on screen, as itself with no element added, while the rows after it glide up', async ({
   page,
   browserName,
 }) => {
@@ -470,10 +471,17 @@ test('a row swiped away with a removal action exits in place as it was on screen
   if (box == null) {
     throw new Error('no row');
   }
-  // Record, from the frame Sent is put back for its exit, where its content
-  // shows and where Drafts starts its glide.
+  // Record, from the frame Sent is put back for its exit, what exits, where
+  // its content and its action show, and where Drafts starts its glide.
   await page.evaluate(() => {
-    const samples: {offset: number; glide: number | null}[] = [];
+    const samples: {
+      offset: number;
+      glide: number | null;
+      nested: boolean;
+      added: number;
+      rowLeft: number;
+      panelRight: number | null;
+    }[] = [];
     (window as unknown as {__samples: typeof samples}).__samples = samples;
     const tick = () => {
       const exit = document.querySelector<HTMLElement>(
@@ -495,11 +503,29 @@ test('a row swiped away with a removal action exits in place as it was on screen
             glide = Number(first.split(' ')[1]?.replace('px', '') ?? 0);
           }
         }
-        // The swipe moves the row itself (its transform): the offset it
-        // showed as it left, on the row inside what exits.
-        const swiped = exit.querySelector<HTMLElement>(':scope > li') ?? exit;
-        const x = new DOMMatrix(getComputedStyle(swiped).transform).m41;
-        samples.push({offset: x, glide});
+        // What exits is the row itself: no row nested in another element the
+        // list made, and nothing beside the rows but it.
+        const list = exit.parentElement;
+        const content = exit.querySelector<HTMLElement>(
+          ':scope > :not([data-swipe-panel])',
+        );
+        const panel = exit.querySelector<HTMLElement>(
+          '[data-swipe-panel="trailing"]',
+        );
+        samples.push({
+          // Where its content shows against its own box: carried away by the
+          // swipe.
+          offset:
+            (content?.getBoundingClientRect().left ?? 0) -
+            exit.getBoundingClientRect().left,
+          glide,
+          nested: exit.querySelector('li') != null,
+          added: [...(list?.children ?? [])].filter(
+            child => child.tagName !== 'LI',
+          ).length,
+          rowLeft: exit.getBoundingClientRect().left,
+          panelRight: panel?.getBoundingClientRect().right ?? null,
+        });
         return;
       }
       requestAnimationFrame(tick);
@@ -532,13 +558,98 @@ test('a row swiped away with a removal action exits in place as it was on screen
     () =>
       (
         window as unknown as {
-          __samples: {offset: number; glide: number | null}[];
+          __samples: {
+            offset: number;
+            glide: number | null;
+            nested: boolean;
+            added: number;
+            rowLeft: number;
+            panelRight: number | null;
+          }[];
         }
       ).__samples,
   );
-  // It still shows swiped toward the inline start, its action out.
+  // The row itself exits, at its own place: no element added for it.
+  expect(sample.nested, JSON.stringify(sample)).toBe(false);
+  expect(sample.added, JSON.stringify(sample)).toBe(0);
+  expect(sample.rowLeft, JSON.stringify(sample)).toBeCloseTo(box.x, 0);
+  // It still shows swiped toward the inline start, its action out in its
+  // place.
   expect(sample.offset, JSON.stringify(sample)).toBeLessThan(-box.width / 4);
+  expect(
+    sample.panelRight ?? -1e3,
+    JSON.stringify(sample),
+  ).toBeGreaterThanOrEqual(box.x + box.width - 2);
   // Drafts starts where it was.
   expect(sample.glide ?? 0, JSON.stringify(sample)).toBeCloseTo(gap, 0);
   await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
+});
+
+test('a row a swipe left open, still moving when another row is swiped away, is left as the swipe moves it: the list leaves no transform on it', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'the swipe is driven with Chromium touch events (CDP)',
+  );
+  await open(page, SWIPE_STORY);
+  const sent = row(page, 'Sent');
+  const drafts = row(page, 'Drafts');
+  await expect(sent.locator('[data-swipe-panel="trailing"]')).toBeAttached();
+  await expect(drafts.locator('[data-swipe-panel="trailing"]')).toBeAttached();
+  const cdp = await page.context().newCDPSession(page);
+  const swipe = async (target: typeof sent, fractions: number[]) => {
+    const box = await target.boundingBox();
+    if (box == null) {
+      throw new Error('no row');
+    }
+    const y = box.y + box.height / 2;
+    const startX = box.x + box.width - 24;
+    await cdp.send('Input.dispatchTouchEvent', {
+      touchPoints: [{x: startX, y}],
+      type: 'touchStart',
+    });
+    for (const fraction of fractions) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        touchPoints: [{x: startX - box.width * fraction, y}],
+        type: 'touchMove',
+      });
+      await page.waitForTimeout(40);
+    }
+    await cdp.send('Input.dispatchTouchEvent', {
+      touchPoints: [],
+      type: 'touchEnd',
+    });
+  };
+  // Sent's actions open part of the way; the next swipe closes them, so
+  // Sent is still translated as Drafts leaves.
+  await swipe(sent, [0.02, 0.05, 0.1, 0.15, 0.2, 0.25]);
+  await expect
+    .poll(async () =>
+      sent.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41),
+    )
+    .toBeLessThan(-20);
+  await swipe(drafts, [0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9]);
+  await expect(row(page, 'Drafts')).toHaveCount(0, {timeout: 5000});
+  await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
+  await expect
+    .poll(async () =>
+      sent.evaluate(el => el.getAnimations({subtree: true}).length),
+    )
+    .toBe(0);
+  // Sent rests where its swipe leaves it (open or closed), and its content
+  // carries no transform the list wrote while Drafts left.
+  const after = await sent.evaluate(el => {
+    const content = el.querySelector<HTMLElement>(
+      ':scope > :not([data-swipe-panel])',
+    );
+    return {
+      own: new DOMMatrix(getComputedStyle(el).transform).m41,
+      inline: content?.style.transform ?? null,
+      computed: content == null ? null : getComputedStyle(content).transform,
+    };
+  });
+  expect(after.inline, JSON.stringify(after)).toBe('');
+  expect(after.computed, JSON.stringify(after)).toBe('none');
 });

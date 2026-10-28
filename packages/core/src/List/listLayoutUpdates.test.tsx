@@ -63,8 +63,15 @@ function rectOf(element: Element): DOMRect {
     return new DOMRect(0, 0, 400, height);
   }
   if (element.parentElement === list) {
-    const index = rows.indexOf(element);
-    const top = rows.slice(0, index).reduce((sum, row) => sum + takes(row), 0);
+    // The rows before it, summed without copying the list (the linear-work
+    // case below counts copies).
+    let top = 0;
+    for (const row of rows) {
+      if (row === element) {
+        break;
+      }
+      top += takes(row);
+    }
     return new DOMRect(0, top, 400, ROW);
   }
   if (element.id === 'after') {
@@ -301,6 +308,42 @@ describe('List row updates through animatedLayout (component:List FR12)', () => 
       </List>,
     );
     expect(seen).toBeUndefined();
+  });
+
+  it('removing two adjacent rows: both come back in their places, in order', async () => {
+    render(<Demo initial={['Inbox', 'Sent', 'Drafts', 'Archive']} />);
+    await change(['Inbox', 'Archive']);
+    expect(
+      [...document.querySelectorAll('li')].map(row => row.textContent?.trim()),
+    ).toEqual(['Inbox', 'Sent', 'Drafts', 'Archive']);
+    expect(
+      [...document.querySelectorAll('li[data-astryx-leaving]')].map(row =>
+        row.textContent?.trim(),
+      ),
+    ).toEqual(['Sent', 'Drafts']);
+  });
+
+  it('measuring a change keeps no list of the later rows per row: linear work in the row count', async () => {
+    const labels = Array.from({length: 300}, (_, i) => `Row ${i}`);
+    render(<Demo initial={labels} />);
+    // Copies of a 300-row list made while the change is measured and played.
+    const copies: number[] = [];
+    const slice = Array.prototype.slice;
+    const spy = vi.spyOn(Array.prototype, 'slice').mockImplementation(function (
+      this: unknown[],
+      ...args
+    ) {
+      if (this.length === labels.length) {
+        copies.push(this.length);
+      }
+      return slice.apply(this, args);
+    });
+    try {
+      await change(['New', ...labels]);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(copies.length).toBeLessThan(3);
   });
 
   it('a re-render with the same rows in the same order plays nothing', async () => {
