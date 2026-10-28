@@ -338,6 +338,33 @@ test('under a finger, a tap in a link row’s growth follows its link', async ({
   await followed;
 });
 
+test('under a finger, a tap in a link row’s own padding, outside its anchor, follows its link', async ({
+  page,
+}) => {
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  await openStory(page, storybook(), 'core-list--links');
+  const row = page.locator('#storybook-root li').first();
+  const box = await row.boundingBox();
+  if (box == null) {
+    throw new Error('no row');
+  }
+  // The row's leading padding: inside its box, outside its anchor. (Chromium
+  // also moves a tap this close onto the anchor by its touch adjustment;
+  // WebKit does not, and its click from a finger says `mouse`.)
+  const x = box.x + 2;
+  const y = box.y + box.height / 2;
+  expect(
+    await page.evaluate(
+      ([px, py]) => document.elementFromPoint(px, py)?.closest('a') == null,
+      [x, y],
+    ),
+  ).toBe(true);
+  // The row is the Links story's "Documentation" (`href="/docs"`).
+  const followed = page.waitForURL(/\/docs$/, {timeout: 5000});
+  await page.touchscreen.tap(x, y);
+  await followed;
+});
+
 test('a mouse click in a link row’s padding does nothing, as before (spec:AST-017 FR59)', async ({
   browser,
 }) => {
