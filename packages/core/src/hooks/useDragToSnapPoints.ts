@@ -11,8 +11,11 @@
  * @position Public hook, exported from `@astryxdesign/core/hooks`. A thin
  *   wrapper over `createDragToSnapPoints` with no behavior of its own (FR6).
  *
- * The factory attaches when the element mounts and is destroyed when it
- * unmounts or when `axis`, `snapPoints` or `flickThreshold` change. The
+ * The factory attaches to the element behind `ref` after each commit that
+ * mounts or replaces it (`architecture:react-component-runtime` INV6), and
+ * is destroyed when it unmounts. New `snapPoints` or `flickThreshold` apply
+ * to the running drag, so nothing on screen jumps; a new `axis` re-creates
+ * it. The
  * latest `onSettle` is the one called, so it may be a new function on every
  * render, and `settleTo` is the same function on every render.
  *
@@ -21,13 +24,23 @@
  * - /packages/core/src/hooks/useDragToSnapPoints.doc.mjs
  */
 
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import type {RefObject} from 'react';
 import {
   createDragToSnapPoints,
+  updateDragToSnapPoints,
   type DragToSnapPoints,
   type DragToSnapPointsOptions,
 } from '../dragToSnapPoints/createDragToSnapPoints';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+
+interface Attached {
+  readonly element: HTMLElement;
+  readonly axis: DragToSnapPointsOptions['axis'];
+  readonly points: string;
+  readonly flickThreshold: number | undefined;
+  readonly snap: DragToSnapPoints;
+}
 
 export interface UseDragToSnapPointsResult {
   /**
@@ -57,34 +70,63 @@ export function useDragToSnapPoints(
 ): UseDragToSnapPointsResult {
   const {axis, snapPoints, flickThreshold} = options;
   const onSettleRef = useRef(options.onSettle);
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     onSettleRef.current = options.onSettle;
   });
-  const snapRef = useRef<DragToSnapPoints | null>(null);
+  const attachedRef = useRef<Attached | null>(null);
   // The snap points as a value, so a new array with the same points keeps
   // the drag (an empty list stays empty).
   const points = JSON.stringify(snapPoints);
-  useEffect(() => {
+  // One drag for the node behind `ref`, checked after every commit: a node
+  // mounted or replaced later is driven too (INV6), new snap points or flick
+  // speed apply in place so nothing jumps, and a new axis re-creates it.
+  useIsomorphicLayoutEffect(() => {
     const element = ref.current;
-    if (element == null) {
-      return undefined;
-    }
-    const created = createDragToSnapPoints(element, {
-      axis,
-      snapPoints: JSON.parse(points) as number[],
-      flickThreshold,
-      onSettle: index => onSettleRef.current(index),
-    });
-    snapRef.current = created;
-    return () => {
-      created.destroy();
-      if (snapRef.current === created) {
-        snapRef.current = null;
+    const attached = attachedRef.current;
+    if (attached?.element === element && attached.axis === axis) {
+      if (
+        attached.points === points &&
+        attached.flickThreshold === flickThreshold
+      ) {
+        return;
       }
-    };
-  }, [ref, axis, points, flickThreshold]);
+      if (
+        updateDragToSnapPoints(attached.snap, {
+          snapPoints: JSON.parse(points) as number[],
+          flickThreshold,
+        })
+      ) {
+        attachedRef.current = {...attached, points, flickThreshold};
+        return;
+      }
+    }
+    attached?.snap.destroy();
+    attachedRef.current =
+      element == null
+        ? null
+        : {
+            element,
+            axis,
+            points,
+            flickThreshold,
+            snap: createDragToSnapPoints(element, {
+              axis,
+              snapPoints: JSON.parse(points) as number[],
+              flickThreshold,
+              onSettle: index => onSettleRef.current(index),
+            }),
+          };
+  });
+  // Destroyed at unmount.
+  useIsomorphicLayoutEffect(
+    () => () => {
+      attachedRef.current?.snap.destroy();
+      attachedRef.current = null;
+    },
+    [],
+  );
   const [result] = useState<UseDragToSnapPointsResult>(() => ({
-    settleTo: index => snapRef.current?.settleTo(index),
+    settleTo: index => attachedRef.current?.snap.settleTo(index),
   }));
   return result;
 }
