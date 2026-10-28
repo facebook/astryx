@@ -68,8 +68,8 @@ export const glidingDividerStyles = stylex.create({
       content: {default: null, [CELL_LINE]: '""'},
       position: {default: null, [CELL_LINE]: 'absolute'},
       insetInline: {default: null, [CELL_LINE]: 0},
-      // A row's own border is drawn below its box: the line sits that much
-      // lower, where the border rests.
+      // Where the collapsed edge rests below the row's padding box (a wide
+      // border, or the row's own): measured when the row is marked.
       bottom: {
         default: null,
         [CELL_LINE]: 'calc(-1 * var(--_table-row-glide-offset, 0px))',
@@ -221,6 +221,24 @@ export async function markGlidingRows(
     return;
   }
   const batch = Symbol('glide');
+  // Where each row's divider rests, read before any write. The line hangs
+  // from the row's padding box (its containing block), which a row's own
+  // border shortens; the collapsed edge starts at a cell's padding-box
+  // bottom, which a wide border puts below it. The table paints that edge
+  // from the whole pixel at or above it, so the line starts there too.
+  const offsets = new Map<Element, number>();
+  for (const row of rows.keys()) {
+    const edge = edges.get(row);
+    const cell = row.lastElementChild;
+    if (edge == null || !(cell instanceof HTMLElement)) {
+      continue;
+    }
+    const cellEdge =
+      cell.getBoundingClientRect().top + cell.clientTop + cell.clientHeight;
+    const rowPaddingEdge =
+      row.getBoundingClientRect().top + row.clientTop + row.clientHeight;
+    offsets.set(row, Math.floor(cellEdge) + edge.width - rowPaddingEdge);
+  }
   for (const row of rows.keys()) {
     const edge = edges.get(row);
     if (edge != null && !row.hasAttribute(GLIDING_ATTRIBUTE)) {
@@ -247,14 +265,9 @@ export async function markGlidingRows(
           element.style.borderTopColor = 'transparent';
         }
       }
-      const ownWidth = Number.parseFloat(
-        getComputedStyle(row).borderBottomWidth,
-      );
-      // (Read before any write of this batch's next row: the row's own
-      // width does not change with its color.)
       row.style.setProperty(
         '--_table-row-glide-offset',
-        `${Number.isFinite(ownWidth) ? ownWidth : 0}px`,
+        `${offsets.get(row) ?? 0}px`,
       );
       // The table's last row can glide a pixel farther than the rows above
       // it (its border collapses differently), so mid-glide it overlaps the

@@ -200,8 +200,9 @@ test("an app's border on a row itself moves with the row, pinned cells included,
 }) => {
   await mount(page, 'gliding-rows', '&args=rowBorder:!true');
   expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
-  // The green border is on the tbody's fourth row, which glides down.
-  const {y, pinnedX, unpinnedX} = await rowBottom(page, 3);
+  // The green border is on the fourth order's row, which glides down: the
+  // open panel sits above it, so it is the tbody's fifth row now.
+  const {y, pinnedX, unpinnedX} = await rowBottom(page, 4);
   for (const [where, x] of [
     ['pinned', pinnedX],
     ['unpinned', unpinnedX],
@@ -213,7 +214,7 @@ test("an app's border on a row itself moves with the row, pinned cells included,
   const travel = await page.evaluate(() => {
     const row = document.querySelectorAll(
       '.astryx-table-scroll-wrapper tbody tr',
-    )[3] as HTMLElement;
+    )[4] as HTMLElement;
     const parts = getComputedStyle(row).translate.split(' ');
     return Number.parseFloat(parts[1] ?? '0') || 0;
   });
@@ -252,24 +253,26 @@ async function greenRowsAt(page: Page, x: number): Promise<number[]> {
   }, shot.toString('base64'));
 }
 
-test("a row's own border glides level across the pinned and scrolling cells", async ({
-  page,
-}) => {
-  await mount(page, 'gliding-rows', '&args=rowBorder:!true');
-  expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
-  const {pinnedX, unpinnedX} = await rowBottom(page, 3);
-  const pinned = await greenRowsAt(page, pinnedX);
-  const unpinned = await greenRowsAt(page, unpinnedX);
-  expect(pinned.length).toBeGreaterThan(0);
-  expect(unpinned.length).toBeGreaterThan(0);
-  // One line, at one height on both sides of the pinned edge.
-  expect(Math.abs(Math.min(...pinned) - Math.min(...unpinned))).toBeLessThan(
-    1.5,
-  );
-  expect(Math.abs(Math.max(...pinned) - Math.max(...unpinned))).toBeLessThan(
-    1.5,
-  );
-});
+for (const [name, args] of [
+  ["a row's own 3 px border", '&args=rowBorder:!true'],
+  ["a theme's 2 px divider", '&args=wideBorder:!true'],
+] as const) {
+  test(`${name} glides level across the pinned and scrolling cells`, async ({
+    page,
+  }) => {
+    await mount(page, 'gliding-rows', args);
+    expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
+    const {pinnedX, unpinnedX} = await rowBottom(page, 4);
+    const pinned = await greenRowsAt(page, pinnedX);
+    const unpinned = await greenRowsAt(page, unpinnedX);
+    expect(pinned.length).toBeGreaterThan(0);
+    expect(unpinned.length).toBeGreaterThan(0);
+    // One line, at one height on both sides of the pinned edge: not even a
+    // 1 px step.
+    expect(Math.min(...pinned)).toBe(Math.min(...unpinned));
+    expect(Math.max(...pinned)).toBe(Math.max(...unpinned));
+  });
+}
 
 for (const edge of ['tbody', 'top'] as const) {
   test(`a divider the collapse takes from ${edge === 'tbody' ? "the body's bottom border" : "the next row's top border"} is drawn once while it glides`, async ({
