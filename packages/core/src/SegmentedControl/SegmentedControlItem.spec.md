@@ -1,0 +1,197 @@
+---
+schema_version: 3
+template_version: 7
+kind: component
+id: component:SegmentedControlItem
+authority: current
+archive_reason: null
+superseded_by: null
+approved_by: cixzhang
+approved_at: 2026-10-28
+owners: [cixzhang]
+review_triggers:
+  [
+    public-api,
+    behavior,
+    layout,
+    interaction,
+    motion,
+    theming,
+    styling,
+    accessibility,
+    visual,
+    react-runtime,
+    compatibility,
+  ]
+verified_by:
+  [
+    packages/core/src/SegmentedControl/SegmentedControl.test.tsx,
+    packages/core/src/RadioList/__tests__/RadioGroup.a11y.test.tsx,
+    packages/core/src/RadioList/__tests__/RadioGroup.a11y.chromium.spec.ts,
+    packages/core/src/__tests__/PressedState.a11y.chromium.spec.ts,
+  ]
+modules: []
+families: []
+design_specs: [design:user-states]
+architecture:
+  [
+    architecture:component-theming-surface,
+    architecture:interaction-modality,
+    architecture:public-component-api,
+  ]
+contributing: []
+system_specs: [spec:AST-085, spec:AST-102]
+---
+
+# SegmentedControlItem component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                         |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes. SegmentedControlItem takes `value`, `label`, `isLabelHidden`, `icon`, `isDisabled`, and base props, and must sit inside a SegmentedControl.                                                                        |
+| Behavior                | One segment: a `<button role="radio">` with `aria-checked`. A click selects it unless it is selected, disabled, or the caller's `onClick` prevents default.                                                                      |
+| End-user impact         | People see the selected segment raised and bold, and pick another with one click. Icon-only segments are still named. A disabled selected segment drops out of the tab order.                                                    |
+| Builder impact          | None.                                                                                                                                                                                                                            |
+| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. A disabled selected segment leaves the tab order, a caller `onClick` runs while disabled, and segments hold a fixed height; all are listed under Current-state impact. |
+| Review checks           | Reject a segment without a name, a click that selects a disabled segment, press paint on the selected or a disabled segment, or a lost forced-colors selected state.                                                             |
+| Governing rules         | `component:SegmentedControl`; WAI-ARIA radio pattern; `spec:AST-085` FR1, FR2; `spec:AST-102` FR4; `design:user-states` DR1, DR2 (pressed overlay and selected-segment exception); WCAG 1.4.11.                                  |
+
+This table is a review projection; the body below is authoritative.
+
+## Intent
+
+SegmentedControlItem is one choice in a SegmentedControl. It owns the
+segment's radio semantics, click selection, naming, label and icon rendering,
+item disabled state, and the segment's paint. Consumer usage lives in
+`SegmentedControlItem.doc.mjs`.
+
+## Compatibility and migration
+
+- Released default preserved: `yes`; label visible, enabled
+- Compatibility class: records shipped behavior; no public prop, default,
+  export, or DOM change
+- Controlled/uncontrolled behavior: controlled by the parent's `value`
+- Migration decision: none
+
+Consumer migration instructions belong in consumer docs and release notes.
+
+## Ownership boundary
+
+**Owns**
+
+- The segment button, its radio role, checked and disabled state, and name.
+- Click selection and `onClick` composition.
+- Label and icon rendering, truncation, and segment paint per size and state.
+
+**Does not own / non-goals**
+
+- Tab stop, arrow navigation, selection-follows-focus, group disabled state,
+  and the theming anatomy map — owned by `component:SegmentedControl`. The
+  `segmented-control-item` target is declared in SegmentedControl's consumer
+  docs and mapped in its record.
+- Icon artwork — owned by the caller.
+- Use outside SegmentedControl — not supported.
+
+## Public concepts
+
+| Concept  | Closed values or states   | Meaning                                            | Availability by variant/orientation/state | Default  | Owner                            | Stability | Invalid-value behavior              |
+| -------- | ------------------------- | -------------------------------------------------- | ----------------------------------------- | -------- | -------------------------------- | --------- | ----------------------------------- |
+| Value    | string                    | The value this segment selects.                    | Always.                                   | required | `component:SegmentedControlItem` | Stable    | TypeScript rejects a missing value. |
+| Label    | string; visible or hidden | Visible text, or the name of an icon-only segment. | Always.                                   | visible  | `component:SegmentedControlItem` | Stable    | TypeScript rejects a missing label. |
+| Disabled | off, item, group          | Blocks selection.                                  | Always.                                   | off      | `component:SegmentedControlItem` | Stable    | Not applicable.                     |
+
+## Behavioral and layout contract
+
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                            | Basis                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| FR1 | Each segment renders one `<button type="button" role="radio">` with `aria-checked` true when its `value` equals the group value, `data-value`, and the `segmented-control-item` target reflecting `data-size`, `data-selected`, and `data-disabled`. A forwarded prop cannot override the role.                                                                                                                                      | WAI-ARIA radio pattern; current source and tests                                                           |
+| FR2 | A click runs the caller `onClick` first; unless it prevents default, an enabled, unselected segment passes its value to the group's `onChange`. Clicking the selected segment does nothing.                                                                                                                                                                                                                                          | Current tests                                                                                              |
+| FR3 | The segment renders its icon (sized to the segment size) followed by its label. With `isLabelHidden`, the label is not rendered and becomes `aria-label`, and the segment does not shrink. A visible label truncates with an ellipsis when the segment is narrower than it.                                                                                                                                                          | Current tests                                                                                              |
+| FR4 | A segment disabled by its own `isDisabled` or by the group sets `aria-disabled`, refuses selection, shows disabled text color, and shows no hover or press paint. It MUST keep the Tab stop it has when enabled (`spec:AST-085` FR1). Implementation gap: a disabled selected segment leaves the tab order unless the group is disabled with a reason, and a caller `onClick` still runs on a disabled segment (`spec:AST-085` FR2). | `spec:AST-085` FR1, FR2; current tests                                                                     |
+| FR5 | The selected segment paints a raised surface with a low shadow and semibold primary text; under forced colors it paints `Highlight` with `HighlightText`. Unselected enabled segments paint the shared hover tint and, under `design:user-states` DR1 and DR2 with its selected-segment exception, the pressed overlay; the selected segment does not.                                                                               | WCAG 1.4.11; `design:user-states` DR1, DR2 (pressed overlay and selected-segment exception); current tests |
+| FR6 | Segment height is the element height for the size minus 4 CSS px (24, 28, or 32) as a minimum that grows with a set text size under `spec:AST-102` FR4 (implementation gap: the height is fixed), with corners concentric with the control; `sm` uses supporting text and tighter padding. Keyboard focus paints the shared focus outline.                                                                                           | `architecture:interaction-modality` INV1; current source; `spec:AST-102` FR4                               |
+| FR7 | `ref`, `data-*`, and other base props reach the button; `xstyle` composes last.                                                                                                                                                                                                                                                                                                                                                      | Current tests                                                                                              |
+
+### Allowed variation
+
+- **AV1 — Content.** Label text and icon vary within their types.
+
+### Representative states
+
+| State      | Required invariant                                                  | Allowed variation |
+| ---------- | ------------------------------------------------------------------- | ----------------- |
+| Unselected | `aria-checked="false"`; hover and press overlay.                    | Icon.             |
+| Selected   | `aria-checked="true"`; raised; bold; Highlight under forced colors. | —                 |
+| Icon-only  | Named by `aria-label`; does not shrink.                             | —                 |
+| Disabled   | `aria-disabled`; no paint feedback; no selection.                   | Item or group.    |
+
+### Transformation and precedence order
+
+- **ORD1 — Click.** Caller `onClick`, then selection unless prevented,
+  disabled, or already selected.
+
+### Performance and resources
+
+- **PR1 — Bounded resources.** No state, effect, or listener of its own; press
+  feedback shares the press controller's window and document listeners.
+
+## Accessibility contract
+
+- **AR1 — Radio semantics.** Each segment exposes the radio role, checked
+  state, disabled state, and a name (FR1, FR3).
+- **AR2 — Target size.** The smallest segment is 24 CSS px tall, meeting WCAG
+  2.5.8.
+- **AR3 — Non-color state.** FR5.
+
+## Design relationships
+
+| Anatomy or state | Design requirement                                | Representation authority | Hierarchy role | Component contract |
+| ---------------- | ------------------------------------------------- | ------------------------ | -------------- | ------------------ |
+| Segment          | Transparent button; raised surface when selected. | Current source           | Prominent      | FR1, FR5, FR6      |
+| Label            | Medium text; semibold when selected; truncates.   | Current source           | Prominent      | FR3, FR5           |
+| Icon             | Caller artwork sized to the segment.              | Current source           | Supporting     | FR3                |
+
+The target mapping for these parts lives in `component:SegmentedControl`'s
+theming anatomy.
+
+## Family and system relationships
+
+- `component:SegmentedControl` supplies the value, size, layout, and group
+  disabled state, and owns keyboard navigation.
+- `spec:AST-085` owns disabled focusability; FR4 records the gap.
+- `design:user-states` owns the pressed treatment.
+
+## Verification map
+
+| Contract | Verification                                                                                                                                                                                                       | Representative states                         | Mutation or failure expectation                                                                                                                           | Audit section                              |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| FR1      | `SegmentedControl.test.tsx` aria-checked and data-testid cases; `RadioGroup.a11y.test.tsx` and `RadioGroup.a11y.chromium.spec.ts` (in `RadioList/__tests__`) `segmented-option-*` states                           | Selection change; forwarded role              | Stale `aria-checked` or an overridden role fails.                                                                                                         | `audit:SegmentedControlItem/accessibility` |
+| FR2      | `SegmentedControl.test.tsx` click and onClick-composition cases                                                                                                                                                    | Click; selected click; prevented click        | A selected or prevented click that selects fails.                                                                                                         | `audit:SegmentedControlItem/behavior`      |
+| FR3      | `SegmentedControl.test.tsx` icon, icon-only, and truncation cases                                                                                                                                                  | Icon and label; icon-only; long label         | A missing name, or an icon that truncates, fails.                                                                                                         | `audit:SegmentedControlItem/anatomy`       |
+| FR4      | `SegmentedControl.test.tsx` disabled cases; `RadioGroup.a11y.test.tsx` and `RadioGroup.a11y.chromium.spec.ts` (in `RadioList/__tests__`) `segmented-option-disabled` and `segmented-option-group-disabled*` states | Item and group disabled                       | A disabled segment that selects fails. Evidence gap: no test asserts the disabled text color, absent hover paint, or the caller `onClick` while disabled. | `audit:SegmentedControlItem/accessibility` |
+| FR5      | `SegmentedControl.test.tsx` forced-colors and pressed-state cases; `PressedState.a11y.chromium.spec.ts` segmented-control cases                                                                                    | Selected under forced colors; press; disabled | Lost forced-colors state, or press paint on a disabled segment, fails. Evidence gap: no test asserts the raised selected surface or the hover tint.       | `audit:SegmentedControlItem/visual`        |
+| FR6, FR7 | Evidence gap: no test of segment heights, text growth, focus outline, `ref`, or `xstyle` order                                                                                                                     | —                                             | —                                                                                                                                                         | `audit:SegmentedControlItem/layout`        |
+
+## Current-state impact
+
+- **Caller onClick while disabled (FR4).** A disabled segment still runs a
+  caller's `onClick`, against `spec:AST-085` FR2.
+- **Fixed height (FR6).** Segments hold a fixed height instead of growing with
+  a set text size, against `spec:AST-102` FR4.
+- **Disabled selected segment (FR4).** A disabled selected segment leaves the
+  tab order unless the group is disabled with a reason, against `spec:AST-085`
+  FR1.
+
+## Decision log
+
+No component-local decision.
+
+## Open questions
+
+None.
+
+## Content boundary
+
+This file does not duplicate consumer prop tables/examples, current audit
+results, implementation steps, or family/system rules. It links to their owners.
