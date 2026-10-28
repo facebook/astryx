@@ -283,7 +283,7 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
 });
 
 describe('a child of an installed built theme (spec:AST-108 FR5, INV15)', () => {
-  it('keeps the base\u2019s explicit motion tokens, as a child of a defined theme does', () => {
+  it('resolves base first, then generated, as a child of a defined theme does', () => {
     const base = defineTheme({
       name: 'BuiltBase',
       motion: {tempo: 0.8},
@@ -296,10 +296,14 @@ describe('a child of an installed built theme (spec:AST-108 FR5, INV15)', () => 
       extends: built,
       motion: {tempo: 1.2},
     });
-    expect(child.tokens['--duration-medium']).toBe('333ms');
-    expect(child.tokens['--ease-entrance']).toBe('linear');
-    // What the base only generated, the child regenerates at its tempo.
+    // The child's tempo regenerates every duration over the base's tokens,
+    // its explicit one included (`architecture:theme-authoring-contract`).
+    expect(child.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 1.2)}ms`,
+    );
     expect(child.tokens['--duration-fast']).toBe(`${Math.round(175 * 1.2)}ms`);
+    // It generates no entrance curve without a character, so the base's stays.
+    expect(child.tokens['--ease-entrance']).toBe('linear');
   });
 });
 
@@ -472,7 +476,7 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
     }
   });
 
-  it('a base\u2019s explicit duration keeps winning over a child\u2019s knobs', () => {
+  it('a child\u2019s knobs regenerate over its base\u2019s explicit durations: base first, then generated', () => {
     const base = defineTheme({
       name: 'ExplicitBase',
       motion: {tempo: 0.8},
@@ -483,7 +487,9 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       extends: base,
       motion: {tempo: 1.2},
     });
-    expect(quicker.tokens['--duration-medium']).toBe('300ms');
+    expect(quicker.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 1.2)}ms`,
+    );
     expect(quicker.tokens['--duration-fast']).toBe(
       `${Math.round(175 * 1.2)}ms`,
     );
@@ -492,7 +498,10 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       extends: base,
       motion: {character: 'crisp'},
     });
-    expect(crisper.tokens['--duration-medium']).toBe('300ms');
+    // The inherited tempo regenerates it too.
+    expect(crisper.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 0.8)}ms`,
+    );
     expect(crisper.tokens['--duration-fast']).toBe(
       `${Math.round(175 * 0.8)}ms`,
     );
