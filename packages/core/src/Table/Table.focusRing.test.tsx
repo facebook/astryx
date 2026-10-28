@@ -72,7 +72,7 @@ function TreeTable() {
   });
   const tree = useTableTreeData({...treeConfig, hasExpandAllControl: true});
   return (
-    <Table data={visibleData} columns={columns} idKey="id" plugins={[tree]} />
+    <Table data={visibleData} columns={columns} idKey="id" plugins={{tree}} />
   );
 }
 
