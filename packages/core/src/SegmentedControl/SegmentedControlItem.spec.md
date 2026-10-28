@@ -47,15 +47,15 @@ system_specs: [spec:AST-020, spec:AST-085, spec:AST-102]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes. SegmentedControlItem takes `value`, `label`, `isLabelHidden`, `icon`, `isDisabled`, and base props, and must sit inside a SegmentedControl.                                                                                                              |
-| Behavior                | One segment: a `<button role="radio">` with `aria-checked`. A click, or Space or Enter on the focused segment, selects it unless it is selected, disabled, or the caller's `onClick` prevents default.                                                                 |
-| End-user impact         | People see the selected segment raised and bold, and pick another with one click. Icon-only segments are still named. A disabled selected segment drops out of the tab order.                                                                                          |
-| Builder impact          | None.                                                                                                                                                                                                                                                                  |
-| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. A disabled selected segment leaves the tab order, a caller `onClick` runs while disabled, a caller `className` is replaced, and segments hold a fixed height; all are listed under Current-state impact.     |
-| Review checks           | Reject a segment without a name, a click that selects a disabled segment, press paint on the selected or a disabled segment, or a lost forced-colors selected state.                                                                                                   |
-| Governing rules         | `component:SegmentedControl`; WAI-ARIA radio pattern; `spec:AST-085` FR1, FR2; `spec:AST-102` FR4; `design:user-states` DR1–DR3 (pressed overlay, disabled non-response, and selected-segment exception); `architecture:public-component-api` INV5, INV6; WCAG 1.4.11. |
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes. SegmentedControlItem takes `value`, `label`, `isLabelHidden`, `icon`, `isDisabled`, and base props, and must sit inside a SegmentedControl.                                                                                                                                                                                                 |
+| Behavior                | One segment: a `<button role="radio">` with `aria-checked`. A click, or Space or Enter on the focused segment, selects it unless it is selected, disabled, or the caller's `onClick` prevents default.                                                                                                                                                    |
+| End-user impact         | People see the selected segment raised and bold, and pick another with one click. Icon-only segments are still named. A disabled selected segment drops out of the tab order.                                                                                                                                                                             |
+| Builder impact          | None.                                                                                                                                                                                                                                                                                                                                                     |
+| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. A disabled selected segment leaves the tab order, a caller `onClick` runs while disabled or cannot veto a press while focused, a caller `className` is replaced, segments hold a fixed height, and a truncated `sm` segment can be under 24 px wide; all are listed under Current-state impact. |
+| Review checks           | Reject a segment without a name, a click that selects a disabled segment, press paint on the selected or a disabled segment, or a lost forced-colors selected state.                                                                                                                                                                                      |
+| Governing rules         | `component:SegmentedControl`; WAI-ARIA radio pattern; `spec:AST-020` FR9, FR15, DEC-5; `spec:AST-085` FR1, FR2; `spec:AST-102` FR4; `design:user-states` DR1–DR3 (pressed overlay, disabled non-response, and selected-segment exception); `architecture:public-component-api` INV5, INV6; WCAG 1.4.11.                                                   |
 
 This table is a review projection; the body below is authoritative.
 
@@ -141,8 +141,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **AR1 — Radio semantics.** Each segment exposes the radio role, checked
   state, disabled state, and a name (FR1, FR3).
-- **AR2 — Target size.** The smallest segment is 24 CSS px tall, meeting WCAG
-  2.5.8.
+- **AR2 — Target size.** The smallest segment is 24 CSS px tall. A labelled
+  `sm` segment that truncates under `component:SegmentedControl` FR5 can shrink
+  below 24 CSS px wide, short of WCAG 2.5.8 (implementation gap).
 - **AR3 — Non-color state.** FR5.
 
 ## Design relationships
@@ -176,6 +177,8 @@ theming anatomy.
 
 ## Current-state impact
 
+- **Narrow target (AR2).** A labelled `sm` segment that truncates can shrink
+  below 24 CSS px wide, short of WCAG 2.5.8.
 - **Press veto (FR2).** A caller `onClick` cannot veto a press made while focus
   is already in the group, which selects before the click.
 - **Caller className (FR7).** A caller `className` on a segment is replaced by
