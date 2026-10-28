@@ -27,7 +27,6 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {cellPressableProps} from '../utils/pressFeedback';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -355,6 +354,12 @@ export interface TreeListItemInternalProps {
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
+  /**
+   * The row collapsed and its child group is playing its exit: the group
+   * stays rendered (the exit makes it inert) until it ends, and its rows
+   * leave the tree's keyboard order at once.
+   */
+  isExiting?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -401,6 +406,7 @@ export function TreeListItem({
   isLast,
   ancestorsIsLast,
   isExpanded,
+  isExiting = false,
   onToggle,
   density,
   variant,
@@ -409,12 +415,7 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
-  // A row's press is a cell's: it waits UIScrollView's content-touch delay
-  // only inside a scroll view (FR11), yields to the pan, and releases on the
-  // deselect clock.
-  usePressFeedback();
-  // The cell profile (utils/pressFeedback.ts), internal to core.
-  const pressable = cellPressableProps;
+  const pressable = usePressFeedback();
   // A selection hold returns focus to this row after a pop; its ring follows
   // how the user last interacted (List/selectionHold.ts).
   useInteractionModalityTracking();
@@ -719,8 +720,11 @@ export function TreeListItem({
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>
-      {isExpanded && renderedChildren != null && (
-        <ul role="group" {...stylex.props(styles.childGroup)}>
+      {(isExpanded || isExiting) && renderedChildren != null && (
+        <ul
+          role="group"
+          data-tree-exiting={isExiting ? '' : undefined}
+          {...stylex.props(styles.childGroup)}>
           {renderedChildren}
         </ul>
       )}
