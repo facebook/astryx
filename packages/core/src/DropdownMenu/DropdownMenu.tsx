@@ -74,7 +74,6 @@ import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
-import {MenuRegionsContext} from './menuRegionsContext';
 import {moveRegionsTab} from './menuRegionStops';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
@@ -1725,15 +1724,13 @@ function DropdownMenuPopover({
               className,
               style,
             )}>
-            <MenuRegionsContext value={hasRegions}>
-              <DropdownMenuContext value={contextValue}>
-                <DropdownMenuSurfaceContext value={surfaceValue}>
-                  <DropdownMenuRootOpenContext value={isOpen}>
-                    {menuContent}
-                  </DropdownMenuRootOpenContext>
-                </DropdownMenuSurfaceContext>
-              </DropdownMenuContext>
-            </MenuRegionsContext>
+            <DropdownMenuContext value={contextValue}>
+              <DropdownMenuSurfaceContext value={surfaceValue}>
+                <DropdownMenuRootOpenContext value={isOpen}>
+                  {menuContent}
+                </DropdownMenuRootOpenContext>
+              </DropdownMenuSurfaceContext>
+            </DropdownMenuContext>
           </div>,
         ),
         {
