@@ -50,7 +50,7 @@ function identity(overrides = {}) {
     headRef: 'fix-failed-ci-preview-links',
     headRepository: 'cixzhang/astryx',
     headRepositoryId: '321',
-    baseRepository: 'facebook/astryx',
+    baseRepository: 'meta/astryx',
     baseSha: BASE,
     sourceRunId: 33321033727,
     sourceRunAttempt: 1,
@@ -659,7 +659,7 @@ describe('PR Comment keeps its outcome off main', () => {
         sha: HEAD,
         context: 'PR Comment',
         state,
-        target_url: 'https://github.com/facebook/astryx/actions/runs/42',
+        target_url: 'https://github.com/meta/astryx/actions/runs/42',
       }),
     );
   });

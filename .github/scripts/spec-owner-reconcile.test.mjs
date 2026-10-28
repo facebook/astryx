@@ -16,7 +16,7 @@ const {
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const nextHead = '1111111111111111111111111111111111111111';
-const repository = 'facebook/astryx';
+const repository = 'meta/astryx';
 const workspace = path.resolve(import.meta.dirname, '../..');
 const env = {
   REVIEW_LABEL: 'needs:spec-owner-review',

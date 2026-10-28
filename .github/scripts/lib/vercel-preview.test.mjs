@@ -26,7 +26,7 @@ function fixture({
       state: 'open',
       draft: false,
       head: {sha: SHA, repo: {full_name: 'contributor/astryx'}},
-      base: {repo: {full_name: 'facebook/astryx'}},
+      base: {repo: {full_name: 'meta/astryx'}},
     },
   ],
 } = {}) {
@@ -315,7 +315,7 @@ describe('exact-head Vercel preview', () => {
       creator: {login: 'vercel[bot]'},
     };
     const status = {state: 'success', environment_url: ORIGIN};
-    for (const headRepository of ['contributor/astryx', 'facebook/astryx']) {
+    for (const headRepository of ['contributor/astryx', 'meta/astryx']) {
       const github = fixture({
         candidates: [
           {
@@ -323,7 +323,7 @@ describe('exact-head Vercel preview', () => {
             state: 'open',
             draft: false,
             head: {sha: SHA, repo: {full_name: headRepository}},
-            base: {repo: {full_name: 'facebook/astryx'}},
+            base: {repo: {full_name: 'meta/astryx'}},
           },
         ],
       });
@@ -375,7 +375,7 @@ describe('exact-head Vercel preview', () => {
       state: 'open',
       draft: false,
       head: {sha: SHA},
-      base: {repo: {full_name: 'facebook/astryx'}},
+      base: {repo: {full_name: 'meta/astryx'}},
     };
     for (const candidates of [
       [{...candidate, draft: true}],

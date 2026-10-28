@@ -43,7 +43,7 @@
 # stable dispatch. Stable and canary therefore use independent concurrency
 # groups (see each job below).
 #
-# Provenance requires a PUBLIC repo (facebook/astryx is public).
+# Provenance requires a PUBLIC repo (meta/astryx is public).
 name: Release
 run-name: Release (${{ github.sha }})
 

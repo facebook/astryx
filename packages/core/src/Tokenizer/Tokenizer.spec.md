@@ -75,7 +75,7 @@ post-selection lifecycle of an empty-query bootstrap menu, and an experimental
 touch presentation in which a trigger opens one searchable modal bottom sheet in
 place of the inline combobox. The descriptor lets Layer prepare placement without
 exposing DOM refs, pointer coordinates, or width policy to consumers. The
-dependent [PowerSearch draft](https://github.com/facebook/astryx/pull/5804)
+dependent [PowerSearch draft](https://github.com/meta/astryx/pull/5804)
 remains evidence for the need, not authority for this record.
 
 ## Compatibility and migration
@@ -423,7 +423,7 @@ they compose.
   keeps its component-local token/input and source-loading behavior inside that
   boundary.
 - The PowerSearch contract at
-  [#5804](https://github.com/facebook/astryx/pull/5804) depends on the approved
+  [#5804](https://github.com/meta/astryx/pull/5804) depends on the approved
   descriptor and owns its own editor width policy. It is dependent draft evidence,
   not authority for Tokenizer.
 
