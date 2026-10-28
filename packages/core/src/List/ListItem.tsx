@@ -41,7 +41,7 @@ import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {ITEM_KEY_ATTRIBUTE} from './listLayoutUpdates';
+import {ITEM_KEY_ATTRIBUTE, keepPresentation} from './listLayoutUpdates';
 import {useTouchHitArea} from '../utils/touchHitArea';
 import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
@@ -365,7 +365,10 @@ export function ListItem({
   const ctx = use(ListContext);
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
-  const keepRowPresentation = ctx?.keepRowPresentation;
+  // Under the list's animated layout handle, a row leaving the list keeps
+  // what it showed on screen for its exit.
+  const keepRowPresentation =
+    ctx?.animatedLayout != null ? keepPresentation : undefined;
   const keepRowPresentationRef = useRef(keepRowPresentation);
   useIsomorphicLayoutEffect(() => {
     keepRowPresentationRef.current = keepRowPresentation;

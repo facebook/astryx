@@ -12,13 +12,14 @@
  *   proven in List/__tests__/ListUpdates.interaction.browser.spec.ts
  */
 
-import {useRef, useState} from 'react';
+import {use, useRef, useState} from 'react';
 import {act, render} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import {TRAVELLING_ATTRIBUTE} from './listLayoutUpdates';
+import {ListContext} from './ListContext';
 
 interface Played {
   readonly element: Element;
@@ -270,6 +271,36 @@ describe('List row updates through animatedLayout (component:List FR12)', () => 
     expect(list().style.overflowY).toBe('auto');
     await change(['New', 'Inbox', 'Drafts']);
     expect(list().style.overflowY).toBe('auto');
+  });
+
+  it("puts the handle in List's context for its rows", () => {
+    let seen: unknown = 'unset';
+    function Probe() {
+      seen = use(ListContext)?.animatedLayout;
+      return null;
+    }
+    let handle: unknown = null;
+    function WithHandle() {
+      const containerRef = useRef<HTMLDivElement>(null);
+      const animatedLayout = useAnimatedLayout({containerRef});
+      handle = animatedLayout;
+      return (
+        <div ref={containerRef}>
+          <List animatedLayout={animatedLayout}>
+            <Probe />
+          </List>
+        </div>
+      );
+    }
+    render(<WithHandle />);
+    expect(handle).not.toBeNull();
+    expect(seen).toBe(handle);
+    render(
+      <List>
+        <Probe />
+      </List>,
+    );
+    expect(seen).toBeUndefined();
   });
 
   it('a re-render with the same rows in the same order plays nothing', async () => {

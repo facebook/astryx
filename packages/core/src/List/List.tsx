@@ -30,7 +30,7 @@ import {
 } from './ListContext';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {keepPresentation, useListLayoutUpdates} from './listLayoutUpdates';
+import {useListLayoutUpdates} from './listLayoutUpdates';
 import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
 import type {AnimatedLayout} from '../motion/animatedLayout';
 import {themeProps} from '../utils/themeProps';
@@ -267,8 +267,7 @@ export function List({
       hasDividers,
       edge,
       listStyle,
-      keepRowPresentation:
-        animatedLayout != null ? keepPresentation : undefined,
+      animatedLayout,
     }),
     [density, hasDividers, edge, listStyle, animatedLayout],
   );
