@@ -174,14 +174,7 @@ export const docs = {
       type: 'number | string',
       default: '400',
       description:
-        "Requested dialog width. Dialog preserves this preferred width and clamps it to the container and dynamic viewport with token gutters. Without one, a phone (a compact width under a finger) gets the iOS alert width, 320, unless presentation is 'dialog'.",
-    },
-    {
-      name: 'presentation',
-      type: "'adaptive' | 'dialog'",
-      default: "'adaptive'",
-      description:
-        "How the alert presents under a finger. 'adaptive' gives a touch screen the native alert: it appears and leaves the way an iOS alert does, and it is 320 wide on a phone. 'dialog' keeps the dialog a mouse gets on every device: the theme's motion, 400 wide. Either way the two actions are tracked as one group under every pointer.",
+        'Requested dialog width. Dialog preserves this preferred width and clamps it to the container and dynamic viewport with token gutters. Without one, a phone (a compact window under a coarse primary pointer) gets the iOS alert width, 320, in every theme.',
     },
     {
       name: 'isInline',

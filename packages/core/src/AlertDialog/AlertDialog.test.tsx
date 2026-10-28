@@ -525,7 +525,7 @@ describe('AlertDialog action tracking', () => {
       isInline?: boolean;
       touch?: boolean;
       smallScreen?: boolean;
-      presentation?: 'adaptive' | 'dialog';
+      width?: number;
     } = {},
   ) {
     const isTouch = props.touch ?? true;
@@ -540,7 +540,7 @@ describe('AlertDialog action tracking', () => {
       <AlertDialog
         isOpen={isOpen}
         isInline={props.isInline}
-        presentation={props.presentation}
+        width={props.width}
         onOpenChange={onOpenChange}
         title="Delete item?"
         description="This cannot be undone."
@@ -651,25 +651,17 @@ describe('AlertDialog action tracking', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('with presentation="dialog" under a finger keeps the theme motion and Dialog\'s 400: a click acts at once and a close is immediate', () => {
-    const {onOpenChange, cancel, close} = renderOpen({presentation: 'dialog'});
-    // A coarse pointer, before anything is checked.
-    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
-    const dialog = screen.getByRole('alertdialog');
-    expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
-    // No presentation to wait for: the click acts as it lands.
-    fireEvent.click(cancel);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    // No fade to wait for either: the dialog closes with the caller.
-    close();
-    expect(dialog).not.toHaveAttribute('open');
-  });
-
-  it("takes UIKit's alert width on a phone under a finger, and Dialog's 400 on a wider touch screen or with a mouse", () => {
+  it("takes iOS's alert width on a phone, a caller's width there, and Dialog's 400 on a wider touch screen or with a mouse (FR9)", () => {
     const widthOf = () => screen.getByRole('alertdialog').getAttribute('style');
-    // A phone: a compact width with a touch pointer.
+    // A phone: a compact window under a coarse primary pointer.
     renderOpen();
     expect(widthOf()).toContain('--x-width: 320px');
+    cleanup();
+    vi.unstubAllGlobals();
+    // A caller's width still wins on a phone.
+    renderOpen({width: 360});
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+    expect(widthOf()).toContain('--x-width: 360px');
     cleanup();
     vi.unstubAllGlobals();
     // A wider touch screen (a tablet): Dialog's 400.
@@ -733,23 +725,6 @@ describe('AlertDialog action tracking', () => {
     expect(cancel).toHaveAttribute('data-astryx-press', 'on');
     touch('touchend', cancel, {x: 60, y: 156}, id);
     expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it('tracks the actions with presentation="dialog" too: a slide from the action to Cancel cancels', () => {
-    const {onOpenChange, onAction, cancel, action} = renderOpen({
-      presentation: 'dialog',
-    });
-    // The group owns both actions, as under every presentation.
-    for (const button of [cancel, action]) {
-      expect(button).toHaveAttribute(PRESS_GROUP_ITEM_ATTRIBUTE, '');
-    }
-    const id = touchId++;
-    touch('touchstart', action, {x: 60, y: 116}, id);
-    touch('touchmove', action, {x: 60, y: 156}, id);
-    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
-    touch('touchend', action, {x: 60, y: 156}, id);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onAction).not.toHaveBeenCalled();
   });
 
   it('tracks a mouse too (family:action-groups FR5): a press on the action slid to Cancel cancels, once', () => {
