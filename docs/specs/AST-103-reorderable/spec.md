@@ -112,7 +112,8 @@ const {detach} = reorderable.attach(listElement, {
   `onReorder({ key, to })`, an optional `isReorderable(key)` predicate, and
   an optional `positions()`, which supplies drop positions for layouts such as a
   fanned hand or a custom grid; collections the measured layout already places
-  do not need it.
+  do not need it. An optional `feedback` chooses how a drag previews
+  its landing place: `'insertion-line'` (default) or `'shift'` (FR9).
   `positions()` returns one `{x, y}` per item, in item order: the center of
   that item's slot, in pixels from the top-left corner of the collection's
   container box. A drag reports as `to` the slot, within the drop range, whose center is
@@ -124,7 +125,7 @@ const {detach} = reorderable.attach(listElement, {
   collection's full item order (every item it was given, mounted or not). In a
   tree, `to` is `{ parent, index }`: `parent` is the new parent's key (`null`
   at the root) and `index` is the item's position among that parent's children
-  after the move (DEC-3). It carries no gesture, animation, or timing settings. An optional
+  after the move (DEC-3). Beyond `feedback`, it carries no gesture, animation, or timing settings. An optional
   `isReorderable(key)` predicate keeps a row in place: a row it rejects shows no
   handle and cannot be picked up (DEC-2). A row it rejects at either end of the
   collection also bounds the drop range: nothing drops beyond it, and a
@@ -262,6 +263,26 @@ const {detach} = reorderable.attach(listElement, {
 - **FR8 — One public shape for the job.** A collection that reorders uses
   this object and no other public reorder API.
 
+- **FR9 — Shift feedback is opt-in.** With `feedback: 'insertion-line'`, the
+  default, a drag previews its landing place as `design:ordered-collection-reordering`
+  DEC-1 states. With `feedback: 'shift'`, the neighbours slide aside live to
+  open the gap where the item will land, on `spec:AST-105` FR4's one shared
+  motion, as a compositor translate of the rows already rendered
+  (`spec:AST-094` FR5) with no added element and no insertion line; the
+  dragged item rides the pointer and, on the drop, settles into the open gap
+  with no layout jump. The target index changes only once the dragged item's
+  center passes a neighbour's midpoint, so a pointer resting near a boundary
+  does not make the neighbours flicker. With `positions()`, the other items
+  glide to their next slots. Each keyboard arrow move in reorder mode commits
+  as FR4 and DEC-5 state, with the shift animated and the move announced. In a
+  tree, rows shift only within the dragged row's parent; a shift never nests
+  or un-nests a row. Under Reduce Motion the neighbours do not travel: the
+  drag shows the insertion line or an in-place cross-fade instead
+  (`design:reduced-motion` DR1–DR3). Every pointer gets the shift, a fine
+  pointer included. The layout is measured once at pickup, with no layout
+  read per frame (`spec:AST-094` FR17), so a long or virtualized list costs
+  the same per frame as a short one.
+
 ## Current-state impact
 
 - `component:List` gains `reorderable` as the first adopter.
@@ -354,6 +375,18 @@ tap through the same moves; it reuses the keyboard hint's layer rather than a
 second hint pattern.
 
 Rejected: a menu of Move before and Move after.
+
+### DEC-6 — A collection can opt into shift feedback
+
+**Reference:** `spec:AST-103/DEC-6`
+**Decider:** `cixzhang`, `2026-10-28`
+
+Some collections, such as a hand of playing cards, read better when the items
+shift during the drag, as iOS does. `feedback: 'shift'` opts into that while
+the insertion line stays the default (`design:ordered-collection-reordering`
+DEC-2).
+
+Rejected: making shift the default.
 
 ## Open questions
 

@@ -48,11 +48,13 @@ placement and file-drop targets require separate design specifications.
   from a dedicated affordance so activation is intentional and other item
   actions remain available.
 - **DR2 — The moving item remains recognizable without appearing elevated.** The
-  source and pointer-following preview MUST read as the same item in a temporary
-  moving state and MUST NOT imply a raised card.
-- **DR3 — Placement is previewed before the collection changes.** A clear
-  insertion cue MUST mark the candidate position while surrounding items remain
-  stable until commit.
+  pointer-following item MUST NOT imply a raised card. Under the default
+  insertion-line feedback, the source and the preview MUST read as the same item
+  in a temporary moving state (DEC-1).
+- **DR3 — Placement is previewed before the collection changes.** Under the
+  default insertion-line feedback, a clear insertion cue MUST mark the candidate
+  position while surrounding items remain stable until commit (DEC-1); under
+  shift feedback, the surrounding items open the gap instead (DEC-2).
 - **DR4 — Commit happens once.** The collection MUST adopt the new order on drop
   or release rather than repeatedly committing as the pointer crosses items.
 - **DR5 — Completion restores normal hierarchy.** Temporary drag treatment MUST
@@ -61,14 +63,14 @@ placement and file-drop targets require separate design specifications.
 
 ## Anatomy and hierarchy
 
-| Role               | Purpose                                         | Required relationship                                                         |
-| ------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------- |
-| reorder handle     | Starts and retains ownership of the interaction | Belongs to one item and remains distinguishable from item activation          |
-| stationary source  | Preserves the item's origin during active drag  | Remains in place until commit and shares temporary treatment with the preview |
-| moving preview     | Follows pointer movement                        | Duplicates the source identity without adding raised-card elevation           |
-| insertion cue      | Marks the candidate ordered position            | Appears between items on the collection's ordering axis                       |
-| surrounding items  | Provide stable spatial context                  | Do not shift until the reorder is committed                                   |
-| settled collection | Shows the resulting order                       | Returns every item to its normal state after completion                       |
+| Role               | Purpose                                         | Required relationship                                                                                                                                                                                                    |
+| ------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| reorder handle     | Starts and retains ownership of the interaction | Belongs to one item and remains distinguishable from item activation                                                                                                                                                     |
+| stationary source  | Preserves the item's origin during active drag  | Remains in place until commit and shares temporary treatment with the preview (insertion-line feedback; under shift feedback the surrounding items open the gap and no insertion line or stationary source shows, DEC-2) |
+| moving preview     | Follows pointer movement                        | Duplicates the source identity without adding raised-card elevation                                                                                                                                                      |
+| insertion cue      | Marks the candidate ordered position            | Appears between items on the collection's ordering axis (insertion-line feedback; under shift feedback the surrounding items open the gap and no insertion line or stationary source shows, DEC-2)                       |
+| surrounding items  | Provide stable spatial context                  | Do not shift until the reorder is committed (insertion-line feedback; under shift feedback the surrounding items open the gap and no insertion line or stationary source shows, DEC-2)                                   |
+| settled collection | Shows the resulting order                       | Returns every item to its normal state after completion                                                                                                                                                                  |
 
 ## State representation
 
@@ -85,10 +87,15 @@ placement and file-drop targets require separate design specifications.
 - **DR6 — Placement follows the collection axis.** Pointer previews MAY move
   freely, while candidate order MUST be calculated on the collection's ordering
   axis.
-- **DR7 — Keyboard and pointer share the insertion cue.** Keyboard reordering
-  MUST expose the same candidate-position representation as pointer reordering.
+- **DR7 — Keyboard and pointer share the candidate cue.** Keyboard reordering
+  MUST expose the same candidate-position representation as pointer reordering:
+  the insertion line under insertion-line feedback, the opened gap under shift
+  feedback.
 - **DR8 — Reduced motion updates directly.** When motion is reduced, the final
-  order MUST update without animated travel.
+  order MUST update without animated travel, and under shift feedback the
+  neighbours do not travel during the drag: the insertion cue or an in-place
+  cross-fade marks the candidate position instead (`design:reduced-motion`
+  DR1).
 
 ## Accessibility intent
 
@@ -140,6 +147,20 @@ the release, is more accurate for small drop targets than neighbors that move
 under the pointer.
 
 Rejected: neighbors sliding aside during the drag.
+
+### DEC-2 — Shift feedback is opt-in
+
+**Reference:** `design:ordered-collection-reordering/DEC-2`
+**Decider:** `cixzhang`, `2026-10-28`
+
+A collection can opt into neighbours sliding aside during the drag
+(`spec:AST-103` FR9), while DEC-1's insertion line stays the default. Shift
+feedback answers DEC-1's accuracy concern with midpoint hysteresis: the
+candidate position changes only once the dragged item passes a neighbour's
+midpoint, so the neighbours do not move under a pointer resting near a
+boundary.
+
+Rejected: shift feedback without hysteresis.
 
 ## Open questions
 
