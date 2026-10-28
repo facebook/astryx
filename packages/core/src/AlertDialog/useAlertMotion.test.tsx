@@ -354,18 +354,18 @@ describe('useAlertMotion', () => {
     expect(backdrop.calls.at(-1)).toEqual({kind: 'attach', target: null});
   });
 
-  it('plays its springs through the internal motion roles alert.present and alert.dismiss (AST-094 FR4)', () => {
+  it('plays its springs through the internal motion roles springs.alertPresent and springs.alertDismiss (AlertDialog FR6, AST-094 FR4)', () => {
     const view = render(<Alert isOpen isEnabled />);
     const {panel} = animators();
     const shown = moves(panel).at(-1);
     expect(shown?.kind === 'animate' && motionRoleOf(shown.spring)?.id).toBe(
-      'alert.present',
+      'springs.alertPresent',
     );
     now = 2000;
     view.rerender(<Alert isOpen={false} isEnabled />);
     const left = moves(panel).at(-1);
     expect(left?.kind === 'animate' && motionRoleOf(left.spring)?.id).toBe(
-      'alert.dismiss',
+      'springs.alertDismiss',
     );
   });
 
