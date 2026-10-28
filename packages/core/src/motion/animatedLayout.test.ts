@@ -711,6 +711,54 @@ describe('elements the app moves itself (spec:AST-105 Coverage)', () => {
       .map(p => (p.element as HTMLElement).id);
     expect(moved).toEqual(['plain']);
   });
+
+  it('glides a follower whose transform leaves it in place: a swipe row at rest, a resting or pressed button', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><div id="changed"></div>
+        <div id="swipeRow" style="transform: translate3d(0px, 0px, 0px)"></div>
+        <div id="button" style="transform: matrix(1, 0, 0, 1, 0, 0)"></div>
+        <div id="pressed" style="transform: scale(0.98)"></div>
+        <div id="pressedMatrix" style="transform: matrix(0.98, 0, 0, 0.98, 0, 0)"></div>
+        <div id="scaled" style="scale: 0.98"></div>
+        <div id="zero" style="translate: 0px; rotate: 0deg"></div>
+        <div id="swiped" style="transform: translate3d(-120px, 0px, 0px)"></div>
+        <div id="pressedAndMoved" style="transform: matrix(0.98, 0, 0, 0.98, 0, 12)"></div></div>`,
+    );
+    const ids = [
+      'swipeRow',
+      'button',
+      'pressed',
+      'pressedMatrix',
+      'scaled',
+      'zero',
+      'swiped',
+      'pressedAndMoved',
+    ];
+    for (const id of ids) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, 10, 400, 40], after: [0, 90, 400, 40]},
+        phase,
+      );
+    }
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const moved = played
+      .filter(p => p.keyframes[0].translate != null)
+      .map(p => (p.element as HTMLElement).id);
+    // A row a swipe holds open, or anything translated, is still the app's.
+    expect(moved.sort()).toEqual([
+      'button',
+      'pressed',
+      'pressedMatrix',
+      'scaled',
+      'swipeRow',
+      'zero',
+    ]);
+  });
 });
 
 describe('siblings before the change (spec:AST-105 FR3, Coverage)', () => {
