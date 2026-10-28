@@ -158,6 +158,17 @@ brandTheme.iconVariants; // ['outline', 'filled']`,
         },
         {
           type: 'prose',
+          text: "Request a variant with `Icon`'s `variant` prop. The entry receives it only when the active theme lists it; an entry the theme inherited also needs the theme that defined it to list it. Otherwise the entry receives `undefined` and draws its normal artwork, so an unlisted variant never breaks rendering. A `registerIcons()` entry receives the variants the active theme lists, and a node entry draws the same node for every variant. An icon component passed directly to `Icon` never receives `variant`, and `variant` is never written to the DOM: it selects artwork, so there is no theming selector for it.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Requesting a variant',
+          code: `<Icon icon="info" variant="filled" />  // brandTheme: the filled artwork
+<Icon icon="info" />                    // the normal artwork`,
+        },
+        {
+          type: 'prose',
           text: 'An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`.',
         },
         {

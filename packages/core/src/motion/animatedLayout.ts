@@ -844,6 +844,8 @@ function flush(batch: Batch): void {
     after?: DOMRect;
     rawX?: number;
     rawY?: number;
+    isMovedByApp?: boolean;
+    scale?: {x: number; y: number};
   }[] = [];
   for (const element of followers) {
     const before = batch.before.get(element);
@@ -872,6 +874,9 @@ function flush(batch: Batch): void {
     }
     entries.push({element, before, carried, carriedMs});
   }
+  // Every reading (places, transforms, scales) before any glide starts: a
+  // glide started between two readings would make the next one lay the page
+  // out again, once per element (on a long page, the whole cost).
   const byElement = new Map<Element, (typeof entries)[number]>();
   // An ancestor of the change, and a sibling before it, move by their layout
   // change alone: when scroll anchoring re-scrolls the area, an outer
@@ -896,6 +901,15 @@ function flush(batch: Batch): void {
     entry.rawX = isAncestor ? nearer(rawX, scrolledX) : rawX;
     entry.rawY = isAncestor ? nearer(rawY, scrolledY) : rawY;
     byElement.set(entry.element, entry);
+  }
+  for (const entry of entries) {
+    const after = entry.after as DOMRect;
+    if (intersects(entry.before, visible) || intersects(after, visible)) {
+      entry.isMovedByApp = movedByApp(entry.element);
+      // Only its ancestors' scale is corrected: its own scale or transform
+      // (a press's scale) does not apply to the glide's `translate`.
+      entry.scale = scaleOf(entry.element, after, ownScaleOf(entry.element));
+    }
   }
   for (const entry of entries) {
     const {element, before, carried, carriedMs} = entry;
@@ -930,16 +944,14 @@ function flush(batch: Batch): void {
       });
       continue;
     }
-    if (movedByApp(element)) {
+    if (entry.isMovedByApp === true) {
       // The app moves it itself: it takes its final place at once
       // (`spec:AST-105` Coverage).
       continue;
     }
     // Where it shows now, against its new place, in its own px; the part the
-    // carried glide does not cover is the new move. Only its ancestors' scale
-    // is corrected: its own scale or transform (a press's scale) does not
-    // apply to the glide's `translate`.
-    const scale = scaleOf(element, after, ownScaleOf(element));
+    // carried glide does not cover is the new move.
+    const scale = entry.scale ?? {x: 1, y: 1};
     const now = carried(0);
     const moveX = dx / scale.x - now.x;
     const moveY = dy / scale.y - now.y;
@@ -1211,6 +1223,9 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
       ? null
       : nextInFlow(element.parentElement, area);
   const checked = afterParent == null ? [next] : [next, afterParent];
+  // The element's scale, read in the layout the caller's visibility check
+  // already laid out.
+  const scale = scaleOf(element, element.getBoundingClientRect());
   // Where the content after it goes once it is hidden, read with it taken
   // out of flow (not `display: none`, which would restart the CSS animations
   // inside it).
@@ -1224,14 +1239,14 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
   } else {
     element.style.setProperty('position', position, positionPriority);
   }
+  // The reading is in screen px, the margin in the element's own: under a
+  // scaled ancestor a distance is divided by the scale on this axis.
+  const perPx = isRow ? scale.x : scale.y;
   // A first guess (its box), then one correction from the measured result:
   // a gap, a collapsed margin or the element's own margins.
   element.style.setProperty(property, `${-size}px`);
   const guess = placeOf(next, rtl)[axis];
-  // The reading is in screen px, the margin in the element's own: under a
-  // scaled ancestor the correction is divided by the scale on this axis.
-  const scale = scaleOf(element, element.getBoundingClientRect());
-  const correction = (target[axis] - guess) / (isRow ? scale.x : scale.y);
+  const correction = (target[axis] - guess) / perPx;
   element.style.setProperty(property, `${-size + correction}px`);
   // Everything checked must land on both axes: a flex-row item that sets
   // its row's height frees no block space with an inline margin.

@@ -538,6 +538,13 @@ export interface DefinedTheme {
    * the list it inherited. Absent when no theme in its lineage lists any.
    */
   iconVariants?: ReadonlyArray<string>;
+  /**
+   * The variant list of the theme that defined each inherited function entry,
+   * kept where it differs from `iconVariants`, so the entry receives only
+   * variants its defining theme lists. Only Astryx icon resolution reads it.
+   * @internal
+   */
+  __iconEntryVariants?: Record<string, ReadonlyArray<string> | undefined>;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -741,6 +748,15 @@ export function defineTheme<
       ? [...input.iconVariants]
       : base?.iconVariants;
 
+  // An inherited function entry keeps the list of the theme that defined it,
+  // so it receives a variant only when both lists contain it.
+  const iconEntryVariants = resolveIconEntryVariants(
+    iconEntries,
+    input.icons,
+    base,
+    iconVariants,
+  );
+
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
   const indicators =
@@ -762,6 +778,9 @@ export function defineTheme<
     icons,
     ...(icons !== iconEntries ? {__icons: iconEntries} : {}),
     ...(iconVariants !== undefined ? {iconVariants} : {}),
+    ...(iconEntryVariants !== undefined
+      ? {__iconEntryVariants: iconEntryVariants}
+      : {}),
     indicators,
     __inputTokens:
       base?.__inputTokens || input.tokens
@@ -776,6 +795,41 @@ export function defineTheme<
 
   registerTheme(theme);
   return theme;
+}
+
+/**
+ * For each function entry this theme inherits, the variant list of the theme
+ * that defined it, where that list is not this theme's own. Entries this theme
+ * defines use its own list, so they need no record.
+ */
+function resolveIconEntryVariants(
+  entries: ThemeIconEntries<never> | undefined,
+  ownEntries: Readonly<Record<string, unknown>> | undefined,
+  base: DefinedTheme | undefined,
+  iconVariants: ReadonlyArray<string> | undefined,
+): Record<string, ReadonlyArray<string> | undefined> | undefined {
+  if (entries == null || base == null) {
+    return undefined;
+  }
+  const baseRecord = base.__iconEntryVariants;
+  let record: Record<string, ReadonlyArray<string> | undefined> | undefined;
+  for (const [name, entry] of Object.entries(entries)) {
+    if (
+      typeof entry !== 'function' ||
+      (ownEntries != null && Object.hasOwn(ownEntries, name))
+    ) {
+      continue;
+    }
+    const definingVariants =
+      baseRecord != null && Object.hasOwn(baseRecord, name)
+        ? baseRecord[name]
+        : base.iconVariants;
+    if (definingVariants !== iconVariants) {
+      record ??= {};
+      record[name] = definingVariants;
+    }
+  }
+  return record;
 }
 
 /**

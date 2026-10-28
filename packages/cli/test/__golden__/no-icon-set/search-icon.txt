@@ -30,6 +30,12 @@ domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs icons theme-overrides
 parent:      pnpm exec astryx docs icons --index
+name:        icons
+section:     icon-variants
+domain:      doc
+package:     @astryxdesign/cli
+command:     pnpm exec astryx docs icons icon-variants
+parent:      pnpm exec astryx docs icons --index
 name:        BaseTypeaheadCustomSearch
 domain:      template
 package:     @astryxdesign/core
@@ -82,7 +88,3 @@ name:        ChatComposerFullFeatured
 domain:      template
 package:     @astryxdesign/core
 command:     pnpm exec astryx template ChatComposerFullFeatured --type block
-name:        ChatMessageBubbleMetadata
-domain:      template
-package:     @astryxdesign/core
-command:     pnpm exec astryx template ChatMessageBubbleMetadata --type block

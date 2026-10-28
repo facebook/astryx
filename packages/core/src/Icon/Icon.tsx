@@ -4,7 +4,8 @@
 
 /**
  * @file Icon.tsx
- * @input Uses ReactSVGProps, icon components or semantic icon names
+ * @input Uses ReactSVGProps, icon components or semantic icon names, and an
+ *   optional IconVariant request
  * @output Exports Icon component, IconProps, IconColor, IconSize, IconType types
  * @position Core implementation; consumed by index.ts, tested by Icon.test.tsx
  *
@@ -13,7 +14,8 @@
  *   directly with and spread SVG props.
  * - String mode: Pass a semantic name (e.g. 'close', 'chevronDown') — resolved from the
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
- *   A function registry entry receives `{size}`, the size resolved by ORD1.
+ *   A function registry entry receives `{size, variant}`: the size resolved by
+ *   ORD1 and the requested variant when the entry can receive it.
  *
  * Both modes size the glyph from the `icon` target's private size vars
  * (`iconSizeStyles` in IconSize.stylex.ts, `registrySizeStyles` below), so a
@@ -35,6 +37,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {useThemeName} from '../theme/useTheme';
 import {resolveIcon} from './globalIconRegistry';
 import type {IconName, NamespacedIconName} from './globalIconRegistry';
+import type {IconVariant} from './index';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useIconSize} from './IconDefaultSizeContext';
@@ -203,6 +206,23 @@ export interface IconProps extends Omit<
    */
   size?: IconSize;
   /**
+   * Requests the active theme's alternate artwork for a semantic icon name,
+   * such as `'filled'`. Names come from the augmentable `IconVariantMap`.
+   *
+   * The theme's icon entry receives the variant only when the active theme
+   * lists it in `iconVariants` and, for an entry a theme supplied, the theme
+   * that defined the entry lists it too. Otherwise the entry receives
+   * `undefined` and draws its normal artwork. An icon component passed
+   * directly renders as given and never receives `variant`, and `variant` is
+   * never written to the DOM or reflected on the `icon` theming target.
+   *
+   * @example
+   * ```
+   * <Icon icon="info" variant="filled" />
+   * ```
+   */
+  variant?: IconVariant;
+  /**
    * Accessible name for the icon. Set this only when the icon is MEANINGFUL on
    * its own — a standalone status glyph or an icon-only indicator with no
    * adjacent text conveying the same information. Providing it exposes the icon
@@ -282,6 +302,7 @@ export function Icon({
   icon,
   color = 'inherit',
   size: sizeProp,
+  variant,
   label,
   ref,
   className,
@@ -301,6 +322,7 @@ export function Icon({
         name={icon}
         color={color}
         size={size}
+        variant={variant}
         a11yProps={a11yProps}
         className={className}
         style={style}
@@ -310,7 +332,8 @@ export function Icon({
     );
   }
 
-  // Component mode: render SVG component directly with ref forwarding
+  // Component mode: render SVG component directly with ref forwarding. A
+  // supplied component never receives `variant`; it was destructured above.
   const IconComponent = icon;
   return (
     <IconComponent
@@ -351,12 +374,14 @@ Icon.displayName = 'Icon';
  * and renders it in a styled span with proper sizing.
  *
  * Extracted as a separate component so the registry is only read when the
- * icon prop is a string. A function entry receives the resolved size.
+ * icon prop is a string. A function entry receives the resolved size and the
+ * requested variant when the entry can receive it.
  */
 function IconFromRegistry({
   name,
   color,
   size,
+  variant,
   a11yProps,
   className,
   style,
@@ -366,6 +391,7 @@ function IconFromRegistry({
   name: IconName | NamespacedIconName;
   color: IconColor;
   size: IconSize;
+  variant: IconVariant | undefined;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
   className?: string;
   style?: React.CSSProperties;
@@ -373,7 +399,7 @@ function IconFromRegistry({
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const themeName = useThemeName();
-  const resolvedIcon = resolveIcon(name, themeName, {size});
+  const resolvedIcon = resolveIcon(name, themeName, {size, variant});
 
   if (resolvedIcon == null) {
     return null;

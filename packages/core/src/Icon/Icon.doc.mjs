@@ -90,6 +90,12 @@ export const docs = {
       default: "Contextual; otherwise 'md'",
     },
     {
+      name: 'variant',
+      type: 'IconVariant',
+      description:
+        "Requests the active theme's alternate artwork for a semantic icon name, such as 'filled'. Names come from IconVariantMap, which an application augments from @astryxdesign/core/Icon; Astryx defines none. The theme's icon entry receives the variant only when the active theme lists it in iconVariants (and, for an entry the theme inherited, the theme that defined the entry lists it too); otherwise it draws its normal artwork. Ignored by an icon component passed directly. Selects artwork only: it is not written to the DOM and has no theming selector.",
+    },
+    {
       name: 'label',
       type: 'string',
       description:
@@ -218,6 +224,12 @@ export const docsZh = {
       description:
         "图标尺寸。xsm、sm、md、lg 在 16px 根字号下分别为 12、16、20、24px，并随根字号缩放；主题在 components.icon['size:sm']（及其他尺寸）上以 px 或 rem 设置 width 和 height，即可决定该尺寸的图标尺寸。显式值优先。省略时，Icon 使用最近的 Astryx 所属组件为其图标槽提供的默认尺寸；如果没有上下文默认值，则回退为 md。",
       default: "上下文默认值；否则为 'md'",
+    },
+    {
+      name: 'variant',
+      type: 'IconVariant',
+      description:
+        "为语义图标名称请求当前主题的替代图稿，例如 'filled'。名称来自 IconVariantMap，由应用从 @astryxdesign/core/Icon 扩充；Astryx 本身不定义任何名称。只有当前主题在 iconVariants 中列出该变体时（对于主题继承来的条目，还需定义该条目的主题也列出它），主题的图标条目才会收到它；否则绘制常规图稿。直接传入的图标组件会忽略它。它只选择图稿：不会写入 DOM，也没有主题样式选择器。",
     },
     {
       name: 'label',
@@ -381,6 +393,8 @@ export const docsDense = {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, upload, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to Astryx icon color tokens.',
     size: "xsm/sm/md/lg = 12/16/20/24px at a 16px root, scale w/ root font size; theme sets a size's glyph dimension via width + height (px or rem) on components.icon['size:sm'] etc. Explicit Icon size; otherwise nearest owning-component default, then 'md' when no contextual default exists",
+    variant:
+      "Requests the active theme's alternate artwork (e.g. 'filled'); names from augmentable IconVariantMap. Reaches the entry only if the active theme's iconVariants lists it (and an inherited entry's defining theme does too); else normal artwork. Ignored by a directly passed component; never in the DOM; no theming selector.",
     label:
       'Accessible name for a meaningful, standalone icon. Sets role="img" + aria-label and drops the default aria-hidden. Omit (default) for decorative icons (stays aria-hidden). Empty string = decorative. The accessible-name/alt-text prop for icons.',
     xstyle:
