@@ -315,6 +315,49 @@ describe('TextInput', () => {
       }
     });
 
+    it('names the input by its label and a caller aria-labelledby', () => {
+      render(
+        <>
+          <span id="billing-heading">Billing</span>
+          <TextInput
+            label="Email"
+            value=""
+            onChange={() => {}}
+            aria-labelledby="billing-heading"
+          />
+        </>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Email Billing'});
+      expect(input.getAttribute('aria-labelledby')?.split(' ')).toContain(
+        'billing-heading',
+      );
+    });
+
+    it('names a grouped input by the group, its label, and a caller aria-labelledby', () => {
+      render(
+        <>
+          <span id="billing-heading">Billing</span>
+          <InputGroup label="Contact">
+            <TextInput
+              label="Email"
+              value=""
+              onChange={() => {}}
+              aria-labelledby="billing-heading"
+            />
+          </InputGroup>
+        </>,
+      );
+      expect(
+        screen.getByRole('textbox', {name: 'Contact Email Billing'}),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves a standalone input named by its label element without a caller aria-labelledby', () => {
+      render(<TextInput label="Email" value="" onChange={() => {}} />);
+      const input = screen.getByRole('textbox', {name: 'Email'});
+      expect(input).not.toHaveAttribute('aria-labelledby');
+    });
+
     it('does not render status message when not provided', () => {
       render(
         <TextInput
@@ -1324,8 +1367,12 @@ describe('TextInput clear button focus behavior', () => {
     expect(document.activeElement).toBe(input);
   });
 
-  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+  it('focuses the input inside the tap on pointer activation, without scrolling', () => {
+    // iOS Safari brings up its keyboard only for a focus made while handling
+    // the touch: a deferred focus would leave an unfocused field focused but
+    // keyboardless.
     const handleChange = vi.fn();
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
     render(
       <TextInput
@@ -1335,14 +1382,17 @@ describe('TextInput clear button focus behavior', () => {
         onChange={handleChange}
       />,
     );
-
+    const input = screen.getByRole('textbox');
     const clearButton = screen.getByRole('button', {name: /clear/i});
+    expect(document.activeElement).not.toBe(input);
 
-    // Pointer activation (detail > 0)
     fireEvent.click(clearButton, {detail: 1});
 
     expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
-    expect(rafSpy).toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+    expect(focusSpy).toHaveBeenLastCalledWith({preventScroll: true});
+    expect(rafSpy).not.toHaveBeenCalled();
+    focusSpy.mockRestore();
     rafSpy.mockRestore();
   });
 });

@@ -9,7 +9,7 @@
  * SYNC: When PowerSearch.tsx changes, update tests to match
  */
 
-import {useState} from 'react';
+import {StrictMode, useState} from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {
   render,
@@ -476,6 +476,37 @@ describe('PowerSearch', () => {
       });
     });
 
+    it('does not announce the result count present on mount under StrictMode, only a later change', async () => {
+      // StrictMode replays the mount effects: a mounted-flag guard is reset by
+      // the replay and speaks the initial count unprompted; comparing against
+      // the last announced text does not.
+      const {rerender} = render(
+        <StrictMode>
+          <PowerSearch
+            config={config}
+            filters={[]}
+            onChange={() => {}}
+            resultCount={12}
+          />
+        </StrictMode>,
+      );
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(politeRegion()?.textContent ?? '').toBe('');
+      rerender(
+        <StrictMode>
+          <PowerSearch
+            config={config}
+            filters={[]}
+            onChange={() => {}}
+            resultCount={1}
+          />
+        </StrictMode>,
+      );
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 result');
+      });
+    });
+
     it('announces "1 result" (singular) for a single match', async () => {
       const {rerender} = render(
         <PowerSearch
@@ -878,6 +909,51 @@ describe('field menu grouping', () => {
         ),
       ).toHaveLength(0);
     });
+  });
+});
+
+describe('field menu highlight under a resting pointer', () => {
+  it('keeps the first field highlighted when the menu opens under the pointer', async () => {
+    const user = userEvent.setup();
+    render(<PowerSearchWrapper config={config} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+
+    // Open the field menu from the keyboard; the option that lands under a
+    // resting pointer receives mouseenter but no mousemove.
+    await user.tab();
+    const status = await screen.findByRole('option', {
+      name: 'Status',
+      hidden: true,
+    });
+    const title = screen.getByRole('option', {name: 'Title', hidden: true});
+    expect(input.getAttribute('aria-activedescendant')).toBe(title.id);
+
+    fireEvent.mouseEnter(status);
+    expect(input.getAttribute('aria-activedescendant')).toBe(title.id);
+
+    // Enter acts on the highlighted first field, not the one under the
+    // pointer.
+    await user.keyboard('{Enter}');
+    expect(
+      await screen.findByRole('button', {name: 'Apply', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', {name: 'Field', hidden: true}),
+    ).toHaveTextContent('Title');
+  });
+
+  it('moves the highlight when the pointer moves over a field', async () => {
+    const user = userEvent.setup();
+    render(<PowerSearchWrapper config={config} />);
+    const input = screen.getByRole('combobox', {name: 'Search'});
+
+    await user.tab();
+    const status = await screen.findByRole('option', {
+      name: 'Status',
+      hidden: true,
+    });
+    fireEvent.mouseMove(status);
+    expect(input.getAttribute('aria-activedescendant')).toBe(status.id);
   });
 });
 

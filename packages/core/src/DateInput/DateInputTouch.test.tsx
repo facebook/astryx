@@ -701,7 +701,7 @@ describe('DateInput — field parity', () => {
     expect(sheet).not.toBeNull();
     await waitFor(() => {
       expect(
-        sheet!.querySelector('[data-astryx-modal-busy-region]'),
+        sheet!.querySelector('[data-astryx-modal-live-region="polite"]'),
       ).toHaveTextContent('Loading');
     });
     expect(
@@ -2537,6 +2537,15 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(source).toContain("scrollSnapAlign: 'center'");
     expect(source).toContain(
       'paddingBlock: dateInputTouchGeometry.wheelEdgePadding',
+    );
+  });
+
+  it('leaves a two-finger pinch to the page over the wheels', () => {
+    // `pan-y` alone also refuses the browser's pinch-zoom over the wheel, so
+    // the page could not be zoomed over an open picker. The real-engine proof
+    // is WheelPinchZoom.a11y.chromium.spec.ts; jsdom computes no touch-action.
+    expect(declarations(read('Wheel.tsx'), 'scroller')).toContain(
+      "touchAction: 'pan-y pinch-zoom'",
     );
   });
 
