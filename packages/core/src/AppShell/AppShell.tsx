@@ -49,6 +49,7 @@ import {SideNavShellContext, type SideNavShell} from '../SideNav/railMotion';
 import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import {
   holdLayoutSwap,
+  landLayoutGlide,
   layoutMotionFor,
   playLayoutFrames,
   playLayoutSwap,
@@ -805,6 +806,11 @@ export function AppShell({
         mainRef.current == null
           ? null
           : columnOf(mainRef.current, railRef.current),
+      landContent() {
+        if (mainRef.current != null) {
+          landLayoutGlide(columnOf(mainRef.current, railRef.current));
+        }
+      },
       beforeRailChange() {
         const main = mainRef.current;
         if (main == null) {

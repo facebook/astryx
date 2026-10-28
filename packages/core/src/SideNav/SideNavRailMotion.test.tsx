@@ -416,6 +416,41 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(animated('translate')).toHaveLength(0);
   });
 
+  it('lands the running page glide too when a no-copy collapse interrupts an expand', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () =>
+          ({
+            drawImage: vi.fn(),
+            getImageData: () => ({data: new Uint8ClampedArray(16 * 4)}),
+          }) as unknown as CanvasRenderingContext2D,
+      );
+    render(<Shell hasCanvas />);
+    await toggle();
+    settle();
+    recorded = [];
+    await toggle();
+    // The expand's glide on the column beside the rail.
+    const main = screen.getByRole('main');
+    const glide = animated('translate').find(
+      entry => entry.element !== main && entry.element.contains(main),
+    );
+    expect(glide).toBeDefined();
+    const cancel = vi.spyOn(glide!.animation, 'cancel');
+    // 40 ms in, collapse again: the rail cannot be copied.
+    const at = (document.timeline as {currentTime: number}).currentTime;
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      value: {currentTime: at + 40},
+    });
+    recorded = [];
+    await toggle();
+    getContext.mockRestore();
+    expect(cancel).toHaveBeenCalled();
+    expect(animated('translate')).toHaveLength(0);
+  });
+
   it('clips an expand open on the motion when the old rail cannot be copied', async () => {
     // A canvas that reads back blank: the rail is not copied.
     const getContext = vi

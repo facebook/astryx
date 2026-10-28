@@ -62,6 +62,8 @@ export interface SideNavShell {
   beforeRailChange(): void;
   /** After it, before paint: the content moves; returns what ends it. */
   afterRailChange(): () => void;
+  /** The content lands where it is laid out, ending any running glide. */
+  landContent(): void;
 }
 
 export const SideNavShellContext = createContext<SideNavShell | null>(null);

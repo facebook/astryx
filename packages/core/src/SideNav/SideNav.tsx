@@ -512,9 +512,11 @@ export function SideNav({
         wasCollapsed,
       );
       // A collapse covers the old rail with its copy; when the rail cannot
-      // be copied, the page lands at once with it, on one clock.
+      // be copied, the page lands at once with it, on one clock, a running
+      // glide included.
       const snapshot = railSnapshotRef.current;
       if (snapshot != null && snapshot.swap == null && !wasCollapsed) {
+        shell?.landContent();
         return;
       }
       shell?.beforeRailChange();
