@@ -709,21 +709,238 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
-  test('inside a positioned ancestor the siblings before the change take their final place (spec:AST-105 Coverage)', async ({
+  test('inside a positioned ancestor only the content after the change moves: the header before it and the card around it take their final place (spec:AST-105 Coverage)', async ({
     page,
   }) => {
     await open(
       page,
       `<div id="area" class="area">
         <div style="position: absolute; left: 0; right: 0; bottom: 0">
-          <div id="trigger" class="row"></div><div id="grow" class="grow"></div>
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+          <div id="footer" class="row"></div>
         </div>
       </div>`,
     );
     await change(page);
-    // Docked at the bottom, the trigger rises as the content opens below it,
-    // but takes its place at once, so the revealing content never covers it.
-    expect(await page.evaluate(() => window.motionOf('#trigger'))).toEqual([]);
+    // Docked at the bottom, the panel rises as the content opens, and
+    // everything around the change takes its place at once with it, so no
+    // gap opens and the revealing content never covers what is above it.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a stuck sticky footer around the change stays at the area edge (spec:AST-105 Coverage, FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">${Array.from(
+        {length: 30},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div></div>`,
+    );
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  for (const reduce of [false, true]) {
+    test(`a change above the visible part inside a wrapper: with scroll anchoring the rows in view and their wrapper stay put${reduce ? ' under Reduce Motion' : ''} (FR3)`, async ({
+      page,
+    }) => {
+      if (reduce) {
+        await page.emulateMedia({reducedMotion: 'reduce'});
+      }
+      await open(
+        page,
+        `<div id="area" class="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+          {length: 1000},
+          (_, i) => `<div id="r${i}" class="row"></div>`,
+        ).join('')}</div></div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area') as HTMLElement;
+        area.scrollTop = 4200;
+        const inView = document.querySelector('#r95') as HTMLElement;
+        const before = inView.getBoundingClientRect().top;
+        await window.change({
+          changed: '#grow',
+          mutate: `document.querySelector('#grow').classList.add('open')`,
+        });
+        const wrapper = document.querySelector('#wrapper') as HTMLElement;
+        const moving = [wrapper, ...wrapper.children].filter(
+          element => element.getAnimations().length > 0,
+        ).length;
+        const shown = inView.getBoundingClientRect().top;
+        document.getAnimations().forEach(animation => animation.finish());
+        return {moving, before, shown};
+      });
+      // The browser keeps the rows in view where they were; nothing glides
+      // or fades, the wrapper around them included.
+      expect(result.moving).toBe(0);
+      expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+    });
+  }
+
+  test('a change above the view in a panel the page scrolls: with the page anchoring its scroll, the rows in view and their wrapper stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+        {length: 1000},
+        (_, i) => `<div id="r${i}" class="row"></div>`,
+      ).join('')}</div></div>`,
+    );
+    const result = await page.evaluate(async () => {
+      window.scrollTo(0, 4200);
+      const inView = document.querySelector('#r95') as HTMLElement;
+      const before = inView.getBoundingClientRect().top;
+      await window.change({
+        changed: '#grow',
+        mutate: `document.querySelector('#grow').classList.add('open')`,
+      });
+      const wrapper = document.querySelector('#wrapper') as HTMLElement;
+      const moving = [wrapper, ...wrapper.children].filter(
+        element => element.getAnimations().length > 0,
+      ).length;
+      const shown = inView.getBoundingClientRect().top;
+      document.getAnimations().forEach(animation => animation.finish());
+      return {moving, before, shown};
+    });
+    expect(result.moving).toBe(0);
+    expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+  });
+
+  test('a sticky footer stuck to the viewport in a panel the page scrolls stays at the edge (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  test('in a multi-column list the rows of a later column glide too (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="list" style="columns: 2; column-gap: 8px">${[
+        '<div id="grow" class="grow"></div>',
+        ...Array.from(
+          {length: 120},
+          (_, i) =>
+            `<div id="c${i}" class="row" style="break-inside: avoid"></div>`,
+        ),
+      ].join('')}</div></div>`,
+    );
+    await change(page);
+    const moving = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('#list > .row')].filter(
+          row => row.getAnimations().length > 0,
+        ).length,
+    );
+    // Every row shifts one slot along the columns; the rows in view glide,
+    // the second column's included, though they come past the band in DOM
+    // order.
+    expect(moving).toBeGreaterThanOrEqual(20);
+  });
+
+  test('in a dialog re-centered as it grows, the header and trigger before the change stay with their card (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center">
+        <div id="area" style="width: 320px; background: #fff; border: 1px solid #999">
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+        </div>
+      </div>`,
+    );
+    await change(page);
+    // The dialog rises by half the opening at once; what is before the
+    // change in it rises with it, never over the opening content.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a sticky footer stuck to the viewport stays at the edge when the body sets an overflow (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+      'body { overflow-x: hidden; }',
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  test('closing an item above the view while opening one in view, in one frame: the rows the browser keeps in place stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="shut" style="height: 344px; overflow: hidden; background: #fd9"></div>${Array.from(
+        {length: 30},
+        (_, i) =>
+          i === 14
+            ? '<div id="grow" class="grow"></div>'
+            : `<div id="q${i}" class="row"></div>`,
+      ).join('')}</div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area') as HTMLElement;
+      area.scrollTop = 395;
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const shut = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#shut'),
+      );
+      const grow = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#grow'),
+      );
+      shut.measureBefore();
+      grow.measureBefore();
+      (document.querySelector('#shut') as HTMLElement).style.height = '0px';
+      document.querySelector('#grow')?.classList.add('open');
+      shut.animate();
+      grow.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      // The rows in view before the opening one: anchoring keeps them still.
+      return [5, 6, 7, 8, 9].map(
+        i => document.querySelector(`#q${i}`)?.getAnimations().length ?? -1,
+      );
+    });
+    expect(result).toEqual([0, 0, 0, 0, 0]);
   });
 
   for (const anchoring of ['auto', 'none']) {
@@ -762,6 +979,30 @@ test.describe('spec:AST-105 FR2–FR4', () => {
       }
     });
   }
+
+  test('in a centered column an unstuck sticky card around the change glides with the content before it (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px">
+        <div id="above" class="row"></div>
+        <div id="card" style="position: sticky; top: 0; background: #eee"><div id="grow" class="grow"></div><div class="row"></div></div>
+        <div class="row"></div>
+      </div></div>`,
+    );
+    await change(page);
+    const [above] = await page.evaluate(() => window.motionOf('#above'));
+    const [card] = await page.evaluate(() => window.motionOf('#card'));
+    // Not stuck, the card is in flow: it rises with the row above it, so
+    // that row never crosses it.
+    expect(above).toBeDefined();
+    expect(card).toBeDefined();
+    expect(startOffset(card.first).y).toBeCloseTo(
+      startOffset(above.first).y,
+      0,
+    );
+  });
 
   test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
     page,
