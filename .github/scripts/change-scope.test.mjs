@@ -23,10 +23,10 @@ describe('spec-only change scope', () => {
         filename:
           'docs/specs/components/Table/plugins/rowStatus/useTableRowStatus.spec.md',
       },
-      {filename: 'packages/lab/src/FutureInput/FutureInput.spec.md'},
+      {filename: 'docs/specs/components/FutureInput/FutureInput.spec.md'},
       {filename: 'docs/specs/components/Chart/Chart.spec.md'},
-      {filename: 'packages/richtext/src/RichTextView.spec.md'},
-      {filename: 'packages/vega/src/VegaChart.spec.md'},
+      {filename: 'docs/specs/components/RichTextView/RichTextView.spec.md'},
+      {filename: 'docs/specs/components/VegaChart/VegaChart.spec.md'},
     ]);
     expect(result.specOnly).toBe(true);
   });
@@ -168,16 +168,25 @@ describe('spec-only change scope', () => {
   });
 
   it.each([
-    'packages/core/src/__tests__/TopLevel.spec.md',
-    'packages/core/src/Selector/__fixtures__/fixture.spec.md',
-    'packages/core/src/Selector/.hidden/Hidden.spec.md',
-    'packages/core/src/Selector/.Hidden.spec.md',
-    'packages/core/src/Selector/generated/fake.spec.md',
-    'packages/core/src/Selector/plugins/fake.generated.spec.md',
+    'docs/specs/components/__tests__/TopLevel.spec.md',
+    'docs/specs/components/Selector/__fixtures__/fixture.spec.md',
+    'docs/specs/components/Selector/.hidden/Hidden.spec.md',
+    'docs/specs/components/Selector/.Hidden.spec.md',
+    'docs/specs/components/Selector/generated/fake.spec.md',
+    'docs/specs/components/Selector/plugins/fake.generated.spec.md',
   ])('ignores non-record component spec path %s consistently', filename => {
     const result = classifyChanges([{filename}]);
     expect(result.specOnly).toBe(false);
     expect(result.touchesKnowledgeRecords).toBe(false);
+  });
+
+  it('does not treat a spec file left beside component code as a record', () => {
+    const result = classifyChanges([
+      {filename: 'packages/core/src/Selector/Selector.spec.md'},
+    ]);
+    expect(result.specOnly).toBe(false);
+    expect(result.touchesKnowledgeRecords).toBe(false);
+    expect(result.surfaces).toEqual(['runtime:core']);
   });
 
   it('fails closed for an empty change set', () => {
