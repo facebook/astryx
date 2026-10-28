@@ -3965,6 +3965,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-table-infinite-scroll",
+      "path": "hooks/use-table-infinite-scroll",
+      "aliases": []
+    },
+    {
       "name": "hook-use-table-pagination",
       "path": "hooks/use-table-pagination",
       "aliases": []
