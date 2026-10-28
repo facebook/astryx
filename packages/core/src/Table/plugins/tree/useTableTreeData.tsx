@@ -54,6 +54,7 @@ import type {
   HeaderCellRenderProps,
 } from '../../types';
 import {useTranslator} from '../../../i18n';
+import {registerCountIndependentPlugin} from '../../tableRowContextUsage';
 
 // =============================================================================
 // Types
@@ -514,7 +515,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
   // internally no-ops when hasExpandableRows is false. Swapping between
   // an empty and a context-wrapping plugin would change the element tree
   // and remount the whole table when flat data turns nested.
-  return useMemo((): TablePlugin<T> => {
+  const plugin = useMemo((): TablePlugin<T> => {
     const getCachedColumns = (
       columns: TableColumn<T>[],
       treeKey: string | undefined,
@@ -539,6 +540,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
     };
 
     return {
+      rowModel: 'tree',
       transformTableContext(children: ReactNode) {
         return <TreeStoreContext value={store}>{children}</TreeStoreContext>;
       },
@@ -722,4 +724,5 @@ export function useTableTreeData<T extends Record<string, unknown>>(
       },
     };
   }, [store]);
+  return registerCountIndependentPlugin(plugin);
 }

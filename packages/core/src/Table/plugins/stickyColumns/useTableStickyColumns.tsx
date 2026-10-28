@@ -15,6 +15,8 @@
 
 import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {registerCountIndependentPlugin} from '../../tableRowContextUsage';
+
 import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
 import type {
   TableColumn,
@@ -330,8 +332,9 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     };
   }, []);
 
-  return useMemo(
+  const plugin = useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'flat',
       transformHeaderCell(
         props: HeaderCellRenderProps,
         column: TableColumn<T>,
@@ -430,4 +433,5 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     // computed once and reused across renders.
     [attachScrollShadow],
   );
+  return registerCountIndependentPlugin(plugin);
 }
