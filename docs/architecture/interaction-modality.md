@@ -193,10 +193,8 @@ work.
   held pointer across a group's actions for every `family:action-groups`
   member other than menus and Selector's and MultiSelector's options, whose
   tracking and public `menuPressStep` belong to
-  `module:DropdownMenu/useMenuPress` (OQ1; implementation gaps: MultiSelector,
-  and TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's,
-  BreadcrumbItem's and TabMenu's menus,
-  do not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
+  `module:DropdownMenu/useMenuPress` (OQ1; implementation gap: MultiSelector
+  does not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
   FR21).
 
 ## Allowed variation
@@ -299,7 +297,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams                                                                          | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
 | INV11      | Evidence gap: not implemented yet; the shared hover recognizer and its adopters' move onto it are pending. Then: unit tests of the hover recognizer's intent and browser tests of its adopters with a mouse, a pen, a finger, and the keyboard | A show without the owner's entry delay, a missed handoff within a group, a delayed keyboard show, a hover-shown surface that closes before the pointer reaches it, a finger served by it, or a second hover-timing implementation fails                                                                     |
 | INV12      | Unit tests of native scroll's progress and real-browser proofs of its adopters                                                                                                                                                                 | Progress routed through React state, a missing edge, travel under Reduce Motion, use where native scroll-driven animation is supported, or a public export fails                                                                                                                                            |
-| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                         | A member outside menus and Selector's and MultiSelector's options that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                 |
+| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                                                                                                  | A member outside menus and Selector's and MultiSelector's options that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                 |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
