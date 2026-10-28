@@ -54,12 +54,12 @@ value is chosen from a presented list.
 | `MultiSelector`   | `string[]`       | none; clear button and keys only           | Clear restores the starting set. Equality ignores order.                                                               |
 | `Typeahead`       | `T`              | `clearValue` itself, as the first item     | Equality is the item's `id`. The input shows the item's label.                                                         |
 | `Tokenizer`       | `T[]`            | none; clear button and keys only           | Clear restores the starting tokens and reports them with the change descriptor its clear reports. Equality is by `id`. |
-| `ComplexSelector` | its `Value` type | caller-rendered content; nothing is pinned | Has no clear today. When it offers `hasClear`, it takes `clearValue` under this rule.                                  |
+| `ComplexSelector` | its `Value` type | caller-rendered content; nothing is pinned | Has no clear today. When it offers `hasClear`, it takes the object form of `clearValue` under this rule.               |
 
 ## Non-goals
 
-- A reset concept separate from clear. There is one clear job, and `clearValue`
-  names where it lands.
+- A reset concept separate from clear. There is one clear job, one prop for
+  it, and `hasClear`'s `clearValue` names where it lands.
 - A default value or uncontrolled mode. Every member is controlled; no member
   has `defaultValue`.
 - Search matching and query normalization. `spec:AST-056` FR4 owns the matching
@@ -82,8 +82,7 @@ value is chosen from a presented list.
 ```tsx
 <Selector
   label="Owner"
-  hasClear
-  clearValue="all"
+  hasClear={{clearValue: 'all'}}
   hasSearch
   value={owner} // string, never null
   onChange={setOwner} // (value: string) => void
@@ -96,8 +95,7 @@ value is chosen from a presented list.
 
 <MultiSelector
   label="Status"
-  hasClear
-  clearValue={['open', 'in-review']} // clear restores this set
+  hasClear={{clearValue: ['open', 'in-review']}} // clear restores this set
   value={statuses}
   onChange={setStatuses}
   options={statusOptions}
@@ -105,8 +103,7 @@ value is chosen from a presented list.
 
 <Typeahead
   label="Owner"
-  hasClear
-  clearValue={everyone} // {id: 'all', label: 'Everyone'}
+  hasClear={{clearValue: everyone}} // {id: 'all', label: 'Everyone'}
   value={owner} // T, never null
   onChange={setOwner}
   searchSource={people}
@@ -115,22 +112,22 @@ value is chosen from a presented list.
 
 ## Requirements
 
-- **FR1 — `clearValue` is where clear lands.** Every member that offers
-  `hasClear` accepts an optional `clearValue` of its own value type. With it,
-  every clear path reports `clearValue` through `onChange` and `changeAction`:
-  the trigger's clear button, Delete and Backspace on the trigger where the
-  member has them, and choosing the clear option (FR4). Without it, clear
-  reports the empty value as it does today: `null` for `Selector` and
-  `Typeahead`, `[]` for `MultiSelector` and `Tokenizer`. `clearValue` with
-  clear turned off (`hasClear` false or absent where it defaults to false) is a
-  type error; at runtime it is ignored and warns in development.
-- **FR2 — Types follow `clearValue`, and existing callers are unchanged.** With
-  `clearValue`, a single-value member's `value`, `onChange`, and
-  `changeAction` take the value type without `null`: `string` for `Selector`
-  and `T` for `Typeahead`. Without it, each member's types stay exactly as
-  shipped, including `Selector`'s `null` under `hasClear` and `Typeahead`'s
-  `T | null`. Set-valued members keep their array types either way. A caller
-  that passes neither `hasClear` nor `clearValue` sees no type change.
+- **FR1 — `hasClear={{clearValue}}` is where clear lands.** Every member's
+  `hasClear` accepts `boolean | {clearValue: V}`, where `V` is the member's
+  value type. `true` behaves as it does today: clear reports the empty value,
+  `null` for `Selector` and `Typeahead` and `[]` for `MultiSelector` and
+  `Tokenizer`. The object form turns clear on and makes every clear path report
+  `clearValue` through `onChange` and `changeAction`: the trigger's clear
+  button, Delete and Backspace on the trigger where the member has them, and
+  choosing the clear option (FR4). `false` and absent keep their current
+  meaning, including `Typeahead`'s default of `true`.
+- **FR2 — Types follow the object form, and existing callers are unchanged.**
+  With `hasClear={{clearValue}}`, a single-value member's `value`, `onChange`,
+  and `changeAction` take the value type without `null`: `string` for
+  `Selector` and `T` for `Typeahead`. With `true`, `false`, or no `hasClear`,
+  each member's types stay exactly as shipped, including `Selector`'s `null`
+  under `hasClear` and `Typeahead`'s `T | null`. Set-valued members keep their
+  array types either way.
 - **FR3 — At the clear value there is nothing to clear.** While the value
   equals `clearValue` under the member's equality (Members table), the
   trigger's clear button is hidden, as it is hidden while the value is empty
@@ -188,42 +185,44 @@ value is chosen from a presented list.
 
 ## Current-state impact
 
-- `family:input-fields` names `clearValue` beside `hasClear` in its adoption
-  table for each member in the Members table, and cites this record.
+- `family:input-fields` names the `{clearValue}` form of `hasClear` in its
+  adoption table for each member in the Members table, and cites this record.
 - `component:Selector` names the clear option and FR3's clear-button rule; the
-  other member records cite this record for `clearValue`.
-- Each member's `.doc.mjs` documents `clearValue`, its type narrowing, and its
+  other member records cite this record for `hasClear`'s object form.
+- Each member's `.doc.mjs` documents `hasClear`'s object form, its type narrowing, and its
   equality.
 - `Selector` keeps one internal clear path; its current internal name does not
   constrain the public prop.
 
 ## Verification
 
-| Contract | Verification                                                  | Representative states                                                                      | Mutation or failure expectation                                                                           |
-| -------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| FR1      | Per-member callback and Action suites                         | Clear button, Delete/Backspace, clear option; with and without `clearValue`; no `hasClear` | Any clear path reports something other than `clearValue`, or the empty value is reported when it is given |
-| FR2      | Type tests per member                                         | Neither prop; `hasClear` only; both                                                        | `null` is accepted with `clearValue`, or any shipped signature changes without it                         |
-| FR3      | Trigger rendering suites                                      | Value equals `clearValue`; differs; empty                                                  | The clear button shows at `clearValue`, or the trigger shows `placeholder` there                          |
-| FR4      | Search suites with live-region assertions                     | No query; matches; no match; Enter in the search input; a `clearValue` with no option      | The row is filtered, counted, highlighted by default under a query, chosen by Enter, or repeated          |
-| FR5      | Interaction suites in popover and bottom sheet; real-Chromium | Pointer, touch, keyboard; type-to-find                                                     | The row diverges from option-row behavior, or focus lands elsewhere                                       |
-| FR6      | Disabled, read-only, required, and form suites                | Disabled; read-only; required with empty and non-empty `clearValue`; `htmlName`            | Clear is reachable, required validation is wrong, or the submitted value differs                          |
-| AR1–AR4  | Accessibility-tree, focus, and announcement assertions        | Each member at and away from `clearValue`                                                  | The name or state is missing, focus moves elsewhere, or an extra announcement fires                       |
+| Contract | Verification                                                  | Representative states                                                                 | Mutation or failure expectation                                                                                              |
+| -------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Per-member callback and Action suites                         | Clear button, Delete/Backspace, clear option; `hasClear` `true` and `{clearValue}`    | Any clear path reports something other than `clearValue` under the object form, or anything but the empty value under `true` |
+| FR2      | Type tests per member                                         | No `hasClear`; `true`; `{clearValue}`                                                 | `null` is accepted with the object form, or any shipped signature changes without it                                         |
+| FR3      | Trigger rendering suites                                      | Value equals `clearValue`; differs; empty                                             | The clear button shows at `clearValue`, or the trigger shows `placeholder` there                                             |
+| FR4      | Search suites with live-region assertions                     | No query; matches; no match; Enter in the search input; a `clearValue` with no option | The row is filtered, counted, highlighted by default under a query, chosen by Enter, or repeated                             |
+| FR5      | Interaction suites in popover and bottom sheet; real-Chromium | Pointer, touch, keyboard; type-to-find                                                | The row diverges from option-row behavior, or focus lands elsewhere                                                          |
+| FR6      | Disabled, read-only, required, and form suites                | Disabled; read-only; required with empty and non-empty `clearValue`; `htmlName`       | Clear is reachable, required validation is wrong, or the submitted value differs                                             |
+| AR1–AR4  | Accessibility-tree, focus, and announcement assertions        | Each member at and away from `clearValue`                                             | The name or state is missing, focus moves elsewhere, or an extra announcement fires                                          |
 
 Known verification gap: none of these suites exist on `main`.
 
 ## Decision log
 
-### DEC-1 — Going back is clear, to a value the caller names
+### DEC-1 — Going back is clear, to a value the caller names on `hasClear`
 
 **Reference:** `spec:AST-109/DEC-1`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
-Clear already means "go back to the starting point"; `clearValue` lets the
-caller say where that is (`architecture:public-component-api` INV21). It is a
-plain value, not a boolean or an anatomy setting (INV18, INV20), and it costs
-nothing at runtime (INV19).
+Clear already means "go back to the starting point"; the object form of
+`hasClear` lets the caller say where that is, so one job keeps one prop
+(`architecture:public-component-api` INV21). The object is plain configuration
+on the existing switch, not an anatomy setting (INV18), it adds no visual
+boolean (INV20), and it costs nothing at runtime (INV19).
 
-Rejected: a separate reset value or reset row, because it shares clear's job.
+Rejected: a separate reset value or row, because it shares clear's job.
+Rejected: a separate `clearValue` prop, because two props would switch one job.
 
 ### DEC-2 — The clear option is the option that holds the clear value
 
@@ -236,20 +235,20 @@ that stays in the list. No new entry kind or label prop exists.
 Rejected: a dedicated clear entry in `options`, because it names the clear
 state a second time beside the option that holds the value.
 
-### DEC-3 — Types narrow only when `clearValue` is given
+### DEC-3 — Types narrow only with the object form
 
 **Reference:** `spec:AST-109/DEC-3`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
-With `clearValue` a single-value member never reports `null`, so its types say
-so. Without it nothing changes, so the prop is additive.
+With `hasClear={{clearValue}}` a single-value member never reports `null`, so its types say
+so. With any other `hasClear` value nothing changes, so the object form is additive.
 
 ### DEC-4 — The family is the list selectors, and the clear option starts with single values
 
 **Reference:** `spec:AST-109/DEC-4`
 **Decider:** `cixzhang`, `2026-10-26`
 
-`clearValue` applies to the selectors in the Members table. `PowerSearch` is
+`hasClear`'s object form applies to the selectors in the Members table. `PowerSearch` is
 not a member. The clear option exists in `Selector` and `Typeahead`, where one
 option holds the clear value; set-valued members clear through the clear
 button and keys.
