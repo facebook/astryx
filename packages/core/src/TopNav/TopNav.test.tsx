@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen, act} from '@testing-library/react';
 import {__resetMenuPressForTest} from '../hooks/useMenuPress';
+import {NavHeadingMenu, NavHeadingMenuItem} from '../NavMenu';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
 import {TopNavRenderContext} from './TopNavRenderContext';
@@ -353,6 +354,33 @@ describe('TopNavHeading', () => {
         expect(onSecond).toHaveBeenCalledTimes(1);
         expect(onFirst).not.toHaveBeenCalled();
       }
+    });
+
+    it('after a pointer pick, returns focus to the trigger without a keyboard ring (interaction-modality INV1)', async () => {
+      __resetMenuPressForTest();
+      const user = userEvent.setup();
+      render(
+        <TopNavHeading
+          heading="My App"
+          menu={
+            <NavHeadingMenu>
+              <NavHeadingMenuItem label="Alpha" onClick={() => {}} />
+              <NavHeadingMenuItem label="Beta" onClick={() => {}} />
+            </NavHeadingMenu>
+          }
+        />,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await user.click(trigger);
+      const focusSpy = vi.spyOn(trigger, 'focus');
+      const alpha = screen.getByRole('menuitem', {name: 'Alpha', hidden: true});
+      const mouse = {pointerType: 'mouse', pointerId: 4, button: 0};
+      alpha.focus();
+      fireEvent.pointerDown(alpha, mouse);
+      fireEvent.pointerUp(alpha, mouse);
+      expect(focusSpy).toHaveBeenCalledWith(
+        expect.objectContaining({focusVisible: false}),
+      );
     });
 
     it('does not wrap the heading menu popup in a modal dialog', async () => {
