@@ -325,6 +325,46 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(opacityOf(heading)).toBeGreaterThan(0);
   });
 
+  it("keeps a running expand's collapsed rail on top when a collapse reverses it", async () => {
+    render(<Shell />);
+    await toggle();
+    settle();
+    await toggle();
+    // 40 ms into the expand, collapse again.
+    const at = (document.timeline as {currentTime: number}).currentTime;
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      value: {currentTime: at + 40},
+    });
+    recorded = [];
+    await toggle();
+    const carried = copies().find(
+      element => element.querySelector('button[aria-label="Projects"]') != null,
+    ) as HTMLElement | undefined;
+    expect(carried?.isConnected).toBe(true);
+    expect(carried?.style.zIndex).toBe('2');
+    const rise = recorded.find(entry => entry.element === carried);
+    expect(rise?.keyframes.at(-1)?.opacity).toBe(1);
+  });
+
+  it('continues the page through a third press within the motion', async () => {
+    render(<Shell />);
+    await toggle();
+    for (const at of [1040, 1080]) {
+      Object.defineProperty(document, 'timeline', {
+        configurable: true,
+        value: {currentTime: at},
+      });
+      recorded = [];
+      await toggle();
+    }
+    // The wrap entering now had been fading out: it starts low, not high.
+    const heading = recorded.find(
+      entry => entry.element.textContent === 'Projects page',
+    );
+    expect(Number(heading?.keyframes[0].opacity)).toBeLessThan(0.5);
+  });
+
   it('leaves the real collapsed rail and no copies once the motion ends', async () => {
     render(<Shell />);
     await toggle();

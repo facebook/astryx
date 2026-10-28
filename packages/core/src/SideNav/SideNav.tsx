@@ -502,6 +502,12 @@ export function SideNav({
       // A change during a running motion starts from what the rail shows.
       const running = motionRef.current;
       const shown = running?.rail.shown() ?? null;
+      // Collapsing during an expand: its copy of the collapsed rail carries
+      // over into the collapse.
+      const carried =
+        shown != null && !wasCollapsed
+          ? (running?.rail.handOff() ?? null)
+          : null;
       running?.rail.end();
       running?.endContent();
       motionRef.current = null;
@@ -510,6 +516,7 @@ export function SideNav({
         shell?.animatedLayout ?? ownLayout,
         shown,
         wasCollapsed,
+        carried,
       );
       shell?.beforeRailChange();
     },

@@ -84,6 +84,11 @@ export interface RailSnapshot {
   readonly railRect: DOMRect;
   /** What the rail shows when the change lands. */
   readonly shown: RailShown;
+  /**
+   * A running expand's copy of the collapsed rail, taken over where and as
+   * it shows, for the collapse that reverses it.
+   */
+  readonly carried: HTMLElement | null;
   /** The old rail, held by the swap. */
   readonly swap: LayoutSwap | null;
 }
@@ -94,6 +99,8 @@ export interface RailMotion {
   end(): void;
   /** What the rail shows now, or null once it has settled. */
   shown(): RailShown | null;
+  /** Takes over a running expand's copy of the collapsed rail (or null). */
+  handOff(): HTMLElement | null;
 }
 
 /**
@@ -105,6 +112,7 @@ export function snapshotRail(
   handle: AnimatedLayout,
   running: RailShown | null,
   isCollapsed: boolean,
+  carried: HTMLElement | null = null,
 ): RailSnapshot | null {
   if (rail == null || typeof rail.animate !== 'function') {
     return null;
@@ -119,6 +127,7 @@ export function snapshotRail(
       collapsed: isCollapsed ? 1 : 0,
     },
     swap: holdLayoutSwap(handle, rail),
+    carried,
   };
 }
 
@@ -133,7 +142,11 @@ function textElements(rail: HTMLElement): Element[] {
   );
 }
 
-const AT_REST: RailMotion = {end: () => {}, shown: () => null};
+const AT_REST: RailMotion = {
+  end: () => {},
+  shown: () => null,
+  handOff: () => null,
+};
 
 /**
  * After the change commits, before paint: play the rail's motion from the
@@ -144,16 +157,18 @@ export function playRail(
   current: HTMLElement | null,
   handle: AnimatedLayout,
 ): RailMotion {
-  const {railRect, swap, shown: from} = snapshot;
+  const {railRect, swap, shown: from, carried} = snapshot;
   // The rail as it is now: a resizable rail's nav remounts when its resize
   // wrapper comes and goes with the collapse.
   const rail = current?.isConnected === true ? current : snapshot.rail;
   if (!rail.isConnected) {
+    carried?.remove();
     return AT_REST;
   }
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
   if (motion.kind === 'instant' || Math.abs(next.width - from.width) < 0.5) {
+    carried?.remove();
     return AT_REST;
   }
   const isCollapse = next.width < from.width;
@@ -201,7 +216,15 @@ export function playRail(
     // A collapse covers the old rail, held by the swap, from the width it
     // shows down to the new one; the real, collapsed rail fades in under it.
     if (swap == null || host == null) {
+      carried?.remove();
       return AT_REST;
+    }
+    // Reversing an expand: its copy of the collapsed rail stays on top, from
+    // the opacity it shows, and settles in as the collapsed rail it ends as.
+    let carriedFrom = 0;
+    if (carried != null) {
+      carried.style.zIndex = '2';
+      carriedFrom = Number(carried.style.opacity || 1);
     }
     const startInset = railRect.width - from.width;
     const endInset = railRect.width - next.width;
@@ -215,10 +238,23 @@ export function playRail(
           opacity: 1 - clamp((p - 0.7) / 0.3),
         }),
         copyText: labelsAt,
-        incoming: [{element: rail, frames: p => ({opacity: collapsedAt(p)})}],
+        onEnd: () => carried?.remove(),
+        incoming: [
+          {element: rail, frames: p => ({opacity: collapsedAt(p)})},
+          ...(carried == null
+            ? []
+            : [
+                {
+                  element: carried,
+                  frames: (p: number) => ({
+                    opacity: carriedFrom + (1 - carriedFrom) * clamp(p / 0.4),
+                  }),
+                },
+              ]),
+        ],
       },
     );
-    return {end, shown};
+    return {end, shown, handOff: () => null};
   }
 
   // An expand reveals the real rail from the width it showed, its text fading
@@ -234,7 +270,8 @@ export function playRail(
       frames: (p: number) => ({opacity: labelsAt(p)}),
     })),
   ];
-  const end =
+  carried?.remove();
+  const playback =
     swap != null && host != null
       ? playLayoutSwap(
           {...swap, rect: at},
@@ -245,6 +282,11 @@ export function playRail(
             incoming,
           },
         )
-      : playLayoutFrames(handle, incoming);
-  return {end, shown};
+      : null;
+  return {
+    end: playback ?? playLayoutFrames(handle, incoming),
+    shown,
+    // The collapsed rail's copy, for a collapse that reverses this expand.
+    handOff: () => playback?.handOff() ?? null,
+  };
 }

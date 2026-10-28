@@ -773,12 +773,17 @@ export function AppShell({
     change: LayoutChange;
     swap: LayoutSwap | null;
     before: DOMRect;
-    /** How far the old wrap had faded in a running swap (0 at rest). */
-    shown: number;
+    /** The opacities the held and the entering wrap start from. */
+    held: number;
+    entering: number;
   } | null>(null);
-  // When the last swap started, so a change made during it starts its
-  // cross-fade from what the content shows.
-  const lastSwapRef = useRef<{startedAt: number} | null>(null);
+  // The running swap: when it started and its wraps' starting opacities, so a
+  // change made during it starts its cross-fade from what the content shows.
+  const lastSwapRef = useRef<{
+    startedAt: number;
+    held: number;
+    entering: number;
+  } | null>(null);
   const sideNavShell = useMemo<SideNavShell>(
     () => ({
       animatedLayout: contentLayout,
@@ -790,16 +795,21 @@ export function AppShell({
         }
         const change = reportLayoutChange(contentLayout, railRef);
         change.measureBefore();
-        let shown = 0;
+        // At rest the copy (the wrap shown now) starts opaque and the entering
+        // wrap unseen; mid-swap the wrap in the DOM is the entering one and
+        // the copy's wrap is the one entering next, each at what it shows.
+        let held = 1;
+        let entering = 0;
         const motion = layoutMotionFor(main);
         const last = lastSwapRef.current;
         if (last != null && motion.kind === 'spring') {
           const elapsed =
             Number(main.ownerDocument.timeline?.currentTime ?? 0) -
             last.startedAt;
-          shown = 1 - motion.progress.remaining(elapsed);
-          if (elapsed >= motion.progress.durationMs) {
-            shown = 0;
+          if (elapsed < motion.progress.durationMs) {
+            const p = 1 - motion.progress.remaining(elapsed);
+            held = last.entering + (1 - last.entering) * p;
+            entering = last.held * (1 - p);
           }
         }
         lastSwapRef.current = null;
@@ -807,7 +817,8 @@ export function AppShell({
           change,
           swap: holdLayoutSwap(contentLayout, main, {isVisiblePart: true}),
           before: main.getBoundingClientRect(),
-          shown,
+          held,
+          entering,
         };
       },
       afterRailChange() {
@@ -854,12 +865,11 @@ export function AppShell({
         if (pending.swap == null || column.parentElement == null) {
           return playLayoutFrames(contentLayout, cover);
         }
-        // From what the content shows: mid-swap, the wrap now held showed at
-        // `shown` and the wrap entering at the rest.
-        const held = pending.shown > 0 ? pending.shown : 1;
-        const entering = pending.shown > 0 ? 1 - pending.shown : 0;
+        const {held, entering} = pending;
         lastSwapRef.current = {
           startedAt: Number(main.ownerDocument.timeline?.currentTime ?? 0),
+          held,
+          entering,
         };
         return playLayoutSwap(pending.swap, {
           host: column.parentElement,
