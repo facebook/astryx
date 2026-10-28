@@ -142,13 +142,21 @@ const styles = stylex.create({
   /**
    * A button an action group tracks (`family:action-groups`): the group
    * paints `data-astryx-press="on"` on the action under the pointer, and
-   * that paint alone scales it. `:active` stays on the button a press began
-   * on while the pointer slides to another, so it scales nothing here.
+   * that paint scales it. A pointer's `:active` stays on the button a press
+   * began on while the pointer slides to another, so it scales nothing here;
+   * a keyboard press (`:active:focus-visible`) still does.
    */
   pressableTracked: {
     transform: {
       default: 'scale(1)',
       '[data-astryx-press="on"]': 'scale(0.98)',
+      // A keyboard press is the button's own (the group tracks pointers
+      // only): holding Space on the focused button scales it as on any
+      // button, as the tracked overlay's `:active:focus-visible` arm paints.
+      ':active:focus-visible:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
     },
   },
   inactive: {
