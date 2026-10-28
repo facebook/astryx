@@ -187,10 +187,6 @@ Selector's and MultiSelector's options FR1–FR5
 | DateRangeInput's presets                                                                             | Track the preset buttons only.                                        |
 | Banner and Toast action rows                                                                         | Track only a row with two or more sibling actions.                    |
 
-TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's, BreadcrumbItem's, and TabMenu's menus act on
-the browser's click today and track no held pointer across their rows; their
-adoption of the menu press model is an implementation gap.
-
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;
 they are outside the family.
