@@ -9,7 +9,7 @@
  * SYNC: When ComplexSelector.tsx API changes, update these tests.
  */
 
-import React from 'react';
+import React, {useLayoutEffect} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -211,6 +211,121 @@ describe('ComplexSelector', () => {
         ripeness: 'Crisp',
       });
     });
+  });
+
+  it('blocks a commit helper kept from an enabled render once disabled', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const kept: {current: ((value: string) => void) | null} = {current: null};
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}>
+        {(_value, commit) => {
+          kept.current ??= commit;
+          return <span>Choices</span>;
+        }}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    expect(kept.current).not.toBeNull();
+    rerender(renderSelector(true));
+    act(() => kept.current?.('Banana'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('blocks a commit from content in the render that disables it', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function CommitOnDisable({
+      isDisabled,
+      commit,
+    }: {
+      isDisabled: boolean;
+      commit: (value: string) => void;
+    }) {
+      useLayoutEffect(() => {
+        if (isDisabled) {
+          commit('Banana');
+        }
+      }, [isDisabled, commit]);
+      return <span>Choices</span>;
+    }
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}>
+        {(_value, commit) => (
+          <CommitOnDisable isDisabled={isDisabled} commit={commit} />
+        )}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    rerender(renderSelector(true));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('commits through a helper kept from a disabled render once enabled', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const kept: {current: ((value: string) => void) | null} = {current: null};
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}>
+        {(_value, commit) => {
+          kept.current ??= commit;
+          return <span>Choices</span>;
+        }}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(true));
+    expect(kept.current).not.toBeNull();
+    rerender(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    act(() => kept.current?.('Banana'));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('Banana');
+  });
+
+  it('blocks commits when disabled while open and allows them after re-enabling', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const changeAction = vi.fn();
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}
+        changeAction={changeAction}>
+        {(_value, commit) => (
+          <button type="button" onClick={() => commit('Banana')}>
+            Select Banana
+          </button>
+        )}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    const choice = screen.getByRole('button', {name: 'Select Banana', ...h});
+
+    rerender(renderSelector(true));
+    await user.click(choice);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(changeAction).not.toHaveBeenCalled();
+
+    rerender(renderSelector(false));
+    await user.click(choice);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('Banana');
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('Banana');
   });
 
   it('passes a close helper to composed content', async () => {
@@ -595,6 +710,49 @@ describe('ComplexSelector trigger semantics', () => {
     const trigger = screen.getByRole('combobox', {name: /Destination/});
     expect(trigger).toHaveAttribute('aria-required', 'true');
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('names the built-in trigger with the field label when the caller gives no name', () => {
+    render(
+      <ComplexSelector label="Destination" value={[]}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Destination'});
+    const labelId = trigger.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    expect(document.getElementById(labelId!)).toHaveTextContent('Destination');
+    expect(trigger).not.toHaveAttribute('aria-label');
+  });
+
+  it("lets a caller's aria-label name the built-in trigger instead of the field label (family:input-fields FR10)", () => {
+    render(
+      <ComplexSelector
+        label="Destination"
+        aria-label="Trip destination"
+        value={[]}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Trip destination'});
+    expect(trigger).toHaveAttribute('aria-label', 'Trip destination');
+    expect(trigger).not.toHaveAttribute('aria-labelledby');
+  });
+
+  it("lets a caller's aria-labelledby replace the field label on the built-in trigger (family:input-fields FR10)", () => {
+    render(
+      <>
+        <span id="trip-heading">Where to next</span>
+        <ComplexSelector
+          label="Destination"
+          aria-labelledby="trip-heading"
+          value={[]}>
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>
+      </>,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Where to next'});
+    expect(trigger).toHaveAttribute('aria-labelledby', 'trip-heading');
   });
 
   it('spreads the combobox role, required, and disabled state onto a caller control', async () => {

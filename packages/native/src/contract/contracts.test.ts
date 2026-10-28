@@ -52,6 +52,20 @@ describe('native contracts', () => {
     expect(selector!.core).not.toHaveProperty('controlXstyle');
   });
 
+  it('moves a prop only some native platforms carry out of the core and onto those platforms', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const switchContract = contracts.find(
+      contract => contract.name === 'Switch',
+    )!;
+    for (const name of ['labelPosition', 'labelSpacing']) {
+      expect(switchContract.core).not.toHaveProperty(name);
+      expect(switchContract.platforms.android).toHaveProperty(name);
+      expect(switchContract.platforms.windows).toHaveProperty(name);
+      expect(switchContract.platforms.ios ?? {}).not.toHaveProperty(name);
+      expect(switchContract.platforms.macos ?? {}).not.toHaveProperty(name);
+    }
+  });
+
   it('keeps value callbacks, typed text slots, and number sets in the core', async () => {
     const {contracts} = await buildContracts(loadCoreDoc);
     const byName = new Map(
@@ -103,7 +117,15 @@ describe('native contracts', () => {
     expect(icon!.core.icon).toMatchObject({type: {kind: 'icon'}});
     expect(icon!.core.icon.optional).toBe(false);
     expect(Object.keys(icon!.core)).toEqual(['icon', 'color', 'size', 'label']);
-    expect(icon!.webOnly.map(prop => prop.name)).toEqual(['xstyle']);
+    // `variant` names come from core's augmentable `IconVariantMap`, which has
+    // no portable definition yet, so the prop stays on the web.
+    expect(icon!.webOnly).toEqual([
+      {
+        name: 'variant',
+        reason: 'type "IconVariant" has no portable definition yet',
+      },
+      {name: 'xstyle', reason: 'web styling input'},
+    ]);
 
     const swift = generateSwift(contracts);
     expect(swift['Icon.swift']).toContain('public var icon: IconName');
@@ -120,6 +142,69 @@ describe('native contracts', () => {
       "export type IconName = 'close' | 'chevronDown'",
     );
     expect(types['core.d.ts']).toContain('icon: IconName;');
+  });
+
+  it('gives Avatar its named sizes, a press, and a link, and leaves pixel sizes on the web', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const avatar = contracts.find(contract => contract.name === 'Avatar');
+    expect(avatar).toBeDefined();
+    expect(avatar!.core.size.type).toEqual({
+      kind: 'enum',
+      values: ['xsm', 'sm', 'md', 'lg', 'xl'],
+    });
+    expect(Object.entries(avatar!.projections?.size ?? {})).toEqual(
+      ['xsm', 'sm', 'md', 'lg', 'xl'].map(size => [size, size]),
+    );
+    expect(Object.keys(avatar!.core)).toEqual(
+      expect.arrayContaining([
+        'src',
+        'fallbackSrc',
+        'name',
+        'alt',
+        'shape',
+        'href',
+        'onClick',
+      ]),
+    );
+    // `string | boolean`: words, or on (the name) and off.
+    expect(avatar!.core.tooltip?.type).toEqual({kind: 'textOrBoolean'});
+    expect(avatar!.webOnly.map(prop => prop.name)).toEqual(
+      expect.arrayContaining(['target', 'rel', 'as']),
+    );
+  });
+
+  it('gives Avatar a status slot and AvatarStatusDot its variants and label', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const avatar = contracts.find(contract => contract.name === 'Avatar');
+    expect(avatar!.core.status?.type).toEqual({kind: 'content'});
+    const dot = contracts.find(contract => contract.name === 'AvatarStatusDot');
+    expect(dot).toBeDefined();
+    expect(dot!.core.variant?.type).toEqual({
+      kind: 'enum',
+      values: ['success', 'neutral', 'error'],
+    });
+    expect(dot!.core.label?.type).toEqual({kind: 'string'});
+    expect(dot!.webOnly.map(prop => prop.name)).toContain('icon');
+  });
+
+  it('gives Thumbnail its image, names, states, a press, and a remove action', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const thumbnail = contracts.find(contract => contract.name === 'Thumbnail');
+    expect(thumbnail).toBeDefined();
+    expect(Object.keys(thumbnail!.core)).toEqual([
+      'src',
+      'alt',
+      'label',
+      'onRemove',
+      'onClick',
+      'isLoading',
+      'isDisabled',
+      'showRemoveOn',
+    ]);
+    expect(thumbnail!.core.onRemove?.type).toEqual({kind: 'fn', args: []});
+    expect(thumbnail!.webOnly.map(prop => prop.name)).toEqual(
+      expect.arrayContaining(['xstyle', 'className', 'style', 'data-testid']),
+    );
   });
 
   it('reports naming and portability errors', () => {

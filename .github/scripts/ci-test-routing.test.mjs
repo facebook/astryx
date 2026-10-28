@@ -63,6 +63,8 @@ const WORKFLOWS = {
     lanes: ['test-ui', 'test-node'],
     // A PR that only touches docs skips the suite but must still report.
     scopeConditional: true,
+    // A pull request the import graph can scope runs only related tests.
+    graphScoped: true,
     // Each Vitest lane splits its project across matrix legs.
     sharded: true,
   },
@@ -71,7 +73,9 @@ const WORKFLOWS = {
     // other and so ride one lane of their own.
     lanes: ['test-ui', 'test-node', 'typecheck'],
     scopeConditional: false,
-    sharded: false,
+    // The push to main runs every test.
+    graphScoped: false,
+    sharded: true,
   },
 };
 
@@ -103,7 +107,7 @@ function runLines(job) {
 
 describe.each(Object.entries(WORKFLOWS))(
   '%s test routing',
-  (file, {lanes, scopeConditional, sharded}) => {
+  (file, {lanes, scopeConditional, graphScoped, sharded}) => {
     const workflow = load(file);
 
     it('gives the Node suite more than one Vitest worker', () => {
@@ -157,33 +161,76 @@ describe.each(Object.entries(WORKFLOWS))(
         expect(suite['continue-on-error']).not.toBe(true);
       }
 
-      if (!sharded) {
-        // One conditional step preserves the existing scope gate for both
-        // runs. Exact foreground commands also reject backgrounding or
-        // ignored exits.
-        expect(suites).toHaveLength(1);
-        expect(suites[0].run.trim().split('\n')).toEqual([
-          'pnpm test:ui',
-          'pnpm test:ui:isolated',
-        ]);
-        return;
-      }
-
       // Sharded: every leg runs its share without FR23, and exactly one leg
       // runs FR23 in a later step on the same runner, after its share exited.
       expect(suites).toHaveLength(2);
       const [share, isolated] = suites;
-      expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
+      // Its share is the full UI project, or for a scoped pull request the
+      // tests related to its diff (check-scope's full_suite).
+      if (graphScoped) {
+        expect(share.run.trim()).toBe(
+          [
+            'if [ "$SCOPED" = true ]; then',
+            `  pnpm test:ui --changed=HEAD^1 --passWithNoTests ${SHARD_ARG}`,
+            '  # Tests no module graph relates to the change run too: guards',
+            '  # that read sources, and tests that load a changed package from',
+            '  # its build (by name or its dist/).',
+            '  # The list goes through a file so a failing lister fails the step.',
+            '  node .github/scripts/fs-guard-tests.mjs --changed HEAD^1 > "$RUNNER_TEMP/fs-guards.txt"',
+            '  mapfile -t GUARDS < "$RUNNER_TEMP/fs-guards.txt"',
+            '  if [ "${#GUARDS[@]}" -gt 0 ]; then',
+            `    pnpm test:ui --passWithNoTests ${SHARD_ARG} "\${GUARDS[@]}"`,
+            '  fi',
+            'else',
+            `  pnpm test:ui ${SHARD_ARG}`,
+            'fi',
+          ].join('\n'),
+        );
+        expect(share.env.SCOPED).toBe(
+          "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
+        );
+        // The Node lane runs the same scoped share, guards included.
+        const node = workflow.jobs['test-node'].steps.find(
+          step => step.name === 'Run this shard of the Node tests',
+        );
+        expect(node.run.trim()).toBe(
+          [
+            'if [ "$SCOPED" = true ]; then',
+            `  pnpm test:node --changed=HEAD^1 --passWithNoTests ${SHARD_ARG}`,
+            '  # Tests no module graph relates to the change run too: guards',
+            '  # that read sources, and tests that load a changed package from',
+            '  # its build (by name or its dist/).',
+            '  # The list goes through a file so a failing lister fails the step.',
+            '  node .github/scripts/fs-guard-tests.mjs --changed HEAD^1 > "$RUNNER_TEMP/fs-guards.txt"',
+            '  mapfile -t GUARDS < "$RUNNER_TEMP/fs-guards.txt"',
+            '  if [ "${#GUARDS[@]}" -gt 0 ]; then',
+            `    pnpm test:node --passWithNoTests ${SHARD_ARG} "\${GUARDS[@]}"`,
+            '  fi',
+            'else',
+            `  pnpm test:node ${SHARD_ARG}`,
+            'fi',
+          ].join('\n'),
+        );
+        expect(node.env.SCOPED).toBe(share.env.SCOPED);
+      } else {
+        expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
+      }
       expect(isolated.run.trim()).toBe('pnpm test:ui:isolated');
       expect(job.steps.indexOf(isolated)).toBeGreaterThan(
         job.steps.indexOf(share),
       );
-      expect(isolated.if).toBe(`matrix.shard == 1 && ${share.if}`);
+      expect(isolated.if).toBe(
+        share.if ? `matrix.shard == 1 && ${share.if}` : 'matrix.shard == 1',
+      );
     });
 
     if (sharded) {
       it('splits each Vitest lane across legs that together run every file', () => {
-        for (const lane of lanes) {
+        const vitestLanes = lanes.filter(lane =>
+          /--project \w+/.test(runLines(workflow.jobs[lane])),
+        );
+        expect(vitestLanes).toEqual(['test-ui', 'test-node']);
+        for (const lane of vitestLanes) {
           const job = workflow.jobs[lane];
           const legs = job.strategy?.matrix?.shard;
           expect(Array.isArray(legs), `${lane} has no shard matrix`).toBe(true);
@@ -293,74 +340,55 @@ describe.each(Object.entries(WORKFLOWS))(
   },
 );
 
-describe('ci.yml pr-a11y steps against an older PR head', () => {
-  const steps = load('ci.yml').jobs['pr-a11y'].steps;
-  /** The spec files each `pnpm exec playwright test` in a step names. */
-  const specsOf = step =>
-    (step.run ?? '')
-      .replace(/\\\n/g, ' ')
-      .split('\n')
-      .filter(line => /pnpm exec playwright test\b/.test(line))
-      .flatMap(line =>
-        line
-          .trim()
-          .split(/\s+/)
-          .filter(token => /\.spec\.(ts|tsx|js|mjs)$/.test(token)),
+describe('ci.yml pr-a11y browser specs', () => {
+  const steps = load('ci.yml').jobs['pr-a11y-specs'].steps;
+  const run = steps.find(
+    step => step.name === 'Run browser accessibility specs',
+  );
+  const upload = steps.find(
+    step => step.name === 'Upload browser accessibility evidence',
+  );
+
+  // Specs are discovered, never listed: a step naming one spec file is the
+  // per-test workflow edit this lane exists to avoid.
+  it('names no spec file in any step', () => {
+    for (const step of steps) {
+      expect(step.run ?? '', step.name).not.toMatch(
+        /\.spec\.(ts|tsx|js|mjs)\b/,
       );
-  const playwright = steps.filter(step => specsOf(step).length > 0);
-
-  // The wrapper skips spec files a PR head lacks, so a step that named a file
-  // missing on main would pass silently everywhere. Main's steps must name
-  // files that exist; only an older head skips anything.
-  it('names only spec files that exist', () => {
-    expect(playwright.length).toBeGreaterThan(0);
-    for (const step of playwright) {
-      for (const spec of specsOf(step)) {
-        expect(
-          fs.existsSync(path.join(root, spec)),
-          `${step.name}: ${spec}`,
-        ).toBe(true);
-      }
     }
   });
 
-  // A step that uploads its evidence with `if-no-files-found: error` must not
-  // promise a run the wrapper then skips on an older head.
-  it('promises heading-links evidence only when its spec is in the head', () => {
-    const run = steps.find(
-      step => step.name === 'Run heading-links module browser evidence',
-    ).run;
-    const spec =
-      'packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts';
-    const promise = run.indexOf("echo 'should_run=true'");
-    expect(promise).toBeGreaterThan(-1);
-    expect(run.slice(0, promise)).toContain(`if [ -e ${spec} ]; then`);
-  });
-
-  it("sources the merge commit's absent-spec wrapper before every Playwright step", () => {
-    const index = steps.findIndex(
-      step => step.name === 'Skip contract specs the PR head predates',
-    );
-    expect(index).toBeGreaterThan(-1);
-    const wrapper = steps[index];
-    expect(wrapper.if).toBe("github.event_name == 'pull_request'");
+  it("runs the merge commit's runner against the PR head", () => {
+    expect(run.if).toBe('${{ !cancelled() }}');
     // The merge commit the steps come from, not the PR's recorded base, which
-    // can lag main and predate the wrapper.
-    expect(wrapper.env.WORKFLOW_SHA).toBe('${{ github.sha }}');
-    expect(wrapper.env.BASE_SHA).toBeUndefined();
-    expect(wrapper.run).toContain(
-      'git show "$WORKFLOW_SHA:.github/scripts/skip-absent-specs.sh" > "$wrapper"',
+    // can lag main and predate the runner.
+    expect(run.env.WORKFLOW_SHA).toBe('${{ github.sha }}');
+    expect(run.env.BASE_SHA).toBe('${{ github.event.pull_request.base.sha }}');
+    expect(run.env.PR_TITLE).toBe('${{ github.event.pull_request.title }}');
+    expect(run.run).toContain(
+      'git show "$WORKFLOW_SHA:.github/scripts/a11y-pr-contracts.mjs" > "$runner"',
     );
-    expect(wrapper.run).toContain('echo "BASH_ENV=$wrapper" >> "$GITHUB_ENV"');
+    expect(run.run).toContain('node "$runner"');
     expect(
-      fs.existsSync(path.join(root, '.github/scripts/skip-absent-specs.sh')),
-    ).toBe(true);
-    for (const step of playwright) {
-      expect(steps.indexOf(step), step.name).toBeGreaterThan(index);
-      // BASH_ENV reaches bash steps only, and only calls through the function.
-      expect(step.shell ?? 'bash', step.name).toMatch(/^bash/);
-      expect(step.run, step.name).not.toMatch(/\b(exec|command) pnpm\b/);
+      JSON.parse(read('package.json')).scripts['test:a11y-contract:pr'],
+    ).toBe('node .github/scripts/a11y-pr-contracts.mjs');
+  });
+
+  it('uploads every spec receipt in one head-bound artifact', () => {
+    expect(upload.if).toBe('${{ !cancelled() }}');
+    expect(upload.with.name).toBe(
+      'pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}',
+    );
+    for (const dir of [
+      'pr-a11y-evidence/',
+      'pr-a11y-output/',
+      'test-results/',
+      '*-audit-evidence/',
+    ]) {
+      expect(upload.with.path).toContain(dir);
     }
+    expect(steps.indexOf(upload)).toBeGreaterThan(steps.indexOf(run));
   });
 });
 
@@ -391,7 +419,8 @@ describe('ci.yml RTL package sharding', () => {
     for (const name of [
       'build-storybook',
       'pr-a11y-shard',
-      'pr-a11y',
+      'pr-a11y-guards',
+      'pr-a11y-specs',
       'a11y-contracts-shard',
       'pr-rtl-shard',
     ]) {
@@ -411,7 +440,11 @@ describe('ci.yml RTL package sharding', () => {
     expect(runLines(workflow.jobs['build-storybook'])).toContain(
       'astryx-build-sha.txt',
     );
-    expect(runLines(workflow.jobs['pr-a11y'])).toContain('git rev-parse HEAD');
+    for (const name of ['pr-a11y-guards', 'pr-a11y-specs']) {
+      expect(runLines(workflow.jobs[name]), name).toContain(
+        'git rev-parse HEAD',
+      );
+    }
     expect(runLines(shard)).toContain('git rev-parse HEAD');
 
     const evidence = read(
@@ -428,10 +461,10 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('keeps PR accessibility scoped while RTL retains its canonical resolver', () => {
-    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+    expect(runLines(workflow.jobs['pr-a11y-guards'])).toContain(
       '.github/scripts/a11y-pr-scope.mjs',
     );
-    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+    expect(runLines(workflow.jobs['pr-a11y-guards'])).toContain(
       'SCOPE_ARGS=(--components "$COMPONENTS")',
     );
     expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
@@ -451,7 +484,10 @@ describe('ci.yml RTL package sharding', () => {
       expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
     }
     expect(shard['runs-on']).toBe('4-core-ubuntu');
-    expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
+    // Pull requests get the 15-minute PR budget; the full release roster, 30.
+    expect(shard['timeout-minutes']).toBe(
+      "${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}",
+    );
     expect(shard['continue-on-error']).not.toBe(true);
     const scope = shard.steps.find(
       step => step.name === 'Resolve RTL shard scope',
@@ -660,19 +696,140 @@ describe('deploy.yml push gating', () => {
       'packages/cli',
       'apps/storybook',
       'internal/a11y-spec',
+      'internal/interaction-harness',
     ]) {
       const {typecheck} = JSON.parse(read(`${dir}/package.json`)).scripts;
       expect(typecheck, `${dir} lost its typecheck`).toBeTruthy();
     }
   });
 
-  it('checks out main on every push-gate lane', () => {
-    // A lane that checks out the default ref would gate the wrong commit.
+  it('checks out one run-wide main commit on every push-gate lane and leg', () => {
+    // A lane that checks out the default ref would gate the wrong commit, and
+    // legs that each resolve `main` can straddle a merge and shard different
+    // file lists, so one job resolves the commit and every leg checks it out.
+    const resolve = workflow.jobs['main-commit'];
+    expect(resolve.outputs.sha).toBe('${{ steps.resolve.outputs.sha }}');
+    const script = resolve.steps[0].with.script;
+    expect(script).toContain('context.sha');
+    expect(script).toContain("branch: 'main'");
     for (const lane of ['test-ui', 'test-node', 'typecheck']) {
+      expect(workflow.jobs[lane].needs).toEqual(['main-commit']);
       const checkout = workflow.jobs[lane].steps.find(step =>
         step.uses?.startsWith('actions/checkout'),
       );
-      expect(checkout?.with?.ref, `${lane} does not pin main`).toBe('main');
+      expect(checkout?.with?.ref, `${lane} does not pin the run's commit`).toBe(
+        '${{ needs.main-commit.outputs.sha }}',
+      );
     }
+  });
+});
+
+describe('ci.yml interaction proofs', () => {
+  const workflow = load('ci.yml');
+  const job = workflow.jobs['pr-interaction'];
+  const step = name => job.steps.find(candidate => candidate.name === name);
+
+  it('runs the interaction config in Chromium against the exact PR head', () => {
+    // Four cores when the proofs apply, a slim runner when it passes without work.
+    const labels = [...job['runs-on'].matchAll(/'([^']+)'/g)]
+      .map(match => match[1])
+      .filter(label => label !== 'true');
+    expect(labels).toEqual(['4-core-ubuntu', 'ubuntu-slim']);
+    for (const label of labels)
+      expect(KNOWN_RUNNERS.has(label), label).toBe(true);
+    expect(job.needs).toEqual(
+      expect.arrayContaining(['check-scope', 'build-storybook']),
+    );
+    const checkout = job.steps.find(candidate =>
+      candidate.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout?.with?.ref).toBe(
+      '${{ github.event.pull_request.head.sha }}',
+    );
+    const run = step('Run interaction proofs').run;
+    expect(run).toContain('--config playwright.interaction.config.ts');
+    expect(run).toContain('--project chromium');
+    const packageJson = JSON.parse(read('package.json'));
+    expect(packageJson.scripts['test:interaction']).toBe(
+      'playwright test --config playwright.interaction.config.ts',
+    );
+  });
+
+  it('runs whenever the harness, its config, a component or a story changes', () => {
+    const scope = workflow.jobs['interaction-scope'].steps.find(
+      candidate =>
+        candidate.name === 'Decide whether the interaction proofs apply',
+    ).run;
+    expect(scope).toContain('.github/scripts/pr-scope-touches.sh');
+    for (const path of [
+      'internal/interaction-harness/',
+      'internal/a11y-spec/',
+      'playwright\\.interaction\\.config\\.ts',
+      'packages/[^/]+/src/',
+      'apps/storybook/',
+      '\\.github/workflows/ci\\.yml$',
+      'package\\.json$',
+      'pnpm-lock\\.yaml$',
+    ]) {
+      expect(scope).toContain(path);
+    }
+    // Unknown scope (exit 2) runs the proofs; only "out of scope" skips them.
+    expect(scope).toContain('if [ "$scope" = 1 ]; then');
+  });
+});
+
+describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
+  const workflow = load('ci.yml');
+  const stepNamed = name => {
+    for (const job of Object.values(workflow.jobs)) {
+      const step = (job.steps ?? []).find(candidate => candidate.name === name);
+      if (step != null) return step;
+    }
+    throw new Error(`no step named ${name}`);
+  };
+
+  it('asks component analysis for full audits unless check-scope reports a scoped suite', () => {
+    const analyze = stepNamed('Analyze components');
+    expect(analyze.env.FULL_SUITE).toBe(
+      '${{ needs.check-scope.outputs.full_suite }}',
+    );
+    expect(analyze.run).toContain(
+      'if [ "$FULL_SUITE" != false ]; then FORCE_FULL=(--force-full); fi',
+    );
+    expect(analyze.run).toContain('"${FORCE_FULL[@]}"');
+  });
+
+  it('hands the visual gate the folder-level reverse dependents RTL audits, and the whole plan when analysis or the gate asks for it', () => {
+    const visual = stepNamed('Run the visual gate for the touched components');
+    expect(visual.run).toContain(
+      `DEPENDENTS=$(jq -r '[(.dependentComponentFolders // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)`,
+    );
+    expect(visual.run).toContain(
+      'if [ -n "$DEPENDENTS" ]; then DEPENDENT_ARGS=(--dependents "$DEPENDENTS"); fi',
+    );
+    expect(visual.run).toContain(
+      'SCOPE_ARGS=(--tiers component --components "$COMPONENTS" "${DEPENDENT_ARGS[@]}" --no-scout)',
+    );
+    expect(visual.run).toContain(
+      "FORCE_FULL_AUDITS=$(jq -r '.forceFullComponentAudits == true' analysis.json)",
+    );
+    expect(visual.run).toContain('[ "$FORCE_FULL_AUDITS" = \'true\' ]');
+    // The gate's broaden exit runs the whole plan instead of skipping.
+    expect(visual.run).toMatch(
+      /if \[ "\$code" = 3 \]; then[\s\S]*?COMMAND=release\s+SCOPE_ARGS=\(\)\s+run_gate/,
+    );
+  });
+
+  it('scopes the visual classification only on a pull request check-scope scoped', () => {
+    const check = stepNamed('Check for component changes');
+    expect(check.env.SCOPED).toBe(
+      "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
+    );
+    expect(check.run).toContain(
+      'if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi',
+    );
+    expect(check.run).toContain(
+      'visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"',
+    );
   });
 });

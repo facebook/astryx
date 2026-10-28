@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useId,
   useImperativeHandle,
+  useInsertionEffect,
   useOptimistic,
   useRef,
   useTransition,
@@ -378,7 +379,7 @@ export interface ComplexSelectorProps<Value> extends Omit<
   isOptional?: boolean;
   /** Marks the field required. */
   isRequired?: boolean;
-  /** Disables the selector. */
+  /** Blocks opening and value commits, including from an already-open popup. */
   isDisabled?: boolean;
   /** Shows loading state on the trigger. */
   isLoading?: boolean;
@@ -687,8 +688,24 @@ export function ComplexSelector<Value>({
     [isDisabled, popover],
   );
 
+  // The helper reads the selector's availability when it runs, not the
+  // render it came from: content may keep a helper from an earlier render
+  // (after an await, say) across a change either way. The insertion effect
+  // runs before any layout effect of the content, so a commit from the
+  // content's own layout effect in the render that changes it sees the new
+  // availability too.
+  const isDisabledRef = useRef(isDisabled);
+  useInsertionEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
+
   const commitValue = useCallback(
     (nextValue: Value) => {
+      // Caller-owned popup controls may remain mounted after disablement.
+      // Guard the supplied commit boundary, not just the trigger.
+      if (isDisabledRef.current) {
+        return;
+      }
       onChange?.(nextValue);
       if (changeAction) {
         startTransition(async () => {
@@ -823,7 +840,13 @@ export function ComplexSelector<Value>({
             [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
             undefined
           }
-          aria-labelledby={labelId}
+          // The field's label names the trigger unless the selector was
+          // given a name: a caller's `aria-label` or `aria-labelledby`
+          // replaces it (family:input-fields FR10), as on `renderTrigger`.
+          aria-labelledby={
+            rest['aria-labelledby'] ??
+            (rest['aria-label'] != null ? undefined : labelId)
+          }
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}

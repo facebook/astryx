@@ -72,7 +72,7 @@ describe('Node-tooling CI routing', () => {
 
   it('runs the Node project and required lint owners for tooling', () => {
     const nodeSuite = ci.jobs['test-node'].steps.find(candidate =>
-      /^pnpm test:node\b/.test(candidate.run ?? ''),
+      /\bpnpm test:node\b/.test(candidate.run ?? ''),
     );
     expect(nodeSuite.if).not.toContain('tooling_only');
     expect(
@@ -182,6 +182,7 @@ describe('Node-tooling CI routing', () => {
       'test-build',
       'registry-contract',
       'test-native-swift',
+      'pr-interaction',
     ]);
     expect(ci.jobs.build.needs).toEqual([
       'build-storybook',
@@ -201,6 +202,7 @@ describe('Node-tooling CI routing', () => {
       TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
       REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
       TEST_NATIVE_SWIFT_RESULT: '${{ needs.test-native-swift.result }}',
+      PR_INTERACTION_RESULT: '${{ needs.pr-interaction.result }}',
     });
     const buildJoin = step(
       ci.jobs.build,
