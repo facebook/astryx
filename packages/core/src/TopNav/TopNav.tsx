@@ -4,8 +4,13 @@
 
 /**
  * @file TopNav.tsx
- * @input Uses React, ReactNode
- * @output Exports TopNav component and TopNavProps
+ * @input Uses React, ReactNode, the theme's spacing, size and surface
+ *   tokens, and the iOS 26 bar geometry of motion/uikit/bars (built from the
+ *   tokens; TopNavBarCapsule.test.tsx checks that the default tokens give
+ *   the measured geometry)
+ * @output Exports TopNav component and TopNavProps. Under a finger (one
+ *   touch model on every touch device) the phone bar takes the iOS 26 bar's
+ *   geometry and its end items sit on one capsule
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -19,7 +24,7 @@
 import type {ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useTranslator} from '../i18n';
 import {TopNavSlotContext} from './TopNavContext';
@@ -86,12 +91,30 @@ const styles = stylex.create({
     flexShrink: 0,
     marginInlineStart: 'auto',
   },
-  // Mobile bar mode — simplified top bar with heading + toggle + endContent
+  // Mobile bar mode — simplified top bar with heading + toggle + endContent.
+  // Under a finger (the resolver's touch query, spelled literally as
+  // TOUCH_QUERY: an imported at-rule key changes StyleX priority) it takes
+  // the iOS 26 bar's geometry (bars.heightPt, bars.buttonCapsules), from the
+  // theme's tokens: the items on its top row, as tall as the capsule (the
+  // heading centred on them), `--spacing-4` from the screen's sides, and the
+  // measured 10px under them. With the default tokens that is UIKit's 54px
+  // bar, 16px from the sides. A mouse keeps today's bar.
   mobileBar: {
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    padding: spacingVars['--spacing-2'],
+    paddingInline: {
+      default: spacingVars['--spacing-2'],
+      '@media (pointer: coarse)': spacingVars['--spacing-4'],
+    },
+    paddingBlockStart: {
+      default: spacingVars['--spacing-2'],
+      '@media (pointer: coarse)': 0,
+    },
+    paddingBlockEnd: {
+      default: spacingVars['--spacing-2'],
+      '@media (pointer: coarse)': '10px',
+    },
     boxSizing: 'border-box',
   },
   // The heading gives up space first so the end content and toggle stay in view
@@ -107,6 +130,35 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+  },
+  // The end items on one capsule, as iOS 26 puts a run of bar buttons
+  // (bars.buttonCapsules): fully rounded, painted with the theme's surface,
+  // no shadow and nothing blurred. UIKit puts each item in a 36pt cell
+  // (`--size-element-lg`), 4pt (`--spacing-1`) in from the capsule's ends
+  // and above and below, and 16pt (`--spacing-4`) from the next; the padding
+  // and gap below give a control of the theme's size the same centres, so a
+  // lone icon button makes a circle: 44px with the default tokens.
+  mobileBarEndCapsule: {
+    height: {
+      default: null,
+      '@media (pointer: coarse)': `calc(${sizeVars['--size-element-lg']} + 2 * ${spacingVars['--spacing-1']})`,
+    },
+    paddingInline: {
+      default: null,
+      '@media (pointer: coarse)': `calc(${spacingVars['--spacing-1']} + (${sizeVars['--size-element-lg']} - ${sizeVars['--size-element-md']}) / 2)`,
+    },
+    gap: {
+      default: spacingVars['--spacing-1'],
+      '@media (pointer: coarse)': `calc(${spacingVars['--spacing-4']} + ${sizeVars['--size-element-lg']} - ${sizeVars['--size-element-md']})`,
+    },
+    borderRadius: {
+      default: null,
+      '@media (pointer: coarse)': `calc((${sizeVars['--size-element-lg']} + 2 * ${spacingVars['--spacing-1']}) / 2)`,
+    },
+    backgroundColor: {
+      default: null,
+      '@media (pointer: coarse)': colorVars['--color-background-surface'],
+    },
   },
   // Drawer mode — vertical list of nav items
   drawerItems: {
@@ -211,6 +263,10 @@ export function TopNav({
   // to strip down the TopNav if there's nothing to put in the drawer.
   // =========================================================================
   if (renderMode === 'mobile-bar') {
+    const showToggle = hasMobileDrawerContent && hasAutoToggle;
+    // An empty end group draws no capsule.
+    const hasEndItems =
+      (endContent != null && endContent !== false) || showToggle;
     return (
       <nav
         ref={ref}
@@ -226,9 +282,14 @@ export function TopNav({
         {heading && (
           <div {...stylex.props(styles.mobileBarHeading)}>{heading}</div>
         )}
-        <div {...stylex.props(styles.mobileBarEnd)}>
+        <div
+          data-bar-capsule={hasEndItems ? '' : undefined}
+          {...stylex.props(
+            styles.mobileBarEnd,
+            hasEndItems && styles.mobileBarEndCapsule,
+          )}>
           {endContent}
-          {hasMobileDrawerContent && hasAutoToggle && <MobileNavToggle />}
+          {showToggle && <MobileNavToggle />}
         </div>
       </nav>
     );
