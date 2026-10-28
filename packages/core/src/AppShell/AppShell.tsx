@@ -873,11 +873,9 @@ export function AppShell({
         const cover: {element: Element; frames: (p: number) => Keyframe}[] = [];
         const surface = backdropRef.current ?? main;
         const color = getComputedStyle(surface).backgroundColor;
-        if (
-          (isRtl ? travel > 0 : travel < 0) &&
-          layoutMotionFor(main).kind === 'spring' &&
-          !/^rgba\(.*,\s*0\)$|^transparent$/.test(color)
-        ) {
+        const isPainted = !/^rgba\(.*,\s*0\)$|^transparent$/.test(color);
+        const glides = layoutMotionFor(main).kind === 'spring';
+        if ((isRtl ? travel > 0 : travel < 0) && glides && isPainted) {
           cover.push({
             element: surface,
             frames: p => ({
@@ -887,6 +885,12 @@ export function AppShell({
         }
         if (pending.swap == null || column.parentElement == null) {
           return playLayoutFrames(contentLayout, cover);
+        }
+        // Under Reduce Motion nothing glides: the old wrap's copy paints the
+        // surface it sat on, so that surface fades out with it where it was
+        // (`design:reduced-motion` DR2) instead of leaving a bare strip.
+        if (!glides && isPainted) {
+          pending.swap.copy.style.backgroundColor = color;
         }
         const {held, entering} = pending;
         lastSwapRef.current = {

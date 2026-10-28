@@ -519,6 +519,29 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     }
   });
 
+  it('under DR2, an expand fades the old surface out with the old wrap', async () => {
+    media['(prefers-reduced-motion: reduce)'] = true;
+    media['(pointer: coarse)'] = true;
+    render(<Shell />);
+    const main = screen.getByRole('main');
+    main.style.backgroundColor = 'rgb(255, 255, 255)';
+    await toggle();
+    act(() => {
+      recorded.forEach(entry => entry.animation.finish());
+    });
+    settle();
+    recorded = [];
+    await toggle();
+    // The old wrap's copy paints the surface it sat on, from opaque at the
+    // first frame, so the strip the narrower page leaves fades with it.
+    const copy = copies().find(
+      element => element.querySelector('h1') != null,
+    ) as HTMLElement | undefined;
+    expect(copy?.style.backgroundColor).toBe('rgb(255, 255, 255)');
+    const fade = recorded.find(entry => entry.element === copy);
+    expect(fade?.keyframes[0].opacity).toBe(1);
+  });
+
   it('outside AppShell, moves only the rail', async () => {
     render(<Shell inShell={false} />);
     await toggle();
