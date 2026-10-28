@@ -19,6 +19,8 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
@@ -122,6 +124,7 @@ export function NavHeadingMenu({
     itemSelector: ENABLED_ITEM_SELECTOR,
     onDismiss: closeMenu,
   });
+  const hasOverflow = useMenuOverflow(listRef, children, true);
 
   // First-character typeahead over the (enabled) menu items (menus-11).
   const getMenuItems = useCallback(
@@ -204,7 +207,14 @@ export function NavHeadingMenu({
         data-testid={testId}
         {...mergeProps(
           themeProps('nav-heading-menu', {size}),
-          stylex.props(styles.root, sizeStyles[size], xstyle),
+          stylex.props(
+            styles.root,
+            sizeStyles[size],
+            hasOverflow
+              ? menuTouchActionStyles.scrolls
+              : menuTouchActionStyles.fits,
+            xstyle,
+          ),
           className,
           inlineStyle,
         )}

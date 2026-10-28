@@ -202,6 +202,9 @@ export function NavHeadingMenuItem({
       tabIndex={isDisabled && !href ? undefined : -1}
       aria-disabled={isDisabled || undefined}
       href={isDisabled ? undefined : href}
+      // A menu row is never a draggable link: a mouse press that slides to
+      // another row would start a drag and cancel the press.
+      draggable={href != null ? false : undefined}
       onClick={handleClick}
       data-testid={testId}
       {...mergeProps(

@@ -429,6 +429,20 @@ describe('TopNavMenu as an action group (family:action-groups)', () => {
   const item = (name: RegExp) =>
     screen.getByRole('menuitem', {name, hidden: true});
 
+  it('renders a link item undraggable, so a mouse press that slides to another item is not a drag', () => {
+    render(
+      <TopNavMenu
+        label="Products"
+        items={[
+          {title: 'Docs', href: '/docs'},
+          {title: 'Status', onClick: () => {}},
+        ]}
+      />,
+    );
+    expect(item(/Docs/)).toHaveAttribute('draggable', 'false');
+    expect(item(/Status/)).not.toHaveAttribute('draggable');
+  });
+
   it('acts on the item a press lifts on, once, after sliding from another (FR1, FR2, FR5)', () => {
     const onAnalytics = vi.fn();
     const onMessaging = vi.fn();

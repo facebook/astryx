@@ -27,6 +27,8 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
@@ -460,6 +462,7 @@ export function TopNavMenu({
     itemSelector: '[role="menuitem"]',
     onDismiss: close,
   });
+  const hasOverflow = useMenuOverflow(listRef, items.length, popover.isOpen);
 
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {
@@ -594,7 +597,12 @@ export function TopNavMenu({
           // hook's basic arrow-key handler.
           onKeyDown={menuKeyDown}
           onFocus={handleFocus}
-          {...stylex.props(styles.menuContainer)}>
+          {...stylex.props(
+            styles.menuContainer,
+            hasOverflow
+              ? menuTouchActionStyles.scrolls
+              : menuTouchActionStyles.fits,
+          )}>
           {items.map(item => {
             const Element = item.href ? 'a' : 'div';
             return (
@@ -609,6 +617,9 @@ export function TopNavMenu({
                     ? item.href
                     : undefined
                 }
+                // A menu row is never a draggable link: a mouse press that
+                // slides to another item would start a drag instead.
+                draggable={item.href != null ? false : undefined}
                 onClick={item.onClick}
                 {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>

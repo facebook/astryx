@@ -48,6 +48,8 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -429,6 +431,11 @@ export function SideNavHeading({
     onDismiss: closeMenu,
     isEnabled: !!menu,
   });
+  const headingMenuTouch = stylex.props(
+    useMenuOverflow(headingMenuRef, menu, popover.isOpen)
+      ? menuTouchActionStyles.scrolls
+      : menuTouchActionStyles.fits,
+  );
 
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
@@ -550,7 +557,8 @@ export function SideNavHeading({
                 ref={headingMenuRef}
                 role="menu"
                 aria-label={heading}
-                {...headingMenuPress.menuProps}>
+                {...headingMenuPress.menuProps}
+                {...headingMenuTouch}>
                 <NavHeadingCloseContext value={closeMenuCtx}>
                   {menu}
                 </NavHeadingCloseContext>
@@ -776,7 +784,8 @@ export function SideNavHeading({
               ref={headingMenuRef}
               role="menu"
               aria-label={heading}
-              {...headingMenuPress.menuProps}>
+              {...headingMenuPress.menuProps}
+              {...headingMenuTouch}>
               {menu}
             </div>
           </div>,
@@ -856,7 +865,8 @@ export function SideNavHeading({
               ref={headingMenuRef}
               role="menu"
               aria-label={heading}
-              {...headingMenuPress.menuProps}>
+              {...headingMenuPress.menuProps}
+              {...headingMenuTouch}>
               {menu}
             </div>
           </div>,

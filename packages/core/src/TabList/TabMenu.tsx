@@ -35,6 +35,8 @@ import {usePopover} from '../Popover/usePopover';
 import {MENU_ITEM_SELECTOR} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
@@ -311,6 +313,7 @@ export function TabMenu({
     itemSelector: MENU_ITEM_SELECTOR,
     onDismiss: popover.hide,
   });
+  const hasOverflow = useMenuOverflow(listRef, options.length, popover.isOpen);
 
   const handleToggle = useCallback(() => {
     if (popover.isOpen) {
@@ -419,7 +422,12 @@ export function TabMenu({
           onFocus={handleFocus}
           {...mergeProps(
             themeProps('tab-menu-dropdown'),
-            stylex.props(styles.dropdown),
+            stylex.props(
+              styles.dropdown,
+              hasOverflow
+                ? menuTouchActionStyles.scrolls
+                : menuTouchActionStyles.fits,
+            ),
           )}>
           <span role="presentation" {...stylex.props(styles.menuHeading)}>
             {label}

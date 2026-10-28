@@ -663,6 +663,17 @@ describe('NavHeadingMenu as an action group (family:action-groups)', () => {
     return {onDashboard, onSettings, closeMenu};
   }
 
+  it('renders a link item undraggable, so a mouse press that slides to another item is not a drag', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" />
+        <NavHeadingMenuItem label="Sign out" onClick={() => {}} />
+      </NavHeadingMenu>,
+    );
+    expect(item('Docs')).toHaveAttribute('draggable', 'false');
+    expect(item('Sign out')).not.toHaveAttribute('draggable');
+  });
+
   it('acts on the item a finger lifts on, once, after sliding from another (FR1, FR2)', () => {
     const {onDashboard, onSettings} = renderMenu();
     fireEvent.pointerDown(item('Dashboard'), finger);
