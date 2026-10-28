@@ -10,11 +10,11 @@
  * @output Proofs that Lightbox's gestures work for every pointer
  *   (spec:AST-094 FR43): a mouse drag down dismisses and one brought back
  *   springs back, a mouse drag sideways and a trackpad's horizontal scroll
- *   page a gallery, a ctrl-wheel zooms, a wheel pans a zoomed photo, a
- *   zoomed drag released moving coasts, a pen drag down dismisses, a wheel
- *   scroll down over a fitted photo begins a dismiss, and under Reduce
- *   Motion a mouse's release closes at once where the primary pointer is
- *   fine (design:reduced-motion DR3)
+ *   page a gallery, a ctrl-wheel zooms and, out from the fitted size, closes
+ *   the viewer, a wheel pans a zoomed photo, a zoomed drag released moving
+ *   coasts, a pen drag down dismisses, a wheel scroll down over a fitted
+ *   photo begins a dismiss, and under Reduce Motion a mouse's release closes
+ *   at once where the primary pointer is fine (design:reduced-motion DR3)
  * @position Interaction tests for Lightbox (browser), beside
  *   LightboxZoomModes.interaction.browser.spec.ts
  */
@@ -264,7 +264,9 @@ test('a trackpad’s horizontal scroll pages a gallery', async ({browser}) => {
   }
 });
 
-test('a ctrl-wheel zooms the photo', async ({browser}) => {
+test('a ctrl-wheel zooms the photo, and a ctrl-wheel out from the fitted size closes the viewer', async ({
+  browser,
+}) => {
   const {wheel, context, page, dialog, img, centre} = await openDesktop(
     browser,
     'with-zoom',
@@ -286,6 +288,19 @@ test('a ctrl-wheel zooms the photo', async ({browser}) => {
     expect((await boxOf(img)).width).toBeGreaterThan(fitted.width * 1.05);
   } finally {
     await context.close();
+  }
+  const reopened = await openDesktop(browser, 'with-zoom');
+  try {
+    await reopened.page.mouse.move(reopened.centre.x, reopened.centre.y);
+    await reopened.page.keyboard.down('Control');
+    for (let i = 0; i < 6; i++) {
+      await reopened.wheel(0, 40);
+      await reopened.page.waitForTimeout(16);
+    }
+    await reopened.page.keyboard.up('Control');
+    await expect(reopened.dialog).toBeHidden();
+  } finally {
+    await reopened.context.close();
   }
 });
 

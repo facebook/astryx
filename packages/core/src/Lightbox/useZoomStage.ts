@@ -518,12 +518,12 @@ export function useZoomStage(
           dismiss != null &&
           pinchCloses(session.smallest, pinch.scale);
         panRef.current = null;
-        dismiss?.onRelease(closes, true);
+        dismiss?.onRelease(closes, fingerRef.current.pinch);
         if (closes) {
           const pan = recognizers.pan;
           const moving = pan.state === 'began' || pan.state === 'changed';
           leave(geometry, shown, {
-            touch: true,
+            touch: fingerRef.current.pinch,
             position: zoomMedia.pinchClose.closeSpring,
             size: zoomMedia.pinchClose.closeSpring,
             velocity: moving ? pan.velocity() : {x: 0, y: 0},
@@ -550,7 +550,7 @@ export function useZoomStage(
               scale: pinch.velocity * session.start.scale,
             },
           },
-          {touchRelease: true},
+          {touchRelease: fingerRef.current.pinch},
         );
         return;
       }

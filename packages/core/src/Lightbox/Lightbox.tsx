@@ -1193,15 +1193,13 @@ export function Lightbox({
         );
       },
       // Photos' pinch to close fades them by the pinch's scale instead,
-      // under any finger (one touch model).
-      onPinch: isTouch
-        ? scale => {
-            fadeForDismissal(
-              pinchCloseBackdropAlpha(scale),
-              pinchCloseChromeAlpha(scale),
-            );
-          }
-        : undefined,
+      // under any pinch, a ctrl-wheel's included (spec:AST-094 FR43).
+      onPinch: scale => {
+        fadeForDismissal(
+          pinchCloseBackdropAlpha(scale),
+          pinchCloseChromeAlpha(scale),
+        );
+      },
       target: () => sourceBoxOf(sourceElementFor(index)),
       onRelease: (dismisses, touch) => {
         if (dismisses) {
