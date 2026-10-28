@@ -11,6 +11,12 @@ domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs icons theme-overrides
 parent:      pnpm exec astryx docs icons --index
+name:        icons
+section:     icon-variants
+domain:      doc
+package:     @astryxdesign/cli
+command:     pnpm exec astryx docs icons icon-variants
+parent:      pnpm exec astryx docs icons --index
 name:        theme
 section:     icon-sizes
 domain:      doc
@@ -86,7 +92,3 @@ name:        ChatComposerDrawerShowcase
 domain:      template
 package:     @astryxdesign/core
 command:     pnpm exec astryx template ChatComposerDrawerShowcase --type block
-name:        ChatComposerDrawerWithProgress
-domain:      template
-package:     @astryxdesign/core
-command:     pnpm exec astryx template ChatComposerDrawerWithProgress --type block

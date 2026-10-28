@@ -35,6 +35,19 @@
       },
       {
         "domain": "doc",
+        "name": "icons",
+        "package": "@astryxdesign/cli",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "section": "<text>",
+        "title": "<text>",
+        "command": "astryx docs icons icon-variants",
+        "parent": "astryx docs icons --index",
+        "mentions": []
+      },
+      {
+        "domain": "doc",
         "name": "theme",
         "package": "@astryxdesign/cli",
         "score": "<text>",
@@ -232,18 +245,6 @@
         "displayName": "<text>",
         "kind": "block",
         "command": "astryx template ChatComposerDrawerShowcase --type block",
-        "mentions": []
-      },
-      {
-        "domain": "template",
-        "name": "ChatComposerDrawerWithProgress",
-        "package": "@astryxdesign/core",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "displayName": "<text>",
-        "kind": "block",
-        "command": "astryx template ChatComposerDrawerWithProgress --type block",
         "mentions": []
       }
     ]

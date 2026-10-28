@@ -328,7 +328,9 @@ const docTargets = collectDocTargets(SRC_DIR);
  * public-map check above and is exempt from the themeProps() reflection and
  * visualProps checks only — and must stay unreflected and undocumented as a
  * visual prop. `Icon.variant` selects a theme's artwork; an unlisted name
- * renders the request without a variant.
+ * renders the request without a variant. `astryx theme build` keeps the same
+ * list out of component-value enrollment
+ * (packages/cli/api/theme/build/build.mjs).
  */
 const ARTWORK_REQUEST_MAPS: ReadonlySet<string> = new Set(['IconVariantMap']);
 
