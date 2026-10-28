@@ -4,7 +4,8 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, canonical AST, optional plugins and custom renderers
+ * @input Markdown string, canonical AST, optional plugins and custom renderers;
+ *   numbered lists use outside counters matching RichText's native indentation
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
@@ -590,15 +591,14 @@ const styles = stylex.create({
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
-  // A numbered list reaches a marker gutter further toward its start, so a
-  // wide counter can hang there (ListMarkerScope's hasMarkerGutter) as
-  // RichText's native markers hang into their list's padding: `100.` keeps
-  // the text where `9.` puts it on both surfaces (spec:AST-061 FR11). The
-  // list pads back in by the same amount, so its rows stay where they were,
-  // and its inline clip never cuts a counter.
+  // Numbered document lists keep their ordinary text inset regardless of
+  // counter width, matching RichText's native outside markers (AST-061 FR11).
+  // These rows have no swipe actions: unlike general List, their outside ink
+  // may paint past the gutter instead of being clipped at a finite threshold.
   markerGutter: {
     marginInlineStart: `calc(-1 * (${spacingVars['--spacing-2']} + ${spacingVars['--spacing-4']}))`,
     paddingInlineStart: spacingVars['--spacing-4'],
+    overflowInline: 'visible',
   },
   // HR
   hr: {

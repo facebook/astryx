@@ -4,10 +4,12 @@
  * @file RichTextEditor.markdownParity.tsx
  * @input Core Markdown for the read surface; RichTextEditor with its toolbar and
  *   the Lexical plugins available today for the edit surface; the parity
- *   fixture; the Storybook demo Markdown plugins.
+ *   fixture; the Storybook demo Markdown plugins; a 16px wide-counter fixture.
  * @output `MarkdownParitySandbox`: one Markdown document rendered by both
  *   surfaces side by side, swapped in place, or overlaid, with diagnostic
  *   per-block geometry and the scroll anchor across a mode switch.
+ *   `WideNumberMarkerParity` compares short and arbitrarily wide outside
+ *   counters on Markdown, RichTextView, and RichTextEditor.
  * @position Storybook-only diagnostic for RichTextEditor.stories.tsx. It shows
  *   current behavior and fixes nothing: every difference it reports is a
  *   finding, and none of its numbers is a target.
@@ -33,9 +35,15 @@ import {Banner} from '@astryxdesign/core/Banner';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Text} from '@astryxdesign/core/Text';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {defineTheme, Theme, useTheme} from '@astryxdesign/core/theme';
+import {
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   RichTextEditor,
+  RichTextView,
   RichTextEditorAutoLinkPlugin,
   RichTextEditorToolbar,
   markdownToEditorStateJSON,
@@ -802,5 +810,109 @@ export function MarkdownParitySandbox({
         />
       )}
     </div>
+  );
+}
+
+// A real Theme override, not a font-size declaration on the story wrapper:
+// both document text and generated counters must resolve to 16px.
+const wideMarkerTheme = defineTheme({
+  name: 'wide-number-marker-parity',
+  typography: {scale: {base: 16, ratio: 1.2}},
+});
+
+const WIDE_MARKER_SOURCE = [
+  'Reference paragraph.',
+  '',
+  '9. Short decimal',
+  '',
+  'A paragraph separates lists.',
+  '',
+  '999. Before four digits',
+  '1000. Four digits',
+  '      1. Nested under four digits',
+  '1001. Sibling after four digits',
+  '',
+  'Another separate list.',
+  '',
+  '2024. Year counter',
+  '',
+  'The widest decimal supported by Markdown source syntax.',
+  '',
+  '999999999. Nine digits',
+  '',
+  'Nested counters resolve from their parent text line.',
+  '',
+  '1. Outer parent',
+  '   1. Middle parent',
+  '      1. Short roman',
+  '2. Other outer parent',
+  '   1. Other middle parent',
+  '',
+  '      27. Before long roman',
+  '      28. Long roman',
+  '      29. After long roman',
+  '',
+  'A still wider roman counter.',
+  '',
+  '1. Last outer parent',
+  '   1. Last middle parent',
+  '',
+  '      1888. Much wider roman',
+].join('\n');
+
+const wideMarkerStyles = stylex.create({
+  editorFrame: {
+    // The field's 8px inset and 1px border offset its document. Give the frame
+    // that space outside the common measure, rather than testing unequal widths.
+    width: `calc(100% + 2 * (${spacingVars['--spacing-2']} + 1px))`,
+    marginInline: `calc(-1 * (${spacingVars['--spacing-2']} + 1px))`,
+  },
+  columns: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+    gap: spacingVars['--spacing-4'],
+  },
+  surface: {
+    minWidth: 0,
+    // Space to photograph outside ink, including nine-digit counters, without
+    // the viewport cropping it. The document's ordinary list inset is unchanged.
+    paddingInline: 96,
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+  },
+});
+
+/** Reusable short/wide-counter comparison in read and edit mode at 16px. */
+export function WideNumberMarkerParity() {
+  const {mode} = useTheme();
+  const state = useMemo(
+    () => markdownToEditorStateJSON(WIDE_MARKER_SOURCE),
+    [],
+  );
+  return (
+    <Theme theme={wideMarkerTheme} mode={mode}>
+      <div {...stylex.props(wideMarkerStyles.columns)}>
+        <div
+          data-wide-marker-surface="markdown"
+          {...stylex.props(wideMarkerStyles.surface)}>
+          <Markdown>{WIDE_MARKER_SOURCE}</Markdown>
+        </div>
+        <div
+          data-wide-marker-surface="view"
+          {...stylex.props(wideMarkerStyles.surface)}>
+          <RichTextView value={state} />
+        </div>
+        <div
+          data-wide-marker-surface="editor"
+          {...stylex.props(wideMarkerStyles.surface)}>
+          <RichTextEditor
+            label="Wide counters"
+            isLabelHidden
+            defaultValue={state}
+            xstyle={wideMarkerStyles.editorFrame}
+          />
+        </div>
+      </div>
+    </Theme>
   );
 }

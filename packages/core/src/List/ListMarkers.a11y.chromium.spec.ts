@@ -1,14 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope core/List core/Markdown richtext/* ^apps/storybook/stories/(List|Markdown|RichTextEditor)
 
 /**
  * @file ListMarkers.a11y.chromium.spec.ts
- * @input Built Storybook's long List and nested Markdown counter examples
+ * @input Built Storybook's long List and nested Markdown counter examples,
+ *   plus a 16px Theme-provider comparison with both RichText surfaces
  * @output Rendered proof that counters, item text, and nested lists stay
  *   aligned: counters on one line, ending on one edge, never clipped, and
- *   Markdown's text where a short list puts it
+ *   Markdown's text starts matching RichText for counters beyond the gutter
  * @position Core browser regression; no declaration snapshots or committed images
  */
 
+import {writeFile} from 'node:fs/promises';
 import {expect, test, type Page} from '@playwright/test';
 import {
   DEFAULT_STORYBOOK_DIR,
@@ -30,6 +33,9 @@ interface MarkerBox {
   readonly bottom: number;
   readonly left: number;
   readonly right: number;
+  /** Intrinsic rendered counter width, including ink outside the marker box. */
+  readonly counterWidth: number;
+  readonly textStart: number;
 }
 
 /** Paints every counter red and everything else transparent. */
@@ -83,11 +89,11 @@ async function inkOf(
         let end = -Infinity;
         const from = Math.max(
           0,
-          Math.floor(rtl ? box.left - 2 : box.left - 48),
+          Math.floor(rtl ? box.left - 2 : box.right - box.counterWidth - 2),
         );
         const to = Math.min(
           width,
-          Math.ceil(rtl ? box.right + 48 : box.right + 2),
+          Math.ceil(rtl ? box.left + box.counterWidth + 2 : box.right + 2),
         );
         for (let y = Math.floor(box.top); y < Math.ceil(box.bottom); y++) {
           for (let x = from; x < to; x++) {
@@ -101,13 +107,20 @@ async function inkOf(
         return {start, end};
       });
     },
-    {png: screenshot.toString('base64'), rows: boxes, rtl: dir === 'rtl'},
+    {
+      png: screenshot.toString('base64'),
+      rows: boxes,
+      rtl: dir === 'rtl',
+    },
   );
 }
 
 /** Each list's marker boxes, outermost list first, in page coordinates. */
-async function markerBoxes(page: Page): Promise<MarkerBox[][]> {
-  return page.locator('#storybook-root ol').evaluateAll(lists =>
+async function markerBoxes(
+  page: Page,
+  selector = '#storybook-root ol',
+): Promise<MarkerBox[][]> {
+  return page.locator(selector).evaluateAll(lists =>
     lists.map(list =>
       Array.from(list.children, item => {
         const marker = item.firstElementChild;
@@ -115,11 +128,21 @@ async function markerBoxes(page: Page): Promise<MarkerBox[][]> {
           throw new Error('missing marker');
         }
         const box = marker.getBoundingClientRect();
+        const pseudoWidth = Number.parseFloat(
+          getComputedStyle(marker, '::before').width,
+        );
+        const content = marker.nextElementSibling?.getBoundingClientRect();
+        if (content == null) {
+          throw new Error('missing item content');
+        }
+        const rtl = getComputedStyle(item).direction === 'rtl';
         return {
           top: box.top + window.scrollY,
           bottom: box.bottom + window.scrollY,
           left: box.left + window.scrollX,
           right: box.right + window.scrollX,
+          counterWidth: Number.isFinite(pseudoWidth) ? pseudoWidth : box.width,
+          textStart: (rtl ? content.right : content.left) + window.scrollX,
         };
       }),
     ),
@@ -286,5 +309,274 @@ for (const {width, mode} of [
         }
       });
     }
+  }
+}
+
+// FR11 has no counter-width exemption. A fixed larger gutter would only move
+// the failure threshold: exercise four and nine digits and long roman counters
+// with the actual body theme at 16px, not the default 14px desktop theme.
+for (const {width, mode} of [
+  {width: 1440, mode: 'light'},
+  {width: 390, mode: 'dark'},
+] as const) {
+  for (const dir of ['ltr', 'rtl'] as const) {
+    test(`16px outside counters match all document surfaces (${width}px, ${mode}, ${dir})`, async ({
+      page,
+      browser,
+    }, testInfo) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.setViewportSize({width, height: 900});
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-parity-wide-number-markers&viewMode=story&globals=direction:${dir};colorMode:${mode}`,
+      );
+      await expect(
+        page.locator('[data-wide-marker-surface="editor"] li').last(),
+      ).toBeVisible();
+      await page.evaluate(async () => document.fonts.ready);
+      const surfaces = await page
+        .locator('[data-wide-marker-surface]')
+        .evaluateAll(roots =>
+          roots.map(root => {
+            const rtl = getComputedStyle(root).direction === 'rtl';
+            const firstOwnText = (element: Element): Text | null => {
+              const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+              );
+              for (
+                let node = walker.nextNode();
+                node;
+                node = walker.nextNode()
+              ) {
+                if (
+                  node.textContent?.trim() &&
+                  node.parentElement?.closest('li') ===
+                    (element.tagName === 'LI' ? element : null)
+                ) {
+                  return node as Text;
+                }
+              }
+              return null;
+            };
+            const line = (node: Text) => {
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              const boxes = Array.from(range.getClientRects());
+              // A wrapped text node can expose multiple bidi fragments on one
+              // line; count distinct line tops, not Range fragment rectangles.
+              return {
+                start: rtl
+                  ? Math.max(
+                      ...boxes
+                        .filter(box => box.top === boxes[0].top)
+                        .map(box => box.right),
+                    )
+                  : Math.min(
+                      ...boxes
+                        .filter(box => box.top === boxes[0].top)
+                        .map(box => box.left),
+                    ),
+                lines: new Set(
+                  boxes.filter(box => box.width > 0).map(box => box.top),
+                ).size,
+              };
+            };
+            const references = document.createTreeWalker(
+              root,
+              NodeFilter.SHOW_TEXT,
+            );
+            let reference: Text | null = null;
+            for (
+              let node = references.nextNode();
+              node;
+              node = references.nextNode()
+            ) {
+              if (node.textContent?.trim() === 'Reference paragraph.') {
+                reference = node as Text;
+                break;
+              }
+            }
+            if (reference == null) {
+              throw new Error('missing reference paragraph');
+            }
+            const origin = line(reference).start;
+            return {
+              surface: root.getAttribute('data-wide-marker-surface'),
+              measure: (
+                root.querySelector('[data-lexical-editor]') ??
+                root.firstElementChild
+              )?.getBoundingClientRect().width,
+              direction: getComputedStyle(root).direction,
+              items: Array.from(root.querySelectorAll('li')).flatMap(item => {
+                const node = firstOwnText(item);
+                if (node?.parentElement == null) {
+                  return [];
+                }
+                const font = getComputedStyle(node.parentElement);
+                const {start, lines} = line(node);
+                return [
+                  {
+                    text: node.textContent.trim(),
+                    start: start - origin,
+                    lines,
+                    fontSize: font.fontSize,
+                    fontFamily: font.fontFamily,
+                  },
+                ];
+              }),
+              counters:
+                root.getAttribute('data-wide-marker-surface') !== 'markdown'
+                  ? []
+                  : Array.from(
+                      root.querySelectorAll('ol > li > :first-child'),
+                    ).map(marker => {
+                      const style = getComputedStyle(marker);
+                      return {
+                        fontSize: style.fontSize,
+                        height: marker.getBoundingClientRect().height,
+                        lineHeight: Number.parseFloat(style.lineHeight),
+                      };
+                    }),
+            };
+          }),
+        );
+      // Bank the unmodified pixels and measured fonts/line starts even on red.
+      await page.screenshot({
+        path: testInfo.outputPath('surfaces.png'),
+        fullPage: true,
+      });
+      await writeFile(
+        testInfo.outputPath('geometry.json'),
+        JSON.stringify(
+          {browser: browser.version(), width, mode, dir, surfaces},
+          null,
+          2,
+        ),
+      );
+      expect(surfaces.map(({surface}) => surface)).toEqual([
+        'markdown',
+        'view',
+        'editor',
+      ]);
+      const [markdown] = surfaces;
+      expect(markdown.items.map(({text}) => text)).toContain('Four digits');
+      expect(markdown.items.map(({text}) => text)).toContain('Long roman');
+      expect(markdown.items.map(({text}) => text)).toContain(
+        'Much wider roman',
+      );
+      for (const surface of surfaces) {
+        expect(surface.direction).toBe(dir);
+        expect(surface.items.map(({text}) => text)).toEqual(
+          markdown.items.map(({text}) => text),
+        );
+        for (const [index, item] of surface.items.entries()) {
+          expect(item.fontSize, `${surface.surface}: ${item.text}`).toBe(
+            '16px',
+          );
+          expect(item.fontFamily).toBe(markdown.items[index].fontFamily);
+          expect(
+            Math.abs((surface.measure ?? 0) - (markdown.measure ?? 0)),
+          ).toBeLessThanOrEqual(0.5);
+          expect(item.lines, `${surface.surface}: lines of ${item.text}`).toBe(
+            markdown.items[index].lines,
+          );
+          expect(
+            Math.abs(item.start - markdown.items[index].start),
+            `${surface.surface}: ${item.text}`,
+          ).toBeLessThanOrEqual(0.5);
+        }
+      }
+      // Siblings and the nested anchors stay at their depth's ordinary inset.
+      // This is rendered geometry, not a declaration-only assertion.
+      const starts = new Map(
+        markdown.items.map(item => [item.text, item.start]),
+      );
+      const startOf = (text: string): number => {
+        const start = starts.get(text);
+        if (start == null) {
+          throw new Error(`missing item: ${text}`);
+        }
+        return start;
+      };
+      for (const text of [
+        'Before four digits',
+        'Four digits',
+        'Sibling after four digits',
+        'Year counter',
+        'Nine digits',
+      ]) {
+        expect(
+          Math.abs(startOf(text) - startOf('Short decimal')),
+          text,
+        ).toBeLessThanOrEqual(0.5);
+      }
+      expect(
+        Math.abs(startOf('Outer parent') - startOf('Other outer parent')),
+      ).toBeLessThanOrEqual(0.5);
+      expect(
+        Math.abs(startOf('Middle parent') - startOf('Other middle parent')),
+      ).toBeLessThanOrEqual(0.5);
+      for (const text of [
+        'Before long roman',
+        'Long roman',
+        'After long roman',
+        'Much wider roman',
+      ]) {
+        expect(
+          Math.abs(startOf(text) - startOf('Short roman')),
+          text,
+        ).toBeLessThanOrEqual(0.5);
+      }
+      for (const counter of markdown.counters) {
+        expect(counter.fontSize).toBe('16px');
+        expect(counter.height).toBeLessThanOrEqual(counter.lineHeight + 1);
+      }
+      const boxes = await markerBoxes(
+        page,
+        '[data-wide-marker-surface="markdown"] ol',
+      );
+      await page.addStyleTag({
+        content: `#storybook-root, #storybook-root * {color: transparent !important;} #storybook-root [data-wide-marker-surface="markdown"] ol > li > :first-child {color: rgb(255, 0, 0) !important;}`,
+      });
+      const resting = await page.screenshot({
+        path: testInfo.outputPath('counter-ink.png'),
+        fullPage: true,
+      });
+      await page.addStyleTag({content: UNCLIPPED});
+      const unclipped = await page.screenshot({fullPage: true});
+      for (const list of boxes) {
+        for (const box of list) {
+          expect(box.counterWidth).toBeGreaterThan(0);
+          // Outside ink must be within the photographed viewport; otherwise
+          // two equally cropped frames would not prove a whole counter.
+          expect(
+            dir === 'rtl' ? box.left : box.right - box.counterWidth,
+          ).toBeGreaterThanOrEqual(0);
+          expect(
+            dir === 'rtl' ? box.left + box.counterWidth : box.right,
+          ).toBeLessThanOrEqual(width);
+        }
+        const ink = await inkOf(page, resting, list, dir);
+        expect(ink).toEqual(await inkOf(page, unclipped, list, dir));
+        expect(
+          ink.every(
+            ({start, end}) => Number.isFinite(start) && Number.isFinite(end),
+          ),
+        ).toBe(true);
+        for (const [index, extent] of ink.entries()) {
+          const gap =
+            dir === 'rtl'
+              ? extent.start - list[index].textStart
+              : list[index].textStart - extent.end;
+          expect(gap, 'counter ink never overlaps item text').toBeGreaterThan(
+            0,
+          );
+        }
+        const ends = ink.map(({start, end}) => (dir === 'rtl' ? start : end));
+        expect(Math.max(...ends) - Math.min(...ends)).toBeLessThanOrEqual(1);
+      }
+      expect(errors).toEqual([]);
+    });
   }
 }

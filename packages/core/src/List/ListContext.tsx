@@ -9,7 +9,7 @@
  *   treatment, and marker style between List and ListItem, and
  *   ListMarkerScope, which sets the marker for the items inside it, or a
  *   task item's checkbox in its place, and whether their List has a marker
- *   gutter for wide counters to hang into
+ *   gutter whose outside counters keep the ordinary themed text inset
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
@@ -56,12 +56,11 @@ export interface ListContextValue {
    */
   task?: ListTaskMarker;
   /**
-   * Whether the List reaches past its rows' inline start by a marker gutter
-   * (`--spacing-4`), set by ListMarkerScope; internal. A wide counter may
-   * hang into that gutter as well as the row's inline inset before it widens
-   * the List's number column. Markdown sets it on the items of its numbered
-   * Lists, which reach out by that gutter, so their text starts where
-   * RichText's does.
+   * Whether the List has Markdown's outside-marker gutter, set by
+   * ListMarkerScope; internal. Its number column keeps the ordinary themed
+   * width, while whole counters may paint toward inline-start beyond it.
+   * Markdown sets this on its non-swipe numbered rows and allows outside ink
+   * on their List, so its text starts match RichText without a width threshold.
    */
   hasMarkerGutter?: boolean;
 }
@@ -73,8 +72,8 @@ ListContext.displayName = 'ListContext';
  * Draws `marker` on the List items inside it, in place of the marker their
  * List's `listStyle` names, or `task`'s read-only checkbox in place of either;
  * internal, for Markdown's nested lists and task items in mixed lists. With
- * `hasMarkerGutter`, a wide counter may also hang into the marker gutter the
- * List reaches out by. Outside a List, or in a List without markers, it
+ * `hasMarkerGutter`, counters keep the ordinary marker column and may paint
+ * outside it toward inline-start. Outside a List, or in a List without markers, it
  * changes nothing.
  */
 export function ListMarkerScope({

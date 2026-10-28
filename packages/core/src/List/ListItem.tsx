@@ -10,8 +10,9 @@
  *   lists). Number markers stay on one line in the List's shared column,
  *   keeping every sibling's text and nested list on the same start line;
  *   they end on one line too, right-aligned with tabular figures, and hang
- *   into the row's inline inset (and a marker gutter, where the List has one)
- *   before they widen that column.
+ *   into the row's inline inset before they widen that column. Markdown's
+ *   outside counters keep the themed column and may paint beyond it, matching
+ *   RichText's native outside markers without a finite width threshold.
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -222,7 +223,7 @@ const MARKER_DOT_SIZE = 6;
  * list's padding. Up to that width the item's text keeps its usual start; a
  * wider counter widens the List's shared column instead. It is never
  * clipped: the inset is inside the row, and the row inside the List's inline
- * clip. A List with a marker gutter lets it hang further (`gutterHang`).
+ * clip. Markdown's outside counters use a separate rule (`gutterHang`).
  */
 const COUNTER_HANG = 'calc(-1 * var(--_item-inset-inline))';
 
@@ -296,14 +297,16 @@ const markerStyles = stylex.create({
       marginInlineStart: COUNTER_HANG,
     },
   },
-  // In a List with a marker gutter (ListMarkerScope's hasMarkerGutter), a
-  // wide counter also hangs into the gutter, which the List reaches out by
-  // past its rows' inline start, as RichText's native markers hang into their
-  // list's padding. Markdown's numbered lists keep their text where
-  // RichText's start through `999.` at 16px (spec:AST-061 FR11).
+  // Markdown's non-swipe lists allow outside marker paint. Keep their marker
+  // column at the ordinary themed width, as RichText's native outside markers
+  // do (spec:AST-061 FR11). The counter itself stays intrinsic and unbroken;
+  // flex-end aligns its end even when it overflows toward inline-start. A
+  // larger finite negative margin would only move the parity failure threshold.
   gutterHang: {
+    width: spacingVars['--spacing-4'],
     '::before': {
-      marginInlineStart: `calc(-1 * (var(--_item-inset-inline) + ${spacingVars['--spacing-4']}))`,
+      marginInlineStart: 0,
+      flexShrink: 0,
     },
   },
 });

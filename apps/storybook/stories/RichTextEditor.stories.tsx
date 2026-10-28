@@ -19,6 +19,7 @@ import {$getRoot} from 'lexical';
 import {
   LONG_DOCUMENT_COPIES,
   MarkdownParitySandbox,
+  WideNumberMarkerParity,
   type MarkdownParitySandboxProps,
 } from './RichTextEditor.markdownParity';
 import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from './RichTextEditor.markdownPluginsImportExport';
@@ -561,6 +562,12 @@ export const MarkdownParity: MarkdownParityStory = {
     hasPlugins: true,
     hostWidth: 'fill',
   },
+};
+
+export const MarkdownParityWideNumberMarkers: Story = {
+  name: 'Markdown parity: wide number markers at 16px',
+  tags: ['!autodocs'],
+  render: () => <WideNumberMarkerParity />,
 };
 
 export const MarkdownParityToggle: MarkdownParityStory = {
