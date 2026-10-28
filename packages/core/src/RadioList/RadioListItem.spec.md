@@ -85,7 +85,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Row-surface click delegation to the radio and `onClick` routing.
 - Item disabled state and the disabled, selected, and size reflection on
   `radio-list-item`.
-- The radio indicator's focus ring placement, hover tint, and pressed overlay.
+- The radio indicator's hover tint and pressed overlay, and its focus ring (FR7,
+  OQ1).
 - The bare default row appearance.
 
 **Does not own / non-goals**
@@ -116,7 +117,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR4  | The radio is the option's only tab stop. Clicks on the row surface (label, description, empty area) are delegated to the radio; links and buttons inside the label, description, or end content keep their own behavior. A caller `onClick` runs on the radio for direct and delegated clicks.                                                                                                                                                                                  | WCAG 4.1.2; current tests                                                         |
 | FR5  | Selecting the radio calls the group's `onChange(value)` unless the option is disabled.                                                                                                                                                                                                                                                                                                                                                                                          | Current tests                                                                     |
 | FR6  | Disabled when the item or the group is disabled. A disabled radio MUST stay focusable with `aria-disabled="true"`, be detached from the form, and refuse selection (`spec:AST-085` FR1–FR3); disabled options show no hover tint or pressed overlay. Implementation gap: only a group-disabled radio with a group reason renders that shape; an item-disabled radio, and a group-disabled radio without a reason, get native `disabled`, which removes them from the tab order. | `spec:AST-085`; current source and tests                                          |
-| FR7  | Keyboard focus on the radio MUST paint the shared focus ring on the radio indicator, not the row, and one focus move MUST have one owning indicator (`architecture:interaction-modality` INV3). Implementation gap: Item's row focus-within outline also paints, so one focus move shows two indicators; on a focused disabled option only the row outline shows (which meets `spec:AST-085` FR6) and the indicator ring is skipped.                                            | `architecture:interaction-modality` INV1–INV3; `spec:AST-085` FR6; current source |
+| FR7  | Keyboard focus on the radio paints the shared focus ring on the radio indicator, and Item's row focus-within outline on the row. One focus move MUST have one owning indicator (`architecture:interaction-modality` INV3); which element owns it is OQ1. Implementation gap: both paint. On a focused disabled option only the row outline shows (which meets `spec:AST-085` FR6), and the indicator ring is skipped.                                                           | `architecture:interaction-modality` INV1–INV3; `spec:AST-085` FR6; current source |
 | FR8  | Hovering the enabled row tints the radio indicator. RadioListItem applies `design:user-states` DR1 and DR2 for the pressed overlay, painting it on the indicator while the enabled row is pressed. The row itself paints no padding, radius, hover, or press background by default.                                                                                                                                                                                             | `design:user-states`; current tests                                               |
 | FR9  | The radio's hit area is at least 24 by 24 CSS pixels on coarse pointers, and its position follows the inline direction.                                                                                                                                                                                                                                                                                                                                                         | WCAG 2.5.8; current tests                                                         |
 | FR10 | Under forced colors, the selected dot stays visible.                                                                                                                                                                                                                                                                                                                                                                                                                            | WCAG 1.4.11; current tests                                                        |
@@ -206,7 +207,9 @@ No component-local decision.
 
 ## Open questions
 
-None.
+- **OQ1 — Which element paints the option's focus ring, the row or the radio
+  indicator?** (`human-design`) `architecture:interaction-modality` INV3
+  requires one indicator; CheckboxListItem composes the same two painters.
 
 ## Content boundary
 
