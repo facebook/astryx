@@ -483,6 +483,19 @@ const styles = stylex.create({
  * </AppShell>
  * ```
  */
+
+/**
+ * The column beside the rail that holds `main`: its ancestor whose parent
+ * also holds the rail. The glide moves it; the rail's edge rides it.
+ */
+function columnOf(main: HTMLElement, rail: HTMLElement | null): HTMLElement {
+  let column = main;
+  while (column.parentElement != null && !column.parentElement.contains(rail)) {
+    column = column.parentElement;
+  }
+  return column;
+}
+
 export function AppShell({
   variant = 'elevated',
   banner,
@@ -788,6 +801,10 @@ export function AppShell({
     () => ({
       animatedLayout: contentLayout,
       rail: () => railRef.current,
+      column: () =>
+        mainRef.current == null
+          ? null
+          : columnOf(mainRef.current, railRef.current),
       beforeRailChange() {
         const main = mainRef.current;
         if (main == null) {
@@ -831,13 +848,7 @@ export function AppShell({
         pending.change.animate();
         // The column beside the rail, which the glide moves: the copy sits
         // beside it, in its parent, and rides its glide.
-        let column: HTMLElement = main;
-        while (
-          column.parentElement != null &&
-          !column.parentElement.contains(railRef.current)
-        ) {
-          column = column.parentElement;
-        }
+        const column = columnOf(main, railRef.current);
         const after = main.getBoundingClientRect();
         const isRtl = getComputedStyle(main).direction === 'rtl';
         const travel = isRtl

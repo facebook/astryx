@@ -502,12 +502,6 @@ export function SideNav({
       // A change during a running motion starts from what the rail shows.
       const running = motionRef.current;
       const shown = running?.rail.shown() ?? null;
-      // Collapsing during an expand: its copy of the collapsed rail carries
-      // over into the collapse.
-      const carried =
-        shown != null && !wasCollapsed
-          ? (running?.rail.handOff() ?? null)
-          : null;
       running?.rail.end();
       running?.endContent();
       motionRef.current = null;
@@ -516,7 +510,6 @@ export function SideNav({
         shell?.animatedLayout ?? ownLayout,
         shown,
         wasCollapsed,
-        carried,
       );
       shell?.beforeRailChange();
     },
@@ -528,13 +521,16 @@ export function SideNav({
     if (snapshot == null) {
       return;
     }
+    // The content moves first: its glide starts before the rail rides it.
+    const endContent = shell?.afterRailChange() ?? (() => {});
     motionRef.current = {
       rail: playRail(
         snapshot,
         shell?.rail() ?? navRef.current,
         shell?.animatedLayout ?? ownLayout,
+        shell?.column() ?? null,
       ),
-      endContent: shell?.afterRailChange() ?? (() => {}),
+      endContent,
     };
   }, [collapsed, shell, ownLayout]);
   // An unmount mid-motion removes the copy at once.

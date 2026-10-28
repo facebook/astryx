@@ -29,6 +29,8 @@ interface Recorded {
 let recorded: Recorded[] = [];
 /** Where the rail's inline-start edge sits for a width (a centered rail moves). */
 let railLeft = (_width: number) => 0;
+/** Where a running glide shows the column, past its layout place. */
+let columnShift = 0;
 let media: Record<string, boolean> = {};
 
 /** The real rail (not a copy): collapsed rows carry their label as a name. */
@@ -59,6 +61,7 @@ function rect(left: number, width: number): DOMRect {
 beforeEach(() => {
   recorded = [];
   railLeft = () => 0;
+  columnShift = 0;
   media = {};
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: media[query] ?? false,
@@ -93,7 +96,7 @@ beforeEach(() => {
         this.querySelector('[role="main"]') != null ||
         this.getAttribute('role') === 'main'
       ) {
-        return rect(width, SHELL_WIDTH - width);
+        return rect(width + columnShift, SHELL_WIDTH - width);
       }
       return rect(0, 0);
     },
@@ -132,10 +135,12 @@ function Shell({
   inShell = true,
   hasNav = true,
   isResizable = false,
+  height = 'fill',
 }: {
   inShell?: boolean;
   hasNav?: boolean;
   isResizable?: boolean;
+  height?: 'fill' | 'auto';
 }) {
   const nav = (
     <SideNav collapsible resizable={isResizable}>
@@ -145,7 +150,7 @@ function Shell({
   );
   return inShell ? (
     <AppShell
-      height="fill"
+      height={height}
       mobileNav={{breakpoint: 'none'}}
       sideNav={hasNav ? nav : undefined}>
       <h1>Projects page</h1>
@@ -273,11 +278,13 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
   it('starts a change made mid-motion from the width the rail shows', async () => {
     render(<Shell />);
     await toggle();
-    // 150 ms into the collapse the clip shows part of the old rail.
+    // 150 ms into the collapse the clip shows part of the old rail: the
+    // column's glide shows it 102 px past its place, so the rail shows 150.
     Object.defineProperty(document, 'timeline', {
       configurable: true,
       value: {currentTime: 1150},
     });
+    columnShift = 102;
     recorded = [];
     await toggle();
     const reveal = animated('clipPath').find(
@@ -287,8 +294,7 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
       /inset\(0px ([\d.]+)px/.exec(String(reveal?.keyframes[0].clipPath))?.[1],
     );
     // It reveals from the shown width, not from the collapsed one.
-    expect(start).toBeGreaterThan(0);
-    expect(start).toBeLessThan(EXPANDED - COLLAPSED);
+    expect(start).toBe(EXPANDED - 150);
   });
 
   it('continues what the rail and the page show when a change reverses a running one', async () => {
@@ -325,7 +331,7 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(opacityOf(heading)).toBeGreaterThan(0);
   });
 
-  it("keeps a running expand's collapsed rail on top when a collapse reverses it", async () => {
+  it('draws a collapse that reverses an expand with one rail copy, the real collapsed rail raised above it', async () => {
     render(<Shell />);
     await toggle();
     settle();
@@ -338,13 +344,21 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     });
     recorded = [];
     await toggle();
-    const carried = copies().find(
-      element => element.querySelector('button[aria-label="Projects"]') != null,
-    ) as HTMLElement | undefined;
-    expect(carried?.isConnected).toBe(true);
-    expect(carried?.style.zIndex).toBe('2');
-    const rise = recorded.find(entry => entry.element === carried);
-    expect(rise?.keyframes.at(-1)?.opacity).toBe(1);
+    const railCopies = copies().filter(
+      element => element.querySelector('nav') != null,
+    );
+    expect(railCopies).toHaveLength(1);
+    const panel = document.querySelector<HTMLElement>('.astryx-layout-panel');
+    expect(panel?.style.zIndex).toBe('2');
+    // Its icons start at the opacity the collapsed rail showed, mostly seen.
+    const icons = recorded.find(
+      entry => entry.element === panel && 'opacity' in entry.keyframes[0],
+    );
+    expect(Number(icons?.keyframes[0].opacity)).toBeGreaterThan(0.5);
+    act(() => {
+      recorded.forEach(entry => entry.animation.finish());
+    });
+    expect(panel?.style.zIndex).toBe('');
   });
 
   it('continues the page through a third press within the motion', async () => {
@@ -363,6 +377,19 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
       entry => entry.element.textContent === 'Projects page',
     );
     expect(Number(heading?.keyframes[0].opacity)).toBeLessThan(0.5);
+  });
+
+  it('lays the old rail in the row beside the content, past an auto-height side wrapper that clips', async () => {
+    render(<Shell height="auto" />);
+    await toggle();
+    const railCopy = copies().find(
+      element => element.querySelector('nav') != null,
+    );
+    // In the row that holds the rail and the content, not in the sticky side
+    // wrapper, whose clip is already the collapsed width.
+    expect(railCopy?.parentElement?.contains(screen.getByRole('main'))).toBe(
+      true,
+    );
   });
 
   it('leaves the real collapsed rail and no copies once the motion ends', async () => {
