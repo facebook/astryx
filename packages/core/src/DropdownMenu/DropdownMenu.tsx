@@ -929,7 +929,10 @@ function DropdownMenuPopover({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps & {
-  /** Whether the touch input modes apply (the resolved presentation). */
+  /**
+   * Whether the touch modes apply (the resolved presentation): the grow and
+   * collapse are a finger's on a touch device (`spec:AST-094` FR31).
+   */
   touchModes?: boolean;
   /**
    * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
@@ -1938,7 +1941,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  // The touch modes are the default under a finger (spec:AST-094);
+  // The touch modes are the default on a touch device (spec:AST-094);
   // `presentation="popover"` pins the fine-pointer surface and modes.
   const {surface: resolvedPresentation, touchModes} = usePresentation(
     props.presentation,
