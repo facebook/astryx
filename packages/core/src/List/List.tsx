@@ -20,7 +20,7 @@
 
 import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {focusVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {
   ListContext,
@@ -130,6 +130,9 @@ export interface ListProps extends BaseProps<
 // Styles
 // =============================================================================
 
+// How far a row's focus ring reaches past the row: its offset plus its width.
+const FOCUS_RING_REACH = `calc(${focusVars['--focus-outline-offset']} + ${focusVars['--focus-outline-width']})`;
+
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -137,7 +140,6 @@ const styles = stylex.create({
   },
   list: {
     margin: 0,
-    paddingInlineStart: 0,
     listStyleType: 'none',
     display: 'flex',
     flexDirection: 'column',
@@ -147,6 +149,15 @@ const styles = stylex.create({
     // `hidden`: hidden makes a scroll container, which fights the list's
     // vertical scroller. (StyleX emits the physical longhand of this axis.)
     overflowInline: 'clip',
+    // The clip cuts at the padding edge, so the list keeps the focus ring's
+    // reach as inline padding and gives it back as negative margin: a focused
+    // row's ring paints whole while the rows keep their width and place.
+    // (`overflow-clip-margin` would say this directly, but browsers ignore it
+    // when only one axis clips.) Content-box keeps the padding out of the
+    // list's width under any box-sizing reset.
+    boxSizing: 'content-box',
+    paddingInline: FOCUS_RING_REACH,
+    marginInline: `calc(-1 * ${FOCUS_RING_REACH})`,
   },
   // 'outset' and 'bleed' rows reach into the container's padding. The list
   // reaches the container's padding edge on each inline edge first, so its
@@ -155,8 +166,8 @@ const styles = stylex.create({
   // so the list can read them, while the rows' own inset is scoped to the
   // rows. Missing or reset container padding resolves to zero.
   reachesContainerPadding: {
-    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
-    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    marginInlineStart: `calc(-1 * (var(--container-padding-inline-start, 0px) + ${FOCUS_RING_REACH}))`,
+    marginInlineEnd: `calc(-1 * (var(--container-padding-inline-end, 0px) + ${FOCUS_RING_REACH}))`,
     width:
       'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
   },
