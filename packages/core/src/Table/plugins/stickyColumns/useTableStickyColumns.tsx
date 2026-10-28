@@ -198,6 +198,9 @@ const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
 const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
 const PINNED_BASE = `var(--table-sticky-background, ${colorVars['--color-background-card']})`;
 const DIVIDER_WIDTH = `var(${PINNED_DIVIDER_WIDTH}, var(--_table-row-divider-width, 0px))`;
+// The row's divider, carried on the row while it glides (glidingDivider.ts):
+// it outranks the cell's own carry, which it would otherwise inherit under.
+const GLIDE_WIDTH = `var(--_table-row-glide-width, ${DIVIDER_WIDTH})`;
 
 const stickyStyles = stylex.create({
   cell: {
@@ -219,22 +222,28 @@ const stickyStyles = stylex.create({
       // The divider: the layer reaches the bottom of the cell's border area,
       // paints the pinned base there (hiding the table's static border and any
       // scrolled cell's border), then the divider over it.
-      marginBottom: `calc(-1 * ${DIVIDER_WIDTH})`,
-      borderBottomWidth: DIVIDER_WIDTH,
+      marginBottom: {
+        default: `calc(-1 * ${DIVIDER_WIDTH})`,
+        [CELL_GLIDING]: `calc(-1 * ${GLIDE_WIDTH})`,
+      },
+      borderBottomWidth: {default: DIVIDER_WIDTH, [CELL_GLIDING]: GLIDE_WIDTH},
       // While its row glides the cell's own border is transparent: the
       // divider is the row's, carried for the glide (glidingDivider.ts).
       borderBottomStyle: {
         default: 'inherit',
         [CARRYING]: `var(${PINNED_DIVIDER_STYLE}, solid)`,
-        [CELL_GLIDING]: `var(${PINNED_DIVIDER_STYLE}, solid)`,
+        [CELL_GLIDING]: 'var(--_table-row-glide-style, solid)',
       },
       borderBottomColor: {
         default: 'inherit',
         [CARRYING]: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
-        [CELL_GLIDING]: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+        [CELL_GLIDING]: `var(--_table-row-glide-color, ${colorVars['--color-border']})`,
       },
       backgroundImage: `linear-gradient(${PINNED_BASE}, ${PINNED_BASE})`,
-      backgroundSize: `100% ${DIVIDER_WIDTH}`,
+      backgroundSize: {
+        default: `100% ${DIVIDER_WIDTH}`,
+        [CELL_GLIDING]: `100% ${GLIDE_WIDTH}`,
+      },
       backgroundPosition: 'bottom',
       backgroundRepeat: 'no-repeat',
       backgroundOrigin: 'border-box',

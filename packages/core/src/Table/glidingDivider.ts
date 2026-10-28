@@ -40,10 +40,13 @@ const CELL_LINE = '[data-astryx-cell-gliding="line"]';
 /** On a pinned (sticky) cell: plugins/stickyColumns. */
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 
-/** A row's own divider, carried for the glide (or a pinned cell's). */
-export const APP_DIVIDER_WIDTH = '--_table-row-divider-app-width';
-export const APP_DIVIDER_STYLE = '--_table-row-divider-app-style';
-export const APP_DIVIDER_COLOR = '--_table-row-divider-app-color';
+/**
+ * A row's divider, carried on the row for its glide. Names no cell sets, so
+ * a pinned cell's own carry (plugins/stickyColumns) cannot shadow them.
+ */
+export const GLIDE_DIVIDER_WIDTH = '--_table-row-glide-width';
+export const GLIDE_DIVIDER_STYLE = '--_table-row-glide-style';
+export const GLIDE_DIVIDER_COLOR = '--_table-row-glide-color';
 
 export const glidingDividerStyles = stylex.create({
   /**
@@ -69,15 +72,15 @@ export const glidingDividerStyles = stylex.create({
       height: {default: null, [CELL_LINE]: 0},
       borderBottomWidth: {
         default: null,
-        [CELL_LINE]: `var(${APP_DIVIDER_WIDTH}, 0px)`,
+        [CELL_LINE]: `var(${GLIDE_DIVIDER_WIDTH}, 0px)`,
       },
       borderBottomStyle: {
         default: null,
-        [CELL_LINE]: `var(${APP_DIVIDER_STYLE}, solid)`,
+        [CELL_LINE]: `var(${GLIDE_DIVIDER_STYLE}, solid)`,
       },
       borderBottomColor: {
         default: null,
-        [CELL_LINE]: `var(${APP_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
+        [CELL_LINE]: `var(${GLIDE_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
       },
       pointerEvents: {default: null, [CELL_LINE]: 'none'},
     },
@@ -172,10 +175,15 @@ export async function markGlidingRows(
   for (const row of rows.keys()) {
     const edge = edges.get(row);
     if (edge != null && !row.hasAttribute(GLIDING_ATTRIBUTE)) {
-      row.style.setProperty(APP_DIVIDER_WIDTH, `${edge.width}px`);
-      row.style.setProperty(APP_DIVIDER_STYLE, edge.style);
-      row.style.setProperty(APP_DIVIDER_COLOR, edge.color);
+      row.style.setProperty(GLIDE_DIVIDER_WIDTH, `${edge.width}px`);
+      row.style.setProperty(GLIDE_DIVIDER_STYLE, edge.style);
+      row.style.setProperty(GLIDE_DIVIDER_COLOR, edge.color);
       row.setAttribute(GLIDING_ATTRIBUTE, '');
+      // An app's border on the row itself (a winning `tr` border) is painted
+      // by the table at the row's static place: it goes transparent too, and
+      // the line carries it.
+      inlineColorOf.set(row, row.style.borderBottomColor);
+      row.style.borderBottomColor = 'transparent';
       // The table's last row can glide a pixel farther than the rows above
       // it (its border collapses differently), so mid-glide it overlaps the
       // row above. Each moving row is its own layer; the last one stays
@@ -214,6 +222,10 @@ export async function markGlidingRows(
     markedBy.delete(row);
     row.removeAttribute(GLIDING_ATTRIBUTE);
     row.style.removeProperty('z-index');
+    if (inlineColorOf.has(row)) {
+      row.style.borderBottomColor = inlineColorOf.get(row) ?? '';
+      inlineColorOf.delete(row);
+    }
     for (const cell of row.children) {
       cell.removeAttribute(CELL_ATTRIBUTE);
       if (cell instanceof HTMLElement && inlineColorOf.has(cell)) {
@@ -221,8 +233,8 @@ export async function markGlidingRows(
         inlineColorOf.delete(cell);
       }
     }
-    row.style.removeProperty(APP_DIVIDER_WIDTH);
-    row.style.removeProperty(APP_DIVIDER_STYLE);
-    row.style.removeProperty(APP_DIVIDER_COLOR);
+    row.style.removeProperty(GLIDE_DIVIDER_WIDTH);
+    row.style.removeProperty(GLIDE_DIVIDER_STYLE);
+    row.style.removeProperty(GLIDE_DIVIDER_COLOR);
   }
 }

@@ -222,14 +222,16 @@ const sevenOrders = manyOrders.slice(0, 7);
  * dividers move too. Under Reduce Motion, and with column lines (the
  * `dividers` control at "columns" or "grid"), the rows change at once. The
  * `themed` control sets a blue theme border and an app's red border on the
- * tbody's third row.
+ * tbody's third row; `rowBorder` sets an app's 3 px green border on the
+ * fourth row itself (`tr`), which glides with the row too.
  */
 export const GlidingRows: StoryObj<{
   themed?: boolean;
+  rowBorder?: boolean;
   dividers?: 'rows' | 'columns' | 'grid';
 }> = {
-  args: {themed: false, dividers: 'rows'},
-  render: ({themed, dividers}) => {
+  args: {themed: false, rowBorder: false, dividers: 'rows'},
+  render: ({themed, rowBorder, dividers}) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const animatedLayout = useAnimatedLayout({containerRef});
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
@@ -255,6 +257,9 @@ export const GlidingRows: StoryObj<{
       <div ref={containerRef} data-testid="gliding-rows" style={style}>
         {themed && (
           <style>{`[data-testid="gliding-rows"] tbody tr:nth-child(3) td { border-bottom-color: rgb(220, 38, 38); }`}</style>
+        )}
+        {rowBorder && (
+          <style>{`[data-testid="gliding-rows"] tbody tr:nth-child(4) { border-bottom: 3px solid rgb(22, 163, 74); }`}</style>
         )}
         <Table
           data={sevenOrders}

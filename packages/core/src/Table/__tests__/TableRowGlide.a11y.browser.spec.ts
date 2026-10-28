@@ -195,6 +195,33 @@ test("a theme's divider and an app's override move with their rows, pinned cells
   }
 });
 
+test("an app's border on a row itself moves with the row, pinned cells included, and leaves nothing at its static place", async ({
+  page,
+}) => {
+  await mount(page, 'gliding-rows', '&args=rowBorder:!true');
+  expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
+  // The green border is on the tbody's fourth row, which glides down.
+  const {y, pinnedX, unpinnedX} = await rowBottom(page, 3);
+  for (const [where, x] of [
+    ['pinned', pinnedX],
+    ['unpinned', unpinnedX],
+  ] as const) {
+    const [r, g] = await darkestNear(page, x, y);
+    expect(g - r, `moving line, ${where}`).toBeGreaterThan(60);
+  }
+  // Where the row lands, the line is not drawn yet.
+  const travel = await page.evaluate(() => {
+    const row = document.querySelectorAll(
+      '.astryx-table-scroll-wrapper tbody tr',
+    )[3] as HTMLElement;
+    const parts = getComputedStyle(row).translate.split(' ');
+    return Number.parseFloat(parts[1] ?? '0') || 0;
+  });
+  expect(Math.abs(travel)).toBeGreaterThan(4);
+  const [r, g] = await darkestNear(page, unpinnedX, Math.round(y - travel));
+  expect(g - r, 'static place').toBeLessThan(30);
+});
+
 test('the chevron turns on the glide; column lines and Reduce Motion change at once', async ({
   page,
 }) => {
