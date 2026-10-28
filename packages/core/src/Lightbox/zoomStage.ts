@@ -3,15 +3,16 @@
 /**
  * @file zoomStage.ts
  * @input The stage's size, the photo's fitted box and its pixel size, a
- *   transform (offset from the fitted box and scale), finger positions
+ *   transform (offset from the fitted box and scale), finger or pointer
+ *   positions
  * @output Exports the zoom stage's pure geometry: zoom limits, the resting
  *   place for a scale (centred where the photo is smaller than the stage,
  *   kept inside it where larger), the rubber band of a drag, the overshoot
  *   of a pinch past a limit, the transform that keeps a point under the
- *   fingers, the eased settle curves (UIScrollView's zoom animation), the
- *   chrome's fade and the black behind the photo as a tap hides it, the
- *   pinch that closes (its fades, its release rule, where it goes), and
- *   Lightbox's released zoom that the mouse and the keyboard keep (2x about
+ *   fingers or the pointer, the eased settle curves (UIScrollView's zoom
+ *   animation), the chrome's fade and the black behind the photo as a tap
+ *   hides it, the pinch that closes (its fades, its release rule, where it
+ *   goes), and Lightbox's released zoom that the keyboard keeps (2x about
  *   the centre over a 200 ms ease-out)
  * @position Pure math under useZoomCore and useZoomStage (Lightbox's zoom);
  *   no DOM, no React
@@ -25,7 +26,7 @@
  * 104's recentring, which every UIKit photo viewer uses); where it is larger
  * it rests with no gap at either edge. The UIKit constants come from
  * motion/uikit/zoomMedia.ts and motion/uikit/scroll.ts; RELEASED_ZOOM keeps
- * the released mouse and keyboard zoom.
+ * the keyboard's released zoom.
  *
  * SYNC: When modified, update zoomStage.test.ts, useZoomCore.ts and
  * useZoomStage.ts.
@@ -168,7 +169,7 @@ export function restingTransform(
 /**
  * The scale a pinch shows for its own scale `scale`: 1:1 inside the
  * limits, giving way past them (`zoomMedia.overshoot.limitFactor`), or
- * stopping at them when the limits do not give (a mouse).
+ * stopping at them when the limits do not give (`gives` false).
  */
 export function overshootScale(
   geometry: ZoomGeometry,
@@ -241,10 +242,10 @@ export function transformKeepingPoint(
 }
 
 /**
- * Where a drag shows the photo: `raw` is where the finger's travel would put
- * it with no edges. Past an edge it gives way with UIScrollView's rubber
+ * Where a drag shows the photo: `raw` is where the pointer's travel would
+ * put it with no edges. Past an edge it gives way with UIScrollView's rubber
  * band over the stage's size on that axis, or stops at the edge when edges
- * do not give (a mouse); on an axis where the photo is
+ * do not give (`gives` false); on an axis where the photo is
  * smaller than the stage it stays centred (a scroll view that does not
  * bounce when its content fits).
  */
@@ -270,7 +271,7 @@ export function draggedTransform(
   };
 }
 
-/** The finger-travel position behind a shown one: `draggedTransform` undone. */
+/** The pointer-travel position behind a shown one: `draggedTransform` undone. */
 export function rawForDragged(
   geometry: ZoomGeometry,
   shown: ZoomTransform,
@@ -405,19 +406,19 @@ export function settleCurves(
 }
 
 /**
- * Lightbox's released zoom, which the mouse and the keyboard keep: touch work
- * leaves what fine-pointer and keyboard users see alone (spec:AST-017 FR59).
- * A double-click, Enter, Space or `+` zooms to `zoomMedia.viewer.
- * filledDoubleTapScale` (2x) about the stage's centre, or back to the fitted
- * size when zoomed, and every such change, a keyboard pan included, plays the
- * released 200 ms CSS `ease-out`.
+ * Lightbox's released zoom, which the keyboard keeps: Enter, Space or `+`
+ * zooms to `zoomMedia.viewer.filledDoubleTapScale` (2x) about the stage's
+ * centre, or back to the fitted size when zoomed, and every such change, a
+ * keyboard pan included, plays the released 200 ms CSS `ease-out`. A
+ * pointer's double-click is the stage's double tap instead (spec:AST-094
+ * FR43).
  */
 export const RELEASED_ZOOM = {
   seconds: 0.2,
   curve: [0, 0, 0.58, 1] as readonly [number, number, number, number],
 };
 
-/** Where a double-click or a zoom key goes from `from` (see RELEASED_ZOOM). */
+/** Where a zoom key goes from `from` (see RELEASED_ZOOM). */
 export function releasedZoomTarget(
   geometry: ZoomGeometry,
   from: ZoomTransform,
@@ -484,7 +485,7 @@ export function transformForResize(
 
 /**
  * The photo under a drag to dismiss, from its fitted size: its centre
- * follows the finger (dx, dy) and it shrinks about that centre by
+ * follows the pointer (dx, dy) and it shrinks about that centre by
  * `zoomMedia.dismiss.scalePerTravelSquared` × the downward travel².
  */
 export function dismissTransform(
@@ -524,7 +525,7 @@ export function dismissChromeAlpha(travel: number): number {
 
 /**
  * Whether a released drag to dismiss dismisses, decided once at the lift
- * (spec:AST-094 FR36, FR37): a finger moving up cancels; otherwise the drag
+ * (spec:AST-094 FR36, FR37): a pointer moving up cancels; otherwise the drag
  * dismisses when its projected travel, the travel plus where its velocity
  * would coast (`zoomMedia.dismiss.projectionRate`), passes
  * `zoomMedia.dismiss.cancelTravel`. A short flick down closes; a short pull

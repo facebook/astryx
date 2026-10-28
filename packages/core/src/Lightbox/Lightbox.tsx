@@ -24,7 +24,7 @@
  * - /packages/core/src/Lightbox/Lightbox.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Lightbox/Lightbox.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Lightbox/useZoomCore.ts (the zoom stage for every pointer)
- * - /packages/core/src/Lightbox/useZoomStage.ts (the touch layer)
+ * - /packages/core/src/Lightbox/useZoomStage.ts (the gestures, for every pointer)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoom.interaction.browser.spec.ts (touch zoom proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxPaging.interaction.browser.spec.ts (gallery paging proofs)
  * - /packages/core/src/Lightbox/__tests__/LightboxDismiss.interaction.browser.spec.ts (drag to dismiss proofs)
@@ -157,10 +157,11 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): under a coarse primary pointer (a touch
-   * screen), pinch or double-tap to zoom in at that point; a double-click
-   * or Enter/Space/`+`/`-` zooms 2× about the centre. When zoomed, drag or
-   * use arrow keys to pan.
+   * Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or
+   * double-click, to zoom in at that point and back; Enter/Space/`+`/`-`
+   * zoom 2× about the centre and back. When zoomed, drag or scroll to pan,
+   * with momentum, or use arrow keys. The gestures work for every pointer, a
+   * mouse, a pen and a finger alike (spec:AST-094 FR43).
    * @default false
    */
   hasZoom?: boolean;
@@ -248,11 +249,11 @@ const styles = stylex.create({
     // dismiss draws outside the box that hugs it.
     overflow: {default: 'hidden', ':has([data-zoom-dismissing])': 'visible'},
   },
-  // On a touch screen (the shared touch resolver, useTouchPresentation) a
-  // zoomable photo's stage fills the viewer, as a photo viewer's zooming
-  // scroll view does: a zoomed photo uses the whole screen and a pinch can
-  // start anywhere around it. Only for a zoom target: around any other item
-  // a tap on the dark area still closes the viewer.
+  // A zoomable photo's stage fills the viewer for every pointer
+  // (spec:AST-094 FR43), as a photo viewer's zooming scroll view does: a
+  // zoomed photo uses the whole screen and a pinch can start anywhere around
+  // it. Only for a zoom target: around any other item a tap on the dark area
+  // still closes the viewer.
   mediaGroupZoom: {
     alignSelf: 'stretch',
     flexGrow: 1,
@@ -274,22 +275,23 @@ const styles = stylex.create({
     userSelect: 'none',
     minHeight: 0,
   },
-  // Under the touch layer, the stage's own pinch, pan and double tap take
-  // every touch on it. Only the stage: the controls and caption leave
-  // pinch-zoom to the page. On a touch screen it fills the viewer
-  // (mediaGroupZoom, imageWrapperFill). Where the primary pointer is fine no
-  // recognizer runs, so the browser keeps the touches (spec:AST-094 FR19).
+  // The stage's own pinch, pan and double tap take every touch on it,
+  // whatever the primary pointer: gestures attach for every pointer
+  // (spec:AST-094 FR43). Only the stage: the controls and caption leave
+  // pinch-zoom to the page. It fills the viewer (mediaGroupZoom,
+  // imageWrapperFill).
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },
-  // In a gallery the stage's touches go to the track instead, under the
-  // touch layer only (as imageWrapperZoomTarget): the pager's pan manages
-  // the stage's own `touch-action`.
+  // In a gallery the stage's touches go to the track instead, for every
+  // pointer (as imageWrapperZoomTarget): the pager's pan manages the stage's
+  // own `touch-action`.
   trackZoomTarget: {
     touchAction: 'none',
   },
-  // Under the touch layer, a photo without zoom leaves pinch-zoom to the page
-  // but takes one-finger drags: a drag down dismisses it.
+  // A photo without zoom leaves pinch-zoom to the page but takes one-finger
+  // drags, as it takes a mouse's or a pen's: a drag down dismisses it
+  // (spec:AST-094 FR43).
   imageWrapperDismissTarget: {
     touchAction: 'pinch-zoom',
   },
@@ -1682,8 +1684,9 @@ export function Lightbox({
     }
   });
 
-  // Gallery navigation. Under a finger the pager slides to the new page (a
-  // paging scroll view's setContentOffset). Where the primary pointer is
+  // Gallery navigation. On a touch screen (the touch presentation) the
+  // buttons and the arrow keys slide the pager to the new page (a paging
+  // scroll view's setContentOffset). Where the primary pointer is
   // fine, the buttons and the arrow keys show the new item at once, as they
   // always have (spec:AST-017 FR59): the pager moves there first, so the
   // controlled sync finds nothing to animate, and it returns to `index` if
