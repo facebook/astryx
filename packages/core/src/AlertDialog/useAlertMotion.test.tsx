@@ -32,7 +32,6 @@ import {
   ALERT_PRESENT_SPRING,
 } from '../motion/uikit/springs';
 import type * as SpringsModule from '../motion/uikit/springs';
-import type * as AlertModule from '../motion/uikit/alert';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
 type RecordedCall =
@@ -84,23 +83,6 @@ vi.mock('../motion/uikit/springs', async importOriginal => {
       },
     },
   );
-});
-
-// The roles the hook plays: the alert table's own springs, unless a test
-// changes one.
-vi.mock('../motion/uikit/alert', async importOriginal => {
-  const actual = await importOriginal<typeof AlertModule>();
-  return {
-    ...actual,
-    alertMotion: {
-      get present() {
-        return alertSprings.present ?? actual.alertMotion.present;
-      },
-      get dismiss() {
-        return alertSprings.dismiss ?? actual.alertMotion.dismiss;
-      },
-    },
-  };
 });
 
 vi.mock('../motion/animator', () => ({
