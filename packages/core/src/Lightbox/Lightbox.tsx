@@ -16,7 +16,7 @@
  * - /packages/core/src/Lightbox/Lightbox.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Lightbox/Lightbox.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Lightbox/useZoomCore.ts (the zoom stage for every pointer)
- * - /packages/core/src/Lightbox/useZoomStage.ts (the touch layer)
+ * - /packages/core/src/Lightbox/useZoomStage.ts (the gestures, for every pointer)
  * - /packages/core/src/Lightbox/__tests__/LightboxZoom.interaction.browser.spec.ts (touch zoom proofs)
  * - /packages/core/src/Lightbox/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
@@ -111,10 +111,11 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): under a coarse primary pointer (a touch
-   * screen), pinch or double-tap to zoom in at that point; a double-click
-   * or Enter/Space/`+`/`-` zooms 2× about the centre. When zoomed, drag or
-   * use arrow keys to pan.
+   * Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or
+   * double-click, to zoom in at that point and back; Enter/Space/`+`/`-`
+   * zoom 2× about the centre and back. When zoomed, drag or scroll to pan,
+   * with momentum, or use arrow keys. The gestures work for every pointer, a
+   * mouse, a pen and a finger alike (spec:AST-094 FR43).
    * @default false
    */
   hasZoom?: boolean;
@@ -169,11 +170,11 @@ const styles = stylex.create({
     maxHeight: '100%',
     overflow: 'hidden',
   },
-  // On a touch screen (the shared touch resolver, useTouchPresentation) a
-  // zoomable photo's stage fills the viewer, as a photo viewer's zooming
-  // scroll view does: a zoomed photo uses the whole screen and a pinch can
-  // start anywhere around it. Only for a zoom target: around any other item
-  // a tap on the dark area still closes the viewer.
+  // A zoomable photo's stage fills the viewer for every pointer
+  // (spec:AST-094 FR43), as a photo viewer's zooming scroll view does: a
+  // zoomed photo uses the whole screen and a pinch can start anywhere around
+  // it. Only for a zoom target: around any other item a tap on the dark area
+  // still closes the viewer.
   mediaGroupZoom: {
     alignSelf: 'stretch',
     flexGrow: 1,
@@ -194,11 +195,11 @@ const styles = stylex.create({
     userSelect: 'none',
     minHeight: 0,
   },
-  // Under the touch layer, the stage's own pinch, pan and double tap take
-  // every touch on it. Only the stage: the controls and caption leave
-  // pinch-zoom to the page. On a touch screen it fills the viewer
-  // (mediaGroupZoom, imageWrapperFill). Where the primary pointer is fine no
-  // recognizer runs, so the browser keeps the touches (spec:AST-094 FR19).
+  // The stage's own pinch, pan and double tap take every touch on it,
+  // whatever the primary pointer: gestures attach for every pointer
+  // (spec:AST-094 FR43). Only the stage: the controls and caption leave
+  // pinch-zoom to the page. It fills the viewer (mediaGroupZoom,
+  // imageWrapperFill).
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },

@@ -4,14 +4,15 @@
  * @file LightboxFinePointer.a11y.browser.spec.ts
  * @input The built Lightbox "with zoom" story, a desktop browser (a fine
  *   primary pointer) and real mouse input; in Chromium, pen input
- * @output Browser evidence that touch work leaves fine-pointer zoom alone
- *   (spec:AST-017 FR59, spec:AST-094 FR19): the zoom target keeps the
- *   browser's touch-action, a double-click from a mouse or a pen zooms 2x
- *   about the centre and back over the released 200 ms ease-out, a pen drag
- *   pans a zoomed photo as a mouse drag does, and a drag stops at the
- *   photo's edges
+ * @output Browser evidence that the zoom's gestures attach for every
+ *   pointer where the primary pointer is fine too (spec:AST-094 FR43): the
+ *   zoom target takes its touches as on a phone, a mouse's double-click
+ *   zooms in about where it lands as a finger's double tap does and the next
+ *   zooms back, a pen's double-click zooms too, the keyboard's zoom plays
+ *   the released 200 ms ease-out, a pen drag pans a zoomed photo through the
+ *   stage's pan, and a mouse drag stops at the photo's edges
  * @position Cross-browser proof for Lightbox's mouse, pen and keyboard zoom
- *   where no touch layer runs
+ *   where the primary pointer is fine
  */
 
 import {expect, test, type Page} from '@playwright/test';
