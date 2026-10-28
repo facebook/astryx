@@ -582,8 +582,8 @@ export const ControlledCollapse: Story = {
   },
 };
 
-/** A page whose lines rewrap when the rail collapses or expands. */
-function RewrappingPage() {
+/** Placeholder page text only: long lines that rewrap as the rail moves. */
+function PlaceholderPageText() {
   return (
     <div {...stylex.props(styles.longContent)}>
       <Text type="large">Quarterly planning</Text>
@@ -606,32 +606,126 @@ function RewrappingPage() {
   );
 }
 
-function RailCollapseStory() {
+/**
+ * The rail-collapse stories' code as an app writes it, for the docs' code
+ * panel (Storybook's own source would show the story object around it).
+ * SYNC: When modified, update the render of RailCollapseMotion and
+ * RailCollapseMotionPhone, which run exactly this.
+ */
+const RAIL_COLLAPSE_CODE = `function App() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   return (
     <AppShell
       contentPadding={6}
       mobileNav={{breakpoint: 'none'}}
       sideNav={
-        <SideNavWithoutHeader
-          collapsible={{isCollapsed, onCollapsedChange: setIsCollapsed}}
-        />
+        <SideNav collapsible={{isCollapsed, onCollapsedChange: setIsCollapsed}}>
+          <SideNavSection title="Main" isHeaderHidden>
+            <SideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+              href="#"
+            />
+            <SideNavItem
+              label="Analytics"
+              icon={ChartBarIcon}
+              selectedIcon={ChartBarIconSolid}
+              href="#"
+            />
+            <SideNavItem
+              label="Projects"
+              icon={FolderIcon}
+              selectedIcon={FolderIconSolid}
+              href="#"
+              endContent={<Badge label={12} />}
+            />
+          </SideNavSection>
+          <SideNavSection title="Organization">
+            <SideNavItem
+              label="Team"
+              icon={UserGroupIcon}
+              selectedIcon={UserGroupIconSolid}
+              href="#"
+            />
+            <SideNavItem
+              label="Settings"
+              icon={Cog6ToothIcon}
+              selectedIcon={Cog6ToothIconSolid}
+              href="#"
+            />
+          </SideNavSection>
+        </SideNav>
       }>
-      <RewrappingPage />
+      <PlaceholderPageText />
     </AppShell>
   );
-}
+}`;
 
 /**
  * The side nav's collapse motion (`component:SideNav` FR6,
- * `component:AppShell` FR17). Press the collapse button at the bottom of the
- * rail: the layout snaps, the rail covers or reveals its labels with a clip,
- * and the page's old and new wrapping cross-fade as they slide on one motion.
- * Reduce Motion cross-fades with a finger and changes at once with a mouse.
+ * `component:AppShell` FR17): an AppShell with a collapsible SideNav whose
+ * collapsed state the app holds. Press the collapse button at the bottom of
+ * the rail: the layout snaps, the rail covers or reveals its labels with a
+ * clip, and the page's old and new wrapping cross-fade as they slide on one
+ * motion. Reduce Motion cross-fades with a finger and changes at once with a
+ * mouse.
  */
 export const RailCollapseMotion: Story = {
   name: 'Rail collapse motion',
-  render: () => <RailCollapseStory />,
+  parameters: {docs: {source: {code: RAIL_COLLAPSE_CODE, language: 'tsx'}}},
+  render: function RailCollapseMotionStory() {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    return (
+      <AppShell
+        contentPadding={6}
+        mobileNav={{breakpoint: 'none'}}
+        sideNav={
+          <SideNav
+            collapsible={{isCollapsed, onCollapsedChange: setIsCollapsed}}>
+            <SideNavSection title="Main" isHeaderHidden>
+              <SideNavItem
+                label="Dashboard"
+                icon={HomeIcon}
+                selectedIcon={HomeIconSolid}
+                isSelected
+                href="#"
+              />
+              <SideNavItem
+                label="Analytics"
+                icon={ChartBarIcon}
+                selectedIcon={ChartBarIconSolid}
+                href="#"
+              />
+              <SideNavItem
+                label="Projects"
+                icon={FolderIcon}
+                selectedIcon={FolderIconSolid}
+                href="#"
+                endContent={<Badge label={12} />}
+              />
+            </SideNavSection>
+            <SideNavSection title="Organization">
+              <SideNavItem
+                label="Team"
+                icon={UserGroupIcon}
+                selectedIcon={UserGroupIconSolid}
+                href="#"
+              />
+              <SideNavItem
+                label="Settings"
+                icon={Cog6ToothIcon}
+                selectedIcon={Cog6ToothIconSolid}
+                href="#"
+              />
+            </SideNavSection>
+          </SideNav>
+        }>
+        <PlaceholderPageText />
+      </AppShell>
+    );
+  },
 };
 
 /**
@@ -641,7 +735,58 @@ export const RailCollapseMotion: Story = {
 export const RailCollapseMotionPhone: Story = {
   name: 'Rail collapse motion (phone)',
   globals: {viewport: {value: 'mobile1', isRotated: false}},
-  render: () => <RailCollapseStory />,
+  parameters: {docs: {source: {code: RAIL_COLLAPSE_CODE, language: 'tsx'}}},
+  render: function RailCollapseMotionPhoneStory() {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    return (
+      <AppShell
+        contentPadding={6}
+        mobileNav={{breakpoint: 'none'}}
+        sideNav={
+          <SideNav
+            collapsible={{isCollapsed, onCollapsedChange: setIsCollapsed}}>
+            <SideNavSection title="Main" isHeaderHidden>
+              <SideNavItem
+                label="Dashboard"
+                icon={HomeIcon}
+                selectedIcon={HomeIconSolid}
+                isSelected
+                href="#"
+              />
+              <SideNavItem
+                label="Analytics"
+                icon={ChartBarIcon}
+                selectedIcon={ChartBarIconSolid}
+                href="#"
+              />
+              <SideNavItem
+                label="Projects"
+                icon={FolderIcon}
+                selectedIcon={FolderIconSolid}
+                href="#"
+                endContent={<Badge label={12} />}
+              />
+            </SideNavSection>
+            <SideNavSection title="Organization">
+              <SideNavItem
+                label="Team"
+                icon={UserGroupIcon}
+                selectedIcon={UserGroupIconSolid}
+                href="#"
+              />
+              <SideNavItem
+                label="Settings"
+                icon={Cog6ToothIcon}
+                selectedIcon={Cog6ToothIconSolid}
+                href="#"
+              />
+            </SideNavSection>
+          </SideNav>
+        }>
+        <PlaceholderPageText />
+      </AppShell>
+    );
+  },
 };
 
 /**
