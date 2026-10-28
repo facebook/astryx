@@ -69,15 +69,8 @@ beforeEach(() => {
   vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
     const style = computed(element, pseudo);
     const dir = element.closest('[dir]')?.getAttribute('dir') ?? 'ltr';
-    return new Proxy(style, {
-      get: (target, property) => {
-        if (property === 'direction') {
-          return dir;
-        }
-        const value: unknown = Reflect.get(target, property, target);
-        return typeof value === 'function' ? value.bind(target) : value;
-      },
-    });
+    Object.defineProperty(style, 'direction', {value: dir, configurable: true});
+    return style;
   });
 });
 

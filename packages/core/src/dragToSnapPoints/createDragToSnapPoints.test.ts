@@ -17,6 +17,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
+import type * as AnimatorModule from '../motion/animator';
 import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {springs} from '../motion/uikit/springs';
 import {
@@ -27,10 +28,10 @@ import {
 // Every animate call the factory's animator makes, as the factory made it.
 const animates = vi.hoisted(
   () =>
-    [] as {target: Record<string, number>; options: Record<string, unknown>}[],
+    [] as {target: unknown; options: {spring?: unknown; velocity?: unknown}}[],
 );
 vi.mock('../motion/animator', async importOriginal => {
-  const actual = await importOriginal<typeof import('../motion/animator')>();
+  const actual = await importOriginal<typeof AnimatorModule>();
   return {
     ...actual,
     createMotionAnimator: (
@@ -38,13 +39,10 @@ vi.mock('../motion/animator', async importOriginal => {
     ) => {
       const animator = actual.createMotionAnimator(...args);
       const animate = animator.animate.bind(animator);
-      animator.animate = ((target, options, ...rest) => {
-        animates.push({
-          target: target as Record<string, number>,
-          options: {...options} as Record<string, unknown>,
-        });
+      animator.animate = (target, options, ...rest) => {
+        animates.push({target, options: {...options}});
         return animate(target, options, ...rest);
-      }) as typeof animator.animate;
+      };
       return animator;
     },
   };
