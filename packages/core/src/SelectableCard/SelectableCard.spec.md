@@ -23,7 +23,7 @@ verified_by:
   ]
 modules: []
 families: []
-design_specs: [design:user-states]
+design_specs: []
 architecture:
   [
     architecture:component-theming-surface,
@@ -31,29 +31,29 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-009, spec:AST-085]
+system_specs: [spec:AST-009, spec:AST-020, spec:AST-085]
 ---
 
 # SelectableCard component contract
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | A Card that toggles a controlled `isSelected` through `onChange`, named by a required `label`, with `isDisabled` and Card's `variant`, `elevation`, `padding`, and sizing.                                    |
-| Behavior                | A visually hidden native checkbox carries the role, name, and checked state; the whole surface toggles; selection draws an inset ring without moving layout.                                                  |
-| End-user impact         | Screen-reader users hear a named checkbox and its state; pointer users click anywhere on the card; disabled cards stay discoverable by keyboard.                                                              |
-| Builder impact          | None; the record describes shipped behavior.                                                                                                                                                                  |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Two implementation gaps are listed under Current-state impact.                                                                     |
-| Review checks           | Reject a toggle that fires twice for one press, a disabled card that toggles or leaves the tab order, a ring that shifts layout, or a nested control that toggles the card.                                   |
-| Governing rules         | `spec:AST-085/FR1,FR2,FR5`; `design:user-states/DR3`; `architecture:interaction-modality/INV3`; `architecture:component-theming-surface/INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV7,INV8`. |
+| Area                    | Contract                                                                                                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | A Card that toggles a controlled `isSelected` through `onChange`, named by a required `label`, with `isDisabled` and Card's `variant`, `elevation`, `padding`, and sizing.                                  |
+| Behavior                | A visually hidden native checkbox carries the role, name, and checked state; the whole surface toggles; selection draws an inset ring without moving layout.                                                |
+| End-user impact         | Screen-reader users hear a named checkbox and its state; pointer users click anywhere on the card; disabled cards stay discoverable by keyboard.                                                            |
+| Builder impact          | None; the record describes shipped behavior.                                                                                                                                                                |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Two implementation gaps are listed under Current-state impact.                                                                   |
+| Review checks           | Reject a toggle that fires twice for one press, a disabled card that toggles or leaves the tab order, a ring that shifts layout, or a nested control that toggles the card.                                 |
+| Governing rules         | `spec:AST-085/FR1,FR2,FR5,FR6`; `spec:AST-020/FR9`; `architecture:interaction-modality/INV3`; `architecture:component-theming-surface/INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV7,INV8`. |
 
 This table is a review projection; the body below is authoritative.
 
 ## Intent
 
-SelectableCard turns a Card into one selectable option for single- or
-multi-select card groups. It owns the hidden checkbox semantics, whole-surface
+SelectableCard turns a Card into one checkbox option for multi-select card
+groups; each card is a checkbox, so single-select groups are out of scope. It owns the hidden checkbox semantics, whole-surface
 toggling, and the selection ring; the caller owns the selection state.
 
 ## Compatibility and migration
@@ -104,18 +104,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 | --------- | ------------------------------ | ------------------------------------------------------- | ----------------------------------------- | --------- | -------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
 | Selection | selected; unselected           | Controlled checked state, reflected as `data-selected`. | Always                                    | Required  | `component:SelectableCard` | Stable    | —                                                                                                                    |
 | Disabled  | enabled; disabled              | Blocks toggling while keeping the checkbox focusable.   | Always                                    | enabled   | `component:SelectableCard` | Stable    | —                                                                                                                    |
-| Variant   | Card variants; theme additions | Card paint and the matching selection ring color.       | Always                                    | `default` | `component:SelectableCard` | Stable    | A theme-added variant rings in `--selectable-card-ring-color` (default `--color-accent`) and keeps its border color. |
+| Variant   | Card variants; theme additions | Card paint and the matching selection ring color.       | Always                                    | `default` | `component:Card`           | Stable    | A theme-added variant rings in `--selectable-card-ring-color` (default `--color-accent`) and keeps its border color. |
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| FR1 | SelectableCard renders `component:Card` with the given `variant`, `elevation`, `padding`, and sizing. The root also carries the `selectable-card` target reflecting `variant` and `selected`, and the first child is a visually hidden native `input type="checkbox"` named by `label` with `checked` equal to `isSelected`.                                                                                                                                                                                                                                 | Current source and tests |
-| FR2 | While enabled, a click on the card surface, a click or Space on the checkbox, or Enter on the checkbox calls `onChange(!isSelected)` exactly once. A click that belongs to nested interactive content or selected text does not toggle. A caller `onClick` and `onMouseUp` run after the card's own handling.                                                                                                                                                                                                                                                | Current source and tests |
-| FR3 | Selection adds a 2px inset ring through Card's ring variable, so layout does not move, and composes with any elevation shadow. `default`, `transparent`, and `muted` ring and border in `--color-accent`; each palette variant rings and borders in its `--color-border-<name>`; a theme-added variant rings in `--selectable-card-ring-color`.                                                                                                                                                                                                              | Current source and tests |
-| FR4 | While enabled, the surface paints the shared hover overlay under a hover-capable pointer and the pressed overlay for mouse and touch presses. Keyboard focus on the hidden checkbox shows one indicator on the card root (`architecture:interaction-modality` INV3). Implementation gap: the root outlines while any descendant has `:focus-visible`, so focusing a nested control draws both the card outline and the control's own (Current-state impact).                                                                                                 | Current source and tests |
-| FR5 | `isDisabled` dims the card to half opacity, removes the card's own click and mouseup handling (other caller event props still reach the root) and the hover and pressed overlays (`spec:AST-085` FR6), and keeps the checkbox focusable with `aria-disabled="true"`; no click, Space, or Enter calls `onChange`. The disabled state is reflected on the owning target (`architecture:component-theming-surface` INV6). Implementation gap: the `selectable-card` target reflects `variant` and `selected` but not the disabled state (Current-state impact). | Current source and tests |
-| FR6 | `ref` reaches the Card root. Supported DOM, ARIA, data, and event props reach the root; `xstyle`, `className`, and `style` merge after the component's interactive styles.                                                                                                                                                                                                                                                                                                                                                                                   | Current source and tests |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Basis                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | SelectableCard renders `component:Card` with the given `variant`, `elevation`, `padding`, and sizing. The root also carries the `selectable-card` target reflecting `variant` and `selected`, and the first child is a visually hidden native `input type="checkbox"` named by `label` with `checked` equal to `isSelected`.                                                                                                                                                                                                                                                                            | Current source and tests |
+| FR2 | While enabled, a click on the card surface, a click or Space on the checkbox, or Enter on the checkbox calls `onChange(!isSelected)` exactly once. A click that belongs to nested interactive content or selected text does not toggle. A caller `onClick` and `onMouseUp` run after the card's own handling, including for clicks that do not toggle.                                                                                                                                                                                                                                                  | Current source and tests |
+| FR3 | Selection adds a 2px inset ring through Card's ring variable, so layout does not move, and composes with any elevation shadow. `default`, `transparent`, and `muted` ring and border in `--color-accent`; each palette variant rings and borders in its `--color-border-<name>`; a theme-added variant rings in `--selectable-card-ring-color`.                                                                                                                                                                                                                                                         | Current source and tests |
+| FR4 | While enabled, the surface paints the shared hover overlay under a hover-capable pointer and the pressed overlay for mouse and touch presses. Keyboard focus on the hidden checkbox shows one indicator on the card root (`architecture:interaction-modality` INV3). Implementation gap: the root outlines while any descendant has `:focus-visible`, so focusing a nested control draws both the card outline and the control's own (Current-state impact).                                                                                                                                            | Current source and tests |
+| FR5 | `isDisabled` dims the card to half opacity, removes the card's own click and mouseup handling and the caller's `onClick` and `onMouseUp` (other caller event props still reach the root) and the hover and pressed overlays (`spec:AST-085` FR6), and keeps the checkbox focusable with `aria-disabled="true"`; no click, Space, or Enter calls `onChange`. The disabled state is reflected on the owning target (`architecture:component-theming-surface` INV6). Implementation gap: the `selectable-card` target reflects `variant` and `selected` but not the disabled state (Current-state impact). | Current source and tests |
+| FR6 | `ref` reaches the Card root. Supported DOM, ARIA, data, and event props reach the root; `xstyle`, `className`, and `style` merge after the component's interactive styles.                                                                                                                                                                                                                                                                                                                                                                                                                              | Current source and tests |
 
 ### Allowed variation
 
@@ -136,9 +136,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Transformation and precedence order
 
-- **ORD1 — Toggle.** Disabled → no toggle; nested interactive target or
-  selection → no toggle; otherwise one `onChange(!isSelected)` → caller
-  `onClick`.
+- **ORD1 — Toggle.** Disabled → nothing runs, caller `onClick` and
+  `onMouseUp` included; nested interactive target or selection → no toggle,
+  caller handlers still run; otherwise one `onChange(!isSelected)`, then
+  caller `onClick`.
 - **ORD2 — Ring color.** Built-in variant mapping → `--selectable-card-ring-color`
   for a theme-added variant.
 
@@ -158,8 +159,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR3 — Focusable disabled.** A disabled card keeps its tab stop, exposes
   `aria-disabled`, and blocks every toggle path (`spec:AST-085` FR1, FR2, FR5).
 - **AR4 — Persistent selection.** Selection changes the
-  checked state for assistive technology and draws a ring and border; the ring
-  wins over hover as the persistent state (`design:user-states` DR3).
+  checked state for assistive technology and draws a ring and border that
+  persist under hover and press, which still paint their overlays.
+- **AR5 — Pointer cancellation.** A press that slides off the card before the
+  lift does not toggle it (`spec:AST-020` FR9; WCAG 2.2 2.5.2).
 
 ## Design relationships
 
@@ -188,7 +191,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - `component:Card` supplies paint, padding, and the ring and elevation
   variables SelectableCard sets.
 - `spec:AST-085` owns focusable disabled controls; AR3 records conformance.
-- `design:user-states` DR3 owns persistent selection over transient states.
+- `spec:AST-020` FR9 excludes SelectableCard from the slide-off exception;
+  AR5 applies it.
 - `architecture:component-theming-surface` sets the rules the
   `selectable-card` target follows and requires a safe baseline for the
   extensible `variant`, which `--selectable-card-ring-color` satisfies.
@@ -197,14 +201,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 | Contract            | Verification                                                                                                                         | Representative states                                                            | Mutation or failure expectation                                                                                                                                                                                                                                                              | Audit section                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1, FR2            | `SelectableCard.test.tsx` surface, checkbox, Enter, and Space tests                                                                  | Unselected, selected                                                             | A missed or doubled toggle, or a wrong `onChange` value, fails. Gap: no test asserts the `selectable-card` target or its reflection, or the order of a caller `onClick` or `onMouseUp`.                                                                                                      | `audit:SelectableCard/behavior` |
+| FR1, FR2            | `SelectableCard.test.tsx` surface, checkbox, Enter, and Space tests                                                                  | Unselected, selected                                                             | A missed toggle, a wrong `onChange` value, or a doubled toggle from Space fails. Gap: surface-click tests assert only the value, not the call count, and no test asserts the `selectable-card` target or its reflection, or the order of a caller `onClick` or `onMouseUp`.                  | `audit:SelectableCard/behavior` |
 | FR3                 | `SelectableCard.test.tsx` elevation tests; stable visual baseline `core-selectablecard--single-select`; `SelectableCard.stories.tsx` | Selected with elevation; one selected default card beside unselected ones        | A lost elevation while selected fails; a changed default ring or border comes back changed for review. Gap: palette and theme-added ring colors have no automated check.                                                                                                                     | `audit:SelectableCard/theming`  |
 | FR4                 | `SelectableCard.test.tsx` touch-press test; `CardPress.a11y.chromium.spec.ts` on `core-selectablecard--single-select`                | Rest; desktop hover and mouse press; touch press                                 | A hover that does not paint over rest, a mouse press that does not paint over hover, or a touch press that does not match the desktop press or fade fails. Gap: the focus outline, and the double indicator on nested controls, have no automated check.                                     | `audit:SelectableCard/design`   |
 | FR5, AR3            | `SelectableCard.test.tsx` disabled tests; `Checkbox.a11y.chromium.spec.ts` `card-disabled` state                                     | Disabled click, Enter, Space                                                     | A toggle while disabled, or a disabled card that leaves keyboard reach, fails. Gap: the half opacity, the removed overlays, and the missing disabled reflection on the target have no automated check.                                                                                       | `audit:SelectableCard/a11y`     |
-| FR2 (nested)        | `SelectableCard.stories.tsx` in a browser                                                                                            | Card with a nested button                                                        | Gap: no unit test covers nested-control suppression; a toggle is visible in the fixture.                                                                                                                                                                                                     | `audit:SelectableCard/behavior` |
+| FR2 (nested)        | Shared clickable-container hook tests in other components                                                                            | Card with a nested control or selected text                                      | Gap: no SelectableCard test or story covers nested-control or selection suppression.                                                                                                                                                                                                         | `audit:SelectableCard/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                        | Consumer anatomy and current target                                              | Missing, extra, or stale mappings fail repository validation.                                                                                                                                                                                                                                | `audit:SelectableCard/theming`  |
 | AR1, AR2, AR4       | `SelectableCard.test.tsx` checkbox tests; `Checkbox.a11y.test.tsx` and `Checkbox.a11y.chromium.spec.ts` SelectableCard states        | Unchecked, checked, disabled (`card-unchecked`, `card-checked`, `card-disabled`) | A lost checkbox role or name, a wrong checked state, or a disabled card that is not exposed as unavailable or not reachable fails, including at the accessibility tree. Gap: no test asserts that the root adds no role or tab stop, the root focus outline, or the ring winning over hover. | `audit:SelectableCard/a11y`     |
 | FR6, PR1            | Source review                                                                                                                        | Ref; caller props                                                                | Gap: no test asserts ref or passthrough routing, or fails if SelectableCard adds its own listener or timer.                                                                                                                                                                                  | `audit:SelectableCard/behavior` |
+| AR5                 | `Checkbox.a11y.chromium.spec.ts` aborted-press check on the SelectableCard states                                                    | Press that slides off the card before the lift                                   | A toggle after a slide-off lift fails.                                                                                                                                                                                                                                                       | `audit:SelectableCard/a11y`     |
 
 ## Decision log
 
