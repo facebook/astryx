@@ -12,6 +12,7 @@ owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
+    scripts/check-knowledge.mjs,
     packages/core/src/serverSafeComponents.test.ts,
     packages/core/src/Grid/Grid.test.tsx,
     apps/storybook/stories/Grid.stories.tsx,
@@ -83,7 +84,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | responsive repeat    | `fill`; `fit`                              | Keeps empty tracks or collapses them so present items stretch.          | Object-form columns                       | `fill`                      | `component:Grid`           | Stable    | Type-constrained                             |
 | responsive count cap | absent; positive `max`; non-positive `max` | Caps the number of intrinsic tracks while allowing present tracks fill. | Object-form columns                       | absent                      | `component:Grid`           | Stable    | non-positive behaves as uncapped             |
 | spacing              | shared `SpacingStep` values                | Separates rows/columns; axis values override uniform gap.               | Every Grid                                | browser grid gap default    | `family:layout-primitives` | Stable    | Type-constrained                             |
-| item alignment       | `start`; `center`; `end`; `stretch`        | Sets `align-items` and `justify-items`.                                 | Every Grid                                | `stretch`                   | `component:Grid`           | Stable    | Type-constrained                             |
+| item alignment       | `start`; `center`; `end`; `stretch`        | Sets `align-items` and `justify-items`.                                 | Every Grid                                | browser `normal`            | `component:Grid`           | Stable    | Type-constrained                             |
 | box size             | number; CSS value string; absent           | Sizes the Grid box; numbers become pixels.                              | Every Grid                                | caller/container-determined | `family:layout-primitives` | Stable    | Browser validates strings                    |
 | implicit row height  | number; absent                             | Sets pixel height for implicit rows used by row spans.                  | Every Grid                                | browser `auto`              | `component:Grid`           | Stable    | Browser validates the resulting CSS          |
 
@@ -95,7 +96,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR2 | Object-form columns use auto-fill by default or auto-fit for `repeat: 'fit'`; `minWidth` is the track floor, while a positive `max` caps the count and lets a lone track shrink to the container.                                                                            | Released docs, source, and tests                                |
 | FR3 | `rowGap` overrides `gap` only for rows, and `columnGap` overrides `gap` only for columns; the effective column gap participates in capped-track math. `rowHeight` sets the implicit row height in pixels.                                                                    | `family:layout-primitives/FR4`; source and tests                |
 | FR4 | The track template is a class-level declaration, so caller `xstyle` and class rules, including media rules, can replace it. Caller `style` wins other inline declarations, and explicit `width`, `height`, `maxWidth`, and `minHeight` props override matching `style` keys. | `architecture:public-component-api/INV5–INV8`; source and tests |
-| FR5 | `align` and `justify` set `align-items` and `justify-items` to `start`, `center`, `end`, or `stretch`; unset leaves the browser default (`stretch`).                                                                                                                         | Source and tests                                                |
+| FR5 | `align` and `justify` set `align-items` and `justify-items` to `start`, `center`, `end`, or `stretch`; unset leaves the browser default (`normal`, which stretches items without a natural size or aspect ratio).                                                            | Source and tests                                                |
 | FR6 | `ref`, DOM, data, ARIA, and event props, `xstyle`, class name, and inline style reach or compose on the root without replacing the `grid` target or its reflected `columns` (numeric form only), `gap`, `align`, and `justify`.                                              | `architecture:public-component-api/INV5–INV8`; source and tests |
 | FR7 | Grid preserves caller DOM order and uses the document's logical inline direction; it creates no separate keyboard order.                                                                                                                                                     | Platform layout behavior                                        |
 
@@ -138,9 +139,20 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Spanning item    | An optional wrapper documented beside Grid.             | `component:GridSpan`     | Supporting     | —                  |
 
 Theming: the root is the `grid` target, reflecting `align`, numeric `columns`,
-`gap`, and `justify`. `Grid.doc.mjs` also lists the `grid-span` target and the
-Spanning item anatomy, which `component:GridSpan` owns, so this record declares
-no anatomy-theming block rather than assign `grid-span` to Grid.
+`gap`, and `justify`. `Grid.doc.mjs` documents the Spanning item part and its
+`grid-span` target, so the map below lists both; `component:GridSpan` owns the
+wrapper's behavior.
+
+### Theming anatomy
+
+<!-- anatomy-theming:v1 -->
+
+```json
+{
+  "Grid container": {"target": "grid"},
+  "Spanning item": {"target": "grid-span"}
+}
+```
 
 ## Family and system relationships
 
@@ -158,6 +170,7 @@ no anatomy-theming block rather than assign `grid-span` to Grid.
 | FR5                 | `Grid.test.tsx` alignment and owned-metadata tests                                                                | `align` and `justify`                                                         | A lost `data-align` or `data-justify` reflection fails. Gap: the alignment test asserts only that the grid renders, so the `align-items` and `justify-items` values have no check.                                                                                                                                      | `audit:Grid/behavior` |
 | FR7, AR1, AR2       | `Grid.stories.tsx` AuditMatrix play guard in LTR and RTL                                                          | Fixed tracks in both directions                                               | Items that do not run start to end in the document direction fail the play guard. Gap: no automated check asserts that Grid adds no role or keeps DOM order.                                                                                                                                                            | `audit:Grid/a11y-rtl` |
 | PR1                 | `serverSafeComponents.test.ts`; source review                                                                     | Every state                                                                   | A client API (state, an effect) added without a client directive fails `serverSafeComponents.test.ts`. Gap: a client API added together with a client directive passes, and no automated check fails if Grid adds layout measurement.                                                                                   | `audit:Grid/behavior` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                     | Consumer anatomy and current targets                                          | Missing, extra, or stale mappings fail repository validation.                                                                                                                                                                                                                                                           | `audit:Grid/theming`  |
 
 ## Decision log
 
