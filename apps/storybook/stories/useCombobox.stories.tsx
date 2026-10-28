@@ -2,22 +2,19 @@
 
 /**
  * @file useCombobox.stories.tsx
- * @input Uses useCombobox from @astryxdesign/core/Selector, usePopover,
- *   Dialog, Layout, and Button
- * @output Comboboxes over text fields the story renders itself: a message
- *   field with a mention list in a layer, a search field whose results replace
- *   a page section, a contenteditable people field, and a field in a dialog;
- *   each shows an empty message when nothing matches
+ * @input Uses useCombobox from @astryxdesign/core/Selector, Dialog, Layout,
+ *   and Button
+ * @output Comboboxes over single-line fields the story renders itself: a
+ *   search field whose results replace a page section, and a field in a
+ *   dialog; each shows an empty message when nothing matches
  * @position Storybook stories for useCombobox's field props;
  *   ComboboxField.a11y.chromium.spec.ts drives these stories in Chromium
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useEffect, useId, useRef, useState} from 'react';
+import {useId, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCombobox} from '@astryxdesign/core/Selector';
-import {usePopover} from '@astryxdesign/core/Popover';
-import {isImeKeyEvent} from '@astryxdesign/core/utils';
 import {Button} from '@astryxdesign/core/Button';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
@@ -33,7 +30,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'useCombobox over a text field the product renders itself. The story owns the field, the rows and where the list renders; the hook owns the roles, the keys and the pointer model. Focus never leaves the field: arrows move the active option, Enter picks it, Escape hides the list.',
+          'useCombobox over a single-line text field the product renders itself. The story owns the field, the rows and where the list renders; the hook owns the roles, the keys and the pointer model. Focus never leaves the field: arrows move the active option, Enter picks it, Escape hides the list.',
       },
     },
   },
@@ -81,9 +78,6 @@ const styles = stylex.create({
     width: 360,
     fontFamily: 'inherit',
   },
-  label: {
-    fontWeight: 600,
-  },
   field: {
     boxSizing: 'border-box',
     width: '100%',
@@ -98,10 +92,6 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     font: 'inherit',
   },
-  textarea: {
-    minHeight: 72,
-    resize: 'vertical',
-  },
   listbox: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -114,10 +104,6 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-popover'],
-  },
-  layerListbox: {
-    minWidth: 240,
-    borderStyle: 'none',
   },
   option: {
     paddingBlock: spacingVars['--spacing-2'],
@@ -138,20 +124,6 @@ const styles = stylex.create({
     margin: 0,
     color: colorVars['--color-text-secondary'],
   },
-  chips: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-1'],
-    margin: 0,
-    padding: 0,
-    listStyle: 'none',
-  },
-  chip: {
-    paddingBlock: spacingVars['--spacing-0-5'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-muted'],
-  },
 });
 
 type Combobox = ReturnType<typeof useCombobox<Option>>;
@@ -171,132 +143,6 @@ function Rows({combobox, options}: {combobox: Combobox; options: Option[]}) {
     </div>
   ));
 }
-
-// ---------------------------------------------------------------------------
-// A message field: a textarea whose mention list renders in a layer.
-// ---------------------------------------------------------------------------
-
-function MessageFieldExample() {
-  const fieldId = useId();
-  const listboxId = useId();
-  const fieldRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState('');
-  const [sent, setSent] = useState<string[]>([]);
-  // The caller finds the query in its own text: whatever follows an "@".
-  const [mention, setMention] = useState<{start: number; query: string}>();
-  const options = mention == null ? [] : matching(PEOPLE, mention.query);
-  const isOpen = mention != null;
-
-  const popover = usePopover({
-    hasLightDismiss: true,
-    hasCloseButton: false,
-    hasAutoFocus: false,
-    role: 'none',
-    onHide: () => setMention(undefined),
-  });
-  useEffect(() => {
-    popover.triggerRef(fieldRef.current);
-    return () => popover.triggerRef(null);
-  }, [popover]);
-  useEffect(() => {
-    if (isOpen && !popover.isOpen) {
-      popover.show();
-    } else if (!isOpen && popover.isOpen) {
-      popover.hide();
-    }
-  }, [isOpen, popover]);
-
-  const combobox = useCombobox({
-    selectableItems: options,
-    isOpen,
-    onOpen: () => false,
-    onClose: () => setMention(undefined),
-    onSelect: value => {
-      const person = PEOPLE.find(candidate => candidate.value === value);
-      if (mention == null || person == null) {
-        return;
-      }
-      const end = mention.start + 1 + mention.query.length;
-      const name = person.label.split(' ')[0];
-      setText(`${text.slice(0, mention.start)}@${name} ${text.slice(end)}`);
-      setMention(undefined);
-    },
-    listboxId,
-    field: 'textarea',
-  });
-
-  return (
-    <div {...stylex.props(styles.stack)}>
-      <label htmlFor={fieldId} {...stylex.props(styles.label)}>
-        Message
-      </label>
-      <textarea
-        ref={fieldRef}
-        id={fieldId}
-        value={text}
-        placeholder="Type @ to mention someone"
-        onChange={event => {
-          const next = event.currentTarget.value;
-          const caret = event.currentTarget.selectionStart ?? next.length;
-          setText(next);
-          const match = /(^|\s)@(\w*)$/.exec(next.slice(0, caret));
-          if (match == null) {
-            setMention(undefined);
-            return;
-          }
-          const query = match[2];
-          setMention({start: caret - query.length - 1, query});
-          // A new query makes its first match active, so Enter picks it.
-          combobox.setHighlightedIndex(firstEnabled(matching(PEOPLE, query)));
-        }}
-        {...combobox.getFieldProps({
-          // The field's own Enter sends; the hook stops it only for a pick.
-          // An Enter that commits an input-method composition is not a send:
-          // Safari reports it after compositionend with keyCode 229 and
-          // `isComposing` false, which isImeKeyEvent also catches.
-          onKeyDown: event => {
-            if (
-              event.key === 'Enter' &&
-              !event.shiftKey &&
-              !isImeKeyEvent(event.nativeEvent) &&
-              text.trim() !== ''
-            ) {
-              event.preventDefault();
-              setSent([...sent, text.trim()]);
-              setText('');
-            }
-          },
-        })}
-        {...stylex.props(styles.field, styles.textarea)}
-      />
-      {popover.render(
-        options.length > 0 ? (
-          <div
-            aria-label="People"
-            {...combobox.getListboxProps()}
-            {...stylex.props(styles.listbox, styles.layerListbox)}>
-            <Rows combobox={combobox} options={options} />
-          </div>
-        ) : (
-          <p {...stylex.props(styles.muted)}>No one matches</p>
-        ),
-      )}
-      {sent.length > 0 ? (
-        <p {...stylex.props(styles.muted)}>Sent: {sent.join(' · ')}</p>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * A textarea with a mention list in a layer. Type "@" and a few letters: the
- * first match is active, so Enter picks it; with nothing active, Enter sends.
- * The arrows move between matches while the list shows and move the caret
- * once it is hidden.
- */
-export const MessageField: Story = {
-  render: () => <MessageFieldExample />,
-};
 
 // ---------------------------------------------------------------------------
 // A search field: an input whose results replace a page section in flow.
@@ -325,7 +171,6 @@ function SearchFieldExample() {
       setQuery('');
     },
     listboxId,
-    field: 'input',
   });
 
   return (
@@ -378,93 +223,6 @@ export const SearchField: Story = {
 };
 
 // ---------------------------------------------------------------------------
-// A contenteditable people field with matches listed under it.
-// ---------------------------------------------------------------------------
-
-function EditableFieldExample() {
-  const listboxId = useId();
-  const editableRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [people, setPeople] = useState<Option[]>([]);
-  const available = PEOPLE.filter(person => !people.includes(person));
-  const options = query.trim() === '' ? [] : matching(available, query);
-  const isShown = isOpen && query.trim() !== '';
-
-  const combobox = useCombobox({
-    selectableItems: options,
-    isOpen: isShown,
-    onOpen: () => false,
-    onClose: () => setIsOpen(false),
-    onSelect: value => {
-      const person = PEOPLE.find(candidate => candidate.value === value);
-      if (person != null) {
-        setPeople([...people, person]);
-      }
-      setQuery('');
-      if (editableRef.current) {
-        editableRef.current.textContent = '';
-      }
-    },
-    listboxId,
-    field: 'contenteditable',
-  });
-
-  return (
-    <div {...stylex.props(styles.stack)}>
-      <span id={`${listboxId}-label`} {...stylex.props(styles.label)}>
-        Add people
-      </span>
-      {people.length > 0 ? (
-        <ul aria-label="Added" {...stylex.props(styles.chips)}>
-          {people.map(person => (
-            <li key={person.value} {...stylex.props(styles.chip)}>
-              {person.label}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <div
-        ref={editableRef}
-        contentEditable
-        suppressContentEditableWarning
-        aria-labelledby={`${listboxId}-label`}
-        onInput={event => {
-          const next = event.currentTarget.textContent ?? '';
-          setQuery(next);
-          setIsOpen(true);
-          combobox.setHighlightedIndex(
-            firstEnabled(next.trim() === '' ? [] : matching(available, next)),
-          );
-        }}
-        {...combobox.getFieldProps()}
-        {...stylex.props(styles.field)}
-      />
-      {isShown ? (
-        options.length > 0 ? (
-          <div
-            aria-label="Matching people"
-            {...combobox.getListboxProps()}
-            {...stylex.props(styles.listbox)}>
-            <Rows combobox={combobox} options={options} />
-          </div>
-        ) : (
-          <p {...stylex.props(styles.muted)}>No one matches</p>
-        )
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * A contenteditable field, the shape a rich composer takes. It is multi-line,
- * so a hidden list never takes its arrows.
- */
-export const EditableField: Story = {
-  render: () => <EditableFieldExample />,
-};
-
-// ---------------------------------------------------------------------------
 // A field inside a dialog: Escape hides the list before it closes the dialog.
 // ---------------------------------------------------------------------------
 
@@ -495,7 +253,6 @@ function SharePeopleField() {
       setQuery('');
     },
     listboxId,
-    field: 'input',
   });
 
   return (

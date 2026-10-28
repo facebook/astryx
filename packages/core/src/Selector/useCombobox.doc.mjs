@@ -16,9 +16,6 @@ export const docs = {
     'keyboard',
     'arrow keys',
     'headless',
-    'textarea',
-    'contenteditable',
-    'mention',
     'autocomplete',
     'apg',
     'accessibility',
@@ -102,13 +99,6 @@ export const docs = {
       description: 'Whether the control ignores clicks and keys.',
       default: 'false',
     },
-    {
-      name: 'options.field',
-      type: "'input' | 'textarea' | 'contenteditable'",
-      description:
-        'The text field `getFieldProps` wires, one you render and keep focused while a person picks: a single-line `input`, or a multi-line `textarea` or contenteditable element. It sets the field\u2019s role and whether ArrowDown shows a hidden list. `onKeyDown` ignores it.',
-      default: "'input'",
-    },
   ],
   returns: [
     {
@@ -155,7 +145,7 @@ export const docs = {
       name: 'getFieldProps',
       type: '(props?: {onKeyDown?(event: React.KeyboardEvent): void}) => object',
       description:
-        'Props for a field you render: `role="combobox"` and `aria-expanded` on an `input` or contenteditable element (a `textarea` keeps its textbox role and gets neither), `aria-autocomplete="list"`, `aria-controls` only while the listbox renders (`isOpen` with at least one option), `aria-activedescendant` only while an option is active, and the field\u2019s key handler. Pass your own `onKeyDown` here rather than beside the spread: it runs after the hook\u2019s handler unless that handler claimed the key, and it may be typed for its element (an input, a textarea or a contenteditable element).',
+        'Props for a single-line `input` you render: `role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-controls` only while the listbox renders (`isOpen` with at least one option), `aria-activedescendant` only while an option is active, and the field\u2019s key handler. Pass your own `onKeyDown` here rather than beside the spread: it runs after the hook\u2019s handler unless that handler claimed the key, and it may be typed for its element.',
     },
     {
       name: 'getListboxProps',
@@ -172,7 +162,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Tracks the active option of a single-select combobox and handles its keys, while DOM focus stays on the control. It powers Selector and CommandPalette; use it to build a combobox those components do not cover, including one over a text field you render yourself, such as a message field with a mention list or a search field whose results replace a page section. It renders nothing: you render the field, the listbox and the options, and spread `getFieldProps`, `getListboxProps` and `getOptionProps` onto them, or wire `role`, `aria-expanded`, `aria-controls` and `aria-activedescendant` yourself from `onKeyDown` and `getItemId` for a control such as a button.',
+      'Tracks the active option of a single-select combobox and handles its keys, while DOM focus stays on the control. It powers Selector and CommandPalette; use it to build a combobox those components do not cover, including one over a single-line text field you render yourself, such as a search field whose results replace a page section, or an \u201cadd people\u201d field in a dialog. It renders nothing: you render the field, the listbox and the options, and spread `getFieldProps`, `getListboxProps` and `getOptionProps` onto them, or wire `role`, `aria-expanded`, `aria-controls` and `aria-activedescendant` yourself from `onKeyDown` and `getItemId` for a control such as a button.',
     bestPractices: [
       {
         guidance: true,
@@ -187,7 +177,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For a field you render, pass `field`, spread the prop getters, and set the active option yourself when a new query changes the options: the first option so Enter picks it, or -1 so Enter stays the field\u2019s.',
+          'For a field you render, spread the prop getters, and set the active option yourself when a new query changes the options: the first option so Enter picks it, or -1 so Enter stays the field\u2019s.',
       },
       {
         guidance: true,
@@ -218,21 +208,21 @@ export const docs = {
         category: 'Semantics',
         requirement: 'AST-075 FR2',
         description:
-          'While the listbox renders, the field exposes `aria-expanded="true"` and `aria-controls` naming it. Otherwise it exposes `aria-expanded="false"` and references nothing. A `textarea` gets `aria-controls` the same way and no `aria-expanded`.',
+          'While the listbox renders, the field exposes `aria-expanded="true"` and `aria-controls` naming it. Otherwise it exposes `aria-expanded="false"` and references nothing.',
       },
       {
         name: 'Roles',
         category: 'Semantics',
         requirement: 'AST-075 FR3',
         description:
-          'An `input` or contenteditable field is a `combobox`; a `textarea` keeps its textbox role with `aria-autocomplete="list"`. The list is a `listbox` of `option`s with `aria-selected="true"` on the active one. You name the field and the listbox.',
+          'The field is a `combobox` with `aria-autocomplete="list"`. The list is a `listbox` of `option`s with `aria-selected="true"` on the active one. You name the field and the listbox.',
       },
       {
         name: 'Keys',
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape, whatever modifier is held, hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it in an `input` that has options, and a multi-line field keeps every key, as it also does while an open list has no options. An open `input` with no options still takes Escape, which closes the list, so render an empty message while it is open. Home, End, other chords such as Shift+Enter, and every other key reach the field.',
+          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape, whatever modifier is held, hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it when there are options. An open field with no options still takes Escape, which closes the list, so render an empty message while it is open. Home, End, other chords such as Shift+Enter, and every other key reach the field.',
       },
       {
         name: 'Input method',
@@ -266,7 +256,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Single-select combobox state + keys; focus stays on control. Powers Selector / CommandPalette, and comboboxes over a text field you render (mention list under a message field, search whose results replace a section). Renders nothing: spread getFieldProps / getListboxProps / getOptionProps, or wire role, aria-expanded, aria-controls, aria-activedescendant yourself.',
+    'Single-select combobox state + keys; focus stays on control. Powers Selector / CommandPalette, and comboboxes over a single-line field you render (search whose results replace a section, an add-people field). Renders nothing: spread getFieldProps / getListboxProps / getOptionProps, or wire role, aria-expanded, aria-controls, aria-activedescendant yourself.',
   paramDescriptions: {
     options: 'config.',
     'options.selectableItems':
@@ -287,8 +277,6 @@ export const docsDense = {
     'options.onSearchSeed':
       'w/ hasSearch, each printable char except Space typed while control focused (opens first if closed).',
     'options.isDisabled': 'ignore clicks + keys.',
-    'options.field':
-      "field getFieldProps wires (you render + keep focused): 'input' single-line, 'textarea' / 'contenteditable' multi-line. sets role + whether ArrowDown shows hidden list. onKeyDown ignores it.",
   },
   returnDescriptions: {
     highlightedIndex:
@@ -302,7 +290,7 @@ export const docsDense = {
     onItemSelect: 'pick from a press, then close.',
     onItemMouseEnter: 'hover makes option active; no scroll, no focus move.',
     getFieldProps:
-      'field props: role=combobox + aria-expanded on input / contenteditable (textarea: neither), aria-autocomplete=list, aria-controls only while listbox renders (isOpen + options), aria-activedescendant only while an option is active, key handler. pass own onKeyDown here (may be typed for its element: input / textarea / contenteditable): runs after hook unless hook claimed key.',
+      'input props: role=combobox, aria-expanded, aria-autocomplete=list, aria-controls only while listbox renders (isOpen + options), aria-activedescendant only while an option is active, key handler. pass own onKeyDown here (may be typed for its element): runs after hook unless hook claimed key.',
     getListboxProps:
       'listbox props (id, role, press keeps focus in field); render anywhere incl. page flow while isOpen + options; name it (aria-label / aria-labelledby).',
     getOptionProps:
@@ -325,7 +313,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Own field: pass field, spread the getters, set active option on new query (first: Enter picks; -1: Enter stays the field\u2019s).',
+          'Own field: spread the getters, set active option on new query (first: Enter picks; -1: Enter stays the field\u2019s).',
       },
       {
         guidance: true,
@@ -355,21 +343,21 @@ export const docsDense = {
         category: 'Semantics',
         requirement: 'AST-075 FR2',
         description:
-          'listbox renders -> aria-expanded=true + aria-controls; else false + no reference. textarea: aria-controls only, no aria-expanded.',
+          'listbox renders -> aria-expanded=true + aria-controls; else false + no reference.',
       },
       {
         name: 'Roles',
         category: 'Semantics',
         requirement: 'AST-075 FR3',
         description:
-          'input / contenteditable = combobox; textarea keeps textbox + aria-autocomplete=list. listbox of options, aria-selected=true on active. you name field + listbox.',
+          'field = combobox + aria-autocomplete=list. listbox of options, aria-selected=true on active. you name field + listbox.',
       },
       {
         name: 'Keys',
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape (any modifier) hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows in input w/ options; multi-line keeps every key (also while open list has no options). open input w/ no options still takes Escape (closes list): render an empty message while open. Home / End / other chords (Shift+Enter) / others reach field.',
+          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape (any modifier) hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows it w/ options. open field w/ no options still takes Escape (closes list): render an empty message while open. Home / End / other chords (Shift+Enter) / others reach field.',
       },
       {
         name: 'Input method',

@@ -4,9 +4,9 @@
  * @file useCombobox.public.test.tsx
  * @input useCombobox and SelectorOptionData from the public Selector barrel
  * @output Compile-time compatibility coverage: a caller that names the result
- *   `ReturnType<typeof useCombobox>` over an option type of its own, and key
- *   handlers typed for an input, a textarea and a contenteditable element,
- *   passed to getFieldProps and spread back onto those fields
+ *   `ReturnType<typeof useCombobox>` over an option type of its own, and a
+ *   key handler typed for an input, passed to getFieldProps and spread back
+ *   onto it
  * @position Public API test guarding @astryxdesign/core/Selector; the core
  *   typecheck compiles it, so a type regression fails there
  */
@@ -66,43 +66,13 @@ function FieldTypedHandlers() {
     onOpen: () => {},
     onClose: () => {},
   };
-  const to = useCombobox({...closed, listboxId: 'to', field: 'input'});
-  const message = useCombobox({
-    ...closed,
-    listboxId: 'message',
-    field: 'textarea',
-  });
-  const note = useCombobox({
-    ...closed,
-    listboxId: 'note',
-    field: 'contenteditable',
-  });
-  // Each handler reads a member only its own element has.
+  const to = useCombobox({...closed, listboxId: 'to'});
+  // The handler reads a member only its own element has.
   const onInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     event.currentTarget.select();
   };
-  const onTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    event.currentTarget.setSelectionRange(0, 0);
-  };
-  const onEditableKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    void event.currentTarget.isContentEditable;
-  };
   return (
-    <>
-      <input
-        aria-label="To"
-        {...to.getFieldProps({onKeyDown: onInputKeyDown})}
-      />
-      <textarea
-        aria-label="Message"
-        {...message.getFieldProps({onKeyDown: onTextAreaKeyDown})}
-      />
-      <div
-        contentEditable
-        aria-label="Note"
-        {...note.getFieldProps({onKeyDown: onEditableKeyDown})}
-      />
-    </>
+    <input aria-label="To" {...to.getFieldProps({onKeyDown: onInputKeyDown})} />
   );
 }
 
@@ -112,10 +82,8 @@ describe('useCombobox public types', () => {
     expect(screen.getByRole('button', {name: 'Pick'})).toBeTruthy();
   });
 
-  it('takes key handlers typed for an input, a textarea and a contenteditable element', () => {
+  it('takes a key handler typed for an input', () => {
     render(<FieldTypedHandlers />);
     expect(screen.getByRole('combobox', {name: 'To'})).toBeTruthy();
-    expect(screen.getByRole('textbox', {name: 'Message'})).toBeTruthy();
-    expect(screen.getByRole('combobox', {name: 'Note'})).toBeTruthy();
   });
 });

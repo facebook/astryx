@@ -106,9 +106,10 @@ the behavior from hooks; every such field behaves and announces the same way.
   inside its own contenteditable field only, through an internal hook.
 - `useCombobox` (exported from `@astryxdesign/core/Selector`) tracks the active
   option, opens and closes, and handles the keys for Selector and CommandPalette.
-  For a field the caller renders, over any option type with a string `value`,
-  its `getFieldProps`, `getListboxProps`, and `getOptionProps` carry FR1–FR6.
-  The caller announces the result count through `useAnnounce` (FR7), as DEC-2
+  For a single-line `input` the caller renders, over any option type with a
+  string `value`, its `getFieldProps`, `getListboxProps`, and `getOptionProps`
+  carry FR1–FR6. It does not yet take a multi-line field (DEC-3), and the
+  caller announces the result count through `useAnnounce` (FR7), as DEC-2
   describes.
 - `useMultiCombobox` (exported from `@astryxdesign/core/MultiSelector`) does the
   same for MultiSelector's own control. It takes MultiSelector's option type,

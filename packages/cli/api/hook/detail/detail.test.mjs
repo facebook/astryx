@@ -30,9 +30,6 @@ describe('hook.detail leaf', () => {
   it('resolves useCombobox from the Selector entry point with its field props and the requirements it names', async () => {
     const res = await detail('useCombobox', {cwd: REPO});
     expect(res.data.importPath).toBe('@astryxdesign/core/Selector');
-    expect(res.data.params.map(param => param.name)).toEqual(
-      expect.arrayContaining(['options.field']),
-    );
     expect(res.data.returns.map(entry => entry.name)).toEqual(
       expect.arrayContaining(['getFieldProps', 'getListboxProps', 'getOptionProps']),
     );
