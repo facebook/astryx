@@ -348,12 +348,7 @@ for (const story of [LIST_ROW, SCROLLER_ROW, TREE_ROW]) {
 
 test('a busy first frame after the lift delays the release instead of skipping into it', async ({
   page,
-  browserName,
 }) => {
-  test.skip(
-    browserName !== 'chromium',
-    'WebKit starts an animation created just before a block at its last frame time (motion/animator.ts, known limits)',
-  );
   const {driver, row, center} = await openRow(page, LIST_ROW);
   // When the press controller writes the release, 150 ms of script hold the
   // main thread before the first frame. The release starts when the browser
@@ -394,6 +389,64 @@ test('a busy first frame after the lift delays the release instead of skipping i
   // frame to about 0.74; a start pinned before the block would be past 0.4.
   expect(first).toBeGreaterThan(0.7);
   await expect.poll(async () => layerOpacity(row)).toBe(0);
+});
+
+test('a busy first frame after the lift still plays the whole release before the press attribute goes', async ({
+  page,
+}) => {
+  const {driver, row, center} = await openRow(page, LIST_ROW);
+  // When the press controller writes the release, 150 ms of script hold the
+  // main thread before the first frame, so the release starts after the
+  // block. Every frame after it is read until the attribute goes: the layer
+  // must reach rest on the curve, not vanish while it is still painted.
+  await row.evaluate(el => {
+    const frames: [number, number, string | null][] = [];
+    (window as unknown as {__frames: typeof frames}).__frames = frames;
+    const observer = new MutationObserver(() => {
+      if (el.getAttribute('data-astryx-press') !== 'fading') {
+        return;
+      }
+      observer.disconnect();
+      const until = performance.now() + 150;
+      while (performance.now() < until) {
+        // Busy: the main thread is held.
+      }
+      const sample = (time: number) => {
+        const layer = getComputedStyle(el, '::before');
+        const strength =
+          layer.content === 'none' || layer.content === 'normal'
+            ? 0
+            : Number(layer.opacity);
+        const press = el.getAttribute('data-astryx-press');
+        if ((document.timeline.currentTime as number) >= until) {
+          frames.push([+(time - until).toFixed(1), strength, press]);
+        }
+        if (press === 'fading' && frames.length < 120) {
+          requestAnimationFrame(sample);
+        }
+      };
+      requestAnimationFrame(sample);
+    });
+    observer.observe(el, {attributeFilter: ['data-astryx-press']});
+  });
+  await driver.play(tap(center, {holdMs: 300}));
+  await expect.poll(async () => pressState(row)).toBeNull();
+  const frames = await page.evaluate(
+    () =>
+      (window as unknown as {__frames: [number, number, string | null][]})
+        .__frames,
+  );
+  const fading = frames.filter(([, , press]) => press === 'fading');
+  expect(fading.length, JSON.stringify(frames)).toBeGreaterThan(3);
+  // The last frame still fading is at rest or within one frame of it: the
+  // attribute goes once the release has played, however late it started.
+  expect(fading.at(-1)?.[1], JSON.stringify(frames)).toBeLessThanOrEqual(0.05);
+  // And the release played on the way there, frame by frame.
+  for (let i = 1; i < fading.length; i++) {
+    expect(fading[i][1], JSON.stringify(frames)).toBeLessThanOrEqual(
+      fading[i - 1][1] + 0.01,
+    );
+  }
 });
 
 test('the release does no Layout or Paint per frame', async ({
