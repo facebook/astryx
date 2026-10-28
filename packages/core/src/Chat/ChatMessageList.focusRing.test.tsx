@@ -42,7 +42,11 @@ function expectAtoms(el: Element, expected: string[]) {
 
 describe('Astryx-made tab stops draw the shared focus ring', () => {
   it('the chat log, inset inside the area that scrolls it', () => {
-    render(<ChatMessageList />);
+    render(
+      <ChatMessageList>
+        <p>Hello</p>
+      </ChatMessageList>,
+    );
     expectAtoms(
       screen.getByRole('log'),
       atoms(
