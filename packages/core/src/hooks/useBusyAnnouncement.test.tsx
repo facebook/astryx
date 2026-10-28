@@ -63,6 +63,36 @@ describe('useBusyAnnouncement', () => {
     expect(politeText()).toBe('');
   });
 
+  it('withdraws a busy start written to the channel but not yet exposed (AST-086 FR8)', () => {
+    const {result} = renderBusy();
+    // The busy frame writes "Loading" to the channel; its exposing frame has
+    // not run yet when the outcome announces and settles.
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    act(() => {
+      result.current();
+    });
+    runFrames();
+    expect(politeText()).toBe('');
+  });
+
+  it('withdraws only its own busy start when another owner wrote the same words (AST-086 FR8, FR9)', () => {
+    const first = renderBusy();
+    const second = renderBusy();
+    // Both busy frames write "Loading" to the channel before it is exposed.
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    // The first owner's search settles; the second is still busy.
+    act(() => {
+      first.result.current();
+    });
+    runFrames();
+    expect(politeText()).toBe('Loading');
+    second.unmount();
+  });
+
   it('keeps a settled busy start dropped until the next busy start', () => {
     const {result, rerender} = renderBusy();
     act(() => {

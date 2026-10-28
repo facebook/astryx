@@ -46,6 +46,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
@@ -701,6 +702,7 @@ export function Slider({ref, ...props}: SliderProps) {
     onFocus,
     onBlur,
     id: idProp,
+    'aria-labelledby': ariaLabelledByProp,
     'aria-describedby': ariaDescribedByProp,
     ...restWithRange
   } = props;
@@ -939,6 +941,31 @@ export function Slider({ref, ...props}: SliderProps) {
   // drag the first one owns.
   const dragPointerRef = useRef<number | null>(null);
 
+  // Removes the document lostpointercapture listener of the drag in progress.
+  // It exists only while a drag does, so an idle slider holds no document
+  // listener (react-component-runtime INV5).
+  const detachLostCaptureRef = useRef<(() => void) | null>(null);
+
+  const endDrag = useCallback(
+    (pointerId: number) => {
+      if (
+        draggingThumbRef.current !== null &&
+        pointerId === dragPointerRef.current
+      ) {
+        detachLostCaptureRef.current?.();
+        detachLostCaptureRef.current = null;
+        draggingThumbRef.current = null;
+        dragPointerRef.current = null;
+        setDraggingThumb(null);
+        fireChangeEnd();
+      }
+    },
+    [fireChangeEnd],
+  );
+
+  // A slider unmounted mid-drag leaves no listener behind.
+  useEffect(() => () => detachLostCaptureRef.current?.(), []);
+
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (isDisabled) {
@@ -983,13 +1010,27 @@ export function Slider({ref, ...props}: SliderProps) {
       // through the drag.
       setKeyboardFocusThumb(null);
 
+      // A capture lost without an up or a cancel (the browser releases it, or
+      // script does) still ends the drag, so the slider never stays held by a
+      // pointer that is gone. The listener sits on the document, where
+      // lostpointercapture bubbles to and where the browser fires it when the
+      // captured node is removed, so a control node replaced during the drag
+      // (a FormLayout direction change) is still covered. It lives only for
+      // this drag.
+      const doc = (e.currentTarget as HTMLElement).ownerDocument;
+      const onLostCapture = (event: globalThis.PointerEvent) =>
+        endDrag(event.pointerId);
+      doc.addEventListener('lostpointercapture', onLostCapture);
+      detachLostCaptureRef.current = () =>
+        doc.removeEventListener('lostpointercapture', onLostCapture);
+
       if (
         typeof (e.currentTarget as HTMLElement).setPointerCapture === 'function'
       ) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [isDisabled, getValueFromPosition, getClosestThumb, updateValue, endDrag],
   );
 
   const handlePointerMove = useCallback(
@@ -1007,42 +1048,10 @@ export function Slider({ref, ...props}: SliderProps) {
     [isDisabled, getValueFromPosition, updateValue],
   );
 
-  const endDrag = useCallback(
-    (pointerId: number) => {
-      if (
-        draggingThumbRef.current !== null &&
-        pointerId === dragPointerRef.current
-      ) {
-        draggingThumbRef.current = null;
-        dragPointerRef.current = null;
-        setDraggingThumb(null);
-        fireChangeEnd();
-      }
-    },
-    [fireChangeEnd],
-  );
-
   const handlePointerUp = useCallback(
     (e: PointerEvent<HTMLDivElement>) => endDrag(e.pointerId),
     [endDrag],
   );
-
-  // A capture lost without an up or a cancel (the browser releases it, or
-  // script does) still ends the drag, so the slider never stays held by a
-  // pointer that is gone and keeps answering new presses. The listener sits
-  // on the document, where lostpointercapture bubbles to and where the browser
-  // fires it when the captured node is removed, so a control node replaced
-  // before or during a drag (a FormLayout direction change) is still covered.
-  useEffect(() => {
-    const doc = trackRef.current?.ownerDocument;
-    if (doc == null) {
-      return;
-    }
-    const onLostCapture = (event: globalThis.PointerEvent) =>
-      endDrag(event.pointerId);
-    doc.addEventListener('lostpointercapture', onLostCapture);
-    return () => doc.removeEventListener('lostpointercapture', onLostCapture);
-  }, [endDrag]);
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -1204,7 +1213,10 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
-        aria-labelledby={!isRange ? labelID : undefined}
+        // A caller aria-labelledby names the control together with its label.
+        aria-labelledby={
+          !isRange ? joinAriaIDs(labelID, ariaLabelledByProp) : undefined
+        }
         aria-describedby={
           [
             !isRange ? ariaDescribedByProp : undefined,
@@ -1348,7 +1360,10 @@ export function Slider({ref, ...props}: SliderProps) {
             disabledMessageTooltip.ref,
           )}
           {...(isRange
-            ? {role: 'group', 'aria-labelledby': labelID}
+            ? {
+                role: 'group',
+                'aria-labelledby': joinAriaIDs(labelID, ariaLabelledByProp),
+              }
             : undefined)}
           onPointerDown={after(handlePointerDown, onPointerDown)}
           onPointerMove={after(handlePointerMove, onPointerMove)}

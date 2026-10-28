@@ -19,6 +19,7 @@
  */
 
 import {
+  use,
   useId,
   useState,
   useMemo,
@@ -51,6 +52,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
@@ -59,6 +61,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 
 // Public padding tokens for the `number-input` theme target. A theme writes an
 // ordinary `padding` (in ANY spelling — the shorthand, `paddingBlock`, or a
@@ -204,7 +207,7 @@ const sizeStyles = stylex.create({
 
 export type NumberInputSize = keyof typeof sizeStyles;
 
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 
 // Re-export shared types for convenience
 
@@ -537,7 +540,7 @@ export function NumberInput({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   startIcon,
@@ -575,6 +578,7 @@ export function NumberInput({
   ref,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: NumberInputProps) {
   const {rest, container} = useFieldInputStyling('NumberInput', restProps, {
@@ -589,6 +593,7 @@ export function NumberInput({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -596,6 +601,8 @@ export function NumberInput({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -647,6 +654,12 @@ export function NumberInput({
     ],
     inputGroup,
   );
+  // A caller aria-labelledby names the input together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const inputLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+      : ariaLabelledBy;
 
   const parseInput = useCallback(
     (text: string) => parseNumberInput(text, {min, max, isIntegerOnly, locale}),
@@ -922,6 +935,7 @@ export function NumberInput({
       }}
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('number-input', {
           size,
@@ -985,7 +999,7 @@ export function NumberInput({
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={inputLabelledBy}
         {...stylex.props(
           styles.input,
           isDisabled && styles.inputDisabled,
@@ -1101,6 +1115,7 @@ export function NumberInput({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

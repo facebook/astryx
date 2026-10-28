@@ -30,6 +30,15 @@ vi.mock('../../../assets/codemods/registry.mjs', async importOriginal => {
             transform: file => file.source.replace(/foo/g, 'bar'),
           },
           {
+            name: 'parse-js',
+            meta: {title: 'Parse JavaScript', fileExtensions: ['.js']},
+            /** @param {{source: string}} file @param {{jscodeshift: (source: string) => unknown}} api */
+            transform(file, api) {
+              api.jscodeshift(file.source);
+              return undefined;
+            },
+          },
+          {
             name: 'fail-on-boom',
             meta: {title: 'Fail on boom', fileExtensions: ['.ts']},
             /** @param {{source: string}} file */
@@ -107,6 +116,54 @@ describe('a failed upgrade', () => {
     });
     expect(fs.readFileSync(path.join(dir, 'src/index.ts'), 'utf8')).toBe(
       'const bar = 1;\n',
+    );
+  });
+
+  it('lists a protected file a codemod could not parse in the receipt', async () => {
+    write('.gitattributes', 'src/vendor/** linguist-vendored\n');
+    write('src/vendor/bundle.js', 'export const x = {;\n');
+
+    const err = await rejection(
+      upgrade({from: '0.1.0', apply: true, path: 'src'}, {cwd: dir}),
+    );
+
+    expect(err.code).toBe('ERR_CODEMOD_FAILED');
+    expect(err.receipt.errors).toEqual([
+      expect.objectContaining({file: 'src/broken.ts'}),
+    ]);
+    expect(err.receipt.declinedCandidates).toEqual([
+      {
+        file: 'src/vendor/bundle.js',
+        location: '1:19',
+        reason: expect.stringMatching(
+          /^unparseable protected file \(vendored\): /,
+        ),
+      },
+    ]);
+  });
+
+  it('names a declined file from the folder the command ran in, with no root-relative path in its reason', async () => {
+    write('.gitattributes', 'src/vendor/** linguist-vendored\n');
+    write('src/vendor/bundle.js', 'export const x = {;\n');
+
+    const err = await rejection(
+      upgrade(
+        {from: '0.1.0', apply: true, path: '.'},
+        {cwd: path.join(dir, 'src')},
+      ),
+    );
+
+    expect(err.receipt.declinedCandidates).toEqual([
+      {
+        file: 'vendor/bundle.js',
+        location: '1:19',
+        reason: expect.stringMatching(
+          /^unparseable protected file \(vendored\): /,
+        ),
+      },
+    ]);
+    expect(err.receipt.declinedCandidates[0].reason).not.toContain(
+      '.gitattributes',
     );
   });
 
