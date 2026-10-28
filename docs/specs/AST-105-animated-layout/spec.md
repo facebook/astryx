@@ -34,7 +34,7 @@ affects_consumer_docs:
 When something inside an area changes size, the changed element and the
 content after it animate together on one shared motion role instead of
 jumping. An app opts in once per area; without it, nothing changes, except where a
-component's record holds its own handle for its own change (FR2).
+component's record animates its own change (FR2).
 
 ## Non-goals
 
@@ -66,10 +66,10 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   `animatedLayout` prop or option.
 - **FR2 — Without a handle, nothing changes.** A component without a handle
   keeps its behavior: the changed element shows its change as its own record
-  says, and content after it takes its place at once. AppShell's content area
-  holds its own handle for a side nav collapse or expand (`component:AppShell`
-  FR17), and the SideNav rail holds its own for a collapse or expand
-  (`component:SideNav` FR6).
+  says, and content after it takes its place at once. AppShell's content area and
+  the SideNav rail animate their own change during a side nav collapse or
+  expand, as their records state (`component:AppShell` FR17, `component:SideNav`
+  FR6).
 - **FR3 — The content after a change glides within the area.** For any change
   a component holding the handle reports, such as a disclosure opening,
   content loading in, a message appearing, or an item inserted or removed,
@@ -116,11 +116,8 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   swap ends (`architecture:component-style-authoring` INV7); AppShell's
   content area does this during a side nav collapse or expand
   (`component:AppShell` FR17), and the SideNav rail holds its old state during a collapse or expand
-  (`component:SideNav` FR6). Beside the swap, as an internal capability for Core adopters, the module may
-  play caller-supplied frames on elements the page already renders, on FR4's one motion, with no copy, and releases
-  them when the motion ends; AppShell's content surface uses this to cover an
-  expand's gap when its old wrap is not copied (`component:AppShell` FR17).
-  Both are internal; `useAnimatedLayout`'s public contract is unchanged.
+  (`component:SideNav` FR6).
+  The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
 
@@ -187,8 +184,8 @@ Out of coverage, each taking its final place at once:
 
 Content that jumps when something above it changes size is disorienting, on
 any pointer. An app passes one handle per area to the components whose size
-changes, so the opt-in is explicit and composes without wrappers; a component holds its own
-handle only where its record says so for its own change (FR2;
+changes, so the opt-in is explicit and composes without wrappers; a component animates
+its own change only where its record says so (FR2;
 `component:SideNav/DEC-2`); the
 content after a change glides on one shared motion role with the changed
 element, inside the area and only where it is visible.

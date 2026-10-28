@@ -181,7 +181,14 @@ those contracts.
   component reports a change through an internal, non-exported function that
   takes the `useAnimatedLayout` handle, so the handle stays member-free, and
   each moving element is one the page already renders, except a swap's one
-  transient copy of the old content (`spec:AST-105` FR8)
+  transient copy of the old content (`spec:AST-105` FR8). Two Core components hold their own handle
+  for their own change: AppShell's content area and the SideNav rail, during a
+  side nav collapse or expand (`component:AppShell` FR17, `component:SideNav`
+  FR6), each making its copy through the swap. The module may also play
+  caller-supplied frames on elements the page already renders, on the one
+  shared motion, with no copy, releasing them when the motion ends; AppShell's
+  content surface uses this to cover an expand's gap when its old wrap is not
+  copied. Neither is public
   (`architecture:component-style-authoring` INV7). The module follows INV3
   and INV5.
 - **INV13 — One shared set of internal touch modules.** Core's touch
