@@ -28,9 +28,11 @@ import {radiusVars, shadowVars} from '../theme/tokens.stylex';
 import type {Elevation} from '../utils/types';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import type {ActionGroupTarget} from '../hooks/actionGroupTracker';
-import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
-import {resolveHitTarget, watchHitArea, writeHitInsets} from '../utils/hitArea';
+import {
+  resolveNearestAction,
+  useActionGroupTracking,
+} from '../hooks/useActionGroupTracking';
+import {watchHitArea, writeHitInsets} from '../utils/hitArea';
 import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
 import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -152,20 +154,6 @@ const elevationStyles = stylex.create({
 const TRACKED_BUTTON = `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`;
 
 /**
- * The button under a finger, from the buttons measured when the press began:
- * the nearest one whose target, grown toward 44 px and clamped against its
- * neighbours (utils/hitArea.ts `resolveHitTarget`), holds the point. The
- * tracker asks only for a finger's press; a mouse or a pen hit-tests the
- * buttons' own boxes.
- */
-const resolveTrackedButton = (
-  x: number,
-  y: number,
-  targets: ReadonlyArray<ActionGroupTarget>,
-): HTMLElement | null =>
-  targets[resolveHitTarget(x, y, targets)]?.element ?? null;
-
-/**
  * Whether the group takes a press that lands on `target`: one on a tracked
  * button, or on the group itself (its hit layer). A press on a member the
  * group leaves to itself, such as a menu trigger, keeps that member's own
@@ -270,7 +258,10 @@ export function ButtonGroup({
     // tracker waits the content-touch delay inside a scroller).
     highlightOnsetMs: 0,
     highlightExpansion: 0,
-    resolveTarget: resolveTrackedButton,
+    // The button under a finger: the nearest whose 44 px target holds the
+    // point, with disabled buttons as neighbours (a mouse or a pen
+    // hit-tests the buttons' own boxes).
+    resolveTarget: resolveNearestAction,
     shouldTrack: target => takesPress(groupRef.current, target),
     isEnabled: tracksPress,
   });

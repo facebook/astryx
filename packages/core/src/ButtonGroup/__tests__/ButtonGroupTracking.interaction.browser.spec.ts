@@ -155,6 +155,11 @@ test.describe('with a mouse', () => {
     const to = await centerOf(paste);
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
+    // Whether this engine focuses a button its press lands on (Safari's do
+    // not): after the slide, focus does what a click on Paste would do.
+    const pressFocuses = await cut.evaluate(
+      el => document.activeElement === el,
+    );
     await page.mouse.move(to.x, to.y, {steps: 8});
     const looks = await group.getByRole('button').evaluateAll(buttons =>
       buttons.map(button => ({
@@ -169,6 +174,15 @@ test.describe('with a mouse', () => {
     expect(looks[2].image).not.toBe('none');
     await page.mouse.up();
     await expect(log).toHaveText('Pressed: Paste');
+    // After the slide, focus does what a click on Paste does (FR1).
+    const focused = await page.evaluate(
+      () => (document.activeElement as HTMLElement | null)?.textContent ?? '',
+    );
+    if (pressFocuses) {
+      expect(focused).toBe('Paste');
+    } else {
+      expect(focused).not.toBe('Cut');
+    }
   });
 
   test('a menu trigger in the group keeps its own opening: a click on it opens its menu', async ({
