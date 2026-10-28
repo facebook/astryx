@@ -40,12 +40,22 @@
  */
 
 import type {ReactNode} from 'react';
-import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
+import type {
+  IconEntry,
+  IconName,
+  NamespacedIconName,
+} from '../Icon/globalIconRegistry';
 
 /**
  * Icon overrides a theme may declare: any built-in semantic name, plus the
- * namespaced keys components and libraries own (`'richtext:bold'`).
+ * namespaced keys components and libraries own (`'richtext:bold'`). Each entry
+ * is a React node or a pure synchronous function of `{size, variant}`.
  */
+type ThemeIconEntries = Partial<
+  Record<IconName | NamespacedIconName, IconEntry>
+>;
+
+/** The node-valued view of a theme's icons that public reads return. */
 type ThemeIconOverrides = Partial<
   Record<IconName | NamespacedIconName, ReactNode>
 >;
@@ -338,8 +348,26 @@ export interface DefineThemeInput {
    * ```
    */
   components?: ComponentStyleMap;
-  /** Icon registry — maps semantic icon names to React nodes */
-  icons?: ThemeIconOverrides;
+  /**
+   * Icon registry — maps semantic icon names and namespaced keys to artwork.
+   *
+   * An entry is a React node, or a pure synchronous function of
+   * `{size, variant}` that returns one. `Icon` passes the size it renders at
+   * (`'xsm' | 'sm' | 'md' | 'lg'`), so the theme can map it to its icon
+   * library's own props. A function must not use hooks, measure the DOM, read
+   * browser globals or mutable state, or have side effects. Its result is
+   * final: returning `null` draws nothing instead of falling back to a
+   * registered or built-in icon. A `null` or `undefined` node entry falls back.
+   *
+   * @example
+   * ```
+   * icons: {
+   *   close: <XMarkIcon />,
+   *   info: ({size}) => <InfoIcon weight={size === 'sm' ? 'bold' : 'regular'} />,
+   * }
+   * ```
+   */
+  icons?: ThemeIconEntries;
   /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
@@ -429,8 +457,17 @@ export interface DefinedTheme {
   localTokens?: Record<string, string>;
   /** Component style overrides */
   components?: ComponentStyleMap;
-  /** Icon registry */
+  /**
+   * Icon registry as React nodes. A function entry is read at
+   * `{size: 'md'}`; `Icon` resolves the entry at the size it renders.
+   */
   icons?: ThemeIconOverrides;
+  /**
+   * Icon entries with their functions, present when any entry is a function.
+   * Only Astryx icon resolution reads it.
+   * @internal
+   */
+  __icons?: ThemeIconEntries;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -601,11 +638,14 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     components,
   );
 
-  // Icons — input icons override base icons
-  const icons =
-    input.icons && base?.icons
-      ? {...base.icons, ...input.icons}
-      : (input.icons ?? base?.icons);
+  // Icons — input entries override base entries by key. The base's entries
+  // include its function entries, which its node-valued `icons` does not.
+  const baseIcons = base?.__icons ?? base?.icons;
+  const iconEntries =
+    input.icons && baseIcons
+      ? {...baseIcons, ...input.icons}
+      : (input.icons ?? baseIcons);
+  const icons = readThemeIconNodes(iconEntries);
 
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
@@ -626,6 +666,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       : {}),
     components,
     icons,
+    ...(icons !== iconEntries ? {__icons: iconEntries} : {}),
     indicators,
     __inputTokens:
       base?.__inputTokens || input.tokens
@@ -640,6 +681,26 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
 
   registerTheme(theme);
   return theme;
+}
+
+/**
+ * The node-valued view of a theme's icon entries: each function entry read at
+ * `{size: 'md'}`. Entries without a function are returned as the same object.
+ */
+function readThemeIconNodes(
+  entries: ThemeIconEntries | undefined,
+): ThemeIconOverrides | undefined {
+  if (
+    entries == null ||
+    !Object.values(entries).some(entry => typeof entry === 'function')
+  ) {
+    return entries as ThemeIconOverrides | undefined;
+  }
+  const nodes: Record<string, ReactNode> = {};
+  for (const [name, entry] of Object.entries(entries)) {
+    nodes[name] = typeof entry === 'function' ? entry({size: 'md'}) : entry;
+  }
+  return nodes as ThemeIconOverrides;
 }
 
 // =============================================================================

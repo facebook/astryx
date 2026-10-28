@@ -498,6 +498,18 @@ describe('defineTheme', () => {
     expect(theme.icons).toBe(icons);
   });
 
+  it('reads function icon entries at md in the public icons view', () => {
+    const info = vi.fn(({size}: {size: string}) => `info-${size}`);
+    const theme = defineTheme({
+      name: 'fn-icons',
+      icons: {info, close: 'X', menu: null},
+    });
+
+    expect(theme.icons).toEqual({info: 'info-md', close: 'X', menu: null});
+    expect(info).toHaveBeenCalledTimes(1);
+    expect(info).toHaveBeenCalledWith({size: 'md'});
+  });
+
   it('works with no tokens', () => {
     const theme = defineTheme({name: 'bare'});
     expect(Object.keys(theme.tokens)).toHaveLength(0);
@@ -1549,6 +1561,32 @@ describe('defineTheme extends', () => {
     expect(child.tokens['--radius-container']).toBe('16px');
   });
 
+  it('inherits motion field by field: a field the child leaves unset keeps the base value (spec:AST-108 FR5)', () => {
+    const base = defineTheme({
+      name: 'base',
+      motion: {
+        fast: 100,
+        medium: 200,
+        slow: 400,
+        ratio: 0.75,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      motion: {fast: 120, medium: 240, ratio: 0.8},
+    });
+    // The fields the child sets regenerate their tokens.
+    expect(child.tokens['--duration-fast']).toBe('120ms');
+    expect(child.tokens['--duration-medium-min']).toBe('190ms');
+    // `slow` and `easing`, left unset, keep the base's tokens: the slow band
+    // stays at the base's ratio (400 × 0.75), not the child's.
+    expect(child.tokens['--duration-slow']).toBe('400ms');
+    expect(child.tokens['--duration-slow-min']).toBe('300ms');
+    expect(child.tokens['--ease-standard']).toBe('cubic-bezier(0.2, 0, 0, 1)');
+  });
+
   it('overrides base tokens with explicit tokens', () => {
     const base = defineTheme({
       name: 'base',
@@ -1628,6 +1666,23 @@ describe('defineTheme extends', () => {
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.icons?.close).toBe('X');
+  });
+
+  it('merges function icon entries by key and reads them at md', () => {
+    const base = defineTheme({
+      name: 'base',
+      icons: {close: ({size}) => `base-close-${size}`, menu: 'M'},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      icons: {menu: ({size}) => `child-menu-${size}`},
+    });
+
+    expect(child.icons).toEqual({
+      close: 'base-close-md',
+      menu: 'child-menu-md',
+    });
   });
 
   it('uses child name, not base name', () => {
