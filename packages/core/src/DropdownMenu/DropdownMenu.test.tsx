@@ -3128,6 +3128,18 @@ describe('DropdownMenu press model', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
     });
 
+    it('fine primary pointer: a pen opens the menu as it presses the trigger, as a finger does (spec:AST-094 FR29, FR43; spec:AST-017 FR59)', () => {
+      stubFinePointer();
+      const trigger = renderMenu();
+      const pen = {pointerType: 'pen', pointerId: 7, clientX: 0, clientY: 0};
+      fireEvent.pointerDown(trigger, pen);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerUp(trigger, pen);
+      // The pen's own click comes after the lift; it must not toggle.
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
     it('fine primary pointer, presentation="popover": a finger keeps the released behavior, its press opening nothing and its tap opening the menu through the click (spec:AST-094 FR25)', () => {
       stubFinePointer();
       render(
