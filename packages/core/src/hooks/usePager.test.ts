@@ -1569,7 +1569,7 @@ describe('usePager (React)', () => {
   // spec:AST-094 FR19: recognizers attach only where the primary pointer is
   // coarse. On any other pointer the pager attaches none and adds no input
   // listener, and goTo still moves it.
-  it('on a fine primary pointer attaches no recognizer and listens to no input, and goTo still moves the pager; under a finger it attaches the pan and the catch', () => {
+  it('attaches the pan and the catch for every pointer, a fine primary pointer included, with no document input listener at rest (spec:AST-094 FR43, FR24); goTo still moves the pager', () => {
     stubMedia(false, false);
     const attach = vi.spyOn(GestureHost.prototype, 'attach');
     const listen = vi.spyOn(document, 'addEventListener');
@@ -1583,7 +1583,7 @@ describe('usePager (React)', () => {
         },
       }),
     );
-    expect(attach).not.toHaveBeenCalled();
+    expect(attach).toHaveBeenCalledTimes(2);
     expect(inputListeners()).toEqual([]);
     act(() => {
       box.pager?.goTo(2);
@@ -1592,7 +1592,7 @@ describe('usePager (React)', () => {
     view.unmount();
     stubMedia(false, true);
     const touchView = render(createElement(Paged, {}));
-    expect(attach).toHaveBeenCalledTimes(2);
+    expect(attach).toHaveBeenCalledTimes(4);
     touchView.unmount();
   });
 

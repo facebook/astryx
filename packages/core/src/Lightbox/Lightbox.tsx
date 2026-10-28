@@ -64,7 +64,6 @@ import {UIKIT_TAP} from '../motion/uikit/gestures';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../utils/coarsePointer';
 /**
  * Media type for lightbox items.
  */
@@ -626,14 +625,10 @@ export function Lightbox({
         return;
       }
       // A gallery's stage fills the viewer: a click on it beside the media is
-      // a backdrop click too. With zoom on under a coarse pointer, the stage's
-      // own tap handles it (after the double-tap interval); a fine pointer has
-      // no stage tap (spec:AST-094 FR19), so its click closes here.
+      // a backdrop click too. With zoom on, the stage's own tap handles it
+      // for every pointer, after the double-tap interval (spec:AST-094 FR43).
       const target = e.target as Element;
-      const stageTaps =
-        hasZoom &&
-        !isVideo &&
-        isCoarsePointer(e.currentTarget.ownerDocument.defaultView);
+      const stageTaps = hasZoom && !isVideo;
       const press = pressRef.current;
       const dragged =
         hasZoom &&
@@ -728,8 +723,10 @@ export function Lightbox({
     gap: zoomMedia.viewer.pageGap,
     index,
     isPanEnabled: isOpen && isGallery,
+    // Every pointer pages, a mouse's drag and a trackpad's scroll included
+    // (spec:AST-094 FR43).
     panOptions: {
-      allowedPointerTypes: ['touch', 'pen'],
+      allowedPointerTypes: ['touch', 'pen', 'mouse'],
       maximumNumberOfTouches: 1,
     },
     shouldBeginPan: direction => !stage.isZoomed() || stage.isAtEdge(direction),
@@ -982,7 +979,7 @@ export function Lightbox({
                       ref={trackRef}
                       {...stylex.props(
                         styles.track,
-                        isZoomTarget && isTouch && styles.trackZoomTarget,
+                        isZoomTarget && styles.trackZoomTarget,
                       )}>
                       {pageIndexes.map(i => (
                         <div

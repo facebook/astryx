@@ -2,12 +2,14 @@
 
 /**
  * @file LightboxEveryPointer.interaction.browser.spec.ts
- * @input The built "With zoom" and "Default" Lightbox stories, their photos
- *   served as a 3000 × 2000 test image; a desktop context (1280 × 800, a
- *   fine primary pointer) with a mouse, a trackpad's wheel and, in Chromium,
- *   timed mouse events through the Chrome DevTools Protocol
+ * @input The built "With zoom", "Gallery with zoom" and "Default" Lightbox
+ *   stories, their photos served as a 3000 × 2000 test image; a desktop
+ *   context (1280 × 800, a fine primary pointer) with a mouse, a trackpad's
+ *   wheel and, in Chromium, timed mouse events through the Chrome DevTools
+ *   Protocol
  * @output Proofs that Lightbox's gestures work for every pointer
- *   (spec:AST-094 FR43): a ctrl-wheel zooms, a wheel pans a zoomed photo,
+ *   (spec:AST-094 FR43): a mouse drag sideways and a trackpad's horizontal
+ *   scroll page a gallery, a ctrl-wheel zooms, a wheel pans a zoomed photo,
  *   and a zoomed drag released moving coasts
  * @position Interaction tests for Lightbox (browser), beside
  *   LightboxZoomModes.interaction.browser.spec.ts
@@ -29,10 +31,11 @@ import {
 
 const storybook = withStorybook(test);
 
-type Story = 'with-zoom' | 'default';
+type Story = 'with-zoom' | 'gallery-with-zoom' | 'default';
 
 const TRIGGER: Record<Story, string> = {
   'with-zoom': 'Open with zoom',
+  'gallery-with-zoom': 'Open gallery with zoom',
   default: 'Open lightbox',
 };
 
@@ -70,7 +73,10 @@ async function openDesktop(
   await page.getByRole('button', {name: TRIGGER[story]}).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  const img = dialog.getByRole('img').first();
+  const img =
+    story === 'gallery-with-zoom'
+      ? dialog.locator('[data-current] img')
+      : dialog.getByRole('img').first();
   await expect
     .poll(async () => img.evaluate(el => (el as HTMLImageElement).naturalWidth))
     .toBe(3000);
@@ -102,6 +108,24 @@ async function boxOf(locator: Locator) {
   return box;
 }
 
+/** A mouse pressed at `from` and moved to `to` in `steps`, `stepMs` apart. */
+async function mouseDrag(
+  page: Page,
+  from: Point,
+  to: Point,
+  {steps, stepMs}: {steps: number; stepMs: number},
+) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(
+      from.x + ((to.x - from.x) * i) / steps,
+      from.y + ((to.y - from.y) * i) / steps,
+    );
+    await page.waitForTimeout(stepMs);
+  }
+}
+
 /**
  * Mouse or pen events with exact timestamps through the Chrome DevTools
  * Protocol: a release's velocity is the move's, whatever the runner's pace.
@@ -129,6 +153,49 @@ async function timedPointer(page: Page, pointerType: 'mouse' | 'pen') {
     });
   };
 }
+
+test('a mouse drag sideways pages a gallery', async ({browser}) => {
+  const {context, page, dialog, centre} = await openDesktop(
+    browser,
+    'gallery-with-zoom',
+  );
+  try {
+    const counter = dialog.getByText(/^\d+ \/ \d+$/);
+    await expect(counter).toHaveText('1 / 4');
+    // Past half a page from the photo's right side, so the release pages on
+    // its travel alone, whatever the runner's pace.
+    await mouseDrag(
+      page,
+      {x: 1100, y: centre.y},
+      {x: 250, y: centre.y},
+      {steps: 17, stepMs: 16},
+    );
+    await page.mouse.up();
+    await expect(counter).toHaveText('2 / 4');
+  } finally {
+    await context.close();
+  }
+});
+
+test('a trackpad’s horizontal scroll pages a gallery', async ({browser}) => {
+  const {wheel, context, page, dialog, centre} = await openDesktop(
+    browser,
+    'gallery-with-zoom',
+  );
+  try {
+    const counter = dialog.getByText(/^\d+ \/ \d+$/);
+    await expect(counter).toHaveText('1 / 4');
+    await page.mouse.move(centre.x, centre.y);
+    // Past half a page, so the gesture pages on its travel alone.
+    for (let i = 0; i < 20; i++) {
+      await wheel(40, 0);
+      await page.waitForTimeout(16);
+    }
+    await expect(counter).toHaveText('2 / 4');
+  } finally {
+    await context.close();
+  }
+});
 
 test('a ctrl-wheel zooms the photo', async ({browser}) => {
   const {wheel, context, page, dialog, img, centre} = await openDesktop(

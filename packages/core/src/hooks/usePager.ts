@@ -53,9 +53,9 @@
  * - A controlled `index` wins, as a controlled input's value does: a page
  *   the pager reports (a swipe, or `goTo`) that the owner does not take
  *   returns the pager to `index`, unreported.
- * - `usePager` attaches the pan and the catch only under the touch
- *   presentation (a coarse primary pointer, `spec:AST-094` FR19); on any
- *   other pointer the pager takes no input and still animates `goTo`.
+ * - `usePager` attaches the pan and the catch for every pointer, a mouse's,
+ *   a pen's and a finger's, and the pan takes a trackpad's or a wheel's
+ *   horizontal scroll (`spec:AST-094` FR43).
  *
  * Positions are content offsets in px, 0 at page 0 and growing toward later
  * pages; the track is translated by −position, or +position when the
@@ -106,10 +106,8 @@ import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';
 import {paging} from '../motion/uikit/paging';
 import {observeResize} from '../utils/sharedResizeObserver';
-import {TOUCH_QUERY} from '../utils/touchQueries';
 import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
-import {useMediaQuery} from './useMediaQuery';
 
 /** A release the pager settles: where the content is, how fast, and the page it left. */
 export interface PageRelease {
@@ -1118,7 +1116,7 @@ export function createPager(
       settled = target;
     }
     animator.set({x: positionToX(offsetOf(target))});
-    // The recognizers, only under the touch presentation (FR19).
+    // The recognizers, for every pointer (FR43), unless left off.
     let detachTouch = () => {};
     if (touch) {
       const removePanListener = pan.addListener(onPan);
@@ -1190,9 +1188,9 @@ export function createPager(
 
 export interface PagerAttachOptions {
   /**
-   * Attach the pan and the catch to the gesture host: only under the touch
-   * presentation (a coarse primary pointer, `spec:AST-094` FR19). Without
-   * them the pager takes no input and still animates `goTo`.
+   * Attach the pan and the catch to the gesture host, which take every
+   * pointer (`spec:AST-094` FR43). Without them the pager takes no input and
+   * still animates `goTo`.
    * @default true
    */
   touch?: boolean;
@@ -1244,9 +1242,6 @@ export function usePager({
   // render it causes, batched with the owner's own update, returns the pager
   // to `index` if the owner kept it (the controlled sync below).
   const [reported, setReported] = useState(0);
-  // The touch presentation (a coarse primary pointer): the recognizers
-  // attach only there (spec:AST-094 FR19).
-  const isTouch = useMediaQuery(TOUCH_QUERY);
   const [pager] = useState(() =>
     createPager({
       ...options,
@@ -1278,28 +1273,20 @@ export function usePager({
   const attachedRef = useRef<{
     viewport: HTMLElement | null;
     track: HTMLElement | null;
-    touch: boolean;
     detach: (() => void) | null;
-  }>({viewport: null, track: null, touch: false, detach: null});
+  }>({viewport: null, track: null, detach: null});
   useIsomorphicLayoutEffect(() => {
     const viewport = viewportRef.current;
     const track = trackRef.current;
     const attached = attachedRef.current;
-    if (
-      viewport === attached.viewport &&
-      track === attached.track &&
-      isTouch === attached.touch
-    ) {
+    if (viewport === attached.viewport && track === attached.track) {
       return;
     }
     attached.detach?.();
     attached.viewport = viewport;
     attached.track = track;
-    attached.touch = isTouch;
     attached.detach =
-      viewport != null && track != null
-        ? pager.attach(viewport, track, {touch: isTouch})
-        : null;
+      viewport != null && track != null ? pager.attach(viewport, track) : null;
   });
   useIsomorphicLayoutEffect(
     () => () => {
@@ -1307,7 +1294,6 @@ export function usePager({
       attachedRef.current = {
         viewport: null,
         track: null,
-        touch: false,
         detach: null,
       };
     },
