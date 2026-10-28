@@ -9,15 +9,19 @@
  * @output Exports `useSegmentedTouchTracking`: a finger's touch on a
  *   SegmentedControl, from landing to letting go, reported to the selection
  *   motion (begin, drag, release, cancel); and
- *   `segmentTargetAt` / `measureSegments`, the segment a finger at x counts
- *   for. The segment the finger lets go on is committed through its own
- *   click, by the action-group tracker
+ *   `segmentTargetAt` / `measureSegments` / `liftTargetAt`, the segment a
+ *   finger counts for (none outside the control). The segment the finger
+ *   lets go on is committed through its own click, by the action-group
+ *   tracker
  * @position Internal to SegmentedControl's touch presentation; the motion it
  *   drives is useSegmentedSelectionMotion.ts
  *
  * UISegmentedControl tracks a touch itself, the way a UIControl does: it
  * reacts on touch-down, follows the finger and acts at the lift, where the
- * segment nearest the finger wins, wherever the finger landed. Inside a
+ * segment nearest the finger wins, wherever the finger landed. A lift outside
+ * the control selects nothing: a press that slides off a SegmentedControl
+ * cancels, as for every control that selects (`spec:AST-020` FR9, DEC-5).
+ * Inside a
  * scroll view the touch reaches it only after UIScrollView's content-touch
  * delay, and a scroll that takes the touch cancels it.
  *
@@ -34,9 +38,11 @@
  *
  * Which segment the finger counts for, and the commit, are the action-group
  * tracker's (hooks/actionGroupTracker.ts), the one tracker of a held finger
- * across a group of targets: the segment under the finger, else the nearest
- * (a gap splits at its middle; past the ends, the end one; nothing over a
- * disabled segment), resolved from rects read once when the finger lands. The
+ * across a group of targets: inside the control, the segment under the
+ * finger, else the nearest (a gap splits at its middle; on the padding past
+ * the ends, the end one; nothing over a disabled segment); outside the
+ * control, nothing. It is resolved from rects read once when the finger
+ * lands. The
  * press itself paints as every pressable surface does under a finger: the
  * segment keeps the shared press paint (SegmentedControlItem.tsx), so the
  * tracker paints nothing of its own. A tap (the finger lifts on the segment it landed on,
@@ -207,6 +213,14 @@ function clickAndReport(segment: HTMLElement): boolean {
 /** A ref to nothing: hooks given it attach nothing. */
 const DETACHED: RefObject<HTMLElement | null> = {current: null};
 
+/** The control's box as measured when the finger landed: viewport px. */
+export interface ControlBounds {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
 /** A segment as measured when the finger landed: its viewport span, px. */
 export interface SegmentSpan {
   readonly element: HTMLElement;
@@ -254,6 +268,31 @@ export function segmentTargetAt(
   return best != null && !isDisabled(best.element) ? best.element : null;
 }
 
+/**
+ * The segment a lift at viewport (`x`, `y`) commits: inside the control's
+ * `bounds`, the one `segmentTargetAt` counts it for; outside them, none. A
+ * press that slides off a SegmentedControl cancels: it selects rather than
+ * toggles, so a second press would not undo it (`spec:AST-020` FR9, DEC-5).
+ */
+export function liftTargetAt(
+  x: number,
+  y: number,
+  bounds: ControlBounds,
+  segments: ReadonlyArray<SegmentSpan>,
+): HTMLElement | null {
+  if (
+    x < bounds.left ||
+    x > bounds.right ||
+    y < bounds.top ||
+    y > bounds.bottom
+  ) {
+    return null;
+  }
+  return segmentTargetAt(x, segments);
+}
+
+const NO_BOUNDS: ControlBounds = {left: 0, top: 0, right: -1, bottom: -1};
+
 export function useSegmentedTouchTracking(
   trackRef: RefObject<HTMLElement | null>,
   motion: SegmentedSelectionMotion,
@@ -267,6 +306,8 @@ export function useSegmentedTouchTracking(
   const isDraggingRef = useRef(false);
   /** The segments as the finger found them (disabled ones too). */
   const segmentsRef = useRef<SegmentSpan[]>([]);
+  /** The control's box as the finger found it: a lift outside it cancels. */
+  const boundsRef = useRef<ControlBounds>(NO_BOUNDS);
   const trackerRef = useRef<ActionGroupTracker | null>(null);
   const tracker = (trackerRef.current ??= createActionGroupTracker(() => ({
     roots: () => [trackRef.current],
@@ -278,9 +319,9 @@ export function useSegmentedTouchTracking(
     paintsHighlight: false,
     resolveTarget: (
       x: number,
-      _y: number,
+      y: number,
       _targets: ReadonlyArray<ActionGroupTarget>,
-    ) => segmentTargetAt(x, segmentsRef.current),
+    ) => liftTargetAt(x, y, boundsRef.current, segmentsRef.current),
     onActivated: (item, cancelled) => {
       const track = trackRef.current;
       const value = item.dataset.value;
@@ -304,15 +345,24 @@ export function useSegmentedTouchTracking(
         return;
       }
       switch (event) {
-        case 'touchDown':
+        case 'touchDown': {
           isDraggingRef.current = false;
           segmentsRef.current = measureSegments(track);
+          const rect = track.getBoundingClientRect();
+          boundsRef.current = {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+          };
           tracker.begin(touch.x, touch.y);
           motion.begin(track, tracker.beganOn);
           break;
+        }
         case 'touchUpInside':
         case 'touchUpOutside': {
-          // Where the finger lifts decides, wherever it landed.
+          // Where the finger lifts decides, wherever it landed; a lift
+          // outside the control commits nothing (spec:AST-020 FR9, DEC-5).
           tracker.move(touch.x, touch.y);
           const lifted = tracker.highlighted;
           const isTap =

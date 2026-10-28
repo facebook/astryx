@@ -334,7 +334,8 @@ export function SegmentedControl({
   const isTouchPresentation = useTouchPresentation().isTouch;
   const trackRef = useRef<HTMLDivElement | null>(null);
   // Under a finger the control also tracks the touch itself (the touch layer
-  // wires it) and commits the segment nearest the finger at the lift.
+  // wires it) and commits the segment nearest the finger at the lift; a lift
+  // outside the control commits nothing (spec:AST-020 FR9, DEC-5).
   useSegmentedSelectionMotion(
     trackRef,
     value,

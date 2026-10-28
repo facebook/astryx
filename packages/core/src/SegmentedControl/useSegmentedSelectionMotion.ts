@@ -58,7 +58,9 @@
  *   least 8 px) past the boundary (inline, until the commit's own styles take
  *   over); every title keeps its weight until the lift.
  * - Letting go commits the segment nearest the finger: the lens springs
- *   there on `selectionSpring`.
+ *   there on `selectionSpring`. Letting go outside the control commits
+ *   nothing, and the lens settles back on the selection (`spec:AST-020`
+ *   FR9, DEC-5).
  * - A touch that lands on another segment leaves the lens alone until the
  *   finger lifts; then it slides there like any change. Meanwhile that
  *   segment shows the system's pressed overlay, as every pressable surface

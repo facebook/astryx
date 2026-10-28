@@ -12,6 +12,7 @@
 import {describe, expect, it} from 'vitest';
 import {
   isLateClick,
+  liftTargetAt,
   segmentTargetAt,
   type SegmentSpan,
 } from './useSegmentedTouchTracking';
@@ -56,7 +57,7 @@ describe('segmentTargetAt', () => {
     expect(valueAt(155, segments)).toBe('table');
   });
 
-  it('counts a finger past either end for the end segment', () => {
+  it('counts a finger on the padding past either end for the end segment', () => {
     const segments = spans(layout);
     expect(valueAt(-40, segments)).toBe('grid');
     expect(valueAt(400, segments)).toBe('table');
@@ -67,6 +68,39 @@ describe('segmentTargetAt', () => {
     expect(valueAt(130, segments)).toBeNull();
     expect(valueAt(111, segments)).toBeNull();
     expect(valueAt(109, segments)).toBe('grid');
+  });
+});
+
+describe('liftTargetAt', () => {
+  // The control's box: the segments plus 2 px of padding all round.
+  const bounds = {left: 10, top: 20, right: 316, bottom: 51};
+  const layout: ReadonlyArray<[string, number, number]> = [
+    ['grid', 12, 108],
+    ['list', 110, 208],
+    ['table', 210, 314],
+  ];
+  const liftAt = (x: number, y: number, segments: SegmentSpan[]) =>
+    liftTargetAt(x, y, bounds, segments)?.dataset.value ?? null;
+
+  it('commits the segment a lift inside the control counts for, the padding included', () => {
+    const segments = spans(layout);
+    expect(liftAt(250, 35, segments)).toBe('table');
+    expect(liftAt(109, 35, segments)).toBe('grid');
+    expect(liftAt(11, 21, segments)).toBe('grid');
+    expect(liftAt(315, 50, segments)).toBe('table');
+  });
+
+  it('commits nothing for a lift outside the control: a press that slides off cancels (spec:AST-020 FR9, DEC-5)', () => {
+    const segments = spans(layout);
+    // Past either end, above, below.
+    expect(liftAt(5, 35, segments)).toBeNull();
+    expect(liftAt(330, 35, segments)).toBeNull();
+    expect(liftAt(250, 10, segments)).toBeNull();
+    expect(liftAt(250, 90, segments)).toBeNull();
+  });
+
+  it('commits nothing over a disabled segment', () => {
+    expect(liftAt(150, 35, spans(layout, ['list']))).toBeNull();
   });
 });
 
