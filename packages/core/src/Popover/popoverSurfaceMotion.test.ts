@@ -15,7 +15,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cubicBezier} from '../motion/bezier';
-import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import {solveSpring, toSpring} from '../motion/spring';
 import {popover, springs, timing} from '../motion/uikit';
 import {isInputShield} from '../Layer/inputHold';
 import {
@@ -427,10 +427,11 @@ describe('createPopoverSurfaceMotion', () => {
     expect(live('scale')).toHaveLength(1);
   });
 
-  it('a close before that frame presents nothing and leaves the element as the component styles it', () => {
+  it('a close before that frame presents nothing and leaves the element as the component styles it, with no compositing layer or timer left on it', () => {
     const {element, motion} = create();
     const measure = vi.fn(() => GEOMETRY);
     motion.enter(measure);
+    const timers = vi.getTimerCount();
     motion.exit();
     frame();
     expect(measure).not.toHaveBeenCalled();
@@ -438,6 +439,13 @@ describe('createPopoverSurfaceMotion', () => {
     expect(live('scale')).toEqual([]);
     expect(element.style.getPropertyValue('animation-name')).toBe('');
     expect(element.style.getPropertyValue('opacity')).toMatch(/^(1)?$/);
+    // The element is hidden: a promotion would leave `will-change` on it and
+    // a timer to end it, a style write on an element that no longer paints.
+    expect(element.style.getPropertyValue('will-change')).toBe('');
+    expect(vi.getTimerCount()).toBe(timers);
+    const style = element.getAttribute('style');
+    vi.advanceTimersByTime(1000);
+    expect(element.getAttribute('style')).toBe(style);
   });
 
   it('presented again during the dismissal, grows back from the frame on screen about the same point', () => {

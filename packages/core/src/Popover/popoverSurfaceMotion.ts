@@ -93,7 +93,6 @@ import {
   popoverCollapsedState,
   PRESENTED,
   type PopoverCollapsedState,
-  type PopoverFrame,
   type PopoverSurfaceGeometry,
   type SurfaceState,
 } from './popoverSurfaceFrame';
@@ -326,6 +325,13 @@ export function createPopoverSurfaceMotion(
     // the boxes would lay the page out inside the task that opened the
     // popover. The layer's own CSS entrance, started meanwhile, is turned
     // off before anything paints.
+    // The input hold starts with the presentation too, in that frame: a touch
+    // that starts in the one frame between the open and it (about 16 ms after
+    // the opening tap lifts) reaches the page, though its tap does not
+    // dismiss, since its lift lands on the hold. Holding from the open would
+    // cost two forced layouts in every touch opening (a top-layer cover's
+    // `showPopover()` lays the page out), the work this frame keeps out of
+    // the opening task.
     pendingFrame = scheduleFrame(() => {
       pendingFrame = null;
       // Full size and invisible for the read: the element's box must not
@@ -384,8 +390,19 @@ export function createPopoverSurfaceMotion(
     releaseHold();
     if (pendingFrame != null) {
       // Closed before the frame that would have presented it: nothing is on
-      // screen to dismiss.
-      reset();
+      // screen to dismiss. The element is hidden now, so it is left as the
+      // component styles it without a compositing layer, as at a dismissal
+      // below: a promotion would leave `will-change` on it and a timer to
+      // end it 500 ms later, a style write on an element that no longer
+      // paints.
+      cancelPending();
+      collapsed = null;
+      measured = null;
+      presentHandle = null;
+      animator.set({scaleX: 1, scaleY: 1, opacity: 1}, {promote: false});
+      for (const property of MOTION_STYLE_PROPERTIES) {
+        element.style.removeProperty(property);
+      }
       return;
     }
     const target = collapsed;
