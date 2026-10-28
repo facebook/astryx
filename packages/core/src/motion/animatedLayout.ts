@@ -1224,13 +1224,6 @@ function placeOf(
 }
 
 /**
- * Keeps `element` where it is, in flow (so it scrolls and clips with its
- * container), while the content after it takes the place it takes once the
- * element is hidden: a negative end margin measured against that content,
- * so a gap or collapsing margins come out exact. Returns false, setting
- * nothing, when no margin reaches that place.
- */
-/**
  * Whether a flex-row item is what makes its row as tall as it is: its
  * parent's content box is no taller than the item, and every other item in
  * flow is shorter.
@@ -1280,6 +1273,13 @@ function setsRowHeight(element: HTMLElement): boolean {
   return outerHeight(element) >= content - 0.5 && tallestOther < content - 0.5;
 }
 
+/**
+ * Keeps `element` where it is, in flow (so it scrolls and clips with its
+ * container), while the content after it takes the place it takes once the
+ * element is hidden: a negative end margin measured against that content,
+ * so a gap or collapsing margins come out exact. Returns false, setting
+ * nothing, when no margin reaches that place.
+ */
 function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const view = element.ownerDocument.defaultView;
   const parent =
@@ -1293,14 +1293,15 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const rtl = view?.getComputedStyle(element).direction === 'rtl';
   const property = isRow ? 'margin-inline-end' : 'margin-block-end';
   const size = isRow ? element.offsetWidth : element.offsetHeight;
+  // A flex-row item that sets its row's height frees no block space with an
+  // inline margin: the row would keep its height through the exit, then
+  // jump, whatever follows it.
+  if (isRow && setsRowHeight(element)) {
+    return false;
+  }
   const next = nextInFlow(element, area);
   if (next == null) {
-    // Nothing after it in the area to land anywhere, but a flex-row item
-    // that sets its row's height still frees no block space with an inline
-    // margin: the row would keep its height through the exit, then jump.
-    if (isRow && setsRowHeight(element)) {
-      return false;
-    }
+    // Nothing after it in the area to land anywhere.
     element.style.setProperty(property, `${-size}px`);
     return true;
   }

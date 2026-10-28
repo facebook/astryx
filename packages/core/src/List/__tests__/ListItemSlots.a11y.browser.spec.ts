@@ -36,10 +36,10 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-async function mount(page: Page, width = 1280) {
+async function mount(page: Page, width = 1280, args = '') {
   await page.setViewportSize({width, height: 720});
   await page.goto(
-    `${storybook.origin}/iframe.html?id=core-list--animated-edit-modes&viewMode=story`,
+    `${storybook.origin}/iframe.html?id=core-list--animated-edit-modes&viewMode=story${args}`,
   );
   await expect(page.getByRole('button', {name: 'Select'})).toBeVisible();
 }
@@ -61,7 +61,7 @@ async function clickAndRead(
         return [];
       }
       const effect = animation.effect as KeyframeEffect | null;
-      const element = effect?.target as Element | null | undefined;
+      const element = effect?.target;
       if (element == null || element.closest('li') == null) {
         return [];
       }
@@ -202,23 +202,25 @@ test('a Checkbox toggling at the same size plays nothing', async ({page}) => {
   expect(running).toBe(0);
 });
 
-test("a leaving slot that sets the row's height hides at once", async ({
-  page,
-}) => {
-  await mount(page);
-  await page.addStyleTag({
-    content: '[data-astryx-item-slot="start"] { min-height: 96px; }',
+for (const align of ['center', 'start']) {
+  test(`a leaving start slot that sets the row's height hides at once (align ${align})`, async ({
+    page,
+  }) => {
+    await mount(page, 1280, `&args=align:${align}`);
+    await page.addStyleTag({
+      content: '[data-astryx-item-slot="start"] { min-height: 96px; }',
+    });
+    await page.getByRole('button', {name: 'Select'}).click();
+    await page.waitForTimeout(800);
+    const played = await clickAndRead(page, 'Done');
+    // Nothing plays: the slot goes, and the label and the rows after the row
+    // take their places at once.
+    expect(played).toHaveLength(0);
+    await expect(
+      page.locator('li [data-astryx-item-slot="start"]'),
+    ).toHaveCount(0);
   });
-  await page.getByRole('button', {name: 'Select'}).click();
-  await page.waitForTimeout(800);
-  const played = await clickAndRead(page, 'Done');
-  // Nothing plays: the slot goes, and the label and the rows after the row
-  // take their places at once.
-  expect(played).toHaveLength(0);
-  await expect(page.locator('li [data-astryx-item-slot="start"]')).toHaveCount(
-    0,
-  );
-});
+}
 
 test('under Reduce Motion with a mouse the slots change at once', async ({
   page,

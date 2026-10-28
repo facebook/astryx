@@ -495,8 +495,10 @@ export const AnimatedChanges: Story = {
  * change animates: the control enters or exits, a replaced control swaps in
  * place, and the label glides along the row.
  */
-export const AnimatedEditModes: Story = {
-  render: function AnimatedEditModes() {
+export const AnimatedEditModes: StoryObj<{align?: 'center' | 'start'}> = {
+  args: {align: 'center'},
+  argTypes: {align: {control: 'inline-radio', options: ['center', 'start']}},
+  render: function AnimatedEditModes({align}) {
     const containerRef = useRef<HTMLDivElement>(null);
     const animatedLayout = useAnimatedLayout({containerRef});
     const [mode, setMode] = useState<'none' | 'select' | 'delete'>('none');
@@ -525,6 +527,7 @@ export const AnimatedEditModes: Story = {
                 key={label}
                 itemKey={label}
                 label={label}
+                align={align}
                 onClick={() => {}}
                 isSelected={mode === 'select' && selected.has(label)}
                 startContent={
