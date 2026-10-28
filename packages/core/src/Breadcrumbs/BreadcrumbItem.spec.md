@@ -243,8 +243,8 @@ Read from source, with no focused test yet:
 - FR3: a last crumb with `isCurrent={false}` leaving the trail with no current
   crumb.
 - FR4: the built-in slash mirroring exactly once in a right-to-left layout.
-- FR5: Enter and Space opening the menu, a click focusing the first row, Tab
-  closing the menu, arrows stopping at the ends without wrapping, and typeahead.
+- FR5: Enter and Space opening the menu, Tab closing the menu, arrows stopping
+  at the ends without wrapping, and typeahead.
 - FR7: `onClick` being ignored beside `menu`.
 - FR8.
 - FR9: the shared focus outline on the link, button, and menu trigger.
