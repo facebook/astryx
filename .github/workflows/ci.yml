@@ -226,7 +226,7 @@ jobs:
   release-bump:
     needs: [check-scope]
     if: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.release_bump == 'true' }}
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -292,7 +292,7 @@ jobs:
     name: release-merge-back
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -378,7 +378,7 @@ jobs:
   docsite-test:
     needs: [check-scope, docsite-browser, docsite-data]
     if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -421,7 +421,7 @@ jobs:
   docsite-data:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -467,7 +467,7 @@ jobs:
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     # The longest docsite owner; the Next.js production build uses every core
     # it gets.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -637,7 +637,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -738,7 +738,7 @@ jobs:
         shard: [1, 2, 3, 4]
     # Vitest runs one test file per CPU beyond the first, so the 2-core runner
     # ran this suite one file at a time (~23 min). Four cores give it three.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -903,7 +903,7 @@ jobs:
       fail-fast: false
       matrix:
         leg: [preview, production]
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -1008,7 +1008,7 @@ jobs:
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     # Every browser lane waits for this job, and the package builds and the
     # Storybook build run side by side (build-packages-and-storybook.mjs).
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -1253,7 +1253,7 @@ jobs:
   typecheck:
     needs: [check-scope]
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -1310,7 +1310,7 @@ jobs:
   build-sandbox:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -1428,7 +1428,7 @@ jobs:
         shard: [1, 2, 3]
     # Four pages on four cores: on 2-core ARM runners each shard's scan took
     # 11.5 minutes, the release check's slowest lane after the contracts.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -1471,7 +1471,7 @@ jobs:
     name: pr-a11y (full audit)
     needs: [build-storybook, check-components, pr-a11y-shard]
     if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true' }}
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
     steps:
@@ -1528,7 +1528,7 @@ jobs:
     name: pr-a11y (audit and guards)
     needs: [build-storybook, check-components]
     if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -1635,7 +1635,7 @@ jobs:
     name: pr-a11y (browser specs)
     needs: [build-storybook, check-components]
     if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -1733,7 +1733,7 @@ jobs:
         shard: [1, 2, 3]
     # One core per worker: on two cores, four workers starved the CPU-bound
     # "every expectation" specs past their timeouts.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -1928,7 +1928,7 @@ jobs:
     needs: [check-scope, interaction-scope, build-storybook]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     # Frame evidence measures timing: four cores, one Playwright worker.
-    runs-on: ${{ needs.interaction-scope.outputs.applies == 'true' && '4-core-ubuntu' || 'ubuntu-slim' }}
+    runs-on: ${{ needs.interaction-scope.outputs.applies == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -2004,7 +2004,7 @@ jobs:
   test-build:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -2028,7 +2028,7 @@ jobs:
   fixture-contrast:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
@@ -2071,7 +2071,7 @@ jobs:
         shard: [1, 2, 3, 4, 5]
     # Four pages on four cores: the scout is page-load bound, and on the rig
     # this cut a shard's scout by a quarter against two pages on two cores.
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -2139,7 +2139,7 @@ jobs:
           needs.build-storybook.result == 'success' &&
           needs.check-components.result == 'success') ||
          (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
@@ -2426,7 +2426,7 @@ jobs:
           - {package: charts, part: 1, parts: 1}
           - {package: richtext, part: 1, parts: 1}
           - {package: vega, part: 1, parts: 1}
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}
     permissions:
       contents: read
@@ -2597,7 +2597,7 @@ jobs:
       (needs.check-components.outputs.has_rtl_components == 'true' ||
        needs.check-components.outputs.has_rtl_harness == 'true' ||
        needs.check-components.outputs.force_full_component_audits == 'true')
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read

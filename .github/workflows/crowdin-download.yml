@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
