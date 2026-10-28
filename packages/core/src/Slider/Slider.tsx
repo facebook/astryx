@@ -48,6 +48,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
@@ -704,6 +705,7 @@ export function Slider({ref, ...props}: SliderProps) {
     onFocus,
     onBlur,
     id: idProp,
+    'aria-labelledby': ariaLabelledByProp,
     'aria-describedby': ariaDescribedByProp,
     ...restWithRange
   } = props;
@@ -1340,7 +1342,10 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
-        aria-labelledby={!isRange ? labelID : undefined}
+        // A caller aria-labelledby names the control together with its label.
+        aria-labelledby={
+          !isRange ? joinAriaIDs(labelID, ariaLabelledByProp) : undefined
+        }
         aria-describedby={
           [
             !isRange ? ariaDescribedByProp : undefined,
@@ -1503,7 +1508,10 @@ export function Slider({ref, ...props}: SliderProps) {
             disabledMessageTooltip.ref,
           )}
           {...(isRange
-            ? {role: 'group', 'aria-labelledby': labelID}
+            ? {
+                role: 'group',
+                'aria-labelledby': joinAriaIDs(labelID, ariaLabelledByProp),
+              }
             : undefined)}
           onPointerDown={after(handlePointerDown, onPointerDown)}
           onPointerMove={after(handlePointerMove, onPointerMove)}
