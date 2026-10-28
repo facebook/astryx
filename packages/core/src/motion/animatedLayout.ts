@@ -362,6 +362,15 @@ interface Glide {
 
 const glides = new WeakMap<Element, Glide>();
 
+/**
+ * The glide `element` is playing now, if any. For an adopter that draws
+ * something with each moving element (a table row's divider): it finds what
+ * moves without reading the DOM.
+ */
+export function glideOf(element: Element): Animation | null {
+  return glides.get(element)?.animation ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Handles
 // ---------------------------------------------------------------------------
@@ -707,6 +716,8 @@ interface Batch {
   originBefore: {readonly x: number; readonly y: number} | null;
   readonly cache: WalkCache;
   scheduled: boolean;
+  /** Called after every reading and before any glide starts. */
+  readonly beforeMove: ((candidates: ReadonlyArray<Element>) => void)[];
 }
 
 const batches = new Map<Element, Batch>();
@@ -728,6 +739,7 @@ function batchFor(area: Element): Batch {
       originBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
+      beforeMove: [],
     };
     batches.set(area, created);
     // A measurement no commit claims by the next frame (a controlled owner
@@ -843,6 +855,11 @@ function ownScaleOf(element: Element): {x: number; y: number} {
 
 function flush(batch: Batch): void {
   batches.delete(batch.area);
+  const notify = (candidates: ReadonlyArray<Element>) => {
+    for (const callback of batch.beforeMove) {
+      callback(candidates);
+    }
+  };
   // What each change's walk measured before it: an element added by the
   // change has no old place, and one it removed is gone.
   const followers = new Set<Element>();
@@ -854,10 +871,12 @@ function flush(batch: Batch): void {
     }
   }
   if (followers.size === 0) {
+    notify([]);
     return;
   }
   const motion = layoutMotion(batch.area);
   if (motion.kind === 'instant') {
+    notify([]);
     return;
   }
   const visible = visibleRect(batch.area);
@@ -947,6 +966,8 @@ function flush(batch: Batch): void {
       entry.scale = scaleOf(entry.element, after, ownScaleOf(entry.element));
     }
   }
+  // An adopter's own readings join them here, before any glide starts.
+  notify(entries.map(entry => entry.element));
   for (const entry of entries) {
     const {element, before, carried, carriedMs} = entry;
     const after = entry.after as DOMRect;
@@ -1032,8 +1053,13 @@ export interface LayoutChange {
    * After it commits (a layout effect). Returns whether the change was
    * measured: an unmeasured change (an owner set the state directly) moves
    * nothing, and the component plays no entrance for it either.
+   *
+   * `beforeMove`, when given, runs once the new places are read and before
+   * any glide starts, with the elements the glide may move: whatever the
+   * component reads from the layout for the glide, it reads there, so the page
+   * is not laid out again (`playLayoutChange` included).
    */
-  animate(): boolean;
+  animate(beforeMove?: (candidates: ReadonlyArray<Element>) => void): boolean;
 }
 
 /**
@@ -1098,7 +1124,7 @@ export function reportLayoutChange(
         batch.candidates.set(changed, [...candidates.keys()]);
       }
     },
-    animate() {
+    animate(beforeMove) {
       const element = resolve(target);
       if (element == null || handle == null) {
         return false;
@@ -1107,6 +1133,9 @@ export function reportLayoutChange(
       const batch = area == null ? undefined : batches.get(area);
       if (batch == null || !batch.changed.has(element)) {
         return false;
+      }
+      if (beforeMove != null) {
+        batch.beforeMove.push(beforeMove);
       }
       if (!batch.scheduled) {
         batch.scheduled = true;
@@ -1122,33 +1151,33 @@ export function reportLayoutChange(
  * The changed element's own animation, on the same motion as the content
  * after it: content that appears reveals downward from its top edge. Plays
  * only with a handle, inside its area and in the area's visible part.
+ * Returns the entrance it started, or null when it played none.
  */
 export function playLayoutChange(
   handle: AnimatedLayout | null | undefined,
   element: Element,
-): void {
+): Animation | null {
   if (handle == null) {
-    return;
+    return null;
   }
   const area = areaOf(handle, element);
   if (area == null) {
-    return;
+    return null;
   }
   if (!intersects(element.getBoundingClientRect(), visibleRect(area))) {
-    return;
+    return null;
   }
   const motion = layoutMotion(area);
   if (motion.kind === 'instant') {
-    return;
+    return null;
   }
   if (motion.kind === 'fade') {
-    safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
+    return safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
       duration: motion.durationMs,
       easing: motion.easing,
     });
-    return;
   }
-  safeAnimate(
+  return safeAnimate(
     element,
     sampleKeyframes(motion.progress, remaining => ({
       opacity: 1 - remaining,
