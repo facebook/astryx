@@ -18,10 +18,37 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
 import {resolveSnapPoint} from '../motion/resolveSnapPoint';
+import {springs} from '../motion/uikit/springs';
 import {
   createDragToSnapPoints,
   DEFAULT_FLICK_THRESHOLD,
 } from './createDragToSnapPoints';
+
+// Every animate call the factory's animator makes, as the factory made it.
+const animates = vi.hoisted(
+  () =>
+    [] as {target: Record<string, number>; options: Record<string, unknown>}[],
+);
+vi.mock('../motion/animator', async importOriginal => {
+  const actual = await importOriginal<typeof import('../motion/animator')>();
+  return {
+    ...actual,
+    createMotionAnimator: (
+      ...args: Parameters<typeof actual.createMotionAnimator>
+    ) => {
+      const animator = actual.createMotionAnimator(...args);
+      const animate = animator.animate.bind(animator);
+      animator.animate = ((target, options, ...rest) => {
+        animates.push({
+          target: target as Record<string, number>,
+          options: {...options} as Record<string, unknown>,
+        });
+        return animate(target, options, ...rest);
+      }) as typeof animator.animate;
+      return animator;
+    },
+  };
+});
 
 const POINTS = [0, 240, 480];
 
@@ -203,6 +230,48 @@ describe('createDragToSnapPoints', () => {
     dragY(element, 100);
     await vi.advanceTimersByTimeAsync(3000);
     expect(onSettle).toHaveBeenCalledWith(1);
+    snap.destroy();
+  });
+
+  it('the settle starts at the release velocity, a commit and a spring-back alike (spec:AST-094 FR38)', async () => {
+    const element = sheet();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle: () => {},
+    });
+    // A flick down commits to the next snap point.
+    animates.length = 0;
+    dragY(element, 100);
+    expect(animates).toHaveLength(1);
+    const commit = animates[0];
+    expect(commit.target).toEqual({y: 240});
+    expect(commit.options.spring).toBe(springs.settle);
+    const committed = (commit.options.velocity as {y: number}).y;
+    expect(committed).toBeGreaterThan(DEFAULT_FLICK_THRESHOLD);
+    await vi.advanceTimersByTimeAsync(3000);
+    // From 240, down 120 px and back up 60 quickly: the spring-back to 240
+    // starts at that upward speed.
+    animates.length = 0;
+    clock += 10_000;
+    const start = clock;
+    touch('touchstart', element, {x: 10, y: 10}, start);
+    for (let step = 1; step <= 6; step++) {
+      touch(
+        'touchmove',
+        element,
+        {x: 10, y: 10 + 20 * step},
+        start + step * 50,
+      );
+    }
+    touch('touchmove', element, {x: 10, y: 90}, start + 316);
+    touch('touchmove', element, {x: 10, y: 70}, start + 332);
+    touch('touchend', element, {x: 10, y: 70}, start + 336, true);
+    expect(animates).toHaveLength(1);
+    const back = animates[0];
+    expect(back.target).toEqual({y: 240});
+    expect(back.options.spring).toBe(springs.settle);
+    expect((back.options.velocity as {y: number}).y).toBeLessThan(0);
     snap.destroy();
   });
 
