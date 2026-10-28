@@ -1548,9 +1548,11 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
-      touchModel: touchModes ? 'uikit' : 'pointer',
+      // A flyout runs the root's press model: a finger's on every device
+      // unless the root pins presentation="popover" (spec:AST-094 FR28, FR43).
+      touchModel: pressTouchModel,
     }),
-    [surfaceHost, menuId, resolvedMaxHeight, touchModes],
+    [surfaceHost, menuId, resolvedMaxHeight, pressTouchModel],
   );
 
   // Resolve menu content: data-driven items become components
