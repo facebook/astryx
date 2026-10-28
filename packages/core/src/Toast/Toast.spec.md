@@ -254,7 +254,10 @@ Read from source, with no focused test yet:
   touch gesture is active, and the 1 s minimum on resume.
 - FR4: a mouse drag dismissing, and a release moving back cancelling; the
   gesture tests assert today's touch-and-pen-only, net-travel rule.
-- FR5: a swipe's settle starting at the release velocity.
+- FR5: a swipe's settle starting at the release velocity, and the
+  reduced-motion fade and immediate change; the motion tests assert today's
+  0.01 ms transitions.
+- FR6: a set `toast.inset` edge replacing the provider's value at 0.
 - FR7: the default cap of 5, and `maxVisible={0}` showing every toast.
 - FR9: delivery through the viewport's own polite and assertive containers;
   the announcement tests read the shared body-level channel.
