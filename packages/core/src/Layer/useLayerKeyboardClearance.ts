@@ -46,7 +46,10 @@
  * capped before its first paint. The cap re-renders the layer once per
  * keyboard movement, never per frame. When the runtime replaces the layer
  * element while it is open, the press tracking moves to the new element in
- * the same commit; the cap follows it as the layer's own style.
+ * the same commit, and the new element's own box is read before it paints
+ * (spec:AST-059 FR8). The viewport is read in layout px, the units of the box
+ * and of the keyboard's height (`layoutViewportHeight`): WebKit reports
+ * `innerHeight` pinch-zoomed.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/layerKeyboardClearance.ts
@@ -71,6 +74,7 @@ import {
   LAYER_KEYBOARD_CLEARANCE_PX,
 } from './layerKeyboardClearance';
 import {settledBox} from './settledBox';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 
 export {
   keyboardClearanceCap,
@@ -182,8 +186,11 @@ export function useLayerKeyboardClearance(
       if (inset <= 0) {
         return false;
       }
+      // In layout px, the box's and the keyboard's units: WebKit reports
+      // `innerHeight` in the pinch-zoomed visual viewport's px.
+      const viewport = layoutViewportHeight(win);
       const box = settledBox(layer);
-      const height = keyboardClearanceCap(box, win.innerHeight, inset);
+      const height = keyboardClearanceCap(box, viewport, inset);
       if (height == null) {
         return false;
       }
@@ -193,7 +200,7 @@ export function useLayerKeyboardClearance(
       // below the trigger: cap it again from where it starts now.
       const placed = settledBox(layer);
       if (placed.top > box.top + 1) {
-        const again = keyboardClearanceCap(placed, win.innerHeight, inset);
+        const again = keyboardClearanceCap(placed, viewport, inset);
         if (again != null) {
           commitCap(again);
         }
@@ -201,7 +208,7 @@ export function useLayerKeyboardClearance(
       // The cap holds the block-start edge: below its trigger the top stays
       // and the bottom comes up. Placed above its trigger the layer holds its
       // bottom instead, which a shorter box cannot lift: leave it as it is.
-      const limit = win.innerHeight - inset - LAYER_KEYBOARD_CLEARANCE_PX;
+      const limit = viewport - inset - LAYER_KEYBOARD_CLEARANCE_PX;
       if (settledBox(layer).bottom > limit + 1) {
         commitCap(null);
         return false;
@@ -329,16 +336,37 @@ export function useLayerKeyboardClearance(
             }
           })
         : null;
-    // A replaced layer element keeps the cap as its own style; only the
-    // press tracking moves to it, in the commit that brings it.
+    // A layer element the runtime swaps in while the layer is open: the
+    // press tracking moves to it in the commit that brings it, and its own
+    // box is read before it paints (spec:AST-059 FR8). Like the read at the
+    // open, the read waits for the frame that places the element; like a
+    // keyboard change, it waits for a press in the layer to make its click,
+    // and a rising keyboard's arrival reads it instead (FR10).
+    let swapped: number | null = null;
     resyncRef.current = () => {
-      sync();
+      if (!sync() || swapped != null || getKeyboardHeight(win) <= 0) {
+        return;
+      }
+      swapped = win.requestAnimationFrame(() => {
+        swapped = null;
+        if (isDisposed || pending != null) {
+          return;
+        }
+        if (pressed.size > 0) {
+          deferred = () => avoid(getKeyboardHeight(win));
+          return;
+        }
+        avoid(getKeyboardHeight(win));
+      });
     };
     return () => {
       isDisposed = true;
       resyncRef.current = null;
       if (opening != null) {
         win.cancelAnimationFrame(opening);
+      }
+      if (swapped != null) {
+        win.cancelAnimationFrame(swapped);
       }
       unsubscribe();
       cancelPending();

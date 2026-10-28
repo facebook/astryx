@@ -11,7 +11,9 @@
  *   keyboard, a bottom-held layer and a layer in another positioning left as
  *   they are, the positioning read from the last commit, an entering layer
  *   read without its entrance transform, the cap held through a press until its click, and the window
- *   listeners held only while a press is down
+ *   listeners held only while a press is down; a layer element swapped in
+ *   while open measured again before it paints, and the cap read in layout
+ *   px under a pinch zoom
  * @position Testing; real keyboards are proven by the Popover keyboard
  *   browser spec and on the iOS simulator
  */
@@ -22,6 +24,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {keyboard} from '../motion/uikit/keyboard';
 import {timing} from '../motion/uikit/timing';
 import type {KeyboardTransition} from '../keyboard';
+import type * as KeyboardHeightModule from '../keyboard/keyboardHeight';
 import {
   keyboardClearanceCap,
   LAYER_ANCHORED_ATTRIBUTE,
@@ -67,7 +70,7 @@ vi.mock('../keyboard/keyboardLayoutGuide', () => ({
   getKeyboardLayoutGuide: () => guide,
 }));
 vi.mock('../keyboard/keyboardHeight', async importOriginal => ({
-  ...(await importOriginal<typeof import('../keyboard/keyboardHeight')>()),
+  ...(await importOriginal<typeof KeyboardHeightModule>()),
   // The keyboard module's one height.
   getKeyboardHeight: () => guide.inset,
 }));
@@ -357,6 +360,42 @@ describe('useLayerKeyboardClearance', () => {
     expect(capOf(container)).toBe(`${VIEWPORT - 300 - 10 - BOX.top}px`);
   });
 
+  it('caps in layout px under a pinch zoom, where WebKit reports innerHeight zoomed (spec:AST-059 FR9)', () => {
+    // WebKit reports innerHeight and innerWidth in the zoomed visual
+    // viewport's px (536 for a 714 px layout viewport at a 1.33 zoom, in
+    // Safari on iOS 26.2), while boxes and the keyboard's height stay in
+    // layout px. A 1.5 zoom keeps the arithmetic exact.
+    const zoom = 1.5;
+    const saved = (['innerWidth', 'visualViewport'] as const).map(
+      key => [key, Object.getOwnPropertyDescriptor(window, key)] as const,
+    );
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: VIEWPORT / zoom,
+    });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 402 / zoom,
+    });
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: {width: 402 / zoom, height: VIEWPORT / zoom, scale: zoom},
+    });
+    try {
+      const {container} = render(<Harness />);
+      guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+      expect(capOf(container)).toBe(CAPPED);
+    } finally {
+      for (const [key, descriptor] of saved) {
+        if (descriptor == null) {
+          Reflect.deleteProperty(window, key);
+        } else {
+          Object.defineProperty(window, key, descriptor);
+        }
+      }
+    }
+  });
+
   it('leaves a layer clear of the keyboard as it is', () => {
     const {container} = render(<Harness box={{top: 68, bottom: 300}} />);
     guide.emit({kind: 'show', from: 0, to: COVER});
@@ -419,7 +458,7 @@ describe('useLayerKeyboardClearance', () => {
     expect(guide.listeners.size).toBe(0);
   });
 
-  it('keeps the cap when the runtime replaces the layer element while it is open', () => {
+  it('measures a layer element the runtime swaps in while open from its own box, before it paints (spec:AST-059 FR8)', () => {
     const {container, rerender} = render(<Harness />);
     guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
     const before = container.querySelector<HTMLElement>(
@@ -427,15 +466,79 @@ describe('useLayerKeyboardClearance', () => {
     )!;
     expect(capOf(container)).toBe(CAPPED);
     guide.inset = COVER;
-    rerender(<Harness layerKey="b" />);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.push(callback);
+      return frames.length;
+    });
+    // The new element sits lower than the old one: its own box decides.
+    const lower = {top: 100, bottom: 600};
+    rerender(<Harness layerKey="b" box={lower} />);
     const after = container.querySelector<HTMLElement>(
       '[data-testid="layer"]',
     )!;
     expect(after).not.toBe(before);
-    expect(capOf(container)).toBe(CAPPED);
+    act(() => {
+      for (const frame of frames.splice(0)) {
+        frame(0);
+      }
+    });
+    expect(capOf(container)).toBe(`${VIEWPORT - COVER - 10 - lower.top}px`);
     // The keyboard going down takes the cap off the new element.
     guide.emit({kind: 'hide', from: COVER, to: 0, animated: false});
     expect(capOf(container)).toBe('');
+  });
+
+  it('measures a swapped-in layer element during a press in the layer at the press\u2019s click (spec:AST-059 FR10)', () => {
+    const {container, rerender} = render(<Harness />);
+    guide.inset = COVER;
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    expect(capOf(container)).toBe(CAPPED);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.push(callback);
+      return frames.length;
+    });
+    fireEvent.pointerDown(
+      container.querySelector<HTMLElement>('[data-testid="layer"]')!,
+      {pointerId: 5},
+    );
+    const lower = {top: 100, bottom: 600};
+    rerender(<Harness layerKey="b" box={lower} />);
+    act(() => {
+      for (const frame of frames.splice(0)) {
+        frame(0);
+      }
+    });
+    // Held for the press's click: the layer does not move under the finger.
+    expect(capOf(container)).toBe(CAPPED);
+    fireEvent.pointerUp(window, {pointerId: 5});
+    fireEvent.click(
+      container.querySelector<HTMLElement>('[data-testid="layer"]')!,
+    );
+    expect(capOf(container)).toBe(`${VIEWPORT - COVER - 10 - lower.top}px`);
+  });
+
+  it('leaves a layer element swapped in under a rising keyboard to the keyboard\u2019s arrival (spec:AST-059 FR10)', () => {
+    const {container, rerender} = render(<Harness />);
+    guide.inset = COVER;
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.push(callback);
+      return frames.length;
+    });
+    guide.emit({kind: 'show', from: 0, to: COVER});
+    const lower = {top: 100, bottom: 600};
+    rerender(<Harness layerKey="b" box={lower} />);
+    act(() => {
+      for (const frame of frames.splice(0)) {
+        frame(0);
+      }
+    });
+    // On its way up the keyboard covers the difference: no cap yet.
+    expect(capOf(container)).toBe('');
+    advance(timing.keyboardNotificationMs + 1);
+    expect(capOf(container)).toBe(`${VIEWPORT - COVER - 10 - lower.top}px`);
   });
 
   it('follows a press in a replaced layer element to its click', () => {
