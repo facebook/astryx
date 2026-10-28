@@ -125,9 +125,9 @@ export interface UseZoomStageOptions {
   /** Changes when another item shows: a gesture in progress ends. */
   itemKey: unknown;
   /**
-   * A pinch carried the photo past the fitted size, or back to it, while the
-   * fingers are still down (the core's `onZoomedChange` follows at the
-   * lift).
+   * A pinch, a finger's or a ctrl-wheel's, carried the photo past the fitted
+   * size, or back to it, while it goes on (the core's `onZoomedChange`
+   * follows once it ends).
    */
   onPinchZoomed?: (isZoomed: boolean) => void;
   /** A single tap landed outside the photo. */
