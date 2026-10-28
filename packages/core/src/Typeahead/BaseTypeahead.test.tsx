@@ -3,12 +3,13 @@
 /**
  * @file BaseTypeahead.test.tsx
  * @input BaseTypeahead public props and a synchronous SearchSource
- * @output Combobox contract tests, including stale source refresh on focus and reopen
+ * @output Combobox contract tests, including stale source refresh on focus and reopen,
+ *   and pending work that settles after a dismissal
  * @position Colocated verification for BaseTypeahead
  */
 
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -352,5 +353,193 @@ describe('BaseTypeahead', () => {
         }),
       ).toHaveAttribute('aria-disabled', 'true');
     });
+  });
+});
+
+describe('BaseTypeahead pending work after a dismissal', () => {
+  // A source that cannot abort: every search answers when the test says so.
+  function pendingSource() {
+    const answers = new Map<string, (items: SearchableItem[]) => void>();
+    const search = vi.fn(
+      async (query: string) =>
+        new Promise<SearchableItem[]>(resolve => answers.set(query, resolve)),
+    );
+    const source: SearchSource<SearchableItem> = {search, bootstrap: () => []};
+    const answer = async (query: string, labels: string[]) => {
+      await waitFor(() => expect(answers.has(query)).toBe(true));
+      answers.get(query)?.(labels.map(label => ({id: label, label})));
+      await act(async () => {});
+    };
+    return {source, search, answer};
+  }
+
+  function renderPending(extra: Partial<Parameters<typeof BaseTypeahead>[0]>) {
+    const pending = pendingSource();
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={pending.source}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          {...extra}
+        />
+        <button type="button">Elsewhere</button>
+      </>,
+    );
+    return {...pending, input: screen.getByRole('combobox')};
+  }
+
+  async function openWithPendingQuery(
+    input: HTMLElement,
+    answer: (query: string, labels: string[]) => Promise<void>,
+  ) {
+    input.focus();
+    fireEvent.change(input, {target: {value: 'a'}});
+    await answer('a', ['Alpha']);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.change(input, {target: {value: 'al'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+  }
+
+  it('stays closed and stops being busy when a search answers after Escape', async () => {
+    const {input, answer} = renderPending({});
+    await openWithPendingQuery(input, answer);
+
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    await answer('al', ['Alpine']);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-busy');
+  });
+
+  it('stays closed when a search answers after an outside click closed the popup', async () => {
+    const {input, answer} = renderPending({});
+    await openWithPendingQuery(input, answer);
+
+    // Native light dismissal closes the popover itself and reports a toggle.
+    const popup = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    act(() => popup.hidePopover());
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    await answer('al', ['Alpine']);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not open when a search answers after focus left the field', async () => {
+    const {input, answer} = renderPending({});
+    input.focus();
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+
+    fireEvent.blur(input, {
+      relatedTarget: screen.getByRole('button', {name: 'Elsewhere'}),
+    });
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    await answer('a', ['Alpha']);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not open when focus bootstrap answers after focus left the field', async () => {
+    let resolve: (items: SearchableItem[]) => void = () => {};
+    const source: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: async () =>
+        new Promise<SearchableItem[]>(r => {
+          resolve = r;
+        }),
+    };
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+        <button type="button">Elsewhere</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+
+    fireEvent.blur(input, {
+      relatedTarget: screen.getByRole('button', {name: 'Elsewhere'}),
+    });
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    await act(async () => resolve([{id: '1', label: 'Suggested'}]));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('shows the late answer, without searching again, when the same query is reopened', async () => {
+    const {input, search, answer} = renderPending({});
+    await openWithPendingQuery(input, answer);
+    fireEvent.keyDown(input, {key: 'Escape'});
+    await answer('al', ['Alpine']);
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('option', {name: 'Alpine', hidden: true}),
+    ).toBeInTheDocument();
+    expect(search.mock.calls.filter(([q]) => q === 'al')).toHaveLength(1);
+  });
+
+  it('drops a late answer for a query the person has since changed', async () => {
+    const {input, answer} = renderPending({});
+    await openWithPendingQuery(input, answer);
+    fireEvent.keyDown(input, {key: 'Escape'});
+
+    fireEvent.change(input, {target: {value: 'alp'}});
+    await answer('al', ['Stale']);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('option', {name: 'Stale', hidden: true}),
+    ).not.toBeInTheDocument();
+
+    await answer('alp', ['Alpine']);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('option', {name: 'Alpine', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', {name: 'Stale', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not keep or show a late answer while a changed query waits on its debounce', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    try {
+      const {input, search, answer} = renderPending({debounceMs: 200});
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      await act(async () => vi.advanceTimersByTime(200));
+      await answer('a', ['Alpha']);
+      fireEvent.change(input, {target: {value: 'al'}});
+      await act(async () => vi.advanceTimersByTime(200));
+      await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+      fireEvent.keyDown(input, {key: 'Escape'});
+
+      // The next query is typed but its search has not started yet.
+      fireEvent.change(input, {target: {value: 'alp'}});
+      await answer('al', ['Stale']);
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(
+        screen.queryByRole('option', {name: 'Stale', hidden: true}),
+      ).not.toBeInTheDocument();
+      // Nothing answers 'alp' yet, so there is nothing current to show.
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(search).not.toHaveBeenCalledWith('alp');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

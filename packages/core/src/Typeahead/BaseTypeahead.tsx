@@ -5,7 +5,8 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead; focus bootstraps a replaced search source
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source;
+ *   a dismissed popup stays closed while pending work settles
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -623,6 +624,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // populated before it (resultsGenRef below this) came from a replaced
   // source: they can never be re-shown, so focus bootstraps the new source.
   const sourceGenRef = useRef(0);
+  // The generation at which the popup was last dismissed (Escape, an outside
+  // click, Tab, or focus leaving). Work still pending from that generation
+  // settles without reopening the popup; a search's answer is kept for the
+  // next open of the same query, so reopening does not search again.
+  const dismissedGenRef = useRef(-1);
+  // The query as typed, readable from a search's continuation.
+  const queryRef = useRef('');
 
   // Results still arriving from a replaced source must not land in the new
   // one's menu.
@@ -668,7 +676,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     onOpenChange?.(false);
     setHighlightedIndex(-1);
     searchSource.cancel?.();
-  }, [onOpenChange, searchSource]);
+    dismissedGenRef.current = searchGenRef.current;
+    setLoading(false);
+  }, [onOpenChange, searchSource, setLoading]);
 
   const popover = usePopover({
     onShow: handleLayerShow,
@@ -722,6 +732,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         if (searchGenRef.current !== gen) {
           return;
         }
+        const dismissed = dismissedGenRef.current === gen;
+        // Typed since the dismissal, with the next search still debouncing:
+        // this answer is for text the field no longer holds.
+        if (dismissed && searchQuery !== queryRef.current) {
+          return;
+        }
         resultsGenRef.current = gen;
         const fetched = searchResults.slice(0, maxMenuItems);
         const shown = [
@@ -730,6 +746,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         ];
         setResults(shown);
         setHighlightedIndex(shown.length > 0 ? 0 : -1);
+        if (dismissed) {
+          return;
+        }
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
@@ -787,7 +806,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
       setResults(shown);
       setHighlightedIndex(nextHighlightedIndex);
-      if (bootstrapResults.length > 0) {
+      if (bootstrapResults.length > 0 && dismissedGenRef.current !== gen) {
         showLayer();
       }
     },
@@ -832,6 +851,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const handleQueryChange = useCallback(
     (newQuery: string) => {
       setQuery(newQuery);
+      queryRef.current = newQuery;
       onChangeQuery?.(newQuery);
 
       if (searchTimeoutRef.current) {
@@ -920,6 +940,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       searchSource.cancel?.();
       onChange(item);
       setQuery('');
+      queryRef.current = '';
       setResults([]);
       setHasSearched(false);
       // Same reason as in handleQueryChange: the invalidated search will not
@@ -1010,7 +1031,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // input, so this only closes on a genuine focus-out of the whole field.
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!popover.isOpen) {
+      if (!popover.isOpen && !loadingRef.current) {
         return;
       }
       const next = e.relatedTarget as Node | null;
@@ -1021,9 +1042,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           return;
         }
       }
-      popover.hide();
+      if (popover.isOpen) {
+        popover.hide();
+        return;
+      }
+      // Focus left before pending work opened the popup; it must not open
+      // it afterwards.
+      searchSource.cancel?.();
+      dismissedGenRef.current = searchGenRef.current;
+      setLoading(false);
     },
-    [popover, anchorRef],
+    [popover, anchorRef, searchSource, setLoading],
   );
 
   // Keyboard navigation
@@ -1049,7 +1078,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       if (!popover.isOpen) {
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {
           e.preventDefault();
-          if (results.length > 0) {
+          // Results an older query or source left behind are not shown.
+          if (
+            results.length > 0 &&
+            resultsGenRef.current === searchGenRef.current
+          ) {
             popover.show();
             setHighlightedIndex(0);
           } else if (
