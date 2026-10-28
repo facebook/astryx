@@ -48,6 +48,20 @@ function emulateTouch({ios}: {ios: boolean}): void {
   }));
 }
 
+/** A touchscreen laptop: the primary pointer is fine, and a finger may still press. */
+function emulateFinePointer(): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
 const ITEM_SELECTOR = '[role="menuitem"]:not([aria-disabled="true"])';
 
 /** A scrollable container whose content overflows it: a scroll view. */
@@ -917,6 +931,20 @@ describe('useMenuPress — the public hook takes no touch model option', () => {
 
   it('with no delay set, a finger opens the menu as it presses where the primary pointer is coarse (spec:AST-094 FR25, FR29)', () => {
     emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(<PublicHarness onOpenChange={onOpenChange} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it('with no delay set, a finger opens the menu as it presses where the primary pointer is fine too, a touchscreen laptop as a phone (spec:AST-094 FR29, FR43)', () => {
+    emulateFinePointer();
     const onOpenChange = vi.fn();
     render(<PublicHarness onOpenChange={onOpenChange} />);
     fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
