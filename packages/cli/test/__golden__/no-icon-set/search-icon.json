@@ -62,6 +62,21 @@
         "mentions": []
       },
       {
+        "domain": "doc",
+        "name": "icons",
+        "package": "@astryxdesign/cli",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "section": "<text>",
+        "title": "<text>",
+        "command": "astryx docs icons theme-overrides",
+        "parent": "astryx docs icons --index",
+        "mentions": [
+          "This lets you swap the icon set (e.g."
+        ]
+      },
+      {
         "domain": "template",
         "name": "BaseTypeaheadCustomSearch",
         "package": "@astryxdesign/core",
@@ -227,18 +242,6 @@
         "displayName": "<text>",
         "kind": "block",
         "command": "astryx template ChatMessageBubbleMetadata --type block",
-        "mentions": []
-      },
-      {
-        "domain": "template",
-        "name": "ChatMessageMetadataFooter",
-        "package": "@astryxdesign/core",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "displayName": "<text>",
-        "kind": "block",
-        "command": "astryx template ChatMessageMetadataFooter --type block",
         "mentions": []
       }
     ]

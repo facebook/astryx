@@ -19,18 +19,6 @@
         "mentions": []
       },
       {
-        "domain": "template",
-        "name": "ToolbarTableFilter",
-        "package": "@astryxdesign/core",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "displayName": "<text>",
-        "kind": "block",
-        "command": "astryx template ToolbarTableFilter --type block",
-        "mentions": []
-      },
-      {
         "domain": "doc",
         "name": "icons",
         "package": "@astryxdesign/cli",
@@ -44,6 +32,18 @@
         "mentions": [
           "This lets you swap the icon set (e.g."
         ]
+      },
+      {
+        "domain": "template",
+        "name": "ToolbarTableFilter",
+        "package": "@astryxdesign/core",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "displayName": "<text>",
+        "kind": "block",
+        "command": "astryx template ToolbarTableFilter --type block",
+        "mentions": []
       },
       {
         "domain": "component",

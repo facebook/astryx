@@ -5,16 +5,16 @@ domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs authoring/building-blocks/templates/build-the-template/template-assets/template-icons use-astryx-icon
 parent:      pnpm exec astryx docs authoring/building-blocks/templates/build-the-template/template-assets/template-icons --index
-name:        ToolbarTableFilter
-domain:      template
-package:     @astryxdesign/core
-command:     pnpm exec astryx template ToolbarTableFilter --type block
 name:        icons
 section:     theme-overrides
 domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs icons theme-overrides
 parent:      pnpm exec astryx docs icons --index
+name:        ToolbarTableFilter
+domain:      template
+package:     @astryxdesign/core
+command:     pnpm exec astryx template ToolbarTableFilter --type block
 name:        Icon
 domain:      component
 package:     @astryxdesign/core
