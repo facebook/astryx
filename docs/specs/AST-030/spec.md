@@ -185,8 +185,13 @@ they are separately named.
   its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
   regression**), `pr-a11y`, and `pr-rtl` owners with full scope: the closed stable
   visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
-  focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
-  remain scoped to changed components plus fast interaction guards; full a11y
+  focused, smoke, and no-op paths MUST NOT narrow release checks. On a pull
+  request, the visual (`visual-scout`, `pr-visual`), accessibility (`pr-a11y`
+  with its guards and specs) and RTL (`pr-rtl` with its legs) owners MUST run
+  only when the pull request carries the `ci:heavy-lanes` label at the event; a
+  pull request update without it runs none of them, and no required context
+  depends on them. An opted-in PR's a11y MUST remain scoped to changed components
+  plus fast interaction guards; full a11y
   sweeps, whole-repository spec-test contracts, and their evidence uploads MUST
   run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
@@ -198,7 +203,11 @@ they are separately named.
   later commits remain next-release input. A rewrite or divergence that removes
   the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
-  existing finding policies. Release checks MUST NOT run on every push, capture
+  existing finding policies. The Main workflow MUST dispatch that release-check
+  for every push to `main`, bound to the pushed commit, one push at a time; a
+  commit `main` has already moved past leaves its check to the newer push's run.
+  Main's run MUST fail when that release-check does not succeed, and a failure is
+  fixed forward by an atomic pull request. Release checks MUST NOT capture
   baseline candidates, publish baselines, or use a separate daily workflow or
   retroactive acceptance status.
   Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
@@ -352,7 +361,8 @@ constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
 visual, accessibility, and RTL checks do not run on every main push. Reuse
 existing test/build owners, keep their finding policies, and fail closed on
 incomplete scope, missing work, or when the checked commit is no longer in
-current `main` history. Baseline capture and the reviewed pull request that
+current `main` history (DEC-7 now runs these checks on every main push).
+Baseline capture and the reviewed pull request that
 versions an accepted candidate remain separate operations.
 
 PR accessibility remains a scoped, fast check: audit only explicitly resolved
@@ -369,6 +379,25 @@ The release path retains the complete suite and cannot substitute a scoped resul
 Rejected: a separate workflow, per-push full audits, and treating a maintenance
 capture, skipped check, a checked SHA no longer in current `main` history, or
 retroactive status as release evidence.
+
+### DEC-7 — Visual, accessibility and RTL run on main, not on pull request updates
+
+**Reference:** `spec:AST-030/DEC-7`
+**Decider:** `cixzhang`, `2026-10-28`
+
+Run the visual, accessibility and RTL owners on every push to `main`, through
+the same exact-commit `release-check` the release gate uses, and before a cut;
+a pull request runs them only when it opts in with the `ci:heavy-lanes` label.
+Pull request updates keep the fast checks and every required context. A
+failure on `main` is repaired forward with an atomic pull request, not reverted
+first. This supersedes DEC-5's choice to keep these checks off main pushes: the
+browser suites on larger runners were most of the repository's Actions spend,
+and they ran again on every update of every open pull request. An opted-in
+pull request still runs on its merge commit, so DEC-6's concern about testing a
+head instead of the merged result does not apply.
+
+Rejected: keeping the suites on every pull request update (spend); a separate
+scheduled or daily owner (FR12 keeps one canonical workflow).
 
 ### DEC-6 — Pull requests run what the change reaches; full runs stay where landing is decided
 

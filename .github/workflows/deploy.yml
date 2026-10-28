@@ -112,6 +112,74 @@ jobs:
 
       - run: pnpm test:node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
+  # Visual, accessibility and RTL run on main, not on every pull request update
+  # (spec:AST-030 FR12, DEC-7): each push runs ci.yml's canonical release-check
+  # on its exact commit and waits for it, so this run reports the result and a
+  # failure is fixed forward. This workflow's concurrency group runs one push at
+  # a time and keeps only the newest waiting, and a push that main has already
+  # moved past leaves its check to the newer push's run.
+  heavy-lanes:
+    needs: [main-commit]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-slim
+    timeout-minutes: 120
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Run the visual, accessibility and RTL release-check on this commit
+        uses: actions/github-script@v9
+        env:
+          SHA: ${{ needs.main-commit.outputs.sha }}
+        with:
+          script: |
+            const sha = process.env.SHA;
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+            const tip = async () => (await github.rest.repos.getBranch({...context.repo, branch: 'main'})).data.commit.sha;
+            if ((await tip()) !== sha) {
+              core.notice(`main moved past ${sha.slice(0, 7)}; the newer push's run checks it.`);
+              return;
+            }
+            const since = new Date(Date.now() - 60_000).toISOString();
+            await github.rest.actions.createWorkflowDispatch({
+              ...context.repo,
+              workflow_id: 'ci.yml',
+              ref: 'main',
+              inputs: {operation: 'release-check', 'release-branch': 'main', 'expected-head': sha},
+            });
+            // The dispatch API returns no run id: find the dispatch run made
+            // for this commit, then wait for it to finish.
+            let run;
+            for (let attempt = 0; attempt < 30 && !run; attempt++) {
+              await sleep(10_000);
+              const {data} = await github.rest.actions.listWorkflowRuns({
+                ...context.repo,
+                workflow_id: 'ci.yml',
+                event: 'workflow_dispatch',
+                branch: 'main',
+                created: `>=${since}`,
+                per_page: 20,
+              });
+              run = data.workflow_runs.find(candidate => candidate.head_sha === sha);
+            }
+            if (!run) {
+              // A merge that landed as this dispatched makes the dispatch
+              // check the newer commit, which that push's run reports.
+              if ((await tip()) !== sha) {
+                core.notice(`main moved past ${sha.slice(0, 7)} during the dispatch; the newer push's run checks it.`);
+                return;
+              }
+              throw new Error(`No release-check run started for ${sha}.`);
+            }
+            core.info(`release-check: ${run.html_url}`);
+            while (run.status !== 'completed') {
+              await sleep(30_000);
+              run = (await github.rest.actions.getWorkflowRun({...context.repo, run_id: run.id})).data;
+            }
+            if (run.conclusion !== 'success') {
+              throw new Error(`Visual, accessibility or RTL release-check ${run.conclusion} on ${sha}: ${run.html_url}`);
+            }
+
   # The typecheck mirroring the PR `build` job in ci.yml. ci.yml only runs
   # on pull_request/merge_group, so a typecheck error can land on main (its
   # push only runs the suite) undetected — then break the `build` check on
