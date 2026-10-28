@@ -62,7 +62,10 @@ const meta: Meta<typeof Tokenizer> = {
     },
     isRequired: {control: 'boolean'},
     isOptional: {control: 'boolean'},
-    hasClear: {control: 'boolean'},
+    // Docgen cannot read Tokenizer's prop types through its overloaded
+    // signature, and Storybook drops a URL arg (`args=hasClear:!true`) whose
+    // argType names no type. The browser end-lane contract sets it that way.
+    hasClear: {control: 'boolean', type: 'boolean'},
     maxEntries: {control: 'number'},
     size: {
       control: 'radio',
