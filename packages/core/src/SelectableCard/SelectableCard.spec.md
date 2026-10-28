@@ -94,8 +94,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - Card surface paint, padding, radius, elevation, and sizing — owned by
   `component:Card`.
-- Group semantics, single- versus multi-select policy, and which option is
-  selected — owned by the product callsite.
+- Group semantics and which options are selected — owned by the product
+  callsite. Single-select groups need a radio pattern, which SelectableCard
+  does not provide.
 - Navigation and one-shot actions — owned by `component:ClickableCard`.
 
 ## Public concepts
