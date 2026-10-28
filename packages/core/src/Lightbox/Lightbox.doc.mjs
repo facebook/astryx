@@ -69,7 +69,7 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or (on a touch screen) dragging a photo down or pinching it in from its fitted size.',
+        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, dragging a photo down from its fitted size (with a finger, a mouse, a pen or a trackpad), or (on a touch screen) pinching it in from there.',
       required: true,
     },
     {
@@ -81,7 +81,7 @@ export const docs = {
       // the description instead (#1645).
       type: 'LightboxMedia | LightboxMedia[]',
       description:
-        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation (on a touch screen, a swipe moves between items too). Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
+        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation (a swipe, a mouse drag or a trackpad's sideways scroll moves between items too). Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
       required: true,
     },
     {
@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back. On a touch screen a pinch in from the fitted size shrinks the photo, and closes the viewer into its thumbnail once it goes below about 93.5 % unless it is opened again by 5 % before the lift.',
+        'Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or double-click to zoom in at that point and back; Enter/Space/+/- zoom 2× about the centre and back. When zoomed, drag or scroll to pan, with momentum, or use arrow keys. A tap or a click on the photo hides the controls and turns the background black (so does a zoom in by a finger or a pointer); the next tap or click, a return to the fitted size, or a keyboard focus on a control brings them back. On a touch screen a pinch in from the fitted size shrinks the photo, and closes the viewer once it goes below about 93.5 % (into its thumbnail when experimental gives one) unless it is opened again by 5 % before the lift.',
       default: 'false',
     },
     {
@@ -121,7 +121,7 @@ export const docs = {
       type: '{sourceFor?: (index: number) => HTMLElement | null}',
       stability: 'experimental',
       description:
-        "Experimental options: anything in this object may change or be removed in a patch release. sourceFor: The element an item opens from and closes into, usually its thumbnail: on a touch screen the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it; a tap or a drag that lands while the photo zooms open is held, so it neither closes the viewer nor reaches the page, while keys and screen readers stay live. With a mouse the viewer opens and closes at once, as before. Return null when there is none or it is off screen. Without it, on a touch screen the element that opened the viewer is the opened item's source when it shows a picture. Proposed; pending owner review.",
+        "Experimental options: anything in this object may change or be removed in a patch release. sourceFor: The element an item opens from and closes into, usually its thumbnail: on a touch screen the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it; a tap or a drag that lands while the photo zooms open is held, so it neither closes the viewer nor reaches the page, while keys and screen readers stay live. With a mouse the viewer opens and closes at once, as before. Return null when there is none or it is off screen. Without it, on a touch screen the element that opened the viewer is the opened item's source when it shows a picture. Without experimental, the viewer opens and closes plainly. Proposed; pending owner review.",
     },
     {
       name: 'xstyle',
@@ -197,14 +197,14 @@ export const docsZh = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或（触摸屏上）向下拖动照片或从适合大小向内捏合照片。',
+        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处、从适合大小向下拖动照片（手指、鼠标、触控笔或触控板均可），或（触摸屏上）从适合大小向内捏合照片。',
       required: true,
     },
     {
       name: 'media',
       type: 'LightboxMedia | LightboxMedia[]',
       description:
-        "要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项为 {src, alt, caption?, type?: 'image' | 'video'}；type 默认为 'image'，'video' 禁用缩放/平移。",
+        "要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航；滑动、鼠标拖动或触控板横向滚动也可在各项之间切换）。每项为 {src, alt, caption?, type?: 'image' | 'video'}；type 默认为 'image'，'video' 禁用缩放/平移。",
       required: true,
     },
     {
@@ -221,7 +221,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。在触摸屏上，从适合大小双指向内捏合会缩小照片；一旦小于约 93.5%，除非松开前又张开 5%，查看器就会关闭并缩回缩略图。',
+        '启用缩放（仅图片）：双指捏合（或按住 Ctrl 滚动滚轮），或双点按、双击在该处放大并还原；Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动或滚动平移（带惯性），或用方向键平移。点按或单击照片会隐藏控件并使背景变黑（手指或指针放大时也是如此）；再次点按或单击、还原到适合大小或用键盘聚焦控件会让控件重新出现。在触摸屏上，从适合大小双指向内捏合会缩小照片；一旦小于约 93.5%，除非松开前又张开 5%，查看器就会关闭（experimental 提供缩略图时缩回其中）。',
       default: 'false',
     },
     {
@@ -229,7 +229,7 @@ export const docsZh = {
       type: '{sourceFor?: (index: number) => HTMLElement | null}',
       stability: 'experimental',
       description:
-        '实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除。sourceFor：某一项打开时放大自、关闭时缩回的元素（通常是其缩略图），仅在触屏上；向下拖动的照片也会落入其中。照片放大打开期间，落下的点按或拖动会被拦截，既不会关闭查看器，也不会触及页面；键盘和读屏软件不受影响。使用鼠标时，查看器照常立即打开和关闭。没有或不在屏幕上时返回 null。未提供时，在触屏上，若打开查看器的元素显示图片，则它是所打开项的来源。',
+        '实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除。sourceFor：某一项打开时放大自、关闭时缩回的元素（通常是其缩略图），仅在触屏上；向下拖动的照片也会落入其中。照片放大打开期间，落下的点按或拖动会被拦截，既不会关闭查看器，也不会触及页面；键盘和读屏软件不受影响。使用鼠标时，查看器照常立即打开和关闭。没有或不在屏幕上时返回 null。未提供时，在触屏上，若打开查看器的元素显示图片，则它是所打开项的来源。不传 experimental 时，查看器照常打开和关闭。',
     },
     {
       name: 'xstyle',
@@ -309,13 +309,13 @@ export const docsDense = {
   propDescriptions: {
     isOpen: 'Whether the lightbox is open.',
     onOpenChange:
-      'Callback when open state changes (including a photo dragged down or pinched in on a touch screen).',
+      'Callback when open state changes (including a photo dragged down, or pinched in on a touch screen).',
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
     onIndexChange:
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; on touch, a tap on the photo hides the controls and a pinch in closes the viewer.',
+      'Enable zoom (pinch or ctrl-wheel, double-tap or double-click, Enter/Space, or +/-) and pan (drag, scroll or arrow keys) for images; a tap or click on the photo hides the controls, and on touch a pinch in closes the viewer.',
     experimental:
       'Experimental options, which may change in a patch release: sourceFor, the element an item zooms out of on open and back into on close on a touch screen (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',

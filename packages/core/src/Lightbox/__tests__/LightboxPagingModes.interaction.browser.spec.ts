@@ -303,7 +303,7 @@ test('under Reduce Motion the Next button pages at once with a mouse', async ({
   }
 });
 
-test('a mouse drag does not page: paging is for touch and pen', async ({
+test('a mouse drag pages, as a finger’s does (spec:AST-094 FR43)', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -322,11 +322,10 @@ test('a mouse drag does not page: paging is for touch and pen', async ({
     const mid = {x: g.box.x + g.box.width * 0.8, y: g.box.y + g.box.height / 2};
     await page.mouse.move(mid.x, mid.y);
     await page.mouse.down();
+    // Past half a page: the release pages on its travel alone.
     await page.mouse.move(mid.x - g.box.width * 0.6, mid.y, {steps: 20});
     await page.mouse.up();
-    await frames(page, 10);
-    expect(await g.counter()).toBe('1 / 4');
-    expect(await g.trackX()).toBe(0);
+    await expect.poll(g.counter).toBe('2 / 4');
     await expect(g.dialog).toBeVisible();
   } finally {
     await context.close();
@@ -370,11 +369,17 @@ test('with a mouse (a fine pointer) a click beside the photo closes the gallery,
         );
       }, below),
     ).toBe(true);
-    // A click on the photo itself leaves the viewer open.
+    // A click on the photo itself leaves the viewer open, and hides the
+    // controls once a double-click can no longer follow (spec:AST-094 FR43).
     await page.mouse.click(
       photo.x + photo.width / 2,
       photo.y + photo.height / 2,
     );
+    await page.waitForTimeout(500);
+    await expect(g.dialog).toBeVisible();
+    // With the controls hidden, a click beside the photo brings them back
+    // rather than closing unseen, as a tap does; the next one closes.
+    await page.mouse.click(below.x, below.y);
     await page.waitForTimeout(500);
     await expect(g.dialog).toBeVisible();
     await page.mouse.click(below.x, below.y);

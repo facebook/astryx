@@ -72,7 +72,6 @@ function setup() {
     fittedBox: () => FITTED,
     shownBox: () => FITTED,
     morph: () => ({morph, photo}),
-    play: vi.fn(),
     rest: vi.fn(),
   } as unknown as ZoomStage;
   return {container, source, photo, morph, stage};
