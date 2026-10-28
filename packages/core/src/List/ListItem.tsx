@@ -5,12 +5,10 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, the press layer (dividers beside a touch-pressed or held row
- *   hide and the layer reaches over the row's own), the touch hit area
- *   (utils/touchHitArea.ts and its layer), the travelling
- *   marker of an update's slide (List/useListUpdateMotion.ts), CheckboxInput,
- *   and the marker or task checkbox a ListMarkerScope sets (Markdown's nested
- *   lists and the task items of mixed lists)
+ *   treatment, the touch hit area (utils/touchHitArea.ts and its layer), the
+ *   travelling marker of an update's slide (List/listLayoutUpdates.ts),
+ *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
+ *   (Markdown's nested lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -43,6 +41,11 @@ import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {
+  ITEM_KEY_ATTRIBUTE,
+  isInAnimatedList,
+  keepPresentation,
+} from './listLayoutUpdates';
 import {useTouchHitArea} from '../utils/touchHitArea';
 import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
@@ -136,6 +139,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
+   * The row's item key, a string or a number from the data (the shape
+   * Table's `idKey` returns): the row's identity for the list's animated
+   * layout (`animatedLayout`, `component:List` FR12). A row without one
+   * changes at once. Separate from React's `key`, which stays React's own.
+   */
+  itemKey?: string | number;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -160,7 +171,7 @@ const styles = stylex.create({
   },
   // A row an update slides across rows moving the other way rides above them
   // with the surface behind it, for the length of its slide (the attribute
-  // List/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
+  // List/listLayoutUpdates.ts writes): a UIKit cell passes its neighbours
   // opaque and on top, and rows here have no background of their own. The
   // surface is an inset shadow across the padding box, under the press layer
   // and the row's content, so the row's divider and its press stay visible;
@@ -211,51 +222,13 @@ const styles = stylex.create({
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
-    // Under a finger (a coarse primary pointer, TOUCH_QUERY in
-    // utils/touchPresentation.ts), a touch press hides this row's divider
-    // and the one above it, in the frame the press is believed, with no
-    // transition, as a highlighted UIKit cell hides its separators; both
-    // come back in the first frame of the release, while the press is still
-    // fading. A selection hold (the row kept selected through a navigation
-    // push) hides them the same way until its deselect begins, and again
-    // after a cancel. With a mouse the dividers stay drawn.
-    borderBlockEndColor: {
-      default: colorVars['--color-border'],
-      '@media (pointer: coarse)': {
-        default: null,
-        '[data-astryx-press="on"]': 'transparent',
-        '[data-astryx-press="held"]:not([data-astryx-deselecting])':
-          'transparent',
-        ':has(+ [data-astryx-press="on"])': 'transparent',
-        ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
-          'transparent',
-      },
-    },
+    borderBlockEndColor: colorVars['--color-border'],
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
     // shorthand never reached the shipped CSS and the last item kept its
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
-    },
-    // While its divider is hidden, the press layer (the `cell` style of
-    // utils/interactionOverlay.stylex.ts) reaches over it, so the whole row
-    // is pressed. The last row has no divider to cover.
-    '::before': {
-      insetBlockEnd: {
-        default: null,
-        '@media (pointer: coarse)': {
-          default: null,
-          '[data-astryx-press="on"]': {
-            default: `calc(-1 * ${borderVars['--border-width']})`,
-            ':last-child': 0,
-          },
-          '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
-            default: `calc(-1 * ${borderVars['--border-width']})`,
-            ':last-child': 0,
-          },
-        },
-      },
     },
   },
 });
@@ -382,6 +355,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  itemKey,
   align,
   xstyle,
   className,
@@ -392,11 +366,6 @@ export function ListItem({
   const ctx = use(ListContext);
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
-  const keepRowPresentation = ctx?.keepRowPresentation;
-  const keepRowPresentationRef = useRef(keepRowPresentation);
-  useIsomorphicLayoutEffect(() => {
-    keepRowPresentationRef.current = keepRowPresentation;
-  });
   // External system (`architecture:react-component-runtime` INV3): the Web
   // Animations running on the row's parts (a swipe's travel, on the
   // compositor), which a detached row loses. Leaving a list that animates
@@ -407,13 +376,17 @@ export function ListItem({
     const row = rowRef.current;
     return () => {
       if (row != null) {
-        keepRowPresentationRef.current?.(row);
+        // Only in a list under an animated layout handle, as the list was
+        // at its last commit (List/listLayoutUpdates.ts).
+        if (isInAnimatedList(row)) {
+          keepPresentation(row);
+        }
       }
     };
   }, []);
   // Under a finger, an interactive row's hit target grows toward the touch
   // target where its neighbors leave room, with no visual or layout change
-  // (`spec:AST-094` FR42; `component:List` FR10, #8571): useTouchHitArea keeps the row's insets live, and
+  // (`spec:AST-094` FR42; `component:List` FR10): useTouchHitArea keeps the row's insets live, and
   // its invisible layer (touchHitAreaStyles.layer) reads them.
   const isTouchTarget =
     (onClick != null || href != null || interactiveRef != null) && !isDisabled;
@@ -491,6 +464,9 @@ export function ListItem({
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      // The row's identity for the list's animated layout
+      // (List/listLayoutUpdates.ts).
+      {...(itemKey != null ? {[ITEM_KEY_ATTRIBUTE]: String(itemKey)} : null)}
       {...restProps}
     />
   );

@@ -27,10 +27,8 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {cellPressableProps} from '../utils/pressFeedback';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {useTreeExpansionMotion} from './useTreeExpansionMotion';
 import {
   hasInteractiveAncestor,
@@ -376,6 +374,11 @@ export interface TreeListItemInternalProps {
    * motion; without one, the row plays its own touch slide.
    */
   hasAnimatedLayout?: boolean;
+  /**
+   * The tree's touch presentation, which the tree reads once for every row
+   * (`spec:AST-094` FR24).
+   */
+  isTouch?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -427,6 +430,7 @@ export function TreeListItem({
   isExpanded,
   isExiting = false,
   hasAnimatedLayout = false,
+  isTouch = false,
   onToggle,
   density,
   variant,
@@ -436,11 +440,9 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
-  // A selection hold returns focus to this row after a pop; its ring follows
-  // how the user last interacted (List/selectionHold.ts).
-  useInteractionModalityTracking();
   const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded, {
     isEnabled: !hasAnimatedLayout,
+    isTouch,
   });
   const renderedChildren =
     showsChildren || isExiting ? renderChildren?.() : undefined;
@@ -705,7 +707,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...(isInteractive || (hasChildren && onClick == null)
-            ? {...pressable, ...cellPressableProps}
+            ? pressable
             : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {

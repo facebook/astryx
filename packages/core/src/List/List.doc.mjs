@@ -38,14 +38,13 @@ export const docs = {
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items. Under a finger, a touch press hides the dividers on either side of the pressed row until the finger lifts, as iOS lists do.',
+      description: 'Show dividers between items.',
       default: 'false',
     },
     {
-      name: 'hasAnimatedChanges',
-      type: 'boolean',
-      description: 'Under a finger, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places, a removed row collapses in place, and new rows fade in once the rows sliding past have cleared them; a row that crosses rows moving the other way rides above them with the surface color behind it. Rows need stable keys. With a mouse nothing moves.',
-      default: 'false',
+      name: 'animatedLayout',
+      type: 'AnimatedLayout',
+      description: 'The handle from useAnimatedLayout({containerRef}). With it, when rows are inserted, removed or reordered, an inserted row enters, a removed row collapses in place, a row that crosses rows moving the other way rides above them with the surface color behind it, and the rows after a change and the content after the list, up to that container, glide to their new places, all on one shared motion, under every pointer. Under Reduce Motion nothing travels. A row is identified by its itemKey: a row without one changes at once. Without a handle the list changes at once.',
     },
     {
       name: 'edge',

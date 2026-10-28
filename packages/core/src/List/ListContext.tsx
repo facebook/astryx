@@ -14,6 +14,7 @@
 
 import {use, useMemo, type ReactNode} from 'react';
 import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
+import type {AnimatedLayout} from '../hooks/useAnimatedLayout';
 
 export type ListDensity = 'compact' | 'balanced' | 'spacious';
 export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
@@ -55,13 +56,11 @@ export interface ListContextValue {
    */
   task?: ListTaskMarker;
   /**
-   * Set while the list animates its changes (`hasAnimatedChanges`);
-   * internal. A row leaving the list calls it as it unmounts, while it is
-   * still in the document, so the removal's collapse shows it as it was on
-   * screen (List/useListUpdateMotion.ts `keepPresentation`, the list's
-   * touch layer, reached only through the list).
+   * The list's `animatedLayout` handle (`component:List` FR12), for its rows;
+   * internal: a row's own layout changes (its start and end content) report
+   * to the same handle.
    */
-  keepRowPresentation?: (row: HTMLElement) => void;
+  animatedLayout?: AnimatedLayout;
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);
