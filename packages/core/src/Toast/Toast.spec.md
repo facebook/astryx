@@ -1,0 +1,203 @@
+---
+schema_version: 3
+template_version: 7
+kind: component
+id: component:Toast
+authority: current
+archive_reason: null
+superseded_by: null
+approved_by: cixzhang
+approved_at: 2026-10-28
+owners: [cixzhang]
+review_triggers: [public-api, behavior, layout, theming, accessibility]
+verified_by:
+  [
+    packages/core/src/Toast/ToastViewport.test.tsx,
+    packages/core/src/Toast/ToastViewport.modalHost.test.tsx,
+    packages/core/src/Toast/useToast.test.tsx,
+    apps/storybook/stories/Toast.stories.tsx,
+    scripts/check-knowledge.mjs,
+  ]
+modules: []
+families: []
+design_specs: [design:bidirectionality]
+architecture:
+  [
+    architecture:component-theming-surface,
+    architecture:layer-runtime,
+    architecture:interaction-modality,
+  ]
+contributing: []
+system_specs: [spec:AST-086, spec:AST-003]
+---
+
+# Toast component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `useToast()` returning a show function that takes `{body, type ('info' default, 'error'), isAutoHide, autoHideDuration (5000), endContent, renderContent, uniqueID, collisionBehavior ('overwrite' default, 'ignore'), onHide}` and returns a dismiss function; `ToastViewport` with `position` (`bottomEnd`), `maxVisible` (5), `inset`, `layerInset`, and `isTopLayer`; `Toast`; target `toast` with `type`. |
+| Behavior                | A stack of non-modal notification cards at one viewport corner. Each toast is announced once, can auto-hide (pausing while hovered, focused, touched, or the window is blurred), and dismisses by its button, a vertical swipe toward its edge, or code. F6 moves focus into the newest toast.                                                                                                                 |
+| End-user impact         | Users get brief notices without losing their place; screen-reader users hear each toast once; keyboard users reach toast controls with F6 and land somewhere sensible after dismissing; touch users swipe toasts away.                                                                                                                                                                                         |
+| Builder impact          | None.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Compatibility/readiness | Records shipped behavior; no public change. Two implementation gaps: each card carries its own live role besides the viewport's announcement, and the viewport builds its own top layer and exit (see Current-state impact).                                                                                                                                                                                   |
+| Review checks           | Reject a toast announced more than once per show, a dismissal that drops focus to the body, an auto-hide that runs while the user is reading or interacting, or a swipe as the only way to dismiss.                                                                                                                                                                                                            |
+| Governing rules         | `spec:AST-086` FR1; `spec:AST-003` (modal rehosting); `architecture:layer-runtime`; `design:bidirectionality`.                                                                                                                                                                                                                                                                                                 |
+
+This table is a review projection; the body below is authoritative.
+
+## Intent
+
+Toast shows brief, non-modal notifications. This record covers the toast card
+(`Toast`), the viewport that stacks, hosts, and announces toasts
+(`ToastViewport`, which has no consumer doc of its own), and the behavior the
+`useToast` show function drives. Consumer usage lives in `Toast.doc.mjs`.
+
+## Compatibility and migration
+
+- Released default preserved: `yes`
+- Compatibility class: records shipped behavior; no public change
+- Controlled/uncontrolled behavior: toasts live in the viewport's state; the
+  show function returns a dismiss function
+- Migration decision: none
+
+Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **Each card is a second live region.** The viewport announces every toast
+  through the shared announcement channel, and each visible card also carries
+  `role="status"` or `role="alert"` with `aria-live`. `spec:AST-086` FR1 requires
+  exactly one announcement owner per message.
+- **The viewport builds its own top layer and exit.** ToastViewport mounts its
+  own top layer and runs its own exit collapse. `architecture:layer-runtime`
+  INV14 has a layer use the runtime's top-layer mounting and shared exit copy
+  rather than building its own.
+
+## Ownership boundary
+
+**Owns**
+
+- The card's layout, auto-hide timing, swipe dismissal, and dismiss button
+  (FR1–FR5).
+- The viewport's placement, stacking, collision handling, announcement, F6
+  entry, focus handoff, landmark, and modal rehosting (FR6–FR12).
+
+**Does not own / non-goals**
+
+- Body, end content, and custom content — owned by the caller.
+- The dismiss Button — owned by `component:Button`.
+- The shared announcement channel — owned by `spec:AST-086`; top-layer hosting —
+  owned by `architecture:layer-runtime` and `spec:AST-003`.
+- The `useToast` hook's module contract — uncontracted; this record covers the
+  behavior it drives.
+
+## Public concepts
+
+| Concept            | Closed values or states                          | Meaning                                                    | Availability by variant/orientation/state | Default     | Owner             | Stability | Invalid-value behavior           |
+| ------------------ | ------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------- | ----------- | ----------------- | --------- | -------------------------------- |
+| Type               | `info`, `error`                                  | Announcement urgency and card treatment.                   | Every toast.                              | `info`      | `component:Toast` | Stable    | TypeScript rejects other values. |
+| Position           | `topEnd`, `topStart`, `bottomEnd`, `bottomStart` | Corner the stack sits in and the edge toasts swipe toward. | Viewport.                                 | `bottomEnd` | `component:Toast` | Stable    | TypeScript rejects other values. |
+| Collision behavior | `overwrite`, `ignore`                            | What a toast with an existing `uniqueID` does.             | Toasts with `uniqueID`.                   | `overwrite` | `component:Toast` | Stable    | TypeScript rejects other values. |
+| Dismiss reason     | `auto`, `manual`                                 | Reported to `onHide`.                                      | Every dismissal.                          | —           | `component:Toast` | Stable    | Not applicable.                  |
+
+## Behavioral and layout contract
+
+| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Basis                    |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1  | A card carries `toast` with `type` and shows `body` and, on its first line, `endContent` then a dismiss Button named by `@astryx.toast.dismiss`; long body text wraps below. `renderContent` replaces that layout, receives `body`, `endContent`, `type`, timing, and a `dismiss` function, and gets no injected dismiss control.                                                                                                                                                                    | Current source and tests |
+| FR2  | With auto-hide on, the card dismisses with reason `auto` after `autoHideDuration` ms. The timer pauses while the pointer is over the card, focus is inside it, a touch gesture is active, or the window is blurred, and resumes with the remaining time (at least 1 s).                                                                                                                                                                                                                              | Current source and tests |
+| FR3  | The dismiss button, a `dismiss` call, or the returned dismiss function dismiss with reason `manual`; `onHide` fires exactly once per toast, even when dismissed twice during its exit.                                                                                                                                                                                                                                                                                                               | Current source and tests |
+| FR4  | A touch or pen swipe toward the position's block edge past a distance threshold, or a fast flick, dismisses; a short drag snaps back; horizontal intent, mouse drag, a second touch, or a gesture starting on an interactive descendant does not dismiss. Native page scrolling continues until touch intent matches the dismiss edge. The visible dismiss button stays as a non-gesture alternative.                                                                                                | Current source and tests |
+| FR5  | A dismissed card collapses and fades before it unmounts; motion uses theme timing and slides only along the block axis; under reduced motion its transitions run for 0.01 ms, so they still end and the card still unmounts.                                                                                                                                                                                                                                                                         | Current source and tests |
+| FR6  | The viewport stacks toasts at `position`, newest nearest the configured edge, with an 8 px gap and no extra space at the edge; it spans the inline axis within `inset`, honoring start and end insets in either direction.                                                                                                                                                                                                                                                                           | Current source and tests |
+| FR7  | At most `maxVisible` toasts show; a newer toast evicts the oldest.                                                                                                                                                                                                                                                                                                                                                                                                                                   | Current source and tests |
+| FR8  | A toast whose `uniqueID` matches a visible toast replaces it in place under `overwrite` (and is announced again), and is dropped unshown and unannounced under `ignore`.                                                                                                                                                                                                                                                                                                                             | Current source and tests |
+| FR9  | The viewport announces each shown toast once, when it is shown, through the shared channel: `error` assertively, `info` politely, using the toast's text content. Unrelated renders do not re-announce.                                                                                                                                                                                                                                                                                              | `spec:AST-086`; tests    |
+| FR10 | F6 moves focus to the first control in the newest toast, or the viewport, and remembers where focus was. Dismissing a toast that holds focus moves focus to a remaining toast, or back to the remembered element when none remain.                                                                                                                                                                                                                                                                   | Current source and tests |
+| FR11 | While a toast is visible the viewport is a `region` landmark named by `@astryx.toast.viewport`, without `aria-modal`; it exposes no landmark when empty, and nested viewports do not duplicate it.                                                                                                                                                                                                                                                                                                   | Current source and tests |
+| FR12 | A top-layer viewport moves into the latest open native modal dialog, scrim sheet, or modal flow step, following the top of a stack and handing back to the one beneath when it closes, and returns to its place when none remains, keeping each toast, its timer, and focus inside the viewport. It re-enters the top layer in place when a non-modal sheet opens after it, and stays in place when rendered in place, or when an inline dialog, a sheet without a scrim, or a non-modal flow opens. | `spec:AST-003`; tests    |
+
+### Allowed variation
+
+- **AV1 — Content.** Body, end content, and custom content vary.
+- **AV2 — Theme styling.** Themes restyle `toast` per type.
+
+### Representative states
+
+| State                   | Required invariant                               | Allowed variation |
+| ----------------------- | ------------------------------------------------ | ----------------- |
+| Info, auto-hide         | Polite announcement once; timer pauses on hover. | Duration.         |
+| Error                   | Assertive announcement once.                     | —                 |
+| Overwrite by uniqueID   | Replaced in place; announced again.              | —                 |
+| Six toasts, default cap | Oldest evicted; five visible.                    | Cap.              |
+| Over an open Dialog     | Viewport inside the dialog's top layer.          | —                 |
+
+### Transformation and precedence order
+
+- **ORD1 — Collision.** `ignore` drops a matching toast before announcement;
+  `overwrite` replaces it, then announces.
+
+### Performance and resources
+
+- **PR1 — Cleanup.** Timers, window listeners, and native touch listeners are
+  removed when a toast unmounts.
+
+## Accessibility contract
+
+- **AR1 — One announcement.** FR9 (with the gap under Current-state impact).
+- **AR2 — Keyboard reach.** FR10.
+- **AR3 — Timing.** FR2 pauses auto-hide while the user reads or interacts.
+- **AR4 — Gesture alternative.** FR4 keeps a button for every swipe dismissal.
+
+## Design relationships
+
+| Anatomy or state | Design requirement                       | Representation authority       | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Body             | Message text that wraps.                 | Current source and public docs | Prominent      | FR1                |
+| End content      | Caller controls on the first line.       | Caller content                 | Supporting     | FR1                |
+| Dismiss button   | Small ghost icon button at the line end. | `component:Button`             | Supporting     | FR1, FR3           |
+
+No anatomy-theming map is recorded: the card carries `toast`, but
+`Toast.doc.mjs` names only the card's contents (Body, End content, Dismiss
+button), so no anatomy part can own the `toast` target.
+
+## Family and system relationships
+
+- `spec:AST-086` owns the announcement channel and the one-owner rule.
+- `spec:AST-003` and `architecture:layer-runtime` own top-layer hosting above
+  native modals.
+- `design:bidirectionality` keeps block-axis swipes and inline insets correct in
+  right-to-left.
+
+## Verification map
+
+| Contract | Verification                                                      | Representative states                                        | Mutation or failure expectation                            | Audit section               |
+| -------- | ----------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- | --------------------------- |
+| FR1, FR3 | `ToastViewport.test.tsx` layout, custom content, and onHide tests | Default, custom content, double dismiss                      | Dropped controls or a repeated `onHide` fails.             | `audit:Toast/behavior`      |
+| FR2      | `ToastViewport.test.tsx` blur-pause tests                         | Window blur, new toast during pause                          | A timer running while paused fails.                        | `audit:Toast/behavior`      |
+| FR4, FR5 | `ToastViewport.test.tsx` gesture and motion tests                 | Pen, touch, flick, short drag, RTL                           | A wrong dismissal or drift fails.                          | `audit:Toast/behavior`      |
+| FR6–FR8  | `ToastViewport.test.tsx` placement, cap, and uniqueID tests       | Each position, cap 1 and 5, overwrite, ignore                | Wrong order, cap, or collision fails.                      | `audit:Toast/layout`        |
+| FR9–FR11 | `ToastViewport.test.tsx` announcement, F6, focus, landmark tests  | Info, error, StrictMode, nested viewports                    | Repeated announcement or focus to body fails.              | `audit:Toast/accessibility` |
+| FR12     | `ToastViewport.modalHost.test.tsx`                                | Dialog, nested dialogs, sheets and sheet stacks, modal flows | A lost toast, timer, or focus, or the wrong outlet, fails. | `audit:Toast/layering`      |
+
+Read from source, with no focused test yet:
+
+- FR1: the `toast` target and its `type` state.
+- FR2: pausing while the pointer is over the card, focus is inside it, or a
+  touch gesture is active, and the 1 s minimum on resume.
+- FR10: F6 moving focus to the viewport when the newest toast has no control.
+
+## Decision log
+
+No component-local decision is recorded.
+
+## Open questions
+
+None.
+
+## Content boundary
+
+This file does not duplicate consumer prop tables, examples, the announcement
+channel, or layer-hosting rules. It links to their owners.
