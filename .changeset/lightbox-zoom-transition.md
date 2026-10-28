@@ -6,6 +6,6 @@
 
 Closing works the same way: the Close button, Escape, a tap beside the photo, or a swipe to another photo and then a close each send the photo back into the thumbnail of the photo showing, and the viewer stays open until it lands. A photo dragged down shrinks into its thumbnail. Under Reduce Motion the photo cross-fades in place.
 
-With a mouse the viewer opens and closes at once, as before.
+With a mouse the viewer opens and closes at once, as before, though a photo dragged down still lands in its thumbnail.
 
 @vjeux

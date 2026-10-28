@@ -121,7 +121,7 @@ export const docs = {
       type: '{sourceFor?: (index: number) => HTMLElement | null}',
       stability: 'experimental',
       description:
-        "Experimental options: anything in this object may change or be removed in a patch release. sourceFor: The element an item opens from and closes into, usually its thumbnail: on a touch screen the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it; a tap or a drag that lands while the photo zooms open is held, so it neither closes the viewer nor reaches the page, while keys and screen readers stay live. With a mouse the viewer opens and closes at once, as before. Return null when there is none or it is off screen. Without it, on a touch screen the element that opened the viewer is the opened item's source when it shows a picture. Without experimental, the viewer opens and closes plainly. Proposed; pending owner review.",
+        "Experimental options: anything in this object may change or be removed in a patch release. sourceFor: The element an item opens from and closes into, usually its thumbnail: on a touch screen the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it; a tap or a drag that lands while the photo zooms open is held, so it neither closes the viewer nor reaches the page, while keys and screen readers stay live. With a mouse the viewer opens and closes at once, as before, though a photo dragged down still lands in it. Return null when there is none or it is off screen. Without it, on a touch screen the element that opened the viewer is the opened item's source when it shows a picture. Without experimental, the viewer opens and closes plainly. Proposed; pending owner review.",
     },
     {
       name: 'xstyle',
@@ -229,7 +229,7 @@ export const docsZh = {
       type: '{sourceFor?: (index: number) => HTMLElement | null}',
       stability: 'experimental',
       description:
-        '实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除。sourceFor：某一项打开时放大自、关闭时缩回的元素（通常是其缩略图），仅在触屏上；向下拖动的照片也会落入其中。照片放大打开期间，落下的点按或拖动会被拦截，既不会关闭查看器，也不会触及页面；键盘和读屏软件不受影响。使用鼠标时，查看器照常立即打开和关闭。没有或不在屏幕上时返回 null。未提供时，在触屏上，若打开查看器的元素显示图片，则它是所打开项的来源。不传 experimental 时，查看器照常打开和关闭。',
+        '实验性选项：此对象中的任何内容都可能在补丁版本中更改或移除。sourceFor：某一项打开时放大自、关闭时缩回的元素（通常是其缩略图），仅在触屏上；向下拖动的照片也会落入其中。照片放大打开期间，落下的点按或拖动会被拦截，既不会关闭查看器，也不会触及页面；键盘和读屏软件不受影响。使用鼠标时，查看器照常立即打开和关闭，但向下拖动的照片仍会落入其中。没有或不在屏幕上时返回 null。未提供时，在触屏上，若打开查看器的元素显示图片，则它是所打开项的来源。不传 experimental 时，查看器照常打开和关闭。',
     },
     {
       name: 'xstyle',
