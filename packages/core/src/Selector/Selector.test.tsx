@@ -1830,7 +1830,7 @@ describe('Selector', () => {
           'Strawberry',
           'Blueberry',
         ]);
-        await user.keyboard('{ArrowDown}');
+        // The first match is highlighted as the query lands (FR9).
         expect(search).toHaveAttribute('aria-activedescendant', options[0].id);
         await user.keyboard('{ArrowDown}');
         expect(search).toHaveAttribute('aria-activedescendant', options[1].id);
