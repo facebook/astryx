@@ -310,7 +310,7 @@ describe('DateInput — open-sheet disablement', () => {
     });
   });
 
-  it('blocks reset while the open sheet is disabled or loading, retaining value and focus', () => {
+  it('blocks disabled reset but preserves busy-only month navigation', () => {
     const onChange = vi.fn();
     const changeAction = vi.fn();
     const props = {initial: '2026-02-21' as const, onChange, changeAction};
@@ -341,7 +341,7 @@ describe('DateInput — open-sheet disablement', () => {
       expect(reset).toHaveFocus();
       expect(
         document.querySelector('[data-title="month-year"]'),
-      ).toHaveTextContent('February 2026');
+      ).toHaveTextContent('March 2026');
 
       rerender(<Controlled {...props} />);
       fireEvent.click(reset);

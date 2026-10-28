@@ -848,9 +848,9 @@ export function TouchDateField({
    * value is still cleared either way — that half never depends on the range.
    */
   const handleResetInSheet = useCallback(() => {
-    // Disabled or busy: reject the entire reset, including month navigation,
-    // while leaving the open sheet and focus owner intact.
-    if (isEffectivelyDisabled) {
+    // Disabled: reject the entire reset without closing or moving focus.
+    // Busy-only fields keep month navigation; fireChange blocks the clear.
+    if (isDisabled) {
       return;
     }
     fireChange(undefined);
@@ -863,14 +863,7 @@ export function TouchDateField({
     }
     setMonthIndex(currentMonth);
     scrollerHandleRef.current?.scrollToMonth(currentMonth, 'smooth');
-  }, [
-    isEffectivelyDisabled,
-    fireChange,
-    today,
-    monthIndex,
-    minMonthIndex,
-    maxMonthIndex,
-  ]);
+  }, [isDisabled, fireChange, today, monthIndex, minMonthIndex, maxMonthIndex]);
 
   // Selection commits on the tap and leaves the sheet up, so a mistake can be
   // corrected in place and a nearby date reconsidered without reopening.
