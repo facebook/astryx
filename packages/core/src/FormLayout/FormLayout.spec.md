@@ -3,15 +3,16 @@ schema_version: 3
 template_version: 7
 kind: component
 id: component:FormLayout
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-10-28
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
+    .github/visual-baseline/manifest.json,
     packages/core/src/FormLayout/FormLayout.test.tsx,
     apps/storybook/stories/FormLayout.stories.tsx,
     packages/core/src/theme/themingTargets.test.ts,
@@ -28,22 +29,22 @@ architecture:
     architecture:component-test-sufficiency,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-038]
 ---
 
 # FormLayout component contract
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `FormLayout` arranges caller-owned fields through `vertical`, `horizontal`, and `horizontal-labels` directions, provides a form-level optionality default, exports its context and supporting types, and accepts root `BaseProps`.                                      |
-| Behavior                | Vertical stacks children; horizontal creates one fractional grid track per child in logical inline order; horizontal-labels pairs Field labels and controls, then collapses below a 481px viewport.                                                                     |
-| End-user impact         | People encounter predictable field spacing and order, and assistive technology receives required-state information even when the form-wide visual convention leaves the common case unmarked.                                                                           |
-| Builder impact          | Builders supply the fields and any semantic `<form>`, title, or footer; nested layouts replace the outer direction and optionality context for their descendants.                                                                                                       |
-| Compatibility/readiness | This draft records released behavior. It changes no public API, default, or runtime behavior.                                                                                                                                                                           |
-| Review checks           | Reject lost root props, physical inline ordering, changed collapse boundaries, caller-overridable direction reflection, lost nested-context shadowing, or a visible optionality convention that disagrees with ARIA. Narrow label/control grouping remains open in OQ1. |
-| Governing rules         | Established public FormLayout interface; `family:input-fields` outer-arrangement ownership; `architecture:public-component-api/INV5–INV9`; `architecture:component-theming-surface/INV2–INV6`.                                                                          |
+| Area                    | Contract                                                                                                                                                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `FormLayout` arranges caller-owned fields through `vertical`, `horizontal`, and `horizontal-labels` directions, provides a form-level optionality default, exports its context and supporting types, and accepts root `BaseProps`. |
+| Behavior                | Vertical stacks children; horizontal creates one fractional grid track per child in logical inline order; horizontal-labels pairs Field labels and controls, then collapses below a 481px viewport.                                |
+| End-user impact         | People encounter predictable field spacing and order, and assistive technology receives required-state information even when the form-wide visual convention leaves the common case unmarked.                                      |
+| Builder impact          | Builders supply the fields and any semantic `<form>`, title, or footer; nested layouts replace the outer direction and optionality context for their descendants.                                                                  |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or runtime changes.                                                                                                                                                        |
+| Review checks           | Reject lost root props, physical inline ordering, changed collapse boundaries, caller-overridable direction reflection, lost nested-context shadowing, or a visible optionality convention that disagrees with ARIA.               |
+| Governing rules         | Established public FormLayout interface; `family:input-fields` outer-arrangement ownership; `architecture:public-component-api/INV5–INV9`; `architecture:component-theming-surface/INV2–INV6`.                                     |
 
 This table is a review projection; the body below is authoritative.
 
@@ -54,7 +55,7 @@ This table is a review projection; the body below is authoritative.
 ## Compatibility and migration
 
 - Released default preserved: yes; direction defaults to `vertical`, and optionality remains field-owned when `defaultOptionality` is unset.
-- Compatibility class: observational only; this draft changes no public prop, default, or behavior.
+- Compatibility class: records shipped behavior; no public prop, default, or behavior changes.
 - Controlled/uncontrolled behavior: not applicable; FormLayout owns no form value or submission state.
 - Migration decision: none.
 
@@ -76,23 +77,21 @@ This table is a review projection; the body below is authoritative.
 
 | Concept             | Closed values or states                         | Meaning                                                                 | Availability by variant/orientation/state                    | Default              | Owner                  | Stability | Invalid-value behavior |
 | ------------------- | ----------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------- | ---------------------- | --------- | ---------------------- |
-| direction           | `vertical`; `horizontal`; `horizontal-labels`   | Selects the outer arrangement and provides that value to descendants.   | All layouts.                                                 | `vertical`           | `component:FormLayout` | released  | Type-constrained       |
-| default optionality | unset; `optional`; `required`                   | Marks only exceptions while controls preserve resolved required state.  | All directions; the nearest nested layout shadows the outer. | unset / per-field    | `component:FormLayout` | released  | Type-constrained       |
-| root composition    | DOM/data/ARIA/events; ref; class/style/`xstyle` | Extends the root layout container without replacing owned reflection.   | All directions.                                              | no caller decoration | `component:FormLayout` | released  | Shared merge contract  |
-| layout context      | direction plus optionality                      | Lets Field and inputs adapt their layout and required-state projection. | Descendants in the same layer scope.                         | vertical / unset     | `component:FormLayout` | released  | Nearest provider wins  |
+| direction           | `vertical`; `horizontal`; `horizontal-labels`   | Selects the outer arrangement and provides that value to descendants.   | All layouts.                                                 | `vertical`           | `component:FormLayout` | Stable    | Type-constrained       |
+| default optionality | unset; `optional`; `required`                   | Marks only exceptions while controls preserve resolved required state.  | All directions; the nearest nested layout shadows the outer. | unset / per-field    | `component:FormLayout` | Stable    | Type-constrained       |
+| root composition    | DOM/data/ARIA/events; ref; class/style/`xstyle` | Extends the root layout container without replacing owned reflection.   | All directions.                                              | no caller decoration | `component:FormLayout` | Stable    | Shared merge contract  |
+| layout context      | direction plus optionality                      | Lets Field and inputs adapt their layout and required-state projection. | Descendants in the same layer scope.                         | vertical / unset     | `component:FormLayout` | Stable    | Nearest provider wins  |
 
 ## Behavioral and layout contract
 
-Draft requirements identify their basis so observed code is not mistaken for an intentional decision.
-
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                         | Basis                                                               | Draft review state                                    |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------- |
-| FR1 | Vertical direction stacks children with the shared spacing token.                                                                                                                                                                                                                                                           | Established public interface; current source and stories            | settled observation                                   |
-| FR2 | Horizontal direction places every direct child in one `1fr` grid track and follows the document's logical inline order without a component-owned wrap rule.                                                                                                                                                                 | Established public interface; current source and stories            | settled observation                                   |
-| FR3 | Horizontal-labels direction lets Field labels and control groups participate in a two-column grid, with the label on the inline-start side; at a viewport width of 480px or below it becomes one vertical flex column. Whether the collapsed label/control gap distinguishes each pair strongly enough remains open in OQ1. | Established public interface; Field composition and browser fixture | wide behavior settled; narrow grouping human decision |
-| FR4 | A nested FormLayout replaces the outer direction and optionality context for its descendants.                                                                                                                                                                                                                               | Existing context and unit tests                                     | settled observation                                   |
-| FR5 | `defaultOptionality` suppresses only the visible marker that restates the form default; descendant controls still expose resolved `aria-required`, while native `required` remains tied to explicit field intent.                                                                                                           | Existing tests; `family:input-fields` ownership                     | settled observation                                   |
-| FR6 | Root ref, DOM/data/ARIA/event props, `xstyle`, class name, and inline style reach or compose on the root without replacing `data-direction` or the canonical target.                                                                                                                                                        | `architecture:public-component-api/INV5–INV8`                       | settled observation                                   |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                          | Basis                                                           |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| FR1 | `vertical` (the default) stacks children in a flex column with a `--spacing-4` gap.                                                                                                                                                                                                                                                                                                | Released source, tests, and stories                             |
+| FR2 | `horizontal` places every direct child in one `1fr` grid column in the document's logical inline order, with a `--spacing-4` gap and no component-owned wrap rule.                                                                                                                                                                                                                 | Released source, tests, and stories                             |
+| FR3 | `horizontal-labels` is a two-column grid (`auto 1fr`) with a `--spacing-3` row gap and `--spacing-4` column gap, items aligned to the start, so Field labels sit on the inline-start side of their controls; at a viewport width of 480px or below it becomes one flex column with a `--spacing-4` gap. OQ1 holds whether the collapsed label and control need a tighter pair gap. | Released source, Field composition, and tests                   |
+| FR4 | FormLayout provides its direction and `defaultOptionality` to descendants in the same layer; a nested FormLayout replaces both for its own descendants, and content in a layer opened inside a FormLayout starts without them (`spec:AST-038` FR7, FR8).                                                                                                                           | Context source and tests                                        |
+| FR5 | `defaultOptionality` suppresses only the visible marker that restates the form default; descendant controls still expose the resolved `aria-required`, while native `required` stays tied to an explicit field `isRequired`. Unset keeps each field's own indicators.                                                                                                              | Tests; `family:input-fields` ownership                          |
+| FR6 | The root is a `div`. `ref`, DOM, data, ARIA, and event props, `xstyle`, class name, and inline style reach or compose on the root without replacing `data-direction` or the `form-layout` target.                                                                                                                                                                                  | `architecture:public-component-api/INV5–INV8`; source and tests |
 
 ### Allowed variation
 
@@ -130,7 +129,15 @@ Draft requirements identify their basis so observed code is not mistaken for an 
 
 ## Design relationships
 
-No current component-local or shared design record prescribes a FormLayout-specific representation. Spacing uses the current token scale; exact tuning remains token-owned.
+| Anatomy or state | Design requirement                                          | Representation authority | Hierarchy role | Component contract |
+| ---------------- | ----------------------------------------------------------- | ------------------------ | -------------- | ------------------ |
+| Layout container | Outer arrangement and spacing of caller fields.             | Current source and docs  | Supporting     | FR1–FR3, FR6       |
+| Form title       | Caller content; not rendered or styled by FormLayout.       | Caller-owned             | Prominent      | —                  |
+| Fields           | Caller Field and input components.                          | Their own components     | Prominent      | FR4, FR5           |
+| Footer           | Caller action region; not rendered or styled by FormLayout. | Caller-owned             | Supporting     | —                  |
+
+No shared design record prescribes a FormLayout-specific representation;
+spacing uses the token scale.
 
 ### Theming anatomy
 
@@ -164,24 +171,23 @@ The root target reflects the closed `direction` axis. It owns the outer arrangem
 - `family:input-fields` identifies FormLayout as the owner of outer arrangement, spacing, direction, and form-level optionality.
 - `component:Field` consumes horizontal-label direction and optionality while retaining label, control, description, and status ownership.
 - `architecture:public-component-api` owns root prop, styling, event, ref, and released-type composition.
-- `architecture:component-theming-surface` owns the root target's anatomy mapping and reflected direction axis.
+- `architecture:component-theming-surface` sets the rules the `form-layout` target and its reflected direction follow.
 - `architecture:component-test-sufficiency` owns bounded, mutation-sensitive evidence selection.
 
 ## Verification map
 
-| Contract          | Verification                                                                                           | Representative states                                            | Mutation or failure expectation                                                                               | Audit section                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| FR1–FR4, ORD1     | `FormLayout.test.tsx`, exact-head `AuditMatrix` story-play guards, and independent rendered inspection | vertical, horizontal, horizontal-label wide/narrow, nested       | Changed display, order, breakpoint, or provider shadowing fails; narrow grouping remains visible for OQ1.     | `audit:FormLayout/behavior`      |
-| FR5, ORD3, AR2    | `FormLayout.test.tsx`, Field tests, and scoped browser accessibility audit                             | required/optional/unset defaults; explicit exceptions            | A redundant marker returns, resolved `aria-required` disappears, or native validation changes.                | `audit:FormLayout/accessibility` |
-| FR6, ORD2         | root composition tests, BaseProps lint, theming-target tests, and exact-head AuditMatrix play          | ref, DOM/data/ARIA/events, class/style/`xstyle`, every direction | A caller input drops, direction reflection is replaced, or the public target disappears.                      | `audit:FormLayout/api`           |
-| AR1, AR3          | DOM tests and exact-head browser/a11y evidence                                                         | plain root, native form wrapper, LTR/RTL                         | Layout invents semantics, changes DOM/keyboard order, or uses physical inline placement.                      | `audit:FormLayout/accessibility` |
-| Theming anatomy   | knowledge validation, consumer-doc projection, and theming-target tests                                | root target; caller-owned title, fields, and footer              | The target loses its semantic owner or FormLayout claims a child component's painter.                         | `audit:FormLayout/theming`       |
-| Documentation     | docs typecheck and prop literal/reference tests                                                        | all directions, breakpoint, optionality, root anatomy            | Docs claim wrapping, physical order, flex growth, or another behavior the released code lacks.                | `audit:FormLayout/docs`          |
-| RTL applicability | verified-N/A registry plus exact-head AuditMatrix logical-order assertion                              | horizontal and horizontal-labels in LTR/RTL                      | A physical side, directional glyph, transform, scroll/drag, overlay, or directional key path makes N/A stale. | `audit:FormLayout/i18n-rtl`      |
+| Contract       | Verification                                                                                                                        | Representative states                                   | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                   | Audit section                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1–FR3        | `FormLayout.test.tsx` direction snapshots; `FormLayout.stories.tsx` play checks; stable visual baseline `core-formlayout--vertical` | Vertical, horizontal, horizontal-labels wide and narrow | A changed style class set fails the snapshots; a narrow horizontal-labels control narrower than the layout, or a wide label not before its control, fails the play checks; a changed vertical layout comes back changed for review. Gap: the play checks run left-to-right only, so no automated check covers horizontal-labels in right-to-left. | `audit:FormLayout/behavior`      |
+| FR4, ORD1      | `FormLayout.test.tsx` context and nesting tests                                                                                     | Default, explicit, nested                               | A lost default, value, or nested shadowing fails. Gap: no test covers content in a layer opened inside a FormLayout starting without its values (`spec:AST-038` FR7, FR8).                                                                                                                                                                        | `audit:FormLayout/behavior`      |
+| FR5, ORD3, AR2 | `FormLayout.test.tsx` optionality and `aria-required` tests                                                                         | Required, optional, unset defaults; explicit exceptions | A redundant marker, a missing `aria-required`, or a native `required` from the default fails.                                                                                                                                                                                                                                                     | `audit:FormLayout/accessibility` |
+| FR6, ORD2      | `FormLayout.test.tsx` ref, passthrough, and owned-metadata tests; `themingTargets.test.ts`                                          | Ref, attributes, colliding `data-direction`             | A ref on a non-`div`, a dropped `id` or `role`, or a replaced `data-direction` fails. Gap: the styling-input merge order has no check.                                                                                                                                                                                                            | `audit:FormLayout/api`           |
+| AR1, AR3       | `FormLayout.test.tsx` div and passthrough tests; `FormLayout.stories.tsx` play checks                                               | Plain root; caller `role`                               | A non-`div` root or a dropped caller `role` fails. Gap: no check fails if FormLayout adds a role of its own, and no right-to-left check covers logical inline order.                                                                                                                                                                              | `audit:FormLayout/accessibility` |
+| PR1            | Source review                                                                                                                       | Every direction                                         | Gap: no automated check covers context identity or added resources.                                                                                                                                                                                                                                                                               | `audit:FormLayout/behavior`      |
 
 ## Decision log
 
-No component-local decision is asserted. This draft records released behavior and its current shared owners.
+None recorded. The record describes shipped behavior.
 
 ## Open questions
 
@@ -189,4 +195,5 @@ No component-local decision is asserted. This draft records released behavior an
 
 ## Content boundary
 
-This draft records verified shipped behavior and the unresolved narrow grouping relationship. It does not create form semantics, prescribe caller content, approve a new API or target, or duplicate consumer prop tables and audit-run scores.
+This file does not duplicate consumer prop tables/examples, current audit
+results, implementation steps, or family/system rules. It links to their owners.
