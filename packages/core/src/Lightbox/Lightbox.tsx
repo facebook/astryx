@@ -57,7 +57,6 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useZoomCore} from './useZoomCore';
 import {useZoomStage} from './useZoomStage';
-import {useTouchPresentation} from '../utils/touchPresentation';
 /**
  * Media type for lightbox items.
  */
@@ -527,18 +526,16 @@ export function Lightbox({
   // arrow keys pan while zoomed. A tap on the dark area around the photo
   // closes, as a click on the backdrop does.
   const isZoomTarget = hasZoom && !isVideo;
-  // The zoom stage for every pointer (the keyboard, a mouse double-click and
-  // drag) and, under a finger, its touch layer: one touch model on every
-  // touch device (the shared touch resolver), whose pinch and pan give past
-  // their limits and bounce back.
-  const {isTouch} = useTouchPresentation();
+  // The zoom stage: the keyboard's zoom and pan, and the gestures of every
+  // pointer, a mouse, a pen and a finger alike (spec:AST-094 FR43), whose
+  // pinch (a ctrl-wheel's too) and pan (a wheel's too) give past their
+  // limits and bounce back.
   const onDragStart = () => {
     didDragRef.current = true;
   };
   const zoom = useZoomCore({
     stageRef: imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
-    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -546,11 +543,10 @@ export function Lightbox({
         next ? t('@astryx.lightbox.zoomedIn') : t('@astryx.lightbox.zoomedOut'),
       );
     },
-    onDragStart,
   });
   const stage = useZoomStage(zoom, {
     stageRef: imageWrapperRef,
-    isEnabled: isOpen && isZoomTarget && isTouch,
+    isEnabled: isOpen && isZoomTarget,
     itemKey: viewedItem,
     onTapOutside: handleClose,
     onDragStart,
@@ -681,7 +677,7 @@ export function Lightbox({
               <div
                 {...stylex.props(
                   styles.mediaGroup,
-                  isZoomTarget && isTouch && styles.mediaGroupZoom,
+                  isZoomTarget && styles.mediaGroupZoom,
                 )}>
                 <div
                   ref={imageWrapperRef}
@@ -695,8 +691,8 @@ export function Lightbox({
                   }
                   {...stylex.props(
                     styles.imageWrapper,
-                    isZoomTarget && isTouch && styles.imageWrapperZoomTarget,
-                    isZoomTarget && isTouch && styles.imageWrapperFill,
+                    isZoomTarget && styles.imageWrapperZoomTarget,
+                    isZoomTarget && styles.imageWrapperFill,
                     isZoomTarget && focusOutlineStyles.focusVisible,
                     isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
                     isZoomTarget && isZoomed && styles.imageWrapperZoomed,

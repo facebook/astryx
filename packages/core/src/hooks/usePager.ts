@@ -969,12 +969,7 @@ export function createPager(
 
   function holdSelection(on: boolean): void {
     if (on && releaseSelection == null && trackElement != null) {
-      if (
-        locksSelectionFor(
-          catcher.pointerType ?? 'touch',
-          trackElement.ownerDocument.defaultView,
-        )
-      ) {
+      if (locksSelectionFor(catcher.pointerType ?? 'touch')) {
         releaseSelection = lockSelection([trackElement], null);
       }
     } else if (!on && releaseSelection != null) {
