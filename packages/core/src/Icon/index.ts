@@ -5,7 +5,8 @@
 /**
  * @file index.ts
  * @input Imports Icon component/types, icon registry, and global registration
- * @output Exports Icon, icon registry helpers, registerIcons, getIconRegistry, getIcon
+ * @output Exports Icon, icon registry helpers, registerIcons, getIconRegistry, getIcon,
+ *   and the IconEntry/IconRequest types for theme and registered entries
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Icon/Icon.doc.mjs
@@ -29,4 +30,6 @@ export type {
   NamespacedIconName,
   IconRegistry,
   IconRegistrySource,
+  IconEntry,
+  IconRequest,
 } from './globalIconRegistry';

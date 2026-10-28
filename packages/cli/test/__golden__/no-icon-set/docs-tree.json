@@ -1217,6 +1217,7 @@
     "sections": [
       "quick-start",
       "creating-a-custom-theme",
+      "icon-sizes",
       "light-dark-mode",
       "integration-themes"
     ],
