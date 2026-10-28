@@ -90,7 +90,7 @@ function getKeyDisplay(key: string, isMac: boolean, t: TranslatorFn): string {
   if (key === 'mod') {
     return isMac ? '\u2318' : t('@astryx.kbd.key.controlShort');
   }
-  if (key === 'escape') {return t('@astryx.kbd.key.escapeShort');}
+  if (key === 'escape') return t('@astryx.kbd.key.escapeShort');
   return KEY_DISPLAY.get(key) ?? key.toUpperCase();
 }
 
