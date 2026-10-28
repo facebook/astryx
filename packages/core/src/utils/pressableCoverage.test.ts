@@ -24,6 +24,9 @@
  *    element carrying the scope.
  *  - A styles-only module (`*.stylex.ts`) is covered when every file that
  *    imports it is marked.
+ *  - A composer whose arms ride `xstyle` onto a marked component's root
+ *    (ListItem's divider arms on Item's row) is covered by that component,
+ *    since the controller writes `data-astryx-press` on that root.
  */
 
 import fs from 'node:fs';
@@ -32,9 +35,14 @@ import {describe, expect, it} from 'vitest';
 
 const SRC = path.resolve(__dirname, '..');
 
-/** The utility and the controller define the model; they are not surfaces. */
+/**
+ * The utility, the list row's press layer and the controller define the
+ * model; they are not surfaces.
+ */
 const MODEL_FILES = new Set([
   'utils/interactionOverlay.stylex.ts',
+  'utils/rowPressLayer.ts',
+  'utils/controlPressLayer.ts',
   'utils/pressFeedback.ts',
   'utils/pressGesture.ts',
 ]);
@@ -63,9 +71,14 @@ const source = new Map(
   files.map(file => [path.relative(SRC, file), fs.readFileSync(file, 'utf8')]),
 );
 
-const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
+// A press arm keys on `:active` or on the attribute the controller writes, as
+// a bare attribute selector or inside `:is(…)`.
+const PRESS_ARM =
+  /':active|'(?::is\()?\[data-astryx-press=|interactionOverlayStyles\./;
+// The trailing comma is what the formatter writes when a call wraps over
+// several lines.
 const ANCESTOR_ARM =
-  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
+  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*,?\s*\)/g;
 
 function isMarked(file: string): boolean {
   return (source.get(file) ?? '').includes('usePressFeedback(');
@@ -109,6 +122,29 @@ function importers(file: string): string[] {
     .map(([other]) => other);
 }
 
+/** Components (by exported name) whose own file is marked. */
+const markedComponents = new Set(
+  [...source.entries()]
+    .filter(([file]) => isMarked(file))
+    .flatMap(([, text]) =>
+      [...text.matchAll(/export function ([A-Z]\w*)\(/g)].map(m => m[1]),
+    ),
+);
+
+/**
+ * Marked components `file` renders and styles through `xstyle`: its arms land
+ * on their root, the element that carries the marker.
+ */
+function xstyleHosts(file: string): string[] {
+  const text = source.get(file) ?? '';
+  if (!/\bxstyle=\{/.test(text)) {
+    return [];
+  }
+  return [...markedComponents].filter(name =>
+    new RegExp(`<${name}\\b`).test(text),
+  );
+}
+
 const pressArmFiles = [...source.entries()]
   .filter(([file, text]) => !MODEL_FILES.has(file) && PRESS_ARM.test(text))
   .map(([file]) => file)
@@ -146,9 +182,12 @@ describe('every surface that paints a press is reachable by the touch press cont
         // A component whose arms read an ancestor scope marker: the owners that
         // apply the marker are the pressables, and each must be marked.
         const scopes = [...text.matchAll(ANCESTOR_ARM)].map(m => m[1]);
+        if (scopes.length === 0 && xstyleHosts(file).length > 0) {
+          return;
+        }
         expect(
           scopes,
-          `${file} paints a press without usePressFeedback() and without an ancestor scope`,
+          `${file} paints a press without usePressFeedback(), an ancestor scope, or a marked component to style through xstyle`,
         ).not.toHaveLength(0);
         for (const scope of new Set(scopes)) {
           const owners = referrers(scope, file);
@@ -167,8 +206,9 @@ describe('every surface that paints a press is reachable by the touch press cont
 
   it('marks nothing that does not paint a press', () => {
     // The converse: a marker with no arm would ask the controller to write an
-    // attribute nothing reads. Every marked file must paint a press itself or
-    // apply a scope an indicator reads.
+    // attribute nothing reads. Every marked file must paint a press itself,
+    // compose a styles-only module that does (its arms land on this file's
+    // elements), or apply a scope an indicator reads.
     const marked = [...source.entries()]
       .filter(([, text]) => text.includes('usePressFeedback('))
       .map(([file]) => file)
@@ -178,9 +218,15 @@ describe('every surface that paints a press is reachable by the touch press cont
         [...text.matchAll(ANCESTOR_ARM)].map(m => m[1]),
       ),
     );
+    const pressArmModules = pressArmFiles.filter(file =>
+      file.endsWith('.stylex.ts'),
+    );
     const unexplained = marked.filter(file => {
       const text = source.get(file) ?? '';
       if (PRESS_ARM.test(text)) {
+        return false;
+      }
+      if (pressArmModules.some(module => importers(module).includes(file))) {
         return false;
       }
       return ![...scopeNames].some(scope =>

@@ -16,10 +16,20 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  declaresPressPaint,
   hasPressedArm,
   hasReleaseFade,
   readsPressStrength,
 } from '../__tests__/pressState';
+import {
+  declaresIndicatorPressOwner,
+  layerPressRulesBehindPointer,
+  ownerPressRulesBehindPointer,
+  readIndicatorPressLayer,
+  readsAncestorPress,
+  readsIndicatorPress,
+} from '../__tests__/indicatorPressLayer';
+import {controlPressConsts} from '../utils/controlPressLayer.stylex';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
@@ -875,7 +885,7 @@ describe('label theme target', () => {
 });
 
 describe('pressed state', () => {
-  it('paints the pressed overlay over the indicator while the row is pressed', () => {
+  it('paints its press through the press model for every pointer: no `:active` arm over the indicator (FR43)', () => {
     const {container} = render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
@@ -885,8 +895,11 @@ describe('pressed state', () => {
       throw new Error('the checkbox has no indicator wrapper to press');
     }
     // The owner paints over the resolved indicator, so the treatment survives a
-    // theme replacement that does not forward style props.
-    expect(hasPressedArm(wrapper)).toBe(true);
+    // theme replacement that does not forward style props. A mouse and a pen
+    // press through the same controller as a finger (spec:AST-094 FR11's
+    // fine-pointer profile, FR43), so no `:active` arm paints beside it.
+    expect(hasPressedArm(wrapper)).toBe(false);
+    expect(readsIndicatorPress(wrapper)).toBe(true);
   });
 
   it('does not expose a pressed arm on a disabled checkbox', () => {
@@ -906,21 +919,79 @@ describe('pressed state', () => {
     expect(hasPressedArm(wrapper)).toBe(false);
   });
 
-  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+  it('paints no press on a read-only checkbox, which cannot change', () => {
+    const {container} = render(
+      <CheckboxInput
+        label="Locked by policy"
+        value
+        onChange={() => {}}
+        isReadOnly
+      />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper');
+    }
+    // Nothing for the touch press controller to write, and no arm that
+    // would paint a mouse or touch press over the box.
+    expect(container.querySelector('[data-astryx-pressable]')).toBeNull();
+    expect(hasPressedArm(wrapper)).toBe(false);
+    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(false);
+  });
+
+  it('paints the press on its own layer over the box and releases it on a control’s clock', () => {
     const {container} = render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     const box = container.querySelector('.astryx-checkbox-indicator');
     const wrapper = box?.parentElement?.parentElement;
-    const row = box?.closest('[data-astryx-pressable]');
-    if (wrapper == null || row == null) {
-      throw new Error('the checkbox has no pressable row or indicator wrapper');
+    const control = box?.closest('[data-astryx-pressable]');
+    if (wrapper == null || control == null) {
+      throw new Error(
+        'the checkbox has no pressable control or indicator wrapper',
+      );
     }
-    // The controller writes the row; the row owns the strength and its
-    // release, and the owner-drawn layer over the indicator paints the pressed
-    // token at that strength on both touch arms.
-    expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(wrapper)).toBe(true);
+    // The controller writes the control, which declares the press's image
+    // and release; the layer over the box paints the pressed token at full
+    // strength and fades by its own opacity on UIButton's release, on the
+    // compositor.
+    expect(declaresIndicatorPressOwner(control)).toBe(true);
+    const layer = readIndicatorPressLayer(wrapper, control);
+    expect(layer).toEqual({
+      paintsOn: true,
+      paintsFading: true,
+      releases: true,
+      // UIButton's release, and under Reduce Motion the policy's 200 ms fade
+      // (design:reduced-motion DR2, reducedMotionFadeConsts).
+      releaseMs: [controlPressConsts.controlReleaseMs, 200],
+      fillsBoth: true,
+    });
+    // Nothing carries a press strength any more, so no main-thread release
+    // runs on the control.
+    expect(declaresPressPaint(control)).toBe(false);
+    expect(hasReleaseFade(control)).toBe(false);
+    expect(readsPressStrength(wrapper)).toBe(false);
+    // The layer answers its own control only, never an outer element's
+    // press (architecture:component-style-authoring INV4).
+    expect(readsAncestorPress(wrapper)).toBe(false);
+  });
+
+  it('keeps no press rule behind a pointer query: one press model for every pointer (FR43)', () => {
+    // A mouse, a pen and a finger press through the same controller
+    // (spec:AST-094 FR11's fine-pointer profile, FR43): no rule the layer
+    // adds for a press the controller writes, nor its release's clock, curve
+    // and fill, sits behind a pointer query.
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    const control = box?.closest('[data-astryx-pressable]');
+    if (wrapper == null || control == null) {
+      throw new Error('the checkbox has no indicator wrapper or control');
+    }
+    expect(layerPressRulesBehindPointer(wrapper)).toEqual([]);
+    expect(ownerPressRulesBehindPointer(control)).toEqual([]);
   });
 });

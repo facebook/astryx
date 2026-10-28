@@ -16,11 +16,19 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
-  hasReleaseFade,
   readsPressStrength,
   rulesDeclaredFor,
   rulesWithSelector,
 } from '../__tests__/pressState';
+import {
+  declaresIndicatorPressOwner,
+  layerPressRulesBehindPointer,
+  ownerPressRulesBehindPointer,
+  readIndicatorPressLayer,
+  readsAncestorPress,
+  readsIndicatorPress,
+} from '../__tests__/indicatorPressLayer';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -906,7 +914,7 @@ function declaresRowPress(el: Element): boolean {
 }
 
 describe('pressed state', () => {
-  it('paints the pressed overlay over the radio indicator while the row is pressed', () => {
+  it('paints its press through the press model for every pointer: no `:active` arm over the circle (FR43)', () => {
     const {container} = render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
@@ -919,10 +927,13 @@ describe('pressed state', () => {
     if (wrapper == null || row == null) {
       throw new Error('the radio has no pressable row or indicator wrapper');
     }
-    // The row declares the mouse press's paint while it is pressed, and the
-    // layer over the circle reads it.
-    expect(declaresRowPress(row)).toBe(true);
-    expect(readsRowPress(wrapper)).toBe(true);
+    // A mouse and a pen press through the same controller as a finger
+    // (spec:AST-094 FR11's fine-pointer profile, FR43): the row declares no
+    // `:active` paint, and the layer over the circle reads only the press
+    // the controller marks.
+    expect(declaresRowPress(row)).toBe(false);
+    expect(readsRowPress(wrapper)).toBe(false);
+    expect(readsIndicatorPress(wrapper)).toBe(true);
   });
 
   it('does not expose a pressed arm on a disabled radio', () => {
@@ -941,7 +952,7 @@ describe('pressed state', () => {
     expect(readsRowPress(wrapper)).toBe(false);
   });
 
-  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+  it('paints the press on the circle’s own layer and releases it on the row’s clock', () => {
     const {container} = render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
@@ -954,14 +965,36 @@ describe('pressed state', () => {
     if (wrapper == null || row == null) {
       throw new Error('the radio has no pressable row or indicator wrapper');
     }
-    // The controller writes the row; the row owns the strength and its
-    // release, and the owner-drawn layer over the circle paints the pressed
-    // token at that strength on both touch arms.
-    expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
-    expect(readsPressStrength(wrapper)).toBe(true);
+    // The controller writes the row (a cell), which declares the press's
+    // image and release; the layer over the circle paints the pressed token
+    // at full strength and fades by its own opacity on the row's deselect
+    // clock, on the compositor.
+    expect(declaresIndicatorPressOwner(row)).toBe(true);
+    expect(readIndicatorPressLayer(wrapper, row)).toEqual({
+      paintsOn: true,
+      paintsFading: true,
+      releases: true,
+      releaseMs: [cellPressConsts.cellReleaseMs, 200],
+      fillsBoth: true,
+    });
+    expect(readsPressStrength(wrapper)).toBe(false);
+    // One press model for every pointer (spec:AST-094 FR43): no press rule,
+    // release included, sits behind a pointer query.
+    expect(layerPressRulesBehindPointer(wrapper)).toEqual([]);
+    expect(ownerPressRulesBehindPointer(row)).toEqual([]);
+    // The circle answers its own row only, never an outer element's press
+    // (architecture:component-style-authoring INV4).
+    expect(readsAncestorPress(wrapper)).toBe(false);
     // The row itself paints nothing under a finger, as under a mouse: only
-    // the circle answers.
+    // the circle answers. Neither the overlay's image nor the row's press
+    // layer (Item's `::before`, removed here) shows.
     expect(readsPressStrength(row, '[data-astryx-press="on"]')).toBe(false);
+    expect(
+      rulesDeclaredFor(row).some(
+        rule =>
+          rule.slice(0, rule.indexOf('{')).includes('::before') &&
+          /content:\s*none/.test(rule),
+      ),
+    ).toBe(true);
   });
 });
