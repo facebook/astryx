@@ -162,7 +162,7 @@
         "theme-overrides",
         "component-and-library-icons"
       ],
-      "skeleton": "e64c5b38eb3c598a4e2d35f4301fe72a59497fee2f48a32e1faf270fc5fd41f1",
+      "skeleton": "5d8a54e271cc1aa84302b2b101820eba3ae1b674f3ef87767fb356939464e097",
       "mentions": [
         "This lets you swap the icon set (e.g."
       ]
@@ -252,10 +252,11 @@
       "sections": [
         "quick-start",
         "creating-a-custom-theme",
+        "icon-sizes",
         "light-dark-mode",
         "integration-themes"
       ],
-      "skeleton": "4af0a08dbcf2008c2ad6c12e61a1451130f10109fdb666a08933a7ce69ce18bd",
+      "skeleton": "eacd1432d49237ed62f82ea054c0e5930503e9f072ab40b4965461f29cf31080",
       "mentions": []
     },
     "use-a-theme": {

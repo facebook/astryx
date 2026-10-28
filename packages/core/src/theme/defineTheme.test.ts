@@ -498,6 +498,18 @@ describe('defineTheme', () => {
     expect(theme.icons).toBe(icons);
   });
 
+  it('reads function icon entries at md in the public icons view', () => {
+    const info = vi.fn(({size}: {size: string}) => `info-${size}`);
+    const theme = defineTheme({
+      name: 'fn-icons',
+      icons: {info, close: 'X', menu: null},
+    });
+
+    expect(theme.icons).toEqual({info: 'info-md', close: 'X', menu: null});
+    expect(info).toHaveBeenCalledTimes(1);
+    expect(info).toHaveBeenCalledWith({size: 'md'});
+  });
+
   it('works with no tokens', () => {
     const theme = defineTheme({name: 'bare'});
     expect(Object.keys(theme.tokens)).toHaveLength(0);
@@ -1654,6 +1666,23 @@ describe('defineTheme extends', () => {
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.icons?.close).toBe('X');
+  });
+
+  it('merges function icon entries by key and reads them at md', () => {
+    const base = defineTheme({
+      name: 'base',
+      icons: {close: ({size}) => `base-close-${size}`, menu: 'M'},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      icons: {menu: ({size}) => `child-menu-${size}`},
+    });
+
+    expect(child.icons).toEqual({
+      close: 'base-close-md',
+      menu: 'child-menu-md',
+    });
   });
 
   it('uses child name, not base name', () => {

@@ -327,10 +327,12 @@ export const myTheme = defineTheme({
 
   /**
    * Swap the artwork behind semantic icon names — every component that asks
-   * for `check`, `close`, `chevron-down` gets yours.
+   * for `check`, `close`, `chevron-down` gets yours. An entry may also be a
+   * pure function of `{size, variant}` that picks artwork for the size Icon
+   * renders at.
    * Reference: `astryx docs icons` lists the names.
    */
-  // icons: {check: <MyCheck />, close: <MyClose />},
+  // icons: {check: <MyCheck />, info: ({size}) => <MyInfo bold={size === 'sm'} />},
 
   /**
    * Replace the small components that DRAW control state — the checkbox box,
