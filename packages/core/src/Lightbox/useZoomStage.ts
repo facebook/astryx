@@ -30,9 +30,10 @@
  * Recognizers on the stage, as UIScrollView arranges its own:
  * - pinch, simultaneous with the pan, so two fingers zoom and move at once
  *   and a finger left down after the pinch keeps panning. One that starts
- *   at the fitted size and goes below it is Photos' pinch to close: the
- *   photo follows the fingers without resistance and the release closes the
- *   viewer or springs back (a pinch that starts zoomed gives way instead);
+ *   at the fitted size and goes below it, a ctrl-wheel's out included, is
+ *   Photos' pinch to close: the photo follows the pinch without resistance
+ *   and the release closes the viewer or springs back (a pinch that starts
+ *   zoomed gives way instead);
  * - pan (one or two fingers, a mouse's or a pen's drag, or a scroll),
  *   moving a zoomed photo. As UIScrollView's, it begins only when the photo
  *   can move that way: with two fingers down, or on a zoomed photo not
@@ -200,8 +201,9 @@ interface PinchSession {
   isZoomed: boolean;
   /**
    * Started at the fitted size with a dismissal on: below that size the
-   * photo follows the fingers without resistance, and the release may close
-   * the viewer (Photos' pinch to close).
+   * photo follows the pinch (a finger's or a ctrl-wheel's) without
+   * resistance, and the release may close the viewer (Photos' pinch to
+   * close).
    */
   readonly closable: boolean;
   /** The pinch's smallest scale so far (its release rule reads it). */
@@ -483,7 +485,7 @@ export function useZoomStage(
         session.centroid = toStage(pinch.focalPoint());
         session.smallest = Math.min(session.smallest, pinch.scale);
         // Below the fitted size, a pinch that started there shrinks the
-        // photo with the fingers (Photos' pinch to close); otherwise the
+        // photo with it (Photos' pinch to close); otherwise the
         // zoom gives way past its limits.
         const closing = session.closable && pinch.scale < 1;
         const shown = closing
@@ -515,8 +517,9 @@ export function useZoomStage(
       const shown = current();
       // (Reopened past the fitted size, it is a zoom like any other.)
       if (session.closable && session.smallest < 1 && pinch.scale < 1) {
-        // Photos' pinch to close: the release closes into the thumbnail, or
-        // springs back to the fitted size from the fingers' velocity.
+        // Photos' pinch to close: the release closes the viewer (into the
+        // thumbnail when there is one), or springs back to the fitted size
+        // from the pinch's velocity.
         const dismiss = optionsRef.current.dismiss;
         const closes =
           pinch.state === 'ended' &&
@@ -539,7 +542,7 @@ export function useZoomStage(
         }
         setTarget(IDENTITY);
         setZoomed(false);
-        // The return continues the fingers (spec:AST-094 FR6, FR38): the
+        // The return continues the pinch (spec:AST-094 FR6, FR38): the
         // pinch's scale velocity and a moving pan's. (Photos starts it from
         // rest: zoomMedia.pinchClose.returnSpring.)
         const pan = recognizers.pan;
