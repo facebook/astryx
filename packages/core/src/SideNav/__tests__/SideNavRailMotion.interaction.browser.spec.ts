@@ -16,8 +16,8 @@
  * @position Testing; the components' unit cases are
  *   SideNav/SideNavRailMotion.test.tsx
  *
- * SYNC: When modified, update the FR6 Verification row in SideNav.spec.md and
- *   the FR17 row in AppShell.spec.md.
+ * SYNC: When modified, update FR6's state cell and Verification row in
+ *   SideNav.spec.md and the FR17 Verification row in AppShell.spec.md.
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -26,6 +26,13 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
+
+// The frame evidence is Chromium's: CI's interaction proofs run the chromium
+// project, and these cases have not been run in WebKit.
+test.skip(
+  ({browserName}) => browserName === 'webkit',
+  'Chromium frame evidence; not yet verified in WebKit',
+);
 
 let storybook: StaticServer | undefined;
 test.beforeAll(async () => {
@@ -65,6 +72,8 @@ interface Frames {
   readonly copiesHidden: boolean;
   /** Rail copies seen during the motion. */
   readonly copiesSeen: number;
+  /** Other inert copies seen: the content's old wrap. */
+  readonly wrapCopiesSeen: number;
   /** Distinct rail-edge positions seen: more than a few means it moved. */
   readonly edges: number;
 }
@@ -86,6 +95,7 @@ async function sampleMotion(
       animatesWidth: false,
       copiesHidden: true,
       copiesSeen: 0,
+      wrapCopiesSeen: 0,
       edges: new Set<number>(),
       running: true,
     };
@@ -119,6 +129,10 @@ async function sampleMotion(
         element => element.querySelector('nav') != null,
       );
       state.copiesSeen = Math.max(state.copiesSeen, copies.length);
+      state.wrapCopiesSeen = Math.max(
+        state.wrapCopiesSeen,
+        document.querySelectorAll('[inert]').length - copies.length,
+      );
       for (const copy of copies) {
         if (copy.getAttribute('aria-hidden') !== 'true') {
           state.copiesHidden = false;
@@ -158,8 +172,17 @@ async function sampleMotion(
     ).railFrames;
     state.running = false;
     const {frames, maxGap, animatesWidth, copiesHidden, copiesSeen} = state;
+    const {wrapCopiesSeen} = state;
     const edges = state.edges.size;
-    return {frames, maxGap, animatesWidth, copiesHidden, copiesSeen, edges};
+    return {
+      frames,
+      maxGap,
+      animatesWidth,
+      copiesHidden,
+      copiesSeen,
+      wrapCopiesSeen,
+      edges,
+    };
   });
 }
 
@@ -310,6 +333,8 @@ test.describe('component:SideNav FR6 and component:AppShell FR17 under a finger'
     expect(expand.maxGap).toBeLessThanOrEqual(1);
     expect(expand.edges).toBeGreaterThan(5);
     expect(expand.animatesWidth).toBe(false);
+    // The fallback branch ran: no copy of the old wrap was made.
+    expect(expand.wrapCopiesSeen).toBe(0);
     expect(await railAtRest(page)).toMatchObject({
       labelsShown: true,
       copies: 0,
