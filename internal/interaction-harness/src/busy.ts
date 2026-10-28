@@ -760,3 +760,107 @@ export function busyWindowProof(
     summary,
   };
 }
+
+/** One run of a pooled busy proof (see `pooledBusyProof`). */
+export interface BusyRun {
+  /** The component's frames, tracked from the run's screencast. */
+  readonly tracked: readonly TrackedFrame[];
+  /** The control's frames (`startBusyControl`), from the same screencast. */
+  readonly control: readonly TrackedFrame[];
+  /** The run's block (`blockMainThread`). */
+  readonly window: BusyWindow;
+}
+
+export interface PooledBusyProof {
+  /**
+   * Each run judged on its own against its control: read its numbers, not its
+   * verdict (one short run can hold too few frames to judge).
+   */
+  readonly runs: readonly BusyProof[];
+  /**
+   * The control's new positions over every run's judged part, and those the
+   * component moved on too.
+   */
+  readonly control: {readonly moved: number; readonly movedWith: number};
+  /** The judgment over the pool (see `pooledBusyProof`). */
+  readonly verdict: BusyVerdict;
+  /** One line with the pooled numbers, then each run's summary. */
+  readonly summary: string;
+}
+
+/**
+ * A busy proof over several runs of the same short animation, against the
+ * control. An animation that lasts a fraction of a second leaves a block only
+ * a few frames to judge: in WebKit, or on a loaded machine, the control can
+ * present fewer than `minJudgedFrames` in one run, and one run cannot decide.
+ * Pooled, the runs are judged as one long window is:
+ * - the control moved on at least `minJudgedFrames` frames over all the runs;
+ * - the component moved on at least `minMovedFraction` of those frames (one
+ *   miss always allowed);
+ * - in each run, its longest stall is at most one interval longer than that
+ *   run's control's: a stall belongs to its run and is never pooled.
+ * `maxMedianFrameMs`, when given, applies to each run. A main-thread
+ * animation still fails: in every run the control moves and it does not.
+ */
+export function pooledBusyProof(
+  runs: readonly BusyRun[],
+  options: Omit<
+    NonNullable<Parameters<typeof busyWindowProof>[2]>,
+    'control'
+  > = {},
+): PooledBusyProof {
+  if (runs.length === 0) {
+    throw new Error('pooledBusyProof: no runs to judge');
+  }
+  const {
+    minJudgedFrames = 4,
+    minMovedFraction = 0.9,
+    maxMedianFrameMs = Infinity,
+  } = options;
+  const proofs = runs.map(run =>
+    busyWindowProof(run.tracked, run.window, {
+      ...options,
+      control: run.control,
+    }),
+  );
+  const reads = proofs.map(proof => proof.control as BusyControlRead);
+  const moved = reads.reduce((sum, read) => sum + read.moved, 0);
+  const movedWith = reads.reduce((sum, read) => sum + read.movedWith, 0);
+  const failures: string[] = [];
+  if (moved < minJudgedFrames) {
+    failures.push(
+      `the control moved on ${moved} frames over ${runs.length} runs, under ${minJudgedFrames}: the compositor presented too little in these windows to judge`,
+    );
+  }
+  const allowed = Math.max(
+    1,
+    Math.floor((1 - minMovedFraction) * moved + 1e-9),
+  );
+  if (moved - movedWith > allowed) {
+    failures.push(
+      `moved on ${movedWith} of the ${moved} frames the control moved over ${runs.length} runs (${((movedWith / Math.max(1, moved)) * 100).toFixed(0)}%, at least ${(minMovedFraction * 100).toFixed(0)}% with one miss allowed)`,
+    );
+  }
+  proofs.forEach((proof, i) => {
+    if (proof.frames > 0 && proof.medianFrameMs > maxMedianFrameMs) {
+      failures.push(
+        `run ${i + 1}: median frame interval ${proof.medianFrameMs.toFixed(1)} ms > ${maxMedianFrameMs} ms`,
+      );
+    }
+    const read = reads[i];
+    if (proof.longestStallMs > read.longestStallMs + proof.cadenceMs) {
+      failures.push(
+        `run ${i + 1}: longest stall ${proof.longestStallMs.toFixed(1)} ms, more than one interval (${proof.cadenceMs.toFixed(1)} ms) past the control's ${read.longestStallMs.toFixed(1)} ms`,
+      );
+    }
+  });
+  const summary =
+    `${runs.length} runs pooled: moved on ${movedWith} of the control's ${moved} frames` +
+    proofs.map((proof, i) => `; run ${i + 1}: ${proof.summary}`).join('');
+  return {
+    runs: proofs,
+    control: {moved, movedWith},
+    verdict: {pass: failures.length === 0, failures},
+    summary,
+  };
+}
