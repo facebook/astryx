@@ -1043,6 +1043,8 @@ export interface LayoutSwapMotion {
     /** Its old place less its new, for when it does not glide. */
     readonly travel: {readonly x: number; readonly y: number};
   };
+  /** Called once when the swap ends, however it ends (not on hand-off). */
+  readonly onEnd?: () => void;
   /** Elements the page already renders, entering with the swap. */
   readonly incoming: ReadonlyArray<{
     readonly element: Element;
@@ -1120,6 +1122,7 @@ export function playLayoutSwap(
     isDone = true;
     animations.forEach(animation => animation.cancel());
     copy.remove();
+    how.onEnd?.();
   };
   const play = (element: Element, shape: (p: number) => Keyframe) => {
     const animation = safeAnimate(element, frames(shape), options);
