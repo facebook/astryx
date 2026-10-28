@@ -8,7 +8,7 @@
  *   treatment, the press layer (dividers beside a touch-pressed or held row
  *   hide and the layer reaches over the row's own), the touch hit area
  *   (utils/touchHitArea.ts and its layer), the travelling
- *   marker of an update's slide (List/useListUpdateMotion.ts), CheckboxInput,
+ *   marker of an update's slide (List/listLayoutUpdates.ts), CheckboxInput,
  *   and the marker or task checkbox a ListMarkerScope sets (Markdown's nested
  *   lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
@@ -43,6 +43,7 @@ import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {ITEM_KEY_ATTRIBUTE} from './listLayoutUpdates';
 import {useTouchHitArea} from '../utils/touchHitArea';
 import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
@@ -136,6 +137,17 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
+   * The row's item key, a string or a number from the data (the shape
+   * Table's `idKey` returns). It is the row's identity for the list's
+   * animated layout (`animatedLayout`, `component:List` FR12) and, in a
+   * reorderable List (`List reorderable`), the key the reorderable object's
+   * `onReorder` reports as given and `isReorderable` is asked about. A row
+   * without one has no reorder handle. Separate from React's `key`, which
+   * stays React's own.
+   */
+  itemKey?: string | number;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -160,7 +172,7 @@ const styles = stylex.create({
   },
   // A row an update slides across rows moving the other way rides above them
   // with the surface behind it, for the length of its slide (the attribute
-  // List/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
+  // List/listLayoutUpdates.ts writes): a UIKit cell passes its neighbours
   // opaque and on top, and rows here have no background of their own. The
   // surface is an inset shadow across the padding box, under the press layer
   // and the row's content, so the row's divider and its press stay visible;
@@ -382,6 +394,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  itemKey,
   align,
   xstyle,
   className,
@@ -491,6 +504,9 @@ export function ListItem({
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      // The row's identity for the list's animated layout
+      // (List/listLayoutUpdates.ts).
+      {...(itemKey != null ? {[ITEM_KEY_ATTRIBUTE]: String(itemKey)} : null)}
       {...restProps}
     />
   );

@@ -7,7 +7,16 @@ export const docs = {
   displayName: 'List',
   group: 'List',
   category: 'Table & List',
-  keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
+  keywords: [
+    'list',
+    'listitem',
+    'listbox',
+    'menu',
+    'collection',
+    'items',
+    'ul',
+    'navlist',
+  ],
   theming: {
     targets: [
       {className: 'astryx-list', visualProps: ['density', 'listStyle']},
@@ -32,20 +41,22 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: "Spacing density for items. Under a finger, an interactive row's hit target reaches 44px where its neighbors leave room, with no change to how rows look or lay out.",
+      description:
+        "Spacing density for items. Under a finger, an interactive row's hit target reaches 44px where its neighbors leave room, with no change to how rows look or lay out.",
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items. Under a finger, a touch press hides the dividers on either side of the pressed row until the finger lifts, as iOS lists do.',
+      description:
+        'Show dividers between items. Under a finger, a touch press hides the dividers on either side of the pressed row until the finger lifts, as iOS lists do.',
       default: 'false',
     },
     {
-      name: 'hasAnimatedChanges',
-      type: 'boolean',
-      description: 'Under a finger, animate changes to the rows the way an iOS table does: when rows are inserted, removed or reordered, the rows that stay slide to their new places, a removed row collapses in place, and new rows fade in once the rows sliding past have cleared them; a row that crosses rows moving the other way rides above them with the surface color behind it. Rows need stable keys. With a mouse nothing moves.',
-      default: 'false',
+      name: 'animatedLayout',
+      type: 'AnimatedLayout',
+      description:
+        'The handle from useAnimatedLayout({containerRef}). With it, when rows are inserted, removed or reordered, an inserted row enters, a removed row collapses in place, a row that crosses rows moving the other way rides above them with the surface color behind it, and the rows after a change and the content after the list, up to that container, glide to their new places, all on one shared motion, under every pointer. Under Reduce Motion nothing travels. A row is identified by its itemKey: a row without one changes at once. Without a handle the list changes at once.',
     },
     {
       name: 'edge',
@@ -58,12 +69,13 @@ export const docs = {
       name: 'edgeCompensation',
       type: "'inline'",
       description:
-        "Deprecated: use edge=\"outset\", which this sets. Still works; edge wins when both are set. `astryx upgrade` rewrites existing usage.",
+        'Deprecated: use edge="outset", which this sets. Still works; edge wins when both are set. `astryx upgrade` rewrites existing usage.',
     },
     {
       name: 'header',
       type: 'ReactNode',
-      description: 'Header content, associated with the list via aria-labelledby.',
+      description:
+        'Header content, associated with the list via aria-labelledby.',
       slotElements: [
         {
           __element: 'Text',
@@ -77,7 +89,8 @@ export const docs = {
     {
       name: 'listStyle',
       type: "'none' | 'disc' | 'decimal' | 'circle'",
-      description: "List marker style. 'decimal' renders an <ol> element instead of <ul>.",
+      description:
+        "List marker style. 'decimal' renders an <ol> element instead of <ul>.",
       default: "'none'",
     },
     {
@@ -90,29 +103,72 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  components: [
-    {name: 'ListItem'},
-  ],
+  components: [{name: 'ListItem'}],
   usage: {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.' },
-      { guidance: true, description: 'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };
@@ -122,19 +178,63 @@ export const docsZh = {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.' },
-      { guidance: true, description: 'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };
@@ -147,19 +247,63 @@ export const docsDense = {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.' },
-      { guidance: true, description: 'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };

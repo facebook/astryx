@@ -19,6 +19,7 @@ import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 // The selection hold is internal to core (no public API records it yet).
 import {
   holdSelection,
@@ -539,40 +540,50 @@ function AnimatedChangesDemo() {
     'Spam',
   ]);
   const [next, setNext] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
   return (
-    <VStack gap={4}>
-      <List hasAnimatedChanges hasDividers>
-        {rows.map(label => (
-          <ListItem key={label} label={label} onClick={() => {}} />
-        ))}
-      </List>
-      <Button
-        label="Insert a row second"
-        onClick={() => {
-          setRows(current => [
-            current[0],
-            `Folder ${next}`,
-            ...current.slice(1),
-          ]);
-          setNext(n => n + 1);
-        }}
-      />
-      <Button
-        label="Remove the second row"
-        onClick={() =>
-          setRows(current => current.filter((_, index) => index !== 1))
-        }
-      />
-      <Button
-        label="Move the last row first"
-        onClick={() =>
-          setRows(current => [
-            current[current.length - 1],
-            ...current.slice(0, -1),
-          ])
-        }
-      />
-    </VStack>
+    <div ref={containerRef}>
+      <VStack gap={4}>
+        <List animatedLayout={animatedLayout} hasDividers>
+          {rows.map(label => (
+            <ListItem
+              key={label}
+              itemKey={label}
+              label={label}
+              onClick={() => {}}
+            />
+          ))}
+        </List>
+        <Text data-testid="after-list">{`${rows.length} folders`}</Text>
+        <Button
+          label="Insert a row second"
+          onClick={() => {
+            setRows(current => [
+              current[0],
+              `Folder ${next}`,
+              ...current.slice(1),
+            ]);
+            setNext(n => n + 1);
+          }}
+        />
+        <Button
+          label="Remove the second row"
+          onClick={() =>
+            setRows(current => current.filter((_, index) => index !== 1))
+          }
+        />
+        <Button
+          label="Move the last row first"
+          onClick={() =>
+            setRows(current => [
+              current[current.length - 1],
+              ...current.slice(0, -1),
+            ])
+          }
+        />
+      </VStack>
+    </div>
   );
 }
 
@@ -582,11 +593,12 @@ export const AnimatedChanges: Story = {
     docs: {
       description: {
         story:
-          'With `hasAnimatedChanges`, under a finger, ' +
-          'rows that stay slide to their new places and new rows fade in ' +
-          'once the rows sliding past have cleared them, on UIKit’s table ' +
-          'update spring; a row crossing rows that move the other way ' +
-          'rides above them with the surface color behind it.',
+          'With `animatedLayout` (the handle from `useAnimatedLayout`) and ' +
+          'an `itemKey` on each row, an inserted row enters, a removed row ' +
+          'collapses in place, a row crossing rows that move the other way ' +
+          'rides above them with the surface color behind it, and the rows ' +
+          'after a change and the buttons below the list glide to their new ' +
+          'places, all on one shared motion, under every pointer.',
       },
     },
   },
@@ -594,27 +606,32 @@ export const AnimatedChanges: Story = {
 
 function AnimatedChangesSwipeDemo() {
   const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
   return (
-    <List hasAnimatedChanges hasDividers>
-      {rows.map(label => (
-        <ListItem
-          key={label}
-          label={label}
-          onClick={() => {}}
-          swipeActions={{
-            trailing: [
-              {
-                label: 'Delete',
-                variant: 'destructive',
-                hasRemoval: true,
-                onActivate: () =>
-                  setRows(current => current.filter(row => row !== label)),
-              },
-            ],
-          }}
-        />
-      ))}
-    </List>
+    <div ref={containerRef}>
+      <List animatedLayout={animatedLayout} hasDividers>
+        {rows.map(label => (
+          <ListItem
+            key={label}
+            itemKey={label}
+            label={label}
+            onClick={() => {}}
+            swipeActions={{
+              trailing: [
+                {
+                  label: 'Delete',
+                  variant: 'destructive',
+                  hasRemoval: true,
+                  onActivate: () =>
+                    setRows(current => current.filter(row => row !== label)),
+                },
+              ],
+            }}
+          />
+        ))}
+      </List>
+    </div>
   );
 }
 
@@ -624,9 +641,9 @@ export const AnimatedChangesSwipe: Story = {
     docs: {
       description: {
         story:
-          'With `hasAnimatedChanges`, a row swiped away with a removal ' +
-          'action collapses in place, its action showing, while the rows ' +
-          'below slide up into its gap on UIKit’s table update spring.',
+          'With `animatedLayout`, a row swiped away with a removal action ' +
+          'collapses in place, its action showing, while the rows below ' +
+          'glide up into its gap on the shared motion.',
       },
     },
   },

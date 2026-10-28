@@ -30,7 +30,9 @@ import {
 } from './ListContext';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
+import {keepPresentation, useListLayoutUpdates} from './listLayoutUpdates';
+import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
+import type {AnimatedLayout} from '../motion/animatedLayout';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 
@@ -60,17 +62,16 @@ export interface ListProps extends BaseProps<
   density?: ListDensity;
 
   /**
-   * Under a finger (iOS and Android alike), animate the list's changes the
-   * way an iOS table does: when rows are inserted, removed or reordered, the rows
-   * that stay slide from where they were to where they are and new rows fade
-   * in once the rows sliding past have cleared them, on UIKit's table update
-   * spring. A row that crosses rows moving the other way rides above them
-   * with the surface color behind it. A removed row collapses in place, a
-   * swiped one with its action showing, while the rows below close its gap.
-   * Off by default; with a mouse nothing moves.
-   * @default false
+   * The handle from `useAnimatedLayout({containerRef})` (`component:List`
+   * FR12). With it, when rows are inserted, removed or reordered, an inserted
+   * row enters, a removed row collapses in place, a row crossing rows that
+   * move the other way rides above them, and the rows after a change and the
+   * content after the list up to that container glide to their new places,
+   * all on one shared motion and under every pointer. A row's identity is its
+   * `itemKey`: a row without one changes at once. Without a handle the list
+   * changes at once.
    */
-  hasAnimatedChanges?: boolean;
+  animatedLayout?: AnimatedLayout;
 
   /**
    * Whether to show dividers between list items. Under a finger, a touch
@@ -226,7 +227,7 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
-  hasAnimatedChanges = false,
+  animatedLayout,
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -243,7 +244,7 @@ export function List({
 }: ListProps) {
   const headerId = useId();
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
-  useListUpdateMotion(listRef, hasAnimatedChanges);
+  const measureRows = useListLayoutUpdates(listRef, animatedLayout);
   const mergedRef = useMergedRefs(
     listRef,
     ref as React.Ref<HTMLUListElement & HTMLOListElement>,
@@ -268,9 +269,10 @@ export function List({
       hasDividers,
       edge,
       listStyle,
-      keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
+      keepRowPresentation:
+        animatedLayout != null ? keepPresentation : undefined,
     }),
-    [density, hasDividers, edge, listStyle, hasAnimatedChanges],
+    [density, hasDividers, edge, listStyle, animatedLayout],
   );
 
   const listElement = (
@@ -310,12 +312,26 @@ export function List({
     </Tag>
   );
 
+  // Every change of the rows is measured before it lands (`spec:AST-105`
+  // FR1): LayoutChangeSnapshot calls this in the commit, before the DOM
+  // changes.
+  const snapshot =
+    animatedLayout != null ? (
+      <LayoutChangeSnapshot value={children} onBeforeChange={measureRows} />
+    ) : null;
+
   if (header == null) {
-    return <ListContext value={contextValue}>{listElement}</ListContext>;
+    return (
+      <ListContext value={contextValue}>
+        {snapshot}
+        {listElement}
+      </ListContext>
+    );
   }
 
   return (
     <ListContext value={contextValue}>
+      {snapshot}
       <div {...stylex.props(styles.root)}>
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
