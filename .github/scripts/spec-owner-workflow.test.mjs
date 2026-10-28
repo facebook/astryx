@@ -149,7 +149,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>

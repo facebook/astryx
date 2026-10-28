@@ -12,6 +12,15 @@ name: Internal Registry
 on:
   pull_request:
     branches: ['main']
+    # Runs only when a dependency declaration or the lockfile can change what
+    # the registry must serve (spec:AST-030 FR14). A merge-group entry, which
+    # cannot filter by path, keeps running.
+    paths:
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '.github/workflows/internal-registry.yml'
   merge_group:
 
 permissions: {}
