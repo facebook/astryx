@@ -35,8 +35,6 @@ import {
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   root: {
-    // A held pointer slides across the items; it selects no text.
-    userSelect: 'none',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
