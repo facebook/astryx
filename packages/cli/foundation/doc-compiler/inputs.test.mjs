@@ -98,6 +98,7 @@ describe('collectDocInputs over what this repo ships', () => {
       'SyntaxTheme',
       'createAnimator',
       'createDragToSnapPoints',
+      'createPanGesture',
     ]);
   });
 

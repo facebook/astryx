@@ -19,6 +19,7 @@ import {
   type PanGestureOptions,
 } from '../createPanGesture';
 import {usePanGesture} from '../../hooks/usePanGesture';
+import {armClickGuard, disarmClickGuard} from '../../utils/clickGuard';
 import {coarsePrimaryPointer} from './harness';
 
 function touch(
@@ -216,8 +217,8 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     drag(element, 40, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
     for (const event of events) {
+      // Exactly the record's values (spec:AST-107 FR1): no pointer kind.
       expect(Object.keys(event).sort()).toEqual([
-        'pointerType',
         'state',
         'translation',
         'velocity',
@@ -232,22 +233,16 @@ describe('createPanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(events.at(-1)?.velocity.x).toBeGreaterThan(0);
   });
 
-  it('says which pointer drove the drag: a finger, a mouse or a pen', () => {
+  it('is driven by a finger, a mouse and a pen alike (spec:AST-107 FR1, AST-094 FR43)', () => {
     const element = surface();
     const events: PanGestureEvent[] = [];
     pan(element, {axis: 'x', onPan: event => events.push(event)});
     drag(element, 60, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
-    expect(new Set(events.map(event => event.pointerType))).toEqual(
-      new Set(['touch']),
-    );
     for (const pointerType of ['mouse', 'pen'] as const) {
       events.length = 0;
       pointerDrag(element, pointerType, 60);
       expect(phases(events)).toEqual(['began', 'changed', 'ended']);
-      expect(new Set(events.map(event => event.pointerType))).toEqual(
-        new Set([pointerType]),
-      );
     }
   });
 
@@ -406,12 +401,45 @@ describe('usePanGesture (spec:AST-107 FR1, FR6)', () => {
     expect(events.at(-1)?.translation).toEqual({x: 30, y: 0});
   });
 
+  it('calls onPan from no effect: a drag in progress at unmount ends without a cancelled event (architecture:react-component-runtime INV2)', () => {
+    const events: PanGestureEvent[] = [];
+    const {getByTestId, unmount} = render(
+      <Draggable axis="x" onPan={event => events.push(event)} />,
+    );
+    drag(getByTestId('surface'), 40, 0, {lift: false});
+    expect(phases(events)).toEqual(['began', 'changed']);
+    unmount();
+    expect(phases(events)).toEqual(['began', 'changed']);
+  });
+
+  it('calls onPan from no effect: a drag in progress when the axis changes ends without a cancelled event (architecture:react-component-runtime INV2)', () => {
+    const events: PanGestureEvent[] = [];
+    const onPan = (event: PanGestureEvent) => events.push(event);
+    const {getByTestId, rerender} = render(
+      <Draggable axis="x" onPan={onPan} />,
+    );
+    drag(getByTestId('surface'), 40, 0, {lift: false});
+    expect(phases(events)).toEqual(['began', 'changed']);
+    rerender(<Draggable axis="y" onPan={onPan} />);
+    expect(phases(events)).toEqual(['began', 'changed']);
+  });
+
   it('attaches once under StrictMode and removes every listener at unmount', () => {
     const events: PanGestureEvent[] = [];
     const holder = document.createElement('div');
     document.body.append(holder);
     surfaces.push(holder);
     // React keeps its own root listeners on the container after unmount.
+    // The page's once-per-document listeners go in first, so the count is
+    // the pan's alone: React's own, and the click guard's window click
+    // listener, which the guard keeps once a gesture first arms it
+    // (utils/clickGuard.ts).
+    const warmup = document.createElement('div');
+    document.body.append(warmup);
+    surfaces.push(warmup);
+    render(<div />, {container: warmup}).unmount();
+    armClickGuard(document);
+    disarmClickGuard(document);
     const live = trackListeners();
     const before = live();
     const {getByTestId, unmount} = render(
@@ -423,6 +451,10 @@ describe('usePanGesture (spec:AST-107 FR1, FR6)', () => {
     drag(getByTestId('surface'), 40, 0);
     expect(phases(events)).toEqual(['began', 'changed', 'ended']);
     unmount();
+    // The drag's claimed lift armed the click guard, which outlives the pan
+    // on purpose, to swallow the browser's click after it, until the next
+    // press or its window ends: end it here.
+    disarmClickGuard(document);
     expect(live()).toBe(before);
   });
 

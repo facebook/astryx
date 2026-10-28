@@ -203,7 +203,7 @@ it, typed as that theme's listed names.
   are the defaults. A duration scale's durations win over `tempo`, and
   explicit tokens win over both. An extending theme inherits motion field by
   field: a duration-scale field or knob the child leaves unset keeps its
-  base's value, and an explicit token anywhere in the lineage still wins. Each duration's
+  base's value. Each duration's
   value before `tempo` is kept for busy-indicator loops, which never follow
   `tempo`. An adaptation rule may set `tempo` and `character`, never
   `reducedMotion`.

@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
+import {generateAdaptationCSS} from './generateThemeRules';
 import {expandMotionScale} from './expandMotionScale';
 import {
   CHARACTER_EASE,
@@ -242,6 +243,100 @@ describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
   });
 });
 
+describe('a layer\u2019s own durations reach the busy loops under an enclosing tempo (spec:AST-108 FR4)', () => {
+  it('a theme with a duration scale and no tempo writes the loops\u2019 copies of its durations', () => {
+    const theme = defineTheme({
+      name: 'ScaledNested',
+      motion: {fast: 100, medium: 250, ratio: 0.75},
+    });
+    for (const name of ['--duration-fast', '--duration-medium-max']) {
+      expect(
+        theme.tokens[name.replace('--duration-', '--pre-tempo-duration-')],
+      ).toBe(theme.tokens[name]);
+    }
+  });
+
+  it('an explicit duration with no tempo writes its copy too', () => {
+    const theme = defineTheme({
+      name: 'ExplicitNested',
+      tokens: {'--duration-slow': '800ms'},
+    });
+    expect(theme.tokens['--pre-tempo-duration-slow']).toBe('800ms');
+  });
+
+  it('an adaptation rule\u2019s own durations write their copies', () => {
+    const css = generateAdaptationCSS(
+      defineTheme({
+        name: 'AdaptiveDurations',
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {tokens: {'--duration-medium': '300ms'}},
+            },
+          ],
+        },
+      }),
+    ).component;
+    expect(css).toContain('--pre-tempo-duration-medium: 300ms');
+  });
+});
+
+describe('a child of an installed built theme (spec:AST-108 FR5, INV15)', () => {
+  it('resolves base first, then generated, as a child of a defined theme does', () => {
+    const base = defineTheme({
+      name: 'BuiltBase',
+      motion: {tempo: 0.8},
+      tokens: {'--duration-medium': '333ms', '--ease-entrance': 'linear'},
+    });
+    // A built module carries the resolved tokens and the axes, not the input.
+    const built = {...base, __inputTokens: undefined};
+    const child = defineTheme({
+      name: 'BuiltChild',
+      extends: built,
+      motion: {tempo: 1.2},
+    });
+    // The child's tempo regenerates every duration over the base's tokens,
+    // its explicit one included (`architecture:theme-authoring-contract`).
+    expect(child.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 1.2)}ms`,
+    );
+    expect(child.tokens['--duration-fast']).toBe(`${Math.round(175 * 1.2)}ms`);
+    // It generates no entrance curve without a character, so the base's stays.
+    expect(child.tokens['--ease-entrance']).toBe('linear');
+  });
+});
+
+describe('an explicit --ease-standard (spec:AST-108 FR2)', () => {
+  it('is what --ease-entrance and --ease-move equal at standard, in the tokens and resolveThemeMotion alike', () => {
+    const curve = 'cubic-bezier(0.3, 0, 0.2, 1)';
+    for (const motion of [
+      undefined,
+      {character: 'standard' as const},
+      {tempo: 1.2},
+    ]) {
+      const theme = defineTheme({
+        name: 'OwnStandard',
+        motion,
+        tokens: {'--ease-standard': curve},
+      });
+      expect(theme.tokens['--ease-entrance'], JSON.stringify(motion)).toBe(
+        curve,
+      );
+      expect(theme.tokens['--ease-move'], JSON.stringify(motion)).toBe(curve);
+      expect(resolveThemeMotion(theme).easings['--ease-entrance']).toBe(curve);
+    }
+  });
+});
+
+describe('resolveThemeMotion reads a defined theme\u2019s motion (spec:AST-108 FR6)', () => {
+  it('takes the knobs a child inherits from its base', () => {
+    const base = defineTheme({name: 'KnobBase', motion: {tempo: 1.2}});
+    const child = defineTheme({name: 'KnobChild', extends: base});
+    expect(resolveThemeMotion(child).knobs.tempo).toBe(1.2);
+  });
+});
+
 describe('the press release follows tempo (spec:AST-108 FR4, component:Button FR15)', () => {
   it('writes the tempo beside the duration tokens for the release fade, and nothing without one', () => {
     expect(expandThemeMotion({tempo: 1.5})['--_astryx-motion-tempo']).toBe(
@@ -293,6 +388,75 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
 });
 
 describe('an extending theme inherits motion field by field (spec:AST-108 FR5)', () => {
+  it('a grandchild that adds only a knob keeps the slow band its parent inherited', () => {
+    const base = defineTheme({
+      name: 'SlowBase',
+      motion: {fast: 100, medium: 250, slow: 700, ratio: 0.75},
+    });
+    // The child's own ratio regenerates its fast and medium bands only. Its
+    // unrelated token gives it authored input tokens of its own.
+    const child = defineTheme({
+      name: 'RatioChild',
+      extends: base,
+      motion: {fast: 100, medium: 250, ratio: 0.8},
+      tokens: {'--radius-element': '6px'},
+    });
+    expect(child.tokens['--duration-slow-min']).toBe('525ms');
+    for (const knob of [
+      {character: 'expressive' as const},
+      {tempo: 1.2},
+      {reducedMotion: 'always' as const},
+    ]) {
+      const grandchild = defineTheme({
+        name: 'KnobGrandchild',
+        extends: child,
+        motion: knob,
+      });
+      for (const band of [
+        '--duration-slow-min',
+        '--duration-slow',
+        '--duration-slow-max',
+      ] as const) {
+        expect(grandchild.tokens[band]).toBe(child.tokens[band]);
+      }
+    }
+  });
+
+  it('an explicit --ease-standard without motion of its own keeps an inherited character\u2019s curves', () => {
+    const crisp = defineTheme({name: 'Crisp', motion: {character: 'crisp'}});
+    const crispEase = crisp.tokens['--ease-entrance'];
+    const child = defineTheme({
+      name: 'EaseChild',
+      extends: crisp,
+      tokens: {'--ease-standard': 'cubic-bezier(0.4, 0, 0.6, 1)'},
+    });
+    expect(child.tokens['--ease-standard']).toBe(
+      'cubic-bezier(0.4, 0, 0.6, 1)',
+    );
+    expect(child.tokens['--ease-entrance']).toBe(crispEase);
+    expect(child.tokens['--ease-move']).toBe(crispEase);
+    const adaptive = defineTheme({
+      name: 'EaseRule',
+      motion: {character: 'expressive'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {'--ease-standard': 'cubic-bezier(0.4, 0, 0.6, 1)'},
+            },
+          },
+        ],
+      },
+    });
+    const rule = adaptive.__adaptationRules?.[0];
+    expect(rule?.tokens['--ease-standard']).toBe(
+      'cubic-bezier(0.4, 0, 0.6, 1)',
+    );
+    expect(rule?.tokens['--ease-entrance']).toBeUndefined();
+    expect(rule?.tokens['--ease-move']).toBeUndefined();
+  });
+
   it('a base duration scale keeps winning over a child\u2019s tempo', () => {
     const base = defineTheme({
       name: 'ScaledBase',
@@ -312,7 +476,7 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
     }
   });
 
-  it('a base\u2019s explicit duration keeps winning over a child\u2019s knobs', () => {
+  it('a child\u2019s knobs regenerate over its base\u2019s explicit durations: base first, then generated', () => {
     const base = defineTheme({
       name: 'ExplicitBase',
       motion: {tempo: 0.8},
@@ -323,7 +487,9 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       extends: base,
       motion: {tempo: 1.2},
     });
-    expect(quicker.tokens['--duration-medium']).toBe('300ms');
+    expect(quicker.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 1.2)}ms`,
+    );
     expect(quicker.tokens['--duration-fast']).toBe(
       `${Math.round(175 * 1.2)}ms`,
     );
@@ -332,7 +498,10 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       extends: base,
       motion: {character: 'crisp'},
     });
-    expect(crisper.tokens['--duration-medium']).toBe('300ms');
+    // The inherited tempo regenerates it too.
+    expect(crisper.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 0.8)}ms`,
+    );
     expect(crisper.tokens['--duration-fast']).toBe(
       `${Math.round(175 * 0.8)}ms`,
     );

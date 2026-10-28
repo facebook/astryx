@@ -1970,6 +1970,11 @@
       "aliases": []
     },
     {
+      "name": "example-create-pan-gesture-a-playing-card-without-react",
+      "path": "examples/create-pan-gesture/a-playing-card-without-react",
+      "aliases": []
+    },
+    {
       "name": "example-date-input-clearable",
       "path": "examples/date-input/clearable",
       "aliases": []
@@ -3685,6 +3690,11 @@
       "aliases": []
     },
     {
+      "name": "example-use-pan-gesture-a-playing-card",
+      "path": "examples/use-pan-gesture/a-playing-card",
+      "aliases": []
+    },
+    {
       "name": "example-use-popover-quick-actions",
       "path": "examples/use-popover/quick-actions",
       "aliases": []
@@ -3772,6 +3782,11 @@
     {
       "name": "hook-create-drag-to-snap-points",
       "path": "hooks/create-drag-to-snap-points",
+      "aliases": []
+    },
+    {
+      "name": "hook-create-pan-gesture",
+      "path": "hooks/create-pan-gesture",
       "aliases": []
     },
     {

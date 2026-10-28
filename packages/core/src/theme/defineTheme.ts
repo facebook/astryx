@@ -303,8 +303,9 @@ export interface DefineThemeInput<
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over
    * `tempo`, and explicit `tokens` overrides win over both. Finger tracking,
-   * momentum, the keyboard, press and hover clocks and loops never follow the
-   * knobs.
+   * momentum, the keyboard, hover, the press's onset delay and tap flash, and
+   * busy loops never follow the knobs; the press release fade follows
+   * `tempo`.
    *
    * @example
    * ```
@@ -662,6 +663,35 @@ function describeBadBase(value: unknown): string {
   return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
 }
 
+/** The slow band's duration tokens. */
+const SLOW_BAND = [
+  '--duration-slow-min',
+  '--duration-slow',
+  '--duration-slow-max',
+] as const;
+
+/**
+ * The base's slow-band tokens a child keeps (spec:AST-108 FR5): a child that
+ * sets no `slow` of its own regenerates only the fast and medium bands, so an
+ * inherited slow band stays as the base's tokens hold it, at the ratio it was
+ * made with, however many themes down it is inherited.
+ */
+function inheritedSlowBand(
+  base: DefinedTheme,
+  baseMotion: ThemeMotionConfig,
+  own: ThemeMotionConfig,
+): Partial<Record<string, TokenValue>> | undefined {
+  if (!('slow' in baseMotion) || 'slow' in own) {
+    return undefined;
+  }
+  const tokens = base.tokens as Record<string, string | undefined>;
+  return Object.fromEntries(
+    SLOW_BAND.flatMap(name =>
+      tokens[name] !== undefined ? [[name, tokens[name]]] : [],
+    ),
+  );
+}
+
 /**
  * Create an Astryx theme.
  *
@@ -699,21 +729,19 @@ export function defineTheme<
   //
   // Motion inherits field by field (spec:AST-108 FR5): a duration-scale field
   // or knob the child leaves unset keeps its base's value, so the child's
-  // motion tokens come from the merged configuration, and the lineage's
-  // explicit motion tokens keep winning over what that regenerates.
+  // motion tokens come from the merged configuration. They resolve base first,
+  // then generated (`architecture:theme-authoring-contract`): what the child
+  // generates replaces the base's tokens, its explicit ones included. A
+  // child's motion regenerates only the bands it sets: an inherited slow band
+  // keeps the base's tokens.
   const baseMotion = base?.__axes?.motion;
   const motion: ThemeMotionConfig | undefined =
     input.motion != null && baseMotion != null
       ? {...baseMotion, ...input.motion}
       : input.motion;
-  const lineageMotionTokens =
-    input.motion != null && base?.__inputTokens != null
-      ? Object.fromEntries(
-          Object.entries(base.__inputTokens).filter(
-            ([name]) =>
-              name.startsWith('--duration-') || name.startsWith('--ease-'),
-          ),
-        )
+  const slowBand =
+    input.motion != null && base != null && baseMotion != null
+      ? inheritedSlowBand(base, baseMotion, input.motion)
       : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
@@ -722,8 +750,8 @@ export function defineTheme<
     motion,
     syntax: input.syntax,
     tokens:
-      lineageMotionTokens != null && Object.keys(lineageMotionTokens).length > 0
-        ? {...lineageMotionTokens, ...input.tokens}
+      slowBand != null && Object.keys(slowBand).length > 0
+        ? {...slowBand, ...input.tokens}
         : input.tokens,
     components: input.components,
   };
@@ -737,7 +765,11 @@ export function defineTheme<
     ? {tokens: base.tokens, components: base.components}
     : undefined;
 
-  const {tokens, components} = resolveThemeValues(ownValues, seed);
+  // An explicit --ease-standard follows the character the theme inherits
+  // when it sets no motion of its own (FR2).
+  const {tokens, components} = resolveThemeValues(ownValues, seed, {
+    inheritedCharacter: baseMotion?.character,
+  });
 
   // On-media token overrides (base's resolved surface, then defaults, then
   // this theme's own overrides). They compile after adaptations so the

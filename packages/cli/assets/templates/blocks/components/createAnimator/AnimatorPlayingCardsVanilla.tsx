@@ -3,7 +3,7 @@
 'use client';
 
 import {useEffect, useRef} from 'react';
-import {createAnimator} from '@astryxdesign/core/animator';
+import {createAnimator} from '@astryxdesign/core';
 
 const DECK = ['A\u2660', 'K\u2665', 'Q\u2663', 'J\u2666'];
 /** A release faster than this (px/s) throws the card away. */

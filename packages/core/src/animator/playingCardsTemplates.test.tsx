@@ -66,7 +66,7 @@ vi.mock('@astryxdesign/core/hooks', async importOriginal => ({
   ...(await importOriginal<object>()),
   useAnimator: () => ({ref: () => {}, animator: recorder.animator}),
 }));
-vi.mock('@astryxdesign/core/animator', async importOriginal => ({
+vi.mock('@astryxdesign/core', async importOriginal => ({
   ...(await importOriginal<object>()),
   createAnimator: () => recorder.animator,
 }));
