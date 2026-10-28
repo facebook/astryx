@@ -118,12 +118,75 @@ const KNOWN_SECTION_KEYS = new Set([
   'changedFrom',
 ]);
 
+/**
+ * The fields `LedgerBlock` declares, with the shape each must have. A BLOCK is
+ * inlined whole too, two levels down (`blocks.open` and each section's
+ * `blocks`), so an undeclared key there reds every build the same way:
+ * `severity` (2026-09-27) and `fix` (2026-10-15) did. `issue` is required, and
+ * a BLOCK recorded without one has no issue filed.
+ */
+const isText = value => typeof value === 'string';
+const isOptionalText = value => value === undefined || typeof value === 'string';
+const BLOCK_KEY_SHAPES = {
+  id: isText,
+  summary: isText,
+  section: isOptionalText,
+  evidence: isOptionalText,
+  severity: isOptionalText,
+  fix: isOptionalText,
+  issue: value => value === null || Number.isInteger(value),
+};
+
 /** Drop keys `LedgerEntry` doesn't declare, or whose shape it rejects. */
 const droppedKeys = new Set();
 const malformedKeys = new Set();
 
+/**
+ * One BLOCK as `LedgerBlock` declares it, or null when it cannot be one: not
+ * an object, or without a text `id` and `summary`. `where` names it in the
+ * build's warnings.
+ */
+function pruneBlock(block, where) {
+  if (block == null || typeof block !== 'object' || Array.isArray(block)) {
+    malformedKeys.add(where);
+    return null;
+  }
+  const kept = {};
+  for (const [k, v] of Object.entries(block)) {
+    const shape = BLOCK_KEY_SHAPES[k];
+    if (!shape) droppedKeys.add(`${where.replace(/\[\d+\]$/, '[]')}.${k}`);
+    else if (!shape(v)) malformedKeys.add(`${where}.${k}`);
+    else kept[k] = v;
+  }
+  if (!isText(kept.id) || !isText(kept.summary)) {
+    malformedKeys.add(where);
+    return null;
+  }
+  if (!('issue' in kept)) kept.issue = null;
+  return kept;
+}
+
+/**
+ * A section's `blocks`. An entry names a BLOCK it already lists by its id
+ * (`["B15"]`, 2026-10-17): that id stands for the entry's open BLOCK.
+ */
+function pruneSectionBlocks(blocks, open, where) {
+  if (!Array.isArray(blocks)) {
+    malformedKeys.add(where);
+    return [];
+  }
+  return blocks
+    .map((block, i) => {
+      if (typeof block !== 'string') return pruneBlock(block, `${where}[${i}]`);
+      const named = open.find(each => each.id === block);
+      if (!named) malformedKeys.add(`${where}[${i}]`);
+      return named ?? null;
+    })
+    .filter(block => block != null);
+}
+
 /** Prune each section object to the keys `LedgerSection` declares. */
-function pruneSections(sections) {
+function pruneSections(sections, open, component) {
   if (sections == null || typeof sections !== 'object' || Array.isArray(sections)) {
     return sections;
   }
@@ -135,8 +198,14 @@ function pruneSections(sections) {
     }
     const kept_section = {};
     for (const [k, v] of Object.entries(section)) {
-      if (KNOWN_SECTION_KEYS.has(k)) kept_section[k] = v;
-      else droppedKeys.add(`sections.*.${k}`);
+      if (!KNOWN_SECTION_KEYS.has(k)) droppedKeys.add(`sections.*.${k}`);
+      else if (k === 'blocks') {
+        kept_section[k] = pruneSectionBlocks(
+          v,
+          open,
+          `${component}.sections.${id}.blocks`,
+        );
+      } else kept_section[k] = v;
     }
     kept[id] = kept_section;
   }
@@ -144,6 +213,7 @@ function pruneSections(sections) {
 }
 
 function pruneEntry(entry) {
+  const component = entry.component ?? '?';
   const kept = {};
   for (const [k, v] of Object.entries(entry)) {
     if (!KNOWN_ENTRY_KEYS.has(k)) {
@@ -156,7 +226,22 @@ function pruneEntry(entry) {
       if (shape.repair) kept[k] = shape.repair(v);
       continue;
     }
-    kept[k] = k === 'sections' ? pruneSections(v) : v;
+    kept[k] = v;
+  }
+  if (kept.blocks) {
+    kept.blocks = {
+      ...kept.blocks,
+      open: kept.blocks.open
+        .map((block, i) => pruneBlock(block, `${component}.blocks.open[${i}]`))
+        .filter(block => block != null),
+    };
+  }
+  if ('sections' in kept) {
+    kept.sections = pruneSections(
+      kept.sections,
+      kept.blocks?.open ?? [],
+      component,
+    );
   }
   return kept;
 }
@@ -195,7 +280,7 @@ if (droppedKeys.size > 0) {
   console.warn(
     `componentScores: the wiki ledger carries ${droppedKeys.size} field(s) LedgerEntry does not declare ` +
       `(${[...droppedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
-      `Add them to LedgerEntry/LedgerSection and the matching KNOWN_*_KEYS set to surface them.`,
+      `Add them to LedgerEntry, LedgerSection or LedgerBlock and to KNOWN_*_KEYS or BLOCK_KEY_SHAPES to surface them.`,
   );
 }
 
@@ -227,6 +312,10 @@ export interface LedgerBlock {
   summary: string;
   section?: string;
   evidence?: string;
+  /** How the audit rated it, when it says: \`BLOCK\`. */
+  severity?: string;
+  /** What would close it, when the audit says. */
+  fix?: string;
   /** The \`hardening\` issue filed for this BLOCK, or null if none is filed. */
   issue: number | null;
 }
