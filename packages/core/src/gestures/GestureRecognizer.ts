@@ -38,6 +38,16 @@ import type {
 } from './types';
 import {DEFAULT_ENVIRONMENT} from './types';
 
+/**
+ * Turns text selection and the touch callout off on `elements` (and on a
+ * non-text input `target` inside one) for one held press; returns the undo.
+ * gestures/selectionLock.ts's `lockSelection` is the one implementation.
+ */
+export type SelectionLock = (
+  elements: Iterable<Element>,
+  target: EventTarget | null,
+) => () => void;
+
 export interface GestureRecognizerOptions<R = GestureRecognizer> {
   /** A name for debugging and test output. */
   name?: string;
@@ -51,6 +61,18 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
   cancelsTouchesInView?: boolean;
   /** Hold the view's touch-began until this recognizer fails. @default false */
   delaysTouchesBegan?: boolean;
+  /**
+   * For a hold that does something (a slider's thumb, a switch's or a
+   * segmented control's drag): the lock that turns text selection and the
+   * touch callout off on this recognizer's element for each held press
+   * (`spec:AST-094` FR41). Pass `lockSelection` from gestures/selectionLock.ts;
+   * the host calls it and never imports it, so a component without such a
+   * hold does not bundle it. Content under a sheet's or a pager's pan stays
+   * selectable, so there is none by default; a mouse keeps desktop selection
+   * either way. A long press brings its own when it has a hold (a
+   * `minimumPressDuration` above 0); `null` brings none.
+   */
+  selectionLock?: SelectionLock | null;
   /**
    * Hold the view's touch-ended (and the browser's click) while this
    * recognizer may still recognize. @default true
@@ -152,6 +174,8 @@ export abstract class GestureRecognizer {
   name: string;
   isEnabled: boolean;
   cancelsTouchesInView: boolean;
+  /** See GestureRecognizerOptions.selectionLock. */
+  readonly selectionLock: SelectionLock | null;
   delaysTouchesBegan: boolean;
   delaysTouchesEnded: boolean;
   allowedPointerTypes: ReadonlySet<PointerKind> | null;
@@ -193,6 +217,7 @@ export abstract class GestureRecognizer {
     this.name = options.name ?? this.constructor.name;
     this.isEnabled = options.isEnabled ?? true;
     this.cancelsTouchesInView = options.cancelsTouchesInView ?? true;
+    this.selectionLock = options.selectionLock ?? null;
     this.delaysTouchesBegan = options.delaysTouchesBegan ?? false;
     this.delaysTouchesEnded = options.delaysTouchesEnded ?? true;
     this.allowedPointerTypes =
