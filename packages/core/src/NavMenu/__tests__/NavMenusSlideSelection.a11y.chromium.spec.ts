@@ -50,9 +50,13 @@ async function selectedText(page: Page): Promise<string> {
  * Press the first item's text, slide to the second, and lift there. Returns
  * the selected text while the pointer is held and after the lift.
  */
-async function slideFirstToSecond(page: Page, item: string) {
+async function slideFirstToSecond(page: Page, item: string, text?: string) {
   await expect(page.locator(item).nth(1)).toBeVisible();
-  const first = await page.locator(item).nth(0).boundingBox();
+  const first = await (
+    text == null
+      ? page.locator(item).nth(0)
+      : page.locator(item).nth(0).getByText(text, {exact: true})
+  ).boundingBox();
   const to = await centerOf(page, item, 1);
   if (first == null) {
     throw new Error(`${item} #0 has no rendered bounds`);
@@ -106,6 +110,18 @@ test.describe('nav and tab menus: a mouse slide selects no text (Chromium)', () 
       held: '',
       lifted: '',
     });
+  });
+
+  test('TopNavMenu, on action items with no destination', async ({page}) => {
+    await mount(page, 'core-topnavmenu--action-items');
+    await page
+      .locator('#storybook-root button', {hasText: 'Actions'})
+      .first()
+      .click();
+    // Start on the title text, past the icon cell.
+    expect(
+      await slideFirstToSecond(page, MENU_ITEMS, 'Invite teammates'),
+    ).toEqual({held: '', lifted: ''});
   });
 
   test('TabMenu', async ({page}) => {
