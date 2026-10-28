@@ -2173,7 +2173,9 @@ function generateBuiltModule(
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +
-    serializeField('__axes', themeDef.__axes ?? {}, true);
+    serializeField('__axes', themeDef.__axes ?? {}, true) +
+    // An explicit empty list replaces an inherited one, so keep `[]`.
+    serializeField('iconVariants', themeDef.iconVariants, true);
 
   return `${iconImport}${iconDeclaration}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
