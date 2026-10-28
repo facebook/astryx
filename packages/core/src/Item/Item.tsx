@@ -803,6 +803,7 @@ export function Item({
       {marker}
       {startContent != null && (
         <span
+          data-astryx-item-slot="start"
           {...stylex.props(
             styles.startContent,
             align === 'first-line' && styles.firstLineSlot,
@@ -863,6 +864,7 @@ export function Item({
 
       {endContent != null && (
         <span
+          data-astryx-item-slot="end"
           {...stylex.props(
             styles.endContent,
             align === 'first-line' && styles.firstLineSlot,
