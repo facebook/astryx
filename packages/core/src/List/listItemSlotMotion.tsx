@@ -65,6 +65,9 @@ function identityOf(node: ReactNode): string | null {
     let id: string;
     if (typeof type === 'string') {
       id = type;
+    } else if (typeof type === 'symbol') {
+      // Fragment, Suspense and the like: a symbol, never a WeakMap key.
+      id = String(type);
     } else {
       const known = typeIds.get(type as object);
       const assigned = known ?? nextTypeId++;

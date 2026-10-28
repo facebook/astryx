@@ -1230,6 +1230,56 @@ function placeOf(
  * so a gap or collapsing margins come out exact. Returns false, setting
  * nothing, when no margin reaches that place.
  */
+/**
+ * Whether a flex-row item is what makes its row as tall as it is: its
+ * parent's content box is no taller than the item, and every other item in
+ * flow is shorter.
+ */
+function setsRowHeight(element: HTMLElement): boolean {
+  const parent = element.parentElement;
+  const view = element.ownerDocument.defaultView;
+  if (parent == null || view == null) {
+    return false;
+  }
+  const outerHeight = (box: Element) => {
+    const style = view.getComputedStyle(box);
+    return (
+      box.getBoundingClientRect().height +
+      (Number.parseFloat(style.marginBlockStart) || 0) +
+      (Number.parseFloat(style.marginBlockEnd) || 0)
+    );
+  };
+  const parentStyle = view.getComputedStyle(parent);
+  const content =
+    parent.getBoundingClientRect().height -
+    (Number.parseFloat(parentStyle.paddingBlockStart) || 0) -
+    (Number.parseFloat(parentStyle.paddingBlockEnd) || 0) -
+    (Number.parseFloat(parentStyle.borderBlockStartWidth) || 0) -
+    (Number.parseFloat(parentStyle.borderBlockEndWidth) || 0);
+  // The row's other items, reached through the element's siblings.
+  const others: Element[] = [];
+  for (
+    let sibling = element.previousElementSibling;
+    sibling != null;
+    sibling = sibling.previousElementSibling
+  ) {
+    others.push(sibling);
+  }
+  for (
+    let sibling = element.nextElementSibling;
+    sibling != null;
+    sibling = sibling.nextElementSibling
+  ) {
+    others.push(sibling);
+  }
+  const inFlow = others.filter(other => {
+    const {position} = view.getComputedStyle(other);
+    return position !== 'absolute' && position !== 'fixed';
+  });
+  const tallestOther = Math.max(0, ...inFlow.map(outerHeight));
+  return outerHeight(element) >= content - 0.5 && tallestOther < content - 0.5;
+}
+
 function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const view = element.ownerDocument.defaultView;
   const parent =
@@ -1245,7 +1295,12 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const size = isRow ? element.offsetWidth : element.offsetHeight;
   const next = nextInFlow(element, area);
   if (next == null) {
-    // Nothing after it in the area to land anywhere.
+    // Nothing after it in the area to land anywhere, but a flex-row item
+    // that sets its row's height still frees no block space with an inline
+    // margin: the row would keep its height through the exit, then jump.
+    if (isRow && setsRowHeight(element)) {
+      return false;
+    }
     element.style.setProperty(property, `${-size}px`);
     return true;
   }

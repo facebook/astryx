@@ -139,6 +139,8 @@ test('a leaving control is inert and out of the accessibility tree as its exit s
   page,
 }) => {
   await mount(page);
+  // Rows taller than their controls, so no slot sets its row's height.
+  await page.addStyleTag({content: '#storybook-root li { min-height: 72px; }'});
   await page.getByRole('button', {name: 'Edit'}).click();
   await page.waitForTimeout(800);
   const played = await clickAndRead(page, 'Done');
@@ -164,6 +166,19 @@ test('a leaving control is inert and out of the accessibility tree as its exit s
     0,
     {timeout: 3000},
   );
+});
+
+test("an end slot that sets its row's height goes at once, the last row's too", async ({
+  page,
+}) => {
+  await mount(page);
+  await page.getByRole('button', {name: 'Edit'}).click();
+  await page.waitForTimeout(800);
+  // The remove buttons are taller than the labels: each sets its row's
+  // height, the last row's (nothing after it) included.
+  const played = await clickAndRead(page, 'Done');
+  expect(played).toHaveLength(0);
+  await expect(page.locator('li [data-astryx-item-slot="end"]')).toHaveCount(0);
 });
 
 test('a Checkbox toggling at the same size plays nothing', async ({page}) => {

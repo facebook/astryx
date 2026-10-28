@@ -296,6 +296,40 @@ describe("a row's start and end content through its List's animatedLayout (compo
     expect(played).toHaveLength(0);
   });
 
+  it('a fragment in a slot renders, with and without a handle', () => {
+    const rows = (withHandle: boolean) => {
+      function Fragments() {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const animatedLayout = useAnimatedLayout({containerRef});
+        return (
+          <div id="area" ref={containerRef}>
+            <List animatedLayout={withHandle ? animatedLayout : undefined}>
+              <ListItem
+                label="Risk"
+                startContent={
+                  <>
+                    <span>!</span>
+                  </>
+                }
+                endContent={
+                  <>
+                    <span>High</span>
+                  </>
+                }
+              />
+            </List>
+          </div>
+        );
+      }
+      return <Fragments />;
+    };
+    for (const withHandle of [false, true]) {
+      const {unmount, getByText} = render(rows(withHandle));
+      expect(getByText('High')).toBeTruthy();
+      unmount();
+    }
+  });
+
   it('without a handle the row changes at once', async () => {
     render(<Demo withHandle={false} />);
     await to('select');
