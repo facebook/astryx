@@ -33,6 +33,7 @@ import {
   blockMainThread,
   busyWindowProof,
   compareCurve,
+  CONTROL_RGB,
   curveOf,
   drag,
   frames,
@@ -42,18 +43,18 @@ import {
   releaseAnimations,
   sampleCurve,
   seekAnimations,
+  startBusyControl,
   startScreencast,
   timeline,
   touchDriver,
+  type TouchDriver,
+  type TouchScript,
   trackMarker,
   waitForAnimation,
   waitForRest,
   withStorybook,
   writeEvidence,
-  type TouchDriver,
-  type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -364,7 +365,6 @@ test('a photo dragged down lands in its thumbnail', async ({page}) => {
 
 test('the opening keeps advancing every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const s = await openStoryPage(page);
   // The closed dialog's photo: a CSS locator (a role query skips it).
@@ -375,35 +375,47 @@ test('the opening keeps advancing every frame while the main thread is blocked',
   await markElement(photo, {mode: 'outline'});
   const cast = await startScreencast(page);
   await tap(s.driver, s.thumbnail(0));
-  const [open] = await waitForAnimation(photo, {minProgressMs: 140});
-  const block = await blockMainThread(page, 150);
+  // A compositor-only control animation in the same window, started once the
+  // tap has opened the dialog so it shows above it: what the compositor
+  // presented while the main thread spun, on this machine.
+  await startBusyControl(page);
+  // Blocked inside the page 140 ms into the opening, once the photo is
+  // opaque, and for 300 ms: a block started from the test lands later in the
+  // opening, by a varying amount, and 150 ms left too little to judge.
+  const block = await blockMainThread(page, 300, {
+    during: photo,
+    minProgressMs: 140,
+  });
   await page.waitForTimeout(100);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
+  // Judged until the photo is within 4 px of where it ends: WebKit's
+  // screencast reports widths 2 CSS px apart, and the spring's last few pixels
+  // move less than that a frame, so they show as plateaus (396, 398, 398,
+  // 398, 400 on the way to 402) though the photo is still moving.
   const proof = busyWindowProof(
     tracked,
-    {from: block.from, to: Math.min(block.to, open.to)},
-    {axis: 'width', settledWithin: 1},
+    {from: block.from, to: block.to},
+    {axis: 'width', settledWithin: 4, control},
   );
   await writeEvidence(
     'busy-main-thread/lightbox-zoom-open',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, open, proof},
+        {block, proof, control},
         null,
         1,
       ),
     },
     testInfo,
   );
-  // At the recording's own pace outside the block (Linux WebKit composites
-  // in software on the CPU the blocked main thread spins on: 1.5 times that
-  // pace there).
-  const cadence = cadenceOutside(tracked, block);
-  expect(proof.medianFrameMs).toBeLessThanOrEqual(
-    Math.max(20, cadence * (browserName === 'webkit' ? 1.5 : 1.15)),
-  );
-  expect(proof.longestStallMs).toBeLessThan(cadence * 2.5);
+  // Judged against the control: a two-core runner's software compositor and
+  // the screencast share the core the block spins on, so every compositor
+  // animation presents fewer frames there, the control's too. The photo keeps
+  // pace with the control, and a main-thread animation would not; a window
+  // too short to judge fails too.
+  expect(proof.verdict.failures).toEqual([]);
   expect(proof.monotonic).toBe(true);
 });
 

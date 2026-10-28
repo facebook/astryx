@@ -26,22 +26,23 @@ import {
   blockMainThread,
   busyWindowProof,
   castStoryboard,
+  CONTROL_RGB,
   drag,
   frames,
   markElement,
   openStory,
+  startBusyControl,
   startScreencast,
   touchDriver,
+  type TouchDriver,
+  type TouchScript,
   touchStoryboard,
   trackMarker,
   waitForAnimation,
   waitForRest,
   withStorybook,
   writeEvidence,
-  type TouchDriver,
-  type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -400,7 +401,17 @@ test('the page settle keeps advancing every frame while the main thread is block
   page,
 }, testInfo) => {
   const g = await openGallery(page);
-  await markElement(g.track, {mode: 'outline'});
+  // The next photo, which slides in from the right as the page settles: the
+  // track itself is wider than the screen, so its tracked box stays pinned to
+  // the screen's edge and reads as settled at once.
+  const nextPhoto = g.dialog
+    .locator('[data-lightbox-page]')
+    .nth(1)
+    .locator('img');
+  await markElement(nextPhoto, {mode: 'outline'});
+  // A compositor-only control animation in the same window: what the
+  // compositor presented while the main thread spun, on this machine.
+  await startBusyControl(page);
   const cast = await startScreencast(page);
   const from = {x: g.box.x + g.box.width * 0.8, y: g.box.y + g.box.height / 2};
   await g.driver.play(slowDrag(from, -g.box.width * 0.6));
@@ -409,16 +420,17 @@ test('the page settle keeps advancing every frame while the main thread is block
   await page.waitForTimeout(100);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, settle.to)},
-    {axis: 'x', settledWithin: 1},
+    {axis: 'x', settledWithin: 1, control},
   );
   await writeEvidence(
     'busy-main-thread/lightbox-page-settle',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, settle, proof},
+        {block, settle, proof, control},
         null,
         1,
       ),
@@ -435,11 +447,12 @@ test('the page settle keeps advancing every frame while the main thread is block
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
   await film.write(testInfo, {block, settle});
-  expect(proof.medianFrameMs).toBeLessThan(20);
-  expect(proof.frames).toBeGreaterThanOrEqual(
-    presentedFramesExpected(proof) - 2,
-  );
-  expect(proof.longestStallMs).toBeLessThan(proof.cadenceMs * 2.5);
+  // Judged against the control: a two-core runner's software compositor and
+  // the screencast share the core the block spins on, so every compositor
+  // animation presents fewer frames there, the control's too. The photo keeps
+  // pace with the control, and a main-thread animation would not; a window
+  // too short to judge fails too.
+  expect(proof.verdict.failures).toEqual([]);
   expect(proof.monotonic).toBe(true);
 });
 
