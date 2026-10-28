@@ -372,7 +372,6 @@ DEC-6 does not require unrelated components to add a new floor.
   | ComplexSelector                    | control box          | control box                            | trigger button              | `control*`               |
   | Typeahead                          | Field                | Field                                  | combobox input              | `container*`             |
   | Tokenizer                          | Field                | Field                                  | combobox input              | `container*`             |
-  | CheckboxList                       | Field                | Field                                  | `role="group"` element      | `container*`             |
   | RadioList                          | Field                | not forwarded; `ref` on Field          | `role="radiogroup"` element | `container*`             |
   | Slider                             | Field                | not forwarded; `ref` on the track      | slider control              | `container*`             |
 

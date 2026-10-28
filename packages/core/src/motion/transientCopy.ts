@@ -234,15 +234,14 @@ export function placeOver(
   host.appendChild(element);
   // What it inherited where it was, where the host passes something else.
   const hostStyle = getComputedStyle(host);
-  const hostFactor = lineHeightFactor(hostStyle);
   for (const [name, value] of inheritedValues.get(element) ?? []) {
-    // A carried factor is compared with the host's factor, a length with
-    // the host's computed length.
-    const passed =
-      name === 'line-height' && /^[\d.]+$/.test(value) && hostFactor != null
-        ? String(hostFactor)
-        : hostStyle.getPropertyValue(name);
-    if (value !== '' && passed !== value) {
+    // A line-height is always written: the host may pass the same number as
+    // the other kind (a factor against a length), which descendants inherit
+    // differently.
+    if (
+      value !== '' &&
+      (name === 'line-height' || hostStyle.getPropertyValue(name) !== value)
+    ) {
       element.style.setProperty(name, value);
     }
   }
