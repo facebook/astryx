@@ -1104,6 +1104,28 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
 }
 
 /**
+ * Public augmentable maps whose axis requests artwork instead of styling.
+ * `Icon.variant` selects a theme's icon artwork, so it has no component styling
+ * map (architecture:component-theming-surface INV14): a `components` key on it
+ * never enrolls a value or generates an augmentation of its map.
+ */
+const ARTWORK_REQUEST_MAPS = new Set(['IconVariantMap']);
+
+/**
+ * Whether a theme's component styling keys may enroll values in `interfaceName`
+ * on `@astryxdesign/core/<Component>`.
+ * @param {string} pascalName
+ * @param {string} interfaceName
+ * @returns {boolean}
+ */
+function isComponentValueAugmentationPoint(pascalName, interfaceName) {
+  return (
+    !ARTWORK_REQUEST_MAPS.has(interfaceName) &&
+    componentHasAugmentableInterface(pascalName, interfaceName)
+  );
+}
+
+/**
  * Adaptation values from resolved runtime rules, raw input, or normalized built
  * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
  * diagnostic that reads rule intent must also understand `__adaptations`.
@@ -1410,7 +1432,7 @@ async function classifyComponentValue(component, prop, value) {
   const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
   const target = (await resolveAugmentationTargetCandidates(component)).find(
     candidate =>
-      componentHasAugmentableInterface(
+      isComponentValueAugmentationPoint(
         candidate.moduleName,
         `${candidate.interfacePrefix}${propPascal}Map`,
       ),
@@ -1567,7 +1589,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
       const target = (
         await resolveAugmentationTargetCandidates(component)
       ).find(candidate =>
-        componentHasAugmentableInterface(
+        isComponentValueAugmentationPoint(
           candidate.moduleName,
           `${candidate.interfacePrefix}${propPascal}Map`,
         ),
@@ -2151,7 +2173,9 @@ function generateBuiltModule(
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +
-    serializeField('__axes', themeDef.__axes ?? {}, true);
+    serializeField('__axes', themeDef.__axes ?? {}, true) +
+    // An explicit empty list replaces an inherited one, so keep `[]`.
+    serializeField('iconVariants', themeDef.iconVariants, true);
 
   return `${iconImport}${iconDeclaration}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`

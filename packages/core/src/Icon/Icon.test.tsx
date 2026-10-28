@@ -3,7 +3,8 @@
 /**
  * @file Icon.test.tsx
  * @input Uses vitest, @testing-library/react, Icon component
- * @output Unit tests for Icon component behavior
+ * @output Unit tests for Icon component behavior, including theme size
+ *   dimensions
  * @position Testing; validates Icon.tsx implementation
  *
  * SYNC: When Icon.tsx changes, update tests to match new behavior
@@ -13,11 +14,22 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {TestIcon} from '../__tests__/TestIcon';
+import {unthemedLength} from '../__tests__/unthemedLength';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {Icon} from './Icon';
-import {registerIcons, resetIcons} from './globalIconRegistry';
+import {IconDefaultSizeProvider} from './IconDefaultSizeContext';
+import {
+  registerIcons,
+  resetIcons,
+  type IconRequest,
+} from './globalIconRegistry';
+
+/** The custom properties a declaration value reads, in order. */
+function varsRead(value: string): string[] {
+  return [...value.matchAll(/var\(\s*(--[\w-]+)/g)].map(match => match[1]);
+}
 
 describe('Icon', () => {
   it('renders the icon component', () => {
@@ -120,8 +132,8 @@ describe('Icon', () => {
         />,
       );
       const style = getComputedStyle(screen.getByTestId('icon'));
-      expect(style.width).toBe(expected);
-      expect(style.height).toBe(expected);
+      expect(unthemedLength(style.width)).toBe(expected);
+      expect(unthemedLength(style.height)).toBe(expected);
       unmount();
     }
   });
@@ -142,10 +154,10 @@ describe('Icon', () => {
         />,
       );
       const style = getComputedStyle(screen.getByTestId('icon'));
-      expect(style.width).toBe(expected);
-      expect(style.height).toBe(expected);
+      expect(unthemedLength(style.width)).toBe(expected);
+      expect(unthemedLength(style.height)).toBe(expected);
       // fontSize is expressed in rem so 1em-based registry icons scale too.
-      expect(style.fontSize).toBe(expected);
+      expect(unthemedLength(style.fontSize)).toBe(expected);
       unmount();
     }
   });
@@ -170,8 +182,113 @@ describe('Icon', () => {
 
     const icon = screen.getByTestId('icon');
     expect(icon).toHaveAttribute('data-size', 'md');
-    expect(getComputedStyle(icon).width).toBe('1.25rem');
-    expect(getComputedStyle(icon).height).toBe('1.25rem');
+    expect(unthemedLength(getComputedStyle(icon).width)).toBe('1.25rem');
+    expect(unthemedLength(getComputedStyle(icon).height)).toBe('1.25rem');
+  });
+
+  describe('theme size dimensions', () => {
+    // spec:AST-087 FR10, component:Icon FR7: width and height on an `icon`
+    // size selector set that size's glyph dimension in both source modes,
+    // and a size the theme leaves alone keeps its own. jsdom resolves neither
+    // `var()` nor the theme's scoped layer, so this checks the two halves that
+    // meet in the browser: the rule the provider mounts writes the dimension
+    // into exactly the vars the glyph's own size styles read.
+    const sizes = {
+      xsm: '0.75rem',
+      sm: '1rem',
+      md: '1.25rem',
+      lg: '1.5rem',
+    } as const;
+    type Size = keyof typeof sizes;
+
+    /** The declarations of the mounted theme rule for one Icon size. */
+    function mountedSizeRule(
+      themeName: string,
+      size: Size,
+    ): Record<string, string> | null {
+      const css =
+        document.querySelector<HTMLStyleElement>(
+          `style[data-astryx-theme="${themeName}"]`,
+        )?.textContent ?? '';
+      const selector = `.astryx-icon[data-size="${size}"] {`;
+      const start = css.indexOf(selector);
+      if (start === -1) {
+        return null;
+      }
+      const body = css.slice(start + selector.length, css.indexOf('}', start));
+      return Object.fromEntries(
+        body
+          .split(';')
+          .map(declaration => declaration.split(':').map(part => part.trim()))
+          .filter(([property]) => property),
+      );
+    }
+
+    it.each(Object.keys(sizes) as Size[])(
+      'a %s rule sets that glyph in both modes and leaves the other sizes alone',
+      styled => {
+        resetIcons();
+        resetThemes();
+        const themeName = `icon-size-${styled}`;
+        render(
+          <Theme
+            theme={defineTheme({
+              name: themeName,
+              components: {
+                icon: {[`size:${styled}`]: {width: '18px', height: '22px'}},
+              },
+            })}>
+            {(Object.keys(sizes) as Size[]).map(size => (
+              <span key={size}>
+                <Icon
+                  icon={TestIcon}
+                  size={size}
+                  data-testid={`direct-${size}`}
+                />
+                <Icon
+                  icon="check"
+                  size={size}
+                  data-testid={`registry-${size}`}
+                />
+              </span>
+            ))}
+          </Theme>,
+        );
+
+        const mounted = mountedSizeRule(themeName, styled);
+        expect(mounted).not.toBeNull();
+        const declared = mounted ?? {};
+        // Raw width/height would lose to an unlayered StyleX build, so the
+        // rule carries the dimension only through the glyph's vars.
+        expect(Object.keys(declared)).not.toContain('width');
+        expect(Object.keys(declared)).not.toContain('height');
+
+        for (const size of Object.keys(sizes) as Size[]) {
+          for (const mode of ['direct', 'registry']) {
+            const style = getComputedStyle(
+              screen.getByTestId(`${mode}-${size}`),
+            );
+            if (size !== styled) {
+              expect(mountedSizeRule(themeName, size)).toBeNull();
+              expect(unthemedLength(style.width)).toBe(sizes[size]);
+              expect(unthemedLength(style.height)).toBe(sizes[size]);
+              continue;
+            }
+            const [widthVar] = varsRead(style.width);
+            const [heightVar] = varsRead(style.height);
+            expect(declared[widthVar], `${mode} width`).toBe('18px');
+            expect(declared[heightVar], `${mode} height`).toBe('22px');
+            if (mode === 'registry') {
+              // 1em registry artwork follows the font size: the smaller side.
+              expect(style.fontSize).toMatch(/^min\(/);
+              expect(varsRead(style.fontSize).sort()).toEqual(
+                [widthVar, heightVar].sort(),
+              );
+            }
+          }
+        }
+      },
+    );
   });
 
   it('applies aria-hidden by default in string (registry) mode', () => {
@@ -196,6 +313,143 @@ describe('Icon', () => {
 
     expect(screen.getByTestId('outer')).toHaveTextContent('outer-check');
     expect(screen.getByTestId('inner')).toHaveTextContent('inner-check');
+  });
+
+  // spec:AST-087 FR1, FR6, FR9 — a function registry entry receives the size
+  // resolved by component:Icon ORD1, and its result is final.
+  describe('function registry entries', () => {
+    const sized = (label: string) => (request: IconRequest) =>
+      `${label}-${request.size}`;
+
+    it('passes each explicit size to a theme function entry', () => {
+      resetIcons();
+      resetThemes();
+      const info = vi.fn(sized('theme-info'));
+      const theme = defineTheme({name: 'fn-sizes', icons: {info}});
+
+      render(
+        <Theme theme={theme}>
+          {(['xsm', 'sm', 'md', 'lg'] as const).map(size => (
+            <Icon key={size} icon="info" size={size} data-testid={size} />
+          ))}
+        </Theme>,
+      );
+
+      for (const size of ['xsm', 'sm', 'md', 'lg'] as const) {
+        const icon = screen.getByTestId(size);
+        expect(icon).toHaveTextContent(`theme-info-${size}`);
+        expect(icon).toHaveAttribute('data-size', size);
+        expect(info).toHaveBeenCalledWith({size});
+      }
+    });
+
+    it('passes the standalone md fallback when no size is set', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'fn-standalone',
+        icons: {info: sized('theme-info')},
+      });
+
+      render(
+        <Theme theme={theme}>
+          <Icon icon="info" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('theme-info-md');
+    });
+
+    it('passes the owning component default, and an explicit size over it', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'fn-contextual',
+        icons: {info: sized('theme-info')},
+      });
+
+      render(
+        <Theme theme={theme}>
+          <IconDefaultSizeProvider value="sm">
+            <Icon icon="info" data-testid="contextual" />
+            <Icon icon="info" size="lg" data-testid="explicit" />
+          </IconDefaultSizeProvider>
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('contextual')).toHaveTextContent(
+        'theme-info-sm',
+      );
+      expect(screen.getByTestId('explicit')).toHaveTextContent('theme-info-lg');
+    });
+
+    it('passes the resolved size to a process-wide function entry', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({info: sized('global-info')});
+
+      render(<Icon icon="info" size="xsm" data-testid="icon" />);
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('global-info-xsm');
+    });
+
+    it('resolves function entries from the nearest Theme', () => {
+      resetIcons();
+      resetThemes();
+      const outer = defineTheme({
+        name: 'fn-outer',
+        icons: {info: sized('outer-info')},
+      });
+      const inner = defineTheme({
+        name: 'fn-inner',
+        icons: {info: sized('inner-info')},
+      });
+
+      render(
+        <Theme theme={outer}>
+          <Icon icon="info" size="sm" data-testid="outer" />
+          <Theme theme={inner}>
+            <Icon icon="info" size="lg" data-testid="inner" />
+          </Theme>
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('outer')).toHaveTextContent('outer-info-sm');
+      expect(screen.getByTestId('inner')).toHaveTextContent('inner-info-lg');
+    });
+
+    it('renders no glyph when the selected function returns null', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({info: 'global-info'});
+      const theme = defineTheme({name: 'fn-null', icons: {info: () => null}});
+
+      const {container} = render(
+        <Theme theme={theme}>
+          <Icon icon="info" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
+      expect(container.querySelector('.astryx-icon')).toBeNull();
+    });
+
+    it('renders a supplied icon component as given', () => {
+      resetIcons();
+      resetThemes();
+      const info = vi.fn(sized('theme-info'));
+      const theme = defineTheme({name: 'fn-direct', icons: {info}});
+      info.mockClear();
+
+      render(
+        <Theme theme={theme}>
+          <Icon icon={TestIcon} size="sm" data-testid="icon" />
+        </Theme>,
+      );
+
+      expect(screen.getByTestId('icon').tagName.toLowerCase()).toBe('svg');
+      expect(info).not.toHaveBeenCalled();
+    });
   });
 
   describe('namespaced extension keys', () => {
