@@ -189,8 +189,9 @@ export const myTheme = defineTheme({
    *   reducedMotion — 'always' reduces motion for everyone; 'system' (the
    *     default) follows each person's setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
-   * Finger tracking, momentum, the keyboard, press and hover clocks and busy
-   * loops never follow them.
+   * Finger tracking, momentum, the keyboard, hover, the press's onset delay
+   * and tap flash, and busy loops never follow them; the press release fade
+   * follows tempo.
    *
    * A duration scale in ms wins over tempo for the durations it sets. Each of
    * fast/medium/slow also gets a -min and -max sibling computed with `ratio`

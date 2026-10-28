@@ -247,8 +247,9 @@ export interface DefineThemeInput {
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over
    * `tempo`, and explicit `tokens` overrides win over both. Finger tracking,
-   * momentum, the keyboard, press and hover clocks and loops never follow the
-   * knobs.
+   * momentum, the keyboard, hover, the press's onset delay and tap flash, and
+   * busy loops never follow the knobs; the press release fade follows
+   * `tempo`.
    *
    * @example
    * ```
@@ -543,16 +544,16 @@ const SLOW_BAND = [
 
 /**
  * The base's slow-band tokens a child keeps (spec:AST-108 FR5): a child that
- * sets its own `ratio` but no `slow` regenerates only the fast and medium
- * bands, so an inherited slow band stays at the base's ratio, as the base's
- * tokens hold it.
+ * sets no `slow` of its own regenerates only the fast and medium bands, so an
+ * inherited slow band stays as the base's tokens hold it, at the ratio it was
+ * made with, however many themes down it is inherited.
  */
 function inheritedSlowBand(
   base: DefinedTheme,
   baseMotion: ThemeMotionConfig,
   own: ThemeMotionConfig,
 ): Partial<Record<string, TokenValue>> | undefined {
-  if (!('slow' in baseMotion) || 'slow' in own || !('ratio' in own)) {
+  if (!('slow' in baseMotion) || 'slow' in own) {
     return undefined;
   }
   const tokens = base.tokens as Record<string, string | undefined>;
@@ -649,7 +650,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   // or knob the child leaves unset keeps its base's value, so the child's
   // motion tokens come from the merged configuration, and the lineage's
   // explicit motion tokens keep winning over what that regenerates. A child's
-  // `ratio` regenerates only the bands it sets: an inherited slow band keeps
+  // motion regenerates only the bands it sets: an inherited slow band keeps
   // the base's tokens.
   const baseMotion = base?.__axes?.motion;
   const motion: ThemeMotionConfig | undefined =
@@ -687,7 +688,11 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     ? {tokens: base.tokens, components: base.components}
     : undefined;
 
-  const {tokens, components} = resolveThemeValues(ownValues, seed);
+  // An explicit --ease-standard follows the character the theme inherits
+  // when it sets no motion of its own (FR2).
+  const {tokens, components} = resolveThemeValues(ownValues, seed, {
+    inheritedCharacter: baseMotion?.character,
+  });
 
   // On-media token overrides (base's resolved surface, then defaults, then
   // this theme's own overrides). They compile after adaptations so the
