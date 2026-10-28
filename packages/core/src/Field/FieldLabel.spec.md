@@ -45,7 +45,7 @@ system_specs: [spec:AST-020/FR1]
 | Builder impact          | Builders provide stable control and description IDs, select group mode when labelling a composite, and wire `aria-labelledby` or `aria-describedby` on the controlled surface.                                                              |
 | Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. Group mode renders a span while public types promise label props and ref, and the tooltip icon exposes its content only to a pointer; both are listed under Current-state impact. |
 | Review checks           | Reject a lost native/group association, nested description in the accessible name, forwarded clicks from group or interactive description content, dropped label-element props/ref, hidden tooltip content, or undocumented public prop.    |
-| Governing rules         | Established public interface; HTML label semantics; WCAG 2.2 SC 2.1.1; `architecture:public-component-api/INV1,INV5–INV9,INV12`; `architecture:component-theming-surface/INV3–INV7`; `spec:AST-020/FR1`.                                    |
+| Governing rules         | Established public interface; HTML label semantics; WCAG 2.2 SC 2.1.1, SC 4.1.2; `architecture:public-component-api/INV1,INV5–INV9,INV12`; `architecture:component-theming-surface/INV3–INV7`; `spec:AST-020/FR1`.                          |
 
 This table is a review projection; the body below is authoritative.
 
@@ -110,14 +110,14 @@ This table is a review projection; the body below is authoritative.
 
 ### Representative states
 
-| State                 | Required invariant                                                                                             | Allowed variation                                |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| single label          | Native label association reaches the one control.                                                              | Visible or visually hidden.                      |
-| group label           | Label element is not a literal label and is referenceable by `labelID`.                                        | Caller owns group role and `aria-labelledby`.    |
-| description           | Supporting content remains outside the label and may expose `descriptionID`.                                   | Text or structured content.                      |
-| optional or required  | One localized exception marker follows label text.                                                             | Suppressed when it matches FormLayout's default. |
-| disabled presentation | Label uses disabled text treatment and no pointer cursor.                                                      | Associated control owns actual disabled state.   |
-| icon and tooltip      | Shared Icon and Tooltip render their owned paint; the current tooltip anchor remains nonfocusable and unnamed. | Either slot may be absent.                       |
+| State                 | Required invariant                                                                                                                                                       | Allowed variation                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| single label          | Native label association reaches the one control.                                                                                                                        | Visible or visually hidden.                      |
+| group label           | Label element is not a literal label and is referenceable by `labelID`.                                                                                                  | Caller owns group role and `aria-labelledby`.    |
+| description           | Supporting content remains outside the label and may expose `descriptionID`.                                                                                             | Text or structured content.                      |
+| optional or required  | One localized exception marker follows label text.                                                                                                                       | Suppressed when it matches FormLayout's default. |
+| disabled presentation | Label uses disabled text treatment and no pointer cursor.                                                                                                                | Associated control owns actual disabled state.   |
+| icon and tooltip      | Shared Icon and Tooltip render their owned paint; the tooltip trigger is keyboard-reachable and named (FR8). Implementation gap: the anchor is nonfocusable and unnamed. | Either slot may be absent.                       |
 
 ### Transformation and precedence order
 
