@@ -29,26 +29,29 @@ import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
+  CONTROL_RGB,
   curveOf,
   drag,
-  frameStats,
   frames,
   holdAnimations,
   openStory,
   pinch,
+  pooledBusyProof,
   releaseAnimations,
   sampleCurve,
+  startBusyControl,
   startScreencast,
   timeline,
   touchDriver,
+  type TouchDriver,
+  type TouchScript,
+  trackMarker,
   waitForAnimation,
   waitForRest,
   withStorybook,
   writeEvidence,
-  type TouchDriver,
-  type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside, regionSignal} from './screenSignal';
+import {regionSignal, signalFrames} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -494,7 +497,6 @@ test('a drag down keeps them hidden while the black fades with the backdrop, and
 
 test('the fade keeps changing the screen every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const v = await openGallery(page);
   const close = await v.dialog
@@ -503,46 +505,75 @@ test('the fade keeps changing the screen every frame while the main thread is bl
   if (close == null) {
     throw new Error('no close button');
   }
+  // A compositor-only control animation in the same recording: what the
+  // compositor presented while the main thread spun, on this machine.
+  await startBusyControl(page);
   const cast = await startScreencast(page);
-  await v.driver.tap(v.centre);
-  const block = await blockMainThread(page, 400, {
-    during: v.chrome,
-    minProgressMs: 16,
-  });
+  // Photos' fade lasts 0.2 s, so one blocked window holds only a few frames
+  // of the control in WebKit: the controls hide, blocked inside the fade, six
+  // times (shown again between), and the runs are judged pooled.
+  const runs: {
+    block: Awaited<ReturnType<typeof blockMainThread>>;
+    restAt: number;
+  }[] = [];
+  for (let i = 0; i < 6; i++) {
+    await v.driver.tap(v.centre);
+    const block = await blockMainThread(page, 400, {
+      during: v.chrome,
+      minProgressMs: 16,
+    });
+    await waitForRest(v.chrome);
+    expect(await v.alpha(v.chrome)).toBe(0);
+    runs.push({block, restAt: await page.evaluate(() => performance.now())});
+    if (i < 5) {
+      // A single tap shows them again once a double tap can no longer follow.
+      await v.driver.tap(v.centre);
+      await expect.poll(async () => v.alpha(v.chrome), {timeout: 3000}).toBe(1);
+    }
+  }
   await page.waitForTimeout(100);
   const castFrames = await cast.stop();
   // The Close button's spot: its icon fades, then the background turns black.
   const signal = await regionSignal(page, castFrames, close);
-  const final = signal.at(-1)?.value ?? 0;
-  const settled =
-    signal.find(c => c.t >= block.from && Math.abs(c.value - final) <= 1)?.t ??
-    block.to;
-  const window = {from: block.from + 20, to: Math.min(block.to, settled) - 1};
-  const stats = frameStats(signal, window, 0.05);
-  const cadence = cadenceOutside(castFrames, block);
-  // Linux WebKit composites in software on the same CPU the blocked main
-  // thread spins on, so on a loaded machine it presents more slowly during
-  // the block: it is judged at 1.5 times the recording's own pace.
-  const pace = cadence * (browserName === 'webkit' ? 1.5 : 1.15);
-  const expected = Math.floor((window.to - window.from) / pace);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
+  // Each run is judged until the spot is within 1 of where that run rests.
+  const windows = runs.map(({block, restAt}) => {
+    const run = signal.filter(c => c.t >= block.from && c.t <= restAt);
+    const final = run.at(-1)?.value ?? 0;
+    const settled =
+      run.find(c => Math.abs(c.value - final) <= 1)?.t ?? block.to;
+    return {from: block.from + 20, to: Math.min(block.to, settled) - 1};
+  });
+  // A change of the region's mean brightness by more than 0.05 counts, as
+  // the signal's own judgment did; settled within 1 of its final value.
+  const signalTracked = signalFrames(signal, 5);
+  const proof = pooledBusyProof(
+    windows.map(window => ({tracked: signalTracked, control, window})),
+    {axis: 'y', settledWithin: 5},
+  );
   await writeEvidence(
     'busy-main-thread/lightbox-chrome-hide',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, window, cadence, expected, stats, signal},
+        {runs, windows, proof, signal, control},
         null,
         1,
       ),
     },
     testInfo,
   );
-  expect(window.to - window.from).toBeGreaterThan(100);
-  expect(stats.medianFrameMs).toBeLessThanOrEqual(Math.max(20, pace));
-  expect(stats.changed).toBeGreaterThanOrEqual(expected - 2);
-  expect(stats.longestStallMs).toBeLessThan(cadence * 2.5);
-  expect(stats.monotonic).toBe(true);
-  await waitForRest(v.chrome);
-  expect(await v.alpha(v.chrome)).toBe(0);
+  for (const window of windows) {
+    expect(window.to - window.from).toBeGreaterThan(100);
+  }
+  // Judged against the control over the six runs pooled: a two-core runner's
+  // software compositor and the screencast share the core the block spins
+  // on, so every compositor animation presents fewer frames there, the
+  // control's too. The fade keeps changing the screen with the control, and
+  // a main-thread fade would not.
+  expect(proof.verdict.failures).toEqual([]);
+  for (const run of proof.runs) {
+    expect(run.monotonic).toBe(true);
+  }
 });
 
 test('under Reduce Motion the fades are opacity only and last 200 ms or less', async ({
