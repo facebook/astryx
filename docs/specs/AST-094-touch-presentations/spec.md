@@ -602,9 +602,7 @@ under a finger, and a mouse follows `module:DropdownMenu/useMenuPress` FR3 and
   pointer, within FR24's listener budget.
 - `design:user-states` DR1, DR3 and `family:buttons`: press timing follows
   FR11's profiles under every pointer, the fine-pointer profile included.
-- `family:action-groups` members (menus, Selector's and MultiSelector's
-  options, the date and time wheels, AlertDialog's actions, ButtonGroup,
-  ToggleButtonGroup, Toolbar's buttons, and Banner's and Toast's action rows):
+- Every `family:action-groups` member, as its membership rule lists them:
   a press that slides across sibling actions acts on the action it lifts on
   (FR26–FR28), under every pointer.
 - Every component under a coarse pointer: no box grows for touch, and a
