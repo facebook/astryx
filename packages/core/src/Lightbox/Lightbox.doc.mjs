@@ -69,7 +69,7 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or (on a touch screen) dragging a photo down.',
+        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or dragging a photo down from its fitted size (with a finger, a mouse, a pen or a trackpad).',
       required: true,
     },
     {
@@ -81,7 +81,7 @@ export const docs = {
       // the description instead (#1645).
       type: 'LightboxMedia | LightboxMedia[]',
       description:
-        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation (on a touch screen, a swipe moves between items too). Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
+        "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation (a swipe, a mouse drag or a trackpad's sideways scroll moves between items too). Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
       required: true,
     },
     {
@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan.',
+        'Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or double-click to zoom in at that point and back; Enter/Space/+/- zoom 2× about the centre and back. When zoomed, drag or scroll to pan, with momentum, or use arrow keys.',
       default: 'false',
     },
     {
@@ -197,14 +197,14 @@ export const docsZh = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或（触摸屏上）向下拖动照片。',
+        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或从适合大小向下拖动照片（手指、鼠标、触控笔或触控板均可）。',
       required: true,
     },
     {
       name: 'media',
       type: 'LightboxMedia | LightboxMedia[]',
       description:
-        "要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项为 {src, alt, caption?, type?: 'image' | 'video'}；type 默认为 'image'，'video' 禁用缩放/平移。",
+        "要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航；滑动、鼠标拖动或触控板横向滚动也可在各项之间切换）。每项为 {src, alt, caption?, type?: 'image' | 'video'}；type 默认为 'image'，'video' 禁用缩放/平移。",
       required: true,
     },
     {
@@ -221,7 +221,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。',
+        '启用缩放（仅图片）：双指捏合（或按住 Ctrl 滚动滚轮），或双点按、双击在该处放大并还原；Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动或滚动平移（带惯性），或用方向键平移。',
       default: 'false',
     },
     {
@@ -309,13 +309,13 @@ export const docsDense = {
   propDescriptions: {
     isOpen: 'Whether the lightbox is open.',
     onOpenChange:
-      'Callback when open state changes (including a photo dragged down on a touch screen).',
+      'Callback when open state changes (including a photo dragged down).',
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
     onIndexChange:
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
+      'Enable zoom (pinch or ctrl-wheel, double-tap or double-click, Enter/Space, or +/-) and pan (drag, scroll or arrow keys) for images.',
     experimental:
       'Experimental options, which may change in a patch release: sourceFor, the element an item zooms out of on open and back into on close on a touch screen (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',

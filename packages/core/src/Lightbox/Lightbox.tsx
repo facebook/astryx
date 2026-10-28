@@ -74,7 +74,6 @@ import {UIKIT_TAP} from '../motion/uikit/gestures';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage} from './useZoomStage';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../utils/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
 import {liftCopy, type LiftedCopy} from '../liftFromTrigger/liftFromTrigger';
 import {sourceBoxOf, openingFadeStart, zoomFromSource} from './zoomFromSource';
@@ -730,14 +729,10 @@ export function Lightbox({
         return;
       }
       // A gallery's stage fills the viewer: a click on it beside the media is
-      // a backdrop click too. With zoom on under a coarse pointer, the stage's
-      // own tap handles it (after the double-tap interval); a fine pointer has
-      // no stage tap (spec:AST-094 FR19), so its click closes here.
+      // a backdrop click too. With zoom on, the stage's own tap handles it
+      // for every pointer, after the double-tap interval (spec:AST-094 FR43).
       const target = e.target as Element;
-      const stageTaps =
-        hasZoom &&
-        !isVideo &&
-        isCoarsePointer(e.currentTarget.ownerDocument.defaultView);
+      const stageTaps = hasZoom && !isVideo;
       const press = pressRef.current;
       const dragged =
         hasZoom &&
@@ -860,10 +855,11 @@ export function Lightbox({
     };
   }, []);
 
-  // The zoom stage for every pointer (the keyboard, a mouse double-click and
-  // drag) and, under a finger, its touch layer: one touch model on every
-  // touch device (the shared touch resolver), whose pinch and pan give past
-  // their limits and bounce back.
+  // The zoom stage: the keyboard's zoom and pan, and the gestures of every
+  // pointer, a mouse, a pen and a finger alike (spec:AST-094 FR43), whose
+  // pinch (a ctrl-wheel's too) and pan (a wheel's too) give past their
+  // limits and bounce back. The touch presentation, which the gallery's
+  // buttons and arrow keys read, is the shared touch resolver's.
   const {isTouch} = useTouchPresentation();
   // The opener is the element the viewer was opened from: a click or tap on
   // it (which a plain image, or a button in Safari, does not focus), else
@@ -877,7 +873,6 @@ export function Lightbox({
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
-    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -889,19 +884,18 @@ export function Lightbox({
         );
       }
     },
-    onDragStart,
   });
   const stage = useZoomStage(zoom, {
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
-    isEnabled: isOpen && isZoomTarget && isTouch,
+    isEnabled: isOpen && isZoomTarget,
     itemKey: viewedItem,
     onTapOutside: handleClose,
     onDragStart,
     dismiss: {
-      // Touch work, like the zoom's: nothing attaches where the primary
-      // pointer is fine (spec:AST-094 FR19).
-      isEnabled: isOpen && !isVideo && isTouch,
+      // Every pointer's, like the zoom's (spec:AST-094 FR43); a video keeps
+      // its own controls' drags.
+      isEnabled: isOpen && !isVideo,
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
@@ -914,7 +908,7 @@ export function Lightbox({
         }
       },
       target: () => sourceBoxOf(sourceElementFor(index)),
-      onRelease: dismisses => {
+      onRelease: (dismisses, touch) => {
         if (dismisses) {
           dismissedRef.current = true;
           let resolve = () => {};
@@ -960,10 +954,10 @@ export function Lightbox({
         const backdropMotion = backdrop?.animate(
           {opacity},
           {spring},
-          {touchRelease: true},
+          {touchRelease: touch},
         );
         for (const animator of chrome) {
-          animator.animate({opacity}, {spring}, {touchRelease: true});
+          animator.animate({opacity}, {spring}, {touchRelease: touch});
         }
         // Back at rest: the blur returns, unless the backdrop moved again.
         void backdropMotion?.finished.then(() => {
@@ -1300,8 +1294,10 @@ export function Lightbox({
     gap: zoomMedia.viewer.pageGap,
     index,
     isPanEnabled: isOpen && isGallery,
+    // Every pointer pages, a mouse's drag and a trackpad's scroll included
+    // (spec:AST-094 FR43).
     panOptions: {
-      allowedPointerTypes: ['touch', 'pen'],
+      allowedPointerTypes: ['touch', 'pen', 'mouse'],
       maximumNumberOfTouches: 1,
     },
     shouldBeginPan: direction => !stage.isZoomed() || stage.isAtEdge(direction),
@@ -1540,10 +1536,7 @@ export function Lightbox({
                 data-lightbox-media=""
                 {...stylex.props(
                   styles.mediaGroup,
-                  isZoomTarget &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.mediaGroupZoom,
+                  isZoomTarget && !isGallery && styles.mediaGroupZoom,
                   isGallery && styles.mediaGroupGallery,
                 )}>
                 <div
@@ -1559,18 +1552,11 @@ export function Lightbox({
                   {...stylex.props(
                     styles.imageWrapper,
                     isGallery && styles.imageWrapperGallery,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperZoomTarget,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperFill,
+                    isZoomTarget && !isGallery && styles.imageWrapperZoomTarget,
+                    isZoomTarget && !isGallery && styles.imageWrapperFill,
                     !isZoomTarget &&
                       !isVideo &&
                       !isGallery &&
-                      isTouch &&
                       styles.imageWrapperDismissTarget,
                     isZoomTarget && focusOutlineStyles.focusVisible,
                     isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
@@ -1586,10 +1572,9 @@ export function Lightbox({
                       ref={trackRef}
                       {...stylex.props(
                         styles.track,
-                        isZoomTarget && isTouch && styles.trackZoomTarget,
+                        isZoomTarget && styles.trackZoomTarget,
                         !isZoomTarget &&
                           !isVideo &&
-                          isTouch &&
                           styles.imageWrapperDismissTarget,
                       )}>
                       {pageIndexes.map(i => (
