@@ -98,14 +98,23 @@ async function snapshot(
   });
 }
 
-/** The start times of the animations running under `root`, in ms. */
+/**
+ * The start times of the animations on the list and its rows, in ms: the
+ * update's own, whatever drives them. An animation outside the list (a
+ * pressed button's release) is not part of the update.
+ */
 async function startTimes(page: Page): Promise<number[]> {
-  return page.evaluate(() =>
-    document
+  return page.evaluate(() => {
+    const list = document.querySelector('#storybook-root ul');
+    return document
       .getAnimations()
+      .filter(animation => {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        return list != null && target != null && list.contains(target);
+      })
       .map(animation => Number(animation.startTime))
-      .filter(time => Number.isFinite(time)),
-  );
+      .filter(time => Number.isFinite(time));
+  });
 }
 
 /** The distance between two consecutive rows' tops, in px. */
@@ -209,8 +218,9 @@ test('an insert: the new row enters in the same frame the rows after it and the 
       0,
     );
   }
-  // One frame: every part started together.
-  expect(starts.length).toBeGreaterThan(5);
+  // One frame: the new row's entrance and the glides of the four rows after
+  // it started together.
+  expect(starts.length, JSON.stringify(starts)).toBe(5);
   expect(
     Math.max(...starts) - Math.min(...starts),
     JSON.stringify(starts),
