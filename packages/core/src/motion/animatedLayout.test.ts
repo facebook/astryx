@@ -712,3 +712,254 @@ describe('elements the app moves itself (spec:AST-105 Coverage)', () => {
     expect(moved).toEqual(['plain']);
   });
 });
+
+describe('siblings before the change (spec:AST-105 FR3, Coverage)', () => {
+  it('moves an earlier sibling a centered row shifts when a later item grows', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="row"><div id="first"></div><div id="changed"></div></div></div>',
+    );
+    // A centered row: the item before the growing one moves left by half.
+    placeAt(
+      document.getElementById('first') as HTMLElement,
+      {before: [160, 0, 40, 24], after: [120, 0, 40, 24]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const moves = played.filter(
+      p =>
+        (p.element as HTMLElement).id === 'first' &&
+        p.keyframes[0].translate != null,
+    );
+    expect(moves).toHaveLength(1);
+    expect(translateOf(moves[0]).x).toBeCloseTo(40);
+  });
+
+  it('leaves an earlier sibling whose rectangle did not change', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="first"></div><div id="changed"></div></div>',
+    );
+    placeAt(
+      document.getElementById('first') as HTMLElement,
+      {before: [0, 0, 400, 40]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    expect(
+      played.filter(p => (p.element as HTMLElement).id === 'first'),
+    ).toEqual([]);
+  });
+});
+
+describe('the walk stops at the band a change can bring into view', () => {
+  it('reads no sibling past the band, after or before the change', async () => {
+    // A 600 px area: the band runs a viewport above and below it.
+    const rows = Array.from({length: 40}, (_, i) => `<div id="r${i}"></div>`);
+    const {area, changed, phase} = setUp(
+      `<div id="area">${rows.slice(0, 20).join('')}<div id="changed"></div>${rows.slice(20).join('')}</div>`,
+    );
+    const reads = new Map<string, number>();
+    rows.forEach((_, i) => {
+      const row = document.getElementById(`r${i}`) as HTMLElement;
+      // Rows 100 px apart, the changed element between rows 19 and 20 at
+      // 1000 px: 20 rows above it reach -1000 px, 20 below reach 3000 px.
+      const top = i < 20 ? (i - 20) * 100 + 1000 : (i - 20) * 100 + 1100;
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => {
+        reads.set(row.id, (reads.get(row.id) ?? 0) + 1);
+        const shift = phase.current === 'after' && i >= 20 ? 80 : 0;
+        return new DOMRect(0, top - 1000 + shift, 400, 100);
+      });
+    });
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    // The band is -600..1200 px: rows past it are never read.
+    expect(reads.get('r39')).toBeUndefined();
+    expect(reads.get('r0')).toBeUndefined();
+    expect(reads.get('r20')).toBeGreaterThan(0);
+    expect(reads.get('r19')).toBeGreaterThan(0);
+  });
+});
+
+describe('the walk reaches what the changes can move (spec:AST-105 FR3)', () => {
+  it("glides the change's ancestor that a centered column moves, and the content inside it moves only with it", async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="column"><div id="above"></div><div id="card"><div id="title"></div><div id="changed"></div></div></div></div>',
+    );
+    // The column centers its content: opening the change moves the card and
+    // the content above it up by half the growth.
+    placeAt(
+      document.getElementById('above') as HTMLElement,
+      {before: [0, 100, 400, 40], after: [0, 60, 400, 40]},
+      phase,
+    );
+    placeAt(
+      document.getElementById('card') as HTMLElement,
+      {before: [0, 140, 400, 60], after: [0, 100, 400, 140]},
+      phase,
+    );
+    placeAt(
+      document.getElementById('title') as HTMLElement,
+      {before: [0, 140, 400, 20], after: [0, 100, 400, 20]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const glides = new Map(
+      played
+        .filter(p => p.keyframes[0].translate != null)
+        .map(p => [(p.element as HTMLElement).id, translateOf(p).y]),
+    );
+    expect(glides.get('card')).toBeCloseTo(40);
+    expect(glides.get('above')).toBeCloseTo(40);
+    // The title rides with its card: it moved by nothing of its own.
+    expect(glides.has('title')).toBe(false);
+  });
+
+  it('reaches the band that all the changes in one frame can pull into view', () => {
+    const rows = Array.from({length: 30}, (_, i) => `<div id="r${i}"></div>`);
+    document.body.innerHTML = `<div id="area"><div id="a"></div><div id="b"></div>${rows.join('')}</div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 560),
+    );
+    // Two 500 px groups closing at once: the rows below them come up 1,000 px.
+    for (const [id, y] of [
+      ['a', 0],
+      ['b', 500],
+    ] as const) {
+      vi.spyOn(
+        document.getElementById(id) as HTMLElement,
+        'getBoundingClientRect',
+      ).mockReturnValue(new DOMRect(0, y, 400, 500));
+    }
+    const reads = new Set<string>();
+    rows.forEach((_, i) => {
+      const row = document.getElementById(`r${i}`) as HTMLElement;
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => {
+        reads.add(row.id);
+        return new DOMRect(0, 1000 + i * 100, 400, 100);
+      });
+    });
+    const layout = createAnimatedLayout(() => area);
+    reportLayoutChange(layout, () =>
+      document.getElementById('a'),
+    ).measureBefore();
+    reportLayoutChange(layout, () =>
+      document.getElementById('b'),
+    ).measureBefore();
+    // One group's band ends at 560 + 560; both together reach 560 + 1,000.
+    expect(reads.has('r5')).toBe(true);
+    expect(reads.has('r20')).toBe(false);
+  });
+
+  it('reads each element once however many changes report in one frame', () => {
+    const rows = Array.from({length: 200}, (_, i) => `<div id="r${i}"></div>`);
+    document.body.innerHTML = `<div id="area">${rows.join('')}</div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 6000),
+    );
+    let reads = 0;
+    rows.forEach((_, i) => {
+      vi.spyOn(
+        document.getElementById(`r${i}`) as HTMLElement,
+        'getBoundingClientRect',
+      ).mockImplementation(() => {
+        reads += 1;
+        return new DOMRect(0, i * 30, 400, 30);
+      });
+    });
+    const layout = createAnimatedLayout(() => area);
+    // A tree collapsing 100 rows in one update reports 100 changes.
+    for (let i = 0; i < 100; i += 1) {
+      reportLayoutChange(layout, () =>
+        document.getElementById(`r${i}`),
+      ).measureBefore();
+    }
+    expect(reads).toBeLessThanOrEqual(rows.length);
+  });
+
+  it('walks no further than the first sibling outside the band from a change outside it', () => {
+    const rows = Array.from({length: 1000}, (_, i) => `<div id="r${i}"></div>`);
+    document.body.innerHTML = `<div id="area">${rows.join('')}</div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 600),
+    );
+    const reads = new Set<string>();
+    rows.forEach((_, i) => {
+      const row = document.getElementById(`r${i}`) as HTMLElement;
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => {
+        reads.add(row.id);
+        return new DOMRect(0, i * 100, 400, 100);
+      });
+    });
+    reportLayoutChange(
+      createAnimatedLayout(() => area),
+      () => document.getElementById('r900'),
+    ).measureBefore();
+    // The change itself, and one sibling on each side, which lie outside.
+    expect(reads.size).toBeLessThanOrEqual(3);
+  });
+
+  it('stops inside a display: contents wrapper at the band too', () => {
+    const rows = Array.from({length: 40}, (_, i) => `<div id="c${i}"></div>`);
+    const {area, changed} = setUp(
+      `<div id="area"><div id="changed"></div><div style="display: contents">${rows.join('')}</div></div>`,
+    );
+    void area;
+    const reads = new Set<string>();
+    rows.forEach((_, i) => {
+      const row = document.getElementById(`c${i}`) as HTMLElement;
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => {
+        reads.add(row.id);
+        return new DOMRect(0, i * 100, 400, 100);
+      });
+    });
+    reportLayoutChange(
+      createAnimatedLayout(() => area),
+      () => changed,
+    ).measureBefore();
+    // The band ends a viewport below the 600 px area.
+    expect(reads.has('c12')).toBe(true);
+    expect(reads.has('c30')).toBe(false);
+  });
+
+  it('moves an earlier sibling that order places after the change, near the visible part', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="ordered" style="order: 1"></div><div id="changed"></div></div>',
+    );
+    // First in the DOM, laid out after the change: it moves down when the
+    // change grows.
+    placeAt(
+      document.getElementById('ordered') as HTMLElement,
+      {before: [0, 0, 400, 40], after: [0, 80, 400, 40]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const glide = played.find(
+      p =>
+        (p.element as HTMLElement).id === 'ordered' &&
+        p.keyframes[0].translate != null,
+    );
+    expect(glide).toBeDefined();
+    expect(translateOf(glide!).y).toBeCloseTo(-80);
+  });
+});
