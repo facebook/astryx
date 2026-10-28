@@ -20,6 +20,21 @@
       },
       {
         "domain": "doc",
+        "name": "icons",
+        "package": "@astryxdesign/cli",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "section": "<text>",
+        "title": "<text>",
+        "command": "astryx docs icons theme-overrides",
+        "parent": "astryx docs icons --index",
+        "mentions": [
+          "This lets you swap the icon set (e.g."
+        ]
+      },
+      {
+        "domain": "doc",
         "name": "theme",
         "package": "@astryxdesign/cli",
         "score": "<text>",
@@ -42,21 +57,6 @@
         "kind": "block",
         "command": "astryx template ToolbarTableFilter --type block",
         "mentions": []
-      },
-      {
-        "domain": "doc",
-        "name": "icons",
-        "package": "@astryxdesign/cli",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "section": "<text>",
-        "title": "<text>",
-        "command": "astryx docs icons theme-overrides",
-        "parent": "astryx docs icons --index",
-        "mentions": [
-          "This lets you swap the icon set (e.g."
-        ]
       },
       {
         "domain": "component",

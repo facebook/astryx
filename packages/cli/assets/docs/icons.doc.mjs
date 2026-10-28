@@ -101,11 +101,34 @@ export const brandTheme = defineTheme({
   },
 });`,
         },
+        {
+          type: 'prose',
+          text: "An entry can also be a function of the request, so the theme maps Icon's size to its icon library's own props or artwork. `Icon` calls it with `{size, variant}`, where `size` is the size it renders at (`xsm`, `sm`, `md`, or `lg`: an explicit `size`, else the owning component's default, else `md`). Reads that return one node — `getIcon()`, `useIcon()`, `getIconRegistry()`, and the theme's `icons` field — call it with `{size: 'md'}`. The same entry shape works in `registerIcons()`.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'A size-aware icon entry',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {Info} from 'lucide-react';
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  icons: {
+    // A heavier stroke keeps the small size legible.
+    info: ({size}) => <Info strokeWidth={size === 'sm' || size === 'xsm' ? 2.5 : 2} />,
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'Keep the function pure and synchronous: it computes its result from the request only, with no hooks, DOM or SVG measurement, browser globals, network access, mutable module state, or side effects. Its result is final. Returning `null` draws no glyph instead of falling back to a registered or built-in icon, while a `null` or `undefined` node entry still falls back. A child theme that sets an entry for a key replaces the inherited entry for that key.',
+        },
       ],
     },
     {
       title: 'Component and Library Icons',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',

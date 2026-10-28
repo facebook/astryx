@@ -24,6 +24,12 @@ domain:      hook
 package:     @astryxdesign/core
 import:      @astryxdesign/core/hooks
 command:     pnpm exec astryx hook useInputStatusIcon
+name:        icons
+section:     theme-overrides
+domain:      doc
+package:     @astryxdesign/cli
+command:     pnpm exec astryx docs icons theme-overrides
+parent:      pnpm exec astryx docs icons --index
 name:        BaseTypeaheadCustomSearch
 domain:      template
 package:     @astryxdesign/core
@@ -80,7 +86,3 @@ name:        ChatMessageBubbleMetadata
 domain:      template
 package:     @astryxdesign/core
 command:     pnpm exec astryx template ChatMessageBubbleMetadata --type block
-name:        ChatMessageMetadataFooter
-domain:      template
-package:     @astryxdesign/core
-command:     pnpm exec astryx template ChatMessageMetadataFooter --type block
