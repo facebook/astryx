@@ -148,7 +148,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "On a phone, a fully expanded `height='tall'` BottomSheet responds to the on-screen keyboard: it measures the keyboard as the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app, in Firefox for Android and in Chrome on Android, it keeps the focused field above the keyboard, and focusing a field never pans the page.",
+          text: "On a phone, a fully expanded `height='tall'` BottomSheet responds to the on-screen keyboard: it measures the keyboard as the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app, in Firefox for Android and in Chrome on Android, it keeps the focused field above the keyboard and leaves the page where it was: if the browser pans to the field, the sheet puts the page back within a couple of frames.",
         },
         {
           type: 'prose',

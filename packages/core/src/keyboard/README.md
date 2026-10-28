@@ -81,7 +81,9 @@ exported from the package entry.
   keyboard still covers, about 150 ms after the report, by the keyboard's
   whole height; `watchRevealPan` puts such a pan back. A Tall BottomSheet
   lands its field above the keyboard in the report's own event, so Chrome 124
-  never pans it. Chromium 158 does not pan.
+  never pans it. Chromium 158 pans the same way when the field stays covered
+  (by the keyboard's whole height, 312 px, with the sheet's reveal on the next
+  frame), and never needs to with the reveal in the report's event.
 
 - Chrome on Android (Chromium 158 with Gboard, Android 15) is measured from
   its visual viewport like every browser (`spec:AST-099` DEC-4).
