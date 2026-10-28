@@ -905,6 +905,7 @@
       "available-names",
       "custom-icons",
       "theme-overrides",
+      "icon-variants",
       "component-and-library-icons"
     ],
     "mentions": [

@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "icon",
-    "matchCount": 222,
+    "matchCount": 223,
     "results": [
       {
         "domain": "component",
@@ -75,6 +75,19 @@
         "mentions": [
           "This lets you swap the icon set (e.g."
         ]
+      },
+      {
+        "domain": "doc",
+        "name": "icons",
+        "package": "@astryxdesign/cli",
+        "score": "<text>",
+        "reason": "<text>",
+        "description": "<text>",
+        "section": "<text>",
+        "title": "<text>",
+        "command": "astryx docs icons icon-variants",
+        "parent": "astryx docs icons --index",
+        "mentions": []
       },
       {
         "domain": "template",
@@ -230,18 +243,6 @@
         "displayName": "<text>",
         "kind": "block",
         "command": "astryx template ChatComposerFullFeatured --type block",
-        "mentions": []
-      },
-      {
-        "domain": "template",
-        "name": "ChatMessageBubbleMetadata",
-        "package": "@astryxdesign/core",
-        "score": "<text>",
-        "reason": "<text>",
-        "description": "<text>",
-        "displayName": "<text>",
-        "kind": "block",
-        "command": "astryx template ChatMessageBubbleMetadata --type block",
         "mentions": []
       }
     ]
