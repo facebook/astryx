@@ -191,7 +191,9 @@ export function playRail(
     column?.parentElement != null && column.parentElement.contains(rail)
       ? column.parentElement
       : rail.parentElement;
-  const rides = host != null && column?.parentElement === host;
+  // Riding needs the swap: its frames carry the column's travel. Without one
+  // (old content that cannot be copied) the clip follows the motion's curve.
+  const rides = host != null && column?.parentElement === host && swap != null;
   // The width the rail shows over the motion: on the column's glide (its
   // travel so far added to where it started), or on the motion's curve.
   const widthAt = (p: number, ride: {x: number}) =>

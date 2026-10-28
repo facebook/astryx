@@ -136,16 +136,21 @@ function Shell({
   hasNav = true,
   isResizable = false,
   height = 'fill',
+  hasCanvas = false,
 }: {
   inShell?: boolean;
   hasNav?: boolean;
   isResizable?: boolean;
   height?: 'fill' | 'auto';
+  hasCanvas?: boolean;
 }) {
   const nav = (
     <SideNav collapsible resizable={isResizable}>
       <SideNavItem label="Home" icon={<svg aria-hidden="true" />} />
       <SideNavItem label="Projects" icon={<svg aria-hidden="true" />} />
+      {hasCanvas && (
+        <SideNavItem label="Chart" icon={<canvas width={4} height={4} />} />
+      )}
     </SideNav>
   );
   return inShell ? (
@@ -389,6 +394,37 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     // wrapper, whose clip is already the collapsed width.
     expect(railCopy?.parentElement?.contains(screen.getByRole('main'))).toBe(
       true,
+    );
+  });
+
+  it('clips an expand open on the motion when the old rail cannot be copied', async () => {
+    // A canvas that reads back blank: the rail is not copied.
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () =>
+          ({
+            drawImage: vi.fn(),
+            getImageData: () => ({data: new Uint8ClampedArray(16 * 4)}),
+          }) as unknown as CanvasRenderingContext2D,
+      );
+    render(<Shell hasCanvas />);
+    await toggle();
+    settle();
+    recorded = [];
+    await toggle();
+    getContext.mockRestore();
+    expect(
+      copies().filter(element => element.querySelector('nav')),
+    ).toHaveLength(0);
+    const reveal = animated('clipPath').find(
+      entry => !entry.element.hasAttribute('inert'),
+    );
+    expect(reveal?.keyframes[0].clipPath).toContain(
+      `${EXPANDED - COLLAPSED}px`,
+    );
+    expect(reveal?.keyframes.at(-1)?.clipPath).toMatch(
+      /inset\(0(px)? 0(px)? 0(px)? 0(px)?\)/,
     );
   });
 
