@@ -367,12 +367,6 @@ export function RadioList({
    */
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLDivElement>) => {
-      // Only correct the no-selection case; a selected value already provides
-      // a deterministic native tab stop.
-      if (value !== '') {
-        return;
-      }
-
       const group = groupRef.current;
       if (!group) {
         return;
@@ -397,6 +391,11 @@ export function RadioList({
       }
 
       const radios = radiosOf(group, radioName);
+      // Only correct the no-selection case: a checked radio already is the
+      // native tab stop. A value that matches no option checks none.
+      if (radios.some(radio => radio.checked)) {
+        return;
+      }
       const target = e.target as HTMLElement;
       const targetIndex = radios.findIndex(radio => radio === target);
       // Only correct when the focus target is one of the group's radios (not a
@@ -423,15 +422,18 @@ export function RadioList({
         intended.focus();
       }
     },
-    [value, radioName],
+    [radioName],
   );
 
   /**
    * Arrow keys skip individually disabled options. The browser's radio group
-   * would move onto an `aria-disabled` radio, so a move whose next radio is
-   * disabled is taken over: focus and selection go to the next available
-   * radio in the same direction, wrapping as the native group does, or stay
-   * put when there is none. Every other move stays the browser's.
+   * would move onto an `aria-disabled` radio, so in a group with any disabled
+   * radio every arrow move is taken over: focus and selection go to the next
+   * available radio in the same direction, wrapping as the native group
+   * does, or stay put when there is none. Owning every move, not only the
+   * ones that would land on a disabled radio, keeps one direction rule in
+   * every engine (WebKit does not mirror horizontal arrows in right-to-left).
+   * A group with no disabled radio keeps the browser's own arrow keys.
    */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -457,13 +459,13 @@ export function RadioList({
       if (index === -1) {
         return;
       }
-      const at = (offset: number) =>
-        radios[(index + offset * step + radios.length * 2) % radios.length];
-      if (!isUnavailable(at(1))) {
+      if (!radios.some(isUnavailable)) {
         return;
       }
+      const at = (offset: number) =>
+        radios[(index + offset * step + radios.length * 2) % radios.length];
       e.preventDefault();
-      for (let offset = 2; offset < radios.length; offset += 1) {
+      for (let offset = 1; offset < radios.length; offset += 1) {
         const next = at(offset);
         if (!isUnavailable(next)) {
           next.focus();

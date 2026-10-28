@@ -134,14 +134,31 @@ describe('RadioList: arrow keys skip individually disabled options', () => {
     expect(onChange).toHaveBeenCalledWith('pickup');
   });
 
-  it('leaves a move onto an enabled option to the browser', () => {
+  it('moves every arrow key itself once an option is disabled, so each engine mirrors the same way', () => {
+    // WebKit does not mirror horizontal arrows in a right-to-left radio group;
+    // with a disabled option RadioList owns every arrow move, so ArrowRight
+    // moves backward in RTL even where the move lands on an enabled option.
     const onChange = vi.fn();
-    renderDelivery(onChange, {value: 'pickup'});
-    radio('Pickup').focus();
-    // Pickup → (wrap) Standard is enabled: the native radio group handles it.
-    const handled = !fireEvent.keyDown(radio('Pickup'), {key: 'ArrowDown'});
+    renderDelivery(onChange, {dir: 'rtl'});
+    radio('Standard').focus();
+    // Backward from the first option wraps to Pickup, which is enabled.
+    const handled = !fireEvent.keyDown(radio('Standard'), {key: 'ArrowRight'});
+    expect(handled).toBe(true);
+    expect(radio('Pickup')).toHaveFocus();
+    expect(onChange).toHaveBeenCalledWith('pickup');
+  });
+
+  it('leaves arrow keys to the browser in a group with no disabled option', () => {
+    const onChange = vi.fn();
+    render(
+      <RadioList label="Delivery" value="standard" onChange={onChange}>
+        <RadioListItem label="Standard" value="standard" />
+        <RadioListItem label="Pickup" value="pickup" />
+      </RadioList>,
+    );
+    radio('Standard').focus();
+    const handled = !fireEvent.keyDown(radio('Standard'), {key: 'ArrowDown'});
     expect(handled).toBe(false);
-    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('keeps focus where it is when every other option is disabled', () => {
@@ -220,6 +237,22 @@ describe('RadioList: entry Tab stop with disabled options', () => {
     screen.getByText('after').focus();
     radio('Locker').focus();
     expect(radio('Pickup')).toHaveFocus();
+  });
+
+  it('treats a value that matches no option as no selection', () => {
+    render(
+      <>
+        <button type="button">before</button>
+        <RadioList label="Delivery" value="missing" onChange={() => {}}>
+          <RadioListItem label="Standard" value="standard" isDisabled />
+          <RadioListItem label="Express" value="express" />
+          <RadioListItem label="Pickup" value="pickup" />
+        </RadioList>
+      </>,
+    );
+    screen.getByText('before').focus();
+    radio('Standard').focus();
+    expect(radio('Express')).toHaveFocus();
   });
 
   it('enters a wholly disabled group on its first radio', () => {
