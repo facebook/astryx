@@ -203,11 +203,14 @@ they are separately named.
   later commits remain next-release input. A rewrite or divergence that removes
   the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
-  existing finding policies. The Main workflow MUST dispatch that release-check
-  for every push to `main`, bound to the pushed commit, one push at a time; a
-  commit `main` has already moved past leaves its check to the newer push's run.
-  Main's run MUST fail when that release-check does not succeed, and a failure is
-  fixed forward by an atomic pull request. Release checks MUST NOT capture
+  existing finding policies. A main-push workflow MUST dispatch that
+  release-check for every push to `main`, bound to the pushed commit, in one
+  concurrency group per workflow and ref that never cancels a running check: at
+  most one runs and one waits, and a burst of pushes is checked once, at its
+  newest commit. A commit `main` has already moved past leaves its check to the
+  newer push's run. That run MUST fail when the release-check does not succeed,
+  and a failure is fixed forward by an atomic pull request. Main's own fast
+  checks still run for every push. Release checks MUST NOT capture
   baseline candidates, publish baselines, or use a separate daily workflow or
   retroactive acceptance status.
   Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
@@ -387,7 +390,9 @@ retroactive status as release evidence.
 
 Run the visual, accessibility and RTL owners on every push to `main`, through
 the same exact-commit `release-check` the release gate uses, and before a cut;
-a pull request runs them only when it opts in with the `ci:heavy-lanes` label.
+a pull request runs them only when it opts in with the `ci:heavy-lanes` label. Main-push checks are throttled: one runs at a time, a
+burst of pushes collapses to its newest commit, and a running check is never
+cancelled, so every check that starts finishes.
 Pull request updates keep the fast checks and every required context. A
 failure on `main` is repaired forward with an atomic pull request, not reverted
 first. This supersedes DEC-5's choice to keep these checks off main pushes: the

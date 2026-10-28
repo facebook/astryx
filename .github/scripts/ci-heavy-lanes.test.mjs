@@ -17,6 +17,7 @@ const read = name =>
     fs.readFileSync(new URL(`../workflows/${name}`, import.meta.url), 'utf8'),
   );
 const ci = read('ci.yml');
+const heavy = read('main-heavy-lanes.yml');
 const main = read('deploy.yml');
 
 const LABEL = 'ci:heavy-lanes';
@@ -122,16 +123,30 @@ describe('visual, accessibility and RTL owners', () => {
   });
 });
 
-describe("Main's release-check on every push", () => {
-  const job = main.jobs['heavy-lanes'];
+describe('the release-check on every push to main', () => {
+  const job = heavy.jobs['release-check'];
   const script = job.steps[0].with.script;
 
-  it('runs on push, one at a time, and may dispatch workflows', () => {
-    expect(main.on).toHaveProperty('push');
-    expect(main.concurrency['cancel-in-progress']).toBe(false);
-    expect(job.if).toBe("github.event_name == 'push'");
-    expect(job.needs).toEqual(['main-commit']);
+  it('runs on a push to main and may dispatch workflows', () => {
+    expect(heavy.on).toEqual({push: {branches: ['main']}});
     expect(job.permissions).toEqual({actions: 'write', contents: 'read'});
+    expect(job.steps[0].env.SHA).toBe('${{ github.sha }}');
+  });
+
+  it('throttles: one check runs, the newest push waits, and a running check is never cancelled', () => {
+    // One group per workflow and ref: GitHub keeps one running and one
+    // pending run in it, and a newer push replaces the pending one, so a
+    // burst of merges is checked once, at its newest commit.
+    expect(heavy.concurrency).toEqual({
+      group: '${{ github.workflow }}-${{ github.ref }}',
+      'cancel-in-progress': false,
+    });
+  });
+
+  it("leaves Main's fast checks running for every push, outside that group", () => {
+    expect(main.concurrency.group).not.toBe(heavy.concurrency.group);
+    expect(Object.keys(main.jobs)).not.toContain('release-check');
+    expect(JSON.stringify(main)).not.toContain('createWorkflowDispatch');
   });
 
   /** Runs the step's script against a fake GitHub API. */
