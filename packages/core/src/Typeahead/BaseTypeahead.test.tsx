@@ -531,13 +531,158 @@ describe('BaseTypeahead pending work after a dismissal', () => {
       // The next query is typed but its search has not started yet.
       fireEvent.change(input, {target: {value: 'alp'}});
       await answer('al', ['Stale']);
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+
+      // Asking for the menu searches the text the field holds now.
       fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(search).toHaveBeenLastCalledWith('alp');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+      await answer('alp', ['Alpine']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: 'Alpine', hidden: true}),
+      ).toBeInTheDocument();
       expect(
         screen.queryByRole('option', {name: 'Stale', hidden: true}),
       ).not.toBeInTheDocument();
-      // Nothing answers 'alp' yet, so there is nothing current to show.
+      await act(async () => vi.advanceTimersByTime(200));
+      expect(search.mock.calls.filter(([q]) => q === 'alp')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    ['with', true],
+    ['without', false],
+  ] as const)(
+    'reopens on ArrowDown %s entries on focus by waiting for the search still running for the typed text',
+    async (_label, hasEntriesOnFocus) => {
+      const bootstrap = vi.fn(() => [{id: 'b', label: 'Suggested'}]);
+      const pending = pendingSource();
+      pending.source.bootstrap = bootstrap;
+      render(
+        <BaseTypeahead
+          searchSource={pending.source}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          hasEntriesOnFocus={hasEntriesOnFocus}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      await pending.answer('a', ['Alpha']);
+      fireEvent.change(input, {target: {value: 'al'}});
+      await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+      fireEvent.keyDown(input, {key: 'Escape'});
+      expect(input).not.toHaveAttribute('aria-busy');
+      bootstrap.mockClear();
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      // The pending answer is the one wanted: no bootstrap, no second search.
+      expect(bootstrap).not.toHaveBeenCalled();
+      expect(input).toHaveAttribute('aria-busy', 'true');
       expect(input).toHaveAttribute('aria-expanded', 'false');
-      expect(search).not.toHaveBeenCalledWith('alp');
+
+      await pending.answer('al', ['Alpine']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(
+        screen.getByRole('option', {name: 'Alpine', hidden: true}),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('option', {name: 'Suggested', hidden: true}),
+      ).not.toBeInTheDocument();
+      expect(
+        pending.search.mock.calls.filter(([q]) => q === 'al'),
+      ).toHaveLength(1);
+    },
+  );
+
+  it('opens with the pending answer when focus returns while its search still runs', async () => {
+    const {input, search, answer} = renderPending({});
+    input.focus();
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+    fireEvent.blur(input, {
+      relatedTarget: screen.getByRole('button', {name: 'Elsewhere'}),
+    });
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    fireEvent.focus(input);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    await answer('a', ['Alpha']);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(search).toHaveBeenCalledTimes(1);
+  });
+
+  it('still opens the entries on focus with ArrowDown for an empty field', async () => {
+    const source: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: () => [{id: 'b', label: 'Suggested'}],
+    };
+    render(
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    expect(
+      screen.getByRole('option', {name: 'Suggested', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not run a search still waiting on its debounce after Escape', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    try {
+      const {input, search, answer} = renderPending({debounceMs: 200});
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      await act(async () => vi.advanceTimersByTime(200));
+      await answer('a', ['Alpha']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.change(input, {target: {value: 'al'}});
+      fireEvent.keyDown(input, {key: 'Escape'});
+      await act(async () => vi.advanceTimersByTime(400));
+      expect(search).not.toHaveBeenCalledWith('al');
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(search).toHaveBeenLastCalledWith('al');
+      await answer('al', ['Alpine']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not run a search still waiting on its debounce after focus leaves', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    try {
+      const {input, search} = renderPending({debounceMs: 200});
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      fireEvent.blur(input, {
+        relatedTarget: screen.getByRole('button', {name: 'Elsewhere'}),
+      });
+      await act(async () => vi.advanceTimersByTime(400));
+      expect(search).not.toHaveBeenCalled();
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
     } finally {
       vi.useRealTimers();
     }
