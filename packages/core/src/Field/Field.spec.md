@@ -21,8 +21,7 @@ verified_by:
   ]
 modules: []
 families: [family:input-fields]
-design_specs:
-  [design:spatial-hierarchy, design:typography-hierarchy, design:system-states]
+design_specs: []
 architecture:
   [
     architecture:public-component-api,
@@ -140,11 +139,9 @@ This table is a review projection; the body below is authoritative.
 
 ## Design relationships
 
-| Anatomy or state              | Design requirement                                       | Representation authority                               | Hierarchy role            | Component contract |
-| ----------------------------- | -------------------------------------------------------- | ------------------------------------------------------ | ------------------------- | ------------------ |
-| Label and description         | `design:typography-hierarchy/DR4`, `DR6`                 | prescribed roles; exact tuning remains token-owned     | label and supporting text | FR1–FR3            |
-| Label/control/status grouping | `design:spatial-hierarchy` local and group relationships | prescribed relationship; exact gap remains token-owned | one field group           | FR5                |
-| Semantic status               | `design:system-states/DR2`                               | delegated to FieldStatus and wrapped input             | supporting feedback       | FR4, FR9           |
+No current repository design record governs component-local visual tuning.
+The label, description, and status use shared semantic type, color, and
+spacing tokens.
 
 ### Theming anatomy
 
