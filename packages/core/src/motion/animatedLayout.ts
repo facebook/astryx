@@ -234,10 +234,85 @@ const ours = new WeakSet<Animation>();
 
 const TRANSFORM_PROPERTIES = ['transform', 'translate', 'rotate', 'scale'];
 
+/** The numbers in a CSS value, units dropped. */
+function numbersIn(value: string): number[] {
+  return (value.match(/-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/gi) ?? []).map(
+    Number,
+  );
+}
+
 /**
- * Whether the app moves `element` itself: its own `transform`, `translate`,
- * `rotate` or `scale`, or a running animation of one this module did not
- * start.
+ * Whether a transform value leaves the element where it is: nothing at all
+ * (a swipe's `translate3d(0, 0, 0)` at rest, a button's `scale(1)`, computed
+ * as `matrix(1, 0, 0, 1, 0, 0)`), or a scale in place (a pressed button's
+ * `scale(0.98)`). A glide's `translate` composes with either; a translation,
+ * rotation or skew of its own is the app moving the element.
+ */
+function staysInPlace(property: string, value: string): boolean {
+  if (value === 'none') {
+    // No transform at all (a keyframe a press's own transition starts from).
+    return true;
+  }
+  if (property === 'scale') {
+    return true;
+  }
+  if (value.includes('var(')) {
+    // An unresolved custom property in an app's own keyframes: its value is
+    // unknown here, so the app moves the element.
+    return false;
+  }
+  if (property === 'translate') {
+    return numbersIn(value).every(n => n === 0);
+  }
+  if (property === 'rotate') {
+    // An angle, after an optional axis: only the angle matters.
+    const numbers = numbersIn(value);
+    return numbers.length > 0 && numbers[numbers.length - 1] === 0;
+  }
+  // A list of transform functions, as computed (`matrix()`, `matrix3d()`)
+  // or as written.
+  const functions = [...value.matchAll(/([a-z0-9]+)\(([^)]*)\)/gi)];
+  return (
+    functions.length > 0 &&
+    functions.every(([, name, args]) => {
+      const numbers = numbersIn(args);
+      const fn = name.toLowerCase();
+      if (fn === 'matrix') {
+        // a b c d e f: no skew, rotation or translation.
+        return (
+          numbers.length === 6 &&
+          [1, 2, 4, 5].every(index => numbers[index] === 0)
+        );
+      }
+      if (fn === 'matrix3d') {
+        // Only the diagonal: a scale, nothing else.
+        return (
+          numbers.length === 16 &&
+          numbers.every((n, index) => index % 5 === 0 || n === 0)
+        );
+      }
+      if (fn === 'rotate3d') {
+        return numbers[3] === 0;
+      }
+      if (fn.startsWith('scale')) {
+        return true;
+      }
+      if (
+        fn.startsWith('translate') ||
+        fn.startsWith('rotate') ||
+        fn.startsWith('skew')
+      ) {
+        return numbers.every(n => n === 0);
+      }
+      return false;
+    })
+  );
+}
+
+/**
+ * Whether the app moves `element` itself: its own `transform`, `translate`
+ * or `rotate`, or a running animation of one this module did not start. A
+ * value that leaves it in place (nothing, or a scale) is not a move.
  */
 function movedByApp(element: Element): boolean {
   const style = element.ownerDocument.defaultView?.getComputedStyle(element);
@@ -245,7 +320,7 @@ function movedByApp(element: Element): boolean {
     style != null &&
     TRANSFORM_PROPERTIES.some(property => {
       const value = style.getPropertyValue(property);
-      return value !== '' && value !== 'none';
+      return value !== '' && value !== 'none' && !staysInPlace(property, value);
     })
   ) {
     return true;
@@ -263,7 +338,13 @@ function movedByApp(element: Element): boolean {
     }
     return effect
       .getKeyframes()
-      .some(frame => TRANSFORM_PROPERTIES.some(property => property in frame));
+      .some(frame =>
+        TRANSFORM_PROPERTIES.some(
+          property =>
+            property in frame &&
+            !staysInPlace(property, String(frame[property])),
+        ),
+      );
   });
 }
 
@@ -280,6 +361,15 @@ interface Glide {
 }
 
 const glides = new WeakMap<Element, Glide>();
+
+/**
+ * The glide `element` is playing now, if any. For an adopter that draws
+ * something with each moving element (a table row's divider): it finds what
+ * moves without reading the DOM.
+ */
+export function glideOf(element: Element): Animation | null {
+  return glides.get(element)?.animation ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // Handles
@@ -626,6 +716,8 @@ interface Batch {
   originBefore: {readonly x: number; readonly y: number} | null;
   readonly cache: WalkCache;
   scheduled: boolean;
+  /** Called after every reading and before any glide starts. */
+  readonly beforeMove: ((candidates: ReadonlyArray<Element>) => void)[];
 }
 
 const batches = new Map<Element, Batch>();
@@ -647,6 +739,7 @@ function batchFor(area: Element): Batch {
       originBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
+      beforeMove: [],
     };
     batches.set(area, created);
     // A measurement no commit claims by the next frame (a controlled owner
@@ -702,13 +795,19 @@ function visibleRect(area: Element): DOMRect {
 }
 
 /** The element's rendered scale against its layout size (a scaled ancestor). */
-function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
+function scaleOf(
+  element: Element,
+  rect: DOMRect,
+  own: {readonly x: number; readonly y: number} = {x: 1, y: 1},
+): {x: number; y: number} {
   const html = element as HTMLElement;
   const x =
-    html.offsetWidth > 0 && rect.width > 0 ? rect.width / html.offsetWidth : 1;
+    html.offsetWidth > 0 && rect.width > 0
+      ? rect.width / html.offsetWidth / own.x
+      : 1;
   const y =
     html.offsetHeight > 0 && rect.height > 0
-      ? rect.height / html.offsetHeight
+      ? rect.height / html.offsetHeight / own.y
       : 1;
   // Subpixel rounding makes an unscaled element read a hair off 1; only a
   // real scale is corrected.
@@ -718,8 +817,49 @@ function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
   };
 }
 
+/**
+ * The scale an element's own `scale` and `transform` give it, on each axis
+ * (a follower that keeps one in place, `staysInPlace`). A glide's `translate`
+ * does not go through them: the individual transform properties apply
+ * `translate` first, in the parent's space.
+ */
+function ownScaleOf(element: Element): {x: number; y: number} {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (style == null) {
+    return {x: 1, y: 1};
+  }
+  let x = 1;
+  let y = 1;
+  const scale = style.getPropertyValue('scale');
+  if (scale !== '' && scale !== 'none') {
+    const [sx = 1, sy = sx] = numbersIn(scale);
+    // Its size, not its direction: a negative scale flips the element in
+    // place, and its measured box stays positive.
+    x *= Math.abs(sx);
+    y *= Math.abs(sy);
+  }
+  // The computed transform is a matrix: its first column's length is the
+  // scale on x, its second's on y.
+  const matrix = /^matrix(3d)?\(([^)]*)\)/.exec(
+    style.getPropertyValue('transform'),
+  );
+  if (matrix != null) {
+    const m = numbersIn(matrix[2]);
+    const [a = 1, b = 0, c = 0, d = 1] =
+      matrix[1] == null ? m : [m[0], m[1], m[4], m[5]];
+    x *= Math.hypot(a, b);
+    y *= Math.hypot(c, d);
+  }
+  return {x: x || 1, y: y || 1};
+}
+
 function flush(batch: Batch): void {
   batches.delete(batch.area);
+  const notify = (candidates: ReadonlyArray<Element>) => {
+    for (const callback of batch.beforeMove) {
+      callback(candidates);
+    }
+  };
   // What each change's walk measured before it: an element added by the
   // change has no old place, and one it removed is gone.
   const followers = new Set<Element>();
@@ -731,10 +871,12 @@ function flush(batch: Batch): void {
     }
   }
   if (followers.size === 0) {
+    notify([]);
     return;
   }
   const motion = layoutMotion(batch.area);
   if (motion.kind === 'instant') {
+    notify([]);
     return;
   }
   const visible = visibleRect(batch.area);
@@ -819,9 +961,13 @@ function flush(batch: Batch): void {
     const after = entry.after as DOMRect;
     if (intersects(entry.before, visible) || intersects(after, visible)) {
       entry.isMovedByApp = movedByApp(entry.element);
-      entry.scale = scaleOf(entry.element, after);
+      // Only its ancestors' scale is corrected: its own scale or transform
+      // (a press's scale) does not apply to the glide's `translate`.
+      entry.scale = scaleOf(entry.element, after, ownScaleOf(entry.element));
     }
   }
+  // An adopter's own readings join them here, before any glide starts.
+  notify(entries.map(entry => entry.element));
   for (const entry of entries) {
     const {element, before, carried, carriedMs} = entry;
     const after = entry.after as DOMRect;
@@ -907,8 +1053,13 @@ export interface LayoutChange {
    * After it commits (a layout effect). Returns whether the change was
    * measured: an unmeasured change (an owner set the state directly) moves
    * nothing, and the component plays no entrance for it either.
+   *
+   * `beforeMove`, when given, runs once the new places are read and before
+   * any glide starts, with the elements the glide may move: whatever the
+   * component reads from the layout for the glide, it reads there, so the page
+   * is not laid out again (`playLayoutChange` included).
    */
-  animate(): boolean;
+  animate(beforeMove?: (candidates: ReadonlyArray<Element>) => void): boolean;
 }
 
 /**
@@ -973,7 +1124,7 @@ export function reportLayoutChange(
         batch.candidates.set(changed, [...candidates.keys()]);
       }
     },
-    animate() {
+    animate(beforeMove) {
       const element = resolve(target);
       if (element == null || handle == null) {
         return false;
@@ -982,6 +1133,9 @@ export function reportLayoutChange(
       const batch = area == null ? undefined : batches.get(area);
       if (batch == null || !batch.changed.has(element)) {
         return false;
+      }
+      if (beforeMove != null) {
+        batch.beforeMove.push(beforeMove);
       }
       if (!batch.scheduled) {
         batch.scheduled = true;
@@ -997,33 +1151,33 @@ export function reportLayoutChange(
  * The changed element's own animation, on the same motion as the content
  * after it: content that appears reveals downward from its top edge. Plays
  * only with a handle, inside its area and in the area's visible part.
+ * Returns the entrance it started, or null when it played none.
  */
 export function playLayoutChange(
   handle: AnimatedLayout | null | undefined,
   element: Element,
-): void {
+): Animation | null {
   if (handle == null) {
-    return;
+    return null;
   }
   const area = areaOf(handle, element);
   if (area == null) {
-    return;
+    return null;
   }
   if (!intersects(element.getBoundingClientRect(), visibleRect(area))) {
-    return;
+    return null;
   }
   const motion = layoutMotion(area);
   if (motion.kind === 'instant') {
-    return;
+    return null;
   }
   if (motion.kind === 'fade') {
-    safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
+    return safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
       duration: motion.durationMs,
       easing: motion.easing,
     });
-    return;
   }
-  safeAnimate(
+  return safeAnimate(
     element,
     sampleKeyframes(motion.progress, remaining => ({
       opacity: 1 - remaining,
@@ -1625,7 +1779,23 @@ export function applyLayoutChangeTransition(
   );
 }
 
-/** @internal For tests: the motion a change in `area` plays. */
+/**
+ * Lands `element`'s running glide at once: it takes its layout place, and a
+ * later change starts from there (a change its caller lands rather than
+ * animates, such as a rail that snaps).
+ */
+export function landLayoutGlide(element: Element): void {
+  const glide = glides.get(element);
+  if (glide != null) {
+    glides.delete(element);
+    glide.animation.cancel();
+  }
+}
+
+/**
+ * @internal The motion a change in `area` plays, for tests and for SideNav's
+ * rail motion, which plays on the same clock (`component:SideNav` FR6).
+ */
 export function layoutMotionFor(area: Element): LayoutMotion {
   return layoutMotion(area);
 }

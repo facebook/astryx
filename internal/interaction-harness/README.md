@@ -1,20 +1,23 @@
 # @astryxdesign/interaction-harness
 
 Playwright instruments for touch interaction and animation proofs: real touch
-input, curve sampling and storyboards. **Internal and unpublished.** Specs live
-next to their component as `*.interaction.browser.spec.ts` and run under
+input, frame evidence, curve sampling and storyboards. **Internal and
+unpublished.** Specs live next to their component as
+`*.interaction.browser.spec.ts` and run under
 [`playwright.interaction.config.ts`](../../playwright.interaction.config.ts) on
 a phone-sized touch screen (402 × 714 CSS px page, 402 × 874 screen, 3 device
 pixels per CSS px, touch, mobile viewport rules), in Chromium and WebKit.
 
 The harness proves its own instruments in
-[`src/harness.interaction.browser.spec.ts`](src/harness.interaction.browser.spec.ts),
-on fixture pages written inline.
+[`src/harness.interaction.browser.spec.ts`](src/harness.interaction.browser.spec.ts).
+The busy-main-thread proof has a negative control beside its positive check
+(a rAF animation that freezes under a blocked main thread); other self-tests
+check an instrument against a known answer.
 
 ## Running
 
 ```sh
-pnpm storybook:build                      # component specs read stories from the built Storybook
+pnpm storybook:build                      # the specs read stories from the built Storybook
 pnpm exec playwright install chromium webkit
 pnpm test:interaction --project chromium  # everything, Chromium
 pnpm test:interaction <spec file>         # one spec, both engines
@@ -42,6 +45,8 @@ committed: a pull request links or attaches it.
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
 | `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
+| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `frameStats`.                                                                              |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                              |
 | `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                        |
 | `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`. |
 | `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event): PNG contact sheet + JSON trace.                                                                                       |
@@ -97,6 +102,72 @@ set): a short entrance no longer races the first look on a cold page. When the
 action may be the page's first contact with the harness, take
 `watchAnimations(locator)` before it and read `watch.started()` after.
 
+**Busy main thread.** Mark the element, start the screencast, start the
+animation, wait until it runs (`waitForAnimation`: an animation cannot start
+while the thread is held), block the main thread for 1 s (`spec:AST-094`
+FR5's verification row), stop. Always
+start the gesture or animation first and block mid-flight, never before:
+in headless Chromium a touch that starts while the main thread is busy does
+not scroll or start a gesture even with only passive listeners (the input
+waits for the main thread). Tracking a finger under a busy main thread is
+therefore proven on the iOS simulator, not here. The
+screencast is captured off the main thread, so a compositor animation shows a
+new position every frame of the block, and a main-thread animation shows none
+(nothing changed, so no frame is sent at all: `busyWindowProof` counts the
+whole window as one stall). `settledWithin` (2 px) stops judging at the easing
+tail: the screencast rounds to whole pixels, so a tail that still moves shows
+plateaus within a pixel or two of rest. A judged part shorter than four of the
+screencast's intervals fails: the animation under test was not moving during
+the block. With
+`during`, `blockMainThread` starts the loop from a task queued in the frame
+that saw the animation, after that frame's rendering update: WebKit hands a
+newly started animation to its compositor there, and a loop inside the rAF
+callback would freeze even a compositor animation. Call it before the release
+that starts a settle and await it after, so the page is already waiting when
+the settle begins. An animation counts once it is no longer pending and has
+run at least one frame: a `minProgressMs` under 16 is raised to 16, since one
+created in the frame the page looks is not on the compositor yet. The `verdict` judges the
+frames the screencast delivered, whatever its rate (a loaded machine's can
+deliver one frame in five or six), and tolerates nothing a frozen animation
+does: at least one frame in the judged part, no stall longer than three of the
+screencast's intervals (two dropped frames), and at least 90% of the frames it
+delivered in the judged part presenting a new position (one miss is always
+allowed; a frame it did not deliver is a gap, for the stall check, unless
+it delivered fewer than four frames there: then the judged part's span counts
+every frame, so one late frame is not "1 of 1 moved"). Pass
+`maxMedianFrameMs` (20 at 60 Hz) only in a proof that claims display rate.
+`verdict.failures` names each miss with its numbers, and `summary` carries the
+raw numbers for the report. Frames are judged in presentation order: a loaded
+machine can deliver them out of order.
+
+A just-started animation can reach the screen after the block began (50–100 ms
+later in WebKit on a loaded machine). When the cast saw the element at rest
+before the block (wait for `cast.frameCount()` to pass 0 before starting the
+animation), judging starts at its first presented change: the judged part still
+ends with the block and still needs four intervals, and `onScreenFromMs` and the
+summary report when it came. An element already moving is judged from the
+block's start. WebKit's casts are 2 px quantized: the frames come at the
+viewport's size, but the page in them is captured at half resolution, so
+positions move in 2 CSS px steps (Chromium's in 1). With under two steps of
+motion per frame, a frame delivered a few ms early shows no step and reads as
+not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
+two steps per frame, which never fails it. Move a proof's element at least two
+steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
+
+On a loaded machine Chromium's screencast can skip frames the compositor
+still presents. Pass when the compositor presented each frame (epoch ms on the
+page clock, from a trace of `Display::FrameDisplayed`) as `presented`. A gap between two moved
+frames with nothing delivered inside it is then measured between the
+compositor's own frames: the frames it presented there count as presented
+(`recorderSkipped`, in the summary), and a gap it did not present through is
+a stall as before. A gap that opens or closes the judged part, or holds a
+delivered frame that did not move, is judged from the screencast, so a
+frozen element fails whatever else the compositor draws (a rAF animation's
+block presents no compositor frame at all). With the record, the 90% counts the
+compositor's frames from the first to the last moved frame; the gaps before and
+after are the stall check's. Without a record (WebKit has no such trace), the
+screencast is judged alone.
+
 **Storyboards.** Deterministic: frames come from seeking held animations or
 from stepping scripted input, never from wall-clock capture. The JSON trace
 carries each frame's measurements and the spec asserts on it; the sheet is
@@ -104,16 +175,18 @@ evidence. A component that finishes an animation from a timer (a transitionend
 backstop, a cleanup render) would do so behind a held storyboard's back:
 `installTimerGate` before the animation starts and `freezeTimers` while
 photographing. The page can still cancel a held callback, a held frame callback
-gets the time it actually runs, and the harness's own frame waits are not held.
+gets the time it actually runs, and the harness's own waits (its frame waits,
+`blockMainThread` with `during`) are not held.
 An animation that repeats forever does not set a storyboard's default length;
 with nothing else to film, pass `times`. A touch filmstrip keeps the scripted
 event `timeStamp`s (Chromium), but a handler that reads `performance.now()` or
 `Date.now()` sees one event per photograph, about 100 ms apart, so a
 clock-timed release flings slower when filmed than when played: a storyboard
-cannot show such a gesture; record it in real time instead. Chromium can return
-an empty copy of the page's surface right after it changes ("Unable to capture
-screenshot"); a storyboard takes that photograph again two frames later, up to
-three attempts in all, and lists each retake under `recaptures` in the trace.
+cannot show such a gesture; record it in real time instead, with
+`startScreencast`. Chromium can return an empty copy of
+the page's surface right after it changes ("Unable to capture screenshot"); a
+storyboard takes that photograph again two frames later, up to three attempts
+in all, and lists each retake under `recaptures` in the trace.
 
 ## Engine limits (measured with Playwright 1.61)
 
@@ -126,11 +199,13 @@ three attempts in all, and lists each retake under `recaptures` in the trace.
 | Lifting one finger while others stay down              | yes          | pointer events right, but that `touchend` lists no remaining `touches`: skip with `PARTIAL_LIFT_SKIP` |
 | Click synthesised from a touch                         | yes          | only from `driver.tap` (WebKit's tap gesture), not from a raw touch sequence                          |
 | Curve sampling, storyboards, input log                 | yes          | yes                                                                                                   |
+| Screencast frame evidence (busy main thread)           | yes          | yes (WebKit's own screencast; frames keep coming while the main thread is blocked)                    |
 
 What WebKit cannot show here — native scroll hand-off, flings, a finger
-lifting while another stays down, and anything iOS-only — needs Mobile Safari
-itself, on a device or the iOS simulator. Skip such a proof on the driver's
-flag, citing the reason: `test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`.
+lifting while another stays down, finger tracking under a busy main thread, and
+anything iOS-only — needs Mobile Safari itself, on a device or the iOS
+simulator. Skip such a proof on the driver's flag, citing the reason:
+`test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`.
 
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.
