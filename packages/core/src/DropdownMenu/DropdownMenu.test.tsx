@@ -2899,20 +2899,27 @@ describe('DropdownMenu press model', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
   });
 
-  it('a held touch on the trigger opens with the finger down and a slide picks', () => {
+  it('a held touch on the trigger opens with the finger down, and a slide past the handoff picks (spec:AST-094 FR29, FR43)', () => {
     vi.useFakeTimers();
     try {
       const onPick = vi.fn();
       const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, touch);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       act(() => {
         vi.advanceTimersByTime(500);
       });
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.pointerMove(item('Delete'), touch);
+      // The handoff counts from the first position the open menu sees.
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      const past = {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      };
+      fireEvent.pointerMove(item('Delete'), past);
       expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), touch);
+      fireEvent.pointerUp(item('Delete'), past);
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.
       fireEvent.click(trigger, {detail: 1});
