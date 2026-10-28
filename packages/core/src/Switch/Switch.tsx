@@ -115,7 +115,7 @@ const trackSizeStyles = stylex.create({
 });
 
 // The thumb is one circle under any pointer, at each state's size (Switch
-// FR4). Under a finger it rests by insets instead of a transform, centered in
+// FR13). Under a finger it rests by insets instead of a transform, centered in
 // the track's height at each end, so the compositor moves and lifts it with
 // translate and scale alone (useSwitchTouch measures the box it renders).
 const thumbOffSizeStyles = stylex.create({
@@ -248,7 +248,7 @@ const styles = stylex.create({
     zIndex: 1,
   },
   // The invisible input covers the track. Under a coarse pointer it is the
-  // hit area a finger needs (Switch FR4): it grows toward 44 × 44 px by the
+  // hit area a finger needs (Switch FR10): it grows toward 44 × 44 px by the
   // insets utils/hitArea measures, each side stopping at half the gap to a
   // neighbouring target, and its center moves with any uneven side; nothing
   // visible grows. The insets are 0 until measured. Physical left and
@@ -949,7 +949,7 @@ export function Switch({
       ),
     );
   // Under a coarse pointer, the hit area's insets toward 44 px, stopping at
-  // half the gap to each neighbouring target (Switch FR4). A disabled switch
+  // half the gap to each neighbouring target (Switch FR10). A disabled switch
   // watches nothing (spec:AST-094 FR24); the watch itself starts its
   // observers only while the primary pointer is coarse.
   useIsomorphicLayoutEffect(() => {

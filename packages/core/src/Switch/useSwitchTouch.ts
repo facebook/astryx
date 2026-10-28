@@ -510,7 +510,7 @@ export class SwitchTouchController {
       {at: time},
     );
     // Each state has its own thumb size (the circle a mouse sees, Switch
-    // FR4): the box the CSS now renders is the new value's, so its scale
+    // FR13): the box the CSS now renders is the new value's, so its scale
     // takes the old size over and grows or shrinks it from there.
     const before = this.geometry;
     this.measureGeometry();

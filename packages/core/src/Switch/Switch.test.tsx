@@ -1288,7 +1288,7 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
   });
 });
 
-describe('hit area under a coarse pointer (Switch FR4)', () => {
+describe('hit area under a coarse pointer (Switch FR10)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

@@ -76,7 +76,7 @@ const TRAVEL = {response: 0.3, dampingFraction: 1};
 const WELL_ON = {response: 0.68, dampingFraction: 1};
 /** The md track is 40 × 24. */
 const TRACK = {width: 40, height: 24};
-/** The md thumb, a circle at the size a mouse sees: 16 off, 20 on (Switch FR4). */
+/** The md thumb, a circle at the size a mouse sees: 16 off, 20 on (Switch FR13). */
 const THUMB_OFF = 16;
 const THUMB_ON = 20;
 /** The off thumb's inset in the track, on every side. */
@@ -666,7 +666,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(clicks).toEqual([true]);
   });
 
-  test('under a finger the thumb is the circle a mouse sees, at each state’s size (Switch FR4)', async ({
+  test('under a finger the thumb is the circle a mouse sees, at each state’s size (Switch FR13)', async ({
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(page);
