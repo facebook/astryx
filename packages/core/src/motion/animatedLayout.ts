@@ -1013,6 +1013,15 @@ export interface LayoutSwap {
   readonly rect: DOMRect;
 }
 
+/**
+ * Ends a swap at once, removing its copy; `handOff` instead ends it leaving
+ * the copy where and as it shows, for a new change to take over (null once
+ * the swap has ended).
+ */
+export type LayoutSwapEnd = (() => void) & {
+  readonly handOff: () => HTMLElement | null;
+};
+
 /** How a swap plays, as frames over its progress (0 → 1). */
 export interface LayoutSwapMotion {
   /** The box the copy is laid out in, over the old content's place. */
@@ -1083,10 +1092,10 @@ export function holdLayoutSwap(
 export function playLayoutSwap(
   swap: LayoutSwap,
   how: LayoutSwapMotion,
-): () => void {
+): LayoutSwapEnd {
   const motion = layoutMotion(swap.area);
   if (motion.kind === 'instant') {
-    return () => {};
+    return Object.assign(() => {}, {handOff: () => null});
   }
   const {copy} = swap;
   placeOver(copy, how.host, swap.rect);
@@ -1168,7 +1177,19 @@ export function playLayoutSwap(
     // Every part runs on one clock, so the first to finish ends them all.
     animations[0]?.addEventListener?.('finish', end);
   }
-  return end;
+  // A new change can take the copy over mid-swap: it stays where it shows,
+  // at the opacity it shows, and the caller removes it.
+  const handOff = (): HTMLElement | null => {
+    if (isDone) {
+      return null;
+    }
+    const {opacity} = getComputedStyle(copy);
+    isDone = true;
+    animations.forEach(animation => animation.cancel());
+    copy.style.opacity = opacity;
+    return copy;
+  };
+  return Object.assign(end, {handOff});
 }
 
 /**

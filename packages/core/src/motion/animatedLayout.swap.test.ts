@@ -620,3 +620,18 @@ describe('more swap layout cases', () => {
     expect(played).toEqual([]);
   });
 });
+
+describe('handing a swap copy over', () => {
+  it('leaves the copy where it shows for a new change, which removes it', () => {
+    const {handle, content, host} = setup();
+    const swap = holdLayoutSwap(handle, content);
+    const end = playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    const copy = end.handOff();
+    expect(copy).toBe(swap!.copy);
+    expect(copy?.isConnected).toBe(true);
+    // Ending it now no longer removes the copy: it belongs to the caller.
+    end();
+    expect(copy?.isConnected).toBe(true);
+    expect(end.handOff()).toBeNull();
+  });
+});
