@@ -41,6 +41,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 // =============================================================================
 // Types
@@ -190,7 +191,7 @@ const styles = stylex.create({
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: '-14px',
+      inset: '-4px',
     },
   },
 });
@@ -321,7 +322,9 @@ export function Token({
         e.stopPropagation();
         onRemove(e);
       }}
-      disabled={isDisabled}
+      // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
+      aria-disabled={isDisabled || undefined}
+      {...(isDisabled ? disabledInteractionProps() : null)}
       {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
@@ -455,7 +458,8 @@ export function Token({
         <button
           type="button"
           onClick={effectiveOnClick}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.invisibleButton)}>
           <span
             {...stylex.props(

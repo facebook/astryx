@@ -152,6 +152,36 @@ const TARGETS = [
     guards:
       'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
   },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--default-filters-beside-search',
+    guards:
+      'default filter tokens that reach past the field center never cover the search input, and pressing its center focuses it',
+  },
+  {
+    component: 'PowerSearch (RTL)',
+    story: 'core-powersearch--default-filters-beside-search-rtl',
+    guards: 'default filter tokens never cover the search input in RTL as well',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--token-row-when-resting-styles-win',
+    guards:
+      'whichever single resting declaration of the empty search input outranks its empty-query override, the input stays on the token row and the field grows no blank row',
+  },
+  {
+    component: 'Tokenizer',
+    story: 'core-tokenizer--caret-placement',
+    guards:
+      'a focused empty combobox puts its caret right after the last token on the last row without moving tokens, and a row too full for the caret keeps its resting height and starts a new row only on focus, never for a read-only field',
+  },
+  {
+    component: 'Tokenizer (RTL)',
+    story: 'core-tokenizer--caret-placement',
+    direction: 'rtl',
+    guards:
+      'the caret follows the last token at its inline end, and a too-full row stays one row at rest and while read-only, under RTL as well',
+  },
   // spec:AST-059 — the layer runtime's viewport inset. Each story is one
   // claim of the record; the guard is its rendered evidence, at a desktop
   // viewport and at a phone's, because a cap that holds only where the
@@ -261,6 +291,63 @@ const TARGETS = [
     guards: 'just above the collapse, labels stay beside their controls',
   },
   {
+    component: 'FormLayout audit (phone)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 320, height: 844},
+    guards:
+      'all arrangements stay in the 320px viewport, horizontal columns retain order, horizontal-labels collapses, and required-default ARIA remains truthful',
+  },
+  {
+    component: 'FormLayout audit (boundary)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 481, height: 844},
+    guards:
+      'at 481px horizontal-labels remains a two-column grid while every arrangement stays in the viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL phone)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    viewport: {width: 320, height: 844},
+    guards:
+      'logical horizontal order mirrors under RTL while the collapsed horizontal-label layout stays in the phone viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL wide)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    guards:
+      'logical horizontal order mirrors under RTL and wide horizontal-label pairs retain inline-start placement',
+  },
+  {
+    component: 'Grid',
+    story: 'core-grid--grid-span-with-long-content',
+    guards:
+      'a full-width GridSpan holding a Tokenizer with a long token stays within its 500px host',
+  },
+  {
+    component: 'Grid audit (phone)',
+    story: 'core-grid--audit-matrix',
+    viewport: {width: 320, height: 900},
+    guards:
+      'fixed tracks retain logical order, capped responsive tracks collapse to one, and every grid stays inside the phone viewport',
+  },
+  {
+    component: 'Grid audit (wide)',
+    story: 'core-grid--audit-matrix',
+    viewport: {width: 800, height: 900},
+    guards:
+      'capped responsive tracks reach three columns, auto-fit expands beyond auto-fill, and full span covers the explicit grid',
+  },
+  {
+    component: 'Grid audit (RTL)',
+    story: 'core-grid--audit-matrix',
+    direction: 'rtl',
+    viewport: {width: 800, height: 900},
+    guards:
+      'the rendered RTL wrapper mirrors fixed-track item order while responsive and span geometry remain bounded',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
@@ -352,8 +439,11 @@ function recordStoryOutcome() {
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
   const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
+  const globalsQuery = target.direction
+    ? `&globals=direction:${target.direction}`
+    : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}${globalsQuery}`,
     {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
@@ -361,7 +451,25 @@ async function probe(page, target) {
     null,
     {timeout: 30000},
   );
-  return page.evaluate(() => window.__storyOutcome);
+  return page.evaluate(expectedDirection => {
+    const outcome = window.__storyOutcome;
+    if (expectedDirection != null) {
+      const directionRoot = document.querySelector('#storybook-root [dir]');
+      if (directionRoot == null) {
+        outcome.errors.push(
+          `direction mismatch — expected ${expectedDirection}, but the story direction wrapper is missing`,
+        );
+      } else {
+        const actualDirection = getComputedStyle(directionRoot).direction;
+        if (actualDirection !== expectedDirection) {
+          outcome.errors.push(
+            `direction mismatch — expected ${expectedDirection}, received ${actualDirection}`,
+          );
+        }
+      }
+    }
+    return outcome;
+  }, target.direction ?? null);
 }
 
 async function run() {

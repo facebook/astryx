@@ -43,7 +43,7 @@ describe('CommentPin', () => {
     ).toHaveAttribute('data-grouped', 'grouped');
   });
 
-  it('caps a group at three circles with a +N overflow beyond three people', () => {
+  it('caps a group at three circles with an ellipsis overflow beyond three people', () => {
     const {container} = render(
       <CommentPin
         label="Open 6 grouped annotations from Ada, Lin, and 3 others"
@@ -54,12 +54,53 @@ describe('CommentPin', () => {
 
     expect(container.querySelectorAll('.astryx-avatar')).toHaveLength(2);
     const overflow = container.querySelector('.astryx-avatar-group-overflow');
-    expect(overflow).toHaveTextContent('+3');
+    // An ellipsis, not `+3`: the thread total stays the pin's only number.
+    expect(overflow?.querySelector('svg')).not.toBeNull();
+    expect(overflow).toHaveTextContent(/^$/);
     expect(overflow?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(screen.getByText('6')).toBeInTheDocument();
   });
 
-  it('shows the unread count in an accent badge in place of the total', () => {
+  it.each([
+    [undefined, 'sm', '22px'],
+    ['sm', 'sm', '22px'],
+    ['md', 'md', '24px'],
+    ['lg', 'lg', '28px'],
+  ] as const)(
+    'size %s reflects %s and draws %s participant circles',
+    (size, reflected, avatarPx) => {
+      const {container} = render(
+        <CommentPin
+          label="Open 6 grouped annotations"
+          participants={[ADA, LIN, MIRA, NOAH, SAM]}
+          threadCount={6}
+          size={size}
+        />,
+      );
+
+      const pin = screen.getByRole('button', {
+        name: 'Open 6 grouped annotations',
+      });
+      expect(pin).toHaveAttribute('data-size', reflected);
+      const avatars = container.querySelectorAll('.astryx-avatar');
+      expect(avatars).toHaveLength(2);
+      for (const avatar of avatars) {
+        expect(avatar.getAttribute('style') ?? '').toContain(avatarPx);
+      }
+    },
+  );
+
+  it('sizes a single participant with the pin', () => {
+    const {container} = render(
+      <CommentPin label="Open annotation" participants={[ADA]} size="lg" />,
+    );
+
+    expect(
+      container.querySelector('.astryx-avatar')?.getAttribute('style') ?? '',
+    ).toContain('28px');
+  });
+
+  it('marks unread threads with an accent dot after the total', () => {
     const {container} = render(
       <CommentPin
         label="Open 4 grouped annotations, 2 unread"
@@ -73,13 +114,20 @@ describe('CommentPin', () => {
       name: 'Open 4 grouped annotations, 2 unread',
     });
     expect(pin).toHaveAttribute('data-unread', 'unread');
-    expect(screen.getByText('2')).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.queryByText('4')).not.toBeInTheDocument();
+    const dot = container.querySelector('.astryx-status-dot');
+    expect(dot).toHaveAttribute('data-variant', 'accent');
+    expect(dot?.closest('[aria-hidden="true"]')).not.toBeNull();
+    // The total stays; the unread count is the dot, not a second number.
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.queryByText('2')).not.toBeInTheDocument();
+    expect(dot?.compareDocumentPosition(screen.getByText('4')) ?? 0).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING,
+    );
     expect(container.querySelectorAll('.astryx-avatar')).toHaveLength(2);
   });
 
-  it('shows an unread badge on a single-thread pin', () => {
-    render(
+  it('marks an unread single-thread pin with a dot and no number', () => {
+    const {container} = render(
       <CommentPin
         label="Open unread annotation from Ada"
         participants={[ADA]}
@@ -92,17 +140,18 @@ describe('CommentPin', () => {
     });
     expect(pin).toHaveAttribute('data-unread', 'unread');
     expect(pin).not.toHaveAttribute('data-grouped');
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(container.querySelector('.astryx-status-dot')).not.toBeNull();
+    expect(pin).toHaveTextContent(/^AL$/);
   });
 
   it.each([
-    [-1, null],
-    [1.5, null],
-    [Number.NaN, null],
-    [9, '3'],
+    [-1, false],
+    [1.5, false],
+    [Number.NaN, false],
+    [9, true],
   ])(
     'normalizes unreadCount %s and warns in development',
-    async (unreadCount, expectedBadge) => {
+    async (unreadCount, isUnread) => {
       const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {container, unmount} = render(
         <CommentPin
@@ -114,13 +163,14 @@ describe('CommentPin', () => {
       );
 
       const pin = container.querySelector('.astryx-comment-pin');
-      if (expectedBadge == null) {
-        expect(pin).not.toHaveAttribute('data-unread');
-        expect(screen.getByText('3')).toBeInTheDocument();
-      } else {
+      if (isUnread) {
         expect(pin).toHaveAttribute('data-unread', 'unread');
-        expect(screen.getByText(expectedBadge)).toBeInTheDocument();
+        expect(container.querySelector('.astryx-status-dot')).not.toBeNull();
+      } else {
+        expect(pin).not.toHaveAttribute('data-unread');
+        expect(container.querySelector('.astryx-status-dot')).toBeNull();
       }
+      expect(screen.getByText('3')).toBeInTheDocument();
       await waitFor(() =>
         expect(warning).toHaveBeenCalledWith(
           expect.stringContaining('unreadCount` must be a finite non-negative'),
@@ -148,7 +198,9 @@ describe('CommentPin', () => {
         .querySelector('.astryx-avatar')
         ?.closest('[aria-hidden="true"]'),
     ).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByText('4')).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      screen.getByText('4').closest('[aria-hidden="true"]'),
+    ).not.toBeNull();
   });
 
   it('keeps a single marker to one representative even when more are supplied', () => {
@@ -181,6 +233,33 @@ describe('CommentPin', () => {
     expect(marker).toHaveAttribute('data-selected', 'selected');
     expect(marker).toHaveAttribute('data-resolved', 'resolved');
     expect(marker).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('renders nothing for a resolved pin unless it is selected', () => {
+    const {container, rerender} = render(
+      <CommentPin
+        label="Open resolved annotation from Ada"
+        participants={[ADA]}
+        isResolved
+      />,
+    );
+
+    expect(container.querySelector('.astryx-comment-pin')).toBeNull();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+    rerender(
+      <CommentPin
+        label="Open resolved annotation from Ada"
+        participants={[ADA]}
+        isResolved
+        isSelected
+      />,
+    );
+    const pin = screen.getByRole('button', {
+      name: 'Open resolved annotation from Ada',
+    });
+    expect(pin).toHaveAttribute('data-resolved', 'resolved');
+    expect(pin).toHaveAttribute('data-selected', 'selected');
   });
 
   it('dims non-selected pins without disabling selection changes', () => {

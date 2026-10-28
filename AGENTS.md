@@ -30,6 +30,11 @@ nested `AGENTS.md`.
   route exposes only the listed claim; it never makes the whole record govern
   the component or change. Preserve each matched record, claim, trigger, and
   match reason in the review receipt.
+- Any path: `pnpm specs:for <path>` lists the current records linked to it,
+  the specs that decided them, and the global claims its component's triggers
+  route. It reads the working tree, so on a pull-request branch it shows that
+  branch's proposed records; it is a lookup, not review authority. It adds to
+  the component-review steps above; it does not replace them.
 - Component-local visual intent: reuse or amend the optional `Design decisions`
   table in the current component/module spec only when durable local intent must
   survive future redesigns. Keep exact tuning in code/evidence and shared rules

@@ -51,6 +51,16 @@ The material is usually good; the finding is placement, not quality. It goes in 
 
 Worked example: a responsive-and-interaction readiness rubric is grading criteria → **Component-Audit-Rubric**, or **Component-Lifecycle** if it is a promotion gate.
 
+## Imports in code samples
+
+Import each Core export from the path `astryx component <Name>` prints: the
+component's own entry when Core has one (`@astryxdesign/core/VStack`,
+`@astryxdesign/core/Heading`), and `@astryxdesign/core/theme` for `Theme`,
+`defineTheme` and the rest of the theme API. A reader copies one sample and then
+reads `astryx component`, and two paths for one export read as two different
+things. The no-build CDN page is the exception: its import map names only the
+package root.
+
 ## Sections are read one at a time
 
 `astryx docs <topic> --index` lists a topic's sections, and readers then open

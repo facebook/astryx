@@ -9,7 +9,8 @@
  * @position Thin wrapper over Button; adds controlled toggle pattern
  *
  * ToggleButton wraps Button with `isPressed` and adds:
- * - `onPressedChange` from internal `onClick`; `pressedChangeAction` via Button
+ * - `onPressedChange` from internal `onClick`, after any caller `onClick`;
+ *   `pressedChangeAction` via Button
  * - `pressedIcon` for outline-to-filled icon swap
  * - Font weight shift on press with width reservation to prevent layout shift
  * - Group integration via ToggleButtonGroupContext
@@ -258,6 +259,7 @@ export function ToggleButton({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
   ...props
 }: ToggleButtonProps): ReactNode {
   const group = useToggleButtonGroup();
@@ -287,9 +289,18 @@ export function ToggleButton({
     if (isDisabled) {
       return;
     }
+    // A caller onClick (a trigger wrapper often supplies one) runs first and
+    // never replaces the toggle's own request (family:buttons FR5, FR11).
+    const wasPrevented = event.defaultPrevented;
+    onClickProp?.(event);
     if (group && value != null) {
       group.toggle(value);
       event.preventDefault();
+      return;
+    }
+    // A standalone toggle is cancelled only by the caller's own
+    // preventDefault(); Button then skips pressedChangeAction too.
+    if (!wasPrevented && event.defaultPrevented) {
       return;
     }
 

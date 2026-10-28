@@ -38,6 +38,7 @@ import {useTooltip} from '../Tooltip';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   CheckboxListContext,
   type CheckboxListContextValue,
@@ -170,6 +171,7 @@ export function CheckboxList({
   controlXstyle,
   controlClassName,
   controlStyle,
+  'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: CheckboxListProps) {
@@ -290,7 +292,8 @@ export function CheckboxList({
             controlStyle,
           )}
           role="group"
-          aria-labelledby={labelID}
+          // A caller aria-labelledby names the group together with its label.
+          aria-labelledby={joinAriaIDs(labelID, ariaLabelledByProp)}
           aria-describedby={
             [
               ariaDescribedByProp,
