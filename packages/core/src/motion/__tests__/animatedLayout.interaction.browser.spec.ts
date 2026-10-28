@@ -709,21 +709,42 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
-  test('inside a positioned ancestor the siblings before the change take their final place (spec:AST-105 Coverage)', async ({
+  test('inside a positioned ancestor only the content after the change moves: the header before it and the card around it take their final place (spec:AST-105 Coverage)', async ({
     page,
   }) => {
     await open(
       page,
       `<div id="area" class="area">
         <div style="position: absolute; left: 0; right: 0; bottom: 0">
-          <div id="trigger" class="row"></div><div id="grow" class="grow"></div>
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+          <div id="footer" class="row"></div>
         </div>
       </div>`,
     );
     await change(page);
-    // Docked at the bottom, the trigger rises as the content opens below it,
-    // but takes its place at once, so the revealing content never covers it.
-    expect(await page.evaluate(() => window.motionOf('#trigger'))).toEqual([]);
+    // Docked at the bottom, the panel rises as the content opens, and
+    // everything around the change takes its place at once with it, so no
+    // gap opens and the revealing content never covers what is above it.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a stuck sticky footer around the change stays at the area edge (spec:AST-105 Coverage, FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">${Array.from(
+        {length: 30},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div></div>`,
+    );
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
   });
 
   for (const anchoring of ['auto', 'none']) {

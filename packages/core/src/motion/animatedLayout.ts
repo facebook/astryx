@@ -384,8 +384,8 @@ function rectOf(element: Element, cache: WalkCache): DOMRect {
  * depth plus the siblings near the visible part, never with the length of a
  * list; where the area opts out of scroll anchoring (`walksToBand`), the walk
  * after a change above the band goes on to the band, a cost that grows with
- * that distance. Inside a positioned or top-layer ancestor only the siblings
- * after the change are taken.
+ * that distance. Inside a positioned, sticky or top-layer ancestor only the
+ * content after the change is taken.
  */
 function collectCandidates(
   changed: Element,
@@ -431,9 +431,9 @@ function collectCandidates(
     return true;
   };
   // The change's chain up to the area, and from where it is inside a
-  // positioned or top-layer ancestor: that ancestor takes its final place,
-  // so inside it only the content after the change moves (the siblings
-  // before it stay, as the content revealing beside them does).
+  // positioned, sticky or top-layer ancestor: that ancestor takes its final
+  // place, so inside it only the content after the change moves; the
+  // ancestors and the siblings before the change stay with it.
   const chain: Element[] = [];
   for (
     let node: Element | null = changed;
@@ -444,17 +444,26 @@ function collectCandidates(
   }
   // The levels below this index are inside a positioned ancestor.
   let positionedFrom = 0;
+  const view = changed.ownerDocument.defaultView;
   for (let index = chain.length - 1; index > 0; index -= 1) {
-    if (partOf(chain[index], cache) === false) {
+    if (
+      partOf(chain[index], cache) === false ||
+      view?.getComputedStyle(chain[index]).position === 'sticky'
+    ) {
       positionedFrom = index;
       break;
     }
   }
   for (const [level, node] of chain.entries()) {
-    if (node !== changed && partOf(node, cache) === true) {
+    if (
+      node !== changed &&
+      level > positionedFrom &&
+      partOf(node, cache) === true
+    ) {
       // An ancestor of the change in flow: where its layout moves it (a
       // centered column), it glides, and what is inside moves only by its own
-      // change. A positioned or top-layer ancestor takes its final place.
+      // change. A positioned, sticky or top-layer ancestor, and every
+      // ancestor inside it, takes its final place.
       out.set(node, rectOf(node, cache));
     }
     for (
