@@ -14,7 +14,7 @@ import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 
 const radio = (name: string) =>
-  screen.getByRole('radio', {name, hidden: true});
+  screen.getByRole<HTMLInputElement>('radio', {name, hidden: true});
 
 describe('RadioList: disabled radios stay focusable (spec:AST-085)', () => {
   it('renders an individually disabled option with aria-disabled and no native disabled', () => {
