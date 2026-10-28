@@ -330,8 +330,16 @@ export default defineTheme({name: 'parity-package-child', extends: packageTheme,
 
   it('keeps function entries in a family build', async () => {
     writeLineage();
+    // A member that sets no icons of its own inherits the child's entries.
+    write(
+      'inherit/source.mjs',
+      `import {defineTheme} from '@astryxdesign/core/theme';
+import {childTheme} from '../child/source.mjs';
+export default defineTheme({name: 'parity-inherit', extends: childTheme, tokens: {}});
+`,
+    );
     const receipt = await themeBuildFamily(
-      ['base/source.mjs', 'child/source.mjs'],
+      ['base/source.mjs', 'child/source.mjs', 'inherit/source.mjs'],
       {familyKey: 'parity-family'},
       {cwd: tmpDir},
     );
@@ -349,10 +357,17 @@ export default defineTheme({name: 'parity-package-child', extends: packageTheme,
         built: `${familyModule}#parityChildTheme`,
         runtime: './child/source.mjs#default',
       },
+      {
+        label: 'inherit',
+        built: `${familyModule}#parityInheritTheme`,
+        runtime: './inherit/source.mjs#default',
+      },
     ]);
 
     expect(result.base.built).toEqual(result.base.runtime);
     expect(result.child.built).toEqual(result.child.runtime);
+    expect(result.inherit.built).toEqual(result.inherit.runtime);
+    expect(result.inherit.built.requests).toEqual(result.child.built.requests);
     expect(result.child.built.requests['info|sm|filled']).toBe(
       'base-info:sm:filled',
     );

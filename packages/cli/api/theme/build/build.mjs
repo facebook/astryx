@@ -3689,8 +3689,16 @@ export async function themeBuildFamily(
       ['icons', member.iconInfo],
       ['indicators', member.indicatorInfo],
     ]) {
-      const value = member.theme[field];
-      const inherited = member.sourceParent?.[field];
+      // A theme with a function entry gets its own node view of `icons`, so
+      // an inherit-only member is recognized by its entries.
+      const value =
+        field === 'icons'
+          ? themeIconEntries(member.theme)
+          : member.theme[field];
+      const inherited =
+        field === 'icons'
+          ? themeIconEntries(member.sourceParent)
+          : member.sourceParent?.[field];
       if (
         value &&
         Object.keys(value).length > 0 &&
