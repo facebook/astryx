@@ -58,7 +58,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {isBuiltin} from 'node:module';
+import {createRequire, isBuiltin} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
@@ -306,7 +306,9 @@ function realLocation(target) {
  * Core, so building with it keeps the CSS identical; and a CLI run one-off
  * (`npx @astryxdesign/cli`) has no Core beside it at all. Null when there is
  * nothing better than the CLI's own import: no installed Core (the Astryx
- * repository, a bare directory), the same Core, or one that does not load.
+ * repository, a bare directory) or the same Core. A Core that is there but
+ * does not load, or lacks the functions the build calls, throws, naming it:
+ * building with another Core would not match the app's `<Theme>`.
  *
  * @param {string} cwd
  * @param {CoreBindings} cliCore - The CLI's own Core, from {@link loadCliCore}.
@@ -316,29 +318,36 @@ function realLocation(target) {
  */
 async function loadProjectCore(cwd, cliCore, {projectOnly = false} = {}) {
   // Outside a project, the Core the answering copy carries (spec AST-081 FR3).
-  const dir =
-    findInstalledPackage(cwd, '@astryxdesign/core') ??
-    (projectOnly ? null : fetchCarriedThemeCoreDir(cwd));
+  const installed = findInstalledPackage(cwd, '@astryxdesign/core');
+  const dir = installed ?? (projectOnly ? null : fetchCarriedThemeCoreDir(cwd));
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
   if (cliCore.themeModule) {
-    try {
-      const own = fileURLToPath(
-        import.meta.resolve('@astryxdesign/core/theme'),
-      );
-      if (realOrSelf(own) === realOrSelf(themeFile)) return null;
-    } catch {
-      // The CLI's own Core cannot be located; load the project's.
-    }
+    const own = cliCoreThemeFile();
+    if (own != null && realOrSelf(own) === realOrSelf(themeFile)) return null;
   }
   let themeModule;
   try {
     themeModule = await import(pathToFileURL(themeFile).href);
-  } catch {
-    return null;
+  } catch (error) {
+    throw new AstryxError(
+      installed == null
+        ? carriedCoreMessage(dir, /** @type {Error} */ (error))
+        : coreUnavailableMessage(cwd, /** @type {Error} */ (error)),
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
-  if (!themeModule.defineTheme || !themeModule.generateThemeRulesSplit)
-    return null;
+  const missing = ['defineTheme', 'generateThemeRulesSplit'].filter(
+    name => typeof themeModule[name] !== 'function',
+  );
+  if (missing.length > 0) {
+    throw new AstryxError(
+      `The @astryxdesign/core at ${path.relative(cwd, dir) || '.'} does not export ${missing.join(' or ')} from its \`./theme\` entry, which \`${formatCliCommand('theme build')}\` calls. Update it.`,
+      undefined,
+      ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+    );
+  }
   let rootModule = null;
   const rootFile = importTarget(dir, '.');
   if (rootFile) {
@@ -357,6 +366,40 @@ async function loadProjectCore(cwd, cliCore, {projectOnly = false} = {}) {
     generateOnMediaCSS: themeModule.generateOnMediaCSS,
     generateAdaptationCSS: themeModule.generateAdaptationCSS,
   };
+}
+
+/**
+ * The file the CLI's own `@astryxdesign/core/theme` resolves to, or null when
+ * the CLI has no Core of its own (a one-off `npx` run).
+ * @returns {string | null}
+ */
+function cliCoreThemeFile() {
+  try {
+    return fileURLToPath(import.meta.resolve('@astryxdesign/core/theme'));
+  } catch (error) {
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    if (
+      code === 'ERR_MODULE_NOT_FOUND' ||
+      code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * The error for a Core the answering copy carries (outside a project) that
+ * does not load.
+ * @param {string} dir
+ * @param {Error} importError
+ * @returns {string}
+ */
+function carriedCoreMessage(dir, importError) {
+  return (
+    `Could not load the @astryxdesign/core this CLI release carries, at ${dir}.` +
+    `\n  Import error: ${importError.message}`
+  );
 }
 
 /** @type {Map<string, Awaited<ReturnType<typeof loadProjectCore>>>} */
@@ -379,7 +422,7 @@ async function selectCore(cwd, {projectOnly = false} = {}) {
   // A global or cached copy's own Core is the carried one.
   if (projectOnly && !projectCore && carriesCore() && !cliCoreIsProjects(cwd)) {
     throw new AstryxError(
-      "The project's Core isn't installed or does not load.",
+      "The project's Core isn't installed.",
       undefined,
       ERROR_CODES.ERR_CORE_NOT_FOUND,
     );
@@ -405,13 +448,11 @@ function carriesCore() {
 function cliCoreIsProjects(cwd) {
   const dir = findProjectCoreDir(cwd);
   if (!dir) return false;
-  try {
-    const own = fileURLToPath(import.meta.resolve('@astryxdesign/core/theme'));
-    const theirs = importTarget(dir, './theme');
-    return theirs != null && realOrSelf(own) === realOrSelf(theirs);
-  } catch {
-    return false;
-  }
+  const own = cliCoreThemeFile();
+  const theirs = importTarget(dir, './theme');
+  return (
+    own != null && theirs != null && realOrSelf(own) === realOrSelf(theirs)
+  );
 }
 
 /**
@@ -1104,6 +1145,28 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
 }
 
 /**
+ * Public augmentable maps whose axis requests artwork instead of styling.
+ * `Icon.variant` selects a theme's icon artwork, so it has no component styling
+ * map (architecture:component-theming-surface INV14): a `components` key on it
+ * never enrolls a value or generates an augmentation of its map.
+ */
+const ARTWORK_REQUEST_MAPS = new Set(['IconVariantMap']);
+
+/**
+ * Whether a theme's component styling keys may enroll values in `interfaceName`
+ * on `@astryxdesign/core/<Component>`.
+ * @param {string} pascalName
+ * @param {string} interfaceName
+ * @returns {boolean}
+ */
+function isComponentValueAugmentationPoint(pascalName, interfaceName) {
+  return (
+    !ARTWORK_REQUEST_MAPS.has(interfaceName) &&
+    componentHasAugmentableInterface(pascalName, interfaceName)
+  );
+}
+
+/**
  * Adaptation values from resolved runtime rules, raw input, or normalized built
  * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
  * diagnostic that reads rule intent must also understand `__adaptations`.
@@ -1410,7 +1473,7 @@ async function classifyComponentValue(component, prop, value) {
   const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
   const target = (await resolveAugmentationTargetCandidates(component)).find(
     candidate =>
-      componentHasAugmentableInterface(
+      isComponentValueAugmentationPoint(
         candidate.moduleName,
         `${candidate.interfacePrefix}${propPascal}Map`,
       ),
@@ -1567,7 +1630,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
       const target = (
         await resolveAugmentationTargetCandidates(component)
       ).find(candidate =>
-        componentHasAugmentableInterface(
+        isComponentValueAugmentationPoint(
           candidate.moduleName,
           `${candidate.interfacePrefix}${propPascal}Map`,
         ),
@@ -1833,23 +1896,86 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
       commonJsPatch.undo();
     }
   } else {
-    mod = await jiti.import(filePath, {default: true});
+    mod = await jiti.import(filePath);
   }
 
-  if (isThemeObject(mod)) return {theme: mod, exportName: 'default', degraded};
-
-  if (mod && typeof mod === 'object') {
-    if (isThemeObject(mod.default)) {
-      return {theme: mod.default, exportName: 'default', degraded};
-    }
+  // Both loads hand back the module. The theme is read from the module's own
+  // exports, never from the module object itself: jiti's interop answers a
+  // property the module lacks from its default export (and a missing
+  // `default` with the module), so the module can pass for the theme while
+  // its own keys hide the theme's fields.
+  const isModule = mod != null && typeof mod === 'object';
+  const hasDefault = isModule && Object.hasOwn(mod, 'default');
+  const defaultExport = hasDefault ? mod.default : undefined;
+  if (isThemeObject(defaultExport)) {
+    return {theme: defaultExport, exportName: 'default', degraded};
+  }
+  if (isModule) {
     for (const [exportName, value] of Object.entries(mod)) {
+      if (exportName === 'default' || exportName === 'module.exports') continue;
       if (isThemeObject(value)) return {theme: value, exportName, degraded};
+    }
+  }
+  // A plain-object default export is the module's theme even when it has
+  // no tokens of its own (local tokens, typography or component styles may
+  // be all it defines), or no name: the build's validation says what it
+  // lacks.
+  if (isPlainObject(defaultExport)) {
+    return {theme: defaultExport, exportName: 'default', degraded};
+  }
+  // A CommonJS module whose exports are the theme (`module.exports =
+  // theme`) has no default of its own: interop answers `default` with
+  // those exports, and without interop (a family build's loader) the module
+  // is them.
+  if (isModule && !hasDefault) {
+    const exportsObject = mod.default ?? mod;
+    if (isThemeObject(exportsObject)) {
+      return {theme: exportsObject, exportName: 'default', degraded};
     }
   }
 
   throw new Error(
     `Could not find a defineTheme() result in ${filePath}.\n` +
       `Expected an export like: export const myTheme = defineTheme({ name: '...', tokens: {...} })`,
+  );
+}
+
+/**
+ * Whether the theme file's own folder resolves Core's theme entry, as the
+ * theme's own `import ... from '@astryxdesign/core/theme'` would. A theme
+ * outside any project (an empty folder, a fresh clone) does not, and is
+ * handed the Core the CLI answers with instead, as a new project with that
+ * Core would build it (`theme build` runs the same outside a project, spec
+ * AST-081 FR3). Only a Core not installed there (MODULE_NOT_FOUND) reads as
+ * no: an installed Core whose entry does not resolve is the theme's own, and
+ * its load reports that.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function themeFolderResolvesCore(filePath) {
+  try {
+    createRequire(filePath).resolve('@astryxdesign/core/theme');
+    return true;
+  } catch (error) {
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    if (code === 'MODULE_NOT_FOUND') return false;
+    if (code === 'ERR_PACKAGE_PATH_NOT_EXPORTED') return true;
+    throw error;
+  }
+}
+
+/**
+ * A plain object, not an array or a module namespace: a theme module's
+ * default export, read as its theme.
+ * @param {any} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    value[Symbol.toStringTag] !== 'Module'
   );
 }
 
@@ -1868,12 +1994,9 @@ function isThemeObject(value) {
 }
 
 /**
- * Extract the theme definition from a JS/TS file.
- * Tries jiti first (full TS support), falls back to regex+eval.
- *
- * The legacy fallback needs no interception: it evaluates the `defineTheme()`
- * ARGUMENT, so what it returns is raw authored input with `adaptations` still
- * on it — nothing has erased anything yet. It is therefore never degraded.
+ * Extract the theme definition from a JS/TS file, through jiti (full TS
+ * support). A module that does not load fails with its own error: the theme
+ * is never read from the file's text instead.
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
@@ -1884,18 +2007,12 @@ async function extractThemeDefinition(filePath, interception, /** @type {any} */
   try {
     return await importThemeModule(filePath, interception, loader);
   } catch (jitiError) {
-    try {
-      return {
-        theme: extractThemeDefinitionLegacy(filePath),
-        degraded: {topLevelAwait: false, commonJs: false},
-      };
-    } catch {
-      const je = /** @type {Error} */ (jitiError);
-      throw new Error(
-        `Failed to load theme from ${filePath}: ${je.message}\n` +
-          `Make sure all imports in the theme file are resolvable.`,
-      );
-    }
+    const je = /** @type {Error} */ (jitiError);
+    throw new Error(
+      `Failed to load theme from ${filePath}: ${je.message}\n` +
+        `Make sure all imports in the theme file are resolvable.`,
+      {cause: jitiError},
+    );
   }
 }
 
@@ -1938,45 +2055,6 @@ export async function validateThemePrivateInputs(
     return [...new Set(inputs.flatMap(input => validatePrivateVars(input)))];
   } finally {
     interception.strip(theme);
-  }
-}
-
-/**
- * Fallback extraction via regex + eval.
- * Only works for plain object literals — can't follow imports or variables.
- * Never erase icon references: an unresolved registry must preserve the loader
- * error instead of turning an incomplete theme into a successful build.
- * @param {string} filePath
- * @returns {any}
- */
-function extractThemeDefinitionLegacy(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-
-  const defineMatch = content.match(/defineTheme\s*\(\s*({[\s\S]*?})\s*\)/);
-  if (!defineMatch) {
-    const defaultMatch = content.match(/export\s+default\s+({[\s\S]*?});/);
-    if (!defaultMatch) {
-      throw new Error(
-        `Could not find defineTheme() call or default export in ${filePath}.\n` +
-          `Expected: defineTheme({ name: '...', tokens: {...} })`,
-      );
-    }
-
-    return eval(`(${defaultMatch[1]})`);
-  }
-
-  let objStr = defineMatch[1];
-  objStr = objStr.replace(/\s+as\s+const/g, '');
-
-  try {
-    return eval(`(${objStr})`);
-  } catch (e) {
-    const err = /** @type {Error} */ (e);
-    throw new Error(
-      `Failed to parse theme definition in ${filePath}: ${err.message}\n` +
-        `Make sure the defineTheme() argument is a plain object literal.`,
-      {cause: e},
-    );
   }
 }
 
@@ -2151,7 +2229,22 @@ function generateBuiltModule(
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +
-    serializeField('__axes', themeDef.__axes ?? {}, true);
+    serializeField('__axes', themeDef.__axes ?? {}, true) +
+    // An explicit empty list replaces an inherited one, so keep `[]`.
+    serializeField('iconVariants', themeDef.iconVariants, true) +
+    // Each inherited function entry keeps its defining theme's list. JSON
+    // drops `undefined`, so a defining theme with no list is written as `[]`,
+    // which no variant matches either.
+    serializeField(
+      '__iconEntryVariants',
+      themeDef.__iconEntryVariants &&
+        Object.fromEntries(
+          Object.entries(themeDef.__iconEntryVariants).map(([name, list]) => [
+            name,
+            list ?? [],
+          ]),
+        ),
+    );
 
   return `${iconImport}${iconDeclaration}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
@@ -2580,13 +2673,15 @@ async function themeBuildInternal(
   }
   await selectCore(cwd, {projectOnly: projectCore});
 
-  // Standalone builds only need interception when an older Core could erase
-  // adaptations. Family preparation always supplies the same recorder as its
+  // Standalone builds need interception when an older Core could erase
+  // adaptations, and when the theme's folder has no Core of its own: its
+  // imports of Core are then handed the Core this build selected, as family
+  // builds' are. Family preparation always supplies the same recorder as its
   // shared loader so exact authored parent identity stays CLI-private instead
   // of becoming a public DefinedTheme field.
   const interception =
     options.__familyInterception ??
-    (_generateAdaptationCSS
+    (_generateAdaptationCSS && themeFolderResolvesCore(filePath)
       ? undefined
       : interceptCore(_coreThemeModule, _coreRootModule));
 
