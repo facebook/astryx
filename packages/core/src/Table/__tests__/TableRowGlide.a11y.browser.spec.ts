@@ -222,6 +222,70 @@ test("an app's border on a row itself moves with the row, pinned cells included,
   expect(g - r, 'static place').toBeLessThan(30);
 });
 
+/** The rows of green pixels down one column of the page at `x`. */
+async function greenRowsAt(page: Page, x: number): Promise<number[]> {
+  const shot = await page.screenshot({
+    clip: {x, y: 0, width: 1, height: 720},
+    scale: 'css',
+  });
+  return page.evaluate(async b64 => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${b64}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    if (context == null) {
+      return [];
+    }
+    context.drawImage(image, 0, 0);
+    const data = context.getImageData(0, 0, 1, image.height).data;
+    const rows: number[] = [];
+    for (let y = 0; y < image.height; y += 1) {
+      const [r, g, b] = [data[y * 4], data[y * 4 + 1], data[y * 4 + 2]];
+      if (g - r > 60 && g - b > 30) {
+        rows.push(y);
+      }
+    }
+    return rows;
+  }, shot.toString('base64'));
+}
+
+test("a row's own border glides level across the pinned and scrolling cells", async ({
+  page,
+}) => {
+  await mount(page, 'gliding-rows', '&args=rowBorder:!true');
+  expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
+  const {pinnedX, unpinnedX} = await rowBottom(page, 3);
+  const pinned = await greenRowsAt(page, pinnedX);
+  const unpinned = await greenRowsAt(page, unpinnedX);
+  expect(pinned.length).toBeGreaterThan(0);
+  expect(unpinned.length).toBeGreaterThan(0);
+  // One line, at one height on both sides of the pinned edge.
+  expect(Math.abs(Math.min(...pinned) - Math.min(...unpinned))).toBeLessThan(
+    1.5,
+  );
+  expect(Math.abs(Math.max(...pinned) - Math.max(...unpinned))).toBeLessThan(
+    1.5,
+  );
+});
+
+for (const edge of ['tbody', 'top'] as const) {
+  test(`a divider the collapse takes from ${edge === 'tbody' ? "the body's bottom border" : "the next row's top border"} is drawn once while it glides`, async ({
+    page,
+  }) => {
+    await mount(page, 'gliding-rows', `&args=edgeBorder:${edge}`);
+    const {unpinnedX} = await rowBottom(page, 0);
+    expect((await greenRowsAt(page, unpinnedX)).length).toBeGreaterThan(0);
+    expect(await toggleAndHold(page, 0, 90)).toBeGreaterThan(0);
+    const rows = await greenRowsAt(page, unpinnedX);
+    // One 3 px line, moving: none left at the static place.
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThanOrEqual(4);
+  });
+}
+
 test('the chevron turns on the glide; column lines and Reduce Motion change at once', async ({
   page,
 }) => {

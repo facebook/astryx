@@ -68,7 +68,12 @@ export const glidingDividerStyles = stylex.create({
       content: {default: null, [CELL_LINE]: '""'},
       position: {default: null, [CELL_LINE]: 'absolute'},
       insetInline: {default: null, [CELL_LINE]: 0},
-      bottom: {default: null, [CELL_LINE]: 0},
+      // A row's own border is drawn below its box: the line sits that much
+      // lower, where the border rests.
+      bottom: {
+        default: null,
+        [CELL_LINE]: 'calc(-1 * var(--_table-row-glide-offset, 0px))',
+      },
       height: {default: null, [CELL_LINE]: 0},
       borderBottomWidth: {
         default: null,
@@ -110,6 +115,16 @@ export const glidingDividerStyles = stylex.create({
 
 /** The batch that marked a row last: only that batch unmarks it. */
 const markedBy = new WeakMap<Element, symbol>();
+/**
+ * A marked element's own inline border colors (bottom, or top for the row
+ * below and its cells), given back when it is unmarked.
+ */
+const inlineTopOf = new WeakMap<HTMLElement, string>();
+/** The edge sources a row hid when it was marked, given back at unmark. */
+const sourcesOf = new WeakMap<
+  Element,
+  {bottoms: HTMLElement[]; tops: HTMLElement[]}
+>();
 /** A marked cell's own inline border color, given back when it is unmarked. */
 const inlineColorOf = new WeakMap<HTMLElement, string>();
 
@@ -118,6 +133,40 @@ const inlineColorOf = new WeakMap<HTMLElement, string>();
  * already carrying one. Read where the glide reads the layout (`animate`'s
  * `beforeMove`), before anything starts moving.
  */
+/**
+ * The elements whose borders the collapse can take a row's divider from
+ * (`rowDivider.ts` collapsedBottom): the row's own bottom, the row below's
+ * top and its cells' tops, and at a section edge the row groups' borders.
+ */
+function edgeSourcesOf(row: HTMLElement): {
+  bottoms: HTMLElement[];
+  tops: HTMLElement[];
+} {
+  const bottoms: HTMLElement[] = [row];
+  const tops: HTMLElement[] = [];
+  const group = row.parentElement;
+  const next =
+    row.nextElementSibling ??
+    group?.nextElementSibling?.firstElementChild ??
+    null;
+  if (next instanceof HTMLElement) {
+    tops.push(next);
+    for (const cell of next.children) {
+      if (cell instanceof HTMLElement) {
+        tops.push(cell);
+      }
+    }
+  }
+  if (row.nextElementSibling == null && group instanceof HTMLElement) {
+    bottoms.push(group);
+    const nextGroup = group.nextElementSibling;
+    if (nextGroup instanceof HTMLElement) {
+      tops.push(nextGroup);
+    }
+  }
+  return {bottoms, tops};
+}
+
 export function rowEdge(row: Element): BottomEdge | null {
   if (row.hasAttribute(GLIDING_ATTRIBUTE) || row.lastElementChild == null) {
     return null;
@@ -179,11 +228,34 @@ export async function markGlidingRows(
       row.style.setProperty(GLIDE_DIVIDER_STYLE, edge.style);
       row.style.setProperty(GLIDE_DIVIDER_COLOR, edge.color);
       row.setAttribute(GLIDING_ATTRIBUTE, '');
-      // An app's border on the row itself (a winning `tr` border) is painted
-      // by the table at the row's static place: it goes transparent too, and
-      // the line carries it.
-      inlineColorOf.set(row, row.style.borderBottomColor);
-      row.style.borderBottomColor = 'transparent';
+      // Every edge the collapse could take the divider from is painted by the
+      // table at the row's static place: the row's own border, the row
+      // below's top and its cells' tops, and at a section edge the row
+      // groups' borders. They go transparent too, and the line carries the
+      // winner.
+      const sources = edgeSourcesOf(row);
+      sourcesOf.set(row, sources);
+      for (const element of sources.bottoms) {
+        if (!inlineColorOf.has(element)) {
+          inlineColorOf.set(element, element.style.borderBottomColor);
+          element.style.borderBottomColor = 'transparent';
+        }
+      }
+      for (const element of sources.tops) {
+        if (!inlineTopOf.has(element)) {
+          inlineTopOf.set(element, element.style.borderTopColor);
+          element.style.borderTopColor = 'transparent';
+        }
+      }
+      const ownWidth = Number.parseFloat(
+        getComputedStyle(row).borderBottomWidth,
+      );
+      // (Read before any write of this batch's next row: the row's own
+      // width does not change with its color.)
+      row.style.setProperty(
+        '--_table-row-glide-offset',
+        `${Number.isFinite(ownWidth) ? ownWidth : 0}px`,
+      );
       // The table's last row can glide a pixel farther than the rows above
       // it (its border collapses differently), so mid-glide it overlaps the
       // row above. Each moving row is its own layer; the last one stays
@@ -222,10 +294,21 @@ export async function markGlidingRows(
     markedBy.delete(row);
     row.removeAttribute(GLIDING_ATTRIBUTE);
     row.style.removeProperty('z-index');
-    if (inlineColorOf.has(row)) {
-      row.style.borderBottomColor = inlineColorOf.get(row) ?? '';
-      inlineColorOf.delete(row);
+    const {bottoms, tops} = sourcesOf.get(row) ?? {bottoms: [], tops: []};
+    sourcesOf.delete(row);
+    for (const element of bottoms) {
+      if (inlineColorOf.has(element)) {
+        element.style.borderBottomColor = inlineColorOf.get(element) ?? '';
+        inlineColorOf.delete(element);
+      }
     }
+    for (const element of tops) {
+      if (inlineTopOf.has(element)) {
+        element.style.borderTopColor = inlineTopOf.get(element) ?? '';
+        inlineTopOf.delete(element);
+      }
+    }
+    row.style.removeProperty('--_table-row-glide-offset');
     for (const cell of row.children) {
       cell.removeAttribute(CELL_ATTRIBUTE);
       if (cell instanceof HTMLElement && inlineColorOf.has(cell)) {

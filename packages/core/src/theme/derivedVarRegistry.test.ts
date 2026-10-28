@@ -95,6 +95,7 @@ const STRUCTURAL_VARS = new Set([
   '--_table-row-glide-width',
   '--_table-row-glide-style',
   '--_table-row-glide-color',
+  '--_table-row-glide-offset',
   '--separator-display',
   '--astryx-section-padding',
   // Private counterpart of the public token above: one ancestor Section's

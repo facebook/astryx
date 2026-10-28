@@ -223,15 +223,18 @@ const sevenOrders = manyOrders.slice(0, 7);
  * `dividers` control at "columns" or "grid"), the rows change at once. The
  * `themed` control sets a blue theme border and an app's red border on the
  * tbody's third row; `rowBorder` sets an app's 3 px green border on the
- * fourth row itself (`tr`), which glides with the row too.
+ * fourth row itself (`tr`), which glides with the row too; `edgeBorder`
+ * sets one on the tbody's bottom (`tbody`) or as the top of the fifth order's
+ * cells (`top`), each of which wins the collapse and glides with its row.
  */
 export const GlidingRows: StoryObj<{
   themed?: boolean;
   rowBorder?: boolean;
+  edgeBorder?: 'none' | 'tbody' | 'top';
   dividers?: 'rows' | 'columns' | 'grid';
 }> = {
-  args: {themed: false, rowBorder: false, dividers: 'rows'},
-  render: ({themed, rowBorder, dividers}) => {
+  args: {themed: false, rowBorder: false, edgeBorder: 'none', dividers: 'rows'},
+  render: ({themed, rowBorder, edgeBorder, dividers}) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const animatedLayout = useAnimatedLayout({containerRef});
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
@@ -260,6 +263,12 @@ export const GlidingRows: StoryObj<{
         )}
         {rowBorder && (
           <style>{`[data-testid="gliding-rows"] tbody tr:nth-child(4) { border-bottom: 3px solid rgb(22, 163, 74); }`}</style>
+        )}
+        {edgeBorder === 'tbody' && (
+          <style>{`[data-testid="gliding-rows"] tbody { border-bottom: 3px solid rgb(22, 163, 74); }`}</style>
+        )}
+        {edgeBorder === 'top' && (
+          <style>{`[data-testid="gliding-rows"] tr[data-expansion-key="${sevenOrders[4].id}"] td { border-top: 3px solid rgb(22, 163, 74); }`}</style>
         )}
         <Table
           data={sevenOrders}
