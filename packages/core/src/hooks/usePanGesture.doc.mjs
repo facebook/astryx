@@ -88,9 +88,25 @@ export const docs = {
           'Recognize taps or long presses with it; `useLongPress` and the components’ own press handling own those.',
       },
     ],
+    accessibility: [
+      {
+        name: 'Keyboard and assistive technology',
+        category: 'Keyboard',
+        criterion: '2.5.7 Dragging Movements',
+        description:
+          'A drag has no keyboard or assistive-technology path of its own: whatever the drag does needs another way to do it, such as buttons, arrow keys or a menu.',
+      },
+      {
+        name: 'Reduce Motion',
+        category: 'Content',
+        criterion: '2.3.3 Animation from Interactions',
+        description:
+          'The pan moves nothing itself, so Reduce Motion applies to the motion you drive from it: a settle or a throw goes to its end without travel when the person asks for reduced motion.',
+      },
+    ],
   },
   relatedComponents: ['BottomSheet', 'Carousel'],
-  relatedHooks: ['useLongPress'],
+  relatedHooks: ['useLongPress', 'createPanGesture'],
   importPath: '@astryxdesign/core/hooks',
   category: 'interaction',
 };
