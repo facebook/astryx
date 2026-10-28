@@ -278,4 +278,27 @@ describe('MobileNav', () => {
     expect(drawer.style.getPropertyValue('--x-width')).toBe('300px');
     expect(declaredValue(drawer, 'width')).toBe('var(--x-width)');
   });
+
+  it('lets the header row grow with a taller header instead of fixing its height', () => {
+    render(
+      <MobileNav
+        isOpen={true}
+        onOpenChange={() => {}}
+        header={
+          <div>
+            <strong>Workspace</strong>
+            <input aria-label="Search" />
+          </div>
+        }>
+        <a href="/one">First item</a>
+      </MobileNav>,
+    );
+    const row = screen.getByText('Workspace').closest('div')?.parentElement;
+    if (row == null) {
+      throw new Error('no header row');
+    }
+    // A bar high at least, never exactly a bar high.
+    expect(declaredValue(row, 'min-height')).not.toBeNull();
+    expect(declaredValue(row, 'height')).toBeNull();
+  });
 });
