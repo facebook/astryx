@@ -377,6 +377,39 @@ export default defineTheme({name: 'parity-inherit', extends: childTheme, tokens:
   });
 });
 
+describe('the node view never captures a registry binding', () => {
+  it.each(['entries', 'nodes', 'name', 'entry', 'Object'])(
+    'loads a built theme whose registry is imported as `%s`',
+    async binding => {
+      writeRegistry('icons.mjs', 'registry', {info: 'bound-info'});
+      write(
+        'bound.mjs',
+        `import {defineTheme} from '@astryxdesign/core/theme';
+import {registry as ${binding}} from './icons.mjs';
+export default defineTheme({
+  name: 'bound', tokens: {}, iconVariants: ['filled'], icons: ${binding},
+});
+`,
+      );
+      await buildAndCheck('bound.mjs');
+
+      const {bound} = inspect([
+        {
+          label: 'bound',
+          built: './bound.js#boundTheme',
+          runtime: './bound.mjs#default',
+        },
+      ]);
+      expect(bound.built).toEqual(bound.runtime);
+      expect(bound.built.icons).toEqual({info: 'bound-info:md:normal'});
+      expect(bound.built.requests['info|lg|filled']).toBe(
+        'bound-info:lg:filled',
+      );
+      expect(bound.reexportIsNodeView).toBe(true);
+    },
+  );
+});
+
 describe('a built theme types its icon variants', () => {
   it('lets a theme extending the built module type `variant` by its list', async () => {
     writeLineage();

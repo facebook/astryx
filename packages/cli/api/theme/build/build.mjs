@@ -2090,19 +2090,24 @@ function themeIconEntries(theme) {
  * The generated code that reads a registry's entries as React nodes, each
  * function entry read at `{size: 'md'}` like core's public reads. It never
  * passes the registry to a call, so a theme extending the built module can
- * still trace the registry through its `__icons` field.
+ * still trace the registry through its `__icons` field, and it reads no
+ * global, which a registry import could shadow. The registry expression runs
+ * where only `entriesName` and `nodesName` are declared, both names the
+ * registry imports cannot use.
  * @param {string} entries - Expression for the registry's entries.
+ * @param {string} entriesName - A reserved local name.
+ * @param {string} nodesName - A reserved local name.
  * @returns {string}
  */
-function iconNodesExpression(entries) {
+function iconNodesExpression(entries, entriesName, nodesName) {
   return `(() => {
-  const entries = ${entries};
-  const nodes = {};
-  for (const name in entries) {
-    const entry = entries[name];
-    nodes[name] = typeof entry === 'function' ? entry({size: 'md'}) : entry;
+  const ${entriesName} = ${entries};
+  const ${nodesName} = {};
+  for (const name in ${entriesName}) {
+    const entry = ${entriesName}[name];
+    ${nodesName}[name] = typeof entry === 'function' ? entry({size: 'md'}) : entry;
   }
-  return nodes;
+  return ${nodesName};
 })()`;
 }
 
@@ -2186,7 +2191,7 @@ function generateBuiltModule(
       : null;
   const iconNodesDeclaration =
     iconNodes && iconsExpression
-      ? `const ${iconNodes} = ${iconNodesExpression(iconsExpression)};\n`
+      ? `const ${iconNodes} = ${iconNodesExpression(iconsExpression, `${themeBinding}IconEntries`, iconNodes)};\n`
       : '';
   const iconsField = iconNodes
     ? `  icons: ${iconNodes},\n  __icons: ${iconsExpression},`
@@ -2830,19 +2835,24 @@ async function themeBuildInternal(
   // themeBuildFamily checks against the selected members' graph.
   const standaloneIcons = !options.__prepareFamily;
   // Function icon entries stay functions in the built module, beside a node
-  // view bound to `<theme>IconNodes`.
+  // view bound to `<theme>IconNodes` and computed from `<theme>IconEntries`.
   const functionEntries =
     hasFunctionIconEntry(themeIconEntries(themeDef)) ||
     hasFunctionIconEntry(themeIconEntries(themeDef.extends));
+  /** @param {boolean} reserveIconNodes */
+  const reservedNames = reserveIconNodes => [
+    `${toIdentifier(themeDef.name)}Theme`,
+    ...(reserveIconNodes
+      ? [
+          `${toIdentifier(themeDef.name)}ThemeIconNodes`,
+          `${toIdentifier(themeDef.name)}ThemeIconEntries`,
+        ]
+      : []),
+  ];
   const iconResolution = {
     readSource: (/** @type {string} */ file) => fs.readFileSync(file, 'utf8'),
     resolveModule: resolveThemeModule,
-    reservedNames: [
-      `${toIdentifier(themeDef.name)}Theme`,
-      ...(functionEntries
-        ? [`${toIdentifier(themeDef.name)}ThemeIconNodes`]
-        : []),
-    ],
+    reservedNames: reservedNames(functionEntries),
     functionEntries,
     rawInput: 'extends' in themeDef,
     hasIcons:
@@ -2974,12 +2984,7 @@ async function themeBuildInternal(
         ...iconResolution,
         hasIcons: true,
         functionEntries: resolvedFunctionEntries,
-        reservedNames: [
-          `${toIdentifier(themeDef.name)}Theme`,
-          ...(resolvedFunctionEntries
-            ? [`${toIdentifier(themeDef.name)}ThemeIconNodes`]
-            : []),
-        ],
+        reservedNames: reservedNames(resolvedFunctionEntries),
       });
     }
     // An opaque package base can legitimately have no icons. Its .icons
