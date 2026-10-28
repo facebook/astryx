@@ -691,6 +691,37 @@ describe('a copy laid outside its ancestors', () => {
     // What the host already passes is not written again.
     expect(swap!.copy.style.color).toBe('');
   });
+
+  it('carries a unitless line-height as its factor, not as pixels', () => {
+    const {handle, content} = setup();
+    const area = document.getElementById('area') as HTMLElement;
+    // The computed style says 18.85px; the typed style map says 1.45.
+    const real = window.getComputedStyle;
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element): CSSStyleDeclaration => {
+        const style = real(element);
+        const values: Record<string, string> =
+          element === content
+            ? {'line-height': '18.85px'}
+            : element === area
+              ? {'line-height': 'normal'}
+              : {};
+        return Object.assign(Object.create(style) as CSSStyleDeclaration, {
+          getPropertyValue: (name: string) => values[name] ?? '',
+          length: 0,
+        });
+      },
+    );
+    (content as unknown as {computedStyleMap: () => unknown}).computedStyleMap =
+      () => ({
+        get: (name: string) =>
+          name === 'line-height' ? {unit: 'number', value: 1.45} : undefined,
+      });
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host: area, copy: travel, incoming: []});
+    vi.restoreAllMocks();
+    expect(swap!.copy.style.lineHeight).toBe('1.45');
+  });
 });
 
 describe('ending a swap', () => {
