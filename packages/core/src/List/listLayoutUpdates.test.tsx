@@ -57,27 +57,33 @@ function rectOf(element: Element): DOMRect {
       ? 0
       : ROW;
   };
-  const rows = [...list.children];
-  const height = rows.reduce((sum, row) => sum + takes(row), 0);
-  if (element === list) {
-    return new DOMRect(0, 0, 400, height);
-  }
   if (element.parentElement === list) {
     // The rows before it, summed without copying the list (the linear-work
     // case below counts copies).
     let top = 0;
-    for (const row of rows) {
-      if (row === element) {
-        break;
-      }
+    for (
+      let row = list.firstElementChild;
+      row != null && row !== element;
+      row = row.nextElementSibling
+    ) {
       top += takes(row);
     }
     return new DOMRect(0, top, 400, ROW);
   }
-  if (element.id === 'after') {
-    return new DOMRect(0, height, 400, ROW);
+  if (element !== list && element.id !== 'after') {
+    return new DOMRect(0, 0, 0, 0);
   }
-  return new DOMRect(0, 0, 0, 0);
+  let height = 0;
+  for (
+    let row = list.firstElementChild;
+    row != null;
+    row = row.nextElementSibling
+  ) {
+    height += takes(row);
+  }
+  return element === list
+    ? new DOMRect(0, 0, 400, height)
+    : new DOMRect(0, height, 400, ROW);
 }
 
 beforeEach(() => {
@@ -344,6 +350,72 @@ describe('List row updates through animatedLayout (component:List FR12)', () => 
       spy.mockRestore();
     }
     expect(copies.length).toBeLessThan(3);
+  });
+
+  describe('a long list (`architecture:react-component-runtime` INV12)', () => {
+    /** The places of rows read for one insert near the top of `length` rows. */
+    async function rowReads(length: number): Promise<number> {
+      const labels = Array.from({length}, (_, index) => `Row ${index}`);
+      const {unmount} = render(<Demo initial={labels} />);
+      let reads = 0;
+      const stub = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        if (this.tagName === 'LI') {
+          reads += 1;
+        }
+        return stub.call(this);
+      };
+      try {
+        await change([labels[0], 'New', ...labels.slice(1)]);
+      } finally {
+        Element.prototype.getBoundingClientRect = stub;
+      }
+      unmount();
+      return reads;
+    }
+
+    it('one update reads the places of the rows near the visible part only: as many for 300 rows as for 150', async () => {
+      const short = await rowReads(150);
+      const long = await rowReads(300);
+      expect(short).toBeLessThan(300);
+      expect(long - short).toBeLessThan(20);
+    });
+
+    it('the rows in view below an insert glide from their old places; a row far below does not move', async () => {
+      const labels = Array.from({length: 300}, (_, index) => `Row ${index}`);
+      render(<Demo initial={labels} />);
+      await change([labels[0], 'New', ...labels.slice(1)]);
+      const moved = glides();
+      expect(moved.get('Row 1')).toBe(-ROW);
+      expect(moved.get('Row 10')).toBe(-ROW);
+      expect(moved.has('Row 200')).toBe(false);
+      expect(entrances()).toEqual(['New']);
+    });
+
+    it('a removal near the top finds the rows that cross in one pass, not by comparing every moved row with every other', async () => {
+      const labels = Array.from({length: 300}, (_, index) => `Row ${index}`);
+      render(<Demo initial={labels} />);
+      // Every check a predicate makes while the change is played.
+      let checks = 0;
+      const some = Array.prototype.some;
+      vi.spyOn(Array.prototype, 'some').mockImplementation(function (
+        this: unknown[],
+        predicate,
+        thisArg,
+      ) {
+        return some.call(
+          this,
+          (...args): boolean => {
+            checks += 1;
+            return Boolean(predicate.apply(thisArg, args));
+          },
+          thisArg,
+        );
+      });
+      await change(labels.filter(label => label !== 'Row 1'));
+      vi.restoreAllMocks();
+      expect(checks).toBeLessThan(labels.length);
+    });
   });
 
   it('a re-render with the same rows in the same order plays nothing', async () => {

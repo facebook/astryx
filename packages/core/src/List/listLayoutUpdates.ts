@@ -15,13 +15,16 @@
  * How it runs, through the one size-change module
  * (`architecture:react-component-runtime` INV12):
  * - Before a commit that changes the list's rows (LayoutChangeSnapshot calls
- *   `measure`, before React changes the DOM), it reports the list itself, so
- *   the content after it glides and any row inside it can exit, and its first
- *   and last rows. The module's walk takes the siblings on both sides of a
- *   change, so each of those two carries the other and every row between
- *   them from its old place: a row inserted above the first, or a row moved
- *   to the top, included. (A one-row list has one such row, which an insert
- *   above it moves at once.)
+ *   `measure`, before React changes the DOM), it reports each row in view
+ *   (any of them may leave, and the module exits only what it measured) and
+ *   the last row (so the content after the list glides when no row is in
+ *   view). The module's walk takes the siblings on both sides of each, up to
+ *   its band around the visible part, so the rows near the view and the
+ *   content after the list glide from their old places, and a long list's
+ *   rows far from the view are never read: the rows in view are found by
+ *   halving, since rows sit in order down the list. (When only one row is
+ *   in view and the last row is far from it, no other reported row's walk
+ *   reaches it, so an insert above it moves it at once.)
  * - After the commit, rows are matched by their `itemKey`
  *   (`spec:AST-103` DEC-4). A row that left comes back where it was and
  *   exits: in place, giving up its space, inert and hidden from assistive
@@ -85,19 +88,57 @@ const REORDERING_ATTRIBUTE = 'data-astryx-reordering';
 /** Moves under half a pixel are layout noise, not updates. */
 const MIN_MOVE_PX = 0.5;
 
-/** A row before the commit: where it was. */
-interface RowBefore {
-  readonly element: HTMLElement;
-  readonly top: number;
-}
-
 /** What `measure` saw, for the layout effect of the same commit. */
 interface Measured {
-  readonly rows: ReadonlyMap<string, RowBefore>;
+  /** Every keyed row, by its key, in order. */
+  readonly rows: ReadonlyMap<string, HTMLElement>;
   readonly order: ReadonlyArray<string>;
+  /**
+   * Where each row near the visible part was (its top), the indices from
+   * `near[0]` to `near[1]` of `order`: only those can glide in view.
+   */
+  readonly tops: ReadonlyMap<string, number>;
+  readonly near: readonly [number, number] | null;
+  /** The rows reported to the module, the only ones whose exit it holds. */
+  readonly reported: ReadonlySet<HTMLElement>;
   readonly changes: ReadonlyArray<LayoutChange>;
   /** Rows whose translation moved onto their children for the commit. */
   readonly settled: ReadonlyArray<Settled>;
+}
+
+/**
+ * The first and last indices of `rows` whose box meets the vertical span
+ * from `start` to `end` (viewport pixels), or null when none does. Rows sit
+ * in order down the list, so halving finds them reading a few rows' places,
+ * never every row's (`architecture:react-component-runtime` INV12).
+ */
+function rowsMeeting(
+  rows: ReadonlyArray<HTMLElement>,
+  start: number,
+  end: number,
+): readonly [number, number] | null {
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (rows[middle].getBoundingClientRect().bottom > start) {
+      high = middle;
+    } else {
+      low = middle + 1;
+    }
+  }
+  const first = low;
+  high = rows.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (rows[middle].getBoundingClientRect().top < end) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  const last = low - 1;
+  return first <= last ? [first, last] : null;
 }
 
 /**
@@ -277,39 +318,47 @@ function unsettle({prior}: Settled): void {
 /**
  * Marks each row that glides up across a row gliding down, for the length of
  * its glide (read once the module has started the glides, after the
- * commit's layout effects).
+ * commit's layout effects). One pass over the rows near the visible part in
+ * their old order, keeping the lowest place any row gliding down so far
+ * reaches: a row gliding up crosses one when that place lies below where it
+ * ends.
  */
 function markCrossings(
-  before: ReadonlyMap<string, RowBefore>,
+  measured: Measured,
   now: ReadonlyMap<string, HTMLElement>,
 ): void {
-  const moves: {element: HTMLElement; from: number; to: number}[] = [];
-  for (const [key, element] of now) {
-    const row = before.get(key);
-    if (row == null) {
+  const {near, order, tops} = measured;
+  if (near == null) {
+    return;
+  }
+  const travelling: HTMLElement[] = [];
+  let lowestDown = -Infinity;
+  for (let index = near[0]; index <= near[1]; index++) {
+    const key = order[index];
+    const from = tops.get(key);
+    const element = now.get(key);
+    if (from == null || element == null) {
       continue;
     }
     const to = element.getBoundingClientRect().top;
-    if (Math.abs(to - row.top) >= MIN_MOVE_PX) {
-      moves.push({element, from: row.top, to});
+    if (Math.abs(to - from) < MIN_MOVE_PX) {
+      continue;
+    }
+    if (to > from) {
+      lowestDown = Math.max(lowestDown, to);
+    } else if (lowestDown > to) {
+      travelling.push(element);
     }
   }
-  const travelling = moves.filter(
-    up =>
-      up.to < up.from &&
-      moves.some(
-        down => down.to > down.from && down.from < up.from && down.to > up.to,
-      ),
-  );
   if (travelling.length === 0) {
     return;
   }
-  for (const {element} of travelling) {
+  for (const element of travelling) {
     element.setAttribute(TRAVELLING_ATTRIBUTE, '');
   }
   // After the module's own microtask has started the glides.
   queueMicrotask(() => {
-    for (const {element} of travelling) {
+    for (const element of travelling) {
       const glide =
         typeof element.getAnimations === 'function'
           ? element.getAnimations().at(-1)
@@ -348,24 +397,37 @@ export function useListLayoutUpdates(
     if (rows.size === 0) {
       return;
     }
-    const ordered = [...rows];
+    const order = [...rows.keys()];
+    const elements = [...rows.values()];
+    const height = list.ownerDocument.defaultView?.innerHeight ?? 0;
+    // The rows near the visible part (a viewport's height above and below
+    // it): only they can glide in view, so only their places are read.
+    const near = rowsMeeting(elements, -height, 2 * height);
     const settled: Settled[] = [];
-    for (const [, element] of ordered) {
-      const done = settleTranslation(element);
-      if (done != null) {
-        settled.push(done);
+    const tops = new Map<string, number>();
+    if (near != null) {
+      for (let index = near[0]; index <= near[1]; index++) {
+        const done = settleTranslation(elements[index]);
+        if (done != null) {
+          settled.push(done);
+        }
+      }
+      for (let index = near[0]; index <= near[1]; index++) {
+        tops.set(order[index], elements[index].getBoundingClientRect().top);
       }
     }
-    const before = new Map<string, RowBefore>();
-    for (const [key, element] of ordered) {
-      before.set(key, {element, top: element.getBoundingClientRect().top});
+    // Each row in view (any of them may leave, and the module exits only a
+    // change it measured), and the last row, so the content after the list
+    // glides when no row is in view.
+    const shown = rowsMeeting(elements, 0, height);
+    const targets: HTMLElement[] = [];
+    if (shown != null) {
+      for (let index = shown[0]; index <= shown[1]; index++) {
+        targets.push(elements[index]);
+      }
     }
-    // The list (the content after it glides, and any row inside it can
-    // exit), and its first and last rows, each of which carries the other
-    // and every row between them.
-    const targets: HTMLElement[] = [list, ordered[0][1]];
-    if (ordered.length > 1) {
-      targets.push(ordered[ordered.length - 1][1]);
+    if (shown == null || shown[1] !== elements.length - 1) {
+      targets.push(elements[elements.length - 1]);
     }
     const changes = targets.map(target => {
       const change = reportLayoutChange(animatedLayout, () => target);
@@ -373,8 +435,11 @@ export function useListLayoutUpdates(
       return change;
     });
     measuredRef.current = {
-      rows: before,
-      order: ordered.map(([key]) => key),
+      rows,
+      order,
+      tops,
+      near,
+      reported: new Set(targets),
       changes,
       settled,
     };
@@ -427,11 +492,13 @@ export function useListLayoutUpdates(
         anchor = staying;
         continue;
       }
-      const row = measured.rows.get(key);
-      if (row != null) {
-        putBack(row.element, list, anchor);
-        leaving.push(row.element);
-        anchor = row.element;
+      // Only a row the module measured can exit; any other went with the
+      // commit (it was out of view).
+      const element = measured.rows.get(key);
+      if (element != null && measured.reported.has(element)) {
+        putBack(element, list, anchor);
+        leaving.push(element);
+        anchor = element;
       }
     }
     for (const change of measured.changes) {
@@ -444,12 +511,21 @@ export function useListLayoutUpdates(
         element.remove();
       }
     }
-    for (const [key, element] of now) {
-      if (!measured.rows.has(key)) {
-        playLayoutChange(animatedLayout, element);
+    // A row that appeared in view enters (the module plays an entrance only
+    // in view): the rows in view are found by halving again.
+    const current = [...now.values()];
+    const height = list.ownerDocument.defaultView?.innerHeight ?? 0;
+    const shown = rowsMeeting(current, 0, height);
+    if (shown != null) {
+      for (let index = shown[0]; index <= shown[1]; index++) {
+        const element = current[index];
+        const key = element.getAttribute(ITEM_KEY_ATTRIBUTE);
+        if (key != null && !measured.rows.has(key)) {
+          playLayoutChange(animatedLayout, element);
+        }
       }
     }
-    markCrossings(measured.rows, now);
+    markCrossings(measured, now);
   });
 
   return measure;
