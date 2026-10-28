@@ -195,8 +195,8 @@ const styles = stylex.create({
   },
   // After `fallback` on a lone Avatar: in forced colors its initials and
   // default icon take the color around them, which the browser forces to
-  // CanvasText, so a control that paints itself disabled (GrayText,
-  // `spec:AST-085` FR6) or selected (HighlightText) carries them with it; an
+  // CanvasText, so a control that paints itself disabled (GrayText) or
+  // selected (HighlightText) carries them with it; an
   // authored color would be forced to CanvasText whatever the control shows.
   // A grouped face keeps it: its ring's opaque fill is forced to Canvas, so
   // only CanvasText is sure to read on it.

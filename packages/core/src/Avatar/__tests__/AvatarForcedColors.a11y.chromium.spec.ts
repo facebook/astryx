@@ -2,15 +2,16 @@
 // @pr-a11y scope ^packages/core/src/Avatar/ ^apps/storybook/stories/Avatar
 
 /**
- * @file AvatarForcedColors.a11y.browser.spec.ts
+ * @file AvatarForcedColors.a11y.chromium.spec.ts
  * @input The built Avatar "Initials Fallback" story in real Chromium, with
  *   forced colors emulated and without
  * @output Browser evidence that, in forced colors, a lone Avatar's initials
  *   take the color around them: CanvasText by default, GrayText inside a control
- *   that paints itself disabled (`spec:AST-085` FR6), HighlightText inside a
+ *   that paints itself disabled, HighlightText inside a
  *   selected one, while grouped faces keep CanvasText on the group's ring;
  *   outside forced colors they keep the theme's color
- * @position Regression proof for Avatar's fallback color
+ * @position Regression proof for Avatar's fallback color (Chromium only:
+ *   Playwright's WebKit matches the forced-colors query but forces nothing)
  */
 
 import {expect, test, type Page} from '@playwright/test';
