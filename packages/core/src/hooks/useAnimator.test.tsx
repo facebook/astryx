@@ -5,7 +5,7 @@
  * @input vitest (jsdom), React Testing Library, the public hook and factory
  * @output Checks `spec:AST-107` FR3 and FR6 for the hook: a stable animator
  *   and ref, the factory's handle and nothing more, an animator used before
- *   its ref attaches (its values reach the element on attach), an unmount
+ *   its ref attaches (it does nothing and resolves at once), an unmount
  *   that keeps the values and a remount that resumes, no re-render while
  *   animating, and a hook module with no behavior of its own
  * @position Testing; validates useAnimator.ts
