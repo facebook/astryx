@@ -27,6 +27,7 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {pressOnItemsOnly} from '../hooks/menuPressOnItems';
 import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useListFocus} from '../hooks/useListFocus';
@@ -592,6 +593,10 @@ export function TopNavMenu({
           aria-label={label}
           {...contentProps}
           {...menuPress.menuProps}
+          onPointerDown={pressOnItemsOnly(
+            menuPress.menuProps.onPointerDown,
+            '[role="menuitem"]',
+          )}
           // After the contentProps spread so the full APG composition (roving
           // tabindex + typeahead + Enter/Space activation) replaces the hover
           // hook's basic arrow-key handler.

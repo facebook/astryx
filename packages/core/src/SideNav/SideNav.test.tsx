@@ -27,6 +27,7 @@ import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {Button} from '../Button';
 import {SideNav} from './SideNav';
 import {__resetMenuPressForTest} from '../hooks/useMenuPress';
+import {expectNativeLinkClicks} from '../hooks/__tests__/menuLinkClicks';
 import {NavHeadingMenu, NavHeadingMenuItem} from '../NavMenu';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
@@ -469,6 +470,26 @@ describe('SideNavHeading', () => {
         fireEvent.click(link, {detail: 1});
         expect(onLink).toHaveBeenCalledTimes(1);
       }
+    });
+
+    it('leaves a Ctrl-, Cmd-, Shift- or middle click on a link item in its menu to the browser', async () => {
+      __resetMenuPressForTest();
+      const user = userEvent.setup();
+      render(
+        <SideNavHeading
+          heading="My App"
+          menu={
+            <NavHeadingMenu>
+              <NavHeadingMenuItem label="Docs" href="/docs" />
+              <NavHeadingMenuItem label="Status" href="/status" />
+            </NavHeadingMenu>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expectNativeLinkClicks(
+        screen.getByRole('menuitem', {name: 'Docs', hidden: true}),
+      );
     });
 
     it('closes when a mouse pressed on a NavHeadingMenu item is released outside the menu (useMenuPress FR3)', async () => {

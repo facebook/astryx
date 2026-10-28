@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen, act} from '@testing-library/react';
 import {__resetMenuPressForTest} from '../hooks/useMenuPress';
+import {expectNativeLinkClicks} from '../hooks/__tests__/menuLinkClicks';
 import {NavHeadingMenu, NavHeadingMenuItem} from '../NavMenu';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
@@ -354,6 +355,26 @@ describe('TopNavHeading', () => {
         expect(onSecond).toHaveBeenCalledTimes(1);
         expect(onFirst).not.toHaveBeenCalled();
       }
+    });
+
+    it('leaves a Ctrl-, Cmd-, Shift- or middle click on a link item in its product menu to the browser', async () => {
+      __resetMenuPressForTest();
+      const user = userEvent.setup();
+      render(
+        <TopNavHeading
+          heading="My App"
+          menu={
+            <NavHeadingMenu>
+              <NavHeadingMenuItem label="Docs" href="/docs" />
+              <NavHeadingMenuItem label="Status" href="/status" />
+            </NavHeadingMenu>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expectNativeLinkClicks(
+        screen.getByRole('menuitem', {name: 'Docs', hidden: true}),
+      );
     });
 
     it('after a pointer pick, returns focus to the trigger without a keyboard ring (interaction-modality INV1)', async () => {

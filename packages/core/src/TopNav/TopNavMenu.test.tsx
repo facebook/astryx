@@ -17,6 +17,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {TopNavRenderContext} from './TopNavRenderContext';
 import {TopNavMenu} from './TopNavMenu';
 import {__resetMenuPressForTest} from '../hooks/useMenuPress';
+import {expectNativeLinkClicks} from '../hooks/__tests__/menuLinkClicks';
 
 const mockItems = [
   {
@@ -441,6 +442,19 @@ describe('TopNavMenu as an action group (family:action-groups)', () => {
     );
     expect(item(/Docs/)).toHaveAttribute('draggable', 'false');
     expect(item(/Status/)).not.toHaveAttribute('draggable');
+  });
+
+  it('leaves a Ctrl-, Cmd-, Shift- or middle click on a link item to the browser', () => {
+    render(
+      <TopNavMenu
+        label="Products"
+        items={[
+          {title: 'Docs', href: '/docs'},
+          {title: 'Status', href: '/status'},
+        ]}
+      />,
+    );
+    expectNativeLinkClicks(item(/Docs/));
   });
 
   it('acts on the item a press lifts on, once, after sliding from another (FR1, FR2, FR5)', () => {

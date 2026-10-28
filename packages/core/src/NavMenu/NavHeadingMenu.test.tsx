@@ -9,6 +9,7 @@ import {NavHeadingMenu} from './NavHeadingMenu';
 import {NavHeadingMenuItem} from './NavHeadingMenuItem';
 import {NavHeadingCloseContext} from './NavMenuContext';
 import {__resetMenuPressForTest} from '../hooks/useMenuPress';
+import {expectNativeLinkClicks} from '../hooks/__tests__/menuLinkClicks';
 
 describe('NavHeadingMenu', () => {
   it('renders with role="menu"', () => {
@@ -672,6 +673,16 @@ describe('NavHeadingMenu as an action group (family:action-groups)', () => {
     );
     expect(item('Docs')).toHaveAttribute('draggable', 'false');
     expect(item('Sign out')).not.toHaveAttribute('draggable');
+  });
+
+  it('leaves a Ctrl-, Cmd-, Shift- or middle click on a link item to the browser', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Docs" href="/docs" />
+        <NavHeadingMenuItem label="Status" href="/status" />
+      </NavHeadingMenu>,
+    );
+    expectNativeLinkClicks(item('Docs'));
   });
 
   it('acts on the item a finger lifts on, once, after sliding from another (FR1, FR2)', () => {
