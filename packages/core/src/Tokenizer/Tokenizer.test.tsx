@@ -762,6 +762,32 @@ describe('Tokenizer', () => {
       );
     });
 
+    it('reopens the Create row below minQueryLength with ArrowDown after Escape', async () => {
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: vi.fn(() => []), bootstrap: () => []}}
+          value={[]}
+          onChange={vi.fn()}
+          hasCreate
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      input.focus();
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      expect(screen.queryByText('Create "QA"')).toBeInTheDocument();
+      fireEvent.keyDown(input, {key: 'Escape'});
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByText('Create "QA"')).toBeInTheDocument();
+    });
+
     it('offers no menu below the threshold without hasCreate', async () => {
       // The negative control for the case above: with nothing to derive from
       // the text, a below-threshold query still opens nothing, and never

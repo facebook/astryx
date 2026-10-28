@@ -631,6 +631,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const dismissedGenRef = useRef(-1);
   // The query as typed, readable from a search's continuation.
   const queryRef = useRef('');
+  // The generation of the search or bootstrap still waiting on its source,
+  // or -1. A dismissal that cancels the source abandons it.
+  const pendingGenRef = useRef(-1);
 
   // Results still arriving from a replaced source must not land in the new
   // one's menu.
@@ -672,13 +675,29 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     onOpenChange?.(true);
   }, [onOpenChange]);
 
+  // A dismissal (Escape, an outside click, Tab, or focus leaving) holds: a
+  // search still waiting on its debounce never starts, and pending work
+  // settles without reopening the popup or keeping the field busy.
+  const holdDismissal = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+      // The results shown were for the query before this one.
+      searchGenRef.current++;
+    }
+    if (searchSource.cancel) {
+      searchSource.cancel();
+      pendingGenRef.current = -1;
+    }
+    dismissedGenRef.current = searchGenRef.current;
+    setLoading(false);
+  }, [searchSource, setLoading]);
+
   const handleLayerHide = useCallback(() => {
     onOpenChange?.(false);
     setHighlightedIndex(-1);
-    searchSource.cancel?.();
-    dismissedGenRef.current = searchGenRef.current;
-    setLoading(false);
-  }, [onOpenChange, searchSource, setLoading]);
+    holdDismissal();
+  }, [onOpenChange, holdDismissal]);
 
   const popover = usePopover({
     onShow: handleLayerShow,
@@ -725,6 +744,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
+      pendingGenRef.current = gen;
       setLoading(true);
       setHasSearched(true);
       try {
@@ -772,6 +792,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setResults([]);
         setHighlightedIndex(-1);
       } finally {
+        if (pendingGenRef.current === gen) {
+          pendingGenRef.current = -1;
+        }
         if (searchGenRef.current === gen) {
           setLoading(false);
         }
@@ -833,6 +856,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       return;
     }
 
+    pendingGenRef.current = gen;
     setLoading(true);
     try {
       applyBootstrapResults(await bootstrapResult, gen);
@@ -841,6 +865,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setResults([]);
       }
     } finally {
+      if (pendingGenRef.current === gen) {
+        pendingGenRef.current = -1;
+      }
       if (searchGenRef.current === gen) {
         setLoading(false);
       }
@@ -866,7 +893,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         (newQuery.length === 0 && !hasEntriesOnFocus) ||
         isBelowMinQueryLength(newQuery, minQueryLength)
       ) {
-        searchGenRef.current++;
+        resultsGenRef.current = ++searchGenRef.current;
         searchSource.cancel?.();
         // A query too short to search can still carry entries derived from
         // the text itself. `hasSearched` stays false either way, so the menu
@@ -891,6 +918,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
 
       const triggerSearch = () => {
+        searchTimeoutRef.current = null;
         if (newQuery.length > 0) {
           void performSearch(newQuery);
         } else if (hasEntriesOnFocus) {
@@ -1031,7 +1059,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // input, so this only closes on a genuine focus-out of the whole field.
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!popover.isOpen && !loadingRef.current) {
+      if (
+        !popover.isOpen &&
+        !loadingRef.current &&
+        searchTimeoutRef.current == null
+      ) {
         return;
       }
       const next = e.relatedTarget as Node | null;
@@ -1048,11 +1080,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
       // Focus left before pending work opened the popup; it must not open
       // it afterwards.
-      searchSource.cancel?.();
-      dismissedGenRef.current = searchGenRef.current;
-      setLoading(false);
+      holdDismissal();
     },
-    [popover, anchorRef, searchSource, setLoading],
+    [popover, anchorRef, holdDismissal],
   );
 
   // Keyboard navigation
@@ -1085,14 +1115,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           ) {
             popover.show();
             setHighlightedIndex(0);
-          } else if (
-            hasEntriesOnFocus &&
-            // A below-threshold query was never searched; falling back to the
-            // bootstrap entries here would open a menu of suggestions that
-            // ignore what the user has already typed.
-            !isBelowMinQueryLength(query, minQueryLength)
-          ) {
-            void performBootstrap();
+          } else if (pendingGenRef.current === searchGenRef.current) {
+            // The current query is still searching: its answer opens the
+            // popup, so the dismissal no longer holds and the field is busy.
+            dismissedGenRef.current = -1;
+            setLoading(true);
+          } else if (searchTimeoutRef.current != null) {
+            // A typed query's search is about to start and opens the popup.
+          } else if (query.length === 0) {
+            // Suggestions for an empty field only: a typed query is searched
+            // instead, never answered with entries that ignore it.
+            if (hasEntriesOnFocus) {
+              void performBootstrap();
+            }
+          } else if (!isBelowMinQueryLength(query, minQueryLength)) {
+            void performSearch(query);
           }
         }
         return;
@@ -1160,6 +1197,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       query,
       minQueryLength,
       performBootstrap,
+      performSearch,
+      setLoading,
       externalOnKeyDown,
     ],
   );

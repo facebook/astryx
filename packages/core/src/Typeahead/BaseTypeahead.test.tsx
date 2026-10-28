@@ -515,6 +515,84 @@ describe('BaseTypeahead pending work after a dismissal', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('never starts a search that was still waiting on its debounce at Escape, and searches on ArrowDown', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    try {
+      const {input, search, answer} = renderPending({debounceMs: 200});
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      await act(async () => vi.advanceTimersByTime(200));
+      await answer('a', ['Alpha']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.change(input, {target: {value: 'al'}});
+      fireEvent.keyDown(input, {key: 'Escape'});
+      await act(async () => vi.advanceTimersByTime(400));
+      expect(search).not.toHaveBeenCalledWith('al');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(input).not.toHaveAttribute('aria-busy');
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      await answer('al', ['Alpine']);
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: 'Alpine', hidden: true}),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never starts a search that was still waiting on its debounce when focus left', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    try {
+      const {input, search} = renderPending({debounceMs: 200});
+      input.focus();
+      fireEvent.change(input, {target: {value: 'a'}});
+      fireEvent.blur(input, {
+        relatedTarget: screen.getByRole('button', {name: 'Elsewhere'}),
+      });
+      await act(async () => vi.advanceTimersByTime(400));
+      expect(search).not.toHaveBeenCalled();
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(input).not.toHaveAttribute('aria-busy');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reopens with the typed query’s answer, not the empty-field suggestions, on ArrowDown while that query is still searching', async () => {
+    const pending = pendingSource();
+    const bootstrap = vi.fn(() => [{id: 'Suggested', label: 'Suggested'}]);
+    render(
+      <BaseTypeahead
+        searchSource={{...pending.source, bootstrap}}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    await openWithPendingQuery(input, pending.answer);
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).not.toHaveAttribute('aria-busy');
+    bootstrap.mockClear();
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    // The search is still running: busy again, and no suggestions instead.
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    expect(bootstrap).not.toHaveBeenCalled();
+
+    await pending.answer('al', ['Alpine']);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('option', {name: 'Alpine', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', {name: 'Suggested', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
   it('does not keep or show a late answer while a changed query waits on its debounce', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     try {
