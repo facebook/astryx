@@ -51,9 +51,10 @@
  *   scroll) that begins only downward on a photo at its fitted size (Photos'
  *   drag to dismiss): the photo's centre follows the pointer and it shrinks
  *   by the travel (zoomMedia.dismiss); a release moving up or back at the
- *   start springs back on the cancel springs, any other sends it on down on
- *   the dismissal's spring (no thumbnail to return to yet) and reports it
- *   once it has left. A dismissed photo is not caught.
+ *   start springs back on the cancel springs, any other sends it into its
+ *   thumbnail when `target` gives one, or else on down, on the dismissal's
+ *   springs, and reports it once it has left. A dismissed photo is not
+ *   caught.
  * The stage's `touch-action` is the caller's (none while zoom is on), since
  * a disabled recognizer would still claim it.
  *
