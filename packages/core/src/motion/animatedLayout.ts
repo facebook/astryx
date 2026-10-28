@@ -1224,56 +1224,6 @@ function placeOf(
 }
 
 /**
- * Whether a flex-row item is what makes its row as tall as it is: its
- * parent's content box is no taller than the item, and every other item in
- * flow is shorter.
- */
-function setsRowHeight(element: HTMLElement): boolean {
-  const parent = element.parentElement;
-  const view = element.ownerDocument.defaultView;
-  if (parent == null || view == null) {
-    return false;
-  }
-  const outerHeight = (box: Element) => {
-    const style = view.getComputedStyle(box);
-    return (
-      box.getBoundingClientRect().height +
-      (Number.parseFloat(style.marginBlockStart) || 0) +
-      (Number.parseFloat(style.marginBlockEnd) || 0)
-    );
-  };
-  const parentStyle = view.getComputedStyle(parent);
-  const content =
-    parent.getBoundingClientRect().height -
-    (Number.parseFloat(parentStyle.paddingBlockStart) || 0) -
-    (Number.parseFloat(parentStyle.paddingBlockEnd) || 0) -
-    (Number.parseFloat(parentStyle.borderBlockStartWidth) || 0) -
-    (Number.parseFloat(parentStyle.borderBlockEndWidth) || 0);
-  // The row's other items, reached through the element's siblings.
-  const others: Element[] = [];
-  for (
-    let sibling = element.previousElementSibling;
-    sibling != null;
-    sibling = sibling.previousElementSibling
-  ) {
-    others.push(sibling);
-  }
-  for (
-    let sibling = element.nextElementSibling;
-    sibling != null;
-    sibling = sibling.nextElementSibling
-  ) {
-    others.push(sibling);
-  }
-  const inFlow = others.filter(other => {
-    const {position} = view.getComputedStyle(other);
-    return position !== 'absolute' && position !== 'fixed';
-  });
-  const tallestOther = Math.max(0, ...inFlow.map(outerHeight));
-  return outerHeight(element) >= content - 0.5 && tallestOther < content - 0.5;
-}
-
-/**
  * Keeps `element` where it is, in flow (so it scrolls and clips with its
  * container), while the content after it takes the place it takes once the
  * element is hidden: a negative end margin measured against that content,
@@ -1293,12 +1243,6 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const rtl = view?.getComputedStyle(element).direction === 'rtl';
   const property = isRow ? 'margin-inline-end' : 'margin-block-end';
   const size = isRow ? element.offsetWidth : element.offsetHeight;
-  // A flex-row item that sets its row's height frees no block space with an
-  // inline margin: the row would keep its height through the exit, then
-  // jump, whatever follows it.
-  if (isRow && setsRowHeight(element)) {
-    return false;
-  }
   const next = nextInFlow(element, area);
   if (next == null) {
     // Nothing after it in the area to land anywhere.

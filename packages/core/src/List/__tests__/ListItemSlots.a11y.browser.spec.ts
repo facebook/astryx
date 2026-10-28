@@ -135,7 +135,7 @@ test('a remove button replaced by Delete swaps in place, and its focus goes to t
   await expect(page.getByRole('button', {name: 'Delete'})).toBeVisible();
 });
 
-test('a leaving control is inert and out of the accessibility tree as its exit starts', async ({
+test('a leaving control plays out where it was, inert and out of the accessibility tree as its exit starts', async ({
   page,
 }) => {
   await mount(page);
@@ -143,23 +143,27 @@ test('a leaving control is inert and out of the accessibility tree as its exit s
   await page.addStyleTag({content: '#storybook-root li { min-height: 72px; }'});
   await page.getByRole('button', {name: 'Edit'}).click();
   await page.waitForTimeout(800);
-  const played = await clickAndRead(page, 'Done');
-  // The leaving control conceals in place (an exit, not a removal).
-  expect(
-    played.some(
-      entry => entry.target === 'copy' && entry.first.clipPath != null,
+  const before = await page.evaluate(() =>
+    [...document.querySelectorAll('li [data-astryx-item-slot="end"]')].map(
+      element => Math.round(element.getBoundingClientRect().left),
     ),
-  ).toBe(true);
+  );
+  const played = await clickAndRead(page, 'Done');
+  // The leaving controls fade out as inert copies.
+  expect(played.some(entry => entry.target === 'copy')).toBe(true);
   const leaving = await page.evaluate(() =>
     [...document.querySelectorAll('li [data-astryx-item-slot="end"]')].map(
       element => ({
+        left: Math.round(element.getBoundingClientRect().left),
         isInert: (element as HTMLElement).inert,
         isHidden: element.getAttribute('aria-hidden') === 'true',
       }),
     ),
   );
-  expect(leaving.length).toBeGreaterThan(0);
+  expect(leaving.length).toBe(before.length);
   expect(leaving.every(entry => entry.isInert && entry.isHidden)).toBe(true);
+  // Each stays where it was, in view.
+  expect(leaving.map(entry => entry.left)).toEqual(before);
   await expect(page.getByRole('button', {name: /^Remove /})).toHaveCount(0);
   // Gone once the exit ends.
   await expect(page.locator('li [data-astryx-item-slot="end"]')).toHaveCount(

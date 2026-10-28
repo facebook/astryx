@@ -8,13 +8,15 @@
  *   List's context) and its start and end content
  * @output `useListItemSlotMotion`: the row reports a change to its start or
  *   end content to the handle (`component:List` FR12): content that appears
- *   enters, content that leaves exits, inert and hidden from assistive
- *   technology, content replaced in the same slot swaps in place
- *   (`spec:AST-105` FR4, FR8), and the row's other content (and the rows
- *   after it, when the row's height changes) glides. A same-size
- *   replacement does not animate; a leaving slot that sets the row's height
- *   hides at once (`holdLayoutExit`). A leaving control that held focus
- *   hands it to the row's focus target without scrolling.
+ *   enters, content that leaves exits in place as an inert copy hidden from
+ *   assistive technology, content replaced in the same slot swaps in place
+ *   (`spec:AST-105` FR4, FR8), content that changes size in place is
+ *   reported too, and the row's other content (and the rows after it, when
+ *   the row's height changes) glides. A change at the same size moves
+ *   nothing; a leaving slot that sets the row's height hides at once, and
+ *   the rest of the row and the rows after it take their places at once. A
+ *   leaving control that held focus hands it to the row's focus target
+ *   without scrolling.
  * @position List internals; ListItem renders the snapshot this returns.
  *   The motion itself is the shared module's (motion/animatedLayout.ts).
  */
@@ -24,7 +26,6 @@ import {isValidElement} from 'react';
 import type {AnimatedLayout} from '../hooks/useAnimatedLayout';
 import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
 import {
-  holdLayoutExit,
   holdLayoutSwap,
   playLayoutChange,
   playLayoutSwap,
@@ -44,13 +45,35 @@ const SLOTS: ReadonlyArray<Slot> = ['start', 'end'];
 const typeIds = new WeakMap<object, number>();
 let nextTypeId = 1;
 
+function typeIdOf(type: unknown): string {
+  if (typeof type === 'string') {
+    return type;
+  }
+  if (typeof type === 'symbol') {
+    // Fragment, Suspense and the like: a symbol, never a WeakMap key.
+    return String(type);
+  }
+  if (
+    (typeof type === 'object' && type !== null) ||
+    typeof type === 'function'
+  ) {
+    const known = typeIds.get(type);
+    if (known != null) {
+      return `#${known}`;
+    }
+    const assigned = nextTypeId++;
+    typeIds.set(type, assigned);
+    return `#${assigned}`;
+  }
+  return 'type';
+}
+
 /**
  * What a slot shows, as an identity that changes only when its content is
- * replaced: the element's type and key (a re-render of the same control, a
- * Checkbox toggling, keeps it), or the text itself. Null for an empty slot.
+ * replaced: the element's type and key, or the text itself. Null for an
+ * empty slot (Item wraps any content but null and undefined).
  */
 function identityOf(node: ReactNode): string | null {
-  // Item wraps any content but null and undefined in the slot.
   if (node == null) {
     return null;
   }
@@ -61,40 +84,101 @@ function identityOf(node: ReactNode): string | null {
     return `text:${node}`;
   }
   if (isValidElement(node)) {
-    const {type} = node;
-    let id: string;
-    if (typeof type === 'string') {
-      id = type;
-    } else if (typeof type === 'symbol') {
-      // Fragment, Suspense and the like: a symbol, never a WeakMap key.
-      id = String(type);
-    } else {
-      const known = typeIds.get(type as object);
-      const assigned = known ?? nextTypeId++;
-      if (known == null) {
-        typeIds.set(type as object, assigned);
-      }
-      id = `#${assigned}`;
-    }
-    return `${id}:${node.key ?? ''}`;
+    return `${typeIdOf(node.type)}:${node.key ?? ''}`;
   }
   return 'node';
 }
 
-/** The slot's live wrapper: never a leaving one, nor a swap's copy (inert). */
+/**
+ * What a slot shows down to its props: its identity, then every prop that is
+ * not a function (handlers are new each render), its children included, a
+ * few levels deep. A change here may change the slot's size, so the row
+ * measures it; one that does not moves nothing.
+ */
+function contentOf(node: ReactNode, depth = 0): string {
+  if (Array.isArray(node)) {
+    return `[${node.map(child => contentOf(child as ReactNode, depth)).join(',')}]`;
+  }
+  const identity = identityOf(node) ?? '';
+  if (!isValidElement(node) || depth > 3) {
+    return identity;
+  }
+  const props = node.props as Record<string, unknown>;
+  const parts = Object.keys(props)
+    .sort()
+    .flatMap(name => {
+      const value = props[name];
+      if (typeof value === 'function') {
+        return [];
+      }
+      if (
+        name === 'children' ||
+        isValidElement(value) ||
+        Array.isArray(value)
+      ) {
+        return [`${name}=${contentOf(value as ReactNode, depth + 1)}`];
+      }
+      if (
+        value === null ||
+        ['string', 'number', 'boolean', 'undefined'].includes(typeof value)
+      ) {
+        return [`${name}=${String(value)}`];
+      }
+      // An object or a ref: it has no say in the slot's size we can read.
+      return [];
+    });
+  return `${identity}{${parts.join(';')}}`;
+}
+
+/** The slot's live wrapper: never a swap's copy (inert). */
 function slotOf(row: Element, slot: Slot): HTMLElement | null {
   return row.querySelector<HTMLElement>(
     `:scope > [${SLOT_ATTRIBUTE}="${slot}"]:not([inert])`,
   );
 }
 
+/**
+ * Whether a slot is what makes its row as tall as it is: the row's content
+ * box is no taller than the slot, and every other part of the row is
+ * shorter. Without it, the row would shrink at once when it goes.
+ */
+function setsRowHeight(slot: HTMLElement, row: HTMLElement): boolean {
+  const view = row.ownerDocument.defaultView;
+  if (view == null) {
+    return false;
+  }
+  const outer = (box: Element) => {
+    const style = view.getComputedStyle(box);
+    return (
+      box.getBoundingClientRect().height +
+      (Number.parseFloat(style.marginBlockStart) || 0) +
+      (Number.parseFloat(style.marginBlockEnd) || 0)
+    );
+  };
+  const rowStyle = view.getComputedStyle(row);
+  const content =
+    row.getBoundingClientRect().height -
+    (Number.parseFloat(rowStyle.paddingBlockStart) || 0) -
+    (Number.parseFloat(rowStyle.paddingBlockEnd) || 0) -
+    (Number.parseFloat(rowStyle.borderBlockStartWidth) || 0) -
+    (Number.parseFloat(rowStyle.borderBlockEndWidth) || 0);
+  const others = [...row.children].filter(part => {
+    if (part === slot) {
+      return false;
+    }
+    const {position} = view.getComputedStyle(part);
+    return position !== 'absolute' && position !== 'fixed';
+  });
+  const tallestOther = Math.max(0, ...others.map(outer));
+  return outer(slot) >= content - 0.5 && tallestOther < content - 0.5;
+}
+
+type Kind = 'enter' | 'exit' | 'swap' | 'resize';
+
 interface PendingSlot {
   readonly slot: Slot;
-  readonly kind: 'enter' | 'exit' | 'swap';
-  /** The leaving or replaced content's wrapper, as it was. */
-  readonly element: HTMLElement | null;
-  /** The sibling it sat before, to put a leaving wrapper back. */
-  readonly next: Node | null;
+  readonly kind: Kind;
+  /** The leaving or replaced content as one inert copy, to play out. */
   readonly swap: LayoutSwap | null;
   readonly hadFocus: boolean;
 }
@@ -127,6 +211,14 @@ function focusRow(row: HTMLElement): void {
   row.focus({preventScroll: true});
 }
 
+/** Inside the row's main content (its label), never a slot. */
+function contentTarget(row: HTMLElement): Element {
+  const content = [...row.children].find(
+    child => !child.hasAttribute(SLOT_ATTRIBUTE) && child.textContent !== '',
+  );
+  return content?.firstElementChild ?? content ?? row;
+}
+
 /**
  * Reports the row's start and end content changes to `animatedLayout`.
  * Returns the snapshot element the row renders, which measures each change
@@ -138,13 +230,16 @@ export function useListItemSlotMotion(
   startContent: ReactNode,
   endContent: ReactNode,
 ): ReactNode {
-  const identities = {
-    start: identityOf(startContent),
-    end: identityOf(endContent),
+  const shown = {
+    start: {
+      identity: identityOf(startContent),
+      content: contentOf(startContent),
+    },
+    end: {identity: identityOf(endContent), content: contentOf(endContent)},
   };
-  const nextRef = useRef(identities);
-  nextRef.current = identities;
-  const shownRef = useRef(identities);
+  const nextRef = useRef(shown);
+  nextRef.current = shown;
+  const shownRef = useRef(shown);
   const pendingRef = useRef<Pending | null>(null);
 
   const measure = useCallback(() => {
@@ -155,45 +250,52 @@ export function useListItemSlotMotion(
     }
     const active = row.ownerDocument.activeElement;
     const slots: PendingSlot[] = [];
+    // What each change is reported from. A replaced or resized slot keeps
+    // its wrapper, so it reports itself; content that appears or leaves has
+    // no wrapper on one side of the change, so it reports from inside the
+    // row's main content, whose walk carries the content itself (as the
+    // label's ancestor), the other slot, and the rows after the row.
+    const targets = new Set<Element>();
     for (const slot of SLOTS) {
       const was = shownRef.current[slot];
       const will = nextRef.current[slot];
-      if (was === will) {
+      if (was.content === will.content) {
         continue;
       }
       const element = slotOf(row, slot);
-      const kind = was == null ? 'enter' : will == null ? 'exit' : 'swap';
+      const kind: Kind =
+        was.identity == null
+          ? 'enter'
+          : will.identity == null
+            ? 'exit'
+            : was.identity !== will.identity
+              ? 'swap'
+              : 'resize';
+      const hadFocus =
+        element != null && active != null && element.contains(active);
+      if (kind === 'exit' && element != null && setsRowHeight(element, row)) {
+        // It hides at once, and the row and the rows after it take their
+        // places at once: nothing is reported for it.
+        slots.push({slot, kind, swap: null, hadFocus});
+        continue;
+      }
       slots.push({
         slot,
         kind,
-        element,
-        next: element?.nextSibling ?? null,
         swap:
-          kind === 'swap' && element != null
+          (kind === 'exit' || kind === 'swap') && element != null
             ? holdLayoutSwap(animatedLayout, element)
             : null,
-        hadFocus: element != null && active != null && element.contains(active),
+        hadFocus,
       });
+      targets.add(
+        (kind === 'swap' || kind === 'resize') && element != null
+          ? element
+          : contentTarget(row),
+      );
     }
     if (slots.length === 0) {
       return;
-    }
-    // A leaving or replaced slot reports itself, so its exit is a measured
-    // one (holdLayoutExit) and its walk carries the row's other parts and
-    // the rows after it. Content that appears has no element yet: it is
-    // reported from inside the row's main content (its label), whose walk
-    // carries the content itself (the label's ancestor) and the other slot.
-    const targets = new Set<Element>();
-    for (const {kind, element} of slots) {
-      if (kind !== 'enter' && element != null) {
-        targets.add(element);
-        continue;
-      }
-      const content = [...row.children].find(
-        child =>
-          !child.hasAttribute(SLOT_ATTRIBUTE) && child.textContent !== '',
-      );
-      targets.add(content?.firstElementChild ?? content ?? row);
     }
     const changes = [...targets].map(target => {
       const change = reportLayoutChange(animatedLayout, () => target);
@@ -214,35 +316,25 @@ export function useListItemSlotMotion(
     if (pending == null || row == null || animatedLayout == null) {
       return;
     }
-    // A leaving wrapper comes back where it was, for its exit.
-    const leaving: HTMLElement[] = [];
-    for (const {kind, element, next} of pending.slots) {
-      if (kind !== 'exit' || element == null || element.isConnected) {
-        continue;
-      }
-      row.insertBefore(element, next?.parentNode === row ? next : null);
-      element.setAttribute('aria-hidden', 'true');
-      element.inert = true;
-      leaving.push(element);
-    }
     for (const change of pending.changes) {
       change.animate();
     }
-    for (const element of leaving) {
-      if (!holdLayoutExit(animatedLayout, element, () => element.remove())) {
-        // An exit the module does not hold (out of view, Reduce Motion with
-        // a fine pointer, a slot that sets the row's height): it goes now,
-        // before this frame paints.
-        element.remove();
-      }
-    }
     for (const {slot, kind, swap, hadFocus} of pending.slots) {
-      const shown = slotOf(row, slot);
-      if (kind === 'enter' && shown != null) {
-        playLayoutChange(animatedLayout, shown);
+      const live = slotOf(row, slot);
+      if (kind === 'enter' && live != null) {
+        playLayoutChange(animatedLayout, live);
       }
-      if (kind === 'swap' && swap != null && shown != null) {
-        const box = shown.getBoundingClientRect();
+      if (kind === 'exit' && swap != null) {
+        // The leaving content plays out where it was, an inert copy over its
+        // old box, while the row's other content glides into its space.
+        playLayoutSwap(swap, {
+          host: row,
+          copy: p => ({opacity: 1 - p}),
+          incoming: [],
+        });
+      }
+      if (kind === 'swap' && swap != null && live != null) {
+        const box = live.getBoundingClientRect();
         const isSameSize =
           Math.abs(box.width - swap.rect.width) < 0.5 &&
           Math.abs(box.height - swap.rect.height) < 0.5;
@@ -250,7 +342,7 @@ export function useListItemSlotMotion(
           playLayoutSwap(swap, {
             host: row,
             copy: p => ({opacity: 1 - p}),
-            incoming: [{element: shown, frames: p => ({opacity: p})}],
+            incoming: [{element: live, frames: p => ({opacity: p})}],
           });
         }
       }
@@ -262,7 +354,7 @@ export function useListItemSlotMotion(
 
   return (
     <LayoutChangeSnapshot
-      value={`${identities.start ?? ''}|${identities.end ?? ''}`}
+      value={`${shown.start.content}|${shown.end.content}`}
       onBeforeChange={measure}
     />
   );

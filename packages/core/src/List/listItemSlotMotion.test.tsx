@@ -128,7 +128,8 @@ const flush = async () => {
   });
 };
 
-type Mode = 'plain' | 'select' | 'remove' | 'confirm' | 'confirm-narrow';
+type Mode =
+  'plain' | 'select' | 'select-wide' | 'remove' | 'confirm' | 'confirm-narrow';
 
 let setMode: (mode: Mode) => void = () => undefined;
 let setChecked: (isChecked: boolean) => void = () => undefined;
@@ -174,11 +175,12 @@ function Demo({withHandle = true}: {withHandle?: boolean}) {
           onClick={() => undefined}
           isSelected={isChecked}
           startContent={
-            mode === 'select' ? (
+            mode === 'select' || mode === 'select-wide' ? (
               <input
                 type="checkbox"
                 aria-label="Select Ada"
                 checked={isChecked}
+                data-wide={mode === 'select-wide' ? '' : undefined}
                 onChange={() => undefined}
               />
             ) : undefined
@@ -236,7 +238,7 @@ describe("a row's start and end content through its List's animatedLayout (compo
     ).toBe(true);
   });
 
-  it('content that leaves comes back for its exit, inert and hidden from assistive technology, and hands its focus to the row without scrolling', async () => {
+  it('content that leaves plays out in place as an inert copy hidden from assistive technology, and hands its focus to the row without scrolling', async () => {
     render(<Demo />);
     await to('remove');
     const remove = document.querySelector<HTMLButtonElement>(
@@ -250,7 +252,7 @@ describe("a row's start and end content through its List's animatedLayout (compo
     );
     expect(leaving).not.toBeNull();
     expect(leaving?.getAttribute('aria-hidden')).toBe('true');
-    expect(leaving?.inert).toBe(true);
+    expect(leaving?.hasAttribute('inert')).toBe(true);
     const rowTarget = document
       .querySelector('li')
       ?.querySelector(':scope > button');
@@ -287,13 +289,27 @@ describe("a row's start and end content through its List's animatedLayout (compo
     expect(document.querySelectorAll('li [inert]')).toHaveLength(0);
   });
 
-  it('the same control re-rendering (a checkbox toggling) reports nothing', async () => {
+  it('the same control changing at the same size (a checkbox toggling) plays nothing', async () => {
     render(<Demo />);
     await to('select');
     played = [];
     act(() => setChecked(true));
     await flush();
     expect(played).toHaveLength(0);
+  });
+
+  it('the same control changing size in place moves the label along the row', async () => {
+    render(<Demo />);
+    await to('select');
+    played = [];
+    await to('select-wide');
+    const label = document.querySelector('li button');
+    const glides = horizontalGlides();
+    expect(
+      [...glides.entries()].some(
+        ([element, x]) => element.contains(label) && x === -40,
+      ),
+    ).toBe(true);
   });
 
   it('a fragment in a slot renders, with and without a handle', () => {
@@ -309,11 +325,13 @@ describe("a row's start and end content through its List's animatedLayout (compo
                 startContent={
                   <>
                     <span>!</span>
+                    <span>Risk</span>
                   </>
                 }
                 endContent={
                   <>
                     <span>High</span>
+                    <span>3</span>
                   </>
                 }
               />
