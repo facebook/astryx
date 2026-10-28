@@ -89,7 +89,7 @@ they are separately named.
 
   | Surface             | Positive path ownership                                                                                                            | Current check owners                                                                                                                                 |
   | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and exact-head spec-owner approval                                                                                              |
+  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and spec-owner approval of the current spec content                                                                             |
   | `docsite`           | the docsite application                                                                                                            | docsite generation and tests                                                                                                                         |
   | `node-tooling`      | admitted operational Node tooling whose consumers are covered by Node contract tests                                               | Node Vitest, repository guardrails, and ESLint                                                                                                       |
   | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                          | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
@@ -233,6 +233,15 @@ they are separately named.
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.
 
+- **FR14 — Review signals and spec-owner approval share one workflow.** The
+  review workflow (`review-signal.yml`) publishes both `review-required` and
+  `spec-owner-approval`; no separate workflow publishes either context. Its
+  spec-owner job evaluates pull-request, review, and owner-command comment
+  events, runs without cancel-in-progress, and publishes a terminal state for
+  the head it read, fork reviews included. Only the review-signal job keeps a
+  per-pull-request cancel group. Comments that are not owner commands start no
+  runner, and no scheduled job reads approvals.
+
 ### Platform support
 
 - Supported feature/engine floor: GitHub pull-request and merge-group workflows
@@ -273,6 +282,7 @@ the shared Storybook PR owner.
 | FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
 | FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
 | FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
+| FR14     | workflow contract and reconciler tests                                      | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                 | a second workflow publishes a context, a fork review leaves a head pending, or a non-command comment starts a runner                                                               |
 
 ## Decision log
 
@@ -383,6 +393,19 @@ release checks run everything, so no landing or release gate narrows.
 
 Rejected: a full run triggered by approval, a label or a draft-to-ready change,
 which tests the pull request's head rather than the merged result.
+
+### DEC-7 — Spec-owner approval runs in the review workflow
+
+**Reference:** `spec:AST-030/DEC-7`
+**Decider:** `cixzhang`, `2026-10-28`
+
+The spec-owner gate and the review gate read the same pull-request events, so
+they run in one workflow and publish their two required contexts from it. The
+context names stay, so branch protection does not change.
+
+Rejected: keeping a separate spec-owner workflow, which started a second runner
+for every pull-request event; reporting the spec rule through `review-required`,
+which would hide which owner a pull request is waiting for.
 
 ## Open questions
 
