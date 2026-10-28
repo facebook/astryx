@@ -174,10 +174,20 @@ those contracts.
   through the shared rectangle morph (`architecture:layer-runtime` INV15;
   `spec:AST-094` FR5) once Core has that morph; until then, the module plays
   its own compositor translate. It never animates height. Its walk visits only
-  the following element siblings at each ancestor level up to the area, through
-  `parentElement` and `nextElementSibling`, descending only into an element
-  with `display: contents`, so its cost grows with depth plus following
-  siblings. Changes in one area in the same frame are measured together. A
+  the changed element's ancestors up to the area and the element siblings on
+  either side at each of their levels, through `parentElement`,
+  `nextElementSibling` and `previousElementSibling`, descending only into an
+  element with `display: contents`, and each level's walk stops at the first
+  sibling outside the band the changes in a frame can bring into view (the
+  area's visible part plus one viewport, or the changed elements' summed size
+  if larger, above and below), so its cost grows with depth plus the
+  siblings near the visible part, never with the length of a list. Where the
+  scroll container opts out of scroll anchoring, a change above the band
+  walks forward to the band; that cost grows with the distance. In a
+  container whose children run across the block direction (multi-column, a
+  wrapping column flex box, or a column-flow grid), the walk runs through
+  that level, a cost that grows with its children. Changes in
+  one area in the same frame are measured together. A
   component reports a change through an internal, non-exported function that
   takes the `useAnimatedLayout` handle, so the handle stays member-free, and
   each moving element is one the page already renders, except a swap's one
