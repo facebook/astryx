@@ -52,6 +52,7 @@ import {Icon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {pressOnItemsOnly} from '../hooks/menuPressOnItems';
 import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -687,6 +688,10 @@ function BreadcrumbMenuTrigger({
           role="menu"
           aria-labelledby={triggerId}
           {...menuPress.menuProps}
+          onPointerDown={pressOnItemsOnly(
+            menuPress.menuProps.onPointerDown,
+            MENU_ITEM_SELECTOR,
+          )}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('breadcrumb-menu'),

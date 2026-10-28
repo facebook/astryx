@@ -48,15 +48,23 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {pressOnItemsOnly} from '../hooks/menuPressOnItems';
 import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
-import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
+import {
+  NavHeadingCloseContext,
+  NavHeadingDismissContext,
+} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
 // =============================================================================
+
+/** The rows a press can act on in the heading's menu. */
+const HEADING_MENU_ITEM_SELECTOR =
+  '[role="menuitem"]:not([aria-disabled="true"])';
 
 const styles = stylex.create({
   root: {
@@ -427,10 +435,15 @@ export function SideNavHeading({
   const headingMenuRef = useRef<HTMLDivElement>(null);
   const headingMenuPress = useMenuPress({
     menuRef: headingMenuRef,
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: HEADING_MENU_ITEM_SELECTOR,
     onDismiss: closeMenu,
     isEnabled: !!menu,
   });
+  const headingMenuPointerDown = pressOnItemsOnly(
+    headingMenuPress.menuProps.onPointerDown,
+    HEADING_MENU_ITEM_SELECTOR,
+  );
+  const dismissCtx = useMemo(() => ({dismiss: closeMenu}), [closeMenu]);
   const headingMenuTouch = stylex.props(
     useMenuOverflow(headingMenuRef, menu, popover.isOpen)
       ? menuTouchActionStyles.scrolls
@@ -558,6 +571,7 @@ export function SideNavHeading({
                 role="menu"
                 aria-label={heading}
                 {...headingMenuPress.menuProps}
+                onPointerDown={headingMenuPointerDown}
                 {...headingMenuTouch}>
                 <NavHeadingCloseContext value={closeMenuCtx}>
                   {menu}
@@ -785,8 +799,11 @@ export function SideNavHeading({
               role="menu"
               aria-label={heading}
               {...headingMenuPress.menuProps}
+              onPointerDown={headingMenuPointerDown}
               {...headingMenuTouch}>
-              {menu}
+              <NavHeadingDismissContext value={dismissCtx}>
+                {menu}
+              </NavHeadingDismissContext>
             </div>
           </div>,
           {
@@ -866,8 +883,11 @@ export function SideNavHeading({
               role="menu"
               aria-label={heading}
               {...headingMenuPress.menuProps}
+              onPointerDown={headingMenuPointerDown}
               {...headingMenuTouch}>
-              {menu}
+              <NavHeadingDismissContext value={dismissCtx}>
+                {menu}
+              </NavHeadingDismissContext>
             </div>
           </div>,
           {

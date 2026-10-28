@@ -39,6 +39,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {pressOnItemsOnly} from '../hooks/menuPressOnItems';
 import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
@@ -375,6 +376,10 @@ export function TopNavHeading({
     onDismiss: closeMenu,
     isEnabled: !!menu,
   });
+  const productMenuPointerDown = pressOnItemsOnly(
+    productMenuPress.menuProps.onPointerDown,
+    '[role="menuitem"]:not([aria-disabled="true"])',
+  );
   const productMenuTouch = stylex.props(
     useMenuOverflow(productMenuRef, menu, popover.isOpen)
       ? menuTouchActionStyles.scrolls
@@ -575,6 +580,7 @@ export function TopNavHeading({
               role="menu"
               aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}
               {...productMenuPress.menuProps}
+              onPointerDown={productMenuPointerDown}
               {...productMenuTouch}>
               <NavHeadingCloseContext value={closeMenuCtx}>
                 {menu}
@@ -657,6 +663,7 @@ export function TopNavHeading({
               role="menu"
               aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}
               {...productMenuPress.menuProps}
+              onPointerDown={productMenuPointerDown}
               {...productMenuTouch}>
               <NavHeadingCloseContext value={closeMenuCtx}>
                 {menu}

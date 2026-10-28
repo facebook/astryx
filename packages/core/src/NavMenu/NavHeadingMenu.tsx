@@ -12,19 +12,21 @@
  * - /packages/core/src/NavMenu/index.ts
  */
 
-import React, {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import React, {use, useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {pressOnItemsOnly} from '../hooks/menuPressOnItems';
 import {menuTouchActionStyles} from '../DropdownMenu/menuTouchAction.stylex';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
 import {
+  NavHeadingDismissContext,
   NavHeadingMenuContext,
   useNavHeadingCloseContext,
   type NavHeadingMenuSize,
@@ -110,6 +112,9 @@ export function NavHeadingMenu({
 }: NavHeadingMenuProps) {
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
+  // A heading whose menu items do not close it on selection (an expanded
+  // SideNavHeading) still lets a mouse released outside dismiss it.
+  const dismissMenu = use(NavHeadingDismissContext)?.dismiss;
 
   const {listRef, handleKeyDown, focusItem} = useListFocus({
     itemSelector: ENABLED_ITEM_SELECTOR,
@@ -122,7 +127,7 @@ export function NavHeadingMenu({
   const menuPress = useMenuPress({
     menuRef: listRef,
     itemSelector: ENABLED_ITEM_SELECTOR,
-    onDismiss: closeMenu,
+    onDismiss: closeMenu ?? dismissMenu,
   });
   const hasOverflow = useMenuOverflow(listRef, children, true);
 
@@ -222,7 +227,10 @@ export function NavHeadingMenu({
         {...menuPress.menuProps}
         onPointerDown={composeEventHandlers(
           onPointerDownProp,
-          menuPress.menuProps.onPointerDown,
+          pressOnItemsOnly(
+            menuPress.menuProps.onPointerDown,
+            ENABLED_ITEM_SELECTOR,
+          ),
         )}
         role="menu"
         onKeyDownCapture={handleMenuKeyDownCapture}
