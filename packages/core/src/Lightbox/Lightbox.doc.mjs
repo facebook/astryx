@@ -69,7 +69,7 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or (on a touch screen) dragging a photo down.',
+        'Callback when the lightbox open state changes: the Close button, Escape, a tap beside the media, or dragging a photo down from its fitted size (with a finger, a mouse, a pen or a trackpad).',
       required: true,
     },
     {
@@ -190,7 +190,7 @@ export const docsZh = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或（触摸屏上）向下拖动照片。',
+        '灯箱打开状态变化时的回调：关闭按钮、Esc 键、点按媒体旁空白处，或从适合大小向下拖动照片（手指、鼠标、触控笔或触控板均可）。',
       required: true,
     },
     {
@@ -295,7 +295,7 @@ export const docsDense = {
   propDescriptions: {
     isOpen: 'Whether the lightbox is open.',
     onOpenChange:
-      'Callback when open state changes (including a photo dragged down on a touch screen).',
+      'Callback when open state changes (including a photo dragged down).',
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
     onIndexChange:

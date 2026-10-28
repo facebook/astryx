@@ -187,11 +187,12 @@ test('the zoom target takes its touches as on a phone where the primary pointer 
   ]);
 });
 
-test('a photo without zoom leaves the browser its touch-action where the primary pointer is fine', async ({
+test('a photo without zoom takes one-finger drags as on a phone where the primary pointer is fine too', async ({
   page,
 }) => {
-  // The drag to dismiss is touch work: with a mouse nothing takes the
-  // touches (a touchscreen laptop's one-finger pan still reaches the page).
+  // The drag to dismiss attaches for every pointer (spec:AST-094 FR43): a
+  // touchscreen laptop's finger drags the photo down as on a phone, and the
+  // page keeps its pinch.
   await page.route('https://picsum.photos/**', async route =>
     route.fulfill({
       contentType: 'image/svg+xml',
@@ -205,7 +206,12 @@ test('a photo without zoom leaves the browser its touch-action where the primary
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   const photo = dialog.getByRole('img').first();
-  expect(new Set(await touchActionsAbove(photo))).toEqual(new Set(['auto']));
+  expect(await touchActionsAbove(photo)).toEqual([
+    'auto',
+    'pinch-zoom',
+    'auto',
+    'auto',
+  ]);
 });
 
 test('a gallery takes its touches as on a phone where the primary pointer is fine too', async ({

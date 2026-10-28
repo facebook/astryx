@@ -1188,7 +1188,7 @@ describe('Lightbox double-click under the touch layer', () => {
   });
 });
 
-describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)', () => {
+describe('Lightbox recognizers attach for every pointer (spec:AST-094 FR43)', () => {
   /** Names of the Lightbox recognizers attached while `body` runs. */
   function lightboxRecognizersAttached(body: () => void): string[] {
     const attach = vi.spyOn(getGestureHost(document), 'attach');
@@ -1202,7 +1202,7 @@ describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)
     }
   }
 
-  it('attaches none where the primary pointer is fine: a photo takes no drag to dismiss', () => {
+  it('attaches the drag to dismiss where the primary pointer is fine too', () => {
     expect(
       lightboxRecognizersAttached(() => {
         render(
@@ -1213,7 +1213,7 @@ describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)
           />,
         );
       }),
-    ).toEqual([]);
+    ).not.toEqual([]);
   });
 
   it('attaches the drag to dismiss under the touch layer', () => {

@@ -787,9 +787,9 @@ export function Lightbox({
     onTapOutside: handleClose,
     onDragStart,
     dismiss: {
-      // Touch work, like the zoom's: nothing attaches where the primary
-      // pointer is fine (spec:AST-094 FR19).
-      isEnabled: isOpen && !isVideo && isTouch,
+      // Every pointer's, like the zoom's (spec:AST-094 FR43); a video keeps
+      // its own controls' drags.
+      isEnabled: isOpen && !isVideo,
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
@@ -801,7 +801,7 @@ export function Lightbox({
           animator.set({opacity});
         }
       },
-      onRelease: dismisses => {
+      onRelease: (dismisses, touch) => {
         const {backdrop, chrome} = dismissFades();
         fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
         const spring = dismisses
@@ -813,10 +813,10 @@ export function Lightbox({
         const backdropMotion = backdrop?.animate(
           {opacity},
           {spring},
-          {touchRelease: true},
+          {touchRelease: touch},
         );
         for (const animator of chrome) {
-          animator.animate({opacity}, {spring}, {touchRelease: true});
+          animator.animate({opacity}, {spring}, {touchRelease: touch});
         }
         // Back at rest: the blur returns, unless the backdrop moved again.
         void backdropMotion?.finished.then(() => {
@@ -1135,7 +1135,6 @@ export function Lightbox({
                     !isZoomTarget &&
                       !isVideo &&
                       !isGallery &&
-                      isTouch &&
                       styles.imageWrapperDismissTarget,
                     isZoomTarget && focusOutlineStyles.focusVisible,
                     isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
@@ -1154,7 +1153,6 @@ export function Lightbox({
                         isZoomTarget && styles.trackZoomTarget,
                         !isZoomTarget &&
                           !isVideo &&
-                          isTouch &&
                           styles.imageWrapperDismissTarget,
                       )}>
                       {pageIndexes.map(i => (

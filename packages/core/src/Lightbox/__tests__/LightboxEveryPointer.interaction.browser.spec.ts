@@ -5,12 +5,16 @@
  * @input The built "With zoom", "Gallery with zoom" and "Default" Lightbox
  *   stories, their photos served as a 3000 × 2000 test image; a desktop
  *   context (1280 × 800, a fine primary pointer) with a mouse, a trackpad's
- *   wheel and, in Chromium, timed mouse events through the Chrome DevTools
- *   Protocol
+ *   wheel and, in Chromium, a pen and timed mouse events through the Chrome
+ *   DevTools Protocol
  * @output Proofs that Lightbox's gestures work for every pointer
- *   (spec:AST-094 FR43): a mouse drag sideways and a trackpad's horizontal
- *   scroll page a gallery, a ctrl-wheel zooms, a wheel pans a zoomed photo,
- *   and a zoomed drag released moving coasts
+ *   (spec:AST-094 FR43): a mouse drag down dismisses and one brought back
+ *   springs back, a mouse drag sideways and a trackpad's horizontal scroll
+ *   page a gallery, a ctrl-wheel zooms, a wheel pans a zoomed photo, a
+ *   zoomed drag released moving coasts, a pen drag down dismisses, a wheel
+ *   scroll down over a fitted photo begins a dismiss, and under Reduce
+ *   Motion a mouse's release closes at once where the primary pointer is
+ *   fine (design:reduced-motion DR3)
  * @position Interaction tests for Lightbox (browser), beside
  *   LightboxZoomModes.interaction.browser.spec.ts
  */
@@ -154,6 +158,69 @@ async function timedPointer(page: Page, pointerType: 'mouse' | 'pen') {
   };
 }
 
+test('a mouse drag down from the fitted size follows the pointer and closes the viewer at the release', async ({
+  browser,
+}) => {
+  const {context, page, dialog, img, centre} = await openDesktop(
+    browser,
+    'with-zoom',
+  );
+  try {
+    const before = await boxOf(img);
+    await mouseDrag(
+      page,
+      centre,
+      {x: centre.x, y: centre.y + 150},
+      {
+        steps: 10,
+        stepMs: 16,
+      },
+    );
+    // The photo follows past the pan's 10 px threshold, as under a finger.
+    expect((await boxOf(img)).y - before.y).toBeGreaterThan(100);
+    await page.mouse.up();
+    await expect(dialog).toBeHidden();
+  } finally {
+    await context.close();
+  }
+});
+
+test('a mouse drag down brought back to where it started springs back, the viewer open', async ({
+  browser,
+}) => {
+  const {context, page, dialog, img, centre} = await openDesktop(
+    browser,
+    'with-zoom',
+  );
+  try {
+    const before = await boxOf(img);
+    await mouseDrag(
+      page,
+      centre,
+      {x: centre.x, y: centre.y + 120},
+      {
+        steps: 8,
+        stepMs: 16,
+      },
+    );
+    // It followed the pointer down.
+    expect((await boxOf(img)).y - before.y).toBeGreaterThan(80);
+    for (let i = 1; i <= 8; i++) {
+      await page.mouse.move(centre.x, centre.y + 120 - 15 * i);
+      await page.waitForTimeout(16);
+    }
+    // Held still at the start, then let go: nothing projects past the
+    // dismissal's distance.
+    await page.waitForTimeout(250);
+    await page.mouse.up();
+    await waitForRest(img);
+    await expect(dialog).toBeVisible();
+    expect((await boxOf(img)).y).toBeCloseTo(before.y, 0);
+  } finally {
+    await context.close();
+  }
+});
+
 test('a mouse drag sideways pages a gallery', async ({browser}) => {
   const {context, page, dialog, centre} = await openDesktop(
     browser,
@@ -270,6 +337,109 @@ test('a zoomed photo coasts on after a mouse drag released moving', async ({
     await waitForRest(img);
     // It kept going after the release, as a finger's flick does.
     expect((await boxOf(img)).x).toBeLessThan(atRelease - 20);
+  } finally {
+    await context.close();
+  }
+});
+
+test('a pen drag down closes the viewer', async ({browser, browserName}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Pen input is dispatched through the Chrome DevTools Protocol.',
+  );
+  const {context, page, dialog, centre} = await openDesktop(
+    browser,
+    'with-zoom',
+  );
+  try {
+    const pen = await timedPointer(page, 'pen');
+    await pen('mouseMoved', centre, 0);
+    await pen('mousePressed', centre, 16);
+    for (let i = 1; i <= 8; i++) {
+      await pen('mouseMoved', {x: centre.x, y: centre.y + 20 * i}, 24);
+    }
+    await pen('mouseReleased', {x: centre.x, y: centre.y + 160}, 8);
+    await expect(dialog).toBeHidden();
+  } finally {
+    await context.close();
+  }
+});
+
+test('a wheel notch that moves a fitted photo down closes the viewer: released still, its 100 px pass the drag’s commit point (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {wheel, context, page, dialog, img, centre} = await openDesktop(
+    browser,
+    'with-zoom',
+  );
+  try {
+    const before = await boxOf(img);
+    await page.mouse.move(centre.x, centre.y);
+    const lowest = page.evaluate(
+      async () =>
+        new Promise<number>(resolve => {
+          const photo = document.querySelector('dialog img');
+          let low = photo?.getBoundingClientRect().y ?? 0;
+          const t0 = performance.now();
+          const tick = () => {
+            low = Math.max(low, photo?.getBoundingClientRect().y ?? low);
+            if (performance.now() - t0 < 400) {
+              requestAnimationFrame(tick);
+            } else {
+              resolve(low);
+            }
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+    // A scroll moves the content with it (a trackpad's swipe down, under
+    // natural scrolling, or a wheel turned toward the reader).
+    await page.evaluate(() => {
+      const w = window as unknown as {__deltas: number[]};
+      w.__deltas = [];
+      window.addEventListener('wheel', e => w.__deltas.push(e.deltaY), {
+        capture: true,
+      });
+    });
+    await wheel(0, -100);
+    // A mouse wheel's notch, as the page saw it.
+    expect(
+      await page.evaluate(
+        () => (window as unknown as {__deltas: number[]}).__deltas,
+      ),
+    ).toEqual([-100]);
+    // The photo moved down with the scroll, as a drag down moves it.
+    expect(await lowest).toBeGreaterThan(before.y + 20);
+    // A notch releases still (position alone decides), and 100 px are past
+    // the commit point, `zoomMedia.dismiss.cancelTravel` (10 pt): the viewer
+    // closes, as a pull held still and lifted does.
+    await expect(dialog).toBeHidden();
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion a mouse’s release closes the viewer at once where the primary pointer is fine (design:reduced-motion DR3)', async ({
+  browser,
+}) => {
+  const {context, page, dialog, centre} = await openDesktop(
+    browser,
+    'with-zoom',
+    {reducedMotion: true},
+  );
+  try {
+    await mouseDrag(
+      page,
+      centre,
+      {x: centre.x, y: centre.y + 150},
+      {
+        steps: 10,
+        stepMs: 16,
+      },
+    );
+    await page.mouse.up();
+    // At once: no fade (DR2 is a coarse pointer's or a finger's release).
+    await expect(dialog).toBeHidden({timeout: 150});
   } finally {
     await context.close();
   }
