@@ -507,6 +507,9 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     render(<Shell />);
     await toggle();
     expect(recorded.length).toBeGreaterThan(0);
+    // The surface stays put: nothing that holds the page animates.
+    const main = screen.getByRole('main');
+    expect(recorded.filter(entry => entry.element.contains(main))).toEqual([]);
     for (const entry of recorded) {
       for (const frame of entry.keyframes) {
         expect(Object.keys(frame).filter(key => key !== 'offset')).toEqual([

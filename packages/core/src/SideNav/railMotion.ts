@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file railMotion.ts
  * @input The rail's outer element, the animated-layout module's handle,

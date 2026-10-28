@@ -784,7 +784,8 @@ export function AppShell({
   const backdropRef = useRef<HTMLDivElement>(null);
   const contentLayout = useAnimatedLayout({containerRef: shellRef});
   const pendingContentRef = useRef<{
-    change: LayoutChange;
+    /** The column's glide, reported only for a spring motion. */
+    change: LayoutChange | null;
     swap: LayoutSwap | null;
     before: DOMRect;
     /** The opacities the held and the entering wrap start from. */
@@ -816,14 +817,19 @@ export function AppShell({
         if (main == null) {
           return;
         }
-        const change = reportLayoutChange(contentLayout, railRef);
-        change.measureBefore();
+        const motion = layoutMotionFor(main);
+        // Only a spring glides the column; under Reduce Motion the two wraps
+        // cross-fade over a steady surface (`design:reduced-motion` DR2).
+        let change: LayoutChange | null = null;
+        if (motion.kind === 'spring') {
+          change = reportLayoutChange(contentLayout, railRef);
+          change.measureBefore();
+        }
         // At rest the copy (the wrap shown now) starts opaque and the entering
         // wrap unseen; mid-swap the wrap in the DOM is the entering one and
         // the copy's wrap is the one entering next, each at what it shows.
         let held = 1;
         let entering = 0;
-        const motion = layoutMotionFor(main);
         const last = lastSwapRef.current;
         if (last != null && motion.kind === 'spring') {
           const elapsed =
@@ -851,7 +857,7 @@ export function AppShell({
         if (pending == null || main == null) {
           return () => {};
         }
-        pending.change.animate();
+        pending.change?.animate();
         // The column beside the rail, which the glide moves: the copy sits
         // beside it, in its parent, and rides its glide.
         const column = columnOf(main, railRef.current);
