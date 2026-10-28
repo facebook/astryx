@@ -39,7 +39,7 @@ function context({
     eventName,
     runId,
     runAttempt: 1,
-    repo: {owner: 'facebook', repo: 'astryx'},
+    repo: {owner: 'meta', repo: 'astryx'},
     payload: {
       action,
       issue: eventName === 'issue_comment' ? {number: 17} : undefined,
@@ -1430,7 +1430,7 @@ describe('spec owner workflow reconciliation', () => {
         eventName: 'workflow_dispatch',
         runId,
         runAttempt: 1,
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         payload: {inputs: {pr: '17', backfill: true}},
       };
     }
@@ -1566,7 +1566,7 @@ describe('relayed owner decisions', () => {
       eventName: 'repository_dispatch',
       runId,
       runAttempt: 1,
-      repo: {owner: 'facebook', repo: 'astryx'},
+      repo: {owner: 'meta', repo: 'astryx'},
       payload: {
         action: 'spec-owner-decision',
         sender,
