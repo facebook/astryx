@@ -56,7 +56,6 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
 // The gesture and the panels, loaded only by a row that has swipe actions: a
@@ -589,10 +588,6 @@ export function Item({
   ...restProps
 }: ItemProps) {
   const pressable = usePressFeedback();
-  // A selection hold (List/selectionHold.ts) returns focus to this row after
-  // a pop; its ring follows how the user last interacted, so a finger's pop
-  // shows none.
-  useInteractionModalityTracking();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
