@@ -27,6 +27,7 @@ import {
 import {
   themeBuild,
   validateComponentOverridesAgainstRegistry,
+  validateThemePrivateInputs,
 } from './build.mjs';
 
 // `themeBuild` captures core's generator once at module load. Wrap the two
@@ -209,6 +210,27 @@ describe('themeBuild() — receipt', () => {
       errSpy.mockRestore();
       outSpy.mockRestore();
     }
+  });
+});
+
+describe('a theme module with no theme export', () => {
+  beforeEach(() => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'none.mjs'),
+      'export const notATheme = 42;\n',
+    );
+  });
+
+  it('fails the build as a module that defines no theme', async () => {
+    await expect(themeBuild('none.mjs', {}, {cwd: tmpDir})).rejects.toThrow(
+      /Could not find a defineTheme\(\) result/,
+    );
+  });
+
+  it("fails doctor's private-input check the same way, rather than read its exports as a theme", async () => {
+    await expect(
+      validateThemePrivateInputs('none.mjs', {cwd: tmpDir}),
+    ).rejects.toThrow(/Could not find a defineTheme\(\) result/);
   });
 });
 

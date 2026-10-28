@@ -58,7 +58,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {isBuiltin} from 'node:module';
+import {createRequire, isBuiltin} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
@@ -1835,6 +1835,9 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
   } else {
     mod = await jiti.import(filePath, {default: true});
   }
+  // Only this load hands back the default export itself; the intercepting
+  // load above hands back the module's exports.
+  const isDefaultExport = !interception;
 
   if (isThemeObject(mod)) return {theme: mod, exportName: 'default', degraded};
 
@@ -1848,17 +1851,46 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
     // A plain-object default export is the module's theme even when it has
     // no tokens of its own (local tokens, typography or component styles may
     // be all it defines), or no name: the build's validation says what it
-    // lacks.
-    if (isPlainObject(mod.default)) {
+    // lacks. Only a default the module has: for a module without one, jiti's
+    // interop answers `default` with the module's exports.
+    if (Object.hasOwn(mod, 'default') && isPlainObject(mod.default)) {
       return {theme: mod.default, exportName: 'default', degraded};
     }
   }
-  if (isPlainObject(mod)) return {theme: mod, exportName: 'default', degraded};
+  // The default export itself, from the load that returns it: on the
+  // intercepting load `mod` is the module's exports, never a theme.
+  if (isDefaultExport && isPlainObject(mod)) {
+    return {theme: mod, exportName: 'default', degraded};
+  }
 
   throw new Error(
     `Could not find a defineTheme() result in ${filePath}.\n` +
       `Expected an export like: export const myTheme = defineTheme({ name: '...', tokens: {...} })`,
   );
+}
+
+/**
+ * Whether the theme file's own folder resolves Core's theme entry, as the
+ * theme's own `import ... from '@astryxdesign/core/theme'` would. A theme
+ * outside any project (an empty folder, a fresh clone) does not, and is
+ * handed the Core the CLI answers with instead, as a new project with that
+ * Core would build it (`theme build` runs the same outside a project, spec
+ * AST-081 FR3). Only a Core not installed there (MODULE_NOT_FOUND) reads as
+ * no: an installed Core whose entry does not resolve is the theme's own, and
+ * its load reports that.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function themeFolderResolvesCore(filePath) {
+  try {
+    createRequire(filePath).resolve('@astryxdesign/core/theme');
+    return true;
+  } catch (error) {
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    if (code === 'MODULE_NOT_FOUND') return false;
+    if (code === 'ERR_PACKAGE_PATH_NOT_EXPORTED') return true;
+    throw error;
+  }
 }
 
 /**
@@ -2555,13 +2587,15 @@ async function themeBuildInternal(
   }
   await selectCore(cwd, {projectOnly: projectCore});
 
-  // Standalone builds only need interception when an older Core could erase
-  // adaptations. Family preparation always supplies the same recorder as its
+  // Standalone builds need interception when an older Core could erase
+  // adaptations, and when the theme's folder has no Core of its own: its
+  // imports of Core are then handed the Core this build selected, as family
+  // builds' are. Family preparation always supplies the same recorder as its
   // shared loader so exact authored parent identity stays CLI-private instead
   // of becoming a public DefinedTheme field.
   const interception =
     options.__familyInterception ??
-    (_generateAdaptationCSS
+    (_generateAdaptationCSS && themeFolderResolvesCore(filePath)
       ? undefined
       : interceptCore(_coreThemeModule, _coreRootModule));
 
