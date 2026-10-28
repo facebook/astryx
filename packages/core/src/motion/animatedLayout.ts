@@ -214,10 +214,76 @@ const ours = new WeakSet<Animation>();
 
 const TRANSFORM_PROPERTIES = ['transform', 'translate', 'rotate', 'scale'];
 
+/** The numbers in a CSS value, units dropped. */
+function numbersIn(value: string): number[] {
+  return (value.match(/-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/gi) ?? []).map(
+    Number,
+  );
+}
+
 /**
- * Whether the app moves `element` itself: its own `transform`, `translate`,
- * `rotate` or `scale`, or a running animation of one this module did not
- * start.
+ * Whether a transform value leaves the element where it is: nothing at all
+ * (a swipe's `translate3d(0, 0, 0)` at rest, a button's `scale(1)`, computed
+ * as `matrix(1, 0, 0, 1, 0, 0)`), or a scale in place (a pressed button's
+ * `scale(0.98)`). A glide's `translate` composes with either; a translation,
+ * rotation or skew of its own is the app moving the element.
+ */
+function staysInPlace(property: string, value: string): boolean {
+  if (property === 'scale') {
+    return true;
+  }
+  if (property === 'translate') {
+    return numbersIn(value).every(n => n === 0);
+  }
+  if (property === 'rotate') {
+    // An angle, after an optional axis: only the angle matters.
+    const numbers = numbersIn(value);
+    return numbers.length > 0 && numbers[numbers.length - 1] === 0;
+  }
+  // A list of transform functions, as computed (`matrix()`, `matrix3d()`)
+  // or as written.
+  const functions = [...value.matchAll(/([a-z0-9]+)\(([^)]*)\)/gi)];
+  return (
+    functions.length > 0 &&
+    functions.every(([, name, args]) => {
+      const numbers = numbersIn(args);
+      const fn = name.toLowerCase();
+      if (fn === 'matrix') {
+        // a b c d e f: no skew, rotation or translation.
+        return (
+          numbers.length === 6 &&
+          [1, 2, 4, 5].every(index => numbers[index] === 0)
+        );
+      }
+      if (fn === 'matrix3d') {
+        // Only the diagonal: a scale, nothing else.
+        return (
+          numbers.length === 16 &&
+          numbers.every((n, index) => index % 5 === 0 || n === 0)
+        );
+      }
+      if (fn === 'rotate3d') {
+        return numbers[3] === 0;
+      }
+      if (fn.startsWith('scale')) {
+        return true;
+      }
+      if (
+        fn.startsWith('translate') ||
+        fn.startsWith('rotate') ||
+        fn.startsWith('skew')
+      ) {
+        return numbers.every(n => n === 0);
+      }
+      return false;
+    })
+  );
+}
+
+/**
+ * Whether the app moves `element` itself: its own `transform`, `translate`
+ * or `rotate`, or a running animation of one this module did not start. A
+ * value that leaves it in place (nothing, or a scale) is not a move.
  */
 function movedByApp(element: Element): boolean {
   const style = element.ownerDocument.defaultView?.getComputedStyle(element);
@@ -225,7 +291,7 @@ function movedByApp(element: Element): boolean {
     style != null &&
     TRANSFORM_PROPERTIES.some(property => {
       const value = style.getPropertyValue(property);
-      return value !== '' && value !== 'none';
+      return value !== '' && value !== 'none' && !staysInPlace(property, value);
     })
   ) {
     return true;
@@ -243,7 +309,13 @@ function movedByApp(element: Element): boolean {
     }
     return effect
       .getKeyframes()
-      .some(frame => TRANSFORM_PROPERTIES.some(property => property in frame));
+      .some(frame =>
+        TRANSFORM_PROPERTIES.some(
+          property =>
+            property in frame &&
+            !staysInPlace(property, String(frame[property])),
+        ),
+      );
   });
 }
 
