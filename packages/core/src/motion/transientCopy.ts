@@ -67,7 +67,6 @@ function paintCanvas(
   }
 }
 
-/** Scroll offsets a copy restores once laid out (a clone carries none). */
 /** Inherited properties a copy carries when laid outside its ancestors. */
 const INHERITED_PROPERTIES = [
   'color',
@@ -108,6 +107,17 @@ function readInherited(element: Element): Map<string, string> {
   for (const name of INHERITED_PROPERTIES) {
     values.set(name, style.getPropertyValue(name));
   }
+  // A unitless line-height inherits as its factor, but the computed style
+  // reports it in pixels: carry the factor where the typed style map has it.
+  const lineHeight = element.computedStyleMap?.().get('line-height');
+  if (
+    lineHeight != null &&
+    'unit' in lineHeight &&
+    lineHeight.unit === 'number' &&
+    'value' in lineHeight
+  ) {
+    values.set('line-height', String(lineHeight.value));
+  }
   for (let index = 0; index < style.length; index++) {
     const name = style[index];
     if (name.startsWith('--')) {
@@ -117,6 +127,7 @@ function readInherited(element: Element): Map<string, string> {
   return values;
 }
 
+/** Scroll offsets a copy restores once laid out (a clone carries none). */
 const scrollOffsets = new WeakMap<
   HTMLElement,
   ReadonlyArray<readonly [Element, number, number]>
