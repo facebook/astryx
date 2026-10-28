@@ -722,6 +722,38 @@ describe('a copy laid outside its ancestors', () => {
     vi.restoreAllMocks();
     expect(swap!.copy.style.lineHeight).toBe('1.45');
   });
+
+  it('carries a line-height factor without a typed style map, and leaves an equal one to inherit', () => {
+    const {handle, content} = setup();
+    const area = document.getElementById('area') as HTMLElement;
+    const computed = new Map<Element, Record<string, string>>([
+      // 13 px type at 1.5 inside a 16 px area at 1.25: the factor differs.
+      [content, {'font-size': '13px', 'line-height': '19.5px'}],
+      [area, {'font-size': '16px', 'line-height': '20px'}],
+    ]);
+    const real = window.getComputedStyle;
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element): CSSStyleDeclaration => {
+        const values = computed.get(element);
+        if (values == null) {
+          return real(element);
+        }
+        return Object.assign(
+          Object.create(real(element)) as CSSStyleDeclaration,
+          {getPropertyValue: (name: string) => values[name] ?? '', length: 0},
+        );
+      },
+    );
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host: area, copy: travel, incoming: []});
+    expect(swap!.copy.style.lineHeight).toBe('1.5');
+    // The same factor in the host: nothing written, the factor inherits.
+    computed.set(area, {'font-size': '16px', 'line-height': '24px'});
+    const again = holdLayoutSwap(handle, content);
+    playLayoutSwap(again!, {host: area, copy: travel, incoming: []});
+    vi.restoreAllMocks();
+    expect(again!.copy.style.lineHeight).toBe('');
+  });
 });
 
 describe('ending a swap', () => {
