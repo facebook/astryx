@@ -2452,9 +2452,11 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
-      # The D7 regression test lives on the PR head. A head cut before it
-      # existed has no D7 for the test to check, so the step says so and
-      # passes; a head that has the file always runs it, and a failure fails.
+      # The D7 native-size regression test lives on the PR head. A head cut
+      # before it has no native-size enforcement for the test to check (its
+      # audit still checks D7's centering and hit-testing), so the step says
+      # so and passes; a head that has the file always runs it, and a failure
+      # fails. ci-rtl-d7.test.mjs keeps the path pointing at a real file.
       - name: Verify D7 native target regression
         if: matrix.package == 'core' && matrix.part == 1
         env:
@@ -2462,7 +2464,7 @@ jobs:
         run: |
           D7_TEST=.github/scripts/rtl-audit-coarse-hit.browser.test.mjs
           if [ ! -f "$D7_TEST" ]; then
-            echo '::notice title=D7 regression skipped::skipped: harness predates D7'
+            echo '::notice title=D7 regression skipped::skipped: head predates D7 native-size enforcement; its D7 results cover centering and hit-testing only'
             exit 0
           fi
           pnpm exec vitest run --project node "$D7_TEST" --maxWorkers=1

@@ -4,9 +4,10 @@
  * @file Contract for the RTL audit's D7 regression step in ci.yml.
  *
  * The step runs `.github/scripts/rtl-audit-coarse-hit.browser.test.mjs` from
- * the pull request's head. A head cut before that test existed has no D7 for
- * it to check: the step logs "skipped: harness predates D7" and passes. A
- * head that has the file always runs it, and its failure fails the step.
+ * the pull request's head. A head cut before that test existed has no D7
+ * native-size enforcement for it to check: the step logs that it skipped and
+ * passes. A head that has the file always runs it, and its failure fails the
+ * step. The path must name a real file, or a move would skip silently.
  */
 
 import {spawnSync} from 'node:child_process';
@@ -65,6 +66,11 @@ function run({hasTest, pnpmExit}) {
 }
 
 describe('ci.yml RTL D7 regression step', () => {
+  it('names a D7 test that exists, so moving it cannot skip the step silently', () => {
+    expect(fs.existsSync(path.join(root, D7_TEST))).toBe(true);
+    expect(d7Step().run).toContain(D7_TEST);
+  });
+
   it('runs only for the first core RTL shard, in the browser mode', () => {
     const step = d7Step();
     expect(step.if).toBe("matrix.package == 'core' && matrix.part == 1");
@@ -74,7 +80,9 @@ describe('ci.yml RTL D7 regression step', () => {
   it('skips with a visible log when the head predates the D7 test', () => {
     const result = run({hasTest: false, pnpmExit: 1});
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('skipped: harness predates D7');
+    expect(result.stdout).toContain(
+      'skipped: head predates D7 native-size enforcement',
+    );
     expect(result.pnpm).toBe('');
   });
 
