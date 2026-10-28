@@ -1648,6 +1648,7 @@ describe('Lightbox opener fallback listener (spec:AST-094 FR24)', () => {
     const restorePointer = stubCoarsePointer();
     const added = vi.spyOn(document, 'addEventListener');
     const removed = vi.spyOn(document, 'removeEventListener');
+    // Inside `experimental`, the element that opened a viewer is its source.
     const viewers = (count: number) =>
       render(
         <>
@@ -1657,6 +1658,7 @@ describe('Lightbox opener fallback listener (spec:AST-094 FR24)', () => {
               isOpen={false}
               onOpenChange={() => {}}
               media={{src: `/photo-${i}.jpg`, alt: `Photo ${i}`}}
+              experimental={{}}
             />
           ))}
         </>,

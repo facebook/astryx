@@ -21,8 +21,9 @@
  *   lands a mouse's drag down in the thumbnail at once, and never
  *   hides the thumbnail; a close during the opening turns it around from
  *   where it shows; while the photo lands an Escape stays the viewer's;
- *   a viewer unmounted on close gives the thumbnail back; a plain image
- *   opener zooms; a storyboard of the opening
+ *   a viewer unmounted on close gives the thumbnail back; without
+ *   `experimental` a plain image opener opens plainly; a storyboard of the
+ *   opening
  * @position Interaction tests for Lightbox (browser), beside
  *   LightboxZoom.interaction.browser.spec.ts
  */
@@ -802,14 +803,17 @@ test('a viewer the page unmounts on close gives the thumbnail back after a drag 
   ).toBe('visible');
 });
 
-test('a photo opened from a plain image zooms out of it', async ({page}) => {
+test('without `experimental` a photo opened from a plain image opens plainly: the opener is no source (spec:AST-017 FR21)', async ({
+  page,
+}) => {
   await page.route('https://picsum.photos/**', async route =>
     route.fulfill({contentType: 'image/svg+xml', body: photoSvg('#d22')}),
   );
   await openStory(page, storybook(), 'core-lightbox--gallery');
   const driver = await touchDriver(page);
   // The Gallery story opens from <img> elements with a click handler and no
-  // experimental.sourceFor: a plain image is never the focused element.
+  // `experimental`: the zoom from the opener is experimental, so the viewer
+  // keeps its stable opening.
   const thumbnail = page.locator('#storybook-root img[style*="cover"]').nth(1);
   await expect
     .poll(async () =>
@@ -818,12 +822,12 @@ test('a photo opened from a plain image zooms out of it', async ({page}) => {
     .toBe(3000);
   await tap(driver, thumbnail);
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect
-    .poll(async () => page.locator('[data-lightbox-portal]').count(), {
-      timeout: 400,
-      intervals: [16],
-    })
-    .toBeGreaterThan(0);
+  // The zoom transition's copy would be in place within a frame or two.
+  await frames(page, 10);
+  expect(await page.locator('[data-lightbox-portal]').count()).toBe(0);
+  expect(await thumbnail.evaluate(el => getComputedStyle(el).visibility)).toBe(
+    'visible',
+  );
 });
 
 test('under Reduce Motion the photo cross-fades in place', async ({page}) => {

@@ -164,7 +164,8 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    * of it on open and back into it on close (UIKit's zoom transition), and a
    * photo dragged down lands in it. It returns null for an item with none on
    * screen. Without it, on a touch screen the element that opened the viewer
-   * is the opened item's source when it shows a picture.
+   * is the opened item's source when it shows a picture. Omitting
+   * `experimental` keeps the stable viewer, which opens and closes plainly.
    * @experimental
    */
   experimental?: LightboxExperimentalOptions;
@@ -649,12 +650,18 @@ export function Lightbox({
 
   // An item's source: the caller's, or for the opened item the element that
   // opened the viewer when it shows a picture (a thumbnail, or a button or
-  // link around one); a text button opens and closes plainly.
+  // link around one); a text button opens and closes plainly. Both are
+  // experimental: without `experimental` no item has a source, so the
+  // viewer keeps its stable opening and closing (spec:AST-017 FR21).
+  const isExperimental = experimental != null;
   const sourceFor = experimental?.sourceFor;
   const sourceElementFor = useCallback(
     (i: number): HTMLElement | null => {
       if (sourceFor != null) {
         return sourceFor(i);
+      }
+      if (!isExperimental) {
+        return null;
       }
       const opener = openerRef.current;
       return i === openedIndexRef.current &&
@@ -665,7 +672,7 @@ export function Lightbox({
         ? opener
         : null;
     },
-    [sourceFor],
+    [isExperimental, sourceFor],
   );
 
   // The viewer stays presented while its dialog is open, also while a closing
@@ -864,9 +871,10 @@ export function Lightbox({
   const {isTouch} = useTouchPresentation();
   // The opener is the element the viewer was opened from: a click or tap on
   // it (which a plain image, or a button in Safari, does not focus), else
-  // the focused element. Only the touch presentation reads it, through one
-  // listener every closed touch viewer shares (spec:AST-094 FR24).
-  useOpenerActivation(!isOpen && isTouch);
+  // the focused element. Only the touch presentation reads it, inside
+  // `experimental`, through one listener every closed touch viewer shares
+  // (spec:AST-094 FR24).
+  useOpenerActivation(!isOpen && isTouch && isExperimental);
   const onDragStart = () => {
     didDragRef.current = true;
   };
@@ -985,8 +993,8 @@ export function Lightbox({
   });
 
   // Open and close the dialog. Under the touch layer, with a source
-  // (`experimental.sourceFor`, or the element that opened the viewer for the
-  // opened item),
+  // (`experimental.sourceFor`, or inside `experimental` the element that
+  // opened the viewer for the opened item),
   // the photo zooms out of it on open and back into the current item's on
   // close (UIKit's zoom transition); the dialog stays open, the page inert,
   // until the photo has landed. Where the primary pointer is fine the viewer
