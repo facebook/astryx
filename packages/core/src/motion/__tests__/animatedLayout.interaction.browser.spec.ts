@@ -862,6 +862,47 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(moving).toBeGreaterThanOrEqual(20);
   });
 
+  test('in a dialog re-centered as it grows, the header and trigger before the change stay with their card (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center">
+        <div id="area" style="width: 320px; background: #fff; border: 1px solid #999">
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+        </div>
+      </div>`,
+    );
+    await change(page);
+    // The dialog rises by half the opening at once; what is before the
+    // change in it rises with it, never over the opening content.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a sticky footer stuck to the viewport stays at the edge when the body sets an overflow (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+      'body { overflow-x: hidden; }',
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
   for (const anchoring of ['auto', 'none']) {
     test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
       page,

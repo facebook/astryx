@@ -404,6 +404,15 @@ function scrollportOf(element: Element): {start: number; end: number} {
     node = node.parentElement
   ) {
     const overflow = view?.getComputedStyle(node).overflowY ?? 'visible';
+    if (
+      node === element.ownerDocument.body &&
+      view?.getComputedStyle(element.ownerDocument.documentElement)
+        .overflowY === 'visible'
+    ) {
+      // The body's overflow applies to the viewport while the root's is
+      // visible: the body is no scroller of its own.
+      continue;
+    }
     if (overflow !== 'visible' && overflow !== 'clip') {
       const box = node.getBoundingClientRect();
       return {
@@ -465,6 +474,7 @@ function collectCandidates(
   cache: WalkCache,
   walksToBand: boolean,
   ancestors: Set<Element>,
+  befores: Set<Element>,
 ): Map<Element, DOMRect> {
   const out = new Map<Element, DOMRect>();
   /** Takes `element`; returns false once it lies outside the band. */
@@ -506,6 +516,9 @@ function collectCandidates(
       return isAfter && walksToBand;
     }
     out.set(element, rect);
+    if (!isAfter) {
+      befores.add(element);
+    }
     return true;
   };
   // The change's chain up to the area, and from where it is inside a
@@ -583,6 +596,8 @@ interface Batch {
   walksToBand: boolean | null;
   /** The change's ancestors among the candidates. */
   readonly ancestors: Set<Element>;
+  /** The siblings before the change among the candidates. */
+  readonly befores: Set<Element>;
   /**
    * Where the area's content sat before the change, read once per frame: the
    * area's place in view less its scroll offset, so a scroll of the area, an
@@ -608,6 +623,7 @@ function batchFor(area: Element): Batch {
       visible: null,
       walksToBand: null,
       ancestors: new Set(),
+      befores: new Set(),
       originBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
@@ -741,16 +757,19 @@ function flush(batch: Batch): void {
     entries.push({element, before, carried, carriedMs});
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
-  // An ancestor of the change moves by its layout change alone: when scroll
-  // anchoring re-scrolls the area, an outer scroller or the page (a change
-  // above the visible part), its place in view shifts by the scroll while
-  // the content in view stays.
+  // An ancestor of the change, and a sibling before it, move by their layout
+  // change alone: when scroll anchoring re-scrolls the area, an outer
+  // scroller or the page (a change above the visible part), or the area
+  // itself moves as its content grows (a dialog re-centered), their place in
+  // view shifts by that while their place in the area stays.
   const origin = originOf(batch.area);
   const scrolledX = origin.x - (batch.originBefore?.x ?? origin.x);
   const scrolledY = origin.y - (batch.originBefore?.y ?? origin.y);
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    const isAncestor = batch.ancestors.has(entry.element);
+    // The siblings before the change stay with the ancestors around them.
+    const isAncestor =
+      batch.ancestors.has(entry.element) || batch.befores.has(entry.element);
     entry.rawX =
       entry.before.left - entry.after.left + (isAncestor ? scrolledX : 0);
     entry.rawY =
@@ -898,6 +917,7 @@ export function reportLayoutChange(
           batch.cache,
           batch.walksToBand,
           batch.ancestors,
+          batch.befores,
         );
         for (const [candidate, rect] of candidates) {
           if (!batch.before.has(candidate)) {
