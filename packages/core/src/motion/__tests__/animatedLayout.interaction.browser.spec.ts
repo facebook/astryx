@@ -709,6 +709,60 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
+  test('inside a positioned ancestor the siblings before the change take their final place (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">
+        <div style="position: absolute; left: 0; right: 0; bottom: 0">
+          <div id="trigger" class="row"></div><div id="grow" class="grow"></div>
+        </div>
+      </div>`,
+    );
+    await change(page);
+    // Docked at the bottom, the trigger rises as the content opens below it,
+    // but takes its place at once, so the revealing content never covers it.
+    expect(await page.evaluate(() => window.motionOf('#trigger'))).toEqual([]);
+  });
+
+  for (const anchoring of ['auto', 'none']) {
+    test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area" style="overflow-anchor: ${anchoring}"><div id="grow" class="grow"></div>${Array.from(
+          {length: 1000},
+          (_, i) => `<div id="r${i}" class="row"></div>`,
+        ).join('')}</div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area') as HTMLElement;
+        area.scrollTop = 3600 + 600;
+        const firstInView = document.querySelector('#r95') as HTMLElement;
+        const before = firstInView.getBoundingClientRect().top;
+        await window.change({
+          changed: '#grow',
+          mutate: `document.querySelector('#grow').classList.add('open')`,
+        });
+        const moving = [...area.children].filter(
+          row => row.getAnimations().length > 0,
+        ).length;
+        document.getAnimations().forEach(animation => animation.finish());
+        return {moving, before, after: firstInView.getBoundingClientRect().top};
+      });
+      if (anchoring === 'auto') {
+        // The browser keeps the rows in view where they were: nothing moves.
+        expect(result.moving).toBe(0);
+        expect(Math.abs(result.after - result.before)).toBeLessThan(1);
+      } else {
+        // They shift down 80 px, and glide there.
+        expect(result.moving).toBeGreaterThanOrEqual(12);
+      }
+    });
+  }
+
   test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
     page,
   }) => {

@@ -380,15 +380,19 @@ function rectOf(element: Element, cache: WalkCache): DOMRect {
  * after and before (a centered, end-aligned or space-between row, or
  * `order`, moves those too). A `display: contents` element has no box: its
  * children stand in its place, walked in the same direction. At each level
- * the walk stops at the first sibling past `band` (the siblings after it are
- * further along), so its cost grows with depth plus the siblings near the
- * visible part, never with the length of a list.
+ * the walk stops at the first sibling outside `band`, so its cost grows with
+ * depth plus the siblings near the visible part, never with the length of a
+ * list; where the area opts out of scroll anchoring (`walksToBand`), the walk
+ * after a change above the band goes on to the band, a cost that grows with
+ * that distance. Inside a positioned or top-layer ancestor only the siblings
+ * after the change are taken.
  */
 function collectCandidates(
   changed: Element,
   area: Element,
   band: Band,
   cache: WalkCache,
+  walksToBand: boolean,
 ): Map<Element, DOMRect> {
   const out = new Map<Element, DOMRect>();
   /** Takes `element`; returns false once it lies outside the band. */
@@ -414,17 +418,39 @@ function collectCandidates(
       return true;
     }
     const rect = rectOf(element, cache);
-    if (rect.top > band.end || rect.bottom < band.start) {
+    if (rect.top > band.end) {
       return false;
+    }
+    if (rect.bottom < band.start) {
+      // Above the band. Where the scroller opts out of scroll anchoring, the
+      // content after a change above the band shifts the rows in view, so
+      // the walk after it goes on to the band; with anchoring, it stops.
+      return isAfter && walksToBand;
     }
     out.set(element, rect);
     return true;
   };
+  // The change's chain up to the area, and from where it is inside a
+  // positioned or top-layer ancestor: that ancestor takes its final place,
+  // so inside it only the content after the change moves (the siblings
+  // before it stay, as the content revealing beside them does).
+  const chain: Element[] = [];
   for (
     let node: Element | null = changed;
     node != null && node !== area;
     node = node.parentElement
   ) {
+    chain.push(node);
+  }
+  // The levels below this index are inside a positioned ancestor.
+  let positionedFrom = 0;
+  for (let index = chain.length - 1; index > 0; index -= 1) {
+    if (partOf(chain[index], cache) === false) {
+      positionedFrom = index;
+      break;
+    }
+  }
+  for (const [level, node] of chain.entries()) {
     if (node !== changed && partOf(node, cache) === true) {
       // An ancestor of the change in flow: where its layout moves it (a
       // centered column), it glides, and what is inside moves only by its own
@@ -437,6 +463,9 @@ function collectCandidates(
       sibling = sibling.nextElementSibling
     ) {
       // The siblings after it, until one lies past the band.
+    }
+    if (level < positionedFrom) {
+      continue;
     }
     for (
       let sibling = node.previousElementSibling;
@@ -465,6 +494,8 @@ interface Batch {
   reach: number;
   /** The area's visible part, read once per frame. */
   visible: DOMRect | null;
+  /** Whether the area opts out of scroll anchoring, read once per frame. */
+  walksToBand: boolean | null;
   readonly cache: WalkCache;
   scheduled: boolean;
 }
@@ -482,6 +513,7 @@ function batchFor(area: Element): Batch {
       changedSize: 0,
       reach: 0,
       visible: null,
+      walksToBand: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
@@ -731,6 +763,10 @@ export function reportLayoutChange(
       batch.changed.add(element);
       batch.changedSize += rectOf(element, batch.cache).height;
       batch.visible ??= visibleRect(area);
+      batch.walksToBand ??=
+        area.ownerDocument.defaultView
+          ?.getComputedStyle(area)
+          .getPropertyValue('overflow-anchor') === 'none';
       // Changes in one frame add up: every change's walk reaches the band
       // their summed size can pull into view. When that outgrows the band
       // walked so far, the band at least doubles and every change is walked
@@ -743,7 +779,13 @@ export function reportLayoutChange(
       }
       const band = bandFor(batch.visible, batch.reach);
       for (const changed of walks) {
-        const candidates = collectCandidates(changed, area, band, batch.cache);
+        const candidates = collectCandidates(
+          changed,
+          area,
+          band,
+          batch.cache,
+          batch.walksToBand,
+        );
         for (const [candidate, rect] of candidates) {
           if (!batch.before.has(candidate)) {
             batch.before.set(candidate, rect);
