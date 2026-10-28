@@ -24,6 +24,7 @@ import {
   blockMainThread,
   busyWindowProof,
   compareCurve,
+  CONTROL_RGB,
   curveOf,
   drag,
   holdAnimations,
@@ -31,19 +32,19 @@ import {
   openStory,
   releaseAnimations,
   sampleCurve,
+  startBusyControl,
   startScreencast,
   timeline,
   touchDriver,
+  type TouchDriver,
+  type TouchScript,
   touchStoryboard,
   trackMarker,
   waitForAnimation,
   waitForRest,
   withStorybook,
   writeEvidence,
-  type TouchDriver,
-  type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside, presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -423,51 +424,53 @@ test('under Reduce Motion a cancelled drag returns by a fade of 200 ms or less, 
 
 test('the cancel keeps moving every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const v = await openViewer(page);
   await markElement(v.photo, {mode: 'outline'});
+  // A compositor-only control animation in the same window: what the
+  // compositor presented while the main thread spun, on this machine.
+  await startBusyControl(page);
   const cast = await startScreencast(page);
-  await v.driver.play(pullThenFlickUp(v.centre, 150, 60));
-  const [ret] = await waitForAnimation(v.photo, {minProgressMs: 16});
-  const block = await blockMainThread(page, 600);
+  // Pulled 300 px, so the return takes long enough to judge: from 150 px it
+  // came within 2 px of rest in about 75 ms in WebKit, 5 frames of the
+  // control, too close to the 4 a judgment needs on a loaded runner.
+  await v.driver.play(pullThenFlickUp(v.centre, 300, 60));
+  // Blocked inside the page once the return runs on the compositor, 16 ms in,
+  // as the dismissal's proof is: a block started from the test lands later in
+  // the return, by a varying amount, and leaves less of it to judge.
+  const block = await blockMainThread(page, 600, {
+    during: v.photo,
+    minProgressMs: 16,
+  });
   await page.waitForTimeout(100);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
   // Judged until the photo is within 2 px of where it ends, the harness's
   // usual value: the screencast reports whole pixels (2 CSS px apart in
   // WebKit), so the spring's tail shows plateaus (210, 208, 208, 208 against
   // a final 206) that would read as stalls.
   const proof = busyWindowProof(
     tracked,
-    {from: block.from, to: Math.min(block.to, ret.to)},
-    {axis: 'y', settledWithin: 2},
+    {from: block.from, to: block.to},
+    {axis: 'y', settledWithin: 2, control},
   );
   await writeEvidence(
     'busy-main-thread/lightbox-dismiss-cancel',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, ret, proof},
+        {block, proof, control},
         null,
         1,
       ),
     },
     testInfo,
   );
-  // At most one frame dropped at the recording's own cadence. Linux WebKit
-  // composites in software on the same CPU the blocked main thread spins
-  // on, so on a loaded machine it presents more slowly during the block
-  // than outside it: its median is held to 1.5 times the outside pace.
-  expect(proof.medianFrameMs).toBeLessThanOrEqual(
-    Math.max(
-      20,
-      cadenceOutside(tracked, block) * (browserName === 'webkit' ? 1.5 : 1.15),
-    ),
-  );
-  expect(proof.frames).toBeGreaterThanOrEqual(
-    presentedFramesExpected(proof) - 2,
-  );
-  expect(proof.longestStallFrames).toBeLessThanOrEqual(2);
+  // Judged against the control: a two-core runner's software compositor and
+  // the screencast share the core the block spins on, so every compositor
+  // animation presents fewer frames there, the control's too. The photo keeps
+  // pace with the control, and a main-thread animation would not.
+  expect(proof.verdict.failures).toEqual([]);
   expect(proof.monotonic).toBe(true);
   await expectRestored(v);
 });

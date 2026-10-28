@@ -24,27 +24,30 @@
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
   blockMainThread,
+  busyWindowProof,
   compareCurve,
+  CONTROL_RGB,
   curveOf,
   drag,
-  frameStats,
   frames,
   holdAnimations,
   openStory,
   releaseAnimations,
   sampleCurve,
+  startBusyControl,
   startScreencast,
   timeline,
   touchDriver,
+  type TouchDriver,
+  type TouchScript,
   touchStoryboard,
+  trackMarker,
   waitForAnimation,
   waitForRest,
   withStorybook,
   writeEvidence,
-  type TouchDriver,
-  type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside, regionSignal} from './screenSignal';
+import {regionSignal, signalFrames} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -386,7 +389,6 @@ test('a gallery photo dismisses with a drag down', async ({page}) => {
 
 test('the dismissal keeps changing the screen every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const v = await openViewer(page);
   // Where the photo starts: as it leaves and the backdrop fades behind it,
@@ -396,6 +398,9 @@ test('the dismissal keeps changing the screen every frame while the main thread 
   if (box == null) {
     throw new Error('no photo');
   }
+  // A compositor-only control animation in the same window: what the
+  // compositor presented while the main thread spun, on this machine.
+  await startBusyControl(page);
   const cast = await startScreencast(page);
   await v.driver.play(pullDown(v.centre, 60));
   // Blocked inside the page once the dismissal runs on the compositor.
@@ -411,14 +416,19 @@ test('the dismissal keeps changing the screen every frame while the main thread 
     signal.find(c => c.t >= block.from && Math.abs(c.value - final) <= 1)?.t ??
     block.to;
   const window = {from: block.from + 20, to: Math.min(block.to, settled) - 1};
-  const stats = frameStats(signal, window, 0.05);
-  const cadence = cadenceOutside(castFrames, block);
-  const expected = Math.floor((window.to - window.from) / cadence);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
+  // A change of the region's mean brightness by more than 0.05 counts, as
+  // the signal's own judgment did; settled within 1 of its final value.
+  const proof = busyWindowProof(signalFrames(signal, 5), window, {
+    axis: 'y',
+    settledWithin: 5,
+    control,
+  });
   await writeEvidence(
     'busy-main-thread/lightbox-dismiss',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, window, cadence, expected, stats, signal},
+        {block, window, proof, signal, control},
         null,
         1,
       ),
@@ -426,13 +436,11 @@ test('the dismissal keeps changing the screen every frame while the main thread 
     testInfo,
   );
   expect(window.to - window.from).toBeGreaterThan(100);
-  // At the recording's own pace (Linux WebKit composites in software on the
-  // CPU the blocked main thread spins on: 1.5 times that pace there).
-  expect(stats.medianFrameMs).toBeLessThanOrEqual(
-    Math.max(20, cadence * (browserName === 'webkit' ? 1.5 : 1.15)),
-  );
-  expect(stats.changed).toBeGreaterThanOrEqual(expected - 2);
-  expect(stats.longestStallMs).toBeLessThan(cadence * 2.5);
+  // Judged against the control: a two-core runner's software compositor and
+  // the screencast share the core the block spins on, so every compositor
+  // animation presents fewer frames there, the control's too. The screen
+  // keeps changing with the control, and a main-thread fade would not.
+  expect(proof.verdict.failures).toEqual([]);
   await expect(v.dialog).toBeHidden();
 });
 

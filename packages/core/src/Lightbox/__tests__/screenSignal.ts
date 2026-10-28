@@ -4,16 +4,18 @@
  * @file screenSignal.ts
  * @input A screencast's frames (the interaction harness's startScreencast)
  * @output Exports `cadenceOutside` (the pace a recording keeps while the main
- *   thread is free, to judge a blocked main thread against), `regionSignal`
- *   (a region's mean brightness in every frame: what changes on the screen
- *   where nothing carries a marker, as a fade) and `presentedFramesExpected`
- *   (the frames a busy proof's window can show at no more than 60 a second)
+ *   thread is free), `regionSignal` (a region's mean brightness in every
+ *   frame: what changes on the screen where nothing carries a marker, as a
+ *   fade), `signalFrames` (that signal as the frames `busyWindowProof` reads,
+ *   to judge it against the harness's busy control) and
+ *   `presentedFramesExpected` (the frames a busy proof's window can show at no
+ *   more than 60 a second)
  * @position Test helper for Lightbox's busy-main-thread proofs
  *   (__tests__/*.interaction.browser.spec.ts)
  */
 
 import type {Page} from '@playwright/test';
-import type {CastFrame} from '@astryxdesign/interaction-harness';
+import type {CastFrame, TrackedFrame} from '@astryxdesign/interaction-harness';
 
 /**
  * The recording's own median frame interval outside the block (ms): the
@@ -120,4 +122,21 @@ export function presentedFramesExpected(proof: {
     1000 / 60,
   );
   return Math.floor((proof.judged.to - proof.judged.from) / frameMs);
+}
+
+/**
+ * A region signal as the frames `busyWindowProof` reads: each value, times
+ * `scale`, as the frame's `y` (judge it with `axis: 'y'`). The proof counts a
+ * frame as moved when that changes by more than 0.25, so a scale of 5 counts
+ * a change of the region's mean brightness by more than 0.05 of 255.
+ */
+export function signalFrames(
+  signal: ReadonlyArray<{t: number; value: number}>,
+  scale: number,
+): TrackedFrame[] {
+  return signal.map(({t, value}) => ({
+    t,
+    box: {x: 0, y: value * scale, width: 0, height: 0},
+    pixels: 1,
+  }));
 }
