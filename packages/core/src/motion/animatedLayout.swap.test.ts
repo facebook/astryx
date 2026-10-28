@@ -723,7 +723,7 @@ describe('a copy laid outside its ancestors', () => {
     expect(swap!.copy.style.lineHeight).toBe('1.45');
   });
 
-  it('carries a line-height factor without a typed style map, and leaves an equal one to inherit', () => {
+  it('carries a line-height factor without a typed style map, also where the host passes the same number', () => {
     const {handle, content} = setup();
     const area = document.getElementById('area') as HTMLElement;
     const computed = new Map<Element, Record<string, string>>([
@@ -747,20 +747,21 @@ describe('a copy laid outside its ancestors', () => {
     const swap = holdLayoutSwap(handle, content);
     playLayoutSwap(swap!, {host: area, copy: travel, incoming: []});
     expect(swap!.copy.style.lineHeight).toBe('1.5');
-    // The same factor in the host: nothing written, the factor inherits.
+    // The host passes the same factor, perhaps as a length: still written.
     computed.set(area, {'font-size': '16px', 'line-height': '24px'});
     const again = holdLayoutSwap(handle, content);
     playLayoutSwap(again!, {host: area, copy: travel, incoming: []});
     vi.restoreAllMocks();
-    expect(again!.copy.style.lineHeight).toBe('');
+    expect(again!.copy.style.lineHeight).toBe('1.5');
   });
 
   it('keeps a length line-height as its pixels when the typed style map reports a length', () => {
     const {handle, content} = setup();
     const area = document.getElementById('area') as HTMLElement;
     const computed = new Map<Element, Record<string, string>>([
+      // The host passes the same 20px as a factor (1.25 at 16px).
       [content, {'font-size': '13px', 'line-height': '20px'}],
-      [area, {'font-size': '16px', 'line-height': '24px'}],
+      [area, {'font-size': '16px', 'line-height': '20px'}],
     ]);
     const real = window.getComputedStyle;
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
