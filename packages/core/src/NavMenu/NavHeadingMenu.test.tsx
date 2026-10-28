@@ -675,6 +675,15 @@ describe('NavHeadingMenu as an action group (family:action-groups)', () => {
     expect(item('Sign out')).not.toHaveAttribute('draggable');
   });
 
+  it('selects no text under a slide across its items', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Dashboard" onClick={() => {}} />
+      </NavHeadingMenu>,
+    );
+    expect(screen.getByRole('menu')).toHaveStyle({userSelect: 'none'});
+  });
+
   it('leaves a Ctrl-, Cmd-, Shift- or middle click on a link item to the browser', () => {
     render(
       <NavHeadingMenu>
