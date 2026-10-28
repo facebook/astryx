@@ -5,8 +5,7 @@
 /**
  * @file hooks.ts
  * @input Uses untransformed DOM layout geometry from the Selector's outer
- *   anchor, listbox, and selected option; useAnnounce and the translator for
- *   result counts; useAnnounceRenderedText for the caller's empty message
+ *   anchor, listbox, and selected option
  * @output Hooks for Selector: useSelectedItemOffset, and useCombobox (public,
  *   exported from the Selector entry point; also used by CommandPalette, and
  *   by products for a combobox over a text field they render, spec:AST-075)
@@ -16,15 +15,11 @@
  * - /packages/core/src/Selector/useCombobox.doc.mjs
  */
 
-import {useCallback, useEffect, useRef, useState} from 'react';
-import {useAnnounce} from '../hooks/useAnnounce';
-import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
+import {useCallback, useState} from 'react';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {useTranslator} from '../i18n';
-import {devWarn} from '../utils/devWarning';
 import {isImeKeyEvent} from '../utils/ime';
-import type {ReactNode, RefObject} from 'react';
+import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
 
 // The selected row renders one optical pixel below the closed trigger label at
@@ -212,29 +207,6 @@ interface UseComboboxOptions<T extends ComboboxOption> {
    * its own key model and ignores it.
    */
   field?: ComboboxField;
-  /**
-   * The query the current options answer. When it changes to a non-empty value
-   * while the list is open (`isOpen`), the number of options, or that there are
-   * none, is announced politely through the shared announcer (spec:AST-075
-   * FR7). The announcement follows where the hook is called (spec:AST-086
-   * FR14): inside a modal, call it from a component rendered inside it.
-   */
-  query?: string;
-  /**
-   * What the field shows when a non-empty `query` matches no options, and the
-   * words announced for it. Render the returned `emptySearchText` inside the
-   * element that spreads `getEmptyProps()`: the hook announces that element's
-   * rendered text, read from the DOM, so an element is announced as written
-   * and the announced words are always the shown words (spec:AST-086 FR7). With
-   * no such element, a string is announced as it is.
-   * @default 'No results found'
-   */
-  emptySearchText?: ReactNode;
-}
-
-/** Spread onto the element that shows `emptySearchText`. */
-interface ComboboxEmptyProps {
-  ref: (element: HTMLElement | null) => void;
 }
 
 /** Spread onto the caller's field. */
@@ -284,9 +256,6 @@ interface UseComboboxResult<T extends ComboboxOption> {
   getFieldProps: (props?: ComboboxFieldHandlers) => ComboboxFieldProps;
   getListboxProps: () => ComboboxListboxProps;
   getOptionProps: (index: number) => ComboboxOptionProps;
-  /** `emptySearchText`, or the catalog's "No results found" when it is omitted. */
-  emptySearchText: ReactNode;
-  getEmptyProps: () => ComboboxEmptyProps;
 }
 
 /** Whether a key is chorded with a modifier, such as Shift+Enter. */
@@ -305,7 +274,8 @@ function hasModifier(e: React.KeyboardEvent): boolean {
  * For a text field the caller renders (spec:AST-075), `getFieldProps`,
  * `getListboxProps` and `getOptionProps` carry the combobox semantics, the
  * field's keys and the pointer model, while the caller keeps the field, the
- * rows and where the list renders.
+ * rows and where the list renders. The caller announces each new result count
+ * through useAnnounce (spec:AST-075 DEC-2), with the words the field shows.
  */
 export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
   selectableItems,
@@ -320,8 +290,6 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
   onSearchSeed,
   listboxId,
   field = 'input',
-  query,
-  emptySearchText: emptySearchTextOption,
 }: UseComboboxOptions<T>): UseComboboxResult<T> {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
@@ -709,77 +677,6 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
     ],
   );
 
-  // The result count for each new query, spoken through the one shared live
-  // region rather than one per field (FR7). The first query a field mounts
-  // with is not new, so it is not announced.
-  const announce = useAnnounce();
-  const t = useTranslator();
-  const emptySearchText =
-    emptySearchTextOption ?? t('@astryx.combobox.noResults');
-  const announcedQueryRef = useRef(query);
-  // The query a field mounts with is not announced, but every later query is,
-  // a return to that first query included: latched the first time the query
-  // differs from it (adjusting state during render, as CodeBlock does).
-  const [mountQuery] = useState(query);
-  const [hasQueryChanged, setHasQueryChanged] = useState(false);
-  if (!hasQueryChanged && query !== mountQuery) {
-    setHasQueryChanged(true);
-  }
-  const optionCount = selectableItems.length;
-  // The element the caller shows `emptySearchText` in. A stable callback ref,
-  // so React never detaches and reattaches an unchanged element.
-  const emptyElementRef = useRef<HTMLElement | null>(null);
-  const setEmptyElement = useCallback((element: HTMLElement | null) => {
-    emptyElementRef.current = element;
-  }, []);
-  const getEmptyProps = useCallback(
-    (): ComboboxEmptyProps => ({ref: setEmptyElement}),
-    [setEmptyElement],
-  );
-  // Synchronizes the shared live region (the external system) with each new
-  // query. It writes only the count, or a string `emptySearchText` that no
-  // element shows; a shown empty message speaks for itself below.
-  useEffect(() => {
-    if (query == null || query === '') {
-      announcedQueryRef.current = query;
-      return;
-    }
-    if (!isOpen || announcedQueryRef.current === query) {
-      return;
-    }
-    announcedQueryRef.current = query;
-    if (optionCount > 0) {
-      announce(t('@astryx.combobox.resultCount', {count: optionCount}));
-      return;
-    }
-    if (emptyElementRef.current != null) {
-      return;
-    }
-    if (typeof emptySearchText === 'string') {
-      announce(emptySearchText);
-      return;
-    }
-    devWarn(
-      'useCombobox',
-      'nothing is announced when a query matches no options: emptySearchText ' +
-        'is not a string, and no element spreads getEmptyProps(). Render ' +
-        'emptySearchText inside the element that spreads getEmptyProps().',
-    );
-  }, [query, isOpen, optionCount, announce, t, emptySearchText]);
-  // None, as shown: the empty message's own rendered text, read from the DOM
-  // by the shared helper Selector and Typeahead use for theirs, so the region
-  // says what the screen says (spec:AST-086 FR7, spec:AST-056 FR3). The query
-  // is the occasion: each new query that matches nothing is announced again.
-  useAnnounceRenderedText(
-    emptyElementRef,
-    isOpen &&
-      optionCount === 0 &&
-      query != null &&
-      query !== '' &&
-      (hasQueryChanged || query !== mountQuery),
-    query ?? '',
-  );
-
   return {
     highlightedIndex,
     setHighlightedIndex,
@@ -791,7 +688,5 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
     getFieldProps,
     getListboxProps,
     getOptionProps,
-    emptySearchText,
-    getEmptyProps,
   };
 }

@@ -109,19 +109,6 @@ export const docs = {
         'The text field `getFieldProps` wires, one you render and keep focused while a person picks: a single-line `input`, or a multi-line `textarea` or contenteditable element. It sets the field\u2019s role and whether ArrowDown shows a hidden list. `onKeyDown` ignores it.',
       default: "'input'",
     },
-    {
-      name: 'options.query',
-      type: 'string',
-      description:
-        'The query the current options answer, for a field that filters them. When it changes to a non-empty value while the list is open (`isOpen`), the number of options, or that there are none, is announced politely through the shared announcer, never a live region of the field\u2019s own. Update it together with the options it produced. The query a field mounts with is not announced. The announcement follows where `useCombobox` is called: a field inside a modal, such as a Dialog, needs the call in a component rendered inside that modal. For none, render the returned `emptySearchText` inside the element that spreads the returned `getEmptyProps()`: the hook announces the words that element shows.',
-    },
-    {
-      name: 'options.emptySearchText',
-      type: 'ReactNode',
-      description:
-        'What the field shows when a non-empty `query` matches no options, and the words announced for it. Render the returned `emptySearchText` inside the element that spreads `getEmptyProps()`: the hook announces that element\u2019s rendered text, read from the DOM, so an element is announced as written and the announced words are the shown words. With no such element, a string is announced as it is.',
-      default: "'No results found'",
-    },
   ],
   returns: [
     {
@@ -182,18 +169,6 @@ export const docs = {
       description:
         'Props for the option at `index`: its `id`, `role`, `aria-selected` (true on the active option), `aria-disabled` on a disabled one, a pointer move that makes it active without moving focus, and a press that picks it.',
     },
-    {
-      name: 'emptySearchText',
-      type: 'ReactNode',
-      description:
-        '`options.emptySearchText`, or the catalog\u2019s \u201cNo results found\u201d when it is omitted. Render it inside the element that spreads `getEmptyProps()` while the list is open (`isOpen`) and a non-empty `query` matches no options.',
-    },
-    {
-      name: 'getEmptyProps',
-      type: '() => object',
-      description:
-        'Props for the element that shows `emptySearchText`: a `ref` the hook reads the rendered words from, so what it announces for no matches is what that element shows. Render the element beside the listbox, never inside it.',
-    },
   ],
   usage: {
     description:
@@ -212,12 +187,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For a field you render, pass `field` and `query`, spread the prop getters, show `emptySearchText` in the `getEmptyProps()` element when nothing matches, and set the active option yourself when a new query changes the options: the first option so Enter picks it, or -1 so Enter stays the field\u2019s.',
+          'For a field you render, pass `field`, spread the prop getters, and set the active option yourself when a new query changes the options: the first option so Enter picks it, or -1 so Enter stays the field\u2019s.',
       },
       {
         guidance: true,
         description:
-          'Without `query`, announce the number of results through useAnnounce when the options change for a new query.',
+          'Announce the number of results through useAnnounce when the options change for a new query (AST-075 DEC-2). When nothing matches, announce the words the field shows for it.',
       },
       {
         guidance: false,
@@ -278,7 +253,7 @@ export const docs = {
         category: 'Content',
         requirement: 'AST-075 FR7',
         description:
-          'With `query`, each new query announces the number of options, or that there are none, politely through the shared announcer. For none it announces the words the field shows: the rendered text of the element that spreads `getEmptyProps()`.',
+          'Yours to announce: compose useAnnounce (AST-075 DEC-2) so each new query announces the number of options, or that there are none, once and politely. For none, announce the words the field shows.',
       },
     ],
   },
@@ -314,10 +289,6 @@ export const docsDense = {
     'options.isDisabled': 'ignore clicks + keys.',
     'options.field':
       "field getFieldProps wires (you render + keep focused): 'input' single-line, 'textarea' / 'contenteditable' multi-line. sets role + whether ArrowDown shows hidden list. onKeyDown ignores it.",
-    'options.query':
-      'query current options answer; change to non-empty while open (isOpen) -> count (or none) announced politely via shared announcer, no own live region. update w/ its options. mount query not announced. announcement follows where useCombobox is called: a field in a modal (Dialog) needs the call inside it. none: render returned emptySearchText in getEmptyProps() element; hook announces its shown words.',
-    'options.emptySearchText':
-      'ReactNode shown + announced when non-empty query matches nothing (default \u201cNo results found\u201d). render returned emptySearchText in getEmptyProps() element: hook announces its rendered DOM text (element announced as written). no element: string announced as is.',
   },
   returnDescriptions: {
     highlightedIndex:
@@ -336,10 +307,6 @@ export const docsDense = {
       'listbox props (id, role, press keeps focus in field); render anywhere incl. page flow while isOpen + options; name it (aria-label / aria-labelledby).',
     getOptionProps:
       'option props at index: id, role, aria-selected on active, aria-disabled, pointer move activates w/o focus move, press picks.',
-    emptySearchText:
-      'options.emptySearchText or catalog \u201cNo results found\u201d; render in getEmptyProps() element while open + non-empty query matches nothing.',
-    getEmptyProps:
-      'props (ref) for element showing emptySearchText; hook announces its rendered words for none. render beside listbox, not inside.',
   },
   usage: {
     description:
@@ -358,12 +325,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Own field: pass field + query, spread the getters, show emptySearchText in getEmptyProps() element when nothing matches, set active option on new query (first: Enter picks; -1: Enter stays the field\u2019s).',
+          'Own field: pass field, spread the getters, set active option on new query (first: Enter picks; -1: Enter stays the field\u2019s).',
       },
       {
         guidance: true,
         description:
-          'W/o query: announce result count via useAnnounce on new query.',
+          'Announce result count via useAnnounce on new query (AST-075 DEC-2); for none, the words the field shows.',
       },
       {
         guidance: false,
@@ -422,7 +389,7 @@ export const docsDense = {
         category: 'Content',
         requirement: 'AST-075 FR7',
         description:
-          'w/ query: each new query announces count or none politely via shared announcer; none = rendered text of getEmptyProps() element (shown words).',
+          'yours: compose useAnnounce (DEC-2), each new query announces count or none once, politely; none = the words the field shows.',
       },
     ],
   },

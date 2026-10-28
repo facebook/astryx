@@ -3,61 +3,27 @@
 /**
  * @file useCombobox.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event,
- *   useCombobox, the shared announcer and the layer dismissal stack
+ *   useCombobox and the layer dismissal stack
  * @output Unit tests for useCombobox over a text field the caller renders
- * @position Tests; validates the field props, keys, pointer model and result
- *   announcements of hooks.ts against spec:AST-075 FR1–FR7
+ * @position Tests; validates the field props, keys and pointer model of
+ *   hooks.ts against spec:AST-075 FR1–FR6
  *
  * SYNC: When useCombobox's field props or keys change, update these tests.
  */
 
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   COMBOBOX_PATTERN,
   expectAccessibilitySpec,
   type ComboboxStateFacts,
 } from '@astryxdesign/a11y-spec';
-import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {resetLayerStackForTests} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {useCombobox} from './hooks';
-
-// Every call the hook makes to the shared announcer. The channel exposes an
-// identical message written twice in one frame once (spec:AST-086 FR9), so
-// counting what it exposes cannot see the hook announcing twice. The mock
-// wraps the real useAnnounce, so the live regions still fill as before.
-const {announceSpy} = vi.hoisted(() => ({announceSpy: vi.fn<AnnounceFn>()}));
-vi.mock('../hooks/useAnnounce', async importActual => {
-  const actual = await importActual<{
-    useAnnounce: () => AnnounceFn;
-    __resetLiveRegionsForTest: () => void;
-  }>();
-  const {useCallback} = await import('react');
-  return {
-    ...actual,
-    useAnnounce: (): AnnounceFn => {
-      const realAnnounce = actual.useAnnounce();
-      return useCallback<AnnounceFn>(
-        (message, politeness) => {
-          announceSpy(message, politeness);
-          realAnnounce(message, politeness);
-        },
-        [realAnnounce],
-      );
-    },
-  };
-});
 
 type Person = {value: string; label: string; disabled?: boolean};
 type Field = 'input' | 'textarea' | 'contenteditable';
@@ -69,7 +35,6 @@ const PEOPLE: Person[] = [
 ];
 
 afterEach(() => {
-  __resetLiveRegionsForTest();
   resetLayerStackForTests();
 });
 
@@ -77,14 +42,10 @@ interface PickerProps {
   field: Field;
   options?: Person[];
   isInitiallyOpen?: boolean;
-  query?: string;
   onSelect?: (value: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
   onFieldKeyDown?: (event: React.KeyboardEvent) => void;
-  emptySearchText?: ReactNode;
-  /** Render `emptySearchText` while the list is open with no options. */
-  hasEmptyMessage?: boolean;
 }
 
 /** A field the test renders itself, with its list in the page's flow. */
@@ -92,13 +53,10 @@ function Picker({
   field,
   options = PEOPLE,
   isInitiallyOpen = true,
-  query,
   onSelect,
   onOpen,
   onClose,
   onFieldKeyDown,
-  emptySearchText,
-  hasEmptyMessage = false,
 }: PickerProps) {
   const [isOpen, setIsOpen] = useState(isInitiallyOpen);
   const combobox = useCombobox({
@@ -115,8 +73,6 @@ function Picker({
     onSelect,
     listboxId: 'people',
     field,
-    query,
-    emptySearchText,
   });
   const fieldProps = combobox.getFieldProps({onKeyDown: onFieldKeyDown});
   return (
@@ -141,11 +97,6 @@ function Picker({
             </div>
           ))}
         </div>
-      ) : null}
-      {hasEmptyMessage && isOpen && options.length === 0 ? (
-        <p data-testid="empty" {...combobox.getEmptyProps()}>
-          {combobox.emptySearchText}
-        </p>
       ) : null}
     </>
   );
@@ -607,308 +558,5 @@ describe('useCombobox field props — pointer (FR6)', () => {
     box.focus();
     expect(fireEvent.mouseDown(screen.getByRole('listbox'))).toBe(false);
     expect(fireEvent.mouseDown(option('Ada'))).toBe(false);
-  });
-});
-
-describe('useCombobox field props — result count (FR7)', () => {
-  beforeEach(() => {
-    announceSpy.mockClear();
-  });
-
-  /** The messages the hook handed the announcer, one entry per call. */
-  function announced(): string[] {
-    return announceSpy.mock.calls.map(([message]) => message);
-  }
-
-  function politeText(): string {
-    return (
-      document.querySelector('[data-astryx-live-region="polite"]')
-        ?.textContent ?? ''
-    );
-  }
-
-  async function nextFrames(): Promise<void> {
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-  }
-
-  // Every non-empty text written to the shared polite region, in order: one
-  // entry per update a screen reader can hear.
-  const observers: MutationObserver[] = [];
-  afterEach(() => {
-    for (const observer of observers.splice(0)) {
-      observer.disconnect();
-    }
-  });
-  function recordPoliteWrites(): string[] {
-    const writes: string[] = [];
-    const observer = new MutationObserver(records => {
-      for (const record of records) {
-        if (
-          record.target instanceof Element &&
-          record.target.matches('[data-astryx-live-region="polite"]')
-        ) {
-          for (const node of record.addedNodes) {
-            if (node.textContent) {
-              writes.push(node.textContent);
-            }
-          }
-        }
-      }
-    });
-    observer.observe(document.body, {childList: true, subtree: true});
-    observers.push(observer);
-    return writes;
-  }
-
-  it('announces the count once for each new query through the shared announcer', async () => {
-    const writes = recordPoliteWrites();
-    const {rerender} = render(<Picker field="input" query="" />);
-    rerender(<Picker field="input" query="a" />);
-    await waitFor(() => expect(politeText()).toBe('3 results'));
-
-    rerender(<Picker field="input" query="ad" options={PEOPLE.slice(0, 1)} />);
-    await waitFor(() => expect(politeText()).toBe('1 result'));
-
-    rerender(<Picker field="input" query="zz" options={[]} />);
-    await waitFor(() => expect(politeText()).toBe('No results found'));
-    await nextFrames();
-    expect(writes).toEqual(['3 results', '1 result', 'No results found']);
-    expect(announced()).toEqual(['3 results', '1 result', 'No results found']);
-
-    // Every live region on the page is the shared announcer's; the field
-    // renders none of its own.
-    const regions = Array.from(document.querySelectorAll('[aria-live]'));
-    expect(regions.length).toBeGreaterThan(0);
-    for (const region of regions) {
-      expect(region).toHaveAttribute('data-astryx-live-region');
-    }
-  });
-
-  it('announces nothing for the query a field mounts with, an empty query, or the same query again', async () => {
-    const writes = recordPoliteWrites();
-    const {rerender} = render(<Picker field="input" query="a" />);
-    await nextFrames();
-    expect(politeText()).toBe('');
-
-    rerender(<Picker field="input" query="" />);
-    await nextFrames();
-    expect(politeText()).toBe('');
-
-    rerender(<Picker field="input" query="c" />);
-    await waitFor(() => expect(politeText()).toBe('3 results'));
-    // Options that change under the same query are not a new query.
-    rerender(<Picker field="input" query="c" options={PEOPLE.slice(2)} />);
-    await nextFrames();
-    expect(politeText()).toBe('3 results');
-    expect(writes).toEqual(['3 results']);
-    expect(announced()).toEqual(['3 results']);
-  });
-
-  it('announces nothing while the list is hidden, and the count once it shows', async () => {
-    const writes = recordPoliteWrites();
-    const user = userEvent.setup();
-    const {rerender} = render(
-      <Picker field="input" query="" isInitiallyOpen={false} />,
-    );
-    rerender(<Picker field="input" query="a" isInitiallyOpen={false} />);
-    await nextFrames();
-    expect(politeText()).toBe('');
-
-    await user.click(fieldFor('input'));
-    await user.keyboard('{ArrowDown}');
-    await waitFor(() => expect(politeText()).toBe('3 results'));
-    await nextFrames();
-    expect(writes).toEqual(['3 results']);
-    expect(announced()).toEqual(['3 results']);
-  });
-
-  /** The words the field shows for no matches, as a reader sees them. */
-  function shownEmptyText(): string {
-    return (screen.getByTestId('empty').textContent ?? '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  it('announces the empty message the field shows, word for word', async () => {
-    const writes = recordPoliteWrites();
-    const {rerender} = render(
-      <Picker
-        field="input"
-        query=""
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    rerender(
-      <Picker
-        field="input"
-        query="zz"
-        options={[]}
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    await waitFor(() => expect(politeText()).toBe('No one matches'));
-    await nextFrames();
-    expect(shownEmptyText()).toBe('No one matches');
-    expect(writes).toEqual([shownEmptyText()]);
-    expect(announced()).toEqual([shownEmptyText()]);
-  });
-
-  it('announces an empty message with a link as it renders', async () => {
-    const empty = (
-      <>
-        No one matches. <a href="#invite">Invite someone</a>
-      </>
-    );
-    const writes = recordPoliteWrites();
-    const {rerender} = render(
-      <Picker field="input" query="" emptySearchText={empty} hasEmptyMessage />,
-    );
-    rerender(
-      <Picker
-        field="input"
-        query="zz"
-        options={[]}
-        emptySearchText={empty}
-        hasEmptyMessage
-      />,
-    );
-    await waitFor(() =>
-      expect(politeText()).toBe('No one matches. Invite someone'),
-    );
-    await nextFrames();
-    expect(shownEmptyText()).toBe('No one matches. Invite someone');
-    expect(writes).toEqual([shownEmptyText()]);
-    expect(announced()).toEqual([shownEmptyText()]);
-  });
-
-  it('shows and announces the catalog message when emptySearchText is omitted', async () => {
-    const writes = recordPoliteWrites();
-    const {rerender} = render(
-      <Picker field="input" query="" hasEmptyMessage />,
-    );
-    rerender(<Picker field="input" query="zz" options={[]} hasEmptyMessage />);
-    await waitFor(() => expect(politeText()).toBe('No results found'));
-    await nextFrames();
-    expect(shownEmptyText()).toBe('No results found');
-    expect(writes).toEqual([shownEmptyText()]);
-    expect(announced()).toEqual([shownEmptyText()]);
-  });
-
-  it('announces each new query that matches nothing, and not an empty message the field mounts with', async () => {
-    const writes = recordPoliteWrites();
-    const {rerender} = render(
-      <Picker
-        field="input"
-        query="zz"
-        options={[]}
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    await nextFrames();
-    expect(writes).toEqual([]);
-
-    rerender(
-      <Picker
-        field="input"
-        query="zzz"
-        options={[]}
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    await waitFor(() => expect(writes).toEqual(['No one matches']));
-    await nextFrames();
-    rerender(
-      <Picker
-        field="input"
-        query="zzzz"
-        options={[]}
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    await waitFor(() =>
-      expect(writes).toEqual(['No one matches', 'No one matches']),
-    );
-    expect(announced()).toEqual(['No one matches', 'No one matches']);
-  });
-
-  it('announces a return to the query the field mounted with, once the query has changed', async () => {
-    const writes = recordPoliteWrites();
-    const empty = (query: string) => (
-      <Picker
-        field="input"
-        query={query}
-        options={[]}
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />
-    );
-    const {rerender} = render(empty('zz'));
-    await nextFrames();
-    expect(writes).toEqual([]);
-
-    rerender(
-      <Picker
-        field="input"
-        query="z"
-        emptySearchText="No one matches"
-        hasEmptyMessage
-      />,
-    );
-    await waitFor(() => expect(writes).toEqual(['3 results']));
-    await nextFrames();
-
-    rerender(empty('zz'));
-    await waitFor(() =>
-      expect(writes).toEqual(['3 results', 'No one matches']),
-    );
-    expect(announced()).toEqual(['3 results', 'No one matches']);
-  });
-
-  it('announces a string emptySearchText that no element shows', async () => {
-    const {rerender} = render(
-      <Picker field="input" query="" emptySearchText="No one matches" />,
-    );
-    rerender(
-      <Picker
-        field="input"
-        query="zz"
-        options={[]}
-        emptySearchText="No one matches"
-      />,
-    );
-    await waitFor(() => expect(politeText()).toBe('No one matches'));
-    expect(announced()).toEqual(['No one matches']);
-  });
-
-  it('warns in development when an emptySearchText element is not shown through getEmptyProps', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      const {rerender} = render(
-        <Picker field="input" query="" emptySearchText={<b>No one</b>} />,
-      );
-      rerender(
-        <Picker
-          field="input"
-          query="zz"
-          options={[]}
-          emptySearchText={<b>No one</b>}
-        />,
-      );
-      await nextFrames();
-      expect(announced()).toEqual([]);
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(String(warn.mock.calls[0][0])).toMatch(
-        /^useCombobox: .*getEmptyProps\(\)/,
-      );
-    } finally {
-      warn.mockRestore();
-    }
   });
 });

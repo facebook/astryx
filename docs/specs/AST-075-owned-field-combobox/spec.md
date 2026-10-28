@@ -81,8 +81,7 @@ the behavior from hooks; every such field behaves and announces the same way.
   keep focus through the press.
 - **FR7 — Result count.** When the options change for a new query, the number of
   options, or that there are none, MUST be announced politely through the shared
-  announcer rather than a live region per field. The words announced for none
-  MUST be the words the field shows for it.
+  announcer rather than a live region per field.
 - **FR8 — The hooks are discoverable as hooks.** Each public hook that
   implements this contract MUST be returned by `astryx hook <name>` and
   `astryx search` with its parameters, its return fields, and the requirements
@@ -108,8 +107,9 @@ the behavior from hooks; every such field behaves and announces the same way.
 - `useCombobox` (exported from `@astryxdesign/core/Selector`) tracks the active
   option, opens and closes, and handles the keys for Selector and CommandPalette.
   For a field the caller renders, over any option type with a string `value`,
-  its `getFieldProps`, `getListboxProps`, and `getOptionProps` carry FR1–FR6,
-  and its `query` input announces the result count through `useAnnounce` (FR7).
+  its `getFieldProps`, `getListboxProps`, and `getOptionProps` carry FR1–FR6.
+  The caller announces the result count through `useAnnounce` (FR7), as DEC-2
+  describes.
 - `useMultiCombobox` (exported from `@astryxdesign/core/MultiSelector`) does the
   same for MultiSelector's own control. It takes MultiSelector's option type,
   leaves the ARIA wiring to the caller, and does not guard keys during an
@@ -127,7 +127,7 @@ the behavior from hooks; every such field behaves and announces the same way.
 | FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                                                        | focus leaves the field, a stale `aria-activedescendant` or `aria-controls` remains, or axe reports `aria-allowed-role` or `aria-allowed-attr` on the field |
 | FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press; ArrowDown on a hidden list in an `input` and in a `textarea` | a key or press picks, dismisses, or blurs the field at the wrong time                                                                                      |
 | FR5      | composition event tests                                              | candidate selection confirmed with Enter                                                                             | Enter during composition picks an option                                                                                                                   |
-| FR7      | shared announcer tests                                               | results, none, a new query                                                                                           | no announcement, an announcement from a per-field live region, or words for none that differ from the words shown                                          |
+| FR7      | shared announcer tests                                               | results, none, a new query                                                                                           | no announcement, or an announcement from a per-field live region                                                                                           |
 | FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point                                      | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists                                                                   |
 
 ## Decision log

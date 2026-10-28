@@ -6,8 +6,7 @@
  * @output Compile-time compatibility coverage: a caller that names the result
  *   `ReturnType<typeof useCombobox>` over an option type of its own, and key
  *   handlers typed for an input, a textarea and a contenteditable element,
- *   passed to getFieldProps and spread back onto those fields, and
- *   getEmptyProps spread onto a paragraph and a div
+ *   passed to getFieldProps and spread back onto those fields
  * @position Public API test guarding @astryxdesign/core/Selector; the core
  *   typecheck compiles it, so a type regression fails there
  */
@@ -103,9 +102,6 @@ function FieldTypedHandlers() {
         aria-label="Note"
         {...note.getFieldProps({onKeyDown: onEditableKeyDown})}
       />
-      {/* The empty message's ref fits any element the caller picks. */}
-      <p {...to.getEmptyProps()}>{to.emptySearchText}</p>
-      <div {...message.getEmptyProps()}>{message.emptySearchText}</div>
     </>
   );
 }

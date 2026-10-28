@@ -7,8 +7,7 @@
  * @output Comboboxes over text fields the story renders itself: a message
  *   field with a mention list in a layer, a search field whose results replace
  *   a page section, a contenteditable people field, and a field in a dialog;
- *   each shows its empty message through `getEmptyProps`, so the words
- *   announced for no matches are the words shown
+ *   each shows an empty message when nothing matches
  * @position Storybook stories for useCombobox's field props;
  *   ComboboxField.a11y.chromium.spec.ts drives these stories in Chromium
  */
@@ -34,7 +33,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'useCombobox over a text field the product renders itself. The story owns the field, the rows and where the list renders; the hook owns the roles, the keys, the pointer model and the announced result count. Focus never leaves the field: arrows move the active option, Enter picks it, Escape hides the list.',
+          'useCombobox over a text field the product renders itself. The story owns the field, the rows and where the list renders; the hook owns the roles, the keys and the pointer model. Focus never leaves the field: arrows move the active option, Enter picks it, Escape hides the list.',
       },
     },
   },
@@ -224,8 +223,6 @@ function MessageFieldExample() {
     },
     listboxId,
     field: 'textarea',
-    query: mention?.query,
-    emptySearchText: 'No one matches',
   });
 
   return (
@@ -281,9 +278,7 @@ function MessageFieldExample() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
-            {combobox.emptySearchText}
-          </p>
+          <p {...stylex.props(styles.muted)}>No one matches</p>
         ),
       )}
       {sent.length > 0 ? (
@@ -331,8 +326,6 @@ function SearchFieldExample() {
     },
     listboxId,
     field: 'input',
-    query: query.trim(),
-    emptySearchText: 'No settings match',
   });
 
   return (
@@ -362,9 +355,7 @@ function SearchFieldExample() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
-            {combobox.emptySearchText}
-          </p>
+          <p {...stylex.props(styles.muted)}>No settings match</p>
         )
       ) : (
         <p {...stylex.props(styles.muted)}>
@@ -417,7 +408,6 @@ function EditableFieldExample() {
     },
     listboxId,
     field: 'contenteditable',
-    query: query.trim(),
   });
 
   return (
@@ -459,11 +449,7 @@ function EditableFieldExample() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          // No `emptySearchText` is passed, so this shows, and the hook
-          // announces, the catalog's "No results found".
-          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
-            {combobox.emptySearchText}
-          </p>
+          <p {...stylex.props(styles.muted)}>No one matches</p>
         )
       ) : null}
     </div>
@@ -482,11 +468,7 @@ export const EditableField: Story = {
 // A field inside a dialog: Escape hides the list before it closes the dialog.
 // ---------------------------------------------------------------------------
 
-/**
- * The dialog's field. It calls `useCombobox` from inside the Dialog: an
- * announcement follows where the hook is called, and the open modal hides the
- * page body, so the result count has to come from within the dialog.
- */
+/** The dialog's field and its list, rendered inside the Dialog. */
 function SharePeopleField() {
   const listboxId = useId();
   const [query, setQuery] = useState('');
@@ -514,8 +496,6 @@ function SharePeopleField() {
     },
     listboxId,
     field: 'input',
-    query: query.trim(),
-    emptySearchText: 'No one matches',
   });
 
   return (
@@ -542,9 +522,7 @@ function SharePeopleField() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
-            {combobox.emptySearchText}
-          </p>
+          <p {...stylex.props(styles.muted)}>No one matches</p>
         )
       ) : null}
       <p {...stylex.props(styles.muted)}>
@@ -584,8 +562,6 @@ function InDialogExample() {
  * A field inside a dialog, its matches listed in the dialog's flow and an
  * empty message shown when nothing matches. With either shown, the first
  * Escape hides it and the dialog stays; the next Escape closes the dialog.
- * The field calls `useCombobox` inside the dialog, so its result count is
- * announced in the dialog's own live region.
  */
 export const InDialog: Story = {
   render: () => <InDialogExample />,
