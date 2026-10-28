@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or double-click to zoom in at that point and back; Enter/Space/+/- zoom 2× about the centre and back. When zoomed, drag or scroll to pan, with momentum, or use arrow keys. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back.',
+        'Enable zoom (images only): pinch (or ctrl-wheel), or double-tap or double-click to zoom in at that point and back; Enter/Space/+/- zoom 2× about the centre and back. When zoomed, drag or scroll to pan, with momentum, or use arrow keys. A tap or a click on the photo hides the controls and turns the background black (so does a zoom in by a finger or a pointer); the next tap or click, a return to the fitted size, or a keyboard focus on a control brings them back.',
       default: 'false',
     },
     {
@@ -221,7 +221,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：双指捏合（或按住 Ctrl 滚动滚轮），或双点按、双击在该处放大并还原；Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动或滚动平移（带惯性），或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。',
+        '启用缩放（仅图片）：双指捏合（或按住 Ctrl 滚动滚轮），或双点按、双击在该处放大并还原；Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动或滚动平移（带惯性），或用方向键平移。点按或单击照片会隐藏控件并使背景变黑（手指或指针放大时也是如此）；再次点按或单击、还原到适合大小或用键盘聚焦控件会让控件重新出现。',
       default: 'false',
     },
     {
@@ -315,7 +315,7 @@ export const docsDense = {
     onIndexChange:
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (pinch or ctrl-wheel, double-tap or double-click, Enter/Space, or +/-) and pan (drag, scroll or arrow keys) for images; on touch, a tap on the photo hides the controls.',
+      'Enable zoom (pinch or ctrl-wheel, double-tap or double-click, Enter/Space, or +/-) and pan (drag, scroll or arrow keys) for images; a tap or click on the photo hides the controls.',
     experimental:
       'Experimental options, which may change in a patch release: sourceFor, the element an item zooms out of on open and back into on close on a touch screen (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',

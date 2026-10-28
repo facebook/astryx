@@ -369,11 +369,17 @@ test('with a mouse (a fine pointer) a click beside the photo closes the gallery,
         );
       }, below),
     ).toBe(true);
-    // A click on the photo itself leaves the viewer open.
+    // A click on the photo itself leaves the viewer open, and hides the
+    // controls once a double-click can no longer follow (spec:AST-094 FR43).
     await page.mouse.click(
       photo.x + photo.width / 2,
       photo.y + photo.height / 2,
     );
+    await page.waitForTimeout(500);
+    await expect(g.dialog).toBeVisible();
+    // With the controls hidden, a click beside the photo brings them back
+    // rather than closing unseen, as a tap does; the next one closes.
+    await page.mouse.click(below.x, below.y);
     await page.waitForTimeout(500);
     await expect(g.dialog).toBeVisible();
     await page.mouse.click(below.x, below.y);

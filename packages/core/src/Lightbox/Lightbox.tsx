@@ -467,11 +467,6 @@ const pageStyles = stylex.create({
   }),
 });
 
-/** Touch and pen hide the controls (Photos is a touch viewer). */
-function isTouchInput(input: string): boolean {
-  return input === 'touch' || input === 'pen';
-}
-
 /** A control layer or a caption: what a tap on the photo hides. */
 function isChromeElement(element: HTMLElement | null): boolean {
   return (
@@ -762,7 +757,9 @@ export function Lightbox({
   // Where the last press on the stage landed: a mouse drag released beside
   // the photo still fires a click there, which is no click (UIKit's tap
   // movement limit).
-  const pressRef = useRef<{x: number; y: number} | null>(null);
+  // And on which photo: a tap the stage recognizes after the double-tap
+  // interval belongs to the photo it landed on.
+  const pressRef = useRef<{x: number; y: number; index: number} | null>(null);
   // With the controls hidden, a click or tap where the stage does not take
   // it (a video page, the dark area beside a photo the stage only hugs)
   // brings them back instead of closing the viewer unseen.
@@ -1023,7 +1020,12 @@ export function Lightbox({
     }
     for (const element of chromeElements()) {
       const animator = animatorFor(element);
-      if (animator.get('opacity') !== 0 && !element.getAnimations().length) {
+      // Without Web Animations the animator writes styles and nothing runs
+      // (the motion system's own reading, animatedLayout's movedByApp).
+      const fading =
+        typeof element.getAnimations === 'function' &&
+        element.getAnimations().length > 0;
+      if (animator.get('opacity') !== 0 && !fading) {
         animator.set({opacity: 0});
       }
     }
@@ -1103,10 +1105,10 @@ export function Lightbox({
             ? t('@astryx.lightbox.zoomedIn')
             : t('@astryx.lightbox.zoomedOut'),
         );
-        // Photos hides the controls as a finger zooms. Where the primary
-        // pointer is fine no zoom hides them, a pen's or a finger's
-        // included, as before (spec:AST-017 FR59).
-        if (isTouch && isTouchInput(lastInputRef.current)) {
+        // Photos hides the controls as a gesture zooms, a mouse's, a pen's
+        // or a finger's alike (spec:AST-094 FR43); a zoom from the keyboard
+        // leaves them, so the keys that zoomed can reach them.
+        if (lastInputRef.current !== 'keyboard') {
           setChrome({hidden: next, immersive: next});
         }
       }
@@ -1120,12 +1122,14 @@ export function Lightbox({
     onPinchZoomed: next => {
       // Photos hides them as the pinch passes the fitted size, not at the
       // lift; the return shows them once the photo is back at it.
-      if (next && isTouchInput(lastInputRef.current)) {
+      if (next) {
         setChrome({hidden: true, immersive: true});
       }
     },
     onTapPhoto: () => {
-      if (!isTouchInput(lastInputRef.current)) {
+      // A page change before the tap was recognized calls it off: the next
+      // photo keeps its controls.
+      if (pressRef.current != null && pressRef.current.index !== index) {
         return;
       }
       const hidden = !chromeHiddenRef.current;
@@ -1138,6 +1142,9 @@ export function Lightbox({
     // With the controls hidden, a tap beside the photo brings them back
     // (Photos' tap on the background) rather than closing unseen.
     onTapOutside: () => {
+      if (pressRef.current != null && pressRef.current.index !== index) {
+        return;
+      }
       if (chromeHiddenRef.current) {
         setChrome({
           hidden: false,
@@ -1230,7 +1237,7 @@ export function Lightbox({
           if (returning && isChromeElement(animator.element)) {
             animator.play(
               {opacity: chromeFadeCurve(animator.get('opacity'), false)},
-              {touchRelease: true},
+              {touchRelease: touch},
             );
           } else {
             animator.animate({opacity}, {spring}, {touchRelease: touch});
@@ -1240,7 +1247,7 @@ export function Lightbox({
           blackoutAnimator()?.animate(
             {opacity},
             {spring},
-            {touchRelease: true},
+            {touchRelease: touch},
           );
         }
         // Back at rest: the blur returns, unless the backdrop moved again.
@@ -1890,7 +1897,7 @@ export function Lightbox({
                   onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
                   onPointerDown={e => {
                     didDragRef.current = false;
-                    pressRef.current = {x: e.clientX, y: e.clientY};
+                    pressRef.current = {x: e.clientX, y: e.clientY, index};
                   }}>
                   {isGallery ? (
                     <div

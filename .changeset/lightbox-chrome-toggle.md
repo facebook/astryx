@@ -11,6 +11,6 @@ Zooming in by touch hides the controls the same way: a double tap as it zooms, o
 - a cancelled drag down brings them back;
 - a keyboard focus on a control shows them.
 
-A mouse click leaves the controls in place.
+A mouse or a pen click on the photo toggles them the same way, once a double-click can no longer follow.
 
 @vjeux

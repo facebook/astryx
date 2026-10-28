@@ -1093,7 +1093,8 @@ describe('Lightbox', () => {
 
 describe('Lightbox gestures for a mouse and a pen (spec:AST-094 FR43)', () => {
   // Gestures attach for every pointer: a mouse's or a pen's double-click is
-  // the stage's double tap, and a zoomed photo pans once the pan begins.
+  // the stage's double tap, a zoom by any pointer hides the controls as a
+  // finger's does, and a zoomed photo pans once the pan begins.
   let restoreLayout: () => void = () => {};
   beforeEach(() => {
     restoreLayout = stubStageLayout();
@@ -1216,14 +1217,22 @@ describe('Lightbox gestures for a mouse and a pen (spec:AST-094 FR43)', () => {
     expect(stage).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it("keeps the controls through a pen's zoom, as through a mouse's", () => {
-    // Photos hides them as a finger zooms; where the primary pointer is fine
-    // no zoom ever hid them (spec:AST-017 FR59).
-    const {stage} = renderPhoto();
-    doubleClick(stage, 'pen', 200, 300);
-    expect(stage).toHaveAttribute('aria-pressed', 'true');
-    const container = document.querySelector('dialog')!.firstElementChild!;
-    expect(container).not.toHaveAttribute('data-chrome-hidden');
+  it("hides the controls as a mouse's or a pen's zoom does a finger's; the keyboard's zoom leaves them", () => {
+    const container = () =>
+      document.querySelector('dialog')!.firstElementChild!;
+    const mouse = renderPhoto();
+    doubleClick(mouse.stage, 'mouse', 200, 300);
+    expect(mouse.stage).toHaveAttribute('aria-pressed', 'true');
+    expect(container()).toHaveAttribute('data-chrome-hidden');
+    mouse.view.unmount();
+    const pen = renderPhoto();
+    doubleClick(pen.stage, 'pen', 200, 300);
+    expect(container()).toHaveAttribute('data-chrome-hidden');
+    pen.view.unmount();
+    const keys = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    expect(keys.stage).toHaveAttribute('aria-pressed', 'true');
+    expect(container()).not.toHaveAttribute('data-chrome-hidden');
   });
 
   it('pans a zoomed photo under a mouse drag once the pan begins, with the grab cursor', async () => {

@@ -315,10 +315,18 @@ test('in a gallery, a mouse click beside the photo closes the viewer', async ({
   });
 });
 
-test('a mouse double-click zooms in about where it lands, as a finger’s double tap, and the next zooms back', async ({
+test('a mouse double-click zooms in about where it lands, as a finger’s double tap, hiding the controls, and the next zooms back', async ({
   page,
 }) => {
   const {stage, img, fitted, stageBox} = await openViewer(page);
+  const chromeAlpha = async () =>
+    page.evaluate(() =>
+      parseFloat(
+        getComputedStyle(
+          document.querySelector('dialog [data-lightbox-chrome]') as Element,
+        ).opacity,
+      ),
+    );
   // A quarter of the way in from the photo's top-left corner: the stage's
   // double tap (spec:AST-094 FR43) zooms to the aspect fill about that point,
   // where the released zoom went 2x about the centre.
@@ -332,12 +340,15 @@ test('a mouse double-click zooms in about where it lands, as a finger’s double
   expect(zoomed.width / fitted.width).toBeGreaterThan(1.03);
   // The photo moved toward the clicked point: no longer centred.
   expect(centre(zoomed).y - centre(stageBox).y).toBeGreaterThan(5);
+  // A zoom by a pointer hides the controls, as a finger's does.
+  await expect.poll(chromeAlpha, {timeout: 3000}).toBe(0);
   await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
   await expect(stage).toHaveAttribute('aria-pressed', 'false');
   await settled(page);
   const back = await boxOf(img);
   expect(back.width).toBeCloseTo(fitted.width, 1);
   expect(back.x).toBeCloseTo(fitted.x, 1);
+  await expect.poll(chromeAlpha, {timeout: 3000}).toBe(1);
 });
 
 test('the keyboard’s zoom plays the released 200 ms ease-out', async ({
