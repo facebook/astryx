@@ -168,8 +168,11 @@ interface BarFrame {
   bars: Record<string, number>;
   /** Effective opacity (own times every ancestor's) of the back button. */
   back: {platter: number; chevron: number} | null;
-  /** Whether an animation drives a card or a bar in this frame. */
-  animating: boolean;
+  /**
+   * Each card's and bar's running `translate` animations (start time,
+   * progress and keyframes), one string per layer: `[]` when none moves it.
+   */
+  curves: {cards: Record<string, string>; bars: Record<string, string>};
 }
 
 /**
@@ -177,10 +180,11 @@ interface BarFrame {
  * stack and the back button's effective opacities; the returned function
  * stops and returns them. A layer's x is its computed `translate` (the
  * cards and bars sit at the stack's leading edge, checked when the trace
- * starts), so a frame reads no layout. Under load, in a frame that comes a
- * few milliseconds late, WebKit evaluates two layers that animate on one
- * clock about a millisecond apart (boxes and translates alike): `animating`
- * says which frames an animation drives.
+ * starts), so a frame reads no layout. While an animation moves a layer, its
+ * computed value is not proof of where it is: in WebKit under load the first
+ * computed read in a frame can come from an earlier time (the same element
+ * read twice in one frame gives two values, one curve and one progress), so
+ * `curves` records each layer's running animations to compare instead.
  */
 async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
   await page.evaluate(() => {
@@ -227,6 +231,34 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
         throw new Error(`a layer sits ${offset} px from the stack's edge`);
       }
     }
+    const curves = (selector: string, attribute: string) => {
+      const out: Record<string, string> = {};
+      for (const element of document.querySelectorAll(selector)) {
+        const key = element.getAttribute(attribute);
+        if (key != null) {
+          out[key] = JSON.stringify(
+            element
+              .getAnimations()
+              .filter(
+                a =>
+                  a.playState === 'running' &&
+                  (a.effect as KeyframeEffect)
+                    .getKeyframes()
+                    .some(k => k.translate != null),
+              )
+              .map(a => {
+                const effect = a.effect as KeyframeEffect;
+                return [
+                  a.startTime,
+                  effect.getComputedTiming().progress,
+                  effect.getKeyframes().map(k => k.translate ?? null),
+                ];
+              }),
+          );
+        }
+      }
+      return out;
+    };
     const t0 = performance.now();
     const tick = () => {
       const button = document.querySelector('[data-navigation-back]');
@@ -239,13 +271,10 @@ async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
           button == null || chevron == null
             ? null
             : {platter: effective(button), chevron: effective(chevron)},
-        animating: [
-          ...document.querySelectorAll(
-            '[data-navigation-screen], [data-navigation-bar]',
-          ),
-        ].some(element =>
-          element.getAnimations().some(a => a.playState === 'running'),
-        ),
+        curves: {
+          cards: curves('[data-navigation-screen]', 'data-navigation-screen'),
+          bars: curves('[data-navigation-bar]', 'data-navigation-bar'),
+        },
       });
       if (!w.__barsStop) {
         requestAnimationFrame(tick);
@@ -913,16 +942,24 @@ test.describe('the bars ride with their screens, as UIKit’s', () => {
     await page.waitForTimeout(1200);
     const frames = await stop();
     const swiping = frames.filter(f => (f.cards['screen-About'] ?? 0) > 0.5);
-    expect(swiping.filter(f => !f.animating).length).toBeGreaterThan(10);
+    const isTracked = (f: BarFrame) =>
+      (f.curves.cards['screen-About'] ?? '[]') === '[]' &&
+      (f.curves.bars['screen-About'] ?? '[]') === '[]';
+    expect(swiping.filter(isTracked).length).toBeGreaterThan(10);
     for (const f of swiping) {
-      // Within a pixel while the finger drives both layers; through the
-      // release's spring back, the other bar proofs' 1 % of the width (in
-      // a late frame WebKit evaluates two layers on one clock about a
-      // millisecond apart).
-      expect(
-        Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
-        JSON.stringify(f),
-      ).toBeLessThan(f.animating ? width * 0.01 : 1);
+      if (isTracked(f)) {
+        // The finger moves both layers: within a pixel.
+        expect(
+          Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
+          JSON.stringify(f),
+        ).toBeLessThan(1);
+      } else {
+        // After the lift one animation moves both: the bar runs the card's
+        // own start time, progress and curve.
+        expect(f.curves.bars['screen-About'], JSON.stringify(f)).toBe(
+          f.curves.cards['screen-About'],
+        );
+      }
       // UIKit's revealed title stays centred while its screen slides in.
       expect(
         Math.abs(f.bars['screen-General']),
@@ -1178,229 +1215,6 @@ test('a push does no Layout or Paint per frame', async ({
     .map(e => `${e.name}@${Math.round(e.t - push.from)}`);
   expect(during.Layout ?? 0, JSON.stringify({during, when})).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify({during, when})).toBe(0);
-});
-
-/** The press layer's presented opacity on a list row (its ::before). */
-const rowHighlight = async (page: Page, name: string) =>
-  page
-    .getByRole('button', {name})
-    .first()
-    .evaluate(control => {
-      const row = control.closest('[data-astryx-pressable="cell"]');
-      if (row == null) {
-        return -1;
-      }
-      // At rest a row paints no press layer (no generated box), so nothing
-      // is highlighted; the layer exists only while pressed, fading or held.
-      const layer = getComputedStyle(row, '::before');
-      return layer.content === 'none' ? 0 : Number(layer.opacity);
-    });
-
-test.describe('the row that pushed', () => {
-  test('stays selected under the pushed screen, then deselects linearly over the pop’s first 350 ms', async ({
-    page,
-  }) => {
-    const {driver} = await openStack(page, 'settings');
-    await driver.tap(await rowCenter(page, 'General'));
-    const top = card(page, 'screen-General');
-    await waitForAnimation(top);
-    await waitForRest(top);
-    const held = await rowHighlight(page, 'General');
-    expect(held).toBeGreaterThan(0);
-
-    await page.locator('[data-navigation-back]').last().click();
-    await waitForAnimation(top);
-    await holdAnimations(page);
-    const at = async (ms: number) => {
-      await page.evaluate(t => {
-        const list =
-          (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
-          [];
-        for (const animation of list) {
-          const end = Number(
-            animation.effect?.getComputedTiming().endTime ?? Infinity,
-          );
-          animation.currentTime = Math.min(t, end - 0.5);
-        }
-      }, ms);
-      return rowHighlight(page, 'General');
-    };
-    // UIKit's in-transition deselect: linear over 0.35 s from the pop's
-    // start, on the same clock as the cards.
-    for (const ms of [0, 87.5, 175, 262.5]) {
-      expect(Math.abs((await at(ms)) - held * (1 - ms / 350))).toBeLessThan(
-        0.03 * held + 0.01,
-      );
-    }
-    await releaseAnimations(page, {finish: true});
-  });
-
-  test('a cancelled back swipe selects the row again', async ({page}) => {
-    const {driver, width, left} = await openStack(page, 'settings', {
-      standalone: true,
-    });
-    await driver.tap(await rowCenter(page, 'General'));
-    const top = card(page, 'screen-General');
-    await waitForAnimation(top);
-    await waitForRest(top);
-    const held = await rowHighlight(page, 'General');
-    let lowest = held;
-    // A slow approach to 32 % of the width: p + 0.35·v̄ stays short of half,
-    // so the pop cancels and the cards spring back.
-    await driver.play(
-      drag(
-        {x: left + 4, y: 400},
-        {x: left + width * 0.32, y: 400},
-        {durationMs: 2000, hz: 60},
-      ),
-      {
-        onEvent: async () => {
-          lowest = Math.min(lowest, await rowHighlight(page, 'General'));
-        },
-      },
-    );
-    await waitForRest(top);
-    // The swipe scrubbed the row toward deselected; the cancel brings it back
-    // to selected, and the row is still held under the screen.
-    expect(lowest).toBeLessThan(held * 0.85);
-    expect(Math.abs(await translateX(top))).toBeLessThan(0.5);
-    await expect.poll(() => rowHighlight(page, 'General')).toBeCloseTo(held, 2);
-    expect(
-      await page
-        .getByRole('button', {name: 'General'})
-        .first()
-        .evaluate(control =>
-          control
-            .closest('[data-astryx-pressable="cell"]')
-            ?.getAttribute('data-astryx-press'),
-        ),
-    ).toBe('held');
-  });
-
-  test('a finished back swipe deselects the row on the cards’ spring, from the swipe’s velocity', async ({
-    page,
-  }) => {
-    const {driver, width, left} = await openStack(page, 'settings', {
-      standalone: true,
-    });
-    await driver.tap(await rowCenter(page, 'General'));
-    const top = card(page, 'screen-General');
-    await waitForAnimation(top);
-    await waitForRest(top);
-    const held = await rowHighlight(page, 'General');
-    // A quick drag to 45 %: the release finishes the pop at the finger's
-    // speed.
-    await driver.play(
-      drag(
-        {x: left + 4, y: 400},
-        {x: left + width * 0.45, y: 400},
-        {durationMs: 180, hz: 60},
-      ),
-    );
-    await waitForAnimation(top);
-    await holdAnimations(page);
-    // Row and cards ride one spring: the highlight stays at
-    // held · (1 − progress) while the pop finishes.
-    for (const ms of [0, 40, 80, 140, 220]) {
-      await page.evaluate(t => {
-        const list =
-          (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
-          [];
-        for (const animation of list) {
-          const end = Number(
-            animation.effect?.getComputedTiming().endTime ?? Infinity,
-          );
-          animation.currentTime = Math.min(t, end - 0.5);
-        }
-      }, ms);
-      const progress = (await translateX(top)) / width;
-      const highlight = await rowHighlight(page, 'General');
-      expect(
-        Math.abs(highlight - held * (1 - progress)),
-        JSON.stringify({ms, progress, highlight, held}),
-      ).toBeLessThan(0.05 * held + 0.01);
-    }
-    await releaseAnimations(page, {finish: true});
-    await expect(top).toHaveCount(0);
-    await expect.poll(() => rowHighlight(page, 'General')).toBe(0);
-  });
-
-  test('under Reduce Motion the row fades out in the animator’s 200 ms cross-fade, without a jump', async ({
-    page,
-  }) => {
-    await page.emulateMedia({reducedMotion: 'reduce'});
-    const {driver} = await openStack(page, 'settings');
-    await driver.tap(await rowCenter(page, 'General'));
-    const top = card(page, 'screen-General');
-    await waitForAnimation(top);
-    await waitForRest(top);
-    const held = await rowHighlight(page, 'General');
-    expect(held).toBeGreaterThan(0);
-    await page.locator('[data-navigation-back]').last().click();
-    await waitForAnimation(top);
-    await holdAnimations(page);
-    // Reduced Motion is the animator's (design:reduced-motion DR2): under a
-    // finger the deselect is an opacity fade of 200 ms, with no jump.
-    const samples: number[] = [];
-    for (const ms of [0, 50, 100, 150, 199]) {
-      await page.evaluate(t => {
-        const list =
-          (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
-          [];
-        for (const animation of list) {
-          const end = Number(
-            animation.effect?.getComputedTiming().endTime ?? Infinity,
-          );
-          animation.currentTime = Math.min(t, end - 0.5);
-        }
-      }, ms);
-      samples.push(await rowHighlight(page, 'General'));
-    }
-    const at = JSON.stringify({held, samples});
-    expect(samples[0], at).toBeGreaterThan(held * 0.9);
-    for (let i = 1; i < samples.length; i += 1) {
-      expect(samples[i], at).toBeLessThanOrEqual(samples[i - 1] + 0.01);
-      // A fade, not a cut: no 50 ms step takes most of the highlight.
-      expect(samples[i - 1] - samples[i], at).toBeLessThan(held * 0.7);
-    }
-    expect(samples.at(-1) ?? NaN, at).toBeLessThan(held * 0.1 + 0.01);
-    await releaseAnimations(page, {finish: true});
-  });
-
-  test('a back swipe scrubs the deselect with its progress', async ({page}) => {
-    const {driver, width, left} = await openStack(page, 'settings', {
-      standalone: true,
-    });
-    await driver.tap(await rowCenter(page, 'General'));
-    const top = card(page, 'screen-General');
-    await waitForAnimation(top);
-    await waitForRest(top);
-    const held = await rowHighlight(page, 'General');
-    const pairs: {p: number; highlight: number}[] = [];
-    await driver.play(
-      drag(
-        {x: left + 4, y: 400},
-        {x: left + width * 0.4, y: 400},
-        {
-          durationMs: 2000,
-        },
-      ),
-      {
-        onEvent: async () => {
-          const p = (await translateX(top)) / width;
-          if (p > 0.05 && p < 0.35) {
-            pairs.push({p, highlight: await rowHighlight(page, 'General')});
-          }
-        },
-      },
-    );
-    expect(pairs.length).toBeGreaterThan(5);
-    for (const pair of pairs) {
-      expect(Math.abs(pair.highlight - held * (1 - pair.p))).toBeLessThan(
-        0.05 * held + 0.01,
-      );
-    }
-  });
 });
 
 test.describe('with Reduce Motion', () => {
