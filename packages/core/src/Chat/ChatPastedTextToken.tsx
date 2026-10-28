@@ -4,7 +4,7 @@
 
 /**
  * @file ChatPastedTextToken.tsx
- * @input Uses React, StyleX, Badge, HoverCard, Button, CodeBlock
+ * @input Uses React, StyleX, Badge, HoverCard, Button, provider-bound translator
  * @output Exports ChatPastedTextToken component
  * @position Inline token for pasted text with hover card preview + expand
  *
@@ -27,6 +27,7 @@ import {Button} from '../Button';
 import {HoverCard} from '../HoverCard';
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
 import chatMessages from '../i18n/generated-locales/en/chat.generated';
+import type {TranslatorFn} from '../i18n';
 
 // =============================================================================
 // Types
@@ -76,10 +77,11 @@ const styles = stylex.create({
 // Helpers
 // =============================================================================
 
-function formatLabel(text: string): string {
-  const lines = text.split('\n').length;
-  const chars = text.length;
-  return lines > 1 ? `${lines} lines, ${chars} chars` : `${chars} chars`;
+function formatLabel(text: string, t: TranslatorFn): string {
+  return t('@astryx.chat.pastedText.label', {
+    lines: text.split('\n').length,
+    chars: text.length,
+  });
 }
 
 // =============================================================================
@@ -91,7 +93,7 @@ export function ChatPastedTextToken({
   onExpand,
 }: ChatPastedTextTokenProps) {
   const t = useComponentTranslator(chatMessages);
-  const label = formatLabel(text);
+  const label = formatLabel(text, t);
 
   const cardContent = (
     <div {...stylex.props(styles.preview)}>
