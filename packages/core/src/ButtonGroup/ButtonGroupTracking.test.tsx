@@ -290,6 +290,42 @@ describe('ButtonGroup tracks a held pointer across its buttons (family:action-gr
     });
   }
 
+  it('a finger on the edge of a disabled button that has a tooltip runs nothing, not its enabled neighbour (FR2)', () => {
+    const onCut = vi.fn();
+    const view = render(
+      <ButtonGroup label="Edit" data-testid="group">
+        <Button label="Cut" onClick={onCut} data-testid="a" />
+        <Button
+          label="Copy"
+          isDisabled
+          tooltip="Nothing to copy"
+          data-testid="b"
+        />
+        <Button label="Paste" data-testid="c" />
+      </ButtonGroup>,
+    );
+    const copy = view.getByTestId('b');
+    // Three touching 28 px buttons: Cut's target grows 8 px past its edge,
+    // over the disabled Copy.
+    place(view.getByTestId('group'), {
+      left: 0,
+      top: 100,
+      width: 84,
+      height: 28,
+    });
+    place(view.getByTestId('a'), {left: 0, top: 100, width: 28, height: 28});
+    place(copy, {left: 28, top: 100, width: 28, height: 28});
+    place(view.getByTestId('c'), {left: 56, top: 100, width: 28, height: 28});
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const f = finger();
+    f.down(copy, {x: 30, y: 114});
+    expect(paintOf(view.getByTestId('a'))).toBeNull();
+    f.up(copy, {x: 30, y: 114});
+    expect(onCut).not.toHaveBeenCalled();
+  });
+
   it('skips a disabled button: no highlight, and a lift on it runs nothing (FR2)', () => {
     const {a, b, onB} = mount({isBDisabled: true});
     const f = finger();

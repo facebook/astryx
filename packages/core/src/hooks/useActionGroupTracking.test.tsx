@@ -460,6 +460,72 @@ describe('useActionGroupTracking', () => {
     expect(onDelete).not.toHaveBeenCalled();
   });
 
+  describe('focus after a slide (family:action-groups FR1)', () => {
+    /** A mouse under a fine pointer, as on a desktop. */
+    function mouseOn(
+      target: Element,
+      type: string,
+      point: {x: number; y: number},
+    ): void {
+      time += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      target.dispatchEvent(event);
+    }
+
+    function mountFine(props: Partial<Parameters<typeof Group>[0]> = {}) {
+      restorePointer();
+      restorePointer = pointerQuery(false).restore;
+      const mounted = mount(props);
+      runAttachFrame();
+      return mounted;
+    }
+
+    it('moves focus to the lifted action when the press focused the one it began on, as a click on the lifted action does', () => {
+      const {cancel, del} = mountFine();
+      mouseOn(del, 'pointerdown', centerOf(DELETE));
+      // The browser focuses a pressed button on the press (not Safari).
+      del.focus();
+      mouseOn(del, 'pointermove', centerOf(CANCEL));
+      mouseOn(cancel, 'pointerup', centerOf(CANCEL));
+      expect(document.activeElement).toBe(cancel);
+    });
+
+    it("leaves focus where it was when the press did not focus the action it began on (Safari's buttons)", () => {
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+      const {cancel, del} = mountFine();
+      mouseOn(del, 'pointerdown', centerOf(DELETE));
+      mouseOn(del, 'pointermove', centerOf(CANCEL));
+      mouseOn(cancel, 'pointerup', centerOf(CANCEL));
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    });
+
+    it("keeps the focus the lifted action's own click moved", () => {
+      const elsewhere = document.createElement('button');
+      document.body.appendChild(elsewhere);
+      const {cancel, del} = mountFine({onCancel: () => elsewhere.focus()});
+      mouseOn(del, 'pointerdown', centerOf(DELETE));
+      del.focus();
+      mouseOn(del, 'pointermove', centerOf(CANCEL));
+      mouseOn(cancel, 'pointerup', centerOf(CANCEL));
+      expect(document.activeElement).toBe(elsewhere);
+      elsewhere.remove();
+    });
+  });
+
   it('expands the hit area for a finger only: a mouse hit-tests the exact rects (family:action-groups FR5)', () => {
     const outside = {x: DELETE.left + DELETE.width + 5, y: centerOf(DELETE).y};
     // A finger 5 px past Delete's edge, inside a 10 px expansion, keeps it lit.
