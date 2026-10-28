@@ -2899,20 +2899,27 @@ describe('DropdownMenu press model', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
   });
 
-  it('a held touch on the trigger opens with the finger down and a slide picks', () => {
+  it('a held touch on the trigger opens with the finger down, and a slide past the handoff picks (spec:AST-094 FR29, FR43)', () => {
     vi.useFakeTimers();
     try {
       const onPick = vi.fn();
       const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, touch);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       act(() => {
         vi.advanceTimersByTime(500);
       });
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.pointerMove(item('Delete'), touch);
+      // The handoff counts from the first position the open menu sees.
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      const past = {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      };
+      fireEvent.pointerMove(item('Delete'), past);
       expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), touch);
+      fireEvent.pointerUp(item('Delete'), past);
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.
       fireEvent.click(trigger, {detail: 1});
@@ -2941,6 +2948,38 @@ describe('DropdownMenu press model', () => {
       expect(item('Delete')).not.toHaveFocus();
       // UIMenu's handoff: the finger picks once it travels from the first
       // sample the menu saw.
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(item('Delete')).toHaveFocus();
+      fireEvent.pointerUp(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('on a fine primary pointer too, the finger that opened the menu picks only once it travels the handoff, as on a phone (spec:AST-094 FR29, FR43)', () => {
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+      });
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      expect(item('Delete')).not.toHaveFocus();
       fireEvent.pointerMove(item('Delete'), {
         ...touch,
         clientX: 0,
