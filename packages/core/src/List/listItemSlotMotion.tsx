@@ -78,9 +78,10 @@ function identityOf(node: ReactNode): string | null {
   return 'node';
 }
 
+/** The slot's live wrapper: never a leaving one, nor a swap's copy (inert). */
 function slotOf(row: Element, slot: Slot): HTMLElement | null {
   return row.querySelector<HTMLElement>(
-    `:scope > [${SLOT_ATTRIBUTE}="${slot}"]`,
+    `:scope > [${SLOT_ATTRIBUTE}="${slot}"]:not([inert])`,
   );
 }
 
@@ -174,17 +175,28 @@ export function useListItemSlotMotion(
     if (slots.length === 0) {
       return;
     }
-    // Reported from inside the row's main content (its label), so the walk
-    // carries every part of the row (the content itself, as the label's
-    // ancestor, and the other slot beside it) and, when the row's height
-    // changes, the rows after it.
-    const content = [...row.children].find(
-      child => !child.hasAttribute(SLOT_ATTRIBUTE) && child.textContent !== '',
-    );
-    const target = content?.firstElementChild ?? content ?? row;
-    const change = reportLayoutChange(animatedLayout, () => target);
-    change.measureBefore();
-    const changes = [change];
+    // A leaving or replaced slot reports itself, so its exit is a measured
+    // one (holdLayoutExit) and its walk carries the row's other parts and
+    // the rows after it. Content that appears has no element yet: it is
+    // reported from inside the row's main content (its label), whose walk
+    // carries the content itself (the label's ancestor) and the other slot.
+    const targets = new Set<Element>();
+    for (const {kind, element} of slots) {
+      if (kind !== 'enter' && element != null) {
+        targets.add(element);
+        continue;
+      }
+      const content = [...row.children].find(
+        child =>
+          !child.hasAttribute(SLOT_ATTRIBUTE) && child.textContent !== '',
+      );
+      targets.add(content?.firstElementChild ?? content ?? row);
+    }
+    const changes = [...targets].map(target => {
+      const change = reportLayoutChange(animatedLayout, () => target);
+      change.measureBefore();
+      return change;
+    });
     pendingRef.current = {changes, slots};
   }, [animatedLayout, rowRef]);
 

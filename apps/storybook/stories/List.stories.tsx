@@ -17,8 +17,10 @@ import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
-import {VStack} from '@astryxdesign/core/Layout';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 import {
   Cog6ToothIcon,
@@ -28,6 +30,7 @@ import {
   InboxIcon,
   PaperAirplaneIcon,
   DocumentIcon,
+  MinusCircleIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof List> = {
@@ -479,6 +482,112 @@ export const AnimatedChanges: Story = {
           'rides above them with the surface color behind it, and the rows ' +
           'after a change and the buttons below the list glide to their new ' +
           'places, all on one shared motion, under every pointer.',
+      },
+    },
+  },
+};
+
+/**
+ * Edit modes composed through ListItem's slots with the list's
+ * `animatedLayout` handle (`component:List` FR12): a Checkbox in
+ * `startContent` with `isSelected` to select, and a remove button in
+ * `endContent` that swaps in place for a Delete button to delete. Each slot
+ * change animates: the control enters or exits, a replaced control swaps in
+ * place, and the label glides along the row.
+ */
+export const AnimatedEditModes: Story = {
+  render: function AnimatedEditModes() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const animatedLayout = useAnimatedLayout({containerRef});
+    const [mode, setMode] = useState<'none' | 'select' | 'delete'>('none');
+    const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+    const [confirming, setConfirming] = useState<string | null>(null);
+    return (
+      <div ref={containerRef}>
+        <VStack gap={4}>
+          <HStack gap={2}>
+            <Button
+              label={mode === 'select' ? 'Done' : 'Select'}
+              onClick={() => setMode(mode === 'select' ? 'none' : 'select')}
+            />
+            <Button
+              label={mode === 'delete' ? 'Done' : 'Edit'}
+              onClick={() => {
+                setConfirming(null);
+                setMode(mode === 'delete' ? 'none' : 'delete');
+              }}
+            />
+          </HStack>
+          <List animatedLayout={animatedLayout} hasDividers>
+            {rows.map(label => (
+              <ListItem
+                key={label}
+                itemKey={label}
+                label={label}
+                onClick={() => {}}
+                isSelected={mode === 'select' && selected.has(label)}
+                startContent={
+                  mode === 'select' ? (
+                    <CheckboxInput
+                      label={`Select ${label}`}
+                      isLabelHidden
+                      value={selected.has(label)}
+                      onChange={isChecked =>
+                        setSelected(current => {
+                          const next = new Set(current);
+                          if (isChecked) {
+                            next.add(label);
+                          } else {
+                            next.delete(label);
+                          }
+                          return next;
+                        })
+                      }
+                    />
+                  ) : undefined
+                }
+                endContent={
+                  mode !== 'delete' ? undefined : confirming === label ? (
+                    <Button
+                      key="delete"
+                      label="Delete"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setRows(current =>
+                          current.filter(row => row !== label),
+                        );
+                        setConfirming(null);
+                      }}
+                    />
+                  ) : (
+                    <IconButton
+                      key="remove"
+                      label={`Remove ${label}`}
+                      variant="ghost"
+                      icon={<Icon icon={MinusCircleIcon} />}
+                      onClick={() => setConfirming(label)}
+                    />
+                  )
+                }
+              />
+            ))}
+          </List>
+        </VStack>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Edit modes composed through ListItem slots with the list's " +
+          '`animatedLayout` handle: **Select** puts a Checkbox in each ' +
+          "row's `startContent` (with `isSelected`), and **Edit** puts a " +
+          'remove button in `endContent` that swaps in place for a Delete ' +
+          'button. The controls enter, exit, and swap, and the labels glide ' +
+          'along their rows.',
       },
     },
   },

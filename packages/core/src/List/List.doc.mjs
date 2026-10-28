@@ -44,7 +44,7 @@ export const docs = {
     {
       name: 'animatedLayout',
       type: 'AnimatedLayout',
-      description: 'The handle from useAnimatedLayout({containerRef}). With it, when rows are inserted, removed or reordered, an inserted row enters, a removed row collapses in place, a row that crosses rows moving the other way rides above them with the surface color behind it, and the rows after a change and the content after the list, up to that container, glide to their new places, all on one shared motion, under every pointer. Under Reduce Motion nothing travels. A row is identified by its itemKey: a row without one changes at once. Without a handle the list changes at once.',
+      description: 'The handle from useAnimatedLayout({containerRef}). With it, when rows are inserted, removed or reordered, an inserted row enters, a removed row collapses in place, a row that crosses rows moving the other way rides above them with the surface color behind it, and the rows after a change and the content after the list, up to that container, glide to their new places, all on one shared motion, under every pointer. Under Reduce Motion nothing travels. A row is identified by its itemKey: a row without one changes at once. With the handle, changes to the startContent and endContent of a row animate too: a control that appears enters, one that leaves exits (inert, its focus handed to the row without scrolling), one replaced in the same slot swaps in place, and the label of the row glides along it; a replacement at the same size, or the same control re-rendering, does not animate. Without a handle the list changes at once.',
     },
     {
       name: 'edge',
