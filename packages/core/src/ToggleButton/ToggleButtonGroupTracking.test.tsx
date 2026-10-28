@@ -324,6 +324,44 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("reads a disabled toggle's box once per press, not on every move", () => {
+    const view = render(
+      <ToggleButtonGroup
+        type="multiple"
+        label="Formatting"
+        value={[]}
+        onChange={() => {}}
+        data-testid="group">
+        <ToggleButton label="Bold" value="bold" data-testid="a" />
+        <ToggleButton
+          label="Italic"
+          value="italic"
+          isDisabled
+          tooltip="Italic is not available here"
+          data-testid="b"
+        />
+        <ToggleButton label="Underline" value="underline" data-testid="c" />
+      </ToggleButtonGroup>,
+    );
+    const group = view.getByTestId('group');
+    const italic = view.getByTestId('b');
+    place(group, {left: 0, top: 100, width: 84, height: 28});
+    place(view.getByTestId('a'), {left: 0, top: 100, width: 28, height: 28});
+    place(italic, {left: 28, top: 100, width: 28, height: 28});
+    place(view.getByTestId('c'), {left: 56, top: 100, width: 28, height: 28});
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const read = vi.spyOn(italic, 'getBoundingClientRect');
+    const f = finger();
+    f.down(group, {x: 10, y: 114});
+    for (let x = 12; x <= 80; x += 4) {
+      f.move(group, {x, y: 114});
+    }
+    f.up(group, {x: 80, y: 114});
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
   it('a finger just past a small toggle, inside its 44 px target, toggles it (FR5)', () => {
     const {group, onChange} = mount();
     const f = finger();

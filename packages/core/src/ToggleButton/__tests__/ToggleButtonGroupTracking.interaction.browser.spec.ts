@@ -128,6 +128,11 @@ test.describe('with a mouse', () => {
     const to = await centerOf(underline);
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
+    // Whether this engine focuses a button its press lands on (Safari's do
+    // not): after the slide, focus does what a click on Underline would do.
+    const pressFocuses = await bold.evaluate(
+      el => document.activeElement === el,
+    );
     await page.mouse.move(to.x, to.y, {steps: 8});
     const looks = await group.getByRole('button').evaluateAll(toggles =>
       toggles.map(toggle => ({
@@ -147,6 +152,29 @@ test.describe('with a mouse', () => {
     expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(await scaleOf(bold));
     await page.mouse.up();
     await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
+    // After the slide, focus does what a click on Underline does
+    // (family:action-groups FR1), so a following Space toggles Underline.
+    const focused = await page.evaluate(
+      () => document.activeElement?.getAttribute('aria-label') ?? '',
+    );
+    if (pressFocuses) {
+      expect(focused).toBe('Underline');
+    } else {
+      expect(focused).not.toBe('Bold');
+    }
+  });
+
+  test('holding Space on a focused toggle scales it, as on any button (family:action-groups FR5: the keyboard is unchanged)', async ({
+    page,
+  }) => {
+    const {bold} = await open(page);
+    await bold.focus();
+    expect(await bold.evaluate(el => el.matches(':focus-visible'))).toBe(true);
+    await page.keyboard.down('Space');
+    await expect
+      .poll(async () => bold.evaluate(el => getComputedStyle(el).transform))
+      .toBe('matrix(0.98, 0, 0, 0.98, 0, 0)');
+    await page.keyboard.up('Space');
   });
 
   test('the keyboard is unchanged: Space on a focused toggle toggles it once', async ({
