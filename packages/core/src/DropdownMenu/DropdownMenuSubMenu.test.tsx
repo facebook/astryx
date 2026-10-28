@@ -1117,23 +1117,25 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
 describe('DropdownMenuSubMenu press model', () => {
   const finger = (pointerId = 1) => ({pointerType: 'touch', pointerId});
 
-  it('a cancelled finger in a flyout clears its lit row where the root menu\u2019s touch modes apply, as the root\u2019s does (spec:AST-094 FR28); pinned to the pointer model, the row stays lit', async () => {
+  it('a cancelled finger in a flyout clears its lit row as the root\u2019s does, on every device (spec:AST-094 FR28, FR43); presentation="popover" keeps it', async () => {
     const originalMatchMedia = window.matchMedia;
-    // A coarse primary pointer on a large screen: the root is an anchored
-    // popover in its touch modes, and its sub-menu flies out.
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockImplementation((query: string) => ({
-        matches: query === TOUCH_QUERY,
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    );
+    // A large screen, its primary pointer coarse (a tablet) or fine (a
+    // touchscreen laptop): the root is an anchored popover and its sub-menu
+    // flies out.
+    const stubPrimaryPointer = (coarse: boolean) =>
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: coarse && query === TOUCH_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
     try {
       const litAfterCancel = async (presentation?: 'popover') => {
         const user = userEvent.setup();
@@ -1172,8 +1174,11 @@ describe('DropdownMenuSubMenu press model', () => {
         unmount();
         return lit;
       };
-      expect(await litAfterCancel()).toBe(false);
-      expect(await litAfterCancel('popover')).toBe(true);
+      for (const coarse of [true, false]) {
+        stubPrimaryPointer(coarse);
+        expect(await litAfterCancel(), `coarse=${coarse}`).toBe(false);
+        expect(await litAfterCancel('popover'), `coarse=${coarse}`).toBe(true);
+      }
     } finally {
       vi.stubGlobal('matchMedia', originalMatchMedia);
     }
