@@ -2175,7 +2175,20 @@ function generateBuiltModule(
     serializeField('__adaptations', themeDef.__adaptations) +
     serializeField('__axes', themeDef.__axes ?? {}, true) +
     // An explicit empty list replaces an inherited one, so keep `[]`.
-    serializeField('iconVariants', themeDef.iconVariants, true);
+    serializeField('iconVariants', themeDef.iconVariants, true) +
+    // Each inherited function entry keeps its defining theme's list. JSON
+    // drops `undefined`, so a defining theme with no list is written as `[]`,
+    // which no variant matches either.
+    serializeField(
+      '__iconEntryVariants',
+      themeDef.__iconEntryVariants &&
+        Object.fromEntries(
+          Object.entries(themeDef.__iconEntryVariants).map(([name, list]) => [
+            name,
+            list ?? [],
+          ]),
+        ),
+    );
 
   return `${iconImport}${iconDeclaration}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
