@@ -334,6 +334,8 @@ function apply(slot: Slot, step: PressStep): void {
           }),
         );
       },
+      // The release fade follows the theme's tempo (`spec:AST-108` FR4,
+      // `component:Button` FR15); the onset delay and the tap flash do not.
       TIMER_MS[kind] * (kind === 'fade' ? themeTempo(live.element) : 1),
     );
   }

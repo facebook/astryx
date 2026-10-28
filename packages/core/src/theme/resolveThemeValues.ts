@@ -34,6 +34,7 @@ import {
 import {
   expandThemeMotion,
   preTempoName,
+  type MotionCharacter,
   type ThemeMotionConfig,
 } from './themeMotion';
 import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
@@ -275,7 +276,17 @@ export function buildFontFamilyTokens(
 export function resolveThemeValues(
   input: ThemeValuesInput,
   seed?: ThemeValuesSeed,
-  {strictTokens = false}: {strictTokens?: boolean} = {},
+  {
+    strictTokens = false,
+    inheritedCharacter,
+  }: {
+    strictTokens?: boolean;
+    /**
+     * The motion character in effect beneath this layer, from a base theme or
+     * the theme an adaptation rule belongs to, for a layer that sets none.
+     */
+    inheritedCharacter?: MotionCharacter;
+  } = {},
 ): ResolvedThemeValues {
   const tokens: Record<string, string> = {...seed?.tokens};
 
@@ -342,11 +353,12 @@ export function resolveThemeValues(
     }
     // At 'standard', --ease-entrance and --ease-move equal --ease-standard
     // (spec:AST-108 FR2): an explicit one carries them, unless the layer sets
-    // them itself or a character picks its own curve.
+    // them itself or a character, its own or the one it inherits, picks its
+    // own curve.
     const character =
       input.motion != null && 'character' in input.motion
         ? input.motion.character
-        : undefined;
+        : inheritedCharacter;
     if (
       own['--ease-standard'] !== undefined &&
       (character === undefined || character === 'standard')

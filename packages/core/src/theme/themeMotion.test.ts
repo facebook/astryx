@@ -384,6 +384,75 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
 });
 
 describe('an extending theme inherits motion field by field (spec:AST-108 FR5)', () => {
+  it('a grandchild that adds only a knob keeps the slow band its parent inherited', () => {
+    const base = defineTheme({
+      name: 'SlowBase',
+      motion: {fast: 100, medium: 250, slow: 700, ratio: 0.75},
+    });
+    // The child's own ratio regenerates its fast and medium bands only. Its
+    // unrelated token gives it authored input tokens of its own.
+    const child = defineTheme({
+      name: 'RatioChild',
+      extends: base,
+      motion: {fast: 100, medium: 250, ratio: 0.8},
+      tokens: {'--radius-element': '6px'},
+    });
+    expect(child.tokens['--duration-slow-min']).toBe('525ms');
+    for (const knob of [
+      {character: 'expressive' as const},
+      {tempo: 1.2},
+      {reducedMotion: 'always' as const},
+    ]) {
+      const grandchild = defineTheme({
+        name: 'KnobGrandchild',
+        extends: child,
+        motion: knob,
+      });
+      for (const band of [
+        '--duration-slow-min',
+        '--duration-slow',
+        '--duration-slow-max',
+      ] as const) {
+        expect(grandchild.tokens[band]).toBe(child.tokens[band]);
+      }
+    }
+  });
+
+  it('an explicit --ease-standard without motion of its own keeps an inherited character\u2019s curves', () => {
+    const crisp = defineTheme({name: 'Crisp', motion: {character: 'crisp'}});
+    const crispEase = crisp.tokens['--ease-entrance'];
+    const child = defineTheme({
+      name: 'EaseChild',
+      extends: crisp,
+      tokens: {'--ease-standard': 'cubic-bezier(0.4, 0, 0.6, 1)'},
+    });
+    expect(child.tokens['--ease-standard']).toBe(
+      'cubic-bezier(0.4, 0, 0.6, 1)',
+    );
+    expect(child.tokens['--ease-entrance']).toBe(crispEase);
+    expect(child.tokens['--ease-move']).toBe(crispEase);
+    const adaptive = defineTheme({
+      name: 'EaseRule',
+      motion: {character: 'expressive'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {'--ease-standard': 'cubic-bezier(0.4, 0, 0.6, 1)'},
+            },
+          },
+        ],
+      },
+    });
+    const rule = adaptive.__adaptationRules?.[0];
+    expect(rule?.tokens['--ease-standard']).toBe(
+      'cubic-bezier(0.4, 0, 0.6, 1)',
+    );
+    expect(rule?.tokens['--ease-entrance']).toBeUndefined();
+    expect(rule?.tokens['--ease-move']).toBeUndefined();
+  });
+
   it('a base duration scale keeps winning over a child\u2019s tempo', () => {
     const base = defineTheme({
       name: 'ScaledBase',

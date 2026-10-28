@@ -1034,7 +1034,9 @@ export function resolveThemeAdaptationRules(
       // acceptance to preserve, so a malformed token is rejected here rather
       // than emitted. The root path stays lenient for compatibility.
       // SYNC: packages/core/src/theme/resolveThemeValues.ts (resolveTokenValue)
-      {strictTokens: true},
+      // A rule without motion of its own keeps the theme's character, so its
+      // explicit --ease-standard leaves that character's curves alone.
+      {strictTokens: true, inheritedCharacter: axes.motion?.character},
     );
     for (const [name, value] of Object.entries(resolved.tokens)) {
       assertConcreteLeaf(
