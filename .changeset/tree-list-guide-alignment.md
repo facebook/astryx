@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] TreeList now keeps each expand/collapse chevron in its natural column and aligns hierarchy guides to the chevron center. Showing or hiding guides no longer relies on compensating positive and negative chevron margins, while labels keep their existing position.
+[feat] TreeList chevrons and hierarchy guides sit 4px closer to the row's inline start, and the chevron-to-label gap widens from 4px to 8px; labels keep their position.
 
 @rubyycheung
