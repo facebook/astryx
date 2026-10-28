@@ -648,6 +648,11 @@ export function MobileNav({
   // only, and never while an IME composition is in progress.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      // A cancel that bubbles up from inside (a dismissed file picker) is not
+      // a close request; the platform's is fired at the dialog itself.
+      if (event.target !== event.currentTarget) {
+        return;
+      }
       event.preventDefault();
       if (!shouldDismissOnCloseRequest()) {
         return;
