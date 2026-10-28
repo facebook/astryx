@@ -229,6 +229,10 @@ function numbersIn(value: string): number[] {
  * rotation or skew of its own is the app moving the element.
  */
 function staysInPlace(property: string, value: string): boolean {
+  if (value === 'none') {
+    // No transform at all (a keyframe a press's own transition starts from).
+    return true;
+  }
   if (property === 'scale') {
     return true;
   }
@@ -754,13 +758,19 @@ function visibleRect(area: Element): DOMRect {
 }
 
 /** The element's rendered scale against its layout size (a scaled ancestor). */
-function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
+function scaleOf(
+  element: Element,
+  rect: DOMRect,
+  own: {readonly x: number; readonly y: number} = {x: 1, y: 1},
+): {x: number; y: number} {
   const html = element as HTMLElement;
   const x =
-    html.offsetWidth > 0 && rect.width > 0 ? rect.width / html.offsetWidth : 1;
+    html.offsetWidth > 0 && rect.width > 0
+      ? rect.width / html.offsetWidth / own.x
+      : 1;
   const y =
     html.offsetHeight > 0 && rect.height > 0
-      ? rect.height / html.offsetHeight
+      ? rect.height / html.offsetHeight / own.y
       : 1;
   // Subpixel rounding makes an unscaled element read a hair off 1; only a
   // real scale is corrected.
@@ -768,6 +778,40 @@ function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
     x: Math.abs(x - 1) < 0.01 ? 1 : x || 1,
     y: Math.abs(y - 1) < 0.01 ? 1 : y || 1,
   };
+}
+
+/**
+ * The scale an element's own `scale` and `transform` give it, on each axis
+ * (a follower that keeps one in place, `staysInPlace`). A glide's `translate`
+ * does not go through them: the individual transform properties apply
+ * `translate` first, in the parent's space.
+ */
+function ownScaleOf(element: Element): {x: number; y: number} {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (style == null) {
+    return {x: 1, y: 1};
+  }
+  let x = 1;
+  let y = 1;
+  const scale = style.getPropertyValue('scale');
+  if (scale !== '' && scale !== 'none') {
+    const [sx = 1, sy = sx] = numbersIn(scale);
+    x *= sx;
+    y *= sy;
+  }
+  // The computed transform is a matrix: its first column's length is the
+  // scale on x, its second's on y.
+  const matrix = /^matrix(3d)?\(([^)]*)\)/.exec(
+    style.getPropertyValue('transform'),
+  );
+  if (matrix != null) {
+    const m = numbersIn(matrix[2]);
+    const [a = 1, b = 0, c = 0, d = 1] =
+      matrix[1] == null ? m : [m[0], m[1], m[4], m[5]];
+    x *= Math.hypot(a, b);
+    y *= Math.hypot(c, d);
+  }
+  return {x: x || 1, y: y || 1};
 }
 
 function flush(batch: Batch): void {
@@ -892,8 +936,10 @@ function flush(batch: Batch): void {
       continue;
     }
     // Where it shows now, against its new place, in its own px; the part the
-    // carried glide does not cover is the new move.
-    const scale = scaleOf(element, after);
+    // carried glide does not cover is the new move. Only its ancestors' scale
+    // is corrected: its own scale or transform (a press's scale) does not
+    // apply to the glide's `translate`.
+    const scale = scaleOf(element, after, ownScaleOf(element));
     const now = carried(0);
     const moveX = dx / scale.x - now.x;
     const moveY = dy / scale.y - now.y;

@@ -759,6 +759,51 @@ describe('elements the app moves itself (spec:AST-105 Coverage)', () => {
       'zero',
     ]);
   });
+
+  it('glides a follower whose own transition runs from no transform to a scale (a press starting)', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><div id="changed"></div><div id="pressing"></div><div id="sliding"></div></div>`,
+    );
+    for (const id of ['pressing', 'sliding']) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, 10, 400, 40], after: [0, 90, 400, 40]},
+        phase,
+      );
+    }
+    class StubKeyframeEffect {
+      constructor(readonly frames: Keyframe[]) {}
+      getKeyframes() {
+        return this.frames;
+      }
+    }
+    vi.stubGlobal('KeyframeEffect', StubKeyframeEffect);
+    const runs = (frames: Keyframe[]) => () =>
+      [{effect: new StubKeyframeEffect(frames)}] as unknown as Animation[];
+    // A press's transition: from no transform toward a scale, in place.
+    (document.getElementById('pressing') as HTMLElement).getAnimations = runs([
+      {transform: 'none'},
+      {transform: 'matrix(0.98, 0, 0, 0.98, 0, 0)'},
+    ]);
+    // The app sliding the element itself stays the app's.
+    (document.getElementById('sliding') as HTMLElement).getAnimations = runs([
+      {transform: 'none'},
+      {transform: 'translateX(120px)'},
+    ]);
+    try {
+      await runChange(
+        createAnimatedLayout(() => area),
+        changed,
+        phase,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    const moved = played
+      .filter(p => p.keyframes[0].translate != null)
+      .map(p => (p.element as HTMLElement).id);
+    expect(moved).toEqual(['pressing']);
+  });
 });
 
 describe('siblings before the change (spec:AST-105 FR3, Coverage)', () => {
