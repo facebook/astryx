@@ -19,7 +19,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: []
+families: [family:action-groups]
 design_specs: [design:bidirectionality]
 architecture:
   [
@@ -41,7 +41,7 @@ system_specs: [spec:AST-086, spec:AST-003, spec:AST-094]
 | Behavior                | A stack of non-modal notification cards at one viewport corner. Each toast is announced once, can auto-hide (pausing while hovered, focused, touched, or the window is blurred), and dismisses by its button, a vertical swipe toward its edge, or code. F6 moves focus into the newest toast.                                                                                                                                                  |
 | End-user impact         | Users get brief notices without losing their place; screen-reader users hear each toast once; keyboard users reach toast controls with F6 and land somewhere sensible after dismissing; touch users swipe toasts away.                                                                                                                                                                                                                          |
 | Builder impact          | None.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Compatibility/readiness | Records shipped behavior; no public change. Twelve implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                                                                                                                                      |
+| Compatibility/readiness | Records shipped behavior; no public change. Fifteen implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                                                                                                                                     |
 | Review checks           | Reject a toast announced more than once per show, a dismissal that drops focus to the body, an auto-hide that runs while the user is reading or interacting, or a swipe as the only way to dismiss.                                                                                                                                                                                                                                             |
 | Governing rules         | `spec:AST-086` FR1; `spec:AST-003` (modal rehosting); `architecture:layer-runtime`; `design:bidirectionality`.                                                                                                                                                                                                                                                                                                                                  |
 
@@ -106,6 +106,19 @@ Consumer migration instructions belong in consumer docs and release notes.
   reachable without a drag.
 - **Some modals supply no outlet.** A modal Drawer, Lightbox, or MobileNav
   opens without supplying an outlet, so toasts stay behind it.
+- **A toast dismissed while hidden can linger.** A toast that code dismisses
+  while the cap hides it, or that a new toast pushes past the cap during its
+  collapse, comes back as an invisible zero-height row that never unmounts: it
+  keeps the notifications landmark exposed and F6 focuses its hidden dismiss
+  button (FR5, FR7, FR11).
+- **Announced words can differ from shown words.** The viewport announces only
+  the `body` option's string children, so a body rendered by a component is
+  never announced and a `renderContent` card is announced with the `body`
+  words even when it shows others. `spec:AST-086` FR7 has the announced words
+  match the shown words (FR9).
+- **The action row does not track a held pointer.** A press that slides across
+  the row's sibling actions does not act on the action it lifts on;
+  `family:action-groups` has the row use the shared press tracking.
 
 ## Ownership boundary
 
@@ -200,6 +213,8 @@ button), so no anatomy part can own the `toast` target.
 ## Family and system relationships
 
 - `spec:AST-086` owns the announcement channel and the one-owner rule.
+- `family:action-groups` covers Toast's action row when it holds two or more
+  sibling actions; the row adopts that family's held-pointer tracking.
 - `spec:AST-003` and `architecture:layer-runtime` own top-layer hosting above
   native modals.
 - `design:bidirectionality` keeps block-axis swipes and inline insets correct in
@@ -207,21 +222,26 @@ button), so no anatomy part can own the `toast` target.
 
 ## Verification map
 
-| Contract | Verification                                                      | Representative states                                        | Mutation or failure expectation                            | Audit section               |
-| -------- | ----------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- | --------------------------- |
-| FR1, FR3 | `ToastViewport.test.tsx` layout, custom content, and onHide tests | Default, custom content, double dismiss                      | Dropped controls or a repeated `onHide` fails.             | `audit:Toast/behavior`      |
-| FR2      | `ToastViewport.test.tsx` blur-pause tests                         | Window blur, new toast during pause                          | A timer running while paused fails.                        | `audit:Toast/behavior`      |
-| FR4, FR5 | `ToastViewport.test.tsx` gesture and motion tests                 | Pen, touch, flick, short drag, RTL                           | A wrong dismissal or drift fails.                          | `audit:Toast/behavior`      |
-| FR6–FR8  | `ToastViewport.test.tsx` placement, cap, and uniqueID tests       | Each position, cap 1 and an explicit cap, overwrite, ignore  | Wrong order, cap, or collision fails.                      | `audit:Toast/layout`        |
-| FR9–FR11 | `ToastViewport.test.tsx` announcement, F6, focus, landmark tests  | Info, error, StrictMode, nested viewports                    | Repeated announcement or focus to body fails.              | `audit:Toast/accessibility` |
-| FR12     | `ToastViewport.modalHost.test.tsx`                                | Dialog, nested dialogs, sheets and sheet stacks, modal flows | A lost toast, timer, or focus, or the wrong outlet, fails. | `audit:Toast/layering`      |
+| Contract | Verification                                                      | Representative states                                                                              | Mutation or failure expectation                                                       | Audit section               |
+| -------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------- |
+| FR1, FR3 | `ToastViewport.test.tsx` layout, custom content, and onHide tests | Default, custom content, double dismiss                                                            | Dropped controls or a repeated `onHide` fails.                                        | `audit:Toast/behavior`      |
+| FR2      | `ToastViewport.test.tsx` blur-pause tests                         | Window blur, new toast during pause                                                                | A timer running while paused fails.                                                   | `audit:Toast/behavior`      |
+| FR4, FR5 | `ToastViewport.test.tsx` gesture and motion tests                 | Pen and touch thresholds, short drag, horizontal intent, second touch, interactive descendant, RTL | A dismissal from a rejected gesture, a lost snap-back, or off-axis drift fails.       | `audit:Toast/behavior`      |
+| FR6–FR8  | `ToastViewport.test.tsx` placement, cap, and uniqueID tests       | Each position, cap 1 and an explicit cap, overwrite, ignore                                        | Wrong order, cap, or collision fails.                                                 | `audit:Toast/layout`        |
+| FR9–FR11 | `ToastViewport.test.tsx` announcement, F6, focus, landmark tests  | Info, error, StrictMode, nested viewports                                                          | A repeated or wrong-urgency announcement, or focus to the body after F6 entry, fails. | `audit:Toast/accessibility` |
+| FR12     | `ToastViewport.modalHost.test.tsx`                                | Dialog, nested dialogs, sheets and sheet stacks, modal flows                                       | A lost toast, timer, or focus, or the wrong outlet, fails.                            | `audit:Toast/layering`      |
 
 Read from source, with no focused test yet:
 
 - FR1: the `toast` target and its `type` state.
 - FR2: pausing while the pointer is over the card, focus is inside it, or a
   touch gesture is active, and the 1 s minimum on resume.
+- FR4: a mouse drag dismissing, and a release moving back cancelling; the
+  gesture tests assert today's touch-and-pen-only, net-travel rule.
+- FR5: a swipe's settle starting at the release velocity.
 - FR7: the default cap of 5, and `maxVisible={0}` showing every toast.
+- FR9: delivery through the viewport's own polite and assertive containers;
+  the announcement tests read the shared body-level channel.
 
 ## Decision log
 
