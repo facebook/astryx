@@ -6,8 +6,10 @@
  * @output Proof that each harness instrument measures what it claims (the
  *   busy-main-thread proof and the rendering-trace counts with a negative
  *   control beside their positive checks): scripted timestamps reach the
- *   page; a flick flings natively (Chromium); a second finger and a pinch
- *   arrive as distinct pointers; the screencast shows a compositor animation
+ *   page; a flick flings natively (Chromium); a wheel step arrives as
+ *   exactly its deltas, with Control when held, and a pen stroke as trusted
+ *   pen pointers with its pressure and times (Chromium); a second finger
+ *   and a pinch arrive as distinct pointers; the screencast shows a compositor animation
  *   advancing through a blocked main thread while a rAF animation freezes;
  *   the trace counts zero Layout for a transform animation and one per frame
  *   for a `top` animation, and none from the harness's own animation recorder
@@ -47,7 +49,9 @@ import {
   castStoryboard,
   blockMainThread,
   busyWindowProof,
+  pooledBusyProof,
   compareCurve,
+  CONTROL_RGB,
   countBetween,
   cubicBezier,
   curveOf,
@@ -71,6 +75,7 @@ import {
   sampleRects,
   seekAnimations,
   springStep,
+  startBusyControl,
   startCompositorTrace,
   startScreencast,
   Storyboard,
@@ -84,6 +89,9 @@ import {
   waitForAnimation,
   waitForRest,
   watchAnimations,
+  webInputDriver,
+  PEN_SKIP,
+  WHEEL_SKIP,
   withFinger,
 } from './index';
 
@@ -369,6 +377,154 @@ test.describe('frame evidence', () => {
     const slowRaf = await run('raf', 6);
     expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
     expect(slowRaf.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  test('against a compositor-only control in the same window, a compositor animation passes and a rAF one fails, whatever the screencast rate', async ({
+    page,
+  }, testInfo) => {
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const control = await startBusyControl(page);
+
+    const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {duration: 1600, easing: 'linear'},
+          );
+        } else {
+          const start = performance.now();
+          const step = (now: number) => {
+            const p = Math.min(1, (now - start) / 1600);
+            el.style.transform = `translateY(${560 * p}px)`;
+            if (p < 1) {
+              requestAnimationFrame(step);
+            }
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page, {everyNthFrame});
+      await page.waitForTimeout(200);
+      const window = await blockMainThread(page, 700);
+      await page.waitForTimeout(200);
+      const frames = await cast.stop();
+      const tracked = await trackMarker(page, frames);
+      const controlFrames = await trackMarker(page, frames, {rgb: CONTROL_RGB});
+      const proof = busyWindowProof(tracked, window, {
+        axis: 'y',
+        control: controlFrames,
+      });
+      // The judgment without the control, for the record only: on a
+      // two-core runner it can fail where the control shows the compositor
+      // itself presented no more.
+      const alone = busyWindowProof(tracked, window, {axis: 'y'});
+      testInfo.annotations.push({
+        type: `busy-main-thread ${driver} 1/${everyNthFrame} against the control`,
+        description: `${proof.summary} | without the control: ${alone.verdict.failures.join('; ') || 'pass'}`,
+      });
+      return proof;
+    };
+
+    const compositor = await run('compositor');
+    expect(compositor.verdict.failures, compositor.summary).toEqual([]);
+    expect(compositor.control?.moved).toBeGreaterThanOrEqual(4);
+
+    // The mutant: a main-thread animation freezes while the control moves.
+    const raf = await run('raf');
+    expect(raf.verdict.pass, raf.summary).toBe(false);
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /moved on 0 of the \d+ frames the control moved/,
+    );
+
+    // A slower screencast samples the control and the component alike.
+    const slow = await run('compositor', 6);
+    expect(slow.verdict.failures, slow.summary).toEqual([]);
+    const slowRaf = await run('raf', 6);
+    expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
+    await control.remove();
+  });
+
+  test('a block too short to judge alone is judged over pooled runs: a compositor animation passes and a rAF one fails', async ({
+    page,
+  }, testInfo) => {
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const control = await startBusyControl(page);
+
+    // Six 70 ms blocks: each judged part (20 ms margins, 30 ms) holds at most
+    // three frames even at WebKit's 14 ms cast, under the four one window
+    // needs, as a short fade's does.
+    const runs = async (driver: 'compositor' | 'raf') => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {
+              duration: 1600,
+              easing: 'linear',
+              iterations: Infinity,
+              direction: 'alternate',
+            },
+          );
+        } else {
+          const start = performance.now();
+          // The same back-and-forth on the main thread.
+          const step = (now: number) => {
+            const p = ((now - start) / 1600) % 2;
+            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page);
+      await page.waitForTimeout(200);
+      const windows = [];
+      for (let i = 0; i < 6; i += 1) {
+        windows.push(await blockMainThread(page, 70));
+        await page.waitForTimeout(150);
+      }
+      const frames = await cast.stop();
+      const tracked = await trackMarker(page, frames);
+      const controlFrames = await trackMarker(page, frames, {rgb: CONTROL_RGB});
+      return windows.map(window => ({tracked, control: controlFrames, window}));
+    };
+
+    const compositor = await runs('compositor');
+    const single = busyWindowProof(
+      compositor[0].tracked,
+      compositor[0].window,
+      {axis: 'y', control: compositor[0].control},
+    );
+    expect(single.verdict.failures.join('\n'), single.summary).toMatch(
+      /too little in this window to judge/,
+    );
+    const pooled = pooledBusyProof(compositor, {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-pooled compositor',
+      description: pooled.summary,
+    });
+    expect(pooled.verdict.failures, pooled.summary).toEqual([]);
+
+    // The mutant: a main-thread animation freezes in every block.
+    const raf = pooledBusyProof(await runs('raf'), {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-pooled raf',
+      description: raf.summary,
+    });
+    expect(raf.verdict.pass, raf.summary).toBe(false);
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /moved on \d+ of the \d+ frames the control moved over 6 runs/,
+    );
+    await control.remove();
   });
 
   test('frames the screencast skips while the compositor presents them are not a stall; a frozen animation still fails with the compositor record', async ({
@@ -1237,6 +1393,178 @@ test.describe('frame evidence', () => {
       trace.longTasks.some(t => within(direct)(t) && t.durationMs >= 55),
     ).toBe(true);
     expect(trace.devtoolsTasks.filter(within(direct))).toEqual([]);
+  });
+});
+
+test.describe('wheel and pen input', () => {
+  /** A non-passive wheel listener: Chromium then waits for the page itself. */
+  const listenNonPassively = (page: Page) =>
+    page.evaluate(() =>
+      window.addEventListener('wheel', () => {}, {passive: false}),
+    );
+  /** The wheel steps the page received. */
+  const wheelsOf = async (page: Page) =>
+    (await readInputLog(page)).filter(r => r.type === 'wheel');
+
+  test('a wheel step reaches the page as exactly its deltas, trusted, with Control when held, by the time wheel() resolves on a page whose wheel listeners are all passive', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    await driver.wheel({x: 60, y: 520, dy: 120});
+    // The input log listens passively, so Chromium answers the dispatch
+    // before the page has the step: read right after the call.
+    expect(await wheelsOf(page)).toHaveLength(1);
+    await driver.wheel({x: 60, y: 520, dx: 30, dy: -40, ctrl: true});
+    const wheels = await wheelsOf(page);
+    expect(wheels).toHaveLength(2);
+    // Chromium's phone context has a device scale factor of 3: the driver
+    // multiplies back what Chromium divides by, so the page sees CSS px.
+    expect(wheels[0]).toMatchObject({
+      isTrusted: true,
+      deltaX: 0,
+      deltaY: 120,
+      deltaMode: 0,
+      ctrlKey: false,
+      x: 60,
+      y: 520,
+    });
+    expect(wheels[1]).toMatchObject({
+      isTrusted: true,
+      deltaX: 30,
+      deltaY: -40,
+      deltaMode: 0,
+      ctrlKey: true,
+    });
+  });
+
+  test('a wheel step reaches the page by the time wheel() resolves with a non-passive wheel listener too', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    await listenNonPassively(page);
+    await driver.wheel({x: 60, y: 520, dy: 80});
+    expect(await wheelsOf(page)).toHaveLength(1);
+    await driver.wheel({x: 60, y: 520, dy: -20, ctrl: true});
+    const wheels = await wheelsOf(page);
+    expect(wheels).toHaveLength(2);
+    expect(wheels[0]).toMatchObject({
+      isTrusted: true,
+      deltaY: 80,
+      ctrlKey: false,
+    });
+    expect(wheels[1]).toMatchObject({
+      isTrusted: true,
+      deltaY: -20,
+      ctrlKey: true,
+    });
+  });
+
+  test('a pen stroke reaches the page as trusted pen pointers, with its pressure, at its scripted times', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    await driver.pen([
+      {x: 100, y: 100, t: 0, pressure: 0.3},
+      {x: 100, y: 140, t: 50, pressure: 0.6},
+      {x: 100, y: 180, t: 100, pressure: 0.6},
+    ]);
+    const log = await readInputLog(page);
+    const down = log.find(r => r.type === 'pointerdown');
+    const moves = log.filter(r => r.type === 'pointermove');
+    const up = log.find(r => r.type === 'pointerup');
+    expect(down).toMatchObject({
+      isTrusted: true,
+      pointerType: 'pen',
+      x: 100,
+      y: 100,
+    });
+    expect(down?.pressure).toBeCloseTo(0.3, 2);
+    expect(moves.at(-1)).toMatchObject({pointerType: 'pen', y: 180});
+    expect(moves.at(-1)?.pressure).toBeCloseTo(0.6, 2);
+    expect(up).toMatchObject({isTrusted: true, pointerType: 'pen'});
+    // The scripted 100 ms between the first and last points reach the page.
+    expect(
+      (moves.at(-1)?.timeStamp ?? NaN) - (down?.timeStamp ?? NaN),
+    ).toBeCloseTo(100, 0);
+  });
+
+  test('a stroke sent right after a navigation presses where it is scripted', async ({
+    page,
+  }) => {
+    // The driver exists before the page navigates, and the stroke goes out
+    // the moment the page has loaded: the press must not take the previous
+    // document's page scale (about:blank's, in the phone project).
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    await fixture(page);
+    await driver.pen([
+      {x: 100, y: 100, t: 0, pressure: 0.5},
+      {x: 100, y: 120, t: 30, pressure: 0.5},
+    ]);
+    const down = (await readInputLog(page)).find(r => r.type === 'pointerdown');
+    expect(down).toMatchObject({pointerType: 'pen', x: 100, y: 100});
+  });
+
+  test('says which inputs it has: WebKit in a phone context has no wheel and no pen', async ({
+    page,
+    browserName,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    if (browserName === 'chromium') {
+      expect({wheels: driver.wheels, pens: driver.pens}).toEqual({
+        wheels: true,
+        pens: true,
+      });
+      return;
+    }
+    expect({wheels: driver.wheels, pens: driver.pens}).toEqual({
+      wheels: false,
+      pens: false,
+    });
+    await expect(driver.wheel({x: 60, y: 520, dy: 120})).rejects.toThrow(
+      WHEEL_SKIP,
+    );
+    await expect(driver.pen([{x: 100, y: 100, t: 0}])).rejects.toThrow(
+      PEN_SKIP,
+    );
+  });
+
+  test.describe('in a desktop context', () => {
+    test.use({isMobile: false, hasTouch: false, deviceScaleFactor: 1});
+
+    test('a wheel step reaches the page as exactly its deltas in both engines', async ({
+      page,
+    }) => {
+      await fixture(page);
+      const driver = await webInputDriver(page);
+      expect(driver.wheels).toBe(true);
+      await driver.wheel({x: 60, y: 520, dy: 120});
+      expect(await wheelsOf(page)).toHaveLength(1);
+      await driver.wheel({x: 60, y: 520, dx: -25, dy: 0, ctrl: true});
+      const wheels = await wheelsOf(page);
+      expect(wheels).toHaveLength(2);
+      expect(wheels[0]).toMatchObject({
+        isTrusted: true,
+        deltaX: 0,
+        deltaY: 120,
+        deltaMode: 0,
+        ctrlKey: false,
+      });
+      expect(wheels[1]).toMatchObject({
+        isTrusted: true,
+        deltaX: -25,
+        deltaY: 0,
+        deltaMode: 0,
+        ctrlKey: true,
+      });
+    });
   });
 });
 
@@ -2286,45 +2614,64 @@ test.describe('animation state', () => {
 
     // A 300 ms delay plays last when going backward: the curve starts at once.
     let watch = await watchAnimations(box);
-    let readyAt = await box.evaluate(async (el, keyframes) => {
+    let begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 400, delay: 300});
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      // When it began, by its own clock read at one instant: a run going
+      // backward starts at its end, so its current time has come down from
+      // there by as much as the timeline has moved since (through the rate).
+      // performance.now() read after `ready` drifts later under load.
+      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+      return (
+        performance.timeOrigin +
+        Number(document.timeline.currentTime) -
+        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
+      );
     }, frames);
     const [delayed] = await watch.started();
-    expect(Math.abs(delayed.from - readyAt)).toBeLessThan(50);
+    expect(Math.abs(delayed.from - begunAt)).toBeLessThan(50);
     expect(delayed.to - delayed.from).toBeCloseTo(400, 0);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
 
     // A short one that ended before the look keeps its curve inside its life.
     watch = await watchAnimations(box);
-    readyAt = await box.evaluate(async (el, keyframes) => {
+    begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+      return (
+        performance.timeOrigin +
+        Number(document.timeline.currentTime) -
+        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
+      );
     }, frames);
     await page.waitForTimeout(200);
     const [ended] = await watch.started();
     expect(ended.finishedAt).not.toBeNull();
-    expect(Math.abs(ended.from - readyAt)).toBeLessThan(50);
+    expect(Math.abs(ended.from - begunAt)).toBeLessThan(50);
     expect(ended.to).toBeLessThanOrEqual((ended.finishedAt ?? 0) + 1);
 
     // One the page cancels when it ends keeps its start.
     watch = await watchAnimations(box);
-    readyAt = await box.evaluate(async (el, keyframes) => {
+    begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
       animation.addEventListener('finish', () => animation.cancel(), {
         once: true,
       });
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+      return (
+        performance.timeOrigin +
+        Number(document.timeline.currentTime) -
+        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
+      );
     }, frames);
     await page.waitForTimeout(200);
     const [cancelled] = await watch.started();
-    expect(Math.abs(cancelled.from - readyAt)).toBeLessThan(50);
+    expect(Math.abs(cancelled.from - begunAt)).toBeLessThan(50);
     expect(cancelled.to - cancelled.from).toBeCloseTo(60, 0);
 
     // Read right after finish(), before the finish event is delivered: the
