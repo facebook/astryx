@@ -188,7 +188,15 @@ const styles = stylex.create({
     // variant, `.astryx-avatar-fallback.<size>`), so the defaults here are
     // plain values with no internal-var seam. See Avatar.doc.mjs theming.
     backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-text-secondary'],
+    // In forced colors the initials take the color around them, which the
+    // browser forces to CanvasText, so a control that paints itself disabled
+    // (GrayText, `spec:AST-085` FR6) or selected (HighlightText) carries its
+    // Avatar's initials with it; an authored color would be forced to
+    // CanvasText whatever the control shows.
+    color: {
+      default: colorVars['--color-text-secondary'],
+      '@media (forced-colors: active)': 'currentColor',
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     textTransform: 'uppercase',
