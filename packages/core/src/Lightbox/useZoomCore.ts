@@ -121,7 +121,7 @@ export interface ZoomStage {
   rest(): void;
 }
 
-/** The core as the touch layer drives it. */
+/** The core as the gestures (useZoomStage.ts) drive it. */
 export interface ZoomCore {
   /** The API Lightbox calls (one object for the component's lifetime). */
   readonly api: ZoomStage;
@@ -151,10 +151,11 @@ export interface ZoomCore {
   isAtEdgeOf(geometry: ZoomGeometry, direction: PanDirection): boolean;
   /**
    * UIScrollView's eased settle (a release past a limit, a zoom to a rect),
-   * or with `released` Lightbox's released 200 ms ease-out (the mouse and the
-   * keyboard, see RELEASED_ZOOM). Under Reduce Motion the animator's default
-   * applies (design:reduced-motion): a fade in place on a touch screen, or
-   * for a touch drag's release (`touchRelease`); at once otherwise.
+   * or with `released` Lightbox's released 200 ms ease-out (the keyboard's,
+   * see RELEASED_ZOOM). Under Reduce Motion the animator's default applies
+   * (design:reduced-motion): a fade in place on a touch screen, or for a
+   * finger's release (`touchRelease`, DR2); at once otherwise (DR3,
+   * spec:AST-094 FR43).
    */
   settleTo(
     geometry: ZoomGeometry,
