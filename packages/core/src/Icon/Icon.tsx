@@ -167,8 +167,8 @@ export interface IconProps extends Omit<
    * - 'md': 1.25rem (20px at a 16px root)
    * - 'lg': 1.5rem (24px at a 16px root)
    *
-   * A theme sets a size's glyph dimension with `width` and `height` on
-   * `components.icon['size:sm']` (and the other sizes).
+   * A theme sets a size's glyph dimension with `width` and `height`, in `px`
+   * or `rem`, on `components.icon['size:sm']` (and the other sizes).
    *
    * An explicit value wins. When omitted, Icon uses the nearest default supplied
    * by an owning Astryx component for its icon slot, then falls back to 'md'.
