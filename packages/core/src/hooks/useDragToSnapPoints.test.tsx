@@ -27,7 +27,10 @@ beforeEach(() => {
       'cancelAnimationFrame',
     ],
   });
-  HTMLElement.prototype.animate = function () {
+  HTMLElement.prototype.animate = function (
+    keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+  ) {
+    played.push(keyframes);
     let start: number | null = null;
     const animation = {
       get startTime() {
@@ -39,7 +42,9 @@ beforeEach(() => {
       playState: 'running',
       ready: new Promise(() => {}),
       finish() {},
-      cancel() {},
+      cancel() {
+        cancels += 1;
+      },
     };
     requestAnimationFrame(() => {
       start ??= performance.now();
@@ -54,6 +59,11 @@ afterEach(() => {
 });
 
 const POINTS = [0, 240, 480];
+
+/** The keyframes of every animation the element played, in order. */
+const played: (Keyframe[] | PropertyIndexedKeyframes | null)[] = [];
+/** How many animations were cancelled. */
+let cancels = 0;
 
 function Drawer({
   onSettle,
@@ -120,6 +130,137 @@ describe('useDragToSnapPoints', () => {
     warn.mockRestore();
   });
 
+  it('drives an element mounted after the hook first ran, and follows the one that replaces it (INV6)', async () => {
+    const settlers = new Set<(index: number) => void>();
+    const onSettle = vi.fn();
+    function Late({shown, version}: {shown: boolean; version: number}) {
+      const ref = useRef<HTMLDivElement>(null);
+      const {settleTo} = useDragToSnapPoints(ref, {
+        axis: 'y',
+        snapPoints: POINTS,
+        onSettle,
+      });
+      settlers.add(settleTo);
+      return shown ? <div key={version} ref={ref} data-testid="late" /> : null;
+    }
+    const {rerender, getByTestId} = render(<Late shown={false} version={0} />);
+    rerender(<Late shown version={0} />);
+    const [settleTo] = settlers;
+    act(() => settleTo(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).toHaveBeenLastCalledWith(1);
+    // A new node behind the ref: the drag moves to it.
+    rerender(<Late shown version={1} />);
+    const replaced = getByTestId('late');
+    act(() => settleTo(2));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).toHaveBeenLastCalledWith(2);
+    expect(replaced.style.translate).toContain('480px');
+  });
+
+  it('an option changed mid-use leaves the element where it is, and the next settle starts there', async () => {
+    const settlers = new Set<(index: number) => void>();
+    const onSettle = vi.fn();
+    function Sheet({flickThreshold}: {flickThreshold: number}) {
+      const ref = useRef<HTMLDivElement>(null);
+      const {settleTo} = useDragToSnapPoints(ref, {
+        axis: 'y',
+        snapPoints: POINTS,
+        flickThreshold,
+        onSettle,
+      });
+      settlers.add(settleTo);
+      return <div ref={ref} data-testid="sheet" />;
+    }
+    const {rerender, getByTestId} = render(<Sheet flickThreshold={1008} />);
+    const element = getByTestId('sheet');
+    const [settleTo] = settlers;
+    act(() => settleTo(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    const settled = element.style.translate;
+    expect(settled).toContain('240px');
+    rerender(<Sheet flickThreshold={600} />);
+    expect(element.style.translate).toBe(settled);
+    // The next settle moves on from 240, not from the resting position.
+    played.length = 0;
+    act(() => settleTo(2));
+    expect(JSON.stringify(played[0])).toContain('240px');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).toHaveBeenLastCalledWith(2);
+  });
+
+  it('an option changed during a settle leaves that settle running', async () => {
+    const settlers = new Set<(index: number) => void>();
+    const onSettle = vi.fn();
+    function Sheet({flickThreshold}: {flickThreshold: number}) {
+      const ref = useRef<HTMLDivElement>(null);
+      const {settleTo} = useDragToSnapPoints(ref, {
+        axis: 'y',
+        snapPoints: POINTS,
+        flickThreshold,
+        onSettle,
+      });
+      settlers.add(settleTo);
+      return <div ref={ref} />;
+    }
+    const {rerender} = render(<Sheet flickThreshold={1008} />);
+    const [settleTo] = settlers;
+    act(() => settleTo(2));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
+    played.length = 0;
+    cancels = 0;
+    rerender(<Sheet flickThreshold={600} />);
+    // Nothing restarted or cut short.
+    expect(played).toHaveLength(0);
+    expect(cancels).toBe(0);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).toHaveBeenLastCalledWith(2);
+  });
+
+  it('new snap points move a resting element only when its own is gone, onto the nearest new one', async () => {
+    const settlers = new Set<(index: number) => void>();
+    const onSettle = vi.fn();
+    function Sheet({snapPoints}: {snapPoints: number[]}) {
+      const ref = useRef<HTMLDivElement>(null);
+      const {settleTo} = useDragToSnapPoints(ref, {
+        axis: 'y',
+        snapPoints,
+        onSettle,
+      });
+      settlers.add(settleTo);
+      return <div ref={ref} />;
+    }
+    const {rerender} = render(<Sheet snapPoints={POINTS} />);
+    const [settleTo] = settlers;
+    act(() => settleTo(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    // 240 is still a snap point, now the third: nothing moves.
+    played.length = 0;
+    rerender(<Sheet snapPoints={[0, 120, 240, 480]} />);
+    expect(played).toHaveLength(0);
+    // 240 is gone: on to the nearest new point, 300, from where it is.
+    rerender(<Sheet snapPoints={[0, 300, 600]} />);
+    expect(JSON.stringify(played[0])).toContain('240px');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(onSettle).toHaveBeenLastCalledWith(1);
+  });
+
   it('delegates entirely to the factory: the hook module holds no behavior of its own', () => {
     const source = fs.readFileSync(
       path.join(__dirname, 'useDragToSnapPoints.ts'),
@@ -128,6 +269,7 @@ describe('useDragToSnapPoints', () => {
     const imports = [...source.matchAll(/from '([^']+)'/g)].map(m => m[1]);
     expect([...new Set(imports)].sort()).toEqual([
       '../dragToSnapPoints/createDragToSnapPoints',
+      './useIsomorphicLayoutEffect',
       'react',
     ]);
     expect(source).toContain('createDragToSnapPoints(element');
