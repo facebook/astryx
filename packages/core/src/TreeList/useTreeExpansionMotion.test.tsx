@@ -7,18 +7,22 @@
  * @output Unit tests for the expansion's presence rules: with a mouse a
  *   collapse removes the children at once; under any finger (iOS and Android
  *   alike) they stay, inert and out of the arrow keys' reach, until they have
- *   slid away, and an expand that interrupts the collapse keeps them; page
- *   content after the tree is never moved (it takes its place by layout), the
- *   rows inside the tree release their translate at their own arrival and are
- *   left at rest when the tree unmounts mid-collapse
+ *   slid away, and an expand that interrupts the collapse keeps them; with no
+ *   animated layout handle nothing outside the group moves, neither the rows
+ *   after it in the tree nor the page content after the tree (both take their
+ *   places by layout, `spec:AST-105` FR2); the group's rows release their
+ *   translate at their own arrival and are left at rest when the tree
+ *   unmounts mid-collapse
  * @position Beside TreeList/useTreeExpansionMotion.ts; the motion itself is
  *   proven in a real engine by
  *   TreeList/__tests__/TreeListExpand.interaction.browser.spec.ts
  */
 
+import {useRef} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {TreeList} from './TreeList';
+import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import type {TreeListItemData} from './TreeListTypes';
 import {motionOf} from '../utils/rowMotion';
 
@@ -154,6 +158,29 @@ describe('TreeList expansion presence', () => {
   });
 });
 
+describe('with an animated-layout handle', () => {
+  function WithHandle() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const animatedLayout = useAnimatedLayout({containerRef});
+    return (
+      <div ref={containerRef}>
+        <TreeList items={items} animatedLayout={animatedLayout} />
+      </div>
+    );
+  }
+
+  it('under a finger, the row plays no slide of its own: the handle plays the group under every pointer', async () => {
+    stubPointer('touch');
+    render(<WithHandle />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
+    expect(row('components')).toHaveAttribute('aria-expanded', 'false');
+    // jsdom has no layout, so the handle holds no exit: the group goes at
+    // once instead of staying for the row's own slide.
+    expect(group()).toBeNull();
+  });
+});
+
 describe('content after the tree', () => {
   const collapsed: TreeListItemData[] = [
     {
@@ -173,7 +200,7 @@ describe('content after the tree', () => {
     );
   }
 
-  it('is never moved by an expansion: it takes its place by layout', async () => {
+  it('is never moved by an expansion, nor are the rows after the group: they take their places by layout', async () => {
     stubPointer('touch');
     stubLayout();
     render(<Page />);
@@ -182,8 +209,12 @@ describe('content after the tree', () => {
     const below = screen.getByTestId('below');
     expect(motionOf(below)).toBeUndefined();
     expect(below.style.translate).toBe('');
-    // The rows inside the tree still move.
-    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
+    // With no animated layout handle the row after the group takes its new
+    // place at once (`spec:AST-105` FR2); only the group's own rows move.
+    const app = row('app') as HTMLElement;
+    expect(motionOf(app)).toBeUndefined();
+    expect(app.style.translate).toBe('');
+    expect(motionOf(row('button') as HTMLElement)).toBeDefined();
   });
 
   it('is never moved by a collapse either', async () => {
@@ -193,26 +224,27 @@ describe('content after the tree', () => {
     await act(async () => undefined);
     fireEvent.click(toggle() as HTMLElement);
     await waitFor(
-      () => expect(motionOf(row('app') as HTMLElement)).toBeUndefined(),
+      () => expect(motionOf(row('button') as HTMLElement)).toBeUndefined(),
       {timeout: 3000},
     );
     fireEvent.click(toggle() as HTMLElement);
     const below = screen.getByTestId('below');
-    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
+    expect(motionOf(row('button') as HTMLElement)).toBeDefined();
+    expect(motionOf(row('app') as HTMLElement)).toBeUndefined();
     expect(motionOf(below)).toBeUndefined();
     expect(below.style.translate).toBe('');
   });
 
-  it("releases each moved row's translate when its own spring arrives", async () => {
+  it("releases each of the group's rows' translate when its own spring arrives", async () => {
     stubPointer('touch');
     stubLayout();
     render(<Page />);
     await act(async () => undefined);
     fireEvent.click(toggle() as HTMLElement);
-    const app = row('app') as HTMLElement;
+    const child = row('button') as HTMLElement;
     // Moved: its spring starts when the browser commits it.
-    expect(motionOf(app)).toBeDefined();
-    await waitFor(() => expect(app.style.translate).toBe(''), {
+    expect(motionOf(child)).toBeDefined();
+    await waitFor(() => expect(child.style.translate).toBe(''), {
       timeout: 3000,
     });
   });
@@ -224,13 +256,16 @@ describe('content after the tree', () => {
     await act(async () => undefined);
     fireEvent.click(toggle() as HTMLElement);
     await waitFor(
-      () => expect(motionOf(row('app') as HTMLElement)).toBeUndefined(),
+      () => expect(motionOf(row('button') as HTMLElement)).toBeUndefined(),
       {timeout: 3000},
     );
-    // Collapse, and take the tree away while it runs.
+    // Collapse, and take the tree away while it runs: the row after the
+    // group was never moved, and nothing is left moving.
     fireEvent.click(toggle() as HTMLElement);
     const app = row('app') as HTMLElement;
-    expect(motionOf(app)).toBeDefined();
+    const child = row('button') as HTMLElement;
+    expect(motionOf(child)).toBeDefined();
+    expect(motionOf(app)).toBeUndefined();
     rerender(
       <div>
         <p data-testid="below">Below the tree</p>

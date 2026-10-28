@@ -7,11 +7,12 @@
  *   UIKit constants table (motion/uikit/list.ts)
  * @output Interaction and animation proofs for a TreeList row's expand and
  *   collapse under a finger: the children slide out from under the parent
- *   as one block inside the group's clip, the rows below move with them and
- *   the chevron turns, all on the outline spring, sampled frame by frame; a
- *   collapse slides them back and removes them with no jump, no child
- *   showing outside the group up to the frame it leaves; the rows below
- *   keep moving while the main thread is blocked, with no Layout or Paint;
+ *   as one block inside the group's clip and the chevron turns, both on the
+ *   outline spring, sampled frame by frame, while the rows below take their
+ *   new places at once (no animated layout handle, `spec:AST-105` FR2); a
+ *   collapse slides them back and removes them, no child showing outside
+ *   the group up to the frame it leaves; the children keep moving while the
+ *   main thread is blocked, with no Layout or Paint;
  *   under reduced motion an expand and a collapse cross-fade, opacity only,
  *   within 200 ms (`design:reduced-motion`); right to left mirrors the
  *   chevron's turn; a theme's outline spring times it; content after the
@@ -67,6 +68,12 @@ const SETTLE_MS =
 /** A tree row by its item id (an ancestor row contains its label too). */
 const treeItem = (page: Page, id: string) =>
   page.locator(`[role="treeitem"][data-tree-id="${id}"]`);
+
+/** The group's last row: the first part of the sliding block to show. */
+const lastChild = (page: Page) =>
+  treeItem(page, 'components')
+    .locator(':scope > [role="group"] > [role="treeitem"]')
+    .last();
 
 /** The toggle of the "components" folder, its group, a child and a row below. */
 function parts(page: Page) {
@@ -141,15 +148,14 @@ test('a busy first frame delays the expand instead of skipping into it', async (
     'WebKit starts an animation created just before a block at its last frame time (motion/animator.ts, known limits)',
   );
   await open(page);
-  const {toggle, below} = parts(page);
-  await expect(below).toBeVisible();
+  const {toggle, parent} = parts(page);
   // The toggle's handler commits the expand and starts its motions; 150 ms
   // of script then hold the main thread before the first frame. The motions
   // start when the browser commits them, so the first frame due after the
-  // block shows the row below at most one frame from where it was, a group's
-  // height up from its new place.
-  const result = await below.evaluate(
-    async (row, toggleButton) =>
+  // block shows the child at most one frame from where it started, a
+  // group's height up from its place.
+  const result = await parent.evaluate(
+    async (folder, toggleButton) =>
       new Promise<{
         first: number;
         pending: boolean;
@@ -159,6 +165,12 @@ test('a busy first frame delays the expand instead of skipping into it', async (
         // after it, in the same task, before any frame.
         const observer = new MutationObserver(() => {
           observer.disconnect();
+          const row = folder.querySelector<HTMLElement>(
+            '[data-tree-id="button"]',
+          );
+          if (row == null) {
+            throw new Error('no child');
+          }
           // The product's part: the motions it just started carry no start
           // of their own; the browser sets it when it commits them.
           const motions = row.getAnimations();
@@ -192,7 +204,7 @@ test('a busy first frame delays the expand instead of skipping into it', async (
           };
           requestAnimationFrame(read);
         });
-        const tree = row.closest('[role="tree"]');
+        const tree = folder.closest('[role="tree"]');
         if (tree != null) {
           observer.observe(tree, {childList: true, subtree: true});
         }
@@ -218,7 +230,7 @@ test('a busy first frame delays the expand instead of skipping into it', async (
       description: `first frame at ${result.first.toFixed(1)} px of ${(-height).toFixed(1)} px`,
     });
   }
-  await expect.poll(async () => translateY(below)).toBe(0);
+  await expect.poll(async () => translateY(parts(page).child)).toBe(0);
 });
 
 test('Android: a tap expands with the same motion (one touch model)', async ({
@@ -231,11 +243,11 @@ test('Android: a tap expands with the same motion (one touch model)', async ({
   await expect(below).toBeVisible();
   await tapToggle(page);
   await expect(child).toBeVisible();
-  // The row below starts where it was and springs home, as on iOS.
-  expect(await below.evaluate(el => el.getAnimations().length)).toBeGreaterThan(
+  // The block slides out from under the parent and springs home, as on iOS.
+  expect(await child.evaluate(el => el.getAnimations().length)).toBeGreaterThan(
     0,
   );
-  await expect.poll(async () => translateY(below)).toBe(0);
+  await expect.poll(async () => translateY(child)).toBe(0);
 });
 
 test('a mouse: a click expands and collapses in one frame, as before', async ({
@@ -285,7 +297,7 @@ test('the expansion keeps its own outline spring, whatever a theme writes', asyn
     ),
   );
   const table = solveSpring(SPRING, {from: 0, to: 1});
-  const {group, child, below} = parts(page);
+  const {group, child} = parts(page);
   await tapToggle(page);
   await expect(child).toBeVisible();
   await holdAnimations(page);
@@ -294,10 +306,9 @@ test('the expansion keeps its own outline spring, whatever a theme writes', asyn
     await seekAnimations(page, t);
     const expected = -height * (1 - table.value(t / 1000));
     expect(await translateY(child)).toBeCloseTo(expected, 0);
-    expect(await translateY(below)).toBeCloseTo(expected, 0);
   }
   await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(below)).toBe(0);
+  await expect.poll(async () => translateY(child)).toBe(0);
 });
 
 test('under reduced motion an expand and a collapse cross-fade: opacity only, within 200 ms', async ({
@@ -353,7 +364,7 @@ test("right to left: the chevron's quarter turn mirrors, and the children slide 
   await expect.poll(async () => rotation(chevron)).toBe(0);
 });
 
-test('expand: the children slide out from under the parent, the rows below move with them, the chevron turns, on the outline spring', async ({
+test('expand: the children slide out from under the parent and the chevron turns, on the outline spring, while the rows below take their places at once', async ({
   page,
 }, testInfo) => {
   await open(page);
@@ -367,6 +378,14 @@ test('expand: the children slide out from under the parent, the rows below move 
   expect(await group.evaluate(el => getComputedStyle(el).overflow)).toBe(
     'clip',
   );
+  // With no animated layout handle (`spec:AST-105` FR2) the row below is in
+  // its new place from the first frame, a group's height lower, with nothing
+  // animating it.
+  expect(await below.evaluate(el => el.getAnimations().length)).toBe(0);
+  expect(((await below.boundingBox())?.y ?? 0) - belowBefore).toBeCloseTo(
+    height,
+    0,
+  );
   const samples: {t: number; child: number; below: number; chevron: number}[] =
     [];
   for (const t of timeline(SETTLE_MS)) {
@@ -379,17 +398,12 @@ test('expand: the children slide out from under the parent, the rows below move 
     });
   }
   await releaseAnimations(page, {finish: true});
-  // The block and the rows below travel the group's height together; the
-  // chevron turns the quarter turn; one spring for all three.
+  // The block travels the group's height, the chevron turns the quarter
+  // turn, on one spring; the row below never moves.
   const offset = (t: number) => -height * (1 - progress(t));
   const turn = (t: number) => -90 * (1 - progress(t));
   const childCurve = compareCurve(
     samples.map(s => ({t: s.t, value: s.child})),
-    offset,
-    0.5,
-  );
-  const belowCurve = compareCurve(
-    samples.map(s => ({t: s.t, value: s.below})),
     offset,
     0.5,
   );
@@ -407,7 +421,6 @@ test('expand: the children slide out from under the parent, the rows below move 
           height,
           samples,
           childCurve,
-          belowCurve,
           chevronCurve,
         },
         null,
@@ -420,15 +433,13 @@ test('expand: the children slide out from under the parent, the rows below move 
   expect(childCurve.maxError, JSON.stringify(childCurve.worst)).toBeLessThan(
     0.5,
   );
-  expect(belowCurve.maxError, JSON.stringify(belowCurve.worst)).toBeLessThan(
-    0.5,
-  );
+  expect(samples.every(sample => sample.below === 0)).toBe(true);
   expect(
     chevronCurve.maxError,
     JSON.stringify(chevronCurve.worst),
   ).toBeLessThan(0.5);
-  // At rest: the clip is gone, nothing is translated, the row below sits a
-  // group's height lower than before.
+  // At rest: the clip is gone, nothing is translated, the row below still
+  // sits a group's height lower than before.
   await expect
     .poll(async () => group.evaluate(el => getComputedStyle(el).overflow))
     .not.toBe('clip');
@@ -439,7 +450,7 @@ test('expand: the children slide out from under the parent, the rows below move 
   );
 });
 
-test('collapse: the children slide back under the parent, then leave, with no jump', async ({
+test('collapse: the children slide back under the parent, then leave, and the rows below take their places when they do', async ({
   page,
 }) => {
   await open(page);
@@ -447,7 +458,7 @@ test('collapse: the children slide back under the parent, then leave, with no ju
   const belowCollapsed = (await below.boundingBox())?.y ?? 0;
   await tapToggle(page);
   await expect(child).toBeVisible();
-  await expect.poll(async () => translateY(below)).toBe(0);
+  await expect.poll(async () => translateY(child)).toBe(0);
   await expect
     .poll(async () => group.evaluate(el => getComputedStyle(el).overflow))
     .not.toBe('clip');
@@ -458,15 +469,74 @@ test('collapse: the children slide back under the parent, then leave, with no ju
   await expect(group).toHaveAttribute('inert', '');
   await holdAnimations(page);
   await seekAnimations(page, SETTLE_MS / 3);
-  const midway = await translateY(below);
+  const midway = await translateY(child);
   expect(midway).toBeLessThan(-1);
   expect(midway).toBeGreaterThan(-height + 1);
+  // The row below waits in place, untranslated, while the block slides.
+  expect(await translateY(below)).toBe(0);
+  expect(await below.evaluate(el => el.getAnimations().length)).toBe(0);
   await releaseAnimations(page, {finish: true});
-  // Gone, and the row below sits where it sat before the expand: the commit
-  // that removed the children took the translate back with it.
+  // Gone, and the row below sits where it sat before the expand, taken there
+  // by the commit that removed the children.
   await expect(group).toHaveCount(0);
   expect(await translateY(below)).toBe(0);
   expect((await below.boundingBox())?.y ?? 0).toBeCloseTo(belowCollapsed, 0);
+});
+
+test('collapse: the group leaves the frame its block is fully clipped, not when the spring settles', async ({
+  page,
+}) => {
+  await open(page);
+  const {group, child} = parts(page);
+  await tapToggle(page);
+  await expect(child).toBeVisible();
+  await expect.poll(async () => translateY(child)).toBe(0);
+  await expect
+    .poll(async () => group.evaluate(el => getComputedStyle(el).overflow))
+    .not.toBe('clip');
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  // When the outline spring brings the block within half a pixel of the
+  // group's height above it: from then on nothing of it shows.
+  let clipMs = 0;
+  while (height * (1 - progress(clipMs)) > 0.5) {
+    clipMs += 4;
+  }
+  expect(clipMs).toBeLessThan(SETTLE_MS - 100);
+  // From the collapse's commit (the group turns inert) to its removal.
+  const watch = page.evaluate(
+    async () =>
+      new Promise<number>(resolve => {
+        const parent = document.querySelector('[data-tree-id="components"]');
+        if (parent == null) {
+          throw new Error('no parent');
+        }
+        let start = 0;
+        const observer = new MutationObserver(() => {
+          const current = parent.querySelector(':scope > [role="group"]');
+          if (start === 0 && current?.hasAttribute('inert') === true) {
+            start = performance.now();
+          }
+          if (start !== 0 && current == null) {
+            observer.disconnect();
+            resolve(performance.now() - start);
+          }
+        });
+        observer.observe(parent, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['inert'],
+        });
+      }),
+  );
+  await tapToggle(page);
+  const elapsed = await watch;
+  // Closer to the clip than to the settle: no empty band before the rows
+  // below take their places.
+  expect(elapsed, `clip ${clipMs} ms, settle ${SETTLE_MS} ms`).toBeLessThan(
+    (clipMs + SETTLE_MS) / 2,
+  );
+  expect(elapsed).toBeGreaterThan(clipMs - 50);
 });
 
 test('the end of a collapse shows no child outside the group, up to the frame the group leaves', async ({
@@ -561,13 +631,13 @@ test('content after the tree takes its place by layout at once, with no translat
   );
   expect(((await button.boundingBox())?.y ?? 0) - rest).toBeCloseTo(height, 0);
   expect(await fixedTop()).toBeCloseTo(10, 0);
-  // The rows inside the tree still spring from where they were.
-  expect(await translateY(below)).toBeCloseTo(-height, 0);
+  // So does the row after the group inside the tree: no animated layout
+  // handle (`spec:AST-105` FR2).
+  expect(await translateY(below)).toBe(0);
   await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(below)).toBe(0);
 
-  // A collapse: it stays where it is while the rows slide back, then takes
-  // its place when the group leaves, never translated.
+  // A collapse: it stays where it is while the children slide back, then
+  // takes its place when the group leaves, never translated.
   await tapToggle(page);
   await holdAnimations(page);
   await seekAnimations(page, SETTLE_MS / 3);
@@ -583,7 +653,7 @@ test('content after the tree takes its place by layout at once, with no translat
   expect((await button.boundingBox())?.y ?? 0).toBeCloseTo(rest, 0);
 });
 
-test('the rows below keep moving on every frame while the main thread is blocked', async ({
+test('the children keep moving on every frame while the main thread is blocked', async ({
   page,
   browserName,
 }, testInfo) => {
@@ -592,12 +662,14 @@ test('the rows below keep moving on every frame while the main thread is blocked
     'screencast frame evidence is Chromium-only in Playwright',
   );
   await open(page);
-  const {below} = parts(page);
-  const unmark = await markElement(below);
   const cast = await startScreencast(page);
   await page.waitForTimeout(100);
   await tapToggle(page);
-  await waitForAnimation(below, {minProgressMs: 16});
+  // The group's last row, the first part of the block to show, carries the
+  // marker from the commit that inserts it.
+  const last = lastChild(page);
+  const unmark = await markElement(last);
+  await waitForAnimation(last, {minProgressMs: 16});
   const block = await blockMainThread(page, 300);
   await page.waitForTimeout(200);
   const frames = await cast.stop();
@@ -618,7 +690,7 @@ test('the rows below keep moving on every frame while the main thread is blocked
   expect(proof.longestStallMs, JSON.stringify(proof)).toBeLessThan(40);
 });
 
-test('WebKit: the rows below keep moving while the main thread is blocked (video)', async ({
+test('WebKit: the children keep moving while the main thread is blocked (video)', async ({
   browser,
   browserName,
 }, testInfo) => {
@@ -636,16 +708,13 @@ test('WebKit: the rows below keep moving while the main thread is blocked (video
   });
   const page = await context.newPage();
   await open(page);
-  const {group, below} = parts(page);
-  // The height the rows below travel: expand once, read it, collapse again.
+  const {group} = parts(page);
+  // Where the block's last row (the first part of it to show) comes to rest,
+  // and how far it travels: expand once, read both, collapse again.
   await tapToggle(page);
-  await expect.poll(async () => translateY(below)).toBe(0);
+  await expect.poll(async () => translateY(lastChild(page))).toBe(0);
   const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
-  await tapToggle(page);
-  await expect(group).toHaveCount(0);
-  // The row below carries a marker chip; probes every 4 px along its path
-  // read where the chip is in each recorded frame.
-  await markElement(below);
+  const unmark = await markElement(lastChild(page));
   const chip = await page.evaluate(() => {
     const el = document.querySelector('[data-harness-marker-chip]');
     const box = el?.getBoundingClientRect();
@@ -653,17 +722,23 @@ test('WebKit: the rows below keep moving while the main thread is blocked (video
       ? null
       : {x: box.x + box.width / 2, y: box.y + box.height / 2};
   });
+  await unmark();
   if (chip == null) {
     throw new Error('no marker chip');
   }
+  await tapToggle(page);
+  await expect(group).toHaveCount(0);
+  // Probes every 4 px along the chip's path, from a group's height up to
+  // where it rests, read where the chip is in each recorded frame.
   const probes = Array.from({length: Math.floor(height / 4) + 1}, (_, k) => ({
     x: Math.round(chip.x),
-    y: Math.round(chip.y + k * 4),
+    y: Math.round(chip.y - height + k * 4),
   }));
   await installBeacon(page);
   await page.waitForTimeout(300);
   await tapToggle(page);
-  await waitForAnimation(below, {minProgressMs: 1});
+  await markElement(lastChild(page));
+  await waitForAnimation(lastChild(page), {minProgressMs: 1});
   await blockBehindBeacon(page, 300);
   await page.waitForTimeout(400);
   const video = page.video();
@@ -690,7 +765,7 @@ test('WebKit: the rows below keep moving while the main thread is blocked (video
     {'webkit.json': JSON.stringify({height, blocked, distinct}, null, 1)},
     testInfo,
   );
-  // The row kept moving down while script could not run.
+  // The block kept moving down while script could not run.
   expect(distinct.length, JSON.stringify(distinct)).toBeGreaterThanOrEqual(3);
   for (let i = 1; i < distinct.length; i++) {
     expect(distinct[i]).toBeGreaterThan(distinct[i - 1]);
@@ -703,14 +778,14 @@ test('the expand does no Layout or Paint per frame', async ({
 }) => {
   test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
   await open(page);
-  const {parent, below} = parts(page);
+  const {parent, child} = parts(page);
   // Expanded from the keyboard (an iPad's): the same motion, with no press
   // feedback of the toggle's own in the trace.
   await parent.focus();
   let window = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await page.keyboard.press('ArrowRight');
-    const [started] = await waitForAnimation(below);
+    const [started] = await waitForAnimation(child);
     window = {from: started.from, to: started.from + SETTLE_MS};
     await page.waitForTimeout(SETTLE_MS + 100);
   });
