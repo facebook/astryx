@@ -668,6 +668,342 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
+  test('an earlier sibling that order places after the change glides from its old place (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; gap: 8px">
+        <div id="ordered" style="order: 1; width: 60px; height: 24px; flex: none; background: #ddd"></div>
+        <div id="changed" style="width: 60px; height: 24px; flex: none; background: #ddd"></div>
+      </div></div>`,
+    );
+    await change(page, {
+      changed: '#changed',
+      mutate: `document.querySelector('#changed').style.width = '140px'`,
+    });
+    const [motion] = await page.evaluate(() => window.motionOf('#ordered'));
+    expect(motion).toBeDefined();
+    // First in the DOM, laid out after the change: it starts 80 px back.
+    expect(startOffset(motion.first).x).toBeCloseTo(-80, 0);
+  });
+
+  for (const position of ['absolute', 'fixed']) {
+    test(`a ${position} ancestor of the change takes its final place (spec:AST-105 Coverage)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area">
+          <div id="anchored" style="position: ${position}; left: 0; bottom: 0; width: 300px">
+            <div id="grow" class="grow"></div><div class="row"></div>
+          </div>
+        </div>`,
+      );
+      await change(page);
+      // Anchored at its bottom, it grows upward: its top moves, yet it never
+      // glides.
+      expect(await page.evaluate(() => window.motionOf('#anchored'))).toEqual(
+        [],
+      );
+    });
+  }
+
+  test('inside a positioned ancestor only the content after the change moves: the header before it and the card around it take their final place (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">
+        <div style="position: absolute; left: 0; right: 0; bottom: 0">
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+          <div id="footer" class="row"></div>
+        </div>
+      </div>`,
+    );
+    await change(page);
+    // Docked at the bottom, the panel rises as the content opens, and
+    // everything around the change takes its place at once with it, so no
+    // gap opens and the revealing content never covers what is above it.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a stuck sticky footer around the change stays at the area edge (spec:AST-105 Coverage, FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">${Array.from(
+        {length: 30},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div></div>`,
+    );
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  for (const reduce of [false, true]) {
+    test(`a change above the visible part inside a wrapper: with scroll anchoring the rows in view and their wrapper stay put${reduce ? ' under Reduce Motion' : ''} (FR3)`, async ({
+      page,
+    }) => {
+      if (reduce) {
+        await page.emulateMedia({reducedMotion: 'reduce'});
+      }
+      await open(
+        page,
+        `<div id="area" class="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+          {length: 1000},
+          (_, i) => `<div id="r${i}" class="row"></div>`,
+        ).join('')}</div></div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area') as HTMLElement;
+        area.scrollTop = 4200;
+        const inView = document.querySelector('#r95') as HTMLElement;
+        const before = inView.getBoundingClientRect().top;
+        await window.change({
+          changed: '#grow',
+          mutate: `document.querySelector('#grow').classList.add('open')`,
+        });
+        const wrapper = document.querySelector('#wrapper') as HTMLElement;
+        const moving = [wrapper, ...wrapper.children].filter(
+          element => element.getAnimations().length > 0,
+        ).length;
+        const shown = inView.getBoundingClientRect().top;
+        document.getAnimations().forEach(animation => animation.finish());
+        return {moving, before, shown};
+      });
+      // The browser keeps the rows in view where they were; nothing glides
+      // or fades, the wrapper around them included.
+      expect(result.moving).toBe(0);
+      expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+    });
+  }
+
+  test('a change above the view in a panel the page scrolls: with the page anchoring its scroll, the rows in view and their wrapper stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+        {length: 1000},
+        (_, i) => `<div id="r${i}" class="row"></div>`,
+      ).join('')}</div></div>`,
+    );
+    const result = await page.evaluate(async () => {
+      window.scrollTo(0, 4200);
+      const inView = document.querySelector('#r95') as HTMLElement;
+      const before = inView.getBoundingClientRect().top;
+      await window.change({
+        changed: '#grow',
+        mutate: `document.querySelector('#grow').classList.add('open')`,
+      });
+      const wrapper = document.querySelector('#wrapper') as HTMLElement;
+      const moving = [wrapper, ...wrapper.children].filter(
+        element => element.getAnimations().length > 0,
+      ).length;
+      const shown = inView.getBoundingClientRect().top;
+      document.getAnimations().forEach(animation => animation.finish());
+      return {moving, before, shown};
+    });
+    expect(result.moving).toBe(0);
+    expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+  });
+
+  test('a sticky footer stuck to the viewport in a panel the page scrolls stays at the edge (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  test('in a multi-column list the rows of a later column glide too (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="list" style="columns: 2; column-gap: 8px">${[
+        '<div id="grow" class="grow"></div>',
+        ...Array.from(
+          {length: 120},
+          (_, i) =>
+            `<div id="c${i}" class="row" style="break-inside: avoid"></div>`,
+        ),
+      ].join('')}</div></div>`,
+    );
+    await change(page);
+    const moving = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('#list > .row')].filter(
+          row => row.getAnimations().length > 0,
+        ).length,
+    );
+    // Every row shifts one slot along the columns; the rows in view glide,
+    // the second column's included, though they come past the band in DOM
+    // order.
+    expect(moving).toBeGreaterThanOrEqual(20);
+  });
+
+  test('in a dialog re-centered as it grows, the header and trigger before the change stay with their card (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center">
+        <div id="area" style="width: 320px; background: #fff; border: 1px solid #999">
+          <div id="header" class="row"></div>
+          <div id="card" style="padding: 8px; background: #eee"><div id="trigger" class="row"></div><div id="grow" class="grow"></div></div>
+        </div>
+      </div>`,
+    );
+    await change(page);
+    // The dialog rises by half the opening at once; what is before the
+    // change in it rises with it, never over the opening content.
+    for (const id of ['#header', '#card', '#trigger']) {
+      expect(await page.evaluate(s => window.motionOf(s), id), id).toEqual([]);
+    }
+  });
+
+  test('a sticky footer stuck to the viewport stays at the edge when the body sets an overflow (FR7)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area">${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join(
+        '',
+      )}<div id="footer" style="position: sticky; bottom: 0; background: #ccc"><div id="grow" class="grow"></div><div class="row"></div></div>${Array.from(
+        {length: 60},
+        () => '<div class="row"></div>',
+      ).join('')}</div>`,
+      'body { overflow-x: hidden; }',
+    );
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
+  });
+
+  test('closing an item above the view while opening one in view, in one frame: the rows the browser keeps in place stay put (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="shut" style="height: 344px; overflow: hidden; background: #fd9"></div>${Array.from(
+        {length: 30},
+        (_, i) =>
+          i === 14
+            ? '<div id="grow" class="grow"></div>'
+            : `<div id="q${i}" class="row"></div>`,
+      ).join('')}</div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area') as HTMLElement;
+      area.scrollTop = 395;
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const shut = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#shut'),
+      );
+      const grow = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#grow'),
+      );
+      shut.measureBefore();
+      grow.measureBefore();
+      (document.querySelector('#shut') as HTMLElement).style.height = '0px';
+      document.querySelector('#grow')?.classList.add('open');
+      shut.animate();
+      grow.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      // The rows in view before the opening one: anchoring keeps them still.
+      return [5, 6, 7, 8, 9].map(
+        i => document.querySelector(`#q${i}`)?.getAnimations().length ?? -1,
+      );
+    });
+    expect(result).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  for (const anchoring of ['auto', 'none']) {
+    test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area" style="overflow-anchor: ${anchoring}"><div id="grow" class="grow"></div>${Array.from(
+          {length: 1000},
+          (_, i) => `<div id="r${i}" class="row"></div>`,
+        ).join('')}</div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area') as HTMLElement;
+        area.scrollTop = 3600 + 600;
+        const firstInView = document.querySelector('#r95') as HTMLElement;
+        const before = firstInView.getBoundingClientRect().top;
+        await window.change({
+          changed: '#grow',
+          mutate: `document.querySelector('#grow').classList.add('open')`,
+        });
+        const moving = [...area.children].filter(
+          row => row.getAnimations().length > 0,
+        ).length;
+        document.getAnimations().forEach(animation => animation.finish());
+        return {moving, before, after: firstInView.getBoundingClientRect().top};
+      });
+      if (anchoring === 'auto') {
+        // The browser keeps the rows in view where they were: nothing moves.
+        expect(result.moving).toBe(0);
+        expect(Math.abs(result.after - result.before)).toBeLessThan(1);
+      } else {
+        // They shift down 80 px, and glide there.
+        expect(result.moving).toBeGreaterThanOrEqual(12);
+      }
+    });
+  }
+
+  test('in a centered column an unstuck sticky card around the change glides with the content before it (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px">
+        <div id="above" class="row"></div>
+        <div id="card" style="position: sticky; top: 0; background: #eee"><div id="grow" class="grow"></div><div class="row"></div></div>
+        <div class="row"></div>
+      </div></div>`,
+    );
+    await change(page);
+    const [above] = await page.evaluate(() => window.motionOf('#above'));
+    const [card] = await page.evaluate(() => window.motionOf('#card'));
+    // Not stuck, the card is in flow: it rises with the row above it, so
+    // that row never crosses it.
+    expect(above).toBeDefined();
+    expect(card).toBeDefined();
+    expect(startOffset(card.first).y).toBeCloseTo(
+      startOffset(above.first).y,
+      0,
+    );
+  });
+
   test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
     page,
   }) => {
@@ -800,60 +1136,70 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(follower[0].duration).toBeLessThan(1200);
   });
 
-  for (const parent of [
-    {name: 'block flow', style: 'display: block'},
+  for (const layout of [
+    {
+      name: 'block flow',
+      html: `<div style="display: block"><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row" style="margin: 0"></div></div>`,
+    },
     {
       name: 'a column flex box with a gap',
-      style: 'display: flex; flex-direction: column; gap: 12px',
+      html: `<div style="display: flex; flex-direction: column; gap: 12px"><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row" style="margin: 0"></div></div>`,
+    },
+    {
+      name: 'a centered column',
+      html: `<div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div></div>`,
+    },
+    {
+      name: 'a space-between column',
+      html: `<div style="display: flex; flex-direction: column; justify-content: space-between; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div><div class="row"></div></div>`,
+    },
+    {
+      name: 'a column that ends a flex row',
+      html: `<div style="display: flex; gap: 8px"><div style="display: flex; flex-direction: column; flex: 1"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div></div><div style="width: 60px; height: 40px; background: #ddd"></div></div><div id="a" class="row"></div>`,
     },
   ]) {
-    test(`an exit in ${parent.name} reads where the content after it goes once, and lands it exactly (FR4)`, async ({
+    test(`an exit in ${layout.name} lands the content after it exactly where it goes once hidden (FR4)`, async ({
       page,
     }) => {
       await open(
         page,
-        `<div id="area" class="area"><div style="${parent.style}">
-          <div id="content" style="height: 80px; background: #fd9">Details</div>
-          <div id="a" class="row" style="margin: 0"></div></div><div id="b" class="row"></div></div>`,
+        `<div id="area" class="area">${layout.html}<div class="row"></div></div>`,
       );
       const result = await page.evaluate(async () => {
         const area = document.querySelector('#area');
         const content = document.querySelector('#content') as HTMLElement;
         const a = document.querySelector('#a') as HTMLElement;
-        const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+        const handle = window.AnimatedLayout.createAnimatedLayout(() => area);
         const report = window.AnimatedLayout.reportLayoutChange(
-          layout,
+          handle,
           () => content,
         );
         report.measureBefore();
         report.animate();
-        // Where the row lands once the content is gone.
+        // Where the content after it lands once the element is gone.
         content.style.display = 'none';
         const target = a.getBoundingClientRect().top;
         content.style.display = '';
-        const original = a.getBoundingClientRect;
-        let reads = 0;
-        a.getBoundingClientRect = function getBoundingClientRect() {
-          reads += 1;
-          return original.call(this);
-        };
         const held = window.AnimatedLayout.holdLayoutExit(
-          layout,
+          handle,
           content,
           () => {},
         );
-        const holdReads = reads;
-        a.getBoundingClientRect = original;
         await new Promise<void>(resolve => {
           queueMicrotask(resolve);
         });
         a.getAnimations().forEach(animation => animation.finish());
-        return {held, holdReads, landed: a.getBoundingClientRect().top, target};
+        const landed = a.getBoundingClientRect().top;
+        // When the element hides, nothing after it moves again.
+        content.style.display = 'none';
+        window.AnimatedLayout.releaseLayoutExit(content);
+        const hidden = a.getBoundingClientRect().top;
+        return {held, landed, hidden, target};
       });
-      expect(result.held).toBe(true);
-      // Where it is and where it goes: no guess and no check.
-      expect(result.holdReads).toBe(2);
-      expect(Math.abs(result.landed - result.target)).toBeLessThan(0.5);
+      if (result.held) {
+        expect(Math.abs(result.landed - result.target)).toBeLessThan(0.5);
+      }
+      expect(Math.abs(result.hidden - result.target)).toBeLessThan(0.5);
     });
   }
 

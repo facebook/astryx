@@ -83,7 +83,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
     expect(descents).toHaveLength(3);
     const contentsDescents =
       body.match(
-        /display === 'contents'\)\s*\{\s*for\s*\(\s*let child =[^;]*\.(first|last)ElementChild/g,
+        /(?:display|part) === 'contents'\)\s*\{\s*for\s*\(\s*let child =[^;]*\.(first|last)ElementChild/g,
       ) ?? [];
     expect(contentsDescents).toHaveLength(2);
     // Each level's sibling walk ends at the first sibling past the band.

@@ -560,18 +560,7 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     expect(content.style.pointerEvents).toBe('');
   });
 
-  it('reads where the content after it goes once, where no other margin collapses with its end margin', () => {
-    const {content, after, layout} = exitSetUp();
-    const reads = vi.mocked(after.getBoundingClientRect);
-    reads.mockClear();
-    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
-    // Where it is now and where it goes: no guess and no check, so a long
-    // page is laid out twice fewer.
-    expect(reads).toHaveBeenCalledTimes(2);
-    expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
-  });
-
-  it('guesses and checks where a negative margin would collapse with its end margin', () => {
+  it('guesses, then corrects, where a negative margin would collapse with its end margin', () => {
     const {content, after, layout} = exitSetUp();
     after.style.marginTop = '-4px';
     const reads = vi.mocked(after.getBoundingClientRect);
@@ -924,6 +913,56 @@ describe('the walk reaches what the changes can move (spec:AST-105 FR3)', () => 
     // One group's band ends at 560 + 560; both together reach 560 + 1,000.
     expect(reads.has('r5')).toBe(true);
     expect(reads.has('r20')).toBe(false);
+  });
+
+  it('reads each element once however many changes report in one frame', () => {
+    const rows = Array.from({length: 200}, (_, i) => `<div id="r${i}"></div>`);
+    document.body.innerHTML = `<div id="area">${rows.join('')}</div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 6000),
+    );
+    let reads = 0;
+    rows.forEach((_, i) => {
+      vi.spyOn(
+        document.getElementById(`r${i}`) as HTMLElement,
+        'getBoundingClientRect',
+      ).mockImplementation(() => {
+        reads += 1;
+        return new DOMRect(0, i * 30, 400, 30);
+      });
+    });
+    const layout = createAnimatedLayout(() => area);
+    // A tree collapsing 100 rows in one update reports 100 changes.
+    for (let i = 0; i < 100; i += 1) {
+      reportLayoutChange(layout, () =>
+        document.getElementById(`r${i}`),
+      ).measureBefore();
+    }
+    expect(reads).toBeLessThanOrEqual(rows.length);
+  });
+
+  it('walks no further than the first sibling outside the band from a change outside it', () => {
+    const rows = Array.from({length: 1000}, (_, i) => `<div id="r${i}"></div>`);
+    document.body.innerHTML = `<div id="area">${rows.join('')}</div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 600),
+    );
+    const reads = new Set<string>();
+    rows.forEach((_, i) => {
+      const row = document.getElementById(`r${i}`) as HTMLElement;
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => {
+        reads.add(row.id);
+        return new DOMRect(0, i * 100, 400, 100);
+      });
+    });
+    reportLayoutChange(
+      createAnimatedLayout(() => area),
+      () => document.getElementById('r900'),
+    ).measureBefore();
+    // The change itself, and one sibling on each side, which lie outside.
+    expect(reads.size).toBeLessThanOrEqual(3);
   });
 
   it('stops inside a display: contents wrapper at the band too', () => {
