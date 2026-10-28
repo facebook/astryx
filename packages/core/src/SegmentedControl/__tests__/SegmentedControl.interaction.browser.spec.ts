@@ -1562,7 +1562,7 @@ test('letting go between segments commits the one nearest the finger', async ({
   }
 });
 
-test('past the end segment the lens stops 11 pt beyond its center', async ({
+test('past the end segment the lens stops 11 pt beyond its center, and letting go out there selects nothing (a press that slides off cancels: spec:AST-020 FR9, DEC-5)', async ({
   page,
 }) => {
   const control = await openControl(page);
@@ -1593,10 +1593,39 @@ test('past the end segment the lens stops 11 pt beyond its center', async ({
   expect(Math.abs(center - (centerOf(table) + DRAG_OVERSHOOT))).toBeLessThan(
     1.5,
   );
+  // The finger let go 60 pt outside the control: nothing is selected, and
+  // the lens goes back to the selected segment.
+  await expectLensHidden(control);
+  await expect(control.segment('grid')).toHaveAttribute('aria-checked', 'true');
   await expect(control.segment('table')).toHaveAttribute(
     'aria-checked',
-    'true',
+    'false',
   );
+});
+
+test('a drag that leaves the control and lets go below it selects nothing: a press that slides off cancels (spec:AST-020 FR9, DEC-5)', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const selections = await recordSelections(control.group);
+  const from = await clientCenter(control, 'grid');
+  const table = await clientCenter(control, 'table');
+  const group = await control.group.boundingBox();
+  if (group == null) {
+    throw new Error('no radiogroup');
+  }
+  // Sideways onto Table first (the drag claims the finger), then down and
+  // off the control, and let go 40 pt below it.
+  const below = {x: table.x, y: group.y + group.height + 40};
+  const sideways = touchDrag(from, table, {durationMs: 400}).slice(0, -1);
+  const lastT = sideways[sideways.length - 1].t;
+  const off = touchDrag(table, below, {durationMs: 300, restMs: 200})
+    .slice(1)
+    .map(frame => ({...frame, t: frame.t + lastT}));
+  await control.driver.play([...sideways, ...off]);
+  await expectLensHidden(control);
+  await expect(control.segment('grid')).toHaveAttribute('aria-checked', 'true');
+  expect(await selections()).toEqual([]);
 });
 
 test('a drag that starts on another segment leaves the lens alone and commits where it lets go', async ({
