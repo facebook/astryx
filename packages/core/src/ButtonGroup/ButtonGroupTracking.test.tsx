@@ -59,12 +59,18 @@ function finger() {
   };
 }
 
+/** Modifier keys held during a pointer event. */
+type Modifiers = Partial<
+  Pick<MouseEventInit, 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>
+>;
+
 /** Dispatch a pointer event of one kind (a pen or a mouse). */
 function pointer(
   kind: 'pen' | 'mouse',
   type: 'pointerdown' | 'pointermove' | 'pointerup',
   target: Element,
   point: Point,
+  modifiers: Modifiers = {},
 ): void {
   time += 16;
   const event = new PointerEvent(type, {
@@ -77,6 +83,7 @@ function pointer(
     buttons: type === 'pointerup' ? 0 : 1,
     clientX: point.x,
     clientY: point.y,
+    ...modifiers,
   });
   Object.defineProperty(event, 'timeStamp', {value: time});
   target.dispatchEvent(event);
@@ -242,6 +249,46 @@ describe('ButtonGroup tracks a held pointer across its buttons (family:action-gr
     expect(onC).toHaveBeenCalledTimes(1);
     expect(onA).not.toHaveBeenCalled();
   });
+
+  for (const key of ['ctrlKey', 'metaKey', 'shiftKey'] as const) {
+    it(`leaves a mouse press with ${key} held on a link member to the browser: its own click runs, carrying the key`, () => {
+      finePrimaryPointer();
+      const onDocs = vi.fn();
+      const view = render(
+        <ButtonGroup label="Help" data-testid="group">
+          <Button label="Docs" href="/docs" onClick={onDocs} data-testid="a" />
+          <Button label="Ask" data-testid="b" />
+        </ButtonGroup>,
+      );
+      const docs = view.getByTestId('a');
+      place(view.getByTestId('group'), {
+        left: 0,
+        top: 100,
+        width: 160,
+        height: 32,
+      });
+      place(docs, A);
+      place(view.getByTestId('b'), B);
+      act(() => {
+        vi.advanceTimersToNextFrame();
+      });
+      pointer('mouse', 'pointerdown', docs, centerOf(A), {[key]: true});
+      expect(paintOf(docs)).toBeNull();
+      pointer('mouse', 'pointerup', docs, centerOf(A), {[key]: true});
+      // The browser's own click for that press: with the key held, it opens
+      // the link in a new tab or window, so nothing may replace or cancel it.
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        [key]: true,
+      });
+      docs.dispatchEvent(click);
+      expect(onDocs).toHaveBeenCalledTimes(1);
+      expect(onDocs.mock.calls[0][0][key]).toBe(true);
+      expect(click.defaultPrevented).toBe(false);
+    });
+  }
 
   it('skips a disabled button: no highlight, and a lift on it runs nothing (FR2)', () => {
     const {a, b, onB} = mount({isBDisabled: true});
