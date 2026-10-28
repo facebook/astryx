@@ -228,8 +228,9 @@ const styles = stylex.create({
   trackZoomTarget: {
     touchAction: 'none',
   },
-  // Under the touch layer, a photo without zoom leaves pinch-zoom to the page
-  // but takes one-finger drags: a drag down dismisses it.
+  // A photo without zoom leaves pinch-zoom to the page but takes one-finger
+  // drags, as it takes a mouse's or a pen's: a drag down dismisses it
+  // (spec:AST-094 FR43).
   imageWrapperDismissTarget: {
     touchAction: 'pinch-zoom',
   },

@@ -483,7 +483,7 @@ export function transformForResize(
 
 /**
  * The photo under a drag to dismiss, from its fitted size: its centre
- * follows the finger (dx, dy) and it shrinks about that centre by
+ * follows the pointer (dx, dy) and it shrinks about that centre by
  * `zoomMedia.dismiss.scalePerTravelSquared` × the downward travel².
  */
 export function dismissTransform(
@@ -523,7 +523,7 @@ export function dismissChromeAlpha(travel: number): number {
 
 /**
  * Whether a released drag to dismiss dismisses, decided once at the lift
- * (spec:AST-094 FR36, FR37): a finger moving up cancels; otherwise the drag
+ * (spec:AST-094 FR36, FR37): a pointer moving up cancels; otherwise the drag
  * dismisses when its projected travel, the travel plus where its velocity
  * would coast (`zoomMedia.dismiss.projectionRate`), passes
  * `zoomMedia.dismiss.cancelTravel`. A short flick down closes; a short pull

@@ -47,13 +47,13 @@
  *   view stops its deceleration, and a lift with no drag lets it settle. It
  *   only claims a press on a moving photo, so a still one leaves the press
  *   to an outer pager's own catch;
- * - with `dismiss`, a one-finger pan that begins only downward on a photo
- *   at its fitted size (Photos' drag to dismiss): the photo's centre follows
- *   the finger and it shrinks by the travel (zoomMedia.dismiss); a release
- *   moving up or back at the start springs back on the cancel springs, any
- *   other sends it on down on the dismissal's spring (no thumbnail to
- *   return to yet) and reports it once it has left. A dismissed photo is not
- *   caught.
+ * - with `dismiss`, a pan (one finger, a mouse's or a pen's drag, or a
+ *   scroll) that begins only downward on a photo at its fitted size (Photos'
+ *   drag to dismiss): the photo's centre follows the pointer and it shrinks
+ *   by the travel (zoomMedia.dismiss); a release moving up or back at the
+ *   start springs back on the cancel springs, any other sends it on down on
+ *   the dismissal's spring (no thumbnail to return to yet) and reports it
+ *   once it has left. A dismissed photo is not caught.
  * The stage's `touch-action` is the caller's (none while zoom is on), since
  * a disabled recognizer would still claim it.
  *
@@ -137,7 +137,7 @@ export interface UseZoomStageOptions {
  * has left.
  */
 export interface ZoomStageDismiss {
-  /** Whether a drag can dismiss now (an image on a touch screen). */
+  /** Whether a drag can dismiss now (an image, under every pointer). */
   isEnabled: boolean;
   /** Each move of the drag: its downward travel, pt. */
   onDrag: (travel: number) => void;
