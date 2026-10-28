@@ -81,8 +81,10 @@ import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
 import {menuTouchActionStyles} from './menuTouchAction.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
-import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
-import {usePresentation} from '../utils/presentation';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
 // Loaded on demand: only the bottom-sheet presentation renders the sheet.
 import {
   MenuBottomSheet,
@@ -908,7 +910,6 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
-  touchModes,
   pressTouchModel = 'uikit',
   header,
   footer,
@@ -918,8 +919,6 @@ function DropdownMenuPopover({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps & {
-  /** Whether the touch input modes apply (the resolved presentation). */
-  touchModes?: boolean;
   /**
    * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
    * UIMenu's, unless the caller pins `presentation="popover"`.
@@ -1780,12 +1779,9 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  // The touch modes are the default under a finger (spec:AST-094);
-  // `presentation="popover"` pins the fine-pointer surface and modes.
-  const {surface: resolvedPresentation, touchModes} = usePresentation(
-    props.presentation,
-    {whenOmitted: 'touch'},
-  );
+  const requestedPresentation =
+    'items' in props ? (props.presentation ?? 'popover') : 'popover';
+  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
   const isControlled = props.isMenuOpen !== undefined;
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
@@ -1821,7 +1817,6 @@ export function DropdownMenu(props: DropdownMenuProps) {
     <DropdownMenuPopover
       {...sharedProps}
       presentation="popover"
-      touchModes={touchModes}
       pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
     />
   );
