@@ -4,7 +4,8 @@
 
 /**
  * @file TreeListItem.tsx
- * @input Uses React, StyleX, theme tokens, TreeListBranches
+ * @input Uses React, StyleX, theme tokens, TreeListBranches, the shared press
+ *   overlays and the compositor press layer
  * @output Exports TreeListItem component (internal, not publicly exported)
  * @position Internal implementation; consumed by TreeList.tsx
  *
@@ -26,7 +27,9 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useTreeExpansionMotion} from './useTreeExpansionMotion';
 import {
   hasInteractiveAncestor,
   useClickableContainer,
@@ -260,6 +263,15 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // With no animated-layout handle, under a finger (a coarse primary
+  // pointer, TOUCH_QUERY) the expansion turns the chevron on UIKit's spring
+  // instead of the theme's ease (useTreeExpansionMotion).
+  chevronSpring: {
+    transitionProperty: {
+      default: 'transform',
+      '@media (pointer: coarse)': 'none',
+    },
+  },
   // The RTL mirror is folded into each state's transform rather than living on
   // a parent span. Both are `transform`, so on one element the later value
   // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
@@ -357,6 +369,11 @@ export interface TreeListItemInternalProps {
    * leave the tree's keyboard order at once.
    */
   isExiting?: boolean;
+  /**
+   * The tree holds an animated-layout handle, which plays the group's
+   * motion; without one, the row plays its own touch slide.
+   */
+  hasAnimatedLayout?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -365,8 +382,11 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
-  /** Pre-rendered children subtree (rendered by the parent recursion) */
-  renderedChildren?: ReactNode;
+  /**
+   * Renders the children subtree (the parent recursion), called while the
+   * row shows its children: expanded, or sliding them away after a collapse.
+   */
+  renderChildren?: () => ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
   posInSet: number;
   /** Number of siblings at this level (aria-setsize). */
@@ -404,15 +424,21 @@ export function TreeListItem({
   ancestorsIsLast,
   isExpanded,
   isExiting = false,
+  hasAnimatedLayout = false,
   onToggle,
   density,
   variant,
-  renderedChildren,
+  renderChildren,
   posInSet,
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
+  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded, {
+    isEnabled: !hasAnimatedLayout,
+  });
+  const renderedChildren =
+    showsChildren || isExiting ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -539,8 +565,11 @@ export function TreeListItem({
       // The button/container owns the chevron color (--color-icon-secondary);
       // inheriting keeps that as the single source.
       color="inherit"
+      // The touch presentation turns the glyph with the expansion's spring.
+      data-tree-chevron=""
       xstyle={[
         styles.chevronSvg,
+        !hasAnimatedLayout && styles.chevronSpring,
         isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
       ]}
     />
@@ -686,6 +715,10 @@ export function TreeListItem({
                   densityStyles[density],
                   styles.interactive,
                   interactionOverlayStyles.backgroundImage,
+                  // The touch press on a compositor layer (after the
+                  // overlay, whose own touch paint it turns off).
+                  rowPressLayerStyles.cell,
+                  rowPressLayerStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,
@@ -710,10 +743,15 @@ export function TreeListItem({
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>
-      {(isExpanded || isExiting) && renderedChildren != null && (
+      {renderedChildren != null && (
         <ul
+          ref={groupRef}
           role="group"
-          data-tree-exiting={isExiting ? '' : undefined}
+          // Collapsed and still leaving (a handle's exit, or the touch slide
+          // without one): out of reach, and out of the tree's keyboard order,
+          // until it goes.
+          data-tree-exiting={!isExpanded ? '' : undefined}
+          inert={!isExpanded || undefined}
           {...stylex.props(styles.childGroup)}>
           {renderedChildren}
         </ul>

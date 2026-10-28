@@ -10,6 +10,14 @@
  *   types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
+ * `hasAnimatedChanges` runs the update motion (utils/useListUpdateMotion.ts);
+ * `reorderable` runs the reorder session after it. List imports only the
+ * reorderable object's type and its key (List/listReorderContext.ts), and
+ * hands the reorder to its rows through ListContext: the session, its
+ * handle, its listeners and its menu come with the object
+ * (reorderable/createReorderable.ts), so a List without it loads no reorder
+ * code (spec:AST-103 FR2).
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/List/List.doc.mjs
  * - /packages/core/src/List/List.test.tsx
@@ -18,7 +26,8 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, useRef, type ReactNode} from 'react';
+import type {Reorderable} from '../reorderable/createReorderable';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -29,8 +38,16 @@ import {
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {
+  REORDER_ENGINE,
+  type ListReorderOptions,
+  type ReorderableInternals,
+} from './listReorderContext';
 
 export {
   type ListDensity,
@@ -56,6 +73,41 @@ export interface ListProps extends BaseProps<
    * @default 'balanced'
    */
   density?: ListDensity;
+
+  /**
+   * Under a finger (iOS and Android alike), animate the list's changes the
+   * way an iOS table does: when rows are inserted, removed or reordered, the rows
+   * that stay slide from where they were to where they are and new rows fade
+   * in once the rows sliding past have cleared them, on UIKit's table update
+   * spring. A row that crosses rows moving the other way rides above them
+   * with the surface color behind it. A removed row collapses in place, a
+   * swiped one with its action showing, while the rows below close its gap.
+   * Off by default; with a mouse nothing moves.
+   * @default false
+   */
+  hasAnimatedChanges?: boolean;
+
+  /**
+   * Makes the rows reorderable, with the object `createReorderable` makes:
+   * each ListItem with an `itemKey` gets a reorder handle at its end (one the
+   * object's `isReorderable` rejects keeps its place), and each committed
+   * move calls its `onReorder` once with the row's key and its index after
+   * the move. Apply it by rendering the rows in their new order; a drop on
+   * the starting place, a cancel, or a move the order does not take changes
+   * nothing.
+   *
+   * On a touch screen a finger held still on a handle for a moment picks up
+   * its row (a flick on it still scrolls); the row stays in its place,
+   * dimmed, while a copy of it follows the finger and an accent line marks
+   * where it would land, the other rows stay still, the list scrolls near the
+   * edges, and on release the rows rearrange. A mouse drags a handle at once,
+   * the same way. Without a drag, activating a
+   * handle (a click, Space or Enter) turns on reorder mode for its row: each
+   * arrow key moves it a place at once, reported and announced with its place
+   * and neighbours, and Escape or another activation ends the mode, keeping
+   * the moves.
+   */
+  reorderable?: Reorderable;
 
   /**
    * Whether to show dividers between list items.
@@ -209,6 +261,8 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
+  reorderable,
+  hasAnimatedChanges = false,
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -224,6 +278,27 @@ export function List({
   ...props
 }: ListProps) {
   const headerId = useId();
+  const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
+  // The reorder's machinery comes with the object (spec:AST-103 FR2). The
+  // object may be made on every render: the session lasts as long as its
+  // machinery, and reads the object's latest callbacks.
+  const reorder = reorderable as ReorderableInternals | undefined;
+  const reorderEngine = reorder?.[REORDER_ENGINE];
+  const reorderOptions = reorder?.options;
+  // The handles' instructions take the header's id with a suffix.
+  const reorderSession = useMemo(
+    () => reorderEngine?.createSession(() => listRef.current, `${headerId}h`),
+    [reorderEngine, headerId],
+  );
+  useListUpdateMotion(listRef, hasAnimatedChanges);
+  // After the update motion, so a drop's commit is the reorder's.
+  useIsomorphicLayoutEffect(() => {
+    reorderSession?.commit();
+  });
+  const mergedRef = useMergedRefs(
+    listRef,
+    ref as React.Ref<HTMLUListElement & HTMLOListElement>,
+  );
   const isOrdered = listStyle === 'decimal';
   const Tag = isOrdered ? 'ol' : 'ul';
   // Plain use of the deprecated prop is reported by its @deprecated type;
@@ -239,13 +314,32 @@ export function List({
   const reachesContainerPadding = edge === 'outset' || edge === 'bleed';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, edge, listStyle}),
-    [density, hasDividers, edge, listStyle],
+    () => ({
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
+      // With a session there is an object, so its options too.
+      reorder: reorderSession && {
+        session: reorderSession,
+        options: reorderOptions as ListReorderOptions,
+      },
+    }),
+    [
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      hasAnimatedChanges,
+      reorderSession,
+      reorderOptions,
+    ],
   );
 
   const listElement = (
     <Tag
-      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      ref={mergedRef}
       // Consumer props first: everything the component sets for itself below
       // is part of its contract and wins on conflict.
       {...props}
@@ -271,6 +365,7 @@ export function List({
             (start != null && start !== 1
               ? dynamicStyles.counterStart(start - 1)
               : styles.withCounter),
+          reorderSession?.listStyle,
           xstyle,
         ),
         className,
@@ -280,8 +375,19 @@ export function List({
     </Tag>
   );
 
+  // The session's options and listeners, and the handles' instructions.
+  const {reorder: reorderValue} = contextValue;
+  const reorderHost = reorderValue && (
+    <reorderValue.session.Host reorder={reorderValue} />
+  );
+
   if (header == null) {
-    return <ListContext value={contextValue}>{listElement}</ListContext>;
+    return (
+      <ListContext value={contextValue}>
+        {listElement}
+        {reorderHost}
+      </ListContext>
+    );
   }
 
   return (
@@ -291,6 +397,7 @@ export function List({
           {header}
         </div>
         {listElement}
+        {reorderHost}
       </div>
     </ListContext>
   );

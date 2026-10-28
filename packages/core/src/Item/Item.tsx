@@ -4,7 +4,9 @@
 
 /**
  * @file Item.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer,
+ *   the shared press overlays and the compositor press layer, and a row's
+ *   trailing control (ItemTrailingContext)
  * @output Exports Item component, ItemProps type; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
@@ -28,6 +30,7 @@
 import {
   lazy,
   Suspense,
+  use,
   useCallback,
   useId,
   useRef,
@@ -45,6 +48,8 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {ItemLabelContext} from './ItemLabelContext';
+import {ItemTrailingContext} from './ItemTrailingContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -53,6 +58,7 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
@@ -671,6 +677,10 @@ export function Item({
   // only once React runs it, such as an empty fragment, still publishes an id.
   const descriptionID = useId();
   const hasRenderableDescription = isRenderable(description);
+  // The label element's id, published through ItemLabelContext for a control
+  // Item renders in a slot that is named after the row (`aria-labelledby`).
+  const labelID = useId();
+  const hasRenderableLabel = isRenderable(label);
 
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
@@ -700,6 +710,7 @@ export function Item({
   const labelAndDescription = (
     <>
       <span
+        id={hasRenderableLabel ? labelID : undefined}
         {...stylex.props(
           styles.label,
           isInline && styles.inlineLabel,
@@ -735,8 +746,32 @@ export function Item({
     if (target.closest('button, a, input, select, textarea')) {
       return;
     }
+    if (onClick == null && href != null && !isLinkRoot) {
+      // A link row's own box follows its link: a click in its padding, or a
+      // tap in its touch hit area under a finger, goes to the row's anchor
+      // with its modifier keys, so the link component and the browser decide
+      // the destination and the tab as for a click on the label.
+      (e.currentTarget as HTMLElement)
+        .querySelector<HTMLElement>('[data-astryx-row-link]')
+        ?.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey,
+            shiftKey: e.shiftKey,
+            altKey: e.altKey,
+            button: e.button,
+          }),
+        );
+      return;
+    }
     onClick?.(e);
   };
+
+  // A control a row adds after the slots, unwrapped (ItemTrailingContext):
+  // a List row's reorder handle when the row has no end content.
+  const trailing = use(ItemTrailingContext);
 
   const innerContent = (
     <>
@@ -768,6 +803,7 @@ export function Item({
           href={href}
           target={target}
           rel={rel}
+          data-astryx-row-link=""
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
@@ -810,6 +846,7 @@ export function Item({
           {endContent}
         </span>
       )}
+      {trailing}
     </>
   );
 
@@ -886,6 +923,10 @@ export function Item({
           align === 'first-line' && styles.alignFirstLine,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
+          // The touch press on a compositor layer (after the overlay, whose
+          // own touch paint it turns off): the release keeps fading while
+          // script runs.
+          isInteractive && rowPressLayerStyles.cell,
           isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
@@ -898,10 +939,14 @@ export function Item({
       )}
       role={role}
       onClick={rootOnClick}>
-      <ItemDescriptionContext
-        value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
-      </ItemDescriptionContext>
+      <ItemTrailingContext value={null}>
+        <ItemDescriptionContext
+          value={hasRenderableDescription ? descriptionID : null}>
+          <ItemLabelContext value={hasRenderableLabel ? labelID : null}>
+            {innerContent}
+          </ItemLabelContext>
+        </ItemDescriptionContext>
+      </ItemTrailingContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
         // the row had before the split. Suspense and lazy add no element, and

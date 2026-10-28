@@ -6,14 +6,15 @@
  * @file ListContext.tsx
  * @input Layer-scoped React context
  * @output Exports ListContext for sharing density, dividers, the row edge
- *   treatment, and marker style between List and ListItem, and
- *   ListMarkerScope, which sets the marker for the items inside it, or a
- *   task item's checkbox in its place
+ *   treatment, marker style and a reorderable List's reorder between List
+ *   and ListItem, and ListMarkerScope, which sets the marker for the items
+ *   inside it, or a task item's checkbox in its place
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
 import {use, useMemo, type ReactNode} from 'react';
 import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
+import type {ListReorderContextValue} from './listReorderContext';
 
 export type ListDensity = 'compact' | 'balanced' | 'spacious';
 export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
@@ -54,6 +55,19 @@ export interface ListContextValue {
    * `'none'`.
    */
   task?: ListTaskMarker;
+  /**
+   * Set while the list animates its changes (`hasAnimatedChanges`);
+   * internal. A row leaving the list calls it as it unmounts, while it is
+   * still in the document, so the removal's collapse shows it as it was on
+   * screen (List/useListUpdateMotion.ts `keepPresentation`, the list's
+   * touch layer, reached only through the list).
+   */
+  keepRowPresentation?: (row: HTMLElement) => void;
+  /**
+   * A reorderable List's reorder (`List reorderable`); internal. Its rows end
+   * with the handle it carries (List/listReorderContext.ts).
+   */
+  reorder?: ListReorderContextValue | null;
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);

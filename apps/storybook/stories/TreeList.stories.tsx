@@ -5,6 +5,8 @@ import {TreeList} from '@astryxdesign/core/TreeList';
 import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   FolderIcon,
@@ -70,6 +72,25 @@ const fileTreeItems: TreeListItemData[] = [
 export const Basic: Story = {
   args: {
     items: fileTreeItems,
+  },
+};
+
+export const WithContentBelow: Story = {
+  render: () => (
+    <VStack gap={4}>
+      <TreeList items={fileTreeItems} />
+      <Button label="Open folder" onClick={() => {}} />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Content after the tree takes its new place by layout when a ' +
+          "folder expands or collapses; under a finger only the tree's own " +
+          'rows animate.',
+      },
+    },
   },
 };
 

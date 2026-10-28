@@ -104,8 +104,15 @@ export const docs = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: 'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected).',
+      description:
+        'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected).',
       default: 'false',
+    },
+    {
+      name: 'itemKey',
+      type: 'string | number',
+      description:
+        "The row's item key in a reorderable List (List reorderable), a string or a number from the data (the shape Table's idKey returns): the key the reorderable object's onReorder reports as given and isReorderable is asked about. A row without one has no reorder handle and keeps its place. Separate from React's key. No effect elsewhere.",
     },
     {
       name: 'swipeActions',
@@ -196,7 +203,8 @@ export const docsZh = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。',
+      description:
+        '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。',
       default: 'false',
     },
     {
@@ -223,6 +231,8 @@ export const docsDense = {
   propDescriptions: {
     align:
       "Start/end content alignment, passed to Item: 'center' (default), 'start', or 'first-line' (centered on the label's first line).",
+    itemKey:
+      'In a reorderable List: the key onReorder reports; without one the row keeps its place.',
     label:
       'Primary content. String auto-truncates; ReactNode renders as given.',
     description: 'Secondary text below label.',
