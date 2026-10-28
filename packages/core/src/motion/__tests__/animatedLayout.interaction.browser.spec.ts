@@ -1151,7 +1151,7 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     },
     {
       name: 'a space-between column',
-      html: `<div style="display: flex; flex-direction: column; justify-content: space-between; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div></div>`,
+      html: `<div style="display: flex; flex-direction: column; justify-content: space-between; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div><div class="row"></div></div>`,
     },
     {
       name: 'a column that ends a flex row',
