@@ -102,18 +102,25 @@ function drawer() {
   return {element, onSettle, snap};
 }
 
-/** A drag down by `dy`, released at `vy` px/s, driven by `pointerType`. */
+/**
+ * A press by `pointerType` on `element`, then a drag down by `dy` released
+ * at `vy` px/s: the pan reports values only, so the factory reads the
+ * pointer from the press.
+ */
 function release(
+  element: HTMLElement,
   dy: number,
   vy: number,
-  pointerType: PanGestureEvent['pointerType'],
+  pointerType: 'touch' | 'mouse' | 'pen',
 ): void {
+  element.dispatchEvent(
+    new PointerEvent('pointerdown', {bubbles: true, pointerType}),
+  );
   const at = (state: PanGestureEvent['state'], y: number, v: number) =>
     onPan?.({
       state,
       translation: {x: 0, y},
       velocity: {x: 0, y: v},
-      pointerType,
     });
   at('began', 0, 0);
   at('changed', dy, 0);
@@ -136,8 +143,8 @@ const travels = () =>
 
 describe('the release under Reduce Motion on a fine pointer (DR2, DR3)', () => {
   it('a touch drag\u2019s release cross-fades into the snap point', async () => {
-    const {onSettle} = drawer();
-    release(300, 0, 'touch');
+    const {element, onSettle} = drawer();
+    release(element, 300, 0, 'touch');
     expect(fades()).toBe(true);
     // It goes to its snap point without travel.
     expect(travels()).toBe(false);
@@ -148,8 +155,8 @@ describe('the release under Reduce Motion on a fine pointer (DR2, DR3)', () => {
   it.each(['mouse', 'pen'] as const)(
     'a %s drag\u2019s release lands at once',
     async pointerType => {
-      const {onSettle} = drawer();
-      release(300, 0, pointerType);
+      const {element, onSettle} = drawer();
+      release(element, 300, 0, pointerType);
       expect(fades()).toBe(false);
       await vi.advanceTimersByTimeAsync(0);
       expect(onSettle).toHaveBeenCalledWith(1);

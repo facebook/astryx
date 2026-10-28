@@ -130,8 +130,26 @@ export function createDragToSnapPoints(
   }).index;
   // Each settle and each drag takes a turn; only the latest settle reports.
   let turn = 0;
-  let drag: {startOffset: number; startIndex: number} | null = null;
+  let drag: {
+    startOffset: number;
+    startIndex: number;
+    pointerType: string;
+  } | null = null;
   let destroyed = false;
+  // The pointer of the press a drag starts from, read from the press itself:
+  // only a touch drag's release cross-fades under Reduce Motion, and the
+  // public pan reports values only (spec:AST-107 FR1). A drag with no
+  // pointer event before it (a test's bare touches) counts as a touch.
+  let pressPointerType = 'touch';
+  const onPointerDown = (event: PointerEvent) => {
+    if (drag == null) {
+      pressPointerType = event.pointerType;
+    }
+  };
+  element.addEventListener('pointerdown', onPointerDown, {
+    capture: true,
+    passive: true,
+  });
 
   const settle = (
     target: number,
@@ -158,7 +176,7 @@ export function createDragToSnapPoints(
 
   const pan = createPanGesture(element, {
     axis,
-    onPan: ({state, translation, velocity, pointerType}: PanGestureEvent) => {
+    onPan: ({state, translation, velocity}: PanGestureEvent) => {
       if (destroyed) {
         return;
       }
@@ -166,7 +184,11 @@ export function createDragToSnapPoints(
         // Catch a settle in flight where it is on screen.
         turn += 1;
         animator.stop();
-        drag = {startOffset: animator.get(axis), startIndex: index};
+        drag = {
+          startOffset: animator.get(axis),
+          startIndex: index,
+          pointerType: pressPointerType,
+        };
       }
       if (drag == null) {
         return;
@@ -176,7 +198,7 @@ export function createDragToSnapPoints(
         animator.set({[axis]: offset});
         return;
       }
-      const {startIndex, startOffset} = drag;
+      const {startIndex, startOffset, pointerType} = drag;
       drag = null;
       // Only a touch drag's release cross-fades under Reduce Motion; a mouse
       // or pen drag's lands at once (design:reduced-motion DR2, DR3).
@@ -220,6 +242,9 @@ export function createDragToSnapPoints(
         return;
       }
       destroyed = true;
+      element.removeEventListener('pointerdown', onPointerDown, {
+        capture: true,
+      });
       pan.destroy();
       animator.dispose();
     },
