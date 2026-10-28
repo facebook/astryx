@@ -747,6 +747,44 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(await page.evaluate(() => window.motionOf('#footer'))).toEqual([]);
   });
 
+  for (const reduce of [false, true]) {
+    test(`a change above the visible part inside a wrapper: with scroll anchoring the rows in view and their wrapper stay put${reduce ? ' under Reduce Motion' : ''} (FR3)`, async ({
+      page,
+    }) => {
+      if (reduce) {
+        await page.emulateMedia({reducedMotion: 'reduce'});
+      }
+      await open(
+        page,
+        `<div id="area" class="area"><div id="wrapper"><div id="grow" class="grow"></div>${Array.from(
+          {length: 1000},
+          (_, i) => `<div id="r${i}" class="row"></div>`,
+        ).join('')}</div></div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area') as HTMLElement;
+        area.scrollTop = 4200;
+        const inView = document.querySelector('#r95') as HTMLElement;
+        const before = inView.getBoundingClientRect().top;
+        await window.change({
+          changed: '#grow',
+          mutate: `document.querySelector('#grow').classList.add('open')`,
+        });
+        const wrapper = document.querySelector('#wrapper') as HTMLElement;
+        const moving = [wrapper, ...wrapper.children].filter(
+          element => element.getAnimations().length > 0,
+        ).length;
+        const shown = inView.getBoundingClientRect().top;
+        document.getAnimations().forEach(animation => animation.finish());
+        return {moving, before, shown};
+      });
+      // The browser keeps the rows in view where they were; nothing glides
+      // or fades, the wrapper around them included.
+      expect(result.moving).toBe(0);
+      expect(Math.abs(result.shown - result.before)).toBeLessThan(1);
+    });
+  }
+
   for (const anchoring of ['auto', 'none']) {
     test(`a change above the band with scroll anchoring ${anchoring === 'auto' ? 'on' : 'off'}: ${anchoring === 'auto' ? 'the rows in view stay put and the walk stops' : 'the rows in view glide'} (FR3)`, async ({
       page,
@@ -783,6 +821,30 @@ test.describe('spec:AST-105 FR2–FR4', () => {
       }
     });
   }
+
+  test('in a centered column an unstuck sticky card around the change glides with the content before it (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px">
+        <div id="above" class="row"></div>
+        <div id="card" style="position: sticky; top: 0; background: #eee"><div id="grow" class="grow"></div><div class="row"></div></div>
+        <div class="row"></div>
+      </div></div>`,
+    );
+    await change(page);
+    const [above] = await page.evaluate(() => window.motionOf('#above'));
+    const [card] = await page.evaluate(() => window.motionOf('#card'));
+    // Not stuck, the card is in flow: it rises with the row above it, so
+    // that row never crosses it.
+    expect(above).toBeDefined();
+    expect(card).toBeDefined();
+    expect(startOffset(card.first).y).toBeCloseTo(
+      startOffset(above.first).y,
+      0,
+    );
+  });
 
   test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
     page,

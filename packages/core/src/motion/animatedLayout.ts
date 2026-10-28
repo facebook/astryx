@@ -364,6 +364,26 @@ function partOf(element: Element, cache: WalkCache): boolean | 'contents' {
   return part;
 }
 
+/**
+ * Whether a sticky element is stuck: resting against the area's edge at its
+ * inset. A stuck element takes its final place; an unstuck one is in flow.
+ */
+function isStuck(element: Element, area: Element, cache: WalkCache): boolean {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (style?.position !== 'sticky') {
+    return false;
+  }
+  const rect = rectOf(element, cache);
+  const edge = rectOf(area, cache);
+  const top = Number.parseFloat(style.top);
+  const bottom = Number.parseFloat(style.bottom);
+  return (
+    (Number.isFinite(top) && Math.abs(rect.top - (edge.top + top)) < 1) ||
+    (Number.isFinite(bottom) &&
+      Math.abs(rect.bottom - (edge.bottom - bottom)) < 1)
+  );
+}
+
 function rectOf(element: Element, cache: WalkCache): DOMRect {
   let rect = cache.rects.get(element);
   if (rect === undefined) {
@@ -384,7 +404,7 @@ function rectOf(element: Element, cache: WalkCache): DOMRect {
  * depth plus the siblings near the visible part, never with the length of a
  * list; where the area opts out of scroll anchoring (`walksToBand`), the walk
  * after a change above the band goes on to the band, a cost that grows with
- * that distance. Inside a positioned, sticky or top-layer ancestor only the
+ * that distance. Inside a positioned, stuck sticky or top-layer ancestor only the
  * content after the change is taken.
  */
 function collectCandidates(
@@ -393,6 +413,7 @@ function collectCandidates(
   band: Band,
   cache: WalkCache,
   walksToBand: boolean,
+  ancestors: Set<Element>,
 ): Map<Element, DOMRect> {
   const out = new Map<Element, DOMRect>();
   /** Takes `element`; returns false once it lies outside the band. */
@@ -431,7 +452,7 @@ function collectCandidates(
     return true;
   };
   // The change's chain up to the area, and from where it is inside a
-  // positioned, sticky or top-layer ancestor: that ancestor takes its final
+  // positioned, stuck sticky or top-layer ancestor: that ancestor takes its final
   // place, so inside it only the content after the change moves; the
   // ancestors and the siblings before the change stay with it.
   const chain: Element[] = [];
@@ -444,11 +465,10 @@ function collectCandidates(
   }
   // The levels below this index are inside a positioned ancestor.
   let positionedFrom = 0;
-  const view = changed.ownerDocument.defaultView;
   for (let index = chain.length - 1; index > 0; index -= 1) {
     if (
       partOf(chain[index], cache) === false ||
-      view?.getComputedStyle(chain[index]).position === 'sticky'
+      isStuck(chain[index], area, cache)
     ) {
       positionedFrom = index;
       break;
@@ -462,9 +482,10 @@ function collectCandidates(
     ) {
       // An ancestor of the change in flow: where its layout moves it (a
       // centered column), it glides, and what is inside moves only by its own
-      // change. A positioned, sticky or top-layer ancestor, and every
+      // change. A positioned, stuck sticky or top-layer ancestor, and every
       // ancestor inside it, takes its final place.
       out.set(node, rectOf(node, cache));
+      ancestors.add(node);
     }
     for (
       let sibling = node.nextElementSibling;
@@ -505,6 +526,10 @@ interface Batch {
   visible: DOMRect | null;
   /** Whether the area opts out of scroll anchoring, read once per frame. */
   walksToBand: boolean | null;
+  /** The change's ancestors among the candidates. */
+  readonly ancestors: Set<Element>;
+  /** The area's scroll offset before the change, read once per frame. */
+  scrollBefore: {readonly x: number; readonly y: number} | null;
   readonly cache: WalkCache;
   scheduled: boolean;
 }
@@ -523,6 +548,8 @@ function batchFor(area: Element): Batch {
       reach: 0,
       visible: null,
       walksToBand: null,
+      ancestors: new Set(),
+      scrollBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
@@ -649,10 +676,18 @@ function flush(batch: Batch): void {
     entries.push({element, before, carried, carriedMs});
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
+  // An ancestor of the change moves by its layout change alone: when scroll
+  // anchoring re-scrolls the area (a change above the visible part), its
+  // place in view shifts by the scroll while the content in view stays.
+  const scrolledX = (batch.scrollBefore?.x ?? 0) - batch.area.scrollLeft;
+  const scrolledY = (batch.scrollBefore?.y ?? 0) - batch.area.scrollTop;
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    entry.rawX = entry.before.left - entry.after.left;
-    entry.rawY = entry.before.top - entry.after.top;
+    const isAncestor = batch.ancestors.has(entry.element);
+    entry.rawX =
+      entry.before.left - entry.after.left + (isAncestor ? scrolledX : 0);
+    entry.rawY =
+      entry.before.top - entry.after.top + (isAncestor ? scrolledY : 0);
     byElement.set(entry.element, entry);
   }
   for (const entry of entries) {
@@ -772,6 +807,7 @@ export function reportLayoutChange(
       batch.changed.add(element);
       batch.changedSize += rectOf(element, batch.cache).height;
       batch.visible ??= visibleRect(area);
+      batch.scrollBefore ??= {x: area.scrollLeft, y: area.scrollTop};
       batch.walksToBand ??=
         area.ownerDocument.defaultView
           ?.getComputedStyle(area)
@@ -794,6 +830,7 @@ export function reportLayoutChange(
           band,
           batch.cache,
           batch.walksToBand,
+          batch.ancestors,
         );
         for (const [candidate, rect] of candidates) {
           if (!batch.before.has(candidate)) {
