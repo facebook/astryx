@@ -169,7 +169,7 @@ brandTheme.iconVariants; // ['outline', 'filled']`,
         },
         {
           type: 'prose',
-          text: 'An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`.',
+          text: 'An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`. `astryx theme build` writes this augmentation for a built theme\'s list.',
         },
         {
           type: 'code',

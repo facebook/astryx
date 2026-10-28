@@ -90,6 +90,12 @@ const STRUCTURAL_VARS = new Set([
   // cell's or a detail panel's own divider reads (Table/rowDivider.ts).
   // Private runtime plumbing, never authored by a theme.
   '--_table-row-divider-width',
+  // A gliding row's divider, carried on the row for the glide
+  // (Table/glidingDivider.ts). Private runtime plumbing.
+  '--_table-row-glide-width',
+  '--_table-row-glide-style',
+  '--_table-row-glide-color',
+  '--_table-row-glide-offset',
   '--separator-display',
   '--astryx-section-padding',
   // Private counterpart of the public token above: one ancestor Section's
