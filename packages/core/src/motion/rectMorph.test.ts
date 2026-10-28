@@ -510,7 +510,7 @@ describe('the presentations that move onto the morph are the same rect at every 
     const curves = morphCurves(path, progress);
     for (const t of frames(progress)) {
       const p = progress.at(t);
-      // zoomElementCurves: x and y from the box, scale by the width.
+      // x and y from the box, scale by the width.
       const frame = model.rectAt(p);
       expect(curves.x!.at(t)).toBeCloseTo(frame.x - detail.x, 6);
       expect(curves.y!.at(t)).toBeCloseTo(frame.y - detail.y, 6);

@@ -32,7 +32,7 @@
 import {useCallback, useEffect, useMemo, useRef, type RefObject} from 'react';
 import type {Point} from '../gestures/types';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import type {Animator, MotionCurve, MotionValues} from '../motion/animator';
+import type {Animator} from '../motion/animator';
 import {createRectMorph, type RectMorph} from '../motion/rectMorph';
 import {resolveMotion} from '../motion/resolveMotion';
 import {registerReducedMotionCrossFade} from '../motion/uikit/timing';
@@ -111,12 +111,6 @@ export interface ZoomStage {
   /** Where the photo shows now (its transform applied), client px. */
   shownBox(): ZoomBox | null;
   /**
-   * Plays curves on the photo (a transition into or out of the viewer). With
-   * `start: 'presented'` the photo shows each curve's first value until the
-   * curves start.
-   */
-  play: Animator['play'];
-  /**
    * The photo's rect morph (architecture:layer-runtime INV15's shared morph)
    * on the stage's own animator, so the zoom transition and pinch, pan and
    * settle share one set of channels; the photo with it. Null before a photo
@@ -125,22 +119,6 @@ export interface ZoomStage {
   morph(): {morph: RectMorph; photo: HTMLElement} | null;
   /** The photo at its fitted size, opaque, at once (after a transition). */
   rest(): void;
-}
-
-/** Each curve's first value: where an element waiting for its curves shows. */
-export function firstValues(
-  curves: Partial<Record<keyof MotionValues, MotionCurve>>,
-): MotionValues {
-  const values: MotionValues = {};
-  for (const [property, curve] of Object.entries(curves) as [
-    keyof MotionValues,
-    MotionCurve | undefined,
-  ][]) {
-    if (curve != null) {
-      values[property] = curve.at(0);
-    }
-  }
-  return values;
 }
 
 /** The core as the touch layer drives it. */
@@ -502,15 +480,6 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
           height: geometry.fit.height * scale,
         };
       },
-      play: (curves, playOptions) => {
-        targetRef.current = IDENTITY;
-        // A presented start leaves the photo at rest for two frames: at rest
-        // it shows where the curves start, so no frame shows it elsewhere.
-        if (playOptions?.start === 'presented') {
-          animator.set(firstValues(curves));
-        }
-        return animator.play(curves, playOptions);
-      },
       morph: () => {
         const photo = contentElementRef.current;
         if (photo == null) {
@@ -520,7 +489,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
         if (morphRef.current?.photo !== photo) {
           morphRef.current = {photo, morph: createRectMorph(photo, {animator})};
         }
-        // A transition takes the photo over, as `play` does.
+        // A transition takes the photo over and leaves it at its fitted size.
         targetRef.current = IDENTITY;
         return morphRef.current;
       },

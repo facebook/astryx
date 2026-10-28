@@ -7,8 +7,7 @@
  * @output Exports the geometry and the curves of UIKit's zoom transition
  *   (iOS 18 `.zoom`): where the detail starts on its source, both portals'
  *   frames and opacities at a progress, the progress springs that open and
- *   close it, MotionCurves for `Animator.play` on elements at rest in
- *   their boxes, and each portal as a path for the shared rect morph
+ *   close it, and each portal as a path for the shared rect morph
  *   (`zoomPath`)
  * @position Pure math for Lightbox's zoom transition, played by
  *   and by navigation's zoom push
@@ -186,55 +185,6 @@ export function zoomCloseProgress({
   return {
     frame: zoomProgress(spring, 0, from),
     fade: zoomProgress(fadeSpring, 0, from),
-  };
-}
-
-/** A curve of f(progress(t)), its velocity by the chain rule. */
-function mapCurve(
-  progress: MotionCurve,
-  f: (p: number) => number,
-): MotionCurve {
-  const h = 1e-4;
-  return {
-    duration: progress.duration,
-    at: t => f(progress.at(t)),
-    velocity: t => {
-      const p = progress.at(t);
-      return ((f(p + h) - f(p - h)) / (2 * h)) * progress.velocity(t);
-    },
-  };
-}
-
-export interface ZoomElementCurves {
-  x: MotionCurve;
-  y: MotionCurve;
-  scale: MotionCurve;
-  opacity: MotionCurve;
-}
-
-/**
- * Curves for `Animator.play` that put an element at rest in `box` (its
- * transform relative to that box, `transform-origin: 0 0`, uniform scale)
- * on a portal's frame and opacity: the detail's (`portal: 'detail'`) or the
- * source's. `frame` drives the geometry and `fade` the opacity; they are the
- * same curve when opening.
- */
-export function zoomElementCurves(
-  geometry: ZoomGeometry,
-  box: Rect,
-  portal: 'detail' | 'source',
-  frame: MotionCurve,
-  fade: MotionCurve = frame,
-): ZoomElementCurves {
-  const rectAt = (p: number) => zoomFramesAt(p, geometry)[portal];
-  return {
-    x: mapCurve(frame, p => rectAt(p).x - box.x),
-    y: mapCurve(frame, p => rectAt(p).y - box.y),
-    scale: mapCurve(frame, p => rectAt(p).width / box.width),
-    opacity: mapCurve(fade, p => {
-      const frames = zoomFramesAt(p, geometry);
-      return portal === 'detail' ? frames.detailOpacity : frames.sourceOpacity;
-    }),
   };
 }
 

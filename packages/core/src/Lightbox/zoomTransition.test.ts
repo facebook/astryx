@@ -7,14 +7,13 @@
  * @output Checks the transition against UIKit's own (iOS 26.2, a 118 pt
  *   cell opening a full-screen detail with `.zoom`): the portals' shared
  *   frame and their aspects, the opening's widths frame by frame, the fades,
- *   the closing's undershoot into the cell, and the element curves' ends
+ *   and the closing's undershoot into the cell
  * @position Testing; zoomTransition.ts without a browser
  */
 
 import {describe, expect, it} from 'vitest';
 import {
   zoomCloseProgress,
-  zoomElementCurves,
   zoomFramesAt,
   zoomOpenProgress,
   zoomStartRect,
@@ -127,32 +126,6 @@ describe("UIKit's zoom transition (iOS 26.2)", () => {
     const {frame} = zoomCloseProgress({from: p, velocity: v});
     expect(frame.at(0)).toBeCloseTo(p, 9);
     expect(frame.velocity(0)).toBeCloseTo(v, 6);
-  });
-
-  it('gives an element at rest in its box curves from the source to rest', () => {
-    const box = {x: 0, y: 303, width: 402, height: 268};
-    const geometry: ZoomGeometry = {source: CELL, detail: box};
-    const curves = zoomElementCurves(
-      geometry,
-      box,
-      'detail',
-      zoomOpenProgress(),
-    );
-    const start = zoomStartRect(CELL, 268 / 402);
-    expect(curves.scale.at(0)).toBeCloseTo(118 / 402, 9);
-    expect(curves.x.at(0)).toBeCloseTo(start.x - box.x, 9);
-    expect(curves.y.at(0)).toBeCloseTo(start.y - box.y, 9);
-    expect(curves.opacity.at(0)).toBe(0);
-    const end = curves.scale.duration;
-    expect(curves.scale.at(end)).toBe(1);
-    expect(curves.x.at(end)).toBe(0);
-    expect(curves.y.at(end)).toBe(0);
-    expect(curves.opacity.at(end)).toBe(1);
-    // Velocities by the chain rule agree with the curve's own slope.
-    const t = 0.05;
-    const slope =
-      (curves.scale.at(t + 1e-5) - curves.scale.at(t - 1e-5)) / 2e-5;
-    expect(curves.scale.velocity(t)).toBeCloseTo(slope, 2);
   });
 
   it('runs on the springs it is given', () => {
