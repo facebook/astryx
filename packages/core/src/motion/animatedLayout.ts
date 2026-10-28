@@ -1750,7 +1750,23 @@ export function applyLayoutChangeTransition(
   );
 }
 
-/** @internal For tests: the motion a change in `area` plays. */
+/**
+ * Lands `element`'s running glide at once: it takes its layout place, and a
+ * later change starts from there (a change its caller lands rather than
+ * animates, such as a rail that snaps).
+ */
+export function landLayoutGlide(element: Element): void {
+  const glide = glides.get(element);
+  if (glide != null) {
+    glides.delete(element);
+    glide.animation.cancel();
+  }
+}
+
+/**
+ * @internal The motion a change in `area` plays, for tests and for SideNav's
+ * rail motion, which plays on the same clock (`component:SideNav` FR6).
+ */
 export function layoutMotionFor(area: Element): LayoutMotion {
   return layoutMotion(area);
 }
