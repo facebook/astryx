@@ -377,6 +377,8 @@ test.describe('spec:AST-105 Coverage', () => {
       `<div id="area" class="area"><div id="grow" class="grow"></div>
         <div id="pressed" class="row" style="transform: scale(0.98)"></div>
         <div id="half" class="row" style="scale: 0.5"></div>
+        <div id="flipped" class="row" style="scale: -1"></div>
+        <div id="mirrored" class="row" style="scale: 1 -1"></div>
         <div id="pressing" class="row" style="transition: transform 2s linear"></div></div>`,
     );
     // A press starting on #pressing: its own transition runs from
@@ -389,7 +391,14 @@ test.describe('spec:AST-105 Coverage', () => {
       }
     });
     await change(page);
-    for (const id of ['#pressed', '#half', '#pressing']) {
+    // A negative scale flips the element in place: it glides the same way.
+    for (const id of [
+      '#pressed',
+      '#half',
+      '#flipped',
+      '#mirrored',
+      '#pressing',
+    ]) {
       const motions = await page.evaluate(s => window.motionOf(s), id);
       const glide = motions.find(motion => (motion.first ?? '').includes('px'));
       expect(glide, `${id} ${JSON.stringify(motions)}`).toBeDefined();

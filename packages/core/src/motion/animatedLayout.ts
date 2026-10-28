@@ -816,8 +816,10 @@ function ownScaleOf(element: Element): {x: number; y: number} {
   const scale = style.getPropertyValue('scale');
   if (scale !== '' && scale !== 'none') {
     const [sx = 1, sy = sx] = numbersIn(scale);
-    x *= sx;
-    y *= sy;
+    // Its size, not its direction: a negative scale flips the element in
+    // place, and its measured box stays positive.
+    x *= Math.abs(sx);
+    y *= Math.abs(sy);
   }
   // The computed transform is a matrix: its first column's length is the
   // scale on x, its second's on y.
