@@ -117,16 +117,19 @@ function readInherited(element: Element): Map<string, string> {
     values.set(name, style.getPropertyValue(name));
   }
   // A unitless line-height inherits as its factor, but the computed style
-  // reports it in pixels: carry the factor, from the typed style map where
-  // there is one, else as the pixels over the font size.
-  const lineHeight = element.computedStyleMap?.().get('line-height');
-  if (
-    lineHeight != null &&
-    'unit' in lineHeight &&
-    lineHeight.unit === 'number' &&
-    'value' in lineHeight
-  ) {
-    values.set('line-height', String(lineHeight.value));
+  // reports it in pixels. The typed style map tells a factor from a length
+  // (a length stays its pixels); without one, the pixels over the font size
+  // stand for the factor.
+  if (typeof element.computedStyleMap === 'function') {
+    const lineHeight = element.computedStyleMap().get('line-height');
+    if (
+      lineHeight != null &&
+      'unit' in lineHeight &&
+      lineHeight.unit === 'number' &&
+      'value' in lineHeight
+    ) {
+      values.set('line-height', String(lineHeight.value));
+    }
   } else {
     const factor = lineHeightFactor(style);
     if (factor != null) {
@@ -233,8 +236,10 @@ export function placeOver(
   const hostStyle = getComputedStyle(host);
   const hostFactor = lineHeightFactor(hostStyle);
   for (const [name, value] of inheritedValues.get(element) ?? []) {
+    // A carried factor is compared with the host's factor, a length with
+    // the host's computed length.
     const passed =
-      name === 'line-height' && hostFactor != null
+      name === 'line-height' && /^[\d.]+$/.test(value) && hostFactor != null
         ? String(hostFactor)
         : hostStyle.getPropertyValue(name);
     if (value !== '' && passed !== value) {
