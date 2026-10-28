@@ -77,11 +77,11 @@ No component-local concept beyond the consumer props.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                    | Basis                              |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| FR1 | A provider with no LayerProvider above it supplies the layer context (`toast` configuration and `inset`) and wraps `children` in one toast viewport configured by `toast.position`, `toast.maxVisible`, `toast.inset`, and `inset`.                          | Current source and tests           |
-| FR2 | A provider nested under another mounts no toast viewport. Without `inset` it renders its children unchanged; with `inset` it replaces the whole inset for its subtree, so an edge it leaves unset reads zero there, keeping the outer `toast` configuration. | Current source; `spec:AST-059` FR6 |
-| FR3 | With nothing declared, a provider changes no layer geometry, so layers under a default provider match layers with no provider.                                                                                                                               | `spec:AST-059` FR6; tests          |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                     | Basis                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| FR1 | A provider with no LayerProvider above it supplies the layer context (`toast` configuration and `inset`) and wraps `children` in one toast viewport configured by `toast.position`, `toast.maxVisible`, `toast.inset`, and `inset`.                                                                           | Current source and tests           |
+| FR2 | A provider nested under another mounts no toast viewport. Without `inset` it renders its children unchanged; with `inset`, each edge it declares applies to the layers in its subtree, and it keeps the outer `toast` configuration. What an edge it leaves unset reads in that subtree is uncontracted here. | Current source; `spec:AST-059` FR6 |
+| FR3 | With nothing declared, a provider changes no layer geometry, so layers under a default provider match layers with no provider.                                                                                                                                                                                | `spec:AST-059` FR6; tests          |
 
 ### Allowed variation
 
@@ -97,7 +97,8 @@ No component-local concept beyond the consumer props.
 
 ### Transformation and precedence order
 
-- **ORD1 — Inset.** The nearest provider that declares `inset`, then the root's.
+- **ORD1 — Inset.** For an edge a nested provider declares, its value applies
+  in its subtree; unset edges are uncontracted (FR2).
 
 ### Performance and resources
 
@@ -132,8 +133,7 @@ Read from source, with no focused test yet:
 
 - FR1: `toast.position` and `toast.maxVisible` reaching the viewport.
 - FR2: a nested provider without `inset` mounting no second viewport and
-  rendering its children unchanged, an edge the nested `inset` leaves unset
-  reading zero, and the outer `toast` configuration being kept.
+  rendering its children unchanged, and the outer `toast` configuration being kept.
 
 ## Decision log
 
