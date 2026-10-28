@@ -259,15 +259,18 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
-    // The turn eases on the theme's tokens; under a finger (a coarse
-    // primary pointer, TOUCH_QUERY) the expansion turns it on UIKit's spring
-    // instead (useTreeExpansionMotion).
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // With no animated-layout handle, under a finger (a coarse primary
+  // pointer, TOUCH_QUERY) the expansion turns the chevron on UIKit's spring
+  // instead of the theme's ease (useTreeExpansionMotion).
+  chevronSpring: {
     transitionProperty: {
       default: 'transform',
       '@media (pointer: coarse)': 'none',
     },
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
   },
   // The RTL mirror is folded into each state's transform rather than living on
   // a parent span. Both are `transform`, so on one element the later value
@@ -360,6 +363,17 @@ export interface TreeListItemInternalProps {
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
+  /**
+   * The row collapsed and its child group is playing its exit: the group
+   * stays rendered (the exit makes it inert) until it ends, and its rows
+   * leave the tree's keyboard order at once.
+   */
+  isExiting?: boolean;
+  /**
+   * The tree holds an animated-layout handle, which plays the group's
+   * motion; without one, the row plays its own touch slide.
+   */
+  hasAnimatedLayout?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -409,6 +423,8 @@ export function TreeListItem({
   isLast,
   ancestorsIsLast,
   isExpanded,
+  isExiting = false,
+  hasAnimatedLayout = false,
   onToggle,
   density,
   variant,
@@ -418,8 +434,11 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
-  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded);
-  const renderedChildren = showsChildren ? renderChildren?.() : undefined;
+  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded, {
+    isEnabled: !hasAnimatedLayout,
+  });
+  const renderedChildren =
+    showsChildren || isExiting ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -550,6 +569,7 @@ export function TreeListItem({
       data-tree-chevron=""
       xstyle={[
         styles.chevronSvg,
+        !hasAnimatedLayout && styles.chevronSpring,
         isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
       ]}
     />
@@ -727,7 +747,10 @@ export function TreeListItem({
         <ul
           ref={groupRef}
           role="group"
-          // Still sliding away after a collapse: out of reach until it leaves.
+          // Collapsed and still leaving (a handle's exit, or the touch slide
+          // without one): out of reach, and out of the tree's keyboard order,
+          // until it goes.
+          data-tree-exiting={!isExpanded ? '' : undefined}
           inert={!isExpanded || undefined}
           {...stylex.props(styles.childGroup)}>
           {renderedChildren}
