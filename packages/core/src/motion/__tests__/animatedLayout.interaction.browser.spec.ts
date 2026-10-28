@@ -369,6 +369,45 @@ test.describe('spec:AST-105 Coverage', () => {
     expect(startOffset(motion.first).y).toBeCloseTo(-80, 0);
   });
 
+  test("a follower with its own scale glides from its old place: its own scale is no ancestor's", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="grow" class="grow"></div>
+        <div id="pressed" class="row" style="transform: scale(0.98)"></div>
+        <div id="half" class="row" style="scale: 0.5"></div>
+        <div id="flipped" class="row" style="scale: -1"></div>
+        <div id="mirrored" class="row" style="scale: 1 -1"></div>
+        <div id="pressing" class="row" style="transition: transform 2s linear"></div></div>`,
+    );
+    // A press starting on #pressing: its own transition runs from
+    // \`transform: none\` toward a scale while the change happens.
+    await page.evaluate(() => {
+      const pressing = document.querySelector<HTMLElement>('#pressing');
+      if (pressing != null) {
+        void pressing.offsetHeight;
+        pressing.style.transform = 'scale(0.98)';
+      }
+    });
+    await change(page);
+    // A negative scale flips the element in place: it glides the same way.
+    for (const id of [
+      '#pressed',
+      '#half',
+      '#flipped',
+      '#mirrored',
+      '#pressing',
+    ]) {
+      const motions = await page.evaluate(s => window.motionOf(s), id);
+      const glide = motions.find(motion => (motion.first ?? '').includes('px'));
+      expect(glide, `${id} ${JSON.stringify(motions)}`).toBeDefined();
+      // 80 px of layout, translated in its parent's space: a \`translate\`
+      // does not go through the element's own scale.
+      expect(startOffset(glide?.first ?? null).y, id).toBeCloseTo(-80, 0);
+    }
+  });
+
   test('top-layer content is never moved', async ({page}) => {
     await open(
       page,
