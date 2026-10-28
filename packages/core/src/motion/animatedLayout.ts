@@ -8,7 +8,8 @@
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
  *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
  *   `releaseLayoutExit`, the in-place swap (`holdLayoutSwap` /
- *   `playLayoutSwap`) and `applyLayoutChangeTransition`: the one module
+ *   `playLayoutSwap`), `playLayoutFrames` and `applyLayoutChangeTransition`:
+ *   the one module
  *   that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
@@ -47,6 +48,9 @@
  *   the swap's progress and, riding a gliding element, how far it has moved,
  *   so every part keeps to that glide; under Reduce Motion with a coarse
  *   pointer only opacity changes.
+ * - Frames on elements the page renders can play on the same motion with no
+ *   copy (`playLayoutFrames`), such as a surface reaching over a gap a glide
+ *   opens, and are released when the motion ends.
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.

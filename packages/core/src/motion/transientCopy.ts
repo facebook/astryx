@@ -100,6 +100,15 @@ const INHERITED_PROPERTIES = [
 /** Each copy's inherited values, read from its element when it was made. */
 const inheritedValues = new WeakMap<Element, Map<string, string>>();
 
+/** A computed line-height over its font size, or null for `normal`. */
+function lineHeightFactor(style: CSSStyleDeclaration): number | null {
+  const lineHeight = parseFloat(style.getPropertyValue('line-height'));
+  const fontSize = parseFloat(style.getPropertyValue('font-size'));
+  return Number.isFinite(lineHeight) && fontSize > 0
+    ? Math.round((lineHeight / fontSize) * 1000) / 1000
+    : null;
+}
+
 /** The element's inherited properties and custom properties, as computed. */
 function readInherited(element: Element): Map<string, string> {
   const values = new Map<string, string>();
@@ -108,7 +117,8 @@ function readInherited(element: Element): Map<string, string> {
     values.set(name, style.getPropertyValue(name));
   }
   // A unitless line-height inherits as its factor, but the computed style
-  // reports it in pixels: carry the factor where the typed style map has it.
+  // reports it in pixels: carry the factor, from the typed style map where
+  // there is one, else as the pixels over the font size.
   const lineHeight = element.computedStyleMap?.().get('line-height');
   if (
     lineHeight != null &&
@@ -117,6 +127,11 @@ function readInherited(element: Element): Map<string, string> {
     'value' in lineHeight
   ) {
     values.set('line-height', String(lineHeight.value));
+  } else {
+    const factor = lineHeightFactor(style);
+    if (factor != null) {
+      values.set('line-height', String(factor));
+    }
   }
   for (let index = 0; index < style.length; index++) {
     const name = style[index];
@@ -216,8 +231,13 @@ export function placeOver(
   host.appendChild(element);
   // What it inherited where it was, where the host passes something else.
   const hostStyle = getComputedStyle(host);
+  const hostFactor = lineHeightFactor(hostStyle);
   for (const [name, value] of inheritedValues.get(element) ?? []) {
-    if (value !== '' && hostStyle.getPropertyValue(name) !== value) {
+    const passed =
+      name === 'line-height' && hostFactor != null
+        ? String(hostFactor)
+        : hostStyle.getPropertyValue(name);
+    if (value !== '' && passed !== value) {
       element.style.setProperty(name, value);
     }
   }
