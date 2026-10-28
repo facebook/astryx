@@ -538,7 +538,7 @@ async function reconcileSpecOwnerGate({
       );
     }
     lines.push(
-      '| Record | Title | Authority | Approved by |',
+      '| Record | Title | Authority | Needs approval from |',
       '| --- | --- | --- | --- |',
       ...rows,
       '',
