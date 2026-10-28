@@ -670,8 +670,8 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         case 'withdraw': {
           // The window's blur withdrew a finger's gesture: it stays tracked to
           // its release, but nothing drives the menu any more (the hold, the
-          // autoscroll, the page lock). A row it lit clears where the primary
-          // pointer is coarse (spec:AST-094 FR28, FR19).
+          // autoscroll, the page lock). A row it lit clears under the touch
+          // model, a finger's on every device (spec:AST-094 FR28, FR43).
           longPressApiRef.current?.cancel();
           stopAutoscroll();
           touchMovePreventerRef.current?.();
@@ -685,9 +685,10 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           return;
         }
         case 'settle': {
-          // A finger's lit row clears on a cancel only where the primary
-          // pointer is coarse (the 'uikit' touch model); elsewhere the
-          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          // A finger's lit row clears on a cancel under the 'uikit' touch
+          // model, a finger's on every device unless the menu pins
+          // presentation="popover" (spec:AST-094 FR28, FR43); the pointer
+          // model keeps the highlight as before (spec:AST-017 FR59).
           if (
             effect.clear === true &&
             optionsRef.current.touchModel === 'uikit'

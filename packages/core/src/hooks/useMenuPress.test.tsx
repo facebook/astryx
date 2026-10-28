@@ -512,7 +512,7 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('where the primary pointer is coarse, a pointercancel clears the row the press lit (the browser took it for a scroll); where it is fine, the highlight stays as before', () => {
+  it('under the touch model, a finger\u2019s on every device, a pointercancel clears the row the press lit (the browser took it for a scroll); under the pointer model the highlight stays as before', () => {
     const onHighlight = vi.fn();
     const {unmount} = render(
       <Harness touchModel="uikit" onHighlight={onHighlight} />,
@@ -531,7 +531,7 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onFineHighlight).toHaveBeenLastCalledWith(row('B'));
   });
 
-  it('where the primary pointer is coarse, a second finger ends the gesture and clears the row the first one lit (spec:AST-094 FR28); where it is fine, the highlight stays', () => {
+  it('under the touch model, a second finger ends the gesture and clears the row the first one lit (spec:AST-094 FR28, FR43); under the pointer model the highlight stays', () => {
     const onHighlight = vi.fn();
     const {unmount} = render(
       <Harness touchModel="uikit" onHighlight={onHighlight} />,
