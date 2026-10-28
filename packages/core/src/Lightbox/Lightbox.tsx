@@ -77,7 +77,6 @@ import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage, type ZoomStage} from './useZoomStage';
 import {lightboxScope} from './lightbox.markers.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../utils/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
 import {liftCopy, type LiftedCopy} from '../liftFromTrigger/liftFromTrigger';
 import {sourceBoxOf, openingFadeStart, zoomFromSource} from './zoomFromSource';
@@ -173,7 +172,8 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    * of it on open and back into it on close (UIKit's zoom transition), and a
    * photo dragged down lands in it. It returns null for an item with none on
    * screen. Without it, on a touch screen the element that opened the viewer
-   * is the opened item's source when it shows a picture.
+   * is the opened item's source when it shows a picture. Omitting
+   * `experimental` keeps the stable viewer, which opens and closes plainly.
    * @experimental
    */
   experimental?: LightboxExperimentalOptions;
@@ -688,12 +688,18 @@ export function Lightbox({
 
   // An item's source: the caller's, or for the opened item the element that
   // opened the viewer when it shows a picture (a thumbnail, or a button or
-  // link around one); a text button opens and closes plainly.
+  // link around one); a text button opens and closes plainly. Both are
+  // experimental: without `experimental` no item has a source, so the
+  // viewer keeps its stable opening and closing (spec:AST-017 FR21).
+  const isExperimental = experimental != null;
   const sourceFor = experimental?.sourceFor;
   const sourceElementFor = useCallback(
     (i: number): HTMLElement | null => {
       if (sourceFor != null) {
         return sourceFor(i);
+      }
+      if (!isExperimental) {
+        return null;
       }
       const opener = openerRef.current;
       return i === openedIndexRef.current &&
@@ -704,7 +710,7 @@ export function Lightbox({
         ? opener
         : null;
     },
-    [sourceFor],
+    [isExperimental, sourceFor],
   );
 
   // The viewer stays presented while its dialog is open, also while a closing
@@ -775,14 +781,10 @@ export function Lightbox({
         return;
       }
       // A gallery's stage fills the viewer: a click on it beside the media is
-      // a backdrop click too. With zoom on under a coarse pointer, the stage's
-      // own tap handles it (after the double-tap interval); a fine pointer has
-      // no stage tap (spec:AST-094 FR19), so its click closes here.
+      // a backdrop click too. With zoom on, the stage's own tap handles it
+      // for every pointer, after the double-tap interval (spec:AST-094 FR43).
       const target = e.target as Element;
-      const stageTaps =
-        hasZoom &&
-        !isVideo &&
-        isCoarsePointer(e.currentTarget.ownerDocument.defaultView);
+      const stageTaps = hasZoom && !isVideo;
       const press = pressRef.current;
       const dragged =
         hasZoom &&
@@ -1072,16 +1074,19 @@ export function Lightbox({
 
   // The stage, for callbacks that run before this render returns it.
   const stageApiRef = useRef<ZoomStage | null>(null);
-  // The zoom stage for every pointer (the keyboard, a mouse double-click and
-  // drag) and, under a finger, its touch layer: one touch model on every
-  // touch device (the shared touch resolver), whose pinch and pan give past
-  // their limits and bounce back.
+  // The zoom stage: the keyboard's zoom and pan, and the gestures of every
+  // pointer, a mouse, a pen and a finger alike (spec:AST-094 FR43), whose
+  // pinch (a ctrl-wheel's too) and pan (a wheel's too) give past their
+  // limits and bounce back. The touch presentation, which the zoom
+  // transition, the opener record and the gallery's buttons and arrow keys
+  // read, is the shared touch resolver's.
   const {isTouch} = useTouchPresentation();
   // The opener is the element the viewer was opened from: a click or tap on
   // it (which a plain image, or a button in Safari, does not focus), else
-  // the focused element. Only the touch presentation reads it, through one
-  // listener every closed touch viewer shares (spec:AST-094 FR24).
-  useOpenerActivation(!isOpen && isTouch);
+  // the focused element. Only the touch presentation reads it, inside
+  // `experimental`, through one listener every closed touch viewer shares
+  // (spec:AST-094 FR24).
+  useOpenerActivation(!isOpen && isTouch && isExperimental);
   const onDragStart = () => {
     didDragRef.current = true;
   };
@@ -1089,7 +1094,6 @@ export function Lightbox({
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
-    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -1107,12 +1111,11 @@ export function Lightbox({
         }
       }
     },
-    onDragStart,
   });
   const stage = useZoomStage(zoom, {
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
-    isEnabled: isOpen && isZoomTarget && isTouch,
+    isEnabled: isOpen && isZoomTarget,
     itemKey: viewedItem,
     onPinchZoomed: next => {
       // Photos hides them as the pinch passes the fitted size, not at the
@@ -1146,9 +1149,9 @@ export function Lightbox({
     },
     onDragStart,
     dismiss: {
-      // Touch work, like the zoom's: nothing attaches where the primary
-      // pointer is fine (spec:AST-094 FR19).
-      isEnabled: isOpen && !isVideo && isTouch,
+      // Every pointer's, like the zoom's (spec:AST-094 FR43); a video keeps
+      // its own controls' drags.
+      isEnabled: isOpen && !isVideo,
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
@@ -1168,7 +1171,7 @@ export function Lightbox({
         }
       },
       target: () => sourceBoxOf(sourceElementFor(index)),
-      onRelease: dismisses => {
+      onRelease: (dismisses, touch) => {
         if (dismisses) {
           dismissedRef.current = true;
           let resolve = () => {};
@@ -1197,7 +1200,7 @@ export function Lightbox({
             portalAnimator.animate(
               {opacity: 1},
               {spring: zoomMedia.dismiss.dismissSizeSpring},
-              {touchRelease: true},
+              {touchRelease: touch},
             );
             restoreLanded();
             landedRef.current = lifted;
@@ -1221,7 +1224,7 @@ export function Lightbox({
         const backdropMotion = backdrop?.animate(
           {opacity},
           {spring},
-          {touchRelease: true},
+          {touchRelease: touch},
         );
         for (const animator of chrome) {
           if (returning && isChromeElement(animator.element)) {
@@ -1230,7 +1233,7 @@ export function Lightbox({
               {touchRelease: true},
             );
           } else {
-            animator.animate({opacity}, {spring}, {touchRelease: true});
+            animator.animate({opacity}, {spring}, {touchRelease: touch});
           }
         }
         if (immersiveRef.current) {
@@ -1273,8 +1276,8 @@ export function Lightbox({
   };
 
   // Open and close the dialog. Under the touch layer, with a source
-  // (`experimental.sourceFor`, or the element that opened the viewer for the
-  // opened item),
+  // (`experimental.sourceFor`, or inside `experimental` the element that
+  // opened the viewer for the opened item),
   // the photo zooms out of it on open and back into the current item's on
   // close (UIKit's zoom transition); the dialog stays open, the page inert,
   // until the photo has landed. Where the primary pointer is fine the viewer
@@ -1614,8 +1617,10 @@ export function Lightbox({
     gap: zoomMedia.viewer.pageGap,
     index,
     isPanEnabled: isOpen && isGallery,
+    // Every pointer pages, a mouse's drag and a trackpad's scroll included
+    // (spec:AST-094 FR43).
     panOptions: {
-      allowedPointerTypes: ['touch', 'pen'],
+      allowedPointerTypes: ['touch', 'pen', 'mouse'],
       maximumNumberOfTouches: 1,
     },
     shouldBeginPan: direction => !stage.isZoomed() || stage.isAtEdge(direction),
@@ -1856,10 +1861,7 @@ export function Lightbox({
                 data-lightbox-media=""
                 {...stylex.props(
                   styles.mediaGroup,
-                  isZoomTarget &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.mediaGroupZoom,
+                  isZoomTarget && !isGallery && styles.mediaGroupZoom,
                   isGallery && styles.mediaGroupGallery,
                 )}>
                 <div
@@ -1875,18 +1877,11 @@ export function Lightbox({
                   {...stylex.props(
                     styles.imageWrapper,
                     isGallery && styles.imageWrapperGallery,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperZoomTarget,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperFill,
+                    isZoomTarget && !isGallery && styles.imageWrapperZoomTarget,
+                    isZoomTarget && !isGallery && styles.imageWrapperFill,
                     !isZoomTarget &&
                       !isVideo &&
                       !isGallery &&
-                      isTouch &&
                       styles.imageWrapperDismissTarget,
                     isZoomTarget && focusOutlineStyles.focusVisible,
                     isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
@@ -1902,10 +1897,9 @@ export function Lightbox({
                       ref={trackRef}
                       {...stylex.props(
                         styles.track,
-                        isZoomTarget && isTouch && styles.trackZoomTarget,
+                        isZoomTarget && styles.trackZoomTarget,
                         !isZoomTarget &&
                           !isVideo &&
-                          isTouch &&
                           styles.imageWrapperDismissTarget,
                       )}>
                       {pageIndexes.map(i => (
