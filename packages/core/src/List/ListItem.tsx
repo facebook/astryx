@@ -40,6 +40,7 @@ import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useListItemSlotMotion} from './listItemSlotMotion';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {
   ITEM_KEY_ATTRIBUTE,
@@ -432,43 +433,55 @@ export function ListItem({
       <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
+  // With the list's handle, the row's start and end content changes animate
+  // (`component:List` FR12): measured in the commit, before the DOM changes.
+  const slotSnapshot = useListItemSlotMotion(
+    rowRef,
+    ctx?.animatedLayout,
+    startContent,
+    endContent,
+  );
+
   return (
-    <Item
-      as="li"
-      ref={mergedRef}
-      marker={marker}
-      startContent={startContent}
-      label={label}
-      description={description}
-      endContent={endContent}
-      onClick={onClick}
-      interactiveRef={interactiveRef}
-      href={href}
-      target={target as '_blank' | '_self'}
-      rel={rel}
-      isDisabled={isDisabled}
-      isSelected={isSelected}
-      align={align}
-      density={density}
-      xstyle={
-        [
-          hasMarkers && styles.withCounter,
-          styles.travelling,
-          hasDividers && styles.withDivider,
-          hasDividers && embeddedStyles.noRadius,
-          isTouchTarget && touchHitAreaStyles.layer,
-          edge === 'flush' && styles.edgeFlush,
-          edge === 'outset' && styles.edgeOutset,
-          edge === 'bleed' && styles.edgeBleed,
-          xstyle,
-        ] as StyleXStyles
-      }
-      {...mergeProps(themeProps('list-item'), {className, style})}
-      // The row's identity for the list's animated layout
-      // (List/listLayoutUpdates.ts).
-      {...(itemKey != null ? {[ITEM_KEY_ATTRIBUTE]: String(itemKey)} : null)}
-      {...restProps}
-    />
+    <>
+      {slotSnapshot}
+      <Item
+        as="li"
+        ref={mergedRef}
+        marker={marker}
+        startContent={startContent}
+        label={label}
+        description={description}
+        endContent={endContent}
+        onClick={onClick}
+        interactiveRef={interactiveRef}
+        href={href}
+        target={target as '_blank' | '_self'}
+        rel={rel}
+        isDisabled={isDisabled}
+        isSelected={isSelected}
+        align={align}
+        density={density}
+        xstyle={
+          [
+            hasMarkers && styles.withCounter,
+            styles.travelling,
+            hasDividers && styles.withDivider,
+            hasDividers && embeddedStyles.noRadius,
+            isTouchTarget && touchHitAreaStyles.layer,
+            edge === 'flush' && styles.edgeFlush,
+            edge === 'outset' && styles.edgeOutset,
+            edge === 'bleed' && styles.edgeBleed,
+            xstyle,
+          ] as StyleXStyles
+        }
+        {...mergeProps(themeProps('list-item'), {className, style})}
+        // The row's identity for the list's animated layout
+        // (List/listLayoutUpdates.ts).
+        {...(itemKey != null ? {[ITEM_KEY_ATTRIBUTE]: String(itemKey)} : null)}
+        {...restProps}
+      />
+    </>
   );
 }
 
