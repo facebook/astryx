@@ -51,7 +51,7 @@ import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
-import {Field} from '@astryxdesign/core/Field';
+import {Field, inputWrapperStyles} from '@astryxdesign/core/Field';
 import {useAnnounce, useMergedRefs} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -121,25 +121,37 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
 const LIST_RENDER_BATCH_SIZE = 50;
 const LIST_LOAD_MORE_THRESHOLD_PX = 200;
 
+// The inline Tokenizer's token-row inset: a token's corners (radius-1) sit
+// concentric with the field's (radius-2) when inset = radius-2 − radius-1 −
+// border = 3px. The same number is the row gap, so wrapped rows read evenly.
+const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
+
 const styles = stylex.create({
+  // The closed trigger is the inline Tokenizer field's own control box, as a
+  // button — the same `inputWrapperStyles.base` box Core's sheet trigger
+  // composes (`component:Tokenizer` FR16: same width, border, radius,
+  // surface and `size` block size, minus only the inline input's own row),
+  // so before the sheet opens the field looks the same as the desktop field.
+  // The 44px thumb targets belong to the sheet's rows, not to the closed
+  // field. These rules are the inline field's own on top of the shared box:
+  // tokens wrap, the row inset and gap keep token and field corners
+  // concentric, the block size is the `md` step, and the cursor says "press"
+  // since there is no input to type into.
   trigger: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     width: '100%',
-    minHeight: 44,
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-element'],
-    // The input surface, as Core's sheet trigger has from the shared input
-    // wrapper: Field's attached status band sits behind the control, and a
-    // transparent trigger would show it through the tokens.
-    backgroundColor: colorVars['--color-background-surface'],
+    flexWrap: 'wrap',
+    gap: spacingVars['--spacing-1'],
+    // Row gap matches the block inset so wrapped rows look evenly spaced.
+    rowGap: TOKEN_ROW_INSET,
+    minHeight: sizeVars['--size-element-md'],
+    height: 'auto',
+    paddingBlock: TOKEN_ROW_INSET,
+    paddingInline: TOKEN_ROW_INSET,
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    color: 'inherit',
     textAlign: 'start',
+    appearance: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -150,7 +162,7 @@ const styles = stylex.create({
   // base values, since StyleX merges per property.
   triggerDisabled: {
     borderColor: {
-      default: colorVars['--color-border'],
+      default: colorVars['--color-border-emphasized'],
       '@media (forced-colors: active)': 'GrayText',
     },
     color: {
@@ -160,6 +172,8 @@ const styles = stylex.create({
   },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
+    // The input's text inset, so the placeholder sits where typed text would.
+    paddingInline: spacingVars['--spacing-1'],
   },
   triggerPlaceholderDisabled: {
     color: {
@@ -536,7 +550,12 @@ export function MobileTokenizer<T extends SearchableItem>({
           )?.(event);
         }}
         {...mergeProps(
-          stylex.props(styles.trigger, isDisabled && styles.triggerDisabled),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.trigger,
+            isDisabled && inputWrapperStyles.disabled,
+            isDisabled && styles.triggerDisabled,
+          ),
           className,
           style,
         )}>

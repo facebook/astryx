@@ -147,6 +147,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       'AppShell/AppShell.tsx',
       'Collapsible/Collapsible.tsx',
       'SideNav/railMotion.ts',
+      'Table/plugins/rowExpansion/useTableRowExpansion.tsx',
       'TreeList/TreeList.tsx',
       'hooks/useAnimatedLayout.ts',
     ]);
