@@ -15,7 +15,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {busyWindowProof} from './busy';
+import {busyWindowProof, pooledBusyProof} from './busy';
 import * as skip from './busy.skip.fixture';
 import {inPresentationOrder, type TrackedFrame} from './frames';
 
@@ -604,5 +604,103 @@ describe('busyWindowProof against a control', () => {
     expect(proof.verdict.failures.join('\n')).toMatch(
       /the control moved on 0 frames in the judged part/,
     );
+  });
+});
+
+/** A 90 ms block from `from`: its judged part holds three 60 Hz frames. */
+const short = (from: number) => ({from, to: from + 90});
+
+describe('pooledBusyProof', () => {
+  it('judges a block too short for one run over pooled runs: one run cannot decide, three runs of a component that moves with the control pass', () => {
+    const control = asControl(moving());
+    const single = busyWindowProof(moving(), short(1000), {control});
+    expect(single.verdict.failures.join('\n')).toMatch(
+      /the control moved on 3 frames in the judged part, under 4/,
+    );
+    const runs = [1000, 1300, 1600].map(from => ({
+      tracked: moving(),
+      control,
+      window: short(from),
+    }));
+    const pooled = pooledBusyProof(runs);
+    expect(pooled.verdict.failures, pooled.summary).toEqual([]);
+    expect(pooled.control).toEqual({moved: 9, movedWith: 9});
+    expect(pooled.runs).toHaveLength(3);
+    expect(pooled.summary).toMatch(
+      /^3 runs pooled: moved on 9 of the control's 9 frames; run 1: /,
+    );
+  });
+
+  it('still fails a component that is frozen in every run while the control moves', () => {
+    const frozen = moving().map(
+      f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame,
+    );
+    const pooled = pooledBusyProof(
+      [1000, 1300, 1600].map(from => ({
+        tracked: frozen,
+        control: asControl(moving()),
+        window: short(from),
+      })),
+    );
+    expect(pooled.verdict.pass).toBe(false);
+    expect(pooled.verdict.failures.join('\n')).toMatch(
+      /moved on 0 of the 9 frames the control moved over 3 runs/,
+    );
+    expect(pooled.verdict.failures.join('\n')).toMatch(
+      /run 1: longest stall .* past the control's/,
+    );
+  });
+
+  it("judges each run's longest stall against that run's control, never pooled", () => {
+    // Two frames in a row present no new position, inside run 2 only.
+    const k = at(1320);
+    const stalled = moving().map((f, i) =>
+      i === k || i === k + 1
+        ? ({...f, box: {...f.box!, y: 3 * (k - 1)}} as TrackedFrame)
+        : f,
+    );
+    const pooled = pooledBusyProof(
+      [1000, 1300, 1600].map(from => ({
+        tracked: stalled,
+        control: asControl(moving()),
+        window: short(from),
+      })),
+    );
+    const failures = pooled.verdict.failures.join('\n');
+    expect(failures).toMatch(/run 2: longest stall .* past the control's/);
+    expect(failures).not.toMatch(/run [13]: longest stall/);
+  });
+
+  it('judges the control over the pool too: runs in which it presented too little fail', () => {
+    const still = asControl(
+      moving().map(f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame),
+    );
+    const pooled = pooledBusyProof(
+      [1000, 1300].map(from => ({
+        tracked: moving(),
+        control: still,
+        window: short(from),
+      })),
+    );
+    expect(pooled.verdict.failures.join('\n')).toMatch(
+      /the control moved on 0 frames over 2 runs, under 4/,
+    );
+  });
+
+  it('judges one long run as busyWindowProof judges it against the control', () => {
+    const control = asControl(moving());
+    const pooled = pooledBusyProof([
+      {tracked: moving(), control, window: BLOCK},
+    ]);
+    const single = busyWindowProof(moving(), BLOCK, {control});
+    expect(pooled.verdict).toEqual(single.verdict);
+    expect(pooled.control).toEqual({
+      moved: single.control?.moved,
+      movedWith: single.control?.movedWith,
+    });
+  });
+
+  it('throws on no runs', () => {
+    expect(() => pooledBusyProof([])).toThrow(/no runs/);
   });
 });
