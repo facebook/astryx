@@ -306,7 +306,9 @@ function realLocation(target) {
  * Core, so building with it keeps the CSS identical; and a CLI run one-off
  * (`npx @astryxdesign/cli`) has no Core beside it at all. Null when there is
  * nothing better than the CLI's own import: no installed Core (the Astryx
- * repository, a bare directory), the same Core, or one that does not load.
+ * repository, a bare directory) or the same Core. A Core that is there but
+ * does not load, or lacks the functions the build calls, throws, naming it:
+ * building with another Core would not match the app's `<Theme>`.
  *
  * @param {string} cwd
  * @param {CoreBindings} cliCore - The CLI's own Core, from {@link loadCliCore}.
@@ -316,29 +318,36 @@ function realLocation(target) {
  */
 async function loadProjectCore(cwd, cliCore, {projectOnly = false} = {}) {
   // Outside a project, the Core the answering copy carries (spec AST-081 FR3).
-  const dir =
-    findInstalledPackage(cwd, '@astryxdesign/core') ??
-    (projectOnly ? null : fetchCarriedThemeCoreDir(cwd));
+  const installed = findInstalledPackage(cwd, '@astryxdesign/core');
+  const dir = installed ?? (projectOnly ? null : fetchCarriedThemeCoreDir(cwd));
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
   if (cliCore.themeModule) {
-    try {
-      const own = fileURLToPath(
-        import.meta.resolve('@astryxdesign/core/theme'),
-      );
-      if (realOrSelf(own) === realOrSelf(themeFile)) return null;
-    } catch {
-      // The CLI's own Core cannot be located; load the project's.
-    }
+    const own = cliCoreThemeFile();
+    if (own != null && realOrSelf(own) === realOrSelf(themeFile)) return null;
   }
   let themeModule;
   try {
     themeModule = await import(pathToFileURL(themeFile).href);
-  } catch {
-    return null;
+  } catch (error) {
+    throw new AstryxError(
+      installed == null
+        ? carriedCoreMessage(dir, /** @type {Error} */ (error))
+        : coreUnavailableMessage(cwd, /** @type {Error} */ (error)),
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
-  if (!themeModule.defineTheme || !themeModule.generateThemeRulesSplit)
-    return null;
+  const missing = ['defineTheme', 'generateThemeRulesSplit'].filter(
+    name => typeof themeModule[name] !== 'function',
+  );
+  if (missing.length > 0) {
+    throw new AstryxError(
+      `The @astryxdesign/core at ${path.relative(cwd, dir) || '.'} does not export ${missing.join(' or ')} from its \`./theme\` entry, which \`${formatCliCommand('theme build')}\` calls. Update it.`,
+      undefined,
+      ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+    );
+  }
   let rootModule = null;
   const rootFile = importTarget(dir, '.');
   if (rootFile) {
@@ -357,6 +366,40 @@ async function loadProjectCore(cwd, cliCore, {projectOnly = false} = {}) {
     generateOnMediaCSS: themeModule.generateOnMediaCSS,
     generateAdaptationCSS: themeModule.generateAdaptationCSS,
   };
+}
+
+/**
+ * The file the CLI's own `@astryxdesign/core/theme` resolves to, or null when
+ * the CLI has no Core of its own (a one-off `npx` run).
+ * @returns {string | null}
+ */
+function cliCoreThemeFile() {
+  try {
+    return fileURLToPath(import.meta.resolve('@astryxdesign/core/theme'));
+  } catch (error) {
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    if (
+      code === 'ERR_MODULE_NOT_FOUND' ||
+      code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * The error for a Core the answering copy carries (outside a project) that
+ * does not load.
+ * @param {string} dir
+ * @param {Error} importError
+ * @returns {string}
+ */
+function carriedCoreMessage(dir, importError) {
+  return (
+    `Could not load the @astryxdesign/core this CLI release carries, at ${dir}.` +
+    `\n  Import error: ${importError.message}`
+  );
 }
 
 /** @type {Map<string, Awaited<ReturnType<typeof loadProjectCore>>>} */
@@ -379,7 +422,7 @@ async function selectCore(cwd, {projectOnly = false} = {}) {
   // A global or cached copy's own Core is the carried one.
   if (projectOnly && !projectCore && carriesCore() && !cliCoreIsProjects(cwd)) {
     throw new AstryxError(
-      "The project's Core isn't installed or does not load.",
+      "The project's Core isn't installed.",
       undefined,
       ERROR_CODES.ERR_CORE_NOT_FOUND,
     );
@@ -405,13 +448,11 @@ function carriesCore() {
 function cliCoreIsProjects(cwd) {
   const dir = findProjectCoreDir(cwd);
   if (!dir) return false;
-  try {
-    const own = fileURLToPath(import.meta.resolve('@astryxdesign/core/theme'));
-    const theirs = importTarget(dir, './theme');
-    return theirs != null && realOrSelf(own) === realOrSelf(theirs);
-  } catch {
-    return false;
-  }
+  const own = cliCoreThemeFile();
+  const theirs = importTarget(dir, './theme');
+  return (
+    own != null && theirs != null && realOrSelf(own) === realOrSelf(theirs)
+  );
 }
 
 /**
