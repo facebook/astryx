@@ -27,10 +27,8 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {cellPressableProps} from '../utils/pressFeedback';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
   hasInteractiveAncestor,
   useClickableContainer,
@@ -410,9 +408,6 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
-  // A selection hold returns focus to this row after a pop; its ring follows
-  // how the user last interacted (List/selectionHold.ts).
-  useInteractionModalityTracking();
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -671,7 +666,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...(isInteractive || (hasChildren && onClick == null)
-            ? {...pressable, ...cellPressableProps}
+            ? pressable
             : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {

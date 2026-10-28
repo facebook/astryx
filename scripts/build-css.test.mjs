@@ -402,12 +402,6 @@ describe('build-css astryx.css', () => {
       expect(curves).toEqual([points]);
     });
 
-    it('lets the motion animator promote the layer it animates', () => {
-      expect(astryxCss).toMatch(
-        /::before\{[^}]*will-change:var\(--astryx-motion-will-change-before,\s*auto\)/,
-      );
-    });
-
     it('shows the layer at once on the on arm, and rests it at 0 on the fading arm under its release', () => {
       const on = layerLines('[data-astryx-press="on"]');
       expect(on.some(line => /\{opacity:1;?\}/.test(line))).toBe(true);
@@ -441,30 +435,17 @@ describe('build-css astryx.css', () => {
      */
     const TOUCH_GATED = /^@media \(pointer: coarse\)\{(?!@supports)/;
     const rules = () => astryxCss.split('\n').map(line => line.trim());
-    /** Rules that hide a divider or reach the press layer over one. */
-    const dividerArms = state =>
-      rules().filter(
-        rule =>
-          rule.includes(`[data-astryx-press="${state}"]`) &&
-          (rule.includes('{border-bottom-color:transparent}') ||
-            rule.includes('::before{bottom:')),
-      );
 
-    it('hides the dividers beside a pressed row, and reaches its layer over them, only under a finger', () => {
-      const arms = dividerArms('on');
-      // Its own divider, the one above, the layer's reach, the last row's.
-      expect(arms.length).toBeGreaterThanOrEqual(4);
-      for (const rule of arms) {
-        expect(rule).toMatch(TOUCH_GATED);
-      }
-    });
-
-    it('keeps them hidden around a row held through a navigation push the same way', () => {
-      const arms = dividerArms('held');
-      expect(arms.length).toBeGreaterThanOrEqual(4);
-      for (const rule of arms) {
-        expect(rule).toMatch(TOUCH_GATED);
-      }
+    it('keeps the dividers drawn beside a pressed row', () => {
+      // No press state hides a divider or reaches the press layer over one.
+      expect(
+        rules().filter(
+          rule =>
+            rule.includes('[data-astryx-press=') &&
+            (rule.includes('{border-bottom-color:transparent}') ||
+              rule.includes('::before{bottom:')),
+        ),
+      ).toEqual([]);
     });
 
     it('gives an interactive row its hit layer only under a finger, and no row a new height', () => {
