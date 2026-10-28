@@ -33,18 +33,24 @@ function mountCard(table: HTMLElement, buttons: HTMLElement) {
   Object.assign(status.style, {position: 'absolute', clip: 'rect(0 0 0 0)'});
   table.append(status);
 
+  // The places run in reading order: leftward in a right-to-left layout,
+  // where the snap points are negative and so sort the other way round
+  // (design:bidirectionality DR13).
+  const steps = [0, 110, 220];
+  const isRtl = getComputedStyle(table).direction === 'rtl';
+  const placeAt = (index: number) => (isRtl ? steps.length - 1 - index : index);
   const snap = createDragToSnapPoints(card, {
     axis: 'x',
-    snapPoints: [0, 110, 220],
+    snapPoints: isRtl ? steps.map(step => -step) : steps,
     onSettle: index => {
-      status.textContent = `The card is on the ${PLACES[index].toLowerCase()}.`;
+      status.textContent = `The card is on the ${PLACES[placeAt(index)].toLowerCase()}.`;
     },
   });
   const controls = PLACES.map((name, index) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = name;
-    button.addEventListener('click', () => snap.settleTo(index));
+    button.addEventListener('click', () => snap.settleTo(placeAt(index)));
     buttons.append(button);
     return button;
   });

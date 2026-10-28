@@ -6,21 +6,27 @@ import {useRef, useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {useDragToSnapPoints} from '@astryxdesign/core/hooks';
+import {useDirection} from '@astryxdesign/core/i18n';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 
 const PLACES = ['Hand', 'Table', 'Discard pile'];
-/** Where each place sits, in px from the card's resting position. */
-const SNAP_POINTS = [0, 110, 220];
+/** How far along the row each place sits, in px from where the card rests. */
+const STEPS = [0, 110, 220];
 
 export default function DragToSnapPointsCard() {
   const ref = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState(0);
+  // The places run in reading order: leftward in a right-to-left layout,
+  // where the snap points are negative and so sort the other way round
+  // (design:bidirectionality DR13).
+  const isRtl = useDirection() === 'rtl';
+  const placeAt = (index: number) => (isRtl ? STEPS.length - 1 - index : index);
   const {settleTo} = useDragToSnapPoints(ref, {
     axis: 'x',
-    snapPoints: SNAP_POINTS,
-    onSettle: setPlace,
+    snapPoints: isRtl ? STEPS.map(step => -step) : STEPS,
+    onSettle: index => setPlace(placeAt(index)),
   });
 
   return (
@@ -50,7 +56,7 @@ export default function DragToSnapPointsCard() {
             key={name}
             label={name}
             variant={index === place ? 'primary' : 'secondary'}
-            onClick={() => settleTo(index)}
+            onClick={() => settleTo(placeAt(index))}
           />
         ))}
       </HStack>
