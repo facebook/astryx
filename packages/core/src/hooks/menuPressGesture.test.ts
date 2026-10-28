@@ -456,6 +456,19 @@ describe('menuPressStep — the window loses focus mid-press (spec:AST-094 FR28)
     ).toMatchObject({gesture: {phase: 'withdrawn'}, last: {type: 'withdraw'}});
   });
 
+  it('a finger\u2019s tap on the trigger that the blur withdrew lets its click through at the lift, so the click still opens the menu', () => {
+    expect(
+      run([
+        downOnTrigger('touch'),
+        {type: 'withdraw'},
+        up(null, {isInMenu: false, isOnTrigger: true}),
+      ]),
+    ).toMatchObject({
+      gesture: {phase: 'idle'},
+      last: {type: 'settle', stray: false, dismiss: false},
+    });
+  });
+
   it('a mouse\u2019s gesture ends as a cancel, keeping its click (spec:AST-017 FR59)', () => {
     expect(run([downInMenu('A', 'mouse'), {type: 'withdraw'}])).toMatchObject({
       gesture: {phase: 'idle'},
