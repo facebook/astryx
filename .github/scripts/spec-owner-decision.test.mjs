@@ -21,6 +21,7 @@ const {
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
+const {parseOwnerCommandTarget} = require('./spec-owner-content.cjs');
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const owner = {login: 'cixzhang'};
@@ -699,26 +700,25 @@ describe('spec owner decision', () => {
       }
     });
 
-    it('explains each way a recognized command misses the head', () => {
+    it('explains only a command that names no single commit', () => {
       const stale = '1111111111111111111111111111111111111111';
-      expect(
-        describeOwnerCommandProblem(
-          parseOwnerCommandIntent('/approve-spec'),
-          head,
-        ),
-      ).toContain('did not name a commit');
+      // A bare command approves the current spec content; a well-formed SHA
+      // is decided by comparing that commit's spec content (DEC-14).
+      for (const body of [
+        '/approve-spec',
+        '/spec ok',
+        `/approve-spec ${stale}`,
+      ]) {
+        expect(
+          describeOwnerCommandProblem(parseOwnerCommandIntent(body)),
+          body,
+        ).toBe(null);
+      }
       expect(
         describeOwnerCommandProblem(
           parseOwnerCommandIntent('/approve-spec abc1234'),
-          head,
         ),
       ).toContain('full 40-character commit SHA');
-      expect(
-        describeOwnerCommandProblem(
-          parseOwnerCommandIntent(`/approve-spec ${stale}`),
-          head,
-        ),
-      ).toContain('1111111');
     });
 
     it('accepts a commit SHA in either casing', () => {
@@ -732,13 +732,12 @@ describe('spec owner decision', () => {
       expect(
         describeOwnerCommandProblem(
           parseOwnerCommandIntent(`/approve-spec ${upper}`),
-          head,
         ),
       ).toBe(null);
       expect(parseOwnerCommand(`/approve-spec ${head}`, upper)).toBe(true);
     });
 
-    it('agrees with the help validator on every recognized command', () => {
+    it('agrees with the validator on every recognized command', () => {
       const stale = '1111111111111111111111111111111111111111';
 
       for (const body of [
@@ -746,26 +745,67 @@ describe('spec owner decision', () => {
         `/approve-spec ${head.toUpperCase()}`,
         `/revoke-spec ${head}`,
         '/approve-spec',
+        '/revoke-spec',
+        '/spec ok',
         '/approve-spec abc1234',
         `/approve-spec ${stale}`,
-        `/approve-spec ${stale.toUpperCase()}`,
         `/approve-spec ${head} please`,
+        '/spec ok please',
       ]) {
-        const intent = parseOwnerCommandIntent(body);
-        const decided = parseOwnerCommand(body, head) !== null;
-        const problem = describeOwnerCommandProblem(intent, head);
-        // Exactly one of the two is true: the command decides the gate, or
-        // the gate can say why it did not.
-        expect(decided, body).toBe(problem === null);
+        const parsed = parseOwnerCommandTarget(body) !== null;
+        const problem = describeOwnerCommandProblem(
+          parseOwnerCommandIntent(body),
+        );
+        // Exactly one holds: the command reads as a decision, or the gate
+        // can say why it does not.
+        expect(parsed, body).toBe(problem === null);
       }
+    });
+
+    it('counts a command by the spec content it names', () => {
+      const earlier = '1111111111111111111111111111111111111111';
+      const comments = [
+        {
+          user: owner,
+          body: `/approve-spec ${earlier}`,
+          created_at: '2026-08-30T10:00:00Z',
+        },
+      ];
+      const decide = approvesCurrentContent =>
+        resolveOwnerDecision({
+          reviews: [],
+          comments,
+          owners: ['cixzhang'],
+          headSha: head,
+          approvesCurrentContent,
+        }).approved;
+
+      expect(decide(sha => sha === head)).toBe(false);
+      expect(decide(sha => sha === head || sha === earlier)).toBe(true);
+    });
+
+    it('counts a bare command posted after the current content appeared', () => {
+      const decide = (body, postedAfterContent) =>
+        resolveOwnerDecision({
+          reviews: [],
+          comments: [{user: owner, body, created_at: '2026-08-30T10:00:00Z'}],
+          owners: ['cixzhang'],
+          headSha: head,
+          postedAfterContent,
+        }).approved;
+
+      expect(decide('/spec ok', () => true)).toBe(true);
+      expect(decide('/approve-spec', () => true)).toBe(true);
+      expect(decide('/spec ok', () => false)).toBe(false);
+      expect(decide('/spec ok')).toBe(false);
     });
 
     it('reports no problem for the exact form the gate accepts', () => {
       const intent = parseOwnerCommandIntent(`/approve-spec ${head}`);
 
-      expect(describeOwnerCommandProblem(intent, head)).toBe(null);
+      expect(describeOwnerCommandProblem(intent)).toBe(null);
       expect(parseOwnerCommand(`/approve-spec ${head}`, head)).toBe(true);
-      expect(describeOwnerCommandProblem(null, head)).toBe(null);
+      expect(describeOwnerCommandProblem(null)).toBe(null);
     });
   });
 });

@@ -33,15 +33,33 @@ neutral yellow "waiting" signal, not a red failure).
 ## Spec records
 
 Any PR that creates, changes, or archives a `current` architecture, component,
-family, design, or system spec waits on `spec-owner-approval` for its exact
-current head. Any handle in `.github/ENGOWNERS` can approve every record kind.
-Current design and theme records and normative design assets may also be approved
-by any handle in `.github/DESIGNOWNERS`. Mixed PRs still require an ENGOWNER for
-non-design current records. Same-repository owner reviews update the exact-head
-approval automatically. Fork review events cannot write
-with their read-only token, so an approver uses an issue comment containing
-`/approve-spec <full-head-sha>` instead; that command runs from the trusted
-default branch and a new commit invalidates it.
+family, design, or system spec waits on `spec-owner-approval`, which the Review
+signal workflow publishes. While approval is missing the status is `pending`,
+never a failure, and names who can give it:
+
+- `⏳ Waiting for human spec approval: an eng owner can reply /spec ok`
+- `⏳ Waiting for human spec approval: a design or eng owner can reply /spec ok`
+
+Any handle in `.github/ENGOWNERS` can approve every record kind. Current design
+and theme records and normative design assets may also be approved by any handle
+in `.github/DESIGNOWNERS`. Mixed PRs still require an ENGOWNER for non-design
+current records.
+
+One approval covers all of a PR's spec changes and binds their **content**, not a
+commit (`architecture:knowledge-contracts` DEC-14). The workflow fingerprints every
+changed spec path's text, leaving out the front-matter `authority`,
+`approved_by`, and `approved_at` values. Commits that leave that text unchanged —
+other paths, merges from `main`, rebases, the `draft` → `current` flip — keep the
+approval. Changing any approved spec text resets it, and the status details say
+when the approval was given.
+
+An owner approves by commenting `/spec ok` on the PR (the author may, if they are
+an ENGOWNER), or with a GitHub approving review if they are not the author. The
+older forms still work: a bare `/approve-spec` counts like `/spec ok`, and
+`/approve-spec <full-sha>` approves that commit's spec content. `/revoke-spec`
+and a request for changes withdraw an approval. Reactions do not approve. The
+status details, at the run the status links to, list each changed record and
+the owner group it needs.
 
 A review app may also relay an owner's decision, for owners who decide from
 the app's own pull request view. It sends a `spec-owner-decision` repository
@@ -51,18 +69,16 @@ sender is the app named in the `SPEC_DECISION_APP` repository variable, the
 owner is in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`, and the SHA is the
 live head; with the variable unset, every relay is ignored. An accepted relay
 is published as the trusted status `spec-owner-decision/<owner>`, and the gate
-counts it exactly like that owner's `/approve-spec` or `/revoke-spec` command:
-it satisfies only the groups that owner may approve, the owner's latest
-decision wins, and a new commit invalidates it.
+counts it like that owner's exact-head command: it satisfies only the groups
+that owner may approve, the owner's latest decision wins, and it applies to the
+head it names.
 
-Only that exact form decides the gate. The command must start the comment,
-lowercase and unindented, because the workflow trigger matches the raw comment
-body — an indented or capitalized command never starts the workflow, so the
-parser refuses it too rather than counting a comment nobody's run ever saw. The
-SHA itself may be either casing. A command that names no commit, names
-something other than one full 40-character SHA, or names a superseded commit
-changes nothing — so the gate replies once per head with the exact command to
-copy, rather than leaving the owner believing they approved.
+The command must start the comment, unindented, because the workflow trigger
+matches the raw comment body — an indented command never starts the workflow, so
+the parser refuses it too rather than counting a comment nobody's run ever saw.
+A SHA may be either casing. A command that names something other than one full
+40-character SHA decides nothing, and the gate's details say so; the gate posts
+no reply comments.
 
 The gate never re-decides a merged or closed head. A run that starts after the
 merge publishes nothing, and neither does a run yielding to a newer one.
@@ -77,12 +93,12 @@ head **for the design-approval group only**. The attestation is published only
 for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
 is still in that file — a marker left by someone since removed, or published
 before this rule existed, authorizes nothing. It satisfies no other group: the
-non-design and theme groups always need a real exact-head review or command from
-someone in their own list. An engineering owner cannot attest their own head.
+non-design and theme groups always need a real review or command from someone in
+their own list. An engineering owner cannot attest their own head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,
-every required owner group has approved the exact head, and all branch checks
+every required owner group has approved the current spec content, and all branch checks
 pass. Normative assets and indexes are outside that scope; adding any code path
 also prevents the spec-only auto-merge path.
 
@@ -228,7 +244,7 @@ will produce, because the gate only runs on a new event. Backfill first.
    auto-merge, so a reconcile cannot land a PR nobody asked to land:
 
    ```sh
-   gh workflow run spec-owner-gate.yml -f pr=<number> -f backfill=true
+   gh workflow run review-signal.yml -f pr=<number> -f backfill=true
    ```
 
 4. Re-run the step 2 query and confirm it prints nothing.

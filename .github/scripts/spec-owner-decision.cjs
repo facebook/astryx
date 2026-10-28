@@ -12,6 +12,7 @@ const {
   parseKind,
   parseOwnerFile,
 } = require('./knowledge-frontmatter.cjs');
+const {parseOwnerCommandTarget} = require('./spec-owner-content.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const GATE_STATUS_CONTEXT = 'spec-owner-approval';
@@ -24,7 +25,7 @@ const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 // raw body, which neither trims nor lowercases. Every parser below applies the
 // same precondition, so a comment the trigger drops can never be read as a
 // decision by a run started for some other event.
-const OWNER_COMMAND_PREFIXES = ['/approve-spec', '/revoke-spec'];
+const OWNER_COMMAND_PREFIXES = ['/spec ok', '/approve-spec', '/revoke-spec'];
 
 function isDispatchableOwnerCommand(body) {
   return (
@@ -35,14 +36,11 @@ function isDispatchableOwnerCommand(body) {
 
 function parseOwnerCommand(body, headSha) {
   if (!isDispatchableOwnerCommand(body)) return null;
-  // The command prefix must match the trigger exactly, but a commit SHA is
-  // case-insensitive everywhere else in git and GitHub. Accept either casing
-  // rather than silently ignoring a copy-pasted uppercase head.
-  const match = body
-    .trim()
-    .match(/^\/(approve|revoke)-spec\s+([0-9a-fA-F]{40})$/);
-  if (!match || headSha.toLowerCase() !== match[2].toLowerCase()) return null;
-  return match[1] === 'approve';
+  // A commit SHA is case-insensitive everywhere else in git and GitHub, so a
+  // copy-pasted uppercase head still names it.
+  const target = parseOwnerCommandTarget(body);
+  if (!target?.sha || target.sha !== headSha.toLowerCase()) return null;
+  return target.approved;
 }
 
 /**
@@ -52,6 +50,12 @@ function parseOwnerCommand(body, headSha) {
  */
 function parseOwnerCommandIntent(body) {
   if (!isDispatchableOwnerCommand(body)) return null;
+  if (/^\/spec ok\b/i.test(body.trim())) {
+    return {
+      verb: 'approve',
+      argument: body.trim().slice('/spec ok'.length).trim(),
+    };
+  }
   const match = body
     .trimEnd()
     .match(/^\/(approve|revoke)-spec(?![-\w])([\s\S]*)$/);
@@ -64,16 +68,10 @@ function parseOwnerCommandIntent(body) {
  * null when it does. The reasons are the two silent failures owners hit: a
  * command that names no full head SHA, and one that names a superseded commit.
  */
-function describeOwnerCommandProblem(intent, headSha) {
-  if (!intent) return null;
-  if (!intent.argument) {
-    return 'it did not name a commit';
-  }
+function describeOwnerCommandProblem(intent) {
+  if (!intent || !intent.argument) return null;
   if (!/^[0-9a-f]{40}$/i.test(intent.argument)) {
-    return 'it did not name exactly one full 40-character commit SHA';
-  }
-  if (intent.argument.toLowerCase() !== headSha.toLowerCase()) {
-    return `it named ${intent.argument.slice(0, 7)}, which is not the current head`;
+    return 'it named something other than one full 40-character commit SHA';
   }
   return null;
 }
@@ -208,6 +206,11 @@ function resolveOwnerDecision({
   dismissalEvents = [],
   owners,
   headSha,
+  // Spec approvals bind content (DEC-14): a review or a SHA command counts
+  // when its commit carries the current spec content, and a command without a
+  // SHA counts when it was posted after that content appeared.
+  approvesCurrentContent = sha => sha === headSha,
+  postedAfterContent = () => false,
 }) {
   const allowed = new Set(owners.map(owner => owner.toLowerCase()));
   const latestByOwner = new Map();
@@ -248,7 +251,7 @@ function resolveOwnerDecision({
 
   for (const review of reviews) {
     const login = review.user?.login?.toLowerCase();
-    if (!login || review.commit_id !== headSha) continue;
+    if (!login || !approvesCurrentContent(review.commit_id)) continue;
     if (
       !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)
     ) {
@@ -277,10 +280,18 @@ function resolveOwnerDecision({
   for (const comment of comments) {
     const login = comment.user?.login?.toLowerCase();
     if (!login) continue;
-    const approved = parseOwnerCommand(comment.body ?? '', headSha);
-    if (approved == null) continue;
+    if (!isDispatchableOwnerCommand(comment.body)) continue;
+    const target = parseOwnerCommandTarget(comment.body);
+    if (target == null) continue;
+    if (
+      target.sha
+        ? !approvesCurrentContent(target.sha)
+        : !postedAfterContent(comment)
+    ) {
+      continue;
+    }
     consider(login, {
-      approved,
+      approved: target.approved,
       at: comment.created_at,
       source: 'command',
     });

@@ -246,7 +246,7 @@ describe('spec-only workflow contract', () => {
   });
 
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
     expect(workflow).toContain(
       'ref: ${{ github.event.repository.default_branch }}',
@@ -254,18 +254,24 @@ describe('spec-only workflow contract', () => {
     expect(workflow).toContain(
       'reconcileSpecOwnerGate({github, context, core})',
     );
-    expect(workflow).not.toContain('concurrency:');
-    const reconcileCondition = workflow
-      .slice(
-        workflow.indexOf('    if: >-', workflow.indexOf('  reconcile:')),
-        workflow.indexOf('    runs-on:', workflow.indexOf('  reconcile:')),
-      )
+    const specJob = workflow.slice(workflow.indexOf('  spec-owner:'));
+    // A cancelled reconcile could leave its head without a terminal status,
+    // so the spec-owner job never joins a cancel group (AST-030 FR14).
+    expect(specJob).not.toContain('concurrency:');
+    expect(specJob).not.toContain('cancel-in-progress');
+    expect(workflow).not.toMatch(/^concurrency:/m);
+    const reconcileCondition = specJob
+      .slice(specJob.indexOf('    if: >-'), specJob.indexOf('    name:'))
       .replace(/^    if: >-\s*/, '')
       .replace(/\s+/g, ' ')
       .trim();
     expect(reconcileCondition).toBe(
-      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec'))))",
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/spec ok') || startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec')))) && (github.event_name != 'workflow_dispatch' || github.event.inputs.pr != '')",
     );
+    // One workflow publishes the gate; no separate spec-owner workflow.
+    expect(
+      fs.existsSync(path.join(root, '.github/workflows/spec-owner-gate.yml')),
+    ).toBe(false);
     expect(workflow).toContain('pull_request_review:');
     expect(workflow).toContain('issue_comment:');
     expect(workflow).toContain('permissions: {}');
@@ -320,7 +326,7 @@ describe('spec-only workflow contract', () => {
   });
 
   it('derives the comment trigger from the parser\u2019s own prefixes', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const {OWNER_COMMAND_PREFIXES} = require(
       path.join(root, '.github/scripts/spec-owner-decision.cjs'),
     );
@@ -340,7 +346,7 @@ describe('spec-only workflow contract', () => {
   });
 
   it('accepts relayed owner decisions only from the configured review app', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
 
     expect(workflow).toContain(
@@ -353,7 +359,7 @@ describe('spec-only workflow contract', () => {
   });
 
   it('offers a backfill dispatch that publishes status without landing', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
 
     expect(workflow).toContain('backfill:');

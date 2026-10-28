@@ -100,6 +100,9 @@ function createHarness({
   changedFiles,
   headContent = 'kind: architecture\nauthority: current\n',
   baseContent = '',
+  // Spec text by commit, for heads before the current one.
+  contentAt = {},
+  commits = [],
 } = {}) {
   const files = changedFiles ?? [changedFile];
   const state = {
@@ -110,6 +113,7 @@ function createHarness({
     timeline: [...timeline],
     calls: [],
     reads: [],
+    summary: null,
     labels: new Set(labels),
     knownLabels: new Set(labels),
     pr: {
@@ -147,6 +151,7 @@ function createHarness({
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
+    listCommits: async () => ({data: commits.map(sha => ({sha}))}),
     listStatuses: async ({ref}) => {
       state.reads.push('statuses');
       return {data: state.statuses.filter(status => status.sha === ref)};
@@ -160,6 +165,7 @@ function createHarness({
         get: methods.getPull,
         listFiles: methods.listFiles,
         listReviews: methods.listReviews,
+        listCommits: methods.listCommits,
       },
       issues: {
         listComments: methods.listComments,
@@ -218,7 +224,11 @@ function createHarness({
         getContent: async ({ref}) => ({
           data: {
             content: Buffer.from(
-              ref === state.pr.head.sha ? headContent : baseContent,
+              ref in contentAt
+                ? contentAt[ref]
+                : ref === state.pr.head.sha
+                  ? headContent
+                  : baseContent,
             ).toString('base64'),
           },
         }),
@@ -239,6 +249,13 @@ function createHarness({
   const core = {
     info: message => state.calls.push(`info:${message}`),
     warning: message => state.calls.push(`warning:${message}`),
+    summary: {
+      addRaw(markdown) {
+        state.summary = markdown;
+        return this;
+      },
+      write: async () => {},
+    },
   };
   return {github, core, state};
 }
@@ -313,7 +330,7 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(false);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('engineering owner'),
+      description: expect.stringContaining('an eng owner can reply /spec ok'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
     expect(harness.state.pr.auto_merge).toBe(null);
@@ -335,7 +352,7 @@ describe('spec owner workflow reconciliation', () => {
     expect(hasReadyAttestation(harness.state)).toBe(true);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('engineering owner'),
+      description: expect.stringContaining('an eng owner can reply /spec ok'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
@@ -347,7 +364,7 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @imdreamrunner'),
+      description: expect.stringContaining('Spec approved by @imdreamrunner'),
     });
     expect(harness.state.calls).toContain('enable-auto-merge');
   });
@@ -374,7 +391,7 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @josephfarina'),
+      description: expect.stringContaining('Spec approved by @josephfarina'),
     });
   });
 
@@ -400,7 +417,7 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('engineering owner'),
+      description: expect.stringContaining('an eng owner can reply /spec ok'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
@@ -431,7 +448,7 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @ernestt'),
+      description: expect.stringContaining('Spec approved by @ernestt'),
     });
     expect(harness.state.calls).toContain('enable-auto-merge');
   });
@@ -447,7 +464,7 @@ describe('spec owner workflow reconciliation', () => {
     expect(hasReadyAttestation(harness.state)).toBe(true);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @ernestt'),
+      description: expect.stringContaining('Spec approved by @ernestt'),
     });
     expect(harness.state.calls).toContain('enable-auto-merge');
   });
@@ -468,7 +485,7 @@ describe('spec owner workflow reconciliation', () => {
     expect(hasReadyAttestation(harness.state)).toBe(true);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @ernestt'),
+      description: expect.stringContaining('Spec approved by @ernestt'),
     });
   });
 
@@ -491,7 +508,7 @@ describe('spec owner workflow reconciliation', () => {
     expect(hasReadyAttestation(harness.state)).toBe(true);
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('engineering owner'),
+      description: expect.stringContaining('an eng owner can reply /spec ok'),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
@@ -612,7 +629,7 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @imdreamrunner'),
+      description: expect.stringContaining('Spec approved by @imdreamrunner'),
     });
     const terminalStatus = harness.state.calls.indexOf(
       'status:spec-owner-approval:success',
@@ -763,7 +780,9 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('theme approver'),
+      description: expect.stringContaining(
+        'a design or eng owner can reply /spec ok',
+      ),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
     expect(harness.state.pr.auto_merge).toBe(null);
@@ -792,7 +811,9 @@ describe('spec owner workflow reconciliation', () => {
 
       expect(latestGateStatus(harness.state)).toMatchObject({
         state: 'pending',
-        description: expect.stringContaining('theme approver'),
+        description: expect.stringContaining(
+          'a design or eng owner can reply /spec ok',
+        ),
       });
       expect(harness.state.calls).not.toContain('enable-auto-merge');
       expect(
@@ -1079,7 +1100,7 @@ describe('spec owner workflow reconciliation', () => {
 
   it('reconciles same-repository owner reviews automatically', async () => {
     const review = {
-      user: {login: 'cixzhang'},
+      user: {login: 'czarandy'},
       state: 'APPROVED',
       commit_id: head,
       submitted_at: '2026-08-30T10:00:00Z',
@@ -1349,7 +1370,9 @@ describe('spec owner workflow reconciliation', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('design approver'),
+      description: expect.stringContaining(
+        'a design or eng owner can reply /spec ok',
+      ),
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
@@ -1442,7 +1465,7 @@ describe('spec owner workflow reconciliation', () => {
 
       expect(latestGateStatus(harness.state)).toMatchObject({
         state: 'success',
-        description: expect.stringContaining('Approved by @imdreamrunner'),
+        description: expect.stringContaining('Spec approved by @imdreamrunner'),
       });
       expect(harness.state.calls).not.toContain('enable-auto-merge');
       expect(harness.state.pr.auto_merge).toBe(null);
@@ -1482,72 +1505,260 @@ describe('spec owner workflow reconciliation', () => {
     });
   });
 
-  describe('an owner command that misses the exact head is answered', () => {
-    function commandRun(body, harness = createHarness()) {
-      const comment = {
-        user: {login: 'cixzhang'},
-        body,
-        created_at: '2026-08-30T10:00:00Z',
-      };
-      harness.state.comments.push(comment);
-      return {
-        harness,
-        comment,
-        promise: run(
-          harness,
-          context({
-            runId: 100n,
-            eventName: 'issue_comment',
-            action: 'created',
-            comment,
-          }),
-        ),
-      };
+  describe('one approval binds the spec content (DEC-14)', () => {
+    const oldHead = '3333333333333333333333333333333333333333';
+    const draftRecord = [
+      '---',
+      'kind: architecture',
+      'id: architecture:owner-ready',
+      'authority: draft',
+      'approved_by: null',
+      'approved_at: null',
+      '---',
+      '',
+      '# Owner ready',
+      '',
+      'The contract.',
+      '',
+    ].join('\n');
+    const currentRecord = draftRecord
+      .replace('authority: draft', 'authority: current')
+      .replace('approved_by: null', 'approved_by: cixzhang')
+      .replace('approved_at: null', 'approved_at: 2026-10-28');
+    const changedRecord = currentRecord.replace(
+      'The contract.',
+      'A different contract.',
+    );
+    // The workflow first saw the current head at 10:00:00.
+    const arrival = trustedStatus({runId: 90n});
+    const waiting =
+      '⏳ Waiting for human spec approval: an eng owner can reply /spec ok';
+
+    function ownerComment(body, createdAt = '2026-08-30T10:05:00Z') {
+      return {user: {login: 'cixzhang'}, body, created_at: createdAt};
     }
 
-    it.each([
-      ['/approve-spec', 'did not name a commit'],
-      ['/approve-spec abc1234', 'full 40-character commit SHA'],
-      [`/approve-spec ${nextHead}`, 'is not the current head'],
-    ])('answers %s instead of ignoring it', async (body, reason) => {
-      const {harness, promise} = commandRun(body);
-      await promise;
+    async function commentRun(harness, comment) {
+      harness.state.comments.push(comment);
+      await run(
+        harness,
+        context({
+          runId: 100n,
+          eventName: 'issue_comment',
+          action: 'created',
+          comment,
+        }),
+      );
+    }
 
-      const help = harness.state.comments.at(-1);
-      expect(harness.state.calls).toContain('create-comment');
-      expect(help.body).toContain(`<!-- spec-owner-command-help:${head} -->`);
-      expect(help.body).toContain(reason);
-      expect(help.body).toContain(`/approve-spec ${head}`);
-      expect(latestGateStatus(harness.state).state).toBe('pending');
-      expect(harness.state.calls).not.toContain('enable-auto-merge');
+    it('keeps an ENGOWNER-authored spec PR pending, naming who can approve', async () => {
+      const harness = createHarness({headContent: currentRecord});
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: waiting,
+      });
+      expect(harness.state.calls).not.toContain('create-comment');
+      expect(harness.state.summary).toContain('/spec ok');
+      expect(harness.state.summary).toContain('architecture:owner-ready');
+      expect(harness.state.summary).toContain('Owner ready');
     });
 
-    it('names the revoke verb the owner actually used', async () => {
-      const {harness, promise} = commandRun('/revoke-spec');
-      await promise;
+    it.each(['/spec ok', '/approve-spec', `/approve-spec ${head}`])(
+      'approves on %s from an ENGOWNER author',
+      async body => {
+        const harness = createHarness({
+          headContent: currentRecord,
+          statuses: [arrival],
+        });
 
-      expect(harness.state.comments.at(-1).body).toContain(
-        `/revoke-spec ${head}`,
+        await commentRun(harness, ownerComment(body));
+
+        expect(latestGateStatus(harness.state)).toMatchObject({
+          state: 'success',
+          description: '✅ Spec approved by @cixzhang',
+        });
+      },
+    );
+
+    it('moves from pending to success when the approval arrives', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        statuses: [arrival],
+      });
+      await run(harness, context({runId: 100n}));
+      expect(latestGateStatus(harness.state).state).toBe('pending');
+
+      const comment = ownerComment('/spec ok');
+      harness.state.comments.push(comment);
+      await run(
+        harness,
+        context({
+          runId: 101n,
+          eventName: 'issue_comment',
+          action: 'created',
+          comment,
+        }),
+      );
+
+      expect(latestGateStatus(harness.state).state).toBe('success');
+    });
+
+    it('ignores a command posted before the current spec content appeared', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        statuses: [arrival],
+      });
+
+      await commentRun(
+        harness,
+        ownerComment('/spec ok', '2026-08-30T09:59:00Z'),
+      );
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: waiting,
+      });
+      expect(harness.state.summary).toContain(
+        'Spec changed after approval at 2026-08-30T09:59:00Z',
       );
     });
 
-    it('answers a given head only once', async () => {
-      const {harness, promise} = commandRun('/approve-spec');
-      await promise;
-      const {promise: second} = commandRun('/approve-spec', harness);
-      await second;
+    it('keeps an approval across a commit that changes no spec text', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        contentAt: {[oldHead]: currentRecord},
+        reviews: [{...specOwnerReview, commit_id: oldHead}],
+      });
 
-      expect(
-        harness.state.calls.filter(call => call === 'create-comment'),
-      ).toHaveLength(1);
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'success',
+        description: '✅ Spec approved by @imdreamrunner',
+      });
     });
 
-    it('stays quiet when the command names the exact head', async () => {
-      const {harness, promise} = commandRun(`/approve-spec ${head}`);
-      await promise;
+    it('keeps an approval across the draft-to-current flip', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        contentAt: {[oldHead]: draftRecord},
+        comments: [ownerComment(`/approve-spec ${oldHead}`)],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state).state).toBe('success');
+    });
+
+    it('resets an approval when spec text changes, and says so', async () => {
+      const harness = createHarness({
+        headContent: changedRecord,
+        contentAt: {[oldHead]: currentRecord},
+        reviews: [{...specOwnerReview, commit_id: oldHead}],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: waiting,
+      });
+      expect(harness.state.summary).toContain(
+        'Spec changed after approval at 2026-08-30T09:59:00Z',
+      );
+    });
+
+    it('carries the content clock from an earlier head with the same spec text', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        contentAt: {[oldHead]: currentRecord},
+        commits: [oldHead, head],
+        statuses: [arrival],
+      });
+      // Learn the fingerprint the workflow records for this content.
+      await run(harness, context({runId: 99n}));
+      const recorded = harness.state.statuses.find(
+        status => status.context === 'spec-owner-content',
+      );
+      const earlier = {
+        ...recorded,
+        sha: oldHead,
+        description: recorded.description.replace(
+          /since .*/,
+          'since 2026-08-30T09:00:00.000Z',
+        ),
+      };
+      const next = createHarness({
+        headContent: currentRecord,
+        contentAt: {[oldHead]: currentRecord},
+        commits: [oldHead, head],
+        statuses: [arrival, earlier],
+      });
+
+      // Posted after the content appeared at 09:00, before this head arrived.
+      await commentRun(next, ownerComment('/spec ok', '2026-08-30T09:30:00Z'));
+
+      expect(latestGateStatus(next.state).state).toBe('success');
+    });
+
+    it('never counts an approving review by the author', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        reviews: [{...specOwnerReview, user: {login: 'cixzhang'}}],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state).state).toBe('pending');
+    });
+
+    it('names a design or eng owner for a design-only change', async () => {
+      const harness = createHarness({
+        changedFile: designRecord,
+        headContent: currentDesign,
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description:
+          '⏳ Waiting for human spec approval: a design or eng owner can reply /spec ok',
+      });
+    });
+
+    it('lets a design owner approve a design-only change with /spec ok', async () => {
+      const harness = createHarness({
+        changedFile: designRecord,
+        headContent: currentDesign,
+        statuses: [arrival],
+      });
+
+      await commentRun(harness, {
+        ...ownerComment('/spec ok'),
+        user: {login: 'rubyycheung'},
+      });
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'success',
+        description: '✅ Spec approved by @rubyycheung',
+      });
+    });
+
+    it('explains a malformed command in the details without commenting', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        statuses: [arrival],
+      });
+
+      await commentRun(harness, ownerComment('/approve-spec abc1234'));
 
       expect(harness.state.calls).not.toContain('create-comment');
-      expect(latestGateStatus(harness.state).state).toBe('success');
+      expect(harness.state.summary).toContain('full 40-character commit SHA');
+      expect(latestGateStatus(harness.state).state).toBe('pending');
     });
   });
 });
@@ -1606,7 +1817,7 @@ describe('relayed owner decisions', () => {
     });
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'success',
-      description: expect.stringContaining('Approved by @cixzhang'),
+      description: expect.stringContaining('Spec approved by @cixzhang'),
     });
   });
 
@@ -1653,7 +1864,7 @@ describe('relayed owner decisions', () => {
 
     expect(latestGateStatus(harness.state)).toMatchObject({
       state: 'pending',
-      description: expect.stringContaining('engineering owner'),
+      description: expect.stringContaining('an eng owner can reply /spec ok'),
     });
   });
 

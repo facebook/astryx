@@ -15,15 +15,25 @@ const {
   decisionStatusDescription,
   describeOwnerCommandProblem,
   newestGateRun,
-  parseOwnerCommand,
   parseDecisionStatuses,
   parseOwnerCommandIntent,
   parseOwnerDecisionDispatch,
+  parseAuthority,
+  parseKind,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
+const {
+  CONTENT_STATUS_CONTEXT,
+  approvedDescription,
+  contentStatusDescription,
+  fingerprintSpecContent,
+  parseOwnerCommandTarget,
+  readContentClock,
+  waitingDescription,
+} = require('./spec-owner-content.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 function isCommandComment(eventName, payload) {
@@ -49,21 +59,13 @@ function labelNames(pr) {
   return new Set(pr.labels.map(label => label.name));
 }
 
-function ownerCommandHelpMarker(headSha) {
-  return `<!-- spec-owner-command-help:${headSha} -->`;
+function isSpecPath(filePath) {
+  const scope = classifyChanges([{filename: filePath}]);
+  return scope.touchesKnowledgeRecords || scope.touchesDesignAssets;
 }
 
-function ownerCommandHelpBody({verb, headSha, problem}) {
-  return [
-    ownerCommandHelpMarker(headSha),
-    `That \`/${verb}-spec\` comment did not change \`${GATE_STATUS_CONTEXT}\`: ${problem}.`,
-    '',
-    'The gate only accepts the exact current head, so post this instead:',
-    '',
-    `    /${verb}-spec ${headSha}`,
-    '',
-    'A new commit invalidates the command, so repeat it after any push.',
-  ].join('\n');
+function formatTime(iso) {
+  return new Date(iso).toISOString().replace('.000Z', 'Z');
 }
 
 function isSettled(pr) {
@@ -353,6 +355,208 @@ async function reconcileSpecOwnerGate({
     }
   }
 
+  /** A spec path's text at `ref`, or null when the path is absent there. */
+  async function readSpecContent(fullName, ref, filePath) {
+    const [repoOwner, repoName] = fullName.split('/');
+    try {
+      const {data} = await github.rest.repos.getContent({
+        owner: repoOwner,
+        repo: repoName,
+        path: filePath,
+        ref,
+      });
+      if (Array.isArray(data)) return null;
+      if (data.content == null) return `blob:${data.sha}`;
+      return Buffer.from(data.content, 'base64').toString('utf8');
+    } catch (error) {
+      if (error.status === 404) return null;
+      throw error;
+    }
+  }
+
+  /** When the workflow first recorded this head: its earliest gate status. */
+  function headArrival(headStatuses) {
+    const times = headStatuses
+      .filter(
+        status =>
+          status.context === GATE_STATUS_CONTEXT &&
+          status.creator?.login === 'github-actions[bot]',
+      )
+      .map(status => status.created_at)
+      .filter(time => time && !Number.isNaN(Date.parse(time)))
+      .sort();
+    return times[0] ?? null;
+  }
+
+  /**
+   * The content clock of the newest earlier head the workflow recorded, when
+   * that head carried the same spec content. Earlier heads are the pull
+   * request's commits and the heads a force-push replaced.
+   */
+  async function carriedContentClock(fingerprint) {
+    let earlier = [];
+    try {
+      const commits = await github.paginate(github.rest.pulls.listCommits, {
+        owner,
+        repo,
+        pull_number: pullNumber,
+        per_page: 100,
+      });
+      earlier = commits.map(commit => commit.sha).reverse();
+    } catch (error) {
+      core.warning(`Could not list commits: ${error.message}`);
+    }
+    try {
+      const result = await github.graphql(
+        `query($owner: String!, $repo: String!, $number: Int!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $number) {
+              timelineItems(itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT], last: 20) {
+                nodes { ... on HeadRefForcePushedEvent { beforeCommit { oid } } }
+              }
+            }
+          }
+        }`,
+        {owner, repo, number: pullNumber},
+      );
+      const replaced =
+        result?.repository?.pullRequest?.timelineItems?.nodes ?? [];
+      earlier.push(
+        ...replaced
+          .map(node => node?.beforeCommit?.oid)
+          .filter(Boolean)
+          .reverse(),
+      );
+    } catch (error) {
+      core.warning(`Could not read force-pushes: ${error.message}`);
+    }
+    const seen = new Set([initialHead.toLowerCase()]);
+    for (const sha of earlier.slice(0, 30)) {
+      if (seen.has(sha.toLowerCase())) continue;
+      seen.add(sha.toLowerCase());
+      const earlierStatuses = await listStatuses(sha);
+      if (
+        !earlierStatuses.some(
+          status =>
+            status.context === CONTENT_STATUS_CONTEXT &&
+            status.creator?.login === 'github-actions[bot]',
+        )
+      ) {
+        continue;
+      }
+      return readContentClock(earlierStatuses, fingerprint);
+    }
+    return null;
+  }
+
+  /** The newest eligible approval that no longer counts, for the details. */
+  function latestStaleApproval({
+    reviews: ownerReviews,
+    comments: allComments,
+    owners: eligible,
+    approvesCurrentContent,
+    postedAfterContent,
+  }) {
+    const stale = [];
+    for (const review of ownerReviews) {
+      if (review.state !== 'APPROVED') continue;
+      if (approvesCurrentContent(review.commit_id)) continue;
+      stale.push(review.submitted_at);
+    }
+    for (const comment of allComments) {
+      if (!eligible.has(comment.user?.login?.toLowerCase() ?? '')) continue;
+      const target = parseOwnerCommandTarget(comment.body);
+      if (!target?.approved) continue;
+      const counts = target.sha
+        ? approvesCurrentContent(target.sha)
+        : postedAfterContent(comment);
+      if (!counts) stale.push(comment.created_at);
+    }
+    return stale.filter(Boolean).sort().at(-1) ?? null;
+  }
+
+  /** The gate's details: the run summary its status links to. */
+  async function writeDetails({
+    statusText,
+    records: changedRecords,
+    requiredGroups: groups,
+    currentContent,
+    contentSince,
+    staleApprovalAt,
+    commandProblem,
+  }) {
+    if (typeof core.summary?.addRaw !== 'function') return;
+    const groupFor = record => {
+      const authority = parseAuthority(record.headContent, record.path);
+      if (
+        authority !== 'current' &&
+        parseAuthority(record.baseContent, record.previousPath) !== 'current'
+      ) {
+        return 'none (draft)';
+      }
+      const kind = parseKind(
+        record.headContent ?? record.baseContent,
+        record.path,
+      );
+      return kind === 'design' || kind === 'theme'
+        ? 'design or eng owner'
+        : 'eng owner';
+    };
+    const rows = changedRecords.map(record => {
+      const text = record.headContent ?? record.baseContent ?? '';
+      const id = text.match(/^id:\s*(.+)$/m)?.[1]?.trim() ?? record.path;
+      const title = text.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? '';
+      const before =
+        record.baseContent == null
+          ? 'new'
+          : (parseAuthority(record.baseContent, record.previousPath) ?? '?');
+      const after =
+        record.headContent == null
+          ? 'removed'
+          : (parseAuthority(record.headContent, record.path) ?? '?');
+      const change = before === after ? after : `${before} → ${after}`;
+      return `| \`${id}\` | ${title} | ${change} | ${groupFor(record)} |`;
+    });
+    const lines = [`### ${statusText}`, ''];
+    if (staleApprovalAt) {
+      lines.push(
+        `Spec changed after approval at ${formatTime(staleApprovalAt)}; reply \`/spec ok\` again.`,
+        '',
+      );
+    }
+    if (commandProblem) {
+      lines.push(`Your owner command decided nothing: ${commandProblem}.`, '');
+    }
+    if (groups.spec || groups.design || groups.theme) {
+      lines.push(
+        'Approve with a comment on the pull request:',
+        '',
+        '```',
+        '/spec ok',
+        '```',
+        '',
+      );
+    }
+    lines.push(
+      '| Record | Title | Authority | Approved by |',
+      '| --- | --- | --- | --- |',
+      ...rows,
+      '',
+      '<details><summary>Changed spec paths and content fingerprint</summary>',
+      '',
+      ...Object.keys(currentContent.files).map(filePath => `- \`${filePath}\``),
+      '',
+      `Fingerprint \`${currentContent.fingerprint}\`, unchanged since ${formatTime(contentSince)}. Commits that leave these paths' text unchanged (other paths, merges from main, rebases, the draft → current flip) keep an approval.`,
+      '',
+      '</details>',
+    );
+    try {
+      await core.summary.addRaw(lines.join('\n')).write();
+    } catch (error) {
+      core.warning(`Could not write the gate details: ${error.message}`);
+    }
+  }
+
   async function fetchSnapshot() {
     const before = await getPullRequest();
     const headSha = before.head.sha;
@@ -503,7 +707,7 @@ async function reconcileSpecOwnerGate({
     context.eventName === 'issue_comment' &&
     commentAuthor &&
     allOwners.has(commentAuthor) &&
-    parseOwnerCommand(context.payload.comment.body ?? '', initialHead) ===
+    parseOwnerCommandTarget(context.payload.comment.body ?? '')?.approved ===
       false;
   const currentReviewDismissal =
     context.eventName === 'pull_request_review' &&
@@ -529,29 +733,14 @@ async function reconcileSpecOwnerGate({
 
   const {pr, scope, records, reviews, comments, timeline, statuses} = snapshot;
 
-  // A near-miss owner command used to do nothing at all, so an owner could
-  // believe they had approved a head the gate never read. Answer it once per
-  // head with the exact command instead of leaving it silent.
-  if (context.eventName === 'issue_comment' && commentAuthor) {
-    const intent = parseOwnerCommandIntent(context.payload.comment?.body);
-    const problem = describeOwnerCommandProblem(intent, initialHead);
-    const marker = ownerCommandHelpMarker(initialHead);
-    if (problem && !comments.some(entry => entry.body?.includes(marker))) {
-      await github.rest.issues.createComment({
-        owner,
-        repo,
-        issue_number: pullNumber,
-        body: ownerCommandHelpBody({
-          verb: intent.verb,
-          headSha: initialHead,
-          problem,
-        }),
-      });
-      core.info(
-        `Answered an inexact ${intent.verb} command on ${initialHead}.`,
-      );
-    }
-  }
+  // A malformed owner command decides nothing. Say why in the gate's
+  // details rather than in another pull-request comment.
+  const commandProblem =
+    context.eventName === 'issue_comment' && commentAuthor
+      ? describeOwnerCommandProblem(
+          parseOwnerCommandIntent(context.payload.comment?.body),
+        )
+      : null;
 
   if (!scope.touchesKnowledgeRecords) {
     await disableAutoMerge(pr);
@@ -592,16 +781,96 @@ async function reconcileSpecOwnerGate({
     headSha: initialHead,
     owners: [...allOwners],
   });
+
+  // --- The spec content an approval binds (DEC-14). ---
+  const specPaths = [
+    ...new Set(
+      snapshot.files.flatMap(file =>
+        [file.filename, file.previous_filename].filter(
+          filePath => filePath && isSpecPath(filePath),
+        ),
+      ),
+    ),
+  ].sort();
+  const contentBySha = new Map();
+  async function specContentAt(sha) {
+    const key = sha.toLowerCase();
+    if (!contentBySha.has(key)) {
+      const entries = await Promise.all(
+        specPaths.map(async filePath => ({
+          path: filePath,
+          content: await readSpecContent(pr.head.repo.full_name, sha, filePath),
+        })),
+      );
+      contentBySha.set(key, fingerprintSpecContent(entries));
+    }
+    return contentBySha.get(key);
+  }
+  const currentContent = await specContentAt(initialHead);
+  const contentSince =
+    readContentClock(statuses, currentContent.fingerprint) ??
+    (await carriedContentClock(currentContent.fingerprint)) ??
+    headArrival(statuses) ??
+    now().toISOString();
+  const contentDescription = contentStatusDescription(
+    currentContent.fingerprint,
+    contentSince,
+  );
+  if (
+    !statuses.some(
+      status =>
+        status.context === CONTENT_STATUS_CONTEXT &&
+        status.description === contentDescription,
+    )
+  ) {
+    await createStatus({
+      sha: initialHead,
+      context: CONTENT_STATUS_CONTEXT,
+      state: 'success',
+      description: contentDescription,
+    });
+  }
+
+  // A review or a SHA command approves the content of its commit. Only
+  // commits an eligible owner named are read.
+  const authorLogin = pr.user.login.toLowerCase();
+  const ownerReviews = reviews.filter(review => {
+    const login = review.user?.login?.toLowerCase();
+    // GitHub refuses an author's approving review; never count one anyway.
+    return login && login !== authorLogin && allOwners.has(login);
+  });
+  const namedShas = new Set([
+    ...ownerReviews.map(review => review.commit_id?.toLowerCase()),
+    ...comments
+      .filter(comment =>
+        allOwners.has(comment.user?.login?.toLowerCase() ?? ''),
+      )
+      .map(comment => parseOwnerCommandTarget(comment.body)?.sha),
+  ]);
+  const sameContent = new Set([initialHead.toLowerCase()]);
+  for (const sha of [...namedShas].filter(Boolean).slice(0, 20)) {
+    if (sameContent.has(sha)) continue;
+    const content = await specContentAt(sha);
+    if (content.fingerprint === currentContent.fingerprint) {
+      sameContent.add(sha);
+    }
+  }
+  const approvesCurrentContent = sha =>
+    sha != null && sameContent.has(sha.toLowerCase());
+  const postedAfterContent = comment =>
+    Date.parse(comment.created_at) >= Date.parse(contentSince);
+
   const decisionInput = {
-    reviews,
+    reviews: ownerReviews,
     comments,
     relayedDecisions,
     dismissalEvents: timeline,
     headSha: initialHead,
+    approvesCurrentContent,
+    postedAfterContent,
   };
   // A ready-for-review attestation is the design group's own self-attestation
-  // path. It is not evidence for the non-design or theme groups, which stay on
-  // real exact-head reviews and commands.
+  // path. It is not evidence for the non-design or theme groups.
   const specDecision = requiredGroups.spec
     ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
@@ -624,19 +893,34 @@ async function reconcileSpecOwnerGate({
   ]
     .filter(Boolean)
     .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
-  const requiredOwnerDescription = [
-    requiredGroups.spec
-      ? `an engineering owner (${engineeringOwners.join(',')})`
-      : null,
-    requiredGroups.design
-      ? `a design approver (${designApprovers.join(',')})`
-      : null,
-    requiredGroups.theme
-      ? `a theme approver (${themeApprovers.join(',')})`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(' and ');
+  const missingGroups = {
+    spec: !specDecision.approved,
+    design: !designDecision.approved,
+    theme: !themeDecision.approved,
+  };
+  const statusText =
+    ownerApprovalRequired && !approved
+      ? waitingDescription(missingGroups)
+      : ownerApprovalRequired
+        ? approvedDescription(approvingOwners)
+        : 'Draft-only knowledge change; owner approval is not required.';
+  await writeDetails({
+    statusText,
+    records,
+    requiredGroups,
+    currentContent,
+    contentSince,
+    staleApprovalAt: approved
+      ? null
+      : latestStaleApproval({
+          reviews: ownerReviews,
+          comments,
+          owners: allOwners,
+          approvesCurrentContent,
+          postedAfterContent,
+        }),
+    commandProblem,
+  });
 
   if (ownerApprovalRequired && !approved) {
     await disableAutoMerge(pr);
@@ -647,11 +931,7 @@ async function reconcileSpecOwnerGate({
       'd4c5f9',
       'Current knowledge records await owner approval',
     );
-    await setFinalStatus(
-      initialHead,
-      'pending',
-      `Waiting for ${requiredOwnerDescription} on ${initialHead.slice(0, 7)}.`,
-    );
+    await setFinalStatus(initialHead, 'pending', statusText);
     return;
   }
 
@@ -667,11 +947,7 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const successDescription = ownerApprovalRequired
-    ? `Approved by ${approvingOwners
-        .map(name => `@${name}`)
-        .join(' and ')} for ${initialHead.slice(0, 7)}.`
-    : 'Draft-only knowledge change; owner approval is not required.';
+  const successDescription = statusText;
 
   if (!scope.specOnly) {
     await disableAutoMerge(pr);

@@ -56,16 +56,41 @@
 # trusted workflow SHA; the visual classifier comes from the PR base ref. It reads
 # eng/design owner lists from repository VARIABLES (vars.ENGOWNERS /
 # vars.DESIGNOWNERS) — no checkout and no execution of PR-controlled code.
-# Do not add checkout or build steps here.
+# Do not add checkout or build steps to the flag job.
+#
+# SPEC OWNER GATE: the spec-owner job publishes the required
+# "spec-owner-approval" status (architecture:knowledge-contracts DEC-14,
+# spec:AST-030 FR14). One owner approval covers a pull request's knowledge-record
+# changes and binds their content, so commits that leave that text unchanged
+# keep it. Approval is a `/spec ok` comment (or `/approve-spec [sha]`) or an
+# approving review by a spec owner who is not the author. A missing approval is
+# `pending`, never a failure. The job checks out only the trusted default branch
+# and runs the tested reconciler from it; it never runs PR-controlled code.
 
 name: Review signal
 
 on:
   pull_request_target:
     branches: ['main']
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        converted_to_draft,
+        auto_merge_enabled,
+      ]
   pull_request_review:
     types: [submitted, dismissed]
+  # Owner commands for the spec-owner job. The job-level filter skips every
+  # other comment before a runner starts.
+  issue_comment:
+    types: [created]
+  # A review app relays an owner's exact-head decision. The reconciler accepts
+  # it only from the app named in the SPEC_DECISION_APP repository variable.
+  repository_dispatch:
+    types: [spec-owner-decision]
   # Manual re-trigger. The App only auto-runs on the PR events above, so if it
   # ever misses one (e.g. the workflow was added after a PR was opened, leaving
   # the required "review-required" check stuck as Expected/pending), this is the
@@ -77,19 +102,24 @@ on:
         description: 'PR number to re-flag (blank = all open PRs)'
         required: false
         type: string
+      backfill:
+        description: >-
+          Spec owner gate: publish the status only. Use this when backfilling
+          heads that predate the required check, so a reconcile cannot also
+          enable auto-merge on a pull request nobody asked to land.
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
-
-concurrency:
-  # One group per PR for the event/single-dispatch paths; a run-scoped group for
-  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
-  group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
-  cancel-in-progress: true
 
 env:
   CODE_LABEL: 'needs:code-review'
   DESIGN_LABEL: 'needs:design-review'
   COMMUNITY_LABEL: 'community'
+  REVIEW_LABEL: needs:spec-owner-review
+  AUTO_MERGE_LABEL: spec-auto-merge
+  SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -101,6 +131,13 @@ jobs:
       || github.event_name == 'workflow_dispatch'
     name: Flag review signals
     runs-on: ubuntu-slim
+    # One group per PR for the event/single-dispatch paths; a run-scoped group
+    # for the backfill-all dispatch so it is never cancelled by an unrelated
+    # re-run. Only this job cancels: a cancelled spec-owner reconcile could
+    # leave its head without a terminal status.
+    concurrency:
+      group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
+      cancel-in-progress: true
     permissions:
       pull-requests: write
       contents: read
@@ -652,3 +689,47 @@ jobs:
     steps:
       - name: Note review state change
         run: echo "Review state changed; review-clear will reconcile the code gate."
+
+  # ---------------------------------------------------------------------------
+  # Spec owner gate: reconcile "spec-owner-approval" for one pull request.
+  # ---------------------------------------------------------------------------
+  spec-owner:
+    # Fork review events have read-only tokens. Same-repo reviews reconcile
+    # automatically; fork approvals use the trusted issue_comment command path.
+    # The comment filter admits any owner-command shape, so the reconciler can
+    # explain a malformed one in the gate's details. The reconciler orders
+    # concurrent runs itself, so this job has no concurrency group.
+    if: >-
+      (github.event_name != 'pull_request_review' ||
+       github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name != 'issue_comment' ||
+       (github.event.issue.pull_request != null &&
+        (startsWith(github.event.comment.body, '/spec ok') ||
+         startsWith(github.event.comment.body, '/approve-spec') ||
+         startsWith(github.event.comment.body, '/revoke-spec')))) &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.pr != '')
+    name: Spec owner gate
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      statuses: write
+    steps:
+      # Every privileged event checks out the trusted default branch. Never
+      # execute the PR merge ref or PR-controlled helpers with write permissions.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Reconcile owner gate
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const path = require('node:path');
+            const {reconcileSpecOwnerGate} = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.github/scripts/spec-owner-reconcile.cjs',
+            ));
+            await reconcileSpecOwnerGate({github, context, core});
