@@ -484,7 +484,10 @@ describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
       copy: (_p, ride) => ({clipPath: `inset(0px ${-ride.x}px 0px 0px)`}),
       rideWith: {element: column, travel: {x: 212, y: 0}, isCopyMoved: false},
       incoming: [
-        {element: title, frames: (_p, ride) => ({marginLeft: `${ride.x}px`})},
+        {
+          element: title,
+          frames: (_p, ride) => ({translate: `${ride.x}px 0px`}),
+        },
       ],
     });
     await Promise.resolve();
@@ -495,7 +498,7 @@ describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
     expect(copy?.keyframes[0].translate).toBeUndefined();
     expect(copy?.keyframes[0].clipPath).toBe('inset(0px 0px 0px 0px)');
     expect(copy?.keyframes.at(-1)?.clipPath).toBe('inset(0px 212px 0px 0px)');
-    expect(incoming?.keyframes.at(-1)?.marginLeft).toBe('-212px');
+    expect(incoming?.keyframes.at(-1)?.translate).toBe('-212px 0px');
     expect(incoming?.keyframes.length).toBe(glide?.keyframes.length);
   });
 
@@ -648,6 +651,45 @@ describe('more swap layout cases', () => {
     media['(pointer: coarse)'] = false;
     playLayoutFrames(handle, [{element: title, frames: () => ({scale: '2'})}]);
     expect(played).toEqual([]);
+  });
+});
+
+describe('a copy laid outside its ancestors', () => {
+  it('keeps what it inherited from them where the host passes something else', () => {
+    const {handle, content} = setup();
+    const area = document.getElementById('area') as HTMLElement;
+    // The element inherits 13 px type and a custom property from an ancestor
+    // between it and the host; the host passes 16 px and the same color.
+    const computed: Record<string, Record<string, string>> = {
+      content: {'font-size': '13px', color: 'rgb(0, 0, 0)', '--row-gap': '6px'},
+      area: {'font-size': '16px', color: 'rgb(0, 0, 0)'},
+    };
+    const real = window.getComputedStyle;
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element: Element): CSSStyleDeclaration => {
+        const style = real(element);
+        const values = computed[element.id];
+        if (values == null) {
+          return style;
+        }
+        const custom = Object.keys(values).filter(name =>
+          name.startsWith('--'),
+        );
+        // Only what the copy reads: values by name, and the custom ones.
+        return Object.assign(Object.create(style) as CSSStyleDeclaration, {
+          getPropertyValue: (name: string) => values[name] ?? '',
+          ...Object.fromEntries(custom.map((name, index) => [index, name])),
+          length: custom.length,
+        });
+      },
+    );
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host: area, copy: travel, incoming: []});
+    vi.restoreAllMocks();
+    expect(swap!.copy.style.fontSize).toBe('13px');
+    expect(swap!.copy.style.getPropertyValue('--row-gap')).toBe('6px');
+    // What the host already passes is not written again.
+    expect(swap!.copy.style.color).toBe('');
   });
 });
 

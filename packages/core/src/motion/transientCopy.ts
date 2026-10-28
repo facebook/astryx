@@ -15,8 +15,12 @@
  * technology, carries no ids or test ids, joins no form or radio group (a
  * copied checked radio would uncheck the live one), and its frames and media
  * load nothing. Laying it out changes no ancestor's position, and a scaled
- * host draws it at the old size. Limits: a rule keyed on a removed `id` does
- * not style the copy, and content holding a canvas whose pixels read back
+ * host draws it at the old size. Laid in a host outside the element's own
+ * ancestors, it keeps what it inherited from them: its inherited properties
+ * and custom properties that differ from the host's are written on it.
+ * Limits: a rule keyed on a removed `id`, or matched through an ancestor
+ * between the host and the element (`.collapsed .label`), does not style the
+ * copy as it styled the element; and content holding a canvas whose pixels read back
  * empty is not copied, so the new content enters without an old copy: a
  * canvas that cannot be read back (a WebGL canvas without
  * `preserveDrawingBuffer`, a tainted one) or a blank one.
@@ -64,6 +68,55 @@ function paintCanvas(
 }
 
 /** Scroll offsets a copy restores once laid out (a clone carries none). */
+/** Inherited properties a copy carries when laid outside its ancestors. */
+const INHERITED_PROPERTIES = [
+  'color',
+  'cursor',
+  'direction',
+  'font-family',
+  'font-feature-settings',
+  'font-size',
+  'font-stretch',
+  'font-style',
+  'font-variant',
+  'font-variation-settings',
+  'font-weight',
+  'hyphens',
+  'letter-spacing',
+  'line-height',
+  'list-style-type',
+  'overflow-wrap',
+  'tab-size',
+  'text-align',
+  'text-indent',
+  'text-shadow',
+  'text-transform',
+  'visibility',
+  'white-space',
+  'word-break',
+  'word-spacing',
+  'writing-mode',
+];
+
+/** Each copy's inherited values, read from its element when it was made. */
+const inheritedValues = new WeakMap<Element, Map<string, string>>();
+
+/** The element's inherited properties and custom properties, as computed. */
+function readInherited(element: Element): Map<string, string> {
+  const values = new Map<string, string>();
+  const style = getComputedStyle(element);
+  for (const name of INHERITED_PROPERTIES) {
+    values.set(name, style.getPropertyValue(name));
+  }
+  for (let index = 0; index < style.length; index++) {
+    const name = style[index];
+    if (name.startsWith('--')) {
+      values.set(name, style.getPropertyValue(name));
+    }
+  }
+  return values;
+}
+
 const scrollOffsets = new WeakMap<
   HTMLElement,
   ReadonlyArray<readonly [Element, number, number]>
@@ -86,6 +139,7 @@ export function inertCopy(element: HTMLElement): HTMLElement | null {
     }
   });
   scrollOffsets.set(copy, offsets);
+  inheritedValues.set(copy, readInherited(element));
   for (const node of copyNodes) {
     for (const name of [
       'id',
@@ -149,6 +203,13 @@ export function placeOver(
     height: `${rect.height}px`,
   });
   host.appendChild(element);
+  // What it inherited where it was, where the host passes something else.
+  const hostStyle = getComputedStyle(host);
+  for (const [name, value] of inheritedValues.get(element) ?? []) {
+    if (value !== '' && hostStyle.getPropertyValue(name) !== value) {
+      element.style.setProperty(name, value);
+    }
+  }
   // The origin, and the host's scale: the rect is in viewport pixels, the
   // copy's styles in the host's own.
   // The rendered size over the layout size, as the glide's `scaleOf` reads
@@ -223,6 +284,10 @@ export function visiblePartCopy(element: HTMLElement): {
     holder,
     (scrollOffsets.get(content) ?? []).filter(([node]) => node !== content),
   );
+  const values = inheritedValues.get(content);
+  if (values != null) {
+    inheritedValues.set(holder, values);
+  }
   const box = element.getBoundingClientRect();
   return {
     copy: holder,
