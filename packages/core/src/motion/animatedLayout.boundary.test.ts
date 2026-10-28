@@ -149,6 +149,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       'List/List.tsx',
       'List/listLayoutUpdates.ts',
       'SideNav/railMotion.ts',
+      'Table/plugins/rowExpansion/useTableRowExpansion.tsx',
       'TreeList/TreeList.tsx',
       'hooks/useAnimatedLayout.ts',
     ]);
