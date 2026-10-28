@@ -397,6 +397,25 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     );
   });
 
+  it('lands a collapse and the page at once when the old rail cannot be copied', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () =>
+          ({
+            drawImage: vi.fn(),
+            getImageData: () => ({data: new Uint8ClampedArray(16 * 4)}),
+          }) as unknown as CanvasRenderingContext2D,
+      );
+    render(<Shell hasCanvas />);
+    await toggle();
+    getContext.mockRestore();
+    expect(railWidth()).toBe(COLLAPSED);
+    // No rail copy, so no page motion either: both land on one clock.
+    expect(copies()).toHaveLength(0);
+    expect(animated('translate')).toHaveLength(0);
+  });
+
   it('clips an expand open on the motion when the old rail cannot be copied', async () => {
     // A canvas that reads back blank: the rail is not copied.
     const getContext = vi
