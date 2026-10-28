@@ -33,6 +33,7 @@ import type {
   SegmentedControlLayout,
 } from './SegmentedControlContext';
 import {mergeProps, composeEventHandlers} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -325,6 +326,7 @@ export function SegmentedControl({
   onKeyDown: onKeyDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
@@ -456,9 +458,11 @@ export function SegmentedControl({
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}
-        aria-describedby={
-          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
-        }
+        // A caller aria-describedby comes before the disabled reason.
+        aria-describedby={joinAriaIDs(
+          ariaDescribedByProp,
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined,
+        )}
         onKeyDown={handleContainerKeyDown}
         onFocus={handleContainerFocus}
         onBlur={composeEventHandlers(onBlurProp, hint.onBlur)}
