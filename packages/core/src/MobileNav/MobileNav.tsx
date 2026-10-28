@@ -225,7 +225,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: spacingVars['--spacing-12'],
+    // At least one bar high, and taller for header content that needs it (a
+    // stacked title and search, or a title wrapped at a larger text size), so
+    // it never runs into the first item below.
+    minHeight: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-2'],
     flexShrink: 0,
     borderBlockEndWidth: borderVars['--border-width'],
