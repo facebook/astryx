@@ -115,6 +115,7 @@ function context(
       mode: 'data',
       rowModel: 'flat',
       canActivate: true,
+      canLoad: true,
       logicalRowCount: 3,
       headerRowCount: 1,
       viewport: createRef<HTMLDivElement>(),
