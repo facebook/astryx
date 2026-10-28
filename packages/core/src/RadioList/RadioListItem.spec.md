@@ -198,8 +198,9 @@ No design record beyond `design:user-states` governs RadioListItem.
   radios without a reason, use native `disabled`, against `spec:AST-085` FR1.
 - **Disabled focus ring (FR7).** The indicator ring is skipped on a focused
   disabled option, against `spec:AST-085` FR6; only the row outline shows.
-- **Consumer docs (FR2).** `RadioListItem.doc.mjs` says `startContent` renders
-  before the radio circle; it renders after it.
+- **Consumer docs (FR2).** `RadioListItem.doc.mjs` and the `startContent` prop
+  JSDoc in `RadioListItem.tsx` say `startContent` renders before the radio
+  circle; it renders after it.
 
 ## Decision log
 
