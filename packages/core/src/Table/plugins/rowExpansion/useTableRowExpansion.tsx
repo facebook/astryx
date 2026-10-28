@@ -448,6 +448,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'detail',
       transformColumns(columns: TableColumn<T>[]) {
         const withExpansion = [expansionColumn, ...columns];
         columnCountRef.current = withExpansion.length;

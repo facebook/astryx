@@ -38,6 +38,7 @@ import {
   type LogicalAxisMapping,
   type LogicalOverflowGeometry,
 } from './scrollGeometry';
+import {publishScrollGeometry} from './scrollGeometrySubscriptions';
 import {
   registerScrollOwner,
   unregisterScrollOwner,
@@ -218,6 +219,7 @@ export function useScrollableArea({
 
     let frame: number | null = null;
     let isActive = true;
+    let hasContentInvalidation = true;
 
     // Measures now; `measure` is the frame callback that also clears the
     // pending frame. The same-commit remeasure below calls this one, so a frame
@@ -259,6 +261,9 @@ export function useScrollableArea({
       const nextState = {inline, block};
       stateRef.current = nextState;
       registerScrollOwner(viewport, nextState);
+      // Subscribers reuse this owner's measurement/listener rather than installing another scroll path.
+      publishScrollGeometry(viewport, hasContentInvalidation);
+      hasContentInvalidation = false;
       // Measured DOM geometry decides whether the viewport becomes a CSS
       // scroll container.
       setOverflow(current =>
@@ -286,11 +291,18 @@ export function useScrollableArea({
       frame = window.requestAnimationFrame(measure);
     };
 
+    const scheduleContentMeasure = () => {
+      hasContentInvalidation = true;
+      scheduleMeasure();
+    };
     registerScrollOwner(viewport, stateRef.current);
     measureRef.current = measureNow;
     measure();
-    const stopObservingViewport = observeResize(viewport, scheduleMeasure);
-    const stopObservingContent = observeResize(content, scheduleMeasure);
+    const stopObservingViewport = observeResize(
+      viewport,
+      scheduleContentMeasure,
+    );
+    const stopObservingContent = observeResize(content, scheduleContentMeasure);
 
     viewport.addEventListener('scroll', scheduleMeasure, {passive: true});
     window.addEventListener('resize', scheduleMeasure);
@@ -306,7 +318,7 @@ export function useScrollableArea({
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
-        : new MutationObserver(scheduleMeasure);
+        : new MutationObserver(scheduleContentMeasure);
     mutationObserver?.observe(viewport, {
       attributes: true,
       attributeFilter: ['class', 'dir', 'hidden', 'style'],
@@ -328,8 +340,8 @@ export function useScrollableArea({
     }
 
     const fonts = document.fonts;
-    fonts?.addEventListener?.('loadingdone', scheduleMeasure);
-    void fonts?.ready.then(scheduleMeasure);
+    fonts?.addEventListener?.('loadingdone', scheduleContentMeasure);
+    void fonts?.ready.then(scheduleContentMeasure);
 
     return () => {
       isActive = false;
@@ -346,7 +358,7 @@ export function useScrollableArea({
       viewport.removeEventListener('animationend', scheduleMeasure);
       content.removeEventListener('transitionend', scheduleMeasure);
       content.removeEventListener('animationend', scheduleMeasure);
-      fonts?.removeEventListener?.('loadingdone', scheduleMeasure);
+      fonts?.removeEventListener?.('loadingdone', scheduleContentMeasure);
       if (frame != null) {
         window.cancelAnimationFrame(frame);
       }

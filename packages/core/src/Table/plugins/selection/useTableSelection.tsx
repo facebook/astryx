@@ -53,6 +53,8 @@ import {CheckboxInput} from '../../../CheckboxInput';
 import {mergeRefs} from '../../../utils';
 import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
 import {pixel} from '../../columnUtils';
+import {registerFixedHeightColumn} from '../../tableColumnAdmission';
+import {registerCountIndependentPlugin} from '../../tableRowContextUsage';
 import {useTranslator} from '../../../i18n';
 
 // =============================================================================
@@ -387,8 +389,9 @@ export function useTableSelection<T extends Record<string, unknown>>(
     [],
   );
 
-  return useMemo(
+  const plugin = useMemo(
     (): TablePlugin<T> => ({
+      rowModel: 'flat',
       transformTableContext(children: ReactNode) {
         return (
           <SelectionStoreContext value={store}>
@@ -398,6 +401,7 @@ export function useTableSelection<T extends Record<string, unknown>>(
       },
 
       transformColumns(columns: TableColumn<T>[]) {
+        registerFixedHeightColumn(selectionColumn);
         return [selectionColumn, ...columns];
       },
 
@@ -440,4 +444,5 @@ export function useTableSelection<T extends Record<string, unknown>>(
     }),
     [store, selectionColumn],
   );
+  return registerCountIndependentPlugin(plugin);
 }
