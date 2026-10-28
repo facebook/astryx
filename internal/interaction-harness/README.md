@@ -55,7 +55,7 @@ committed: a pull request links or attaches it.
 | `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`.                                                                                                                                                  |
 | `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                                                                                                                                                                 |
 | `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                                                                                                                                                                                |
-| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames; `startBusyControl` and `control` judge it against a compositor-only control in the same window.                                                                                               |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames; `startBusyControl` and `control` judge it against a compositor-only control in the same window; `pooledBusyProof(runs)` judges a short animation over several runs, pooled.                   |
 | `trace.ts`      | `traceRendering(page, body, {invalidations?})`: main-thread counts of UpdateLayoutTree / Layout / PrePaint / Paint / Layerize / UpdateLayer / ScrollLayer / HitTest, `countBetween` for a sub-window (optionally without Chrome's own compositor animation updates), long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents. |
 | `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                                                                                                                                                                         |
 | `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`.                                                                                                                                                  |
@@ -173,6 +173,15 @@ the control moved (one miss allowed) and its longest stall is at most one
 interval longer than the control's; a window in which the control moved on
 fewer than four frames fails, since the machine presented too little to judge.
 A main-thread animation still fails: the control moves and it does not.
+
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on 90% of them, and in each run its
+longest stall may be at most one interval longer than that run's control's,
+since a stall belongs to its run.
 
 A just-started animation can reach the screen after the block began (50–100 ms
 later in WebKit on a loaded machine). When the cast saw the element at rest
