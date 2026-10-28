@@ -77,8 +77,7 @@ Consumer migration instructions belong in consumer docs and release notes.
   focusable, in Firefox even when it holds a focusable child. `architecture:container-padding` INV11
   has a host publish its applied padding, and `component:List` FR8 counts a
   Card's content area as such a host, so a `default` card at nonzero padding
-  does not yet meet List FR8: List `outset` and `bleed` rows cross its padding
-  edge by the border width.
+  does not yet meet List FR8: List `outset` and `bleed` lists cross its padding edge by the border width, and `bleed` rows with them.
 
 ## Ownership boundary
 
