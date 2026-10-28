@@ -48,6 +48,7 @@ installed); rows marked † also on iOS 18 for the pre-glass delta. iPhone
 | M-N1  | Navigation push            | Settings: tap General                                                                                                                                 | incoming leading edge x(t), outgoing x(t) (parallax fraction), dimming alpha(t); animation parameters                  | A, B   | `springs.navigationPush`                                                                                                                          |
 | M-N2  | Navigation pop             | General: back button                                                                                                                                  | same as M-N1                                                                                                           | A, B   | `springs.navigationPop`                                                                                                                           |
 | M-N3  | Interactive pop            | Settings ▸ General: edge swipe released at 40 % of the width at 600 pt/s (finishes) and at 30 % at rest (cancels)                                     | x(t) after release; spring parameters; the finish / cancel rule (position, velocity)                                   | A, B   | `springs.navigationInteractivePopFinish`                                                                                                          |
+| M-N4  | Content back swipe start   | Settings ▸ General: sideways drags from mid-screen at 300, 600, 800, 1000 and 1200 pt/s                                                               | travel at `.began` for each speed; the speed above which it begins on the first move                                   | A, B   | `navigation.contentPopHysteresis`                                                                                                                 |
 | M-A1  | Alert                      | Probe app: `UIAlertController(.alert)` presented and dismissed                                                                                        | scale(t), alpha(t) of the alert and the dimming view; animation parameters                                             | A      | `springs.alertPresent`, `.alertDismiss`                                                                                                           |
 | M-AS1 | Action sheet and menu      | Probe app: `.actionSheet`; a button with a `UIMenu` as its primary action; Files: the … menu                                                          | scale, alpha, position (t) on open and close; animation parameters                                                     | A, B   | `springs.actionSheet*`, `.menu*`                                                                                                                  |
 | M-CM1 | Context menu               | Files: long-press an item; dismiss by tapping outside                                                                                                 | preview scale(t) on lift, backdrop blur and dim (t), menu scale(t); the preview's return on dismiss                    | A, B   | `springs.contextMenu*`                                                                                                                            |
@@ -110,7 +111,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -269,3 +271,25 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Lists (UITableView, UICollectionView lists)
+
+Subject "list L": an inset-grouped `UITableView`, a plain `UITableView` and a
+`UICollectionView` list (`UICollectionViewListCell`, default background
+configuration) in a UIKit host app; Settings for the built-in check.
+
+| ID     | Scene                | Gesture                                                                                                           | Extract                                                                                                                                                                                                      | Method |
+| ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| M-LI01 | † list L (all three) | touch a cell, hold 1 s, lift; programmatic `deselectRow(at:animated: true)` and `deselectItem(at:animated: true)` | every `CAAnimation` added in the cell's subtree at highlight, unhighlight and deselect (key path, from / to, duration, timing function, fill); selected-background alpha per frame for 600 ms after the lift | A, C   |
+
+## Search (UISearchController)
+
+Done (iOS 26.2 simulator, Oct 24 2026; in the search table): the activation
+and cancel clock (its measured curve is `timing.curves.move`, in
+`uikit/timing.ts`), the stacked field and its close button, the large title's
+fade, the field scrolling away, the bottom placement's rest above the
+keyboard, the clear button.
+
+| ID    | What                       | App and gesture                                                                                                                | Extract                                                                             | Method | Feeds                                   |
+| ----- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------ | --------------------------------------- |
+| M-SE1 | Scroll-away snap threshold | Probe app: a list with `hidesSearchBarWhenScrolling`; slow pans released at 16, 18, 20 … 28 pt of collapse, then binary search | the collapse at which a release snaps the field closed instead of springing it open | C      | `search.scrollAway.collapseThresholdPt` |

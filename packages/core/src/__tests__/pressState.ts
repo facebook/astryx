@@ -179,7 +179,23 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  const text = value.trim();
+  // StyleX folds a constant cap into `calc(<time>)`.
+  const folded = /^calc\((.+)\)$/.exec(text);
+  if (folded != null) {
+    return durationToMs(folded[1]);
+  }
+  // Under reduced motion the clock is capped: `min(<clock>, 200ms)`.
+  const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(text);
+  if (capped != null) {
+    return Math.min(durationToMs(capped[1]), durationToMs(capped[2]));
+  }
+  // A theme motion role, `var(--motion-…, 200ms)`, reads as the table's
+  // value it falls back to.
+  const role = text.match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+  const match = (role == null ? text : role[1])
+    .trim()
+    .match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }
@@ -194,7 +210,11 @@ export function durationToMs(value: string): number {
  * on a descendant that merely reads the strength.
  */
 export function hasReleaseFade(el: Element): boolean {
-  const fading = rulesWithSelector(el, FADING_ARM);
+  // The element's own release: a layer of its own (a row's `::before`, a
+  // card's `::after`) runs its clock separately.
+  const fading = rulesWithSelector(el, FADING_ARM).filter(
+    rule => !rule.slice(0, rule.indexOf('{')).includes('::'),
+  );
   const durations = fading.flatMap(rule => {
     const match = rule.match(/animation-duration:\s*([^;}]+)/);
     return match == null ? [] : [durationToMs(match[1])];
@@ -205,8 +225,8 @@ export function hasReleaseFade(el: Element): boolean {
   );
   return (
     named &&
-    durations.length === 1 &&
-    durations[0] === PRESS_FADE_MS &&
+    durations.length > 0 &&
+    durations.every(duration => duration === PRESS_FADE_MS) &&
     !onArmAnimates
   );
 }

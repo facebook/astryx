@@ -2,18 +2,21 @@
 
 /**
  * @file values.test.ts
- * @input vitest, the UIKit constants table and the motion math
+ * @input vitest, the UIKit constants table, the motion math, and the press
+ *   overlay's release rule as StyleX's dev runtime injects it
  * @output Checks the table's values through the math that plays them: every
  *   spring is valid and settles; the alert spring is UIKit's legacy
- *   derivation; a sheet's detent and presentation springs render alike;
+ *   derivation; the scroll edge springs are critical at their responses;
+ *   a sheet's detent and presentation springs render alike;
  *   scroll-to-top and the rubber band reproduce what UIKit was measured doing;
  *   the press release curve is the press model's
  * @position Testing; the source rules are uikit.test.ts
  */
 
-import {readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import * as stylex from '@stylexjs/stylex';
 import {describe, expect, it} from 'vitest';
+import {rulesDeclaredFor} from '../../__tests__/pressState';
+import {interactionOverlayStyles} from '../../utils/interactionOverlay.stylex';
 import {solveDecay} from '../decay';
 import {rubberBand} from '../rubberBand';
 import {
@@ -23,7 +26,7 @@ import {
   toSpring,
   type SpringDescription,
 } from '../spring';
-import {scroll, springs} from '.';
+import {bars, scroll, springs} from '.';
 import {press} from './timing';
 
 describe('UIKit constants table through the motion math', () => {
@@ -31,6 +34,8 @@ describe('UIKit constants table through the motion math', () => {
     ...Object.entries(springs),
     ['scroll.bounce', scroll.bounce],
     ['scroll.paging.snap', scroll.paging.snap],
+    ['bars.scrollEdgeEffect.appear', bars.scrollEdgeEffect.appear],
+    ['bars.scrollEdgeEffect.disappear', bars.scrollEdgeEffect.disappear],
   ];
 
   it.each(springEntries)(
@@ -52,6 +57,21 @@ describe('UIKit constants table through the motion math', () => {
     });
     expect(derived.stiffness).toBeCloseTo(springs.alertPresent.stiffness, 1);
     expect(derived.damping).toBeCloseTo(springs.alertPresent.damping, 2);
+  });
+
+  it('the scroll edge springs are critically damped, at 0.2 s and 0.35 s responses', () => {
+    // As the measurement reports them: response 0.2 s in, 0.35 s out, both
+    // at damping ratio 1.
+    for (const [description, response] of [
+      [bars.scrollEdgeEffect.appear, 0.2],
+      [bars.scrollEdgeEffect.disappear, 0.35],
+    ] as const) {
+      const spring = toSpring(description);
+      expect(
+        spring.damping / (2 * Math.sqrt(spring.stiffness * spring.mass)),
+      ).toBeCloseTo(1, 3);
+      expect((2 * Math.PI) / naturalFrequency(spring)).toBeCloseTo(response, 4);
+    }
   });
 
   it('a sheet\u2019s detent spring is its presentation spring as rendered (critical, same pace)', () => {
@@ -97,14 +117,23 @@ describe('UIKit constants table through the motion math', () => {
 
   it('the press release curve is the press model\u2019s RELEASE_EASE', () => {
     // The table records the curve the touch press model ships with; this pins
-    // the two together so neither drifts alone.
-    const source = readFileSync(
-      join(__dirname, '../../utils/interactionOverlay.stylex.ts'),
-      'utf8',
-    );
-    const match = /const RELEASE_EASE = 'cubic-bezier\(([^)]*)\)'/.exec(source);
-    expect(match?.[1].split(',').map(Number)).toEqual([
-      ...press.highlightOutCurve,
-    ]);
+    // the two together so neither drifts alone. It reads the curve the
+    // overlay's fading arm ships (the rule StyleX injects), so it holds
+    // however the stylesheet spells the value.
+    const element = document.createElement('div');
+    element.className =
+      stylex.props(interactionOverlayStyles.backgroundColor).className ?? '';
+    const curves = rulesDeclaredFor(element)
+      .filter(rule =>
+        rule
+          .slice(0, rule.indexOf('{'))
+          .includes('[data-astryx-press="fading"]'),
+      )
+      .flatMap(rule => {
+        const match =
+          /animation-timing-function:\s*cubic-bezier\(([^)]*)\)/.exec(rule);
+        return match == null ? [] : [match[1].split(',').map(Number)];
+      });
+    expect(curves).toEqual([[...press.highlightOutCurve]]);
   });
 });
