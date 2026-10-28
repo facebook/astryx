@@ -404,6 +404,12 @@ describe('a finger waits only inside a scroller (spec:AST-094 FR11)', () => {
   });
 });
 
+describe('the release clock the browser specs read', () => {
+  it('is 200 ms (ButtonPress.interaction.browser.spec.ts RELEASE_MS)', () => {
+    expect(PRESS_FADE_MS).toBe(200);
+  });
+});
+
 describe('the release', () => {
   it('fades, then leaves no attribute behind', () => {
     press(rows[0], 'pointerdown', 10, 10);
