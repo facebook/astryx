@@ -256,6 +256,11 @@ function staysInPlace(property: string, value: string): boolean {
   if (property === 'scale') {
     return true;
   }
+  if (value.includes('var(')) {
+    // An unresolved custom property in an app's own keyframes: its value is
+    // unknown here, so the app moves the element.
+    return false;
+  }
   if (property === 'translate') {
     return numbersIn(value).every(n => n === 0);
   }

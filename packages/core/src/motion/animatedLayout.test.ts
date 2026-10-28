@@ -854,6 +854,52 @@ describe('elements the app moves itself (spec:AST-105 Coverage)', () => {
       .map(p => (p.element as HTMLElement).id);
     expect(moved).toEqual(['pressing']);
   });
+
+  it('leaves a follower whose own keyframes hold an unresolved var() to the app: its value is unknown', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><div id="changed"></div><div id="slide"></div><div id="slideY"></div><div id="spin"></div><div id="grow"></div></div>`,
+    );
+    for (const id of ['slide', 'slideY', 'spin', 'grow']) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, 10, 400, 40], after: [0, 90, 400, 40]},
+        phase,
+      );
+    }
+    class StubKeyframeEffect {
+      constructor(readonly frames: Keyframe[]) {}
+      getKeyframes() {
+        return this.frames;
+      }
+    }
+    vi.stubGlobal('KeyframeEffect', StubKeyframeEffect);
+    const runs = (id: string, frames: Keyframe[]) => {
+      (document.getElementById(id) as HTMLElement).getAnimations = () =>
+        [{effect: new StubKeyframeEffect(frames)}] as unknown as Animation[];
+    };
+    // An app's own slide-ins and spin, from values a custom property holds.
+    runs('slide', [{translate: 'var(--from)'}, {translate: '0px'}]);
+    runs('slideY', [
+      {transform: 'translateY(var(--from))'},
+      {transform: 'none'},
+    ]);
+    runs('spin', [{transform: 'rotate(var(--angle))'}, {transform: 'none'}]);
+    // A scale stays in place whatever its value.
+    runs('grow', [{scale: 'var(--from)'}, {scale: '1'}]);
+    try {
+      await runChange(
+        createAnimatedLayout(() => area),
+        changed,
+        phase,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    const moved = played
+      .filter(p => p.keyframes[0].translate != null)
+      .map(p => (p.element as HTMLElement).id);
+    expect(moved).toEqual(['grow']);
+  });
 });
 
 describe('siblings before the change (spec:AST-105 FR3, Coverage)', () => {
