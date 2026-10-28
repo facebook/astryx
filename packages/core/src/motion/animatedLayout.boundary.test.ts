@@ -105,6 +105,9 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
         'playLayoutChange',
         'applyLayoutChangeTransition',
         'createAnimatedLayout',
+        'holdLayoutSwap',
+        'playLayoutSwap',
+        'playLayoutFrames',
       ]) {
         expect(
           source,
