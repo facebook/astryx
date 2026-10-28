@@ -119,8 +119,10 @@ interface PanSession {
   readonly translation: Point;
 }
 
-/** Fingers and pens: the mouse is the core's. */
-const FINGERS = ['touch', 'pen'] as const;
+/** Every pointer, a mouse, a pen and a finger (spec:AST-094 FR43). */
+const EVERY_POINTER = ['touch', 'pen', 'mouse'] as const;
+/** Fingers only: a pinch under a pen stays off (FR43); a ctrl-wheel pinches. */
+const PINCH_POINTERS = ['touch'] as const;
 
 export function useZoomStage(
   core: ZoomCore,
@@ -198,10 +200,15 @@ export function useZoomStage(
   const isMovingRef = useRef(isMoving);
   isMovingRef.current = isMoving;
 
+  // Whether a finger began each gesture, read from its first touch as it
+  // begins: under reduced motion a finger's release cross-fades
+  // (design:reduced-motion DR2), a mouse's, a trackpad's or a pen's
+  // completes at once where the primary pointer is fine (DR3, FR43).
+  const fingerRef = useRef({pinch: false, catch: false});
   const [recognizers] = useState(() => {
     const pinch = new PinchGestureRecognizer({
       name: 'Lightbox.zoomPinch',
-      allowedPointerTypes: FINGERS,
+      allowedPointerTypes: PINCH_POINTERS,
     });
     // A zoomed photo is a scroll view: its coast reads the pan's scroll-view
     // release (`scrollVelocity()`, spec:AST-100), so it coasts as far as
@@ -209,17 +216,17 @@ export function useZoomStage(
     const pan = new PanGestureRecognizer({
       name: 'Lightbox.zoomPan',
       maximumNumberOfTouches: 2,
-      allowedPointerTypes: FINGERS,
+      allowedPointerTypes: EVERY_POINTER,
       shouldBegin: recognizer => panShouldBeginRef.current(recognizer),
     });
     const doubleTap = new TapGestureRecognizer({
       name: 'lightbox-zoom-double-tap',
       numberOfTapsRequired: 2,
-      allowedPointerTypes: FINGERS,
+      allowedPointerTypes: EVERY_POINTER,
     });
     const tap = new TapGestureRecognizer({
       name: 'lightbox-zoom-tap',
-      allowedPointerTypes: FINGERS,
+      allowedPointerTypes: EVERY_POINTER,
     });
     const touchDown = new LongPressGestureRecognizer({
       name: 'lightbox-zoom-touch-down',
@@ -227,7 +234,7 @@ export function useZoomStage(
       allowableMovement: Number.POSITIVE_INFINITY,
       cancelsTouchesInView: false,
       delaysTouchesEnded: false,
-      allowedPointerTypes: FINGERS,
+      allowedPointerTypes: EVERY_POINTER,
       // Only a moving photo is caught, so a still one leaves the touch to
       // everyone else (an outer pager's own catch).
       shouldBegin: () => isMovingRef.current(),
@@ -248,6 +255,8 @@ export function useZoomStage(
     () => recognizers.pinch,
     pinch => {
       if (pinch.state === 'began') {
+        fingerRef.current.pinch =
+          pinch.trackedTouches[0]?.pointerType === 'touch';
         const geometry = measure();
         if (geometry == null) {
           return;
@@ -293,7 +302,9 @@ export function useZoomStage(
         // Past a limit: UIKit's eased return, anchored at the last centroid.
         // A finger still down rests until it lands again.
         panRef.current = null;
-        settleTo(geometry, target, {touchRelease: true});
+        settleTo(geometry, target, {
+          touchRelease: fingerRef.current.pinch,
+        });
         return;
       }
       const pan = recognizers.pan;
@@ -374,6 +385,8 @@ export function useZoomStage(
     () => recognizers.touchDown,
     touchDown => {
       if (touchDown.state === 'began') {
+        fingerRef.current.catch =
+          touchDown.trackedTouches[0]?.pointerType === 'touch';
         // It only begins on a moving photo: stopped where it shows, at the
         // presentation value from the curve.
         draggedSinceCatchRef.current = false;
@@ -401,7 +414,9 @@ export function useZoomStage(
         y: geometry.height / 2,
       });
       if (limit !== shown) {
-        settleTo(geometry, limit, {touchRelease: true});
+        settleTo(geometry, limit, {
+          touchRelease: fingerRef.current.catch,
+        });
         return;
       }
       coast(geometry, {x: 0, y: 0});

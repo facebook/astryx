@@ -7,13 +7,13 @@
  *   WebKit's input command), a desktop context with a mouse, and the
  *   interaction harness
  * @output Proofs for the zoom stage beyond the finger's model: with a fine
- *   pointer (a desktop) the stage keeps its plain layout (the stretch that
- *   fills the viewer is for a coarse pointer only) and the photo fits as
- *   before; under Reduce Motion a double tap reaches its zoom by a
+ *   pointer (a desktop) the stage fills the viewer, as under a coarse pointer
+ *   (spec:AST-094 FR43), and the photo fits as before; under Reduce Motion a double tap reaches its zoom by a
  *   cross-fade (the photo dips out and back in at the new scale) instead of
- *   travelling; with a mouse a zoomed drag stops at the edge instead of
- *   rubber-banding, and a drag released while moving stops where it is (no
- *   coast); under Reduce Motion, + then -
+ *   travelling; with a mouse a zoomed drag rubber-bands past the edge and
+ *   springs back (a released mouse drag coasts on: see
+ *   LightboxEveryPointer.interaction.browser.spec.ts); under Reduce Motion,
+ *   + then -
  *   pressed 150 ms apart leave the photo at full opacity, also after
  *   reopening; with zoom off, a tap on the dark area around the photo still
  *   closes the viewer on a touch screen; under Reduce Motion
@@ -152,7 +152,7 @@ function doubleTap(at: {x: number; y: number}): TouchScript {
   ];
 }
 
-test('with a fine pointer (a desktop) the stage keeps its plain layout: only a coarse pointer stretches it to fill the viewer', async ({
+test('with a fine pointer (a desktop) the stage fills the viewer, as under a coarse pointer: its gestures take the whole viewer', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -174,8 +174,9 @@ test('with a fine pointer (a desktop) the stage keeps its plain layout: only a c
     const img = dialog.getByRole('img', {name: 'Forest path'});
     await decoded(img);
     await frames(page, 2);
-    // The stage and its group keep their plain layout: the stretch that
-    // makes the stage fill the viewer applies to a coarse pointer only.
+    // The stage and its group stretch to fill the viewer for every pointer
+    // (spec:AST-094 FR43): a click or a drag beside the photo is the stage's,
+    // as a finger's is.
     const layout = await stage.evaluate(el => {
       const own = getComputedStyle(el);
       const group = getComputedStyle(el.parentElement as HTMLElement);
@@ -184,10 +185,8 @@ test('with a fine pointer (a desktop) the stage keeps its plain layout: only a c
         group: [group.alignSelf, group.flexGrow],
       };
     });
-    expect(layout.stage[0]).not.toBe('stretch');
-    expect(layout.stage[1]).toBe('0');
-    expect(layout.group[0]).not.toBe('stretch');
-    expect(layout.group[1]).toBe('0');
+    expect(layout.stage).toEqual(['stretch', '1']);
+    expect(layout.group).toEqual(['stretch', '1']);
     // The photo fits inside the viewer, as before.
     const imgBox = await img.boundingBox();
     if (imgBox == null) {
@@ -250,7 +249,7 @@ test('under Reduce Motion a double tap cross-fades to its zoom instead of travel
   ).toBeGreaterThan(1.5);
 });
 
-test('with a mouse a zoomed drag stops at the edge instead of rubber-banding', async ({
+test('with a mouse a zoomed drag rubber-bands past the edge and springs back to it, as a finger’s does', async ({
   browser,
 }) => {
   const {context, page, img, read} = await openDesktop(browser);
@@ -258,7 +257,13 @@ test('with a mouse a zoomed drag stops at the edge instead of rubber-banding', a
     const before = await read();
     const y = before.stage.y + before.stage.height / 2;
     const left = before.stage.x + 100;
-    await page.mouse.dblclick(left, y);
+    // 2x about the centre from the keyboard (a double-click is the stage's
+    // double tap, the aspect fill), with room to drag past an edge.
+    await page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Zoom', exact: true})
+      .focus();
+    await page.keyboard.press('+');
     await waitForAnimation(img);
     await waitForRest(img);
     const zoomed = await read();
@@ -275,39 +280,11 @@ test('with a mouse a zoomed drag stops at the edge instead of rubber-banding', a
       xs.push((await read()).x);
     }
     await page.mouse.up();
-    expect(Math.max(...xs)).toBeCloseTo(edge, 1);
-    await frames(page, 10);
-    expect((await read()).x).toBeCloseTo(edge, 1);
-  } finally {
-    await context.close();
-  }
-});
-
-test('with a mouse a drag released while moving stops where it is: no coast', async ({
-  browser,
-}) => {
-  const {context, page, img, read} = await openDesktop(browser);
-  try {
-    const before = await read();
-    const y = before.stage.y + before.stage.height / 2;
-    const cx = before.stage.x + before.stage.width / 2;
-    await page.mouse.dblclick(cx, y);
-    await waitForAnimation(img);
+    // Past the edge under the pointer, with UIScrollView's give
+    // (spec:AST-094 FR43: the stage's pan for every pointer).
+    expect(Math.max(...xs)).toBeGreaterThan(edge + 5);
     await waitForRest(img);
-    await page.mouse.move(cx, y);
-    await page.mouse.down();
-    for (let i = 1; i <= 5; i += 1) {
-      await page.mouse.move(cx - i * 40, y);
-    }
-    const lifted = (await read()).x;
-    await page.mouse.up();
-    await frames(page, 20);
-    expect((await read()).x).toBeCloseTo(lifted, 0);
-    expect(
-      await img.evaluate(
-        el => el.getAnimations().filter(a => a.playState === 'running').length,
-      ),
-    ).toBe(0);
+    expect((await read()).x).toBeCloseTo(edge, 1);
   } finally {
     await context.close();
   }

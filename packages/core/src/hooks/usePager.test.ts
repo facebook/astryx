@@ -975,7 +975,7 @@ describe('createPager', () => {
     pager.dispose();
   });
 
-  it('on a fine primary pointer the pager takes no input (spec:AST-094 FR19): a mouse drag leaves the track and the page as they were', async () => {
+  it('on a fine primary pointer a mouse drag pages, as a finger does (spec:AST-094 FR43)', async () => {
     const f = setup({defaultIndex: 1});
     stubMedia(false, false);
     f.pager.dispose();
@@ -992,8 +992,7 @@ describe('createPager', () => {
     await advance(8, f.clock);
     mouse('pointerup', f.page, 52, 100, now);
     await frames(f, 2);
-    expect(pager.index).toBe(1);
-    expect(f.x()).toBe(-WIDTH);
+    expect(pager.index).toBe(2);
   });
 });
 
