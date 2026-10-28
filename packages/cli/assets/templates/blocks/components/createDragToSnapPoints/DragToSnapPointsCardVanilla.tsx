@@ -3,7 +3,7 @@
 'use client';
 
 import {useEffect, useRef} from 'react';
-import {createDragToSnapPoints} from '@astryxdesign/core/dragToSnapPoints';
+import {createDragToSnapPoints} from '@astryxdesign/core';
 
 const PLACES = ['Hand', 'Table', 'Discard pile'];
 
