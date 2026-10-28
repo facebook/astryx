@@ -374,6 +374,11 @@ export interface TreeListItemInternalProps {
    * motion; without one, the row plays its own touch slide.
    */
   hasAnimatedLayout?: boolean;
+  /**
+   * The tree's touch presentation, which the tree reads once for every row
+   * (`spec:AST-094` FR24).
+   */
+  isTouch?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -425,6 +430,7 @@ export function TreeListItem({
   isExpanded,
   isExiting = false,
   hasAnimatedLayout = false,
+  isTouch = false,
   onToggle,
   density,
   variant,
@@ -436,6 +442,7 @@ export function TreeListItem({
   const pressable = usePressFeedback();
   const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded, {
     isEnabled: !hasAnimatedLayout,
+    isTouch,
   });
   const renderedChildren =
     showsChildren || isExiting ? renderChildren?.() : undefined;

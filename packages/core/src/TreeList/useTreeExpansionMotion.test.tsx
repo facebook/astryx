@@ -112,6 +112,39 @@ const toggle = () =>
     ':scope > :not([role="group"]) [data-tree-toggle]',
   ) ?? null;
 
+describe('the touch presentation, read once per tree (spec:AST-094 FR24)', () => {
+  it('adds no touch observer per row: a tree of many rows listens as one of few', () => {
+    const listeners = {count: 0};
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => {
+          listeners.count += 1;
+        },
+        removeEventListener: () => undefined,
+        addListener: () => {
+          listeners.count += 1;
+        },
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      })),
+    );
+    const many = Array.from({length: 30}, (_, index) => ({
+      id: `row-${index}`,
+      label: `Row ${index}`,
+    }));
+    const {unmount} = render(<TreeList items={many.slice(0, 2)} />);
+    const few = listeners.count;
+    unmount();
+    listeners.count = 0;
+    render(<TreeList items={many} />);
+    expect(listeners.count).toBe(few);
+  });
+});
+
 describe('TreeList expansion presence', () => {
   it('with a mouse, a collapse removes the children at once', () => {
     stubPointer('mouse');

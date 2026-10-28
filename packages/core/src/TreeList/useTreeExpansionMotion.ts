@@ -4,14 +4,15 @@
 
 /**
  * @file useTreeExpansionMotion.ts
- * @input A tree row's expanded state, the touch presentation
- *   (utils/touchPresentation.ts), the motion foundation's animator and the
- *   outline spring from the UIKit constants table (motion/uikit/list.ts)
+ * @input A tree row's expanded state, the tree's touch presentation (read
+ *   once per tree in TreeList.tsx, utils/touchPresentation.ts), the motion
+ *   foundation's animator and the outline spring from the UIKit constants
+ *   table (motion/uikit/list.ts)
  * @output `useTreeExpansionMotion`: whether a row renders its children, the
  *   ref its group attaches, and the expand and collapse played the way a UIKit
- *   outline list plays them, under any finger (useTouchPresentation: a
- *   coarse primary pointer, iOS and Android alike); with a mouse the
- *   children come and go in one frame, as before
+ *   outline list plays them, under any finger (a coarse primary pointer, iOS
+ *   and Android alike); with a mouse the children come and go in one frame,
+ *   as before
  * @position TreeList internals; TreeListItem calls it for every row with
  *   children
  *
@@ -64,7 +65,6 @@ import {
   springHome,
   springTo,
 } from '../utils/rowMotion';
-import {useTouchPresentation} from '../utils/touchPresentation';
 
 const SPRING = list.update.outlineSpring;
 /** The chevron turns a quarter turn between collapsed and expanded. */
@@ -107,11 +107,21 @@ function chevronOf(group: HTMLElement): HTMLElement | null {
 
 export function useTreeExpansionMotion(
   isExpanded: boolean,
-  {isEnabled = true}: {isEnabled?: boolean} = {},
+  {
+    isEnabled = true,
+    isTouch = false,
+  }: {
+    isEnabled?: boolean;
+    /**
+     * Under a finger: the tree reads its touch presentation once, for every
+     * row (`spec:AST-094` FR24: a repeated row adds no touch observer).
+     */
+    isTouch?: boolean;
+  } = {},
 ): TreeExpansionMotion {
   // Off while the tree holds an animated-layout handle: the handle then
   // plays the group's motion under every pointer (`component:TreeList` FR8).
-  const animates = useTouchPresentation().isTouch && isEnabled;
+  const animates = isTouch && isEnabled;
   const [shown, setShown] = useState(isExpanded);
   if (isExpanded && !shown) {
     setShown(true);

@@ -37,6 +37,7 @@ import type {
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   applyLayoutChangeTransition,
   holdLayoutExit,
@@ -513,6 +514,9 @@ export function TreeList({
   const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
   );
+  // Read once for every row: a repeated row adds no touch observer of its
+  // own (`spec:AST-094` FR24).
+  const {isTouch} = useTouchPresentation();
 
   function renderItems(
     items: TreeListItemData[],
@@ -578,6 +582,7 @@ export function TreeList({
           isExpanded={isExpanded}
           isExiting={isExiting && !isExpanded}
           hasAnimatedLayout={animatedLayout != null}
+          isTouch={isTouch}
           onToggle={handleToggle}
           density={density}
           variant={variant}
