@@ -15,9 +15,10 @@
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
  *   A function registry entry receives `{size}`, the size resolved by ORD1.
  *
- * Both modes size the glyph from IconSize.stylex.ts, so a theme's `width` and
- * `height` on the `icon` target's size selector set that size's glyph
- * dimension, including the font size 1em-based registry artwork follows.
+ * Both modes size the glyph from the `icon` target's private size vars
+ * (`iconSizeStyles` in IconSize.stylex.ts, `registrySizeStyles` below), so a
+ * theme's `width` and `height` on that target's size selector set the size's
+ * glyph dimension, including the font size 1em-based registry artwork follows.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/Icon.doc.mjs (props table, features, implementation notes)
@@ -37,11 +38,7 @@ import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useIconSize} from './IconDefaultSizeContext';
-import {
-  iconRegistrySizeStyles,
-  iconSizeStyles,
-  type IconSize,
-} from './IconSize.stylex';
+import {iconSizeStyles, type IconSize} from './IconSize.stylex';
 
 export type {IconSize} from './IconSize.stylex';
 
@@ -59,6 +56,36 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+});
+
+/**
+ * Size styles for string-based registry icons: the glyph dimensions
+ * `iconSizeStyles` reads from the `icon` target's private vars, plus a
+ * `fontSize`, because registry artwork is 1em-based. `fontSize` is the smaller
+ * side, which fits square artwork into a non-square box the way an SVG viewBox
+ * does.
+ */
+const registrySizeStyles = stylex.create({
+  xsm: {
+    width: 'var(--_icon-width, 0.75rem)',
+    height: 'var(--_icon-height, 0.75rem)',
+    fontSize: 'min(var(--_icon-width, 0.75rem), var(--_icon-height, 0.75rem))',
+  },
+  sm: {
+    width: 'var(--_icon-width, 1rem)',
+    height: 'var(--_icon-height, 1rem)',
+    fontSize: 'min(var(--_icon-width, 1rem), var(--_icon-height, 1rem))',
+  },
+  md: {
+    width: 'var(--_icon-width, 1.25rem)',
+    height: 'var(--_icon-height, 1.25rem)',
+    fontSize: 'min(var(--_icon-width, 1.25rem), var(--_icon-height, 1.25rem))',
+  },
+  lg: {
+    width: 'var(--_icon-width, 1.5rem)',
+    height: 'var(--_icon-height, 1.5rem)',
+    fontSize: 'min(var(--_icon-width, 1.5rem), var(--_icon-height, 1.5rem))',
   },
 });
 
@@ -373,7 +400,7 @@ function IconFromRegistry({
         stylex.props(
           styles.span,
           colorStyles[color],
-          iconRegistrySizeStyles[size],
+          registrySizeStyles[size],
           xstyle,
         ),
         className ?? undefined,
