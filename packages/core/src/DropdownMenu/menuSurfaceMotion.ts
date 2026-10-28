@@ -68,7 +68,7 @@ import {
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {resolveMotion} from '../motion/resolveMotion';
 import {menu} from '../motion/uikit/menu';
-import {springs} from '../motion/uikit/springs';
+import {MENU_CLOSE_SPRING, MENU_OPEN_SPRING} from '../motion/uikit/springs';
 
 /** A box in viewport px. */
 export interface MenuSurfaceRect {
@@ -125,7 +125,7 @@ export function menuCollapsedState(
 
 /** The spring that times the open or the close: UIKit's menu springs. */
 export function menuSpring(direction: 'open' | 'close'): SpringDescription {
-  return direction === 'open' ? springs.menuOpen : springs.menuClose;
+  return direction === 'open' ? MENU_OPEN_SPRING : MENU_CLOSE_SPRING;
 }
 
 /**
@@ -264,7 +264,7 @@ export function createMenuSurfaceMotion(
     const handle = animator.animate(
       {scaleX: 1, scaleY: 1, opacity: 1},
       {
-        spring: springs.menuOpen,
+        spring: MENU_OPEN_SPRING,
         ...(from != null ? {velocity: from.velocity} : null),
       },
     );
@@ -321,7 +321,7 @@ export function createMenuSurfaceMotion(
     closing.set(presented);
     const handle = closing.animate(
       {scaleX: target.scaleX, scaleY: target.scaleY, opacity: 0},
-      {spring: springs.menuClose, velocity},
+      {spring: MENU_CLOSE_SPRING, velocity},
     );
     exiting = {ghost, animator: closing};
     // The element itself is hidden by the browser now. Leave it at rest,
