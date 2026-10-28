@@ -213,23 +213,25 @@ describe('themeBuild() — receipt', () => {
   });
 });
 
-describe('a theme module with no theme export', () => {
+describe.each(['mjs', 'ts'])('a .%s theme module with no theme export', ext => {
   beforeEach(() => {
     fs.writeFileSync(
-      path.join(tmpDir, 'none.mjs'),
+      path.join(tmpDir, `none.${ext}`),
       'export const notATheme = 42;\n',
     );
   });
 
-  it('fails the build as a module that defines no theme', async () => {
-    await expect(themeBuild('none.mjs', {}, {cwd: tmpDir})).rejects.toThrow(
+  it('fails the build as a module that does not load a theme', async () => {
+    const build = themeBuild(`none.${ext}`, {}, {cwd: tmpDir});
+    await expect(build).rejects.toThrow(
       /Could not find a defineTheme\(\) result/,
     );
+    await expect(build).rejects.toMatchObject({code: 'ERR_THEME_LOAD'});
   });
 
   it("fails doctor's private-input check the same way, rather than read its exports as a theme", async () => {
     await expect(
-      validateThemePrivateInputs('none.mjs', {cwd: tmpDir}),
+      validateThemePrivateInputs(`none.${ext}`, {cwd: tmpDir}),
     ).rejects.toThrow(/Could not find a defineTheme\(\) result/);
   });
 });

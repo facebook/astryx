@@ -1833,34 +1833,42 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
       commonJsPatch.undo();
     }
   } else {
-    mod = await jiti.import(filePath, {default: true});
+    mod = await jiti.import(filePath);
   }
-  // Only this load hands back the default export itself; the intercepting
-  // load above hands back the module's exports.
-  const isDefaultExport = !interception;
 
-  if (isThemeObject(mod)) return {theme: mod, exportName: 'default', degraded};
-
-  if (mod && typeof mod === 'object') {
-    if (isThemeObject(mod.default)) {
-      return {theme: mod.default, exportName: 'default', degraded};
-    }
+  // Both loads hand back the module. The theme is read from the module's own
+  // exports, never from the module object itself: jiti's interop answers a
+  // property the module lacks from its default export (and a missing
+  // `default` with the module), so the module can pass for the theme while
+  // its own keys hide the theme's fields.
+  const isModule = mod != null && typeof mod === 'object';
+  const hasDefault = isModule && Object.hasOwn(mod, 'default');
+  const defaultExport = hasDefault ? mod.default : undefined;
+  if (isThemeObject(defaultExport)) {
+    return {theme: defaultExport, exportName: 'default', degraded};
+  }
+  if (isModule) {
     for (const [exportName, value] of Object.entries(mod)) {
+      if (exportName === 'default' || exportName === 'module.exports') continue;
       if (isThemeObject(value)) return {theme: value, exportName, degraded};
     }
-    // A plain-object default export is the module's theme even when it has
-    // no tokens of its own (local tokens, typography or component styles may
-    // be all it defines), or no name: the build's validation says what it
-    // lacks. Only a default the module has: for a module without one, jiti's
-    // interop answers `default` with the module's exports.
-    if (Object.hasOwn(mod, 'default') && isPlainObject(mod.default)) {
-      return {theme: mod.default, exportName: 'default', degraded};
-    }
   }
-  // The default export itself, from the load that returns it: on the
-  // intercepting load `mod` is the module's exports, never a theme.
-  if (isDefaultExport && isPlainObject(mod)) {
-    return {theme: mod, exportName: 'default', degraded};
+  // A plain-object default export is the module's theme even when it has
+  // no tokens of its own (local tokens, typography or component styles may
+  // be all it defines), or no name: the build's validation says what it
+  // lacks.
+  if (isPlainObject(defaultExport)) {
+    return {theme: defaultExport, exportName: 'default', degraded};
+  }
+  // A CommonJS module whose exports are the theme (`module.exports =
+  // theme`) has no default of its own: interop answers `default` with
+  // those exports, and without interop (a family build's loader) the module
+  // is them.
+  if (isModule && !hasDefault) {
+    const exportsObject = mod.default ?? mod;
+    if (isThemeObject(exportsObject)) {
+      return {theme: exportsObject, exportName: 'default', degraded};
+    }
   }
 
   throw new Error(
