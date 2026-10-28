@@ -210,10 +210,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **Keyboard model (FR4).** RadioList keeps the browser's native radio arrow
   keys and its shipped Tab entry rule; `spec:AST-085` leaves which radios a
   composite's arrow keys visit to the composite.
-- **Disabled options under arrow keys (FR4).** Arrow keys keep skipping
-  individually disabled options after they become focusable-disabled, as they
-  skipped natively disabled radios. ButtonGroup FR8, Calendar's constrained
-  days, and the shared list focus hook skip `aria-disabled` items the same way.
+- **Disabled options under arrow keys (FR4).** Arrow keys skip individually
+  disabled options, which stay focusable under `spec:AST-085`, as a native radio
+  group skips disabled radios. ButtonGroup FR8, Calendar's constrained days, and
+  the shared list focus hook skip `aria-disabled` items the same way.
 
 RadioList otherwise applies `family:input-fields` FR10 and the WAI-ARIA radio
 group pattern.
