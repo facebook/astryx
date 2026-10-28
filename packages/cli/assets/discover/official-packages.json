@@ -154,6 +154,14 @@
         },
         {
           "kind": "component",
+          "name": "NavigationScreen"
+        },
+        {
+          "kind": "component",
+          "name": "NavigationStack"
+        },
+        {
+          "kind": "component",
           "name": "RadialChart"
         },
         {
@@ -163,6 +171,10 @@
         {
           "kind": "component",
           "name": "Schedule"
+        },
+        {
+          "kind": "component",
+          "name": "SearchField"
         },
         {
           "kind": "component",

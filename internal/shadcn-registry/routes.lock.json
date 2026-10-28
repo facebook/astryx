@@ -626,6 +626,16 @@
       "aliases": []
     },
     {
+      "name": "component-lab-navigation-screen",
+      "path": "components/lab/navigation-screen",
+      "aliases": []
+    },
+    {
+      "name": "component-lab-navigation-stack",
+      "path": "components/lab/navigation-stack",
+      "aliases": []
+    },
+    {
       "name": "component-lab-radial-chart",
       "path": "components/lab/radial-chart",
       "aliases": []
@@ -638,6 +648,11 @@
     {
       "name": "component-lab-schedule",
       "path": "components/lab/schedule",
+      "aliases": []
+    },
+    {
+      "name": "component-lab-search-field",
+      "path": "components/lab/search-field",
       "aliases": []
     },
     {

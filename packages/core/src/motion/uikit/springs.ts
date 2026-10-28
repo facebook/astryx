@@ -149,6 +149,40 @@ export const NAVIGATION_BAR_ELEMENTS_SPRING = {
   bounce: 0,
 } as const;
 
+/**
+ * Interactive pop released past its start (the screen rubber-banded by
+ * `navigation.interactivePopRubberBand`): it returns to rest from the
+ * finger's velocity, overshooting further first.
+ * @source measured: UIKit lab batch 62 (iOS 26.2 simulator, iPhone 17
+ *   Pro), the cancelled scrub's per-frame view x (−6.89 pt at the lift at
+ *   −310 pt/s, −14.21 pt 50 ms later, |x| < 0.5 pt from ~0.23 s, no
+ *   overshoot past rest). Damped spring
+ *   x(t) = e^(−ζωt)(x0 cos ω_d t + (v0 + ζωx0)/ω_d sin ω_d t), v0 the
+ *   finger's velocity, x0 from `navigation.interactivePopRubberBand`,
+ *   fitted jointly: ω = 16.5 rad/s, ζ = 0.81, with the at-lift value
+ *   within 0.8 pt, the peak within 0.6 pt (−13.7 pt at 47 ms), at most
+ *   0.2 pt past rest and |x| < 0.5 pt by 0.27 s; worst frame 1.8 pt,
+ *   mid-return, Oct 24 2026
+ */
+export const NAVIGATION_INTERACTIVE_POP_RETURN_SPRING = {
+  response: 0.381,
+  dampingRatio: 0.81,
+} as const;
+
+/**
+ * The back button's chevron fading in on a push and out on a pop. An
+ * interactive swipe leaves it at full opacity; it fades once the pop
+ * finishes.
+ * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+ *   iPhone 17 Pro, the chevron's effective opacity per frame; a
+ *   critically damped spring of response 0.4 s from rest fits all twelve
+ *   33 ms samples within 0.021, Oct 23 2026
+ */
+export const NAVIGATION_BACK_BUTTON_SPRING = {
+  response: 0.4,
+  dampingRatio: 1,
+} as const;
+
 // ---------------------------------------------------------------------
 // Sheets (UISheetPresentationController)
 // ---------------------------------------------------------------------
@@ -456,7 +490,9 @@ export const springs = {
   navigationPush: NAVIGATION_PUSH_SPRING,
   navigationPop: NAVIGATION_POP_SPRING,
   navigationInteractivePopFinish: NAVIGATION_INTERACTIVE_POP_FINISH_SPRING,
+  navigationInteractivePopReturn: NAVIGATION_INTERACTIVE_POP_RETURN_SPRING,
   navigationBarElements: NAVIGATION_BAR_ELEMENTS_SPRING,
+  navigationBackButton: NAVIGATION_BACK_BUTTON_SPRING,
   sheetPresent: SHEET_PRESENT_SPRING,
   sheetDismiss: SHEET_DISMISS_SPRING,
   sheetDetent: SHEET_DETENT_SPRING,
