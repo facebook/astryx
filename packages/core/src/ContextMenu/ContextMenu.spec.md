@@ -200,6 +200,9 @@ anchor is positioning infrastructure rather than consumer anatomy.
   (`spec:AST-107` FR8; FR10), and ContextMenu joins shared Escape ordering through
   `useLayerDismissal`; touch hosting delegates
   to BottomSheet.
+- `spec:AST-094` FR4 lists the three motion roles this component owns, measured
+  for its lift: `springs.contextMenuLift`, `springs.contextMenuDismiss` and
+  `springs.contextMenuMorph`.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering.
   ContextMenu's pointer presentation is a shared-stack adopter; the touch
   presentation delegates dismissal to BottomSheet, which is also a shared-stack
@@ -245,11 +248,13 @@ or keyboard anchoring.
 
 **Reference:** `component:ContextMenu/DEC-2`
 
-**Status:** proposed; pending owner review.
+**Decider:** consistency with current records, 2026-10-28: `spec:AST-017`
+FR60 and DEC-29, `architecture:layer-runtime` INV15, and `spec:AST-094` FR33.
 
 Under a finger, a touch-opened menu on a block trigger lifts the trigger
-itself above the tinted page (`spec:AST-094` FR33), through the lift module
-(`packages/core/src/liftFromTrigger/`). While the menu is up, the page has four
+itself above the tinted page (`spec:AST-094` FR33), through the one lift
+module (`architecture:layer-runtime` INV15,
+`packages/core/src/liftFromTrigger/`). While the menu is up, the page has four
 elements more than under a fine pointer, within the open-layer allowance of
 `spec:AST-017` FR60 and DEC-29, and each has one job:
 

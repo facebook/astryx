@@ -153,6 +153,9 @@ a measured, sourced difference exists.
   | `timing.curves.entrance`     | cubic-bezier(0, 0, 0.58, 1)         | measured: UIKit's ease-out, iOS 26.2 simulator, 2026-10-23                                            |
   | `timing.curves.move`         | cubic-bezier(0.42, 0, 0.58, 1)      | measured: UIKit's ease-in-out, iOS 26.2 simulator, 2026-10-23                                         |
 
+  The three `springs.contextMenu*` rows are measured for ContextMenu's lift,
+  and `component:ContextMenu` owns them (DEC-5).
+
 ### Motion
 
 - **FR5 — Motion runs on the compositor.** Every release and every
