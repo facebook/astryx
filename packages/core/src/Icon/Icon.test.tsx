@@ -26,6 +26,15 @@ import {
   type IconRequest,
 } from './globalIconRegistry';
 
+// The variant names these tests request (spec:AST-087 FR3: an application
+// augments the public map).
+declare module './index' {
+  interface IconVariantMap {
+    outline: true;
+    filled: true;
+  }
+}
+
 /** The custom properties a declaration value reads, in order. */
 function varsRead(value: string): string[] {
   return [...value.matchAll(/var\(\s*(--[\w-]+)/g)].map(match => match[1]);
@@ -449,6 +458,279 @@ describe('Icon', () => {
 
       expect(screen.getByTestId('icon').tagName.toLowerCase()).toBe('svg');
       expect(info).not.toHaveBeenCalled();
+    });
+  });
+
+  // spec:AST-087 FR4, FR5; component:Icon FR6 — a requested variant reaches
+  // the selected entry only when the active theme lists it and, for a theme
+  // entry, the theme that defined it lists it too. Everything else receives
+  // `undefined` and draws its normal artwork.
+  describe('variant', () => {
+    const drawn = (label: string) =>
+      vi.fn(
+        ({size, variant}: IconRequest) =>
+          `${label}-${size}-${variant ?? 'normal'}`,
+      );
+
+    function renderInTheme(
+      theme: Parameters<typeof Theme>[0]['theme'],
+      ui: React.ReactNode,
+    ) {
+      return render(<Theme theme={theme}>{ui}</Theme>);
+    }
+
+    it('passes a variant the active theme lists to its entry', () => {
+      resetIcons();
+      resetThemes();
+      const info = drawn('info');
+      const theme = defineTheme({
+        name: 'variant-listed',
+        iconVariants: ['outline', 'filled'],
+        icons: {info},
+      });
+
+      renderInTheme(
+        theme,
+        <Icon icon="info" size="sm" variant="filled" data-testid="icon" />,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('info-sm-filled');
+      expect(info).toHaveBeenLastCalledWith({size: 'sm', variant: 'filled'});
+    });
+
+    it('passes undefined when the variant is omitted', () => {
+      resetIcons();
+      resetThemes();
+      const info = drawn('info');
+      const theme = defineTheme({
+        name: 'variant-omitted',
+        iconVariants: ['outline', 'filled'],
+        icons: {info},
+      });
+      info.mockClear();
+
+      renderInTheme(theme, <Icon icon="info" data-testid="icon" />);
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('info-md-normal');
+      expect(info).toHaveBeenLastCalledWith({size: 'md'});
+    });
+
+    it('renders the normal artwork for a variant the active theme does not list', () => {
+      // The theme-independent fallback (component-theming-surface INV14).
+      resetIcons();
+      resetThemes();
+      const info = drawn('info');
+      const theme = defineTheme({
+        name: 'variant-unlisted',
+        iconVariants: ['outline'],
+        icons: {info},
+      });
+      info.mockClear();
+
+      renderInTheme(
+        theme,
+        <Icon icon="info" size="lg" variant="filled" data-testid="icon" />,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('info-lg-normal');
+      expect(info).toHaveBeenLastCalledWith({size: 'lg'});
+    });
+
+    it('renders the normal artwork when the active theme lists no variants', () => {
+      resetIcons();
+      resetThemes();
+      const info = drawn('info');
+      const theme = defineTheme({name: 'variant-no-list', icons: {info}});
+
+      renderInTheme(
+        theme,
+        <Icon icon="info" variant="filled" data-testid="icon" />,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('info-md-normal');
+    });
+
+    it('keeps the defining theme list for an inherited entry', () => {
+      resetIcons();
+      resetThemes();
+      const base = defineTheme({
+        name: 'variant-base',
+        iconVariants: ['outline'],
+        icons: {info: drawn('base-info')},
+      });
+      const child = defineTheme({
+        name: 'variant-child',
+        extends: base,
+        iconVariants: ['outline', 'filled'],
+        icons: {close: drawn('child-close')},
+      });
+
+      renderInTheme(
+        child,
+        <>
+          <Icon icon="info" variant="filled" data-testid="inherited-filled" />
+          <Icon icon="info" variant="outline" data-testid="inherited-outline" />
+          <Icon icon="close" variant="filled" data-testid="own-filled" />
+        </>,
+      );
+
+      // The base never listed 'filled', so its entry draws normal artwork.
+      expect(screen.getByTestId('inherited-filled')).toHaveTextContent(
+        'base-info-md-normal',
+      );
+      expect(screen.getByTestId('inherited-outline')).toHaveTextContent(
+        'base-info-md-outline',
+      );
+      expect(screen.getByTestId('own-filled')).toHaveTextContent(
+        'child-close-md-filled',
+      );
+    });
+
+    it('passes an inherited entry only the variants the child still lists', () => {
+      resetIcons();
+      resetThemes();
+      const base = defineTheme({
+        name: 'variant-wide-base',
+        iconVariants: ['outline', 'filled'],
+        icons: {info: drawn('base-info')},
+      });
+      const replaced = defineTheme({
+        name: 'variant-narrow-child',
+        extends: base,
+        iconVariants: ['outline'],
+      });
+      const inherited = defineTheme({
+        name: 'variant-inherit-child',
+        extends: base,
+      });
+
+      renderInTheme(
+        replaced,
+        <Icon icon="info" variant="filled" data-testid="replaced" />,
+      );
+      renderInTheme(
+        inherited,
+        <Icon icon="info" variant="filled" data-testid="inherited" />,
+      );
+
+      expect(screen.getByTestId('replaced')).toHaveTextContent(
+        'base-info-md-normal',
+      );
+      expect(screen.getByTestId('inherited')).toHaveTextContent(
+        'base-info-md-filled',
+      );
+    });
+
+    it('passes a process-wide registration the variants the active theme lists', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({info: drawn('global-info')});
+      const listing = defineTheme({
+        name: 'variant-global-listed',
+        iconVariants: ['filled'],
+      });
+      const notListing = defineTheme({
+        name: 'variant-global-unlisted',
+        iconVariants: ['outline'],
+      });
+
+      renderInTheme(
+        listing,
+        <Icon icon="info" variant="filled" data-testid="listed" />,
+      );
+      renderInTheme(
+        notListing,
+        <Icon icon="info" variant="filled" data-testid="unlisted" />,
+      );
+      render(<Icon icon="info" variant="filled" data-testid="no-theme" />);
+
+      expect(screen.getByTestId('listed')).toHaveTextContent(
+        'global-info-md-filled',
+      );
+      expect(screen.getByTestId('unlisted')).toHaveTextContent(
+        'global-info-md-normal',
+      );
+      expect(screen.getByTestId('no-theme')).toHaveTextContent(
+        'global-info-md-normal',
+      );
+    });
+
+    it('renders the same node entry for every variant', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'variant-node',
+        iconVariants: ['outline', 'filled'],
+        icons: {info: 'node-info'},
+      });
+
+      renderInTheme(
+        theme,
+        <>
+          <Icon icon="info" variant="filled" data-testid="filled" />
+          <Icon icon="info" data-testid="normal" />
+        </>,
+      );
+
+      expect(screen.getByTestId('filled')).toHaveTextContent('node-info');
+      expect(screen.getByTestId('normal')).toHaveTextContent('node-info');
+    });
+
+    it('never passes variant to a supplied icon component', () => {
+      resetIcons();
+      resetThemes();
+      const Supplied = vi.fn((props: React.SVGProps<SVGSVGElement>) => (
+        <svg {...props} />
+      ));
+      const theme = defineTheme({
+        name: 'variant-direct',
+        iconVariants: ['outline', 'filled'],
+      });
+
+      renderInTheme(
+        theme,
+        <Icon icon={Supplied} variant="filled" data-testid="icon" />,
+      );
+
+      const props = Supplied.mock.calls[0]?.[0] ?? {};
+      expect(props).not.toHaveProperty('variant');
+      expect(screen.getByTestId('icon')).not.toHaveAttribute('variant');
+    });
+
+    it('writes no variant to the DOM or the icon theming target', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'variant-dom',
+        iconVariants: ['outline', 'filled'],
+        icons: {info: drawn('info')},
+      });
+
+      renderInTheme(
+        theme,
+        <>
+          <Icon icon="info" variant="filled" data-testid="registry" />
+          <Icon icon={TestIcon} variant="filled" data-testid="component" />
+        </>,
+      );
+
+      for (const id of ['registry', 'component']) {
+        const icon = screen.getByTestId(id);
+        expect(icon).toHaveClass('astryx-icon');
+        expect(icon).not.toHaveAttribute('variant');
+        expect(icon).not.toHaveAttribute('data-variant');
+        expect(icon.outerHTML).not.toContain('filled"');
+      }
+    });
+
+    it('types variant by IconVariantMap', () => {
+      render(
+        <>
+          <Icon icon="info" variant="outline" />
+          {/* @ts-expect-error — 'bold' is not in IconVariantMap. */}
+          <Icon icon="info" variant="bold" />
+        </>,
+      );
     });
   });
 
