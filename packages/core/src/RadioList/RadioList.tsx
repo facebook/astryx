@@ -4,7 +4,7 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, useCallback, useRef, useState, layer-scoped context, ReactNode, Field, InputStatus, isRtlElement
+ * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus, isRtlElement
  * @output Exports RadioList component, RadioListProps, RadioListContext, and the internal RadioListFormContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -22,7 +22,6 @@ import React, {
   useId,
   useMemo,
   useRef,
-  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -73,17 +72,19 @@ RadioListContext.displayName = 'RadioListContext';
  */
 export interface RadioListFormContextValue {
   /**
-   * Every radio leaves the form: the group is disabled, or its selected option
-   * is. Detaching all of them, never one, keeps the radios one native group
-   * with one Tab stop, while nothing submits and a required group does not
-   * block the submit (spec:AST-085 FR3).
+   * Every radio leaves the form: the whole group is disabled, so nothing
+   * submits and a required group does not block the submit (spec:AST-085
+   * FR3). Detaching all of them, never one, keeps the radios one native group
+   * with one Tab stop.
    */
   detachesFromForm: boolean;
   /**
-   * Called by a selected, individually disabled option while it is both;
-   * returns the release.
+   * The `name` the radios render. Detached radios have no form owner, so they
+   * take a name unique to this group: one shared with a detached group in
+   * another form would merge the two native groups. A detached radio submits
+   * nothing, so the form field name does not matter for it.
    */
-  holdSelectedDisabled: () => () => void;
+  radioName: string;
 }
 
 export const RadioListFormContext =
@@ -314,17 +315,10 @@ export function RadioList({
     isEnabled: showsDisabledMessage,
   });
 
-  // A selected option that is individually disabled detaches the whole group
-  // from the form (RadioListFormContextValue.detachesFromForm).
-  const [selectedDisabledHolds, setSelectedDisabledHolds] = useState(0);
-  const holdSelectedDisabled = useCallback(() => {
-    setSelectedDisabledHolds(holds => holds + 1);
-    return () => setSelectedDisabledHolds(holds => holds - 1);
-  }, []);
-  const detachesFromForm = isDisabled || selectedDisabledHolds > 0;
+  const radioName = isDisabled ? autoName : name;
   const formContextValue = useMemo<RadioListFormContextValue>(
-    () => ({detachesFromForm, holdSelectedDisabled}),
-    [detachesFromForm, holdSelectedDisabled],
+    () => ({detachesFromForm: isDisabled, radioName}),
+    [isDisabled, radioName],
   );
 
   const contextValue = useMemo<RadioListContextValue>(
@@ -400,7 +394,7 @@ export function RadioList({
         return;
       }
 
-      const radios = radiosOf(group, name);
+      const radios = radiosOf(group, radioName);
       const target = e.target as HTMLElement;
       const targetIndex = radios.findIndex(radio => radio === target);
       // Only correct when the focus target is one of the group's radios (not a
@@ -427,7 +421,7 @@ export function RadioList({
         intended.focus();
       }
     },
-    [value, name],
+    [value, radioName],
   );
 
   /**
@@ -456,7 +450,7 @@ export function RadioList({
       if (step === 0) {
         return;
       }
-      const radios = radiosOf(group, name);
+      const radios = radiosOf(group, radioName);
       const index = radios.indexOf(target);
       if (index === -1) {
         return;
@@ -476,7 +470,7 @@ export function RadioList({
         }
       }
     },
-    [name],
+    [radioName],
   );
 
   return (

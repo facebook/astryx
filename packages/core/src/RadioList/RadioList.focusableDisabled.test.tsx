@@ -279,7 +279,95 @@ describe('RadioList: disabled values are not submitted (spec:AST-085 FR3)', () =
     expect(new FormData(form).get('delivery')).toBe('standard');
   });
 
-  it('submits nothing, and does not block a required submit, when the selected option is disabled', () => {
+  it('does not block a required submit when every option is disabled and none is selected', () => {
+    const {container} = render(
+      <form>
+        <RadioList
+          label="Delivery"
+          htmlName="delivery"
+          value=""
+          onChange={() => {}}
+          isRequired>
+          <RadioListItem label="Standard" value="standard" isDisabled />
+          <RadioListItem label="Express" value="express" isDisabled />
+        </RadioList>
+      </form>,
+    );
+    expect(formOf(container).checkValidity()).toBe(true);
+  });
+
+  it('still requires a choice while any option is enabled', () => {
+    const {container} = render(
+      <form>
+        <RadioList
+          label="Delivery"
+          htmlName="delivery"
+          value=""
+          onChange={() => {}}
+          isRequired>
+          <RadioListItem label="Standard" value="standard" isDisabled />
+          <RadioListItem label="Express" value="express" />
+        </RadioList>
+      </form>,
+    );
+    expect(formOf(container).checkValidity()).toBe(false);
+  });
+
+  it('keeps two disabled groups that share an htmlName in different forms apart', () => {
+    render(
+      <>
+        <form aria-label="First">
+          <RadioList
+            label="First delivery"
+            htmlName="delivery"
+            value="standard"
+            onChange={() => {}}
+            isDisabled>
+            <RadioListItem label="First standard" value="standard" />
+            <RadioListItem label="First express" value="express" />
+          </RadioList>
+        </form>
+        <form aria-label="Second">
+          <RadioList
+            label="Second delivery"
+            htmlName="delivery"
+            value="express"
+            onChange={() => {}}
+            isDisabled>
+            <RadioListItem label="Second standard" value="standard" />
+            <RadioListItem label="Second express" value="express" />
+          </RadioList>
+        </form>
+      </>,
+    );
+    expect(radio('First standard')).toBeChecked();
+    expect(radio('Second express')).toBeChecked();
+    expect(radio('First standard').name).not.toBe(radio('Second express').name);
+  });
+
+  it('keeps a selected disabled option in its form group from the first render', () => {
+    const {container} = render(
+      <form>
+        <RadioList
+          label="Delivery"
+          htmlName="delivery"
+          value="express"
+          onChange={() => {}}>
+          <RadioListItem label="Standard" value="standard" />
+          <RadioListItem label="Express" value="express" isDisabled />
+        </RadioList>
+      </form>,
+    );
+    const form = formOf(container);
+    expect(radio('Express')).not.toHaveAttribute('form');
+    expect(radio('Express').form).toBe(form);
+    expect(radio('Standard').form).toBe(form);
+    // That its value leaves the submitted entries is proved in a real browser
+    // (RadioListDisabledForm.interaction.browser.spec.ts): jsdom fires no
+    // `formdata` event.
+  });
+
+  it('does not block a required submit, and keeps one group, when the selected option is disabled', () => {
     const {container} = render(
       <form>
         <RadioList
@@ -294,10 +382,10 @@ describe('RadioList: disabled values are not submitted (spec:AST-085 FR3)', () =
       </form>,
     );
     const form = formOf(container);
-    expect([...new FormData(form).keys()]).toEqual([]);
     expect(form.checkValidity()).toBe(true);
     // The radios stay one group: every radio shares the same form owner, so
-    // the selected radio remains the group's only Tab stop.
+    // the selected radio remains the group's only Tab stop. Its value leaving
+    // the submitted entries is proved in a real browser.
     expect(radio('Standard').form).toBe(radio('Express').form);
     expect(radio('Express')).toBeChecked();
   });

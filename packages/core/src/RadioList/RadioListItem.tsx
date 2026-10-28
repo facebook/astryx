@@ -4,7 +4,7 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, RadioListFormContext, useIsomorphicLayoutEffect, Item
+ * @input Uses React use, useEffect, useId, useRef, RadioListContext, RadioListFormContext, Item
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -18,7 +18,7 @@
  * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import React, {use, useId, useRef, type ReactNode} from 'react';
+import React, {use, useEffect, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
@@ -27,7 +27,6 @@ import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
@@ -275,18 +274,36 @@ export function RadioListItem({
   const labelID = useId();
   const descriptionID = useId();
   const formContext = use(RadioListFormContext);
+  const radioName = formContext?.radioName ?? context.name;
   const isDisabled = context.isDisabled || isItemDisabled;
   const isChecked = context.value === value;
-  // A selected option that is individually disabled takes the whole group out
-  // of the form, so its value is not submitted (spec:AST-085 FR3) while the
-  // radios stay one native group with one Tab stop.
-  const holdSelectedDisabled = formContext?.holdSelectedDisabled;
-  const isSelectedDisabled = isItemDisabled && isChecked;
-  useIsomorphicLayoutEffect(() => {
-    if (isSelectedDisabled && holdSelectedDisabled != null) {
-      return holdSelectedDisabled();
+  const radioRef = useRef<HTMLInputElement>(null);
+  // Synchronizes the form owner's submitted entries (its `formdata` event): a
+  // selected, individually disabled radio stays in the form, so the group
+  // keeps one form owner, one Tab stop, and a satisfied `required`, but its
+  // value leaves the entry list, as a natively disabled radio's would
+  // (spec:AST-085 FR3).
+  const excludesValue = isItemDisabled && isChecked && !context.isDisabled;
+  useEffect(() => {
+    const form = radioRef.current?.form;
+    if (!excludesValue || form == null) {
+      return;
     }
-  }, [isSelectedDisabled, holdSelectedDisabled]);
+    const exclude = (event: FormDataEvent) => {
+      const entries = event.formData.getAll(radioName);
+      if (!entries.includes(value)) {
+        return;
+      }
+      event.formData.delete(radioName);
+      for (const entry of entries) {
+        if (entry !== value) {
+          event.formData.append(radioName, entry);
+        }
+      }
+    };
+    form.addEventListener('formdata', exclude);
+    return () => form.removeEventListener('formdata', exclude);
+  }, [excludesValue, radioName, value]);
   // One predicate for both the rendered element and the aria-describedby that
   // points at it. A ReactNode description can be `false` or `''`, which render
   // nothing — a `!= null` check would leave the link dangling.
@@ -310,8 +327,6 @@ export function RadioListItem({
   // option (WCAG 4.1.2). The radio carries its accessible name via `aria-label`
   // since the visible label is now a plain (non-`<label>`) text node — a real
   // `<label htmlFor>` would double-fire under delegation.
-  const radioRef = useRef<HTMLInputElement>(null);
-
   const radioCircle = (
     <div
       {...stylex.props(
@@ -324,16 +339,18 @@ export function RadioListItem({
         ref={radioRef}
         id={id}
         type="radio"
-        name={context.name}
+        name={radioName}
         value={value}
         checked={isChecked}
         // A disabled radio stays focusable (spec:AST-085 FR1): never native
-        // `disabled`. It keeps its name (grouping); RadioList detaches every
-        // radio from the form at once when one could otherwise submit a
-        // disabled value (FR3).
+        // `disabled`. A wholly disabled group leaves the form together, so it
+        // submits nothing and blocks no submit (FR3).
         aria-disabled={isDisabled ? 'true' : undefined}
         form={formContext?.detachesFromForm ? '' : undefined}
-        required={context.isRequired}
+        // A disabled radio is not required: a group whose options are all
+        // disabled blocks no submit, while one enabled option keeps the choice
+        // required (FR3).
+        required={context.isRequired && !isDisabled}
         onChange={() => {
           if (isDisabled) {
             return;
