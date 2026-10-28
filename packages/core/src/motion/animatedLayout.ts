@@ -44,8 +44,9 @@
  *   assistive technology, while new content enters in its place, on the same
  *   motion, and removes it when the swap ends (`holdLayoutSwap`,
  *   `playLayoutSwap`; `spec:AST-105` FR8). The caller shapes the frames over
- *   the swap's progress; under Reduce Motion with a coarse pointer only
- *   opacity changes.
+ *   the swap's progress and, riding a gliding element, how far it has moved,
+ *   so every part keeps to that glide; under Reduce Motion with a coarse
+ *   pointer only opacity changes.
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -1013,44 +1014,47 @@ export interface LayoutSwap {
   readonly rect: DOMRect;
 }
 
-/**
- * Ends a swap at once, removing its copy; `handOff` instead ends it leaving
- * the copy where and as it shows, for a new change to take over (null once
- * the swap has ended).
- */
-export type LayoutSwapEnd = (() => void) & {
-  readonly handOff: () => HTMLElement | null;
-};
+/** How far a ridden element has moved since the swap began. */
+export interface LayoutRide {
+  readonly x: number;
+  readonly y: number;
+}
 
-/** How a swap plays, as frames over its progress (0 → 1). */
+/**
+ * How a swap plays, as frames over its progress (0 → 1) and, with
+ * `rideWith`, the ridden element's travel so far.
+ */
 export interface LayoutSwapMotion {
   /** The box the copy is laid out in, over the old content's place. */
   readonly host: Element;
   /** The copy's frames while it travels. */
-  readonly copy: (p: number) => Keyframe;
+  readonly copy: (p: number, ride: LayoutRide) => Keyframe;
   /** Its text's opacity, on its own curve, when that differs from the copy's. */
   readonly copyText?: (p: number) => number;
   /** The copy paints above its neighbours, in the background it shows. */
   readonly isOpaque?: boolean;
   /**
-   * An element the glide moves, such as the column the old content sat in:
-   * the copy rides its glide, frame by frame, by `travel` (the old place less
-   * the new). Without a glide (it lands silently), the copy takes its new
-   * place at once, as the element does.
+   * An element the glide moves, such as the column the old content sat in.
+   * Every part plays over its glide, frame by frame, and is told how far it
+   * has moved; the copy rides it unless `isCopyMoved` is false. Without a
+   * glide (it lands silently) the ride is the whole `travel` at once (its
+   * old place less its new).
    */
   readonly rideWith?: {
     readonly element: Element;
-    /** Its old place less its new, for when it does not glide. */
-    readonly travel: {readonly x: number; readonly y: number};
+    readonly travel: LayoutRide;
+    readonly isCopyMoved?: boolean;
   };
-  /** Called once when the swap ends, however it ends (not on hand-off). */
+  /** Called once when the swap ends, however it ends. */
   readonly onEnd?: () => void;
   /** Elements the page already renders, entering with the swap. */
   readonly incoming: ReadonlyArray<{
     readonly element: Element;
-    readonly frames: (p: number) => Keyframe;
+    readonly frames: (p: number, ride: LayoutRide) => Keyframe;
   }>;
 }
+
+const NO_RIDE: LayoutRide = {x: 0, y: 0};
 
 /**
  * Before a change commits: hold `element`'s old content as one transient copy
@@ -1094,10 +1098,10 @@ export function holdLayoutSwap(
 export function playLayoutSwap(
   swap: LayoutSwap,
   how: LayoutSwapMotion,
-): LayoutSwapEnd {
+): () => void {
   const motion = layoutMotion(swap.area);
   if (motion.kind === 'instant') {
-    return Object.assign(() => {}, {handOff: () => null});
+    return () => {};
   }
   const {copy} = swap;
   placeOver(copy, how.host, swap.rect);
@@ -1105,14 +1109,6 @@ export function playLayoutSwap(
     copy.style.zIndex = '1';
     copy.style.backgroundColor = paintedBackground(copy);
   }
-  const travels = motion.kind === 'spring';
-  const options: KeyframeAnimationOptions = travels
-    ? {duration: motion.progress.durationMs, easing: 'linear', fill: 'both'}
-    : {duration: motion.durationMs, easing: motion.easing, fill: 'both'};
-  const frames = (shape: (p: number) => Keyframe): Keyframe[] =>
-    travels
-      ? sampleKeyframes(motion.progress, remaining => shape(1 - remaining))
-      : [shape(0), shape(1)];
   const animations: Animation[] = [];
   let isDone = false;
   const end = () => {
@@ -1124,91 +1120,101 @@ export function playLayoutSwap(
     copy.remove();
     how.onEnd?.();
   };
-  const play = (element: Element, shape: (p: number) => Keyframe) => {
-    const animation = safeAnimate(element, frames(shape), options);
-    if (animation != null) {
-      animations.push(animation);
+  const {copyText, rideWith} = how;
+  const fadedText =
+    copyText != null && motion.kind === 'spring' ? wrapText(copy) : [];
+  // Each part as a function of time: its frame, or the copy's with its ride.
+  const parts: [Element, (p: number, ride: LayoutRide) => Keyframe][] = [];
+  if (motion.kind === 'spring') {
+    const moves = rideWith != null && rideWith.isCopyMoved !== false;
+    parts.push([
+      copy,
+      (p, ride) => ({
+        ...how.copy(p, ride),
+        ...(moves ? {translate: `${ride.x}px ${ride.y}px`} : null),
+      }),
+    ]);
+    for (const span of fadedText) {
+      parts.push([span, p => ({opacity: copyText?.(p) ?? 1})]);
     }
-  };
-  const {rideWith} = how;
-  if (travels && rideWith != null) {
-    // After this commit's glides start (the batch flushes in a microtask
-    // queued before this one), before the frame paints.
-    queueMicrotask(() => {
-      if (isDone) {
-        return;
-      }
-      const glide = glides.get(rideWith.element);
-      const durationMs = glide?.durationMs ?? motion.progress.durationMs;
+    for (const {element, frames} of how.incoming) {
+      parts.push([element, frames]);
+    }
+  } else {
+    // Reduce Motion with a coarse pointer: only opacity changes.
+    parts.push([copy, p => ({opacity: 1 - p})]);
+    for (const {element} of how.incoming) {
+      parts.push([element, p => ({opacity: p})]);
+    }
+  }
+  const playAll = (
+    durationMs: number,
+    progressAt: (t: number) => number,
+    rideAt: (t: number) => LayoutRide,
+    options: KeyframeAnimationOptions,
+    sample: (shape: (t: number) => Keyframe) => Keyframe[],
+  ) => {
+    for (const [element, shape] of parts) {
       const animation = safeAnimate(
-        copy,
-        sampleOver(durationMs, t => {
-          // Where the element shows against where it showed at the start,
-          // which is where the copy was laid (a running glide's offset
-          // included); without a glide it lands at once, by `travel`.
-          const offset = glide?.offsetAt(t) ?? AT_REST(t);
-          const start = glide?.offsetAt(0) ?? rideWith.travel;
-          const x = offset.x - start.x;
-          const y = offset.y - start.y;
-          return {
-            ...how.copy(1 - motion.progress.remaining(t)),
-            translate: `${x}px ${y}px`,
-          };
-        }),
-        {duration: durationMs, easing: 'linear', fill: 'both'},
+        element,
+        sample(t => shape(progressAt(t), rideAt(t))),
+        {duration: durationMs, fill: 'both', ...options},
       );
       if (animation != null) {
         animations.push(animation);
-        animation.addEventListener?.('finish', end);
       }
-    });
-  } else {
-    play(copy, travels ? how.copy : p => ({opacity: 1 - p}));
-  }
-  const {copyText} = how;
-  const fadedText = travels && copyText != null ? wrapText(copy) : [];
-  if (copyText != null) {
-    for (const span of fadedText) {
-      play(span, p => ({opacity: copyText(p)}));
     }
-  }
-  for (const {element, frames: shape} of how.incoming) {
-    play(element, travels ? shape : p => ({opacity: p}));
-  }
-  if (animations.length === 0 && !(travels && rideWith != null)) {
-    end();
-  } else {
-    // Every part runs on one clock, so the first to finish ends them all.
-    animations[0]?.addEventListener?.('finish', end);
-  }
-  // A new change can take the copy over mid-swap: it stays where it shows,
-  // at the opacity it shows, and the caller removes it.
-  const handOff = (): HTMLElement | null => {
-    if (isDone) {
-      return null;
+    if (animations.length === 0) {
+      end();
+    } else {
+      // Every part runs on one clock, so the first to finish ends them all.
+      animations[0].addEventListener?.('finish', end);
     }
-    // What the running frames show, written inline before they end: the
-    // copy's opacity, travel and clip, and its text's fade.
-    const shown = getComputedStyle(copy);
-    const frozen = {
-      opacity: shown.opacity,
-      translate: shown.translate,
-      clipPath: shown.clipPath,
-    };
-    const texts = fadedText.map(
-      element => [element, getComputedStyle(element).opacity] as const,
-    );
-    isDone = true;
-    animations.forEach(animation => animation.cancel());
-    copy.style.opacity = frozen.opacity;
-    copy.style.translate = frozen.translate;
-    copy.style.clipPath = frozen.clipPath;
-    for (const [element, opacity] of texts) {
-      (element as HTMLElement | SVGElement).style.opacity = opacity;
-    }
-    return copy;
   };
-  return Object.assign(end, {handOff});
+  if (motion.kind === 'fade') {
+    playAll(
+      motion.durationMs,
+      t => (t <= 0 ? 0 : 1),
+      () => NO_RIDE,
+      {easing: motion.easing},
+      shape => [shape(0), shape(motion.durationMs)],
+    );
+    return end;
+  }
+  const {progress} = motion;
+  const progressAt = (t: number) => 1 - progress.remaining(t);
+  if (rideWith == null) {
+    playAll(
+      progress.durationMs,
+      progressAt,
+      () => NO_RIDE,
+      {easing: 'linear'},
+      shape => sampleOver(progress.durationMs, shape),
+    );
+    return end;
+  }
+  // After this commit's glides start (the batch flushes in a microtask queued
+  // before this one), before the frame paints: every part plays over the
+  // ridden element's glide, told how far it has moved from where it showed.
+  queueMicrotask(() => {
+    if (isDone) {
+      return;
+    }
+    const glide = glides.get(rideWith.element);
+    const durationMs = glide?.durationMs ?? progress.durationMs;
+    const rideAt = (t: number): LayoutRide => {
+      if (glide == null) {
+        return {x: -rideWith.travel.x, y: -rideWith.travel.y};
+      }
+      const now = glide.offsetAt(t);
+      const start = glide.offsetAt(0);
+      return {x: now.x - start.x, y: now.y - start.y};
+    };
+    playAll(durationMs, progressAt, rideAt, {easing: 'linear'}, shape =>
+      sampleOver(durationMs, shape),
+    );
+  });
+  return end;
 }
 
 /**
@@ -1233,7 +1239,9 @@ export function playLayoutFrames(
       motion.kind === 'spring'
         ? safeAnimate(
             element,
-            sampleKeyframes(motion.progress, remaining => shape(1 - remaining)),
+            sampleKeyframes(motion.progress, remaining =>
+              shape(1 - remaining, NO_RIDE),
+            ),
             {
               duration: motion.progress.durationMs,
               easing: 'linear',

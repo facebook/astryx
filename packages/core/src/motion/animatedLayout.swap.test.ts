@@ -469,6 +469,36 @@ describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
     expect(ride?.keyframes.length).toBe(glide?.keyframes.length);
   });
 
+  it('tells every part how far the ridden element has moved, on its glide', async () => {
+    const {handle, area, rail, column, content, after} = rideSetup();
+    const swap = holdLayoutSwap(handle, content);
+    const change = reportLayoutChange(handle, {current: rail});
+    change.measureBefore();
+    after();
+    change.animate();
+    const title = document.createElement('h3');
+    area.appendChild(title);
+    playLayoutSwap(swap!, {
+      host: area,
+      // A copy that stays put and follows the ride by its clip instead.
+      copy: (_p, ride) => ({clipPath: `inset(0px ${-ride.x}px 0px 0px)`}),
+      rideWith: {element: column, travel: {x: 212, y: 0}, isCopyMoved: false},
+      incoming: [
+        {element: title, frames: (_p, ride) => ({marginLeft: `${ride.x}px`})},
+      ],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const glide = played.find(entry => entry.element === column);
+    const copy = played.find(entry => entry.element === swap!.copy);
+    const incoming = played.find(entry => entry.element === title);
+    expect(copy?.keyframes[0].translate).toBeUndefined();
+    expect(copy?.keyframes[0].clipPath).toBe('inset(0px 0px 0px 0px)');
+    expect(copy?.keyframes.at(-1)?.clipPath).toBe('inset(0px 212px 0px 0px)');
+    expect(incoming?.keyframes.at(-1)?.marginLeft).toBe('-212px');
+    expect(incoming?.keyframes.length).toBe(glide?.keyframes.length);
+  });
+
   it('takes its new place at once when the element it rides does not glide', async () => {
     const {handle, area, column, content, after} = rideSetup();
     const swap = holdLayoutSwap(handle, content);
@@ -621,55 +651,7 @@ describe('more swap layout cases', () => {
   });
 });
 
-describe('handing a swap copy over', () => {
-  it('leaves the copy where it shows for a new change, which removes it', () => {
-    const {handle, content, host} = setup();
-    const swap = holdLayoutSwap(handle, content);
-    const end = playLayoutSwap(swap!, {host, copy: travel, incoming: []});
-    const copy = end.handOff();
-    expect(copy).toBe(swap!.copy);
-    expect(copy?.isConnected).toBe(true);
-    // Ending it now no longer removes the copy: it belongs to the caller.
-    end();
-    expect(copy?.isConnected).toBe(true);
-    expect(end.handOff()).toBeNull();
-  });
-
-  it('hands the copy over where and as it shows: travel, clip and text fade', () => {
-    const {handle, content, host} = setup();
-    const swap = holdLayoutSwap(handle, content);
-    const end = playLayoutSwap(swap!, {
-      host,
-      copy: travel,
-      copyText: p => 1 - p,
-      incoming: [],
-    });
-    const real = window.getComputedStyle;
-    vi.spyOn(window, 'getComputedStyle').mockImplementation(
-      (element: Element): CSSStyleDeclaration => {
-        const style = real(element);
-        if (element === swap!.copy) {
-          return Object.assign(Object.create(style), {
-            opacity: '0.7',
-            translate: '-60px 0px',
-            clipPath: 'inset(0px 20px 0px 0px)',
-          });
-        }
-        if (element.parentElement?.id === '' && element.tagName === 'SPAN') {
-          return Object.assign(Object.create(style), {opacity: '0.3'});
-        }
-        return style;
-      },
-    );
-    const copy = end.handOff();
-    vi.restoreAllMocks();
-    expect(copy?.style.translate).toBe('-60px 0px');
-    expect(copy?.style.opacity).toBe('0.7');
-    expect(copy?.style.clipPath).toBe('inset(0px 20px 0px 0px)');
-    const heading = copy?.querySelector('h2 > span') as HTMLElement | null;
-    expect(heading?.style.opacity).toBe('0.3');
-  });
-
+describe('ending a swap', () => {
   it('leaves the text of a style sheet or a textarea in place when its text fades', () => {
     const {handle, content, host} = setup();
     content.insertAdjacentHTML(
