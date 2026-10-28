@@ -291,7 +291,9 @@ test('with no matches in the dialog, the first Escape hides the empty message an
   const field = page.getByRole('combobox', {name: 'Add people'});
   await field.click();
   await page.keyboard.type('zz');
-  const empty = page.getByText('No one matches', {exact: true});
+  // The shown paragraph, not the dialog's live region, which announces the
+  // same words for a moment.
+  const empty = dialog.locator('p').filter({hasText: /^No one matches$/});
   await expect(empty).toBeVisible();
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(field).toHaveAttribute('aria-expanded', 'false');
