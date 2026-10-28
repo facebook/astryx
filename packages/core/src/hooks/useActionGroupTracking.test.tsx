@@ -363,10 +363,18 @@ describe('useActionGroupTracking', () => {
     f.up(message, centerOf(MESSAGE));
     expect(onDelete).toHaveBeenCalledTimes(1);
     expect(onCancel).not.toHaveBeenCalled();
+    // The tracker asks the caller's choice for a finger, handing it the
+    // group's disabled actions read when the press began (none here).
     const getOptions = vi
       .mocked(createActionGroupTracker)
       .mock.calls.at(-1)?.[0];
-    expect(getOptions?.().resolveTarget).toBe(resolveTarget);
+    expect(getOptions?.().resolveTarget).toBeTypeOf('function');
+    expect(resolveTarget).toHaveBeenCalledWith(
+      centerOf(MESSAGE).x,
+      centerOf(MESSAGE).y,
+      expect.any(Array),
+      [],
+    );
   });
 
   it("lets a mouse hit-test the exact rects even with a resolveTarget, which is a finger's (family:action-groups FR5)", () => {
