@@ -237,6 +237,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hover-card',
+  Icon: 'icon',
   Item: 'item',
   NumberInput: 'number-input',
   Popover: 'popover',
@@ -503,6 +504,20 @@ describe('getDerivedVars', () => {
     expect(result).toHaveLength(1);
     expect(result[0].vars).toEqual(['--_textarea-inline-padding']);
     expect(result[0].replaces).toBe(true);
+  });
+
+  it('marks icon width and height as replacing the source property', () => {
+    // spec:AST-087 FR10: the glyph reads these vars for its dimension, so a
+    // raw width/height beside them would only compete with its size styles.
+    for (const [property, varName] of [
+      ['width', '--_icon-width'],
+      ['height', '--_icon-height'],
+    ]) {
+      const result = getDerivedVars('icon', property);
+      expect(result).toHaveLength(1);
+      expect(result[0].vars).toEqual([varName]);
+      expect(result[0].replaces).toBe(true);
+    }
   });
 
   it('marks progress-bar-mark width and height as replacing the source property', () => {

@@ -214,76 +214,10 @@ const ours = new WeakSet<Animation>();
 
 const TRANSFORM_PROPERTIES = ['transform', 'translate', 'rotate', 'scale'];
 
-/** The numbers in a CSS value, units dropped. */
-function numbersIn(value: string): number[] {
-  return (value.match(/-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/gi) ?? []).map(
-    Number,
-  );
-}
-
 /**
- * Whether a transform value leaves the element where it is: nothing at all
- * (a swipe's `translate3d(0, 0, 0)` at rest, a button's `scale(1)`, computed
- * as `matrix(1, 0, 0, 1, 0, 0)`), or a scale in place (a pressed button's
- * `scale(0.98)`). A glide's `translate` composes with either; a translation,
- * rotation or skew of its own is the app moving the element.
- */
-function staysInPlace(property: string, value: string): boolean {
-  if (property === 'scale') {
-    return true;
-  }
-  if (property === 'translate') {
-    return numbersIn(value).every(n => n === 0);
-  }
-  if (property === 'rotate') {
-    // An angle, after an optional axis: only the angle matters.
-    const numbers = numbersIn(value);
-    return numbers.length > 0 && numbers[numbers.length - 1] === 0;
-  }
-  // A list of transform functions, as computed (`matrix()`, `matrix3d()`)
-  // or as written.
-  const functions = [...value.matchAll(/([a-z0-9]+)\(([^)]*)\)/gi)];
-  return (
-    functions.length > 0 &&
-    functions.every(([, name, args]) => {
-      const numbers = numbersIn(args);
-      const fn = name.toLowerCase();
-      if (fn === 'matrix') {
-        // a b c d e f: no skew, rotation or translation.
-        return (
-          numbers.length === 6 &&
-          [1, 2, 4, 5].every(index => numbers[index] === 0)
-        );
-      }
-      if (fn === 'matrix3d') {
-        // Only the diagonal: a scale, nothing else.
-        return (
-          numbers.length === 16 &&
-          numbers.every((n, index) => index % 5 === 0 || n === 0)
-        );
-      }
-      if (fn === 'rotate3d') {
-        return numbers[3] === 0;
-      }
-      if (fn.startsWith('scale')) {
-        return true;
-      }
-      if (
-        fn.startsWith('translate') ||
-        fn.startsWith('rotate') ||
-        fn.startsWith('skew')
-      ) {
-        return numbers.every(n => n === 0);
-      }
-      return false;
-    })
-  );
-}
-
-/**
- * Whether the app moves `element` itself: its own `transform`, `translate`
- * or `rotate`, or a running animation of one this module did not start. A
- * value that leaves it in place (nothing, or a scale) is not a move.
+ * Whether the app moves `element` itself: its own `transform`, `translate`,
+ * `rotate` or `scale`, or a running animation of one this module did not
+ * start.
  */
 function movedByApp(element: Element): boolean {
   const style = element.ownerDocument.defaultView?.getComputedStyle(element);
@@ -291,7 +225,7 @@ function movedByApp(element: Element): boolean {
     style != null &&
     TRANSFORM_PROPERTIES.some(property => {
       const value = style.getPropertyValue(property);
-      return value !== '' && value !== 'none' && !staysInPlace(property, value);
+      return value !== '' && value !== 'none';
     })
   ) {
     return true;
@@ -309,13 +243,7 @@ function movedByApp(element: Element): boolean {
     }
     return effect
       .getKeyframes()
-      .some(frame =>
-        TRANSFORM_PROPERTIES.some(
-          property =>
-            property in frame &&
-            !staysInPlace(property, String(frame[property])),
-        ),
-      );
+      .some(frame => TRANSFORM_PROPERTIES.some(property => property in frame));
   });
 }
 
@@ -436,6 +364,86 @@ function partOf(element: Element, cache: WalkCache): boolean | 'contents' {
   return part;
 }
 
+/**
+ * Whether a container lays its children out across the block direction, so
+ * DOM order does not run down the page: multi-column, a wrapping column flex
+ * box, or a grid that flows by column. The band says nothing about where its
+ * later children sit, so a walk there runs through the level.
+ */
+function flowsAcross(container: Element | null): boolean {
+  if (container == null) {
+    return false;
+  }
+  const style =
+    container.ownerDocument.defaultView?.getComputedStyle(container);
+  if (style == null) {
+    return false;
+  }
+  const count = style.getPropertyValue('column-count');
+  const width = style.getPropertyValue('column-width');
+  return (
+    (count !== '' && count !== 'auto') ||
+    (width !== '' && width !== 'auto') ||
+    (style.display.includes('flex') &&
+      style.flexDirection.startsWith('column') &&
+      style.flexWrap.startsWith('wrap')) ||
+    (style.display.includes('grid') &&
+      style.getPropertyValue('grid-auto-flow').startsWith('column'))
+  );
+}
+
+/**
+ * The box a sticky element sticks to: its nearest scrolling ancestor's, or
+ * the viewport.
+ */
+function scrollportOf(element: Element): {start: number; end: number} {
+  const view = element.ownerDocument.defaultView;
+  for (
+    let node = element.parentElement;
+    node != null && node !== element.ownerDocument.documentElement;
+    node = node.parentElement
+  ) {
+    const overflow = view?.getComputedStyle(node).overflowY ?? 'visible';
+    if (
+      node === element.ownerDocument.body &&
+      view?.getComputedStyle(element.ownerDocument.documentElement)
+        .overflowY === 'visible'
+    ) {
+      // The body's overflow applies to the viewport while the root's is
+      // visible: the body is no scroller of its own.
+      continue;
+    }
+    if (overflow !== 'visible' && overflow !== 'clip') {
+      const box = node.getBoundingClientRect();
+      return {
+        start: box.top + node.clientTop,
+        end: box.top + node.clientTop + node.clientHeight,
+      };
+    }
+  }
+  return {start: 0, end: view?.innerHeight ?? 0};
+}
+
+/**
+ * Whether a sticky element is stuck: resting against its scrollport's edge
+ * at its inset. A stuck element takes its final place; an unstuck one is in
+ * flow.
+ */
+function isStuck(element: Element, cache: WalkCache): boolean {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (style?.position !== 'sticky') {
+    return false;
+  }
+  const rect = rectOf(element, cache);
+  const edge = scrollportOf(element);
+  const top = Number.parseFloat(style.top);
+  const bottom = Number.parseFloat(style.bottom);
+  return (
+    (Number.isFinite(top) && Math.abs(rect.top - (edge.start + top)) < 1) ||
+    (Number.isFinite(bottom) && Math.abs(rect.bottom - (edge.end - bottom)) < 1)
+  );
+}
+
 function rectOf(element: Element, cache: WalkCache): DOMRect {
   let rect = cache.rects.get(element);
   if (rect === undefined) {
@@ -456,8 +464,8 @@ function rectOf(element: Element, cache: WalkCache): DOMRect {
  * depth plus the siblings near the visible part, never with the length of a
  * list; where the area opts out of scroll anchoring (`walksToBand`), the walk
  * after a change above the band goes on to the band, a cost that grows with
- * that distance. Inside a positioned or top-layer ancestor only the siblings
- * after the change are taken.
+ * that distance. Inside a positioned, stuck sticky or top-layer ancestor only the
+ * content after the change is taken.
  */
 function collectCandidates(
   changed: Element,
@@ -465,9 +473,13 @@ function collectCandidates(
   band: Band,
   cache: WalkCache,
   walksToBand: boolean,
+  ancestors: Set<Element>,
+  befores: Set<Element>,
 ): Map<Element, DOMRect> {
   const out = new Map<Element, DOMRect>();
   /** Takes `element`; returns false once it lies outside the band. */
+  /** The current level runs through its siblings, ignoring the band. */
+  let runsThrough = false;
   const take = (element: Element, isAfter: boolean): boolean => {
     const part = partOf(element, cache);
     if (part === 'contents') {
@@ -490,6 +502,10 @@ function collectCandidates(
       return true;
     }
     const rect = rectOf(element, cache);
+    if (runsThrough) {
+      out.set(element, rect);
+      return true;
+    }
     if (rect.top > band.end) {
       return false;
     }
@@ -500,12 +516,15 @@ function collectCandidates(
       return isAfter && walksToBand;
     }
     out.set(element, rect);
+    if (!isAfter) {
+      befores.add(element);
+    }
     return true;
   };
   // The change's chain up to the area, and from where it is inside a
-  // positioned or top-layer ancestor: that ancestor takes its final place,
-  // so inside it only the content after the change moves (the siblings
-  // before it stay, as the content revealing beside them does).
+  // positioned, stuck sticky or top-layer ancestor: that ancestor takes its final
+  // place, so inside it only the content after the change moves; the
+  // ancestors and the siblings before the change stay with it.
   const chain: Element[] = [];
   for (
     let node: Element | null = changed;
@@ -517,17 +536,24 @@ function collectCandidates(
   // The levels below this index are inside a positioned ancestor.
   let positionedFrom = 0;
   for (let index = chain.length - 1; index > 0; index -= 1) {
-    if (partOf(chain[index], cache) === false) {
+    if (partOf(chain[index], cache) === false || isStuck(chain[index], cache)) {
       positionedFrom = index;
       break;
     }
   }
   for (const [level, node] of chain.entries()) {
-    if (node !== changed && partOf(node, cache) === true) {
+    runsThrough = flowsAcross(node.parentElement);
+    if (
+      node !== changed &&
+      level > positionedFrom &&
+      partOf(node, cache) === true
+    ) {
       // An ancestor of the change in flow: where its layout moves it (a
       // centered column), it glides, and what is inside moves only by its own
-      // change. A positioned or top-layer ancestor takes its final place.
+      // change. A positioned, stuck sticky or top-layer ancestor, and every
+      // ancestor inside it, takes its final place.
       out.set(node, rectOf(node, cache));
+      ancestors.add(node);
     }
     for (
       let sibling = node.nextElementSibling;
@@ -568,6 +594,16 @@ interface Batch {
   visible: DOMRect | null;
   /** Whether the area opts out of scroll anchoring, read once per frame. */
   walksToBand: boolean | null;
+  /** The change's ancestors among the candidates. */
+  readonly ancestors: Set<Element>;
+  /** The siblings before the change among the candidates. */
+  readonly befores: Set<Element>;
+  /**
+   * Where the area's content sat before the change, read once per frame: the
+   * area's place in view less its scroll offset, so a scroll of the area, an
+   * outer scroller or the page shows up as a change of it.
+   */
+  originBefore: {readonly x: number; readonly y: number} | null;
   readonly cache: WalkCache;
   scheduled: boolean;
 }
@@ -586,6 +622,9 @@ function batchFor(area: Element): Batch {
       reach: 0,
       visible: null,
       walksToBand: null,
+      ancestors: new Set(),
+      befores: new Set(),
+      originBefore: null,
       cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
@@ -621,6 +660,12 @@ function intersects(a: DOMRect, b: DOMRect): boolean {
 }
 
 /** The part of the area the person can see: its box within the viewport. */
+/** Where the area's scrolled content starts, in client px. */
+function originOf(area: Element): {x: number; y: number} {
+  const box = area.getBoundingClientRect();
+  return {x: box.left - area.scrollLeft, y: box.top - area.scrollTop};
+}
+
 function visibleRect(area: Element): DOMRect {
   const box = area.getBoundingClientRect();
   const view = area.ownerDocument.defaultView;
@@ -712,10 +757,28 @@ function flush(batch: Batch): void {
     entries.push({element, before, carried, carriedMs});
   }
   const byElement = new Map<Element, (typeof entries)[number]>();
+  // An ancestor of the change, and a sibling before it, move by their layout
+  // change alone: when scroll anchoring re-scrolls the area, an outer
+  // scroller or the page (a change above the visible part), or the area
+  // itself moves as its content grows (a dialog re-centered), their place in
+  // view shifts by that while their place in the area stays.
+  const origin = originOf(batch.area);
+  const scrolledX = origin.x - (batch.originBefore?.x ?? origin.x);
+  const scrolledY = origin.y - (batch.originBefore?.y ?? origin.y);
+  // Netted only where that makes the move smaller: an element the browser
+  // kept in place (scroll anchoring for another change in the same frame)
+  // stays where it is.
+  const nearer = (raw: number, shift: number) =>
+    Math.abs(raw + shift) < Math.abs(raw) ? raw + shift : raw;
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    entry.rawX = entry.before.left - entry.after.left;
-    entry.rawY = entry.before.top - entry.after.top;
+    const rawX = entry.before.left - entry.after.left;
+    const rawY = entry.before.top - entry.after.top;
+    // The siblings before the change stay with the ancestors around them.
+    const isAncestor =
+      batch.ancestors.has(entry.element) || batch.befores.has(entry.element);
+    entry.rawX = isAncestor ? nearer(rawX, scrolledX) : rawX;
+    entry.rawY = isAncestor ? nearer(rawY, scrolledY) : rawY;
     byElement.set(entry.element, entry);
   }
   for (const entry of entries) {
@@ -835,6 +898,7 @@ export function reportLayoutChange(
       batch.changed.add(element);
       batch.changedSize += rectOf(element, batch.cache).height;
       batch.visible ??= visibleRect(area);
+      batch.originBefore ??= originOf(area);
       batch.walksToBand ??=
         area.ownerDocument.defaultView
           ?.getComputedStyle(area)
@@ -857,6 +921,8 @@ export function reportLayoutChange(
           band,
           batch.cache,
           batch.walksToBand,
+          batch.ancestors,
+          batch.befores,
         );
         for (const [candidate, rect] of candidates) {
           if (!batch.before.has(candidate)) {

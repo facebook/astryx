@@ -764,6 +764,51 @@ describe('MobileTokenizer Core-sheet parity', () => {
     expect(onBlur).toHaveBeenCalledTimes(1);
   });
 
+  it("reports the sheet's focus hand-back as the entry when the trigger never had focus (a tap that opens without focusing, as Safari does), so the caller never gets a blur without its focus", async () => {
+    presentModally();
+    const events: string[] = [];
+    render(
+      <>
+        <button type="button">Elsewhere</button>
+        <MobileTokenizer
+          label="Tags"
+          onFocus={() => events.push('focus')}
+          onBlur={() => events.push('blur')}
+          searchSource={source}
+          value={[ITEMS[0]]}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tags'});
+    // A click with no focus first: the sheet opens, nothing reported yet.
+    fireEvent.click(trigger);
+    await screen.findByRole('dialog');
+    await screen.findByRole('checkbox', {name: 'Design'});
+    expect(trigger).not.toHaveFocus();
+    expect(events).toEqual([]);
+    // Done: BottomSheet hands focus to the trigger. The trigger never had
+    // focus, so this is the entry.
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    act(() => trigger.focus());
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(events).toEqual(['focus']);
+    // Leaving the field reports the blur, after its focus.
+    act(() => screen.getByRole('button', {name: 'Elsewhere'}).focus());
+    expect(events).toEqual(['focus', 'blur']);
+    // A second round from a focused trigger: entry on focus, quiet on the
+    // hand-back, blur on leaving — one pair again.
+    act(() => trigger.focus());
+    fireEvent.click(trigger);
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    act(() => trigger.focus());
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    act(() => screen.getByRole('button', {name: 'Elsewhere'}).focus());
+    expect(events).toEqual(['focus', 'blur', 'focus', 'blur']);
+  });
+
   it('forwards the base props — id, data-*, aria-*, handlers — to the trigger button, not the field root', () => {
     const onPointerDown = vi.fn();
     render(

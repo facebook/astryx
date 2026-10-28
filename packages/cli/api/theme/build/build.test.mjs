@@ -599,6 +599,33 @@ describe('themeBuild() — component override validation', () => {
   });
 });
 
+describe('themeBuild() — Icon size dimensions', () => {
+  it('writes width and height on an icon size into the vars the glyph reads, with no warnings', async () => {
+    // spec:AST-087 FR10: a built theme sets an Icon size's glyph dimension the
+    // way the runtime provider does, through the shared compiler's derived
+    // vars. Raw width/height would lose to a consumer's unlayered StyleX.
+    const themeFile = path.join(tmpDir, 'iconsizes.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'iconsizes',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {icon: {'size:sm': {width: '18px', height: '22px'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('iconsizes.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+    const css = fs.readFileSync(path.join(tmpDir, 'iconsizes.css'), 'utf8');
+    const rule =
+      css.match(/\.astryx-icon\[data-size="sm"\]\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toMatch(/--_icon-width:\s*18px/);
+    expect(rule).toMatch(/--_icon-height:\s*22px/);
+    expect(rule).not.toMatch(/(^|[\s;])(width|height)\s*:/);
+  });
+});
+
 describe('themeBuild() — the shipped theme template', () => {
   // `assets/theme.template.ts` is what `astryx theme template` puts in a
   // consumer's project. It is the one theme file we hand out, so it has to
