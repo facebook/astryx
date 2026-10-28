@@ -42,7 +42,11 @@ import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListItemSlotMotion} from './listItemSlotMotion';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {ITEM_KEY_ATTRIBUTE, keepPresentation} from './listLayoutUpdates';
+import {
+  ITEM_KEY_ATTRIBUTE,
+  isInAnimatedList,
+  keepPresentation,
+} from './listLayoutUpdates';
 import {useTouchHitArea} from '../utils/touchHitArea';
 import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
@@ -137,12 +141,9 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 
   /**
    * The row's item key, a string or a number from the data (the shape
-   * Table's `idKey` returns). It is the row's identity for the list's
-   * animated layout (`animatedLayout`, `component:List` FR12) and, in a
-   * reorderable List (`List reorderable`), the key the reorderable object's
-   * `onReorder` reports as given and `isReorderable` is asked about. A row
-   * without one has no reorder handle. Separate from React's `key`, which
-   * stays React's own.
+   * Table's `idKey` returns): the row's identity for the list's animated
+   * layout (`animatedLayout`, `component:List` FR12). A row without one
+   * changes at once. Separate from React's `key`, which stays React's own.
    */
   itemKey?: string | number;
 
@@ -366,14 +367,6 @@ export function ListItem({
   const ctx = use(ListContext);
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
-  // Under the list's animated layout handle, a row leaving the list keeps
-  // what it showed on screen for its exit.
-  const keepRowPresentation =
-    ctx?.animatedLayout != null ? keepPresentation : undefined;
-  const keepRowPresentationRef = useRef(keepRowPresentation);
-  useIsomorphicLayoutEffect(() => {
-    keepRowPresentationRef.current = keepRowPresentation;
-  });
   // External system (`architecture:react-component-runtime` INV3): the Web
   // Animations running on the row's parts (a swipe's travel, on the
   // compositor), which a detached row loses. Leaving a list that animates
@@ -384,7 +377,11 @@ export function ListItem({
     const row = rowRef.current;
     return () => {
       if (row != null) {
-        keepRowPresentationRef.current?.(row);
+        // Only in a list under an animated layout handle, as the list was
+        // at its last commit (List/listLayoutUpdates.ts).
+        if (isInAnimatedList(row)) {
+          keepPresentation(row);
+        }
       }
     };
   }, []);

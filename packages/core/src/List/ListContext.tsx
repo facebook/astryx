@@ -57,9 +57,8 @@ export interface ListContextValue {
   task?: ListTaskMarker;
   /**
    * The list's `animatedLayout` handle (`component:List` FR12), for its rows;
-   * internal. With it, a row leaving the list keeps what it showed on screen
-   * for its exit (List/listLayoutUpdates.ts `keepPresentation`), and a row's
-   * own layout changes report to it.
+   * internal: a row's own layout changes (its start and end content) report
+   * to the same handle.
    */
   animatedLayout?: AnimatedLayout;
 }
