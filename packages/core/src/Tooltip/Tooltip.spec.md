@@ -238,7 +238,8 @@ Read from source, with no focused test yet:
 - FR7: `isOpen={true}` suppressing focus hiding.
 - FR1: the 300 px maximum width, the `tooltip` target, and the absence of an
   arrow.
-- FR4: `focusTrigger="always"`, `"never"`, and when `"auto"` reads the tab order, pointer focus on a text field
+- FR4: `focusTrigger="always"`, `"never"`, and when `"auto"` reads the tab order,
+  programmatic focus on a text-entry trigger after pointer input opening it, pointer focus on a text field
   opening the tooltip, programmatic focus before any input, or after a pointer press onto a trigger that is not a text field, other pointer focus not opening it, and focus leaving the trigger
   hiding it.
 - FR8: `hasHoverIndication`.
