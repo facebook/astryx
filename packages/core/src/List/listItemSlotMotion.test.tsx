@@ -129,7 +129,13 @@ const flush = async () => {
 };
 
 type Mode =
-  'plain' | 'select' | 'select-wide' | 'remove' | 'confirm' | 'confirm-narrow';
+  | 'plain'
+  | 'empty'
+  | 'select'
+  | 'select-wide'
+  | 'remove'
+  | 'confirm'
+  | 'confirm-narrow';
 
 let setMode: (mode: Mode) => void = () => undefined;
 let setChecked: (isChecked: boolean) => void = () => undefined;
@@ -156,7 +162,8 @@ function endFor(mode: Mode) {
       </button>
     );
   }
-  return undefined;
+  // A `text && control` slot whose text is empty: it shows nothing.
+  return mode === 'empty' ? '' : undefined;
 }
 
 function Demo({withHandle = true}: {withHandle?: boolean}) {
@@ -258,6 +265,26 @@ describe("a row's start and end content through its List's animatedLayout (compo
       ?.querySelector(':scope > button');
     expect(document.activeElement).toBe(rowTarget);
     expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it("content that leaves as '' (it shows nothing) leaves as an exit, not a swap", async () => {
+    render(<Demo />);
+    await to('remove');
+    played = [];
+    await to('empty');
+    // The remove button plays out as an inert copy, as it does leaving as
+    // undefined.
+    const copies = [...document.querySelectorAll('li [inert]')].filter(
+      element => element.textContent === '×',
+    );
+    expect(copies).toHaveLength(1);
+    expect(
+      played.some(
+        entry =>
+          copies.includes(entry.element) &&
+          Number(entry.keyframes[0]?.opacity) === 1,
+      ),
+    ).toBe(true);
   });
 
   it('content replaced in the same slot swaps in place: the old content as a transient copy while the new one fades in', async () => {

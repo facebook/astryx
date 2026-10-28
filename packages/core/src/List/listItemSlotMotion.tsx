@@ -34,6 +34,7 @@ import {
   type LayoutSwap,
 } from '../motion/animatedLayout';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {isRenderable} from '../utils/isRenderable';
 
 /** On Item's start and end content wrappers: `start` or `end`. */
 export const SLOT_ATTRIBUTE = 'data-astryx-item-slot';
@@ -71,11 +72,11 @@ function typeIdOf(type: unknown): string {
 /**
  * What a slot shows, as an identity that changes only when its content is
  * replaced: the element's type and key, or the text itself. Null for a slot
- * that shows nothing: null, undefined, or a boolean (`condition &&
- * control`), which Item may still wrap in an empty box.
+ * that shows nothing (`isRenderable`: null, undefined, a boolean from
+ * `condition && control`, or ''), which Item may still wrap in an empty box.
  */
 function identityOf(node: ReactNode): string | null {
-  if (node == null || typeof node === 'boolean') {
+  if (!isRenderable(node)) {
     return null;
   }
   if (typeof node === 'string' || typeof node === 'number') {
