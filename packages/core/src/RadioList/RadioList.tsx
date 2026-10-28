@@ -179,7 +179,9 @@ export interface RadioListProps extends Omit<
   /**
    * The HTML name attribute shared by the radio inputs in the group.
    * Useful for form submissions; when omitted, a unique internal name is
-   * generated so the group still roves correctly.
+   * generated so the group still roves correctly. A disabled group submits
+   * nothing, so its radios use the internal name, which keeps it apart from a
+   * disabled group with the same `htmlName` in another form.
    */
   htmlName?: string;
   /**
