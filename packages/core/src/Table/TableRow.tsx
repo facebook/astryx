@@ -7,7 +7,7 @@
  * @input React, StyleX, TableContext, theme tokens
  * @output Exports TableRow component, TableRowProps
  * @position Sub-component; used inside a Table section (TableHeader /
- *   TableBody / TableFooter) in children mode
+ *   TableBody / TableFooter) in children mode; isolates inherited active cues
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
@@ -52,6 +52,13 @@ export interface TableRowProps extends BaseProps<HTMLTableRowElement> {
  * the rows keep their parity whatever is open.
  */
 const NOT_PANEL_ROW = ':nth-child(even of :not([data-expansion-panel]))';
+
+const cueBoundaryStyles = stylex.create({
+  row: {
+    // The active row sets its own inline width; nested rows must not inherit it.
+    '--table-row-active-cue-width': '0px',
+  },
+});
 
 const logicalStripedRowStyles = stylex.create({
   row: {
@@ -179,7 +186,7 @@ export function TableRow({
         {...props}
         {...mergeProps(
           themeProps('table-row'),
-          stylex.props(tableRowMarker, xstyle),
+          stylex.props(tableRowMarker, cueBoundaryStyles.row, xstyle),
           incomingClassName,
           incomingStyle,
         )}>
@@ -188,7 +195,7 @@ export function TableRow({
     );
   }
 
-  const rowStyles: StyleXStyles[] = [];
+  const rowStyles: StyleXStyles[] = [cueBoundaryStyles.row];
 
   // Striped + hover styling is for body rows only — the header row must not
   // pick up the hover highlight (or striping) even when hasHover/isStriped.
@@ -198,13 +205,15 @@ export function TableRow({
       'data-table-logical-index'
     ];
     if (logicalIndex != null) {
-      if (ctx.isStriped && Number(logicalIndex) % 2 === 1)
-        {rowStyles.push(
+      if (ctx.isStriped && Number(logicalIndex) % 2 === 1) {
+        rowStyles.push(
           ctx.hasHover
             ? logicalStripedRowStyles.hover
             : logicalStripedRowStyles.row,
-        );}
-      else if (ctx.hasHover) {rowStyles.push(hoverRowStyles.row);}
+        );
+      } else if (ctx.hasHover) {
+        rowStyles.push(hoverRowStyles.row);
+      }
     } else if (ctx.isStriped && ctx.hasHover) {
       rowStyles.push(stripedHoverRowStyles.row);
     } else if (ctx.isStriped) {
