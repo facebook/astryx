@@ -103,7 +103,7 @@
         "token-utilities",
         "usetheme-hook"
       ],
-      "skeleton": "eff6b78c23d611da7d40a9534e421236f5e6fc1f6367d47d6ee02ef76c5a3229",
+      "skeleton": "74ad4592579fdeb35ec1e46f2788da77d6087c2fb852607680db1d88e3a809b6",
       "mentions": []
     },
     "browser-support": {
@@ -160,9 +160,10 @@
         "available-names",
         "custom-icons",
         "theme-overrides",
+        "icon-variants",
         "component-and-library-icons"
       ],
-      "skeleton": "5d8a54e271cc1aa84302b2b101820eba3ae1b674f3ef87767fb356939464e097",
+      "skeleton": "93430a3f9039a2f8bcf20d0873a6d6a3679096f399bfa493a81083fba92ee908",
       "mentions": [
         "This lets you swap the icon set (e.g."
       ]
