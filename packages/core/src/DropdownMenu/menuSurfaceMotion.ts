@@ -39,7 +39,10 @@
  * hidden from assistive technology, taking no pointer events, and removed
  * when the spring settles. Nothing
  * on the main thread runs per frame while it collapses (a discrete
- * `display` transition would restyle the element every frame).
+ * `display` transition would restyle the element every frame). The hidden
+ * popover itself rests at full size, unpromoted and detached from its
+ * animator until the next open, so no style write lands on it during the
+ * close.
  *
  * Under reduced motion the animator's policy applies (design:reduced-motion):
  * the menu lands at its size and fades in, and fades out where it is,
@@ -198,6 +201,10 @@ export function createMenuSurfaceMotion(
   };
 
   const enter = (measure: () => MenuSurfaceGeometry) => {
+    // A close detached the surface (exit); the open writes to it again.
+    if (animator.element !== element) {
+      animator.attach(element);
+    }
     const resumed = exiting != null && collapsed != null ? exiting : null;
     let from: {
       scaleX: number;
@@ -302,7 +309,8 @@ export function createMenuSurfaceMotion(
     // (no popover API) the close is immediate.
     const ghost = placeLayerExitCopy(element, MENU_EXIT_GHOST_ATTRIBUTE);
     if (ghost == null) {
-      animator.set({scaleX: 1, scaleY: 1, opacity: 1});
+      animator.set({scaleX: 1, scaleY: 1, opacity: 1}, {promote: false});
+      animator.attach(null);
       return;
     }
     ghost.style.setProperty(
@@ -316,8 +324,12 @@ export function createMenuSurfaceMotion(
       {spring: springs.menuClose, velocity},
     );
     exiting = {ghost, animator: closing};
-    // The element itself is hidden by the browser now; leave it at rest.
-    animator.set({scaleX: 1, scaleY: 1, opacity: 1});
+    // The element itself is hidden by the browser now. Leave it at rest,
+    // unpromoted, and detach it in this task: a promotion left from the open
+    // would otherwise end with a style write on it while the copy is still
+    // closing. The next open attaches it again.
+    animator.set({scaleX: 1, scaleY: 1, opacity: 1}, {promote: false});
+    animator.attach(null);
     void handle.finished.then(finished => {
       if (finished && exiting?.ghost === ghost) {
         endExit();
