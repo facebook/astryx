@@ -6,24 +6,20 @@
  * @file useZoomCore.ts
  * @input A stage element ref (clipping, centring the photo), the element the
  *   gestures attach to (the stage, or a gallery's track), whether zoom is
- *   on, whether the touch layer is on, the current item's key, and callbacks
- *   for zoom changes and drags
+ *   on, the current item's key, and the zoom-change callback
  * @output Exports `useZoomCore`: Lightbox's zoom stage for every pointer —
  *   the photo's transform, written through the compositor animator; its
  *   geometry; UIScrollView's eased settle; Lightbox's released zoom for the
- *   keyboard and a double-click (2x about the centre and back over a 200 ms
- *   ease-out, from any pointer when the touch layer is off); the keyboard's
- *   pan; and a drag (a mouse's, or any pointer's when the touch layer is
- *   off) that pans a zoomed photo and stops at its edges — plus the
- *   callback ref for the photo and the imperative API Lightbox calls (with
- *   `isAtEdge` for an outer pager). The finger paths
- *   (pinch, finger pan, double tap, the catch) are the touch layer,
- *   useZoomStage.ts, which drives this core
+ *   keyboard (2x about the centre and back over a 200 ms ease-out) and the
+ *   keyboard's pan — plus the callback ref for the photo and the imperative
+ *   API Lightbox calls (with `isAtEdge` for an outer pager). The pointer
+ *   paths (pinch and ctrl-wheel, pan and wheel, double tap, the catch) are
+ *   useZoomStage.ts's, for a mouse, a pen and a finger alike (spec:AST-094
+ *   FR43), and drive this core
  * @position Lightbox's shared zoom stage (internal); the geometry is in
  *   zoomStage.ts
  *
- * A mouse never rubber-bands or coasts: its drag stops at the photo's edges
- * and where it is released. Every zoom step runs on the compositor as baked
+ * Every zoom step runs on the compositor as baked
  * keyframes (no React render, no layout read after a step begins); a
  * keyboard step continues from where the photo is going (UIKit's model
  * value), so presses during a settle add up. React hears only discrete
@@ -46,7 +42,6 @@ import {
   IDENTITY,
   RELEASED_ZOOM,
   doubleTapScaleFor,
-  draggedTransform,
   isZoomed,
   maxScaleFor,
   pannedBy,
@@ -78,17 +73,10 @@ export interface UseZoomCoreOptions {
   surfaceRef?: RefObject<HTMLElement | null>;
   /** Zoom is on (an image item with `hasZoom`). */
   isEnabled: boolean;
-  /**
-   * The touch layer is on (a coarse primary pointer): fingers and pens are
-   * its recognizers'. Off, a double-click from any pointer is the mouse's.
-   */
-  isTouch: boolean;
   /** Changes when another item shows; the photo returns to the fitted size. */
   itemKey: unknown;
   /** The photo became zoomed or returned to the fitted size. */
   onZoomedChange: (isZoomed: boolean) => void;
-  /** A drag began (a release over the backdrop must not close). */
-  onDragStart?: () => void;
 }
 
 /** What Lightbox calls: the photo's ref and the keyboard's zoom and pan. */
@@ -334,112 +322,6 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     [animator, current, setZoomed],
   );
 
-  // The mouse keeps Lightbox's released zoom (spec:AST-017 FR59): a
-  // double-click zooms in 2x about the centre or back, and a drag pans a
-  // zoomed photo, stopping at its edges (unbounded, it could carry the photo
-  // out of view) and where it is released. Both take any pointer when the
-  // touch layer is off (a pen or a finger where the primary pointer is fine,
-  // interaction-modality INV4); with it on, fingers and pens are its
-  // recognizers'. Re-attached for each item: in a gallery the stage is the
-  // current page's.
-  const isEnabled = options.isEnabled;
-  const itemKey = options.itemKey;
-  useEffect(() => {
-    const stage = optionsRef.current.stageRef.current;
-    if (!isEnabled || stage == null) {
-      return undefined;
-    }
-    let lastPointerType = '';
-    let drag: {
-      readonly pointerId: number;
-      readonly start: Point;
-      readonly from: ZoomTransform;
-      began: boolean;
-    } | null = null;
-    const onPointerDown = (event: PointerEvent) => {
-      lastPointerType = event.pointerType;
-      if (
-        (event.pointerType !== 'mouse' && optionsRef.current.isTouch) ||
-        event.button !== 0 ||
-        !zoomedRef.current ||
-        measure() == null
-      ) {
-        return;
-      }
-      animator.stop();
-      drag = {
-        pointerId: event.pointerId,
-        start: {x: event.clientX, y: event.clientY},
-        from: current(),
-        began: false,
-      };
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      const geometry = geometryRef.current;
-      if (
-        drag == null ||
-        event.pointerId !== drag.pointerId ||
-        geometry == null
-      ) {
-        return;
-      }
-      const dx = event.clientX - drag.start.x;
-      const dy = event.clientY - drag.start.y;
-      if (!drag.began) {
-        // A press that has not moved is still a click; the drag, and its
-        // grab cursor, begin with the first pixel of travel.
-        if (dx === 0 && dy === 0) {
-          return;
-        }
-        drag.began = true;
-        stage.setPointerCapture?.(event.pointerId);
-        stage.setAttribute(ZOOM_DRAGGING_ATTRIBUTE, '');
-        optionsRef.current.onDragStart?.();
-      }
-      write(
-        draggedTransform(
-          geometry,
-          {x: drag.from.x + dx, y: drag.from.y + dy, scale: drag.from.scale},
-          false,
-        ),
-      );
-    };
-    const onPointerEnd = (event: PointerEvent) => {
-      if (drag == null || event.pointerId !== drag.pointerId) {
-        return;
-      }
-      if (drag.began) {
-        stage.removeAttribute(ZOOM_DRAGGING_ATTRIBUTE);
-      }
-      drag = null;
-    };
-    const onDoubleClick = () => {
-      if (lastPointerType !== 'mouse' && optionsRef.current.isTouch) {
-        return;
-      }
-      const geometry = measure();
-      if (geometry == null) {
-        return;
-      }
-      settleTo(geometry, releasedZoomTarget(geometry, current()), {
-        released: true,
-      });
-    };
-    stage.addEventListener('pointerdown', onPointerDown);
-    stage.addEventListener('pointermove', onPointerMove);
-    stage.addEventListener('pointerup', onPointerEnd);
-    stage.addEventListener('pointercancel', onPointerEnd);
-    stage.addEventListener('dblclick', onDoubleClick);
-    return () => {
-      stage.removeEventListener('pointerdown', onPointerDown);
-      stage.removeEventListener('pointermove', onPointerMove);
-      stage.removeEventListener('pointerup', onPointerEnd);
-      stage.removeEventListener('pointercancel', onPointerEnd);
-      stage.removeEventListener('dblclick', onDoubleClick);
-      stage.removeAttribute(ZOOM_DRAGGING_ATTRIBUTE);
-    };
-  }, [animator, current, isEnabled, itemKey, measure, settleTo, write]);
-
   // Another item: back to the fitted size before it paints. Lightbox resets
   // its own zoomed state during that render.
   useIsomorphicLayoutEffect(() => {
@@ -473,6 +355,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
   // subscription follows the element, and zoom turning on or off, after every
   // render rather than the one there at mount.
   const surfaceRef = options.surfaceRef ?? options.stageRef;
+  const isEnabled = options.isEnabled;
   const resizeRef = useRef<{surface: HTMLElement; stop: () => void} | null>(
     null,
   );
