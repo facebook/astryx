@@ -4,8 +4,9 @@
  * @file index.ts
  * @input The domain files of the UIKit constants table
  * @output Re-exports `springs` and one constant per spring (`SHEET_PRESENT_SPRING`,
- *   …), `scroll`, `timing`, `navigation` and the
- *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
+ *   …), `scroll`, `timing`, `navigation`, `segmentedControl`, the button's
+ *   and the list cells' values (`button`, `list`) and the gesture thresholds
+ *   (one `UIKIT_*` group per recognizer, their union
  *   `UIKIT_GESTURES`, and the haptic tables)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
@@ -38,8 +39,11 @@ export {
   type GestureConstantUnit,
   type HapticFeedbackKind,
 } from './gestures';
+export {button} from './button';
+export {list} from './list';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
+export {segmentedControl} from './segmented';
 export {
   ACTION_SHEET_DISMISS_SPRING,
   ACTION_SHEET_PRESENT_SPRING,
@@ -60,7 +64,6 @@ export {
   NAVIGATION_POP_SPRING,
   NAVIGATION_PUSH_SPRING,
   QUICK_CHANGE_SPRING,
-  SEGMENTED_THUMB_SPRING,
   SETTLE_SPRING,
   SHEET_DETENT_SPRING,
   SHEET_DISMISS_SPRING,
