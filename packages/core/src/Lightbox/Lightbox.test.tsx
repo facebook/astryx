@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Profiler} from 'react';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -27,6 +27,75 @@ afterEach(() => {
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+/**
+ * jsdom has no layout, so give the zoom stage what a browser measures: a
+ * 400 × 600 stage showing a landscape photo fitted 400 × 200 at its vertical
+ * centre. Photos' aspect-fill double tap zooms that photo 3×. Returns the
+ * undo.
+ */
+function stubStageLayout(): () => void {
+  const undo: (() => void)[] = [];
+  const define = (
+    proto: object,
+    key: string,
+    get: (element: HTMLElement) => number,
+  ) => {
+    const original = Object.getOwnPropertyDescriptor(proto, key);
+    Object.defineProperty(proto, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return get(this);
+      },
+    });
+    undo.push(() => {
+      if (original) {
+        Object.defineProperty(proto, key, original);
+      } else {
+        Reflect.deleteProperty(proto, key);
+      }
+    });
+  };
+  const isPhoto = (element: Element) => element instanceof HTMLImageElement;
+  const isStage = (element: Element) =>
+    element.querySelector(':scope > img') != null;
+  define(HTMLElement.prototype, 'offsetWidth', element =>
+    isPhoto(element) ? 400 : 0,
+  );
+  define(HTMLElement.prototype, 'offsetHeight', element =>
+    isPhoto(element) ? 200 : 0,
+  );
+  define(Element.prototype, 'clientWidth', element =>
+    isStage(element) ? 400 : 0,
+  );
+  define(Element.prototype, 'clientHeight', element =>
+    isStage(element) ? 600 : 0,
+  );
+  return () => undo.reverse().forEach(restore => restore());
+}
+
+/** A phone: the primary pointer is coarse, so the touch layer is on. Returns the undo. */
+function stubCoarsePointer(): () => void {
+  const original = window.matchMedia;
+  window.matchMedia = (query: string) => ({
+    matches: query === '(pointer: coarse)',
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  });
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
+/** The photo's inline `translate` and `scale`, as the zoom stage wrote them. */
+function photoTransform(img: HTMLElement): {translate: string; scale: string} {
+  return {translate: img.style.translate, scale: img.style.scale};
 }
 
 // Both position messages, supplied by the test. Overriding the pair means an
@@ -508,6 +577,13 @@ describe('Lightbox', () => {
       {src: '/b.jpg', alt: 'Image B'},
       {src: '/c.jpg', alt: 'Image C'},
     ];
+    let restoreLayout: () => void = () => {};
+    beforeEach(() => {
+      restoreLayout = stubStageLayout();
+    });
+    afterEach(() => {
+      restoreLayout();
+    });
 
     function zoomTarget(): HTMLElement {
       return screen.getByRole('button', {name: 'Zoom'});
@@ -593,22 +669,51 @@ describe('Lightbox', () => {
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
       const img = screen.getByAltText('Image B');
-      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      // Lightbox's released zoom (spec:AST-017 FR59): 2× about the stage's
+      // centre, 800 × 400, its centre on the stage's centre, whatever aspect
+      // fill would give (3× for this photo).
+      expect(photoTransform(img)).toEqual({
+        translate: '-200px -100px',
+        scale: '2 2',
+      });
       // ArrowRight reveals content to the right (image shifts left) and must
       // not fall through to gallery navigation.
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       expect(onIndexChange).not.toHaveBeenCalled();
-      expect(img.getAttribute('style') ?? '').toContain(
-        'translate(-25px, 0px)',
-      );
+      expect(photoTransform(img).translate).toBe('-250px -100px');
+      // At 400 px the photo is shorter than the 600 px stage, so it stays
+      // centred vertically.
       fireEvent.keyDown(dialog, {key: 'ArrowDown'});
-      expect(img.getAttribute('style') ?? '').toContain(
-        'translate(-25px, -25px)',
-      );
+      expect(photoTransform(img).translate).toBe('-250px -100px');
       fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
       fireEvent.keyDown(dialog, {key: 'ArrowUp'});
-      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      expect(photoTransform(img).translate).toBe('-200px -100px');
       expect(onIndexChange).not.toHaveBeenCalled();
+    });
+
+    it('stops panning at the edges of the photo', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: '+'});
+      const img = screen.getByAltText('Photo');
+      for (let i = 0; i < 12; i++) {
+        fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
+      }
+      // The photo's left edge rests on the stage's left edge, no gap: on main
+      // the arrows could carry the photo out of view.
+      expect(photoTransform(img).translate).toBe('0px -100px');
+      for (let i = 0; i < 24; i++) {
+        fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      }
+      // 800 px wide on a 400 px stage: its right edge on the stage's.
+      expect(photoTransform(img).translate).toBe('-400px -100px');
     });
 
     it('navigates the gallery with arrows when not zoomed, even with hasZoom', () => {
@@ -646,9 +751,7 @@ describe('Lightbox', () => {
       const img = screen.getByAltText('Image B');
       // ArrowRight still reveals what is to the right of the photo.
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
-      expect(img.getAttribute('style') ?? '').toContain(
-        'translate(-25px, 0px)',
-      );
+      expect(photoTransform(img).translate).toBe('-250px -100px');
       expect(onIndexChange).not.toHaveBeenCalled();
     });
 
@@ -761,7 +864,297 @@ describe('Lightbox', () => {
   });
 });
 
+describe('Lightbox gestures for a mouse and a pen (spec:AST-094 FR43)', () => {
+  // Gestures attach for every pointer: a mouse's or a pen's double-click is
+  // the stage's double tap, and a zoomed photo pans once the pan begins.
+  let restoreLayout: () => void = () => {};
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+  });
+  afterEach(() => {
+    restoreLayout();
+  });
+
+  /** A pointer event as a browser sends it, at `time` (ms). */
+  function pointer(
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    target: Element,
+    pointerType: 'mouse' | 'pen',
+    x: number,
+    y: number,
+    time: number,
+  ): void {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const fields: Record<string, unknown> = {
+      pointerType,
+      pointerId: pointerType === 'pen' ? 7 : 1,
+      isPrimary: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      clientX: x,
+      clientY: y,
+      timeStamp: time,
+    };
+    for (const [key, value] of Object.entries(fields)) {
+      Object.defineProperty(event, key, {value});
+    }
+    act(() => {
+      target.dispatchEvent(event);
+    });
+  }
+
+  /** Two clicks within the double-tap interval, then the browser's dblclick. */
+  function doubleClick(
+    target: Element,
+    pointerType: 'mouse' | 'pen',
+    x: number,
+    y: number,
+  ): void {
+    const t0 = performance.now();
+    pointer('pointerdown', target, pointerType, x, y, t0);
+    pointer('pointerup', target, pointerType, x, y, t0 + 40);
+    pointer('pointerdown', target, pointerType, x, y, t0 + 120);
+    pointer('pointerup', target, pointerType, x, y, t0 + 160);
+    act(() => {
+      target.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, clientX: x, clientY: y}),
+      );
+    });
+  }
+
+  /** A finger's double tap, on a phone (a coarse primary pointer). */
+  function fingerDoubleTap(target: Element, x: number, y: number): void {
+    const t0 = performance.now();
+    const at = (type: string, down: boolean, time: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      const entry = {identifier: 1, clientX: x, clientY: y, target};
+      Object.defineProperty(event, 'touches', {value: down ? [entry] : []});
+      Object.defineProperty(event, 'changedTouches', {value: [entry]});
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      act(() => {
+        target.dispatchEvent(event);
+      });
+    };
+    at('touchstart', true, t0);
+    at('touchend', false, t0 + 40);
+    at('touchstart', true, t0 + 120);
+    at('touchend', false, t0 + 160);
+  }
+
+  function renderPhoto() {
+    const view = render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    return {
+      view,
+      stage: screen.getByRole('button', {name: 'Zoom'}),
+      img: screen.getByAltText('Photo'),
+    };
+  }
+
+  it("zooms a mouse double-click where a finger's double tap zooms, and back", async () => {
+    const restoreCoarse = stubCoarsePointer();
+    let finger: {translate: string; scale: string};
+    try {
+      const {view, stage, img} = renderPhoto();
+      fingerDoubleTap(stage, 20, 220);
+      finger = photoTransform(img);
+      view.unmount();
+    } finally {
+      restoreCoarse();
+    }
+    // Near the photo's top-left corner: Photos' double tap zooms the photo
+    // in about that point, whatever the pointer.
+    expect(finger.scale).not.toBe('');
+    const {stage, img} = renderPhoto();
+    doubleClick(stage, 'mouse', 20, 220);
+    expect(photoTransform(img)).toEqual(finger);
+    expect(stage).toHaveAttribute('aria-pressed', 'true');
+    // The next double tap reads where the photo shows: let the zoom land.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    doubleClick(stage, 'mouse', 20, 220);
+    expect(stage).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('zooms a pen double-click the same way', () => {
+    const {stage} = renderPhoto();
+    doubleClick(stage, 'pen', 200, 300);
+    expect(stage).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('pans a zoomed photo under a mouse drag once the pan begins, with the grab cursor', async () => {
+    const {stage, img} = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    // A drag starts where the photo shows: let the 200 ms zoom land first.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    const from = photoTransform(img).translate;
+    const t0 = performance.now();
+    pointer('pointerdown', stage, 'mouse', 200, 300, t0);
+    // 2 px is under the pan's threshold: no drag, no grab.
+    pointer('pointermove', stage, 'mouse', 198, 300, t0 + 16);
+    expect(photoTransform(img).translate).toBe(from);
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
+    pointer('pointermove', stage, 'mouse', 170, 300, t0 + 32);
+    expect(photoTransform(img).translate).not.toBe(from);
+    expect(stage).toHaveAttribute('data-zoom-dragging');
+    pointer('pointerup', stage, 'mouse', 170, 300, t0 + 48);
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
+  });
+});
+
+describe('Lightbox double-click under the touch layer', () => {
+  let restoreLayout: () => void = () => {};
+  const originalMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+    window.matchMedia = (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    });
+  });
+  afterEach(() => {
+    restoreLayout();
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it("leaves a finger's double-click to the touch layer's recognizers", () => {
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    const stage = screen.getByRole('button', {name: 'Zoom'});
+    const down = new Event('pointerdown', {bubbles: true, cancelable: true});
+    Object.defineProperty(down, 'pointerType', {value: 'touch'});
+    Object.defineProperty(down, 'button', {value: 0});
+    act(() => {
+      stage.dispatchEvent(down);
+      stage.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, clientX: 200, clientY: 300}),
+      );
+    });
+    expect(stage).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('Lightbox touch zoom (synthetic touches)', () => {
+  let restoreLayout: () => void = () => {};
+  const originalMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+    // A phone: the primary pointer is coarse, so the touch layer is on.
+    window.matchMedia = (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    });
+  });
+  afterEach(() => {
+    restoreLayout();
+    window.matchMedia = originalMatchMedia;
+  });
+
+  interface Contact {
+    id: number;
+    x: number;
+    y: number;
+  }
+
+  /** A touch event as a browser sends it: who is down, and who changed. */
+  function touch(
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    target: Element,
+    down: Contact[],
+    changed: Contact[],
+    time: number,
+  ): void {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const entry = (contact: Contact) => ({
+      identifier: contact.id,
+      clientX: contact.x,
+      clientY: contact.y,
+      target,
+    });
+    Object.defineProperty(event, 'touches', {value: down.map(entry)});
+    Object.defineProperty(event, 'changedTouches', {value: changed.map(entry)});
+    Object.defineProperty(event, 'timeStamp', {value: time});
+    act(() => {
+      target.dispatchEvent(event);
+    });
+  }
+
+  it('keeps panning with the finger left down after a pinch, without a jump', () => {
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    const stage = screen.getByRole('button', {name: 'Zoom'});
+    const img = screen.getByAltText('Photo');
+    const x = () => parseFloat(photoTransform(img).translate || '0');
+    // Two fingers land on the photo, spread (100 → 140 px) and drift left
+    // together (the midpoint 200 → 180).
+    let a: Contact = {id: 1, x: 150, y: 300};
+    let b: Contact = {id: 2, x: 250, y: 300};
+    touch('touchstart', stage, [a], [a], 0);
+    touch('touchstart', stage, [a, b], [b], 0);
+    for (let i = 1; i <= 10; i++) {
+      a = {...a, x: 150 - 4 * i};
+      b = {...b, x: 250};
+      touch('touchmove', stage, [a, b], [a, b], i * 16);
+    }
+    const scaled = parseFloat(photoTransform(img).scale);
+    expect(scaled).toBeGreaterThan(1.2);
+    // The right finger lifts: nothing moves.
+    const beforeLift = x();
+    touch('touchend', stage, [a], [b], 11 * 16);
+    expect(x()).toBeCloseTo(beforeLift, 6);
+    // The left finger drags on 40 px: the photo follows it 1:1, zoom kept.
+    for (let i = 1; i <= 8; i++) {
+      a = {...a, x: a.x - 5};
+      touch('touchmove', stage, [a], [a], (11 + i) * 16);
+    }
+    expect(x()).toBeCloseTo(beforeLift - 40, 6);
+    expect(parseFloat(photoTransform(img).scale)).toBeCloseTo(scaled, 6);
+    touch('touchend', stage, [], [a], 20 * 16);
+  });
+});
+
 describe('Lightbox zoom reset timing', () => {
+  let restoreLayout: () => void = () => {};
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+  });
+  afterEach(() => {
+    restoreLayout();
+  });
+
   it('shows the next image unzoomed in the same commit that changes it', () => {
     const media = [
       {src: '/a.jpg', alt: 'Image A'},
@@ -796,6 +1189,13 @@ describe('Lightbox zoom reset timing', () => {
       'aria-pressed',
       'false',
     );
+    // The photo element is reused for the next image: it is back at the
+    // fitted size before that image paints (an animator at rest at the
+    // identity leaves the element's own style).
+    expect(photoTransform(screen.getByAltText('Image B'))).toEqual({
+      translate: '',
+      scale: '',
+    });
   });
 });
 
