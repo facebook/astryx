@@ -45,10 +45,12 @@ describe('the public animator surface', () => {
     }
   });
 
-  it('the package root names createAnimator and no motion or gesture module', () => {
+  it('the package root names createAnimator and re-exports no motion or gesture module whole', () => {
     const source = fs.readFileSync(path.join(SRC, 'index.ts'), 'utf8');
     expect(source).toContain("from './animator/createAnimator';");
-    expect(source).not.toMatch(/from '\.\/(motion|gestures)(\/|')/);
+    // A public factory may be named from its module, as createPanGesture is
+    // from gestures/; the runtime case above keeps the internals out.
+    expect(source).not.toMatch(/export \* from '\.\/(motion|gestures)(\/|')/);
   });
 
   it('createAnimator ships from the package root only: no `./animator` subpath (one API, one entry)', () => {
