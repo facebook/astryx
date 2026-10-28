@@ -7,7 +7,9 @@
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
  *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
- *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module
+ *   `releaseLayoutExit`, the in-place swap (`holdLayoutSwap` /
+ *   `playLayoutSwap`), `playLayoutFrames` and `applyLayoutChangeTransition`:
+ *   the one module
  *   that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
@@ -45,6 +47,16 @@
  *   the same frame (`playLayoutChange`), or its exit: kept where it is while
  *   it gives up its space and conceals (`holdLayoutExit`). A disclosure's
  *   indicator turns on the same motion (`applyLayoutChangeTransition`).
+ * - A swap holds old content as one transient copy, inert and hidden from
+ *   assistive technology, while new content enters in its place, on the same
+ *   motion, and removes it when the swap ends (`holdLayoutSwap`,
+ *   `playLayoutSwap`; `spec:AST-105` FR8). The caller shapes the frames over
+ *   the swap's progress and, riding a gliding element, how far it has moved,
+ *   so every part keeps to that glide; under Reduce Motion with a coarse
+ *   pointer only opacity changes.
+ * - Frames on elements the page renders can play on the same motion with no
+ *   copy (`playLayoutFrames`), such as a surface reaching over a gap a glide
+ *   opens, and are released when the motion ends.
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -53,6 +65,14 @@
  */
 
 import {motionRole} from './roles';
+import {
+  inertCopy,
+  isCopyable,
+  paintedBackground,
+  placeOver,
+  visiblePartCopy,
+  wrapText,
+} from './transientCopy';
 import {isSpring} from './roleValue';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {registerSpringsTable, SETTLE_SPRING} from './uikit/springs';
@@ -893,7 +913,16 @@ function flush(batch: Batch): void {
     Math.abs(raw + shift) < Math.abs(raw) ? raw + shift : raw;
   for (const entry of entries) {
     entry.after = entry.element.getBoundingClientRect();
-    const rawX = entry.before.left - entry.after.left;
+    // The move is the inline-start edge's, by the container's direction (it
+    // decides where the element sits): in a right-to-left container an
+    // element that narrows keeps its left edge and moves its right one.
+    const container = entry.element.parentElement ?? entry.element;
+    const isRtl =
+      container.ownerDocument.defaultView?.getComputedStyle(container)
+        .direction === 'rtl';
+    const rawX = isRtl
+      ? entry.before.right - entry.after.right
+      : entry.before.left - entry.after.left;
     const rawY = entry.before.top - entry.after.top;
     // The siblings before the change stay with the ancestors around them.
     const isAncestor =
@@ -1411,6 +1440,271 @@ export function releaseLayoutExit(element: HTMLElement): void {
       element.style.setProperty(property, value, priority);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// The in-place swap
+// ---------------------------------------------------------------------------
+
+/**
+ * Old content held as one transient copy while new content enters in its
+ * place (`spec:AST-105` FR8): inert, hidden from assistive technology, and
+ * removed when the swap ends (`architecture:component-style-authoring` INV7).
+ */
+export interface LayoutSwap {
+  readonly area: Element;
+  readonly copy: HTMLElement;
+  /** Where the old content showed, in viewport coordinates. */
+  readonly rect: DOMRect;
+}
+
+/** How far a ridden element has moved since the swap began. */
+export interface LayoutRide {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * How a swap plays, as frames over its progress (0 → 1) and, with
+ * `rideWith`, the ridden element's travel so far.
+ */
+export interface LayoutSwapMotion {
+  /** The box the copy is laid out in, over the old content's place. */
+  readonly host: Element;
+  /** The copy's frames while it travels. */
+  readonly copy: (p: number, ride: LayoutRide) => Keyframe;
+  /** Its text's opacity, on its own curve, when that differs from the copy's. */
+  readonly copyText?: (p: number) => number;
+  /** The copy paints above its neighbours, in the background it shows. */
+  readonly isOpaque?: boolean;
+  /**
+   * An element the glide moves, such as the column the old content sat in.
+   * Every part plays over its glide, frame by frame, and is told how far it
+   * has moved; the copy rides it unless `isCopyMoved` is false. Without a
+   * glide (it lands silently) the ride is the whole `travel` at once (its
+   * old place less its new).
+   */
+  readonly rideWith?: {
+    readonly element: Element;
+    readonly travel: LayoutRide;
+    readonly isCopyMoved?: boolean;
+  };
+  /** Called once when the swap ends, however it ends. */
+  readonly onEnd?: () => void;
+  /** Elements the page already renders, entering with the swap. */
+  readonly incoming: ReadonlyArray<{
+    readonly element: Element;
+    readonly frames: (p: number, ride: LayoutRide) => Keyframe;
+  }>;
+}
+
+const NO_RIDE: LayoutRide = {x: 0, y: 0};
+
+/**
+ * Before a change commits: hold `element`'s old content as one transient copy
+ * (`spec:AST-105` FR8). With `isVisiblePart`, the copy is the element's
+ * visible part, its content scrolled as it was (a scroll container). Returns
+ * null without a handle, outside its area, under an immediate change, or for
+ * content too large to copy.
+ */
+export function holdLayoutSwap(
+  handle: AnimatedLayout | null | undefined,
+  element: HTMLElement,
+  {isVisiblePart = false}: {isVisiblePart?: boolean} = {},
+): LayoutSwap | null {
+  if (handle == null || typeof element.animate !== 'function') {
+    return null;
+  }
+  const area = areaOf(handle, element);
+  if (
+    area == null ||
+    layoutMotion(area).kind === 'instant' ||
+    !isCopyable(element)
+  ) {
+    return null;
+  }
+  const box = element.getBoundingClientRect();
+  if (!isVisiblePart) {
+    const copy = inertCopy(element);
+    return copy == null ? null : {area, copy, rect: box};
+  }
+  const part = visiblePartCopy(element);
+  return part == null ? null : {area, ...part};
+}
+
+/**
+ * After the change commits, before paint: the copy leaves while the incoming
+ * elements enter, on FR4's one motion, every part started on the same
+ * timeline time. Under Reduce Motion with a coarse pointer, only opacity
+ * changes (`design:reduced-motion` DR2). Returns what ends the swap at once;
+ * it also ends when its motion does, and the copy is removed.
+ */
+export function playLayoutSwap(
+  swap: LayoutSwap,
+  how: LayoutSwapMotion,
+): () => void {
+  const motion = layoutMotion(swap.area);
+  if (motion.kind === 'instant') {
+    return () => {};
+  }
+  const {copy} = swap;
+  placeOver(copy, how.host, swap.rect);
+  if (how.isOpaque === true) {
+    copy.style.zIndex = '1';
+    copy.style.backgroundColor = paintedBackground(copy);
+  }
+  const animations: Animation[] = [];
+  let isDone = false;
+  const end = () => {
+    if (isDone) {
+      return;
+    }
+    isDone = true;
+    animations.forEach(animation => animation.cancel());
+    copy.remove();
+    how.onEnd?.();
+  };
+  const {copyText, rideWith} = how;
+  const fadedText =
+    copyText != null && motion.kind === 'spring' ? wrapText(copy) : [];
+  // Each part as a function of time: its frame, or the copy's with its ride.
+  const parts: [Element, (p: number, ride: LayoutRide) => Keyframe][] = [];
+  if (motion.kind === 'spring') {
+    const moves = rideWith != null && rideWith.isCopyMoved !== false;
+    parts.push([
+      copy,
+      (p, ride) => ({
+        ...how.copy(p, ride),
+        ...(moves ? {translate: `${ride.x}px ${ride.y}px`} : null),
+      }),
+    ]);
+    for (const span of fadedText) {
+      parts.push([span, p => ({opacity: copyText?.(p) ?? 1})]);
+    }
+    for (const {element, frames} of how.incoming) {
+      parts.push([element, frames]);
+    }
+  } else {
+    // Reduce Motion with a coarse pointer: only opacity changes.
+    parts.push([copy, p => ({opacity: 1 - p})]);
+    for (const {element} of how.incoming) {
+      parts.push([element, p => ({opacity: p})]);
+    }
+  }
+  const playAll = (
+    durationMs: number,
+    progressAt: (t: number) => number,
+    rideAt: (t: number) => LayoutRide,
+    options: KeyframeAnimationOptions,
+    sample: (shape: (t: number) => Keyframe) => Keyframe[],
+  ) => {
+    for (const [element, shape] of parts) {
+      const animation = safeAnimate(
+        element,
+        sample(t => shape(progressAt(t), rideAt(t))),
+        {duration: durationMs, fill: 'both', ...options},
+      );
+      if (animation != null) {
+        animations.push(animation);
+      }
+    }
+    if (animations.length === 0) {
+      end();
+    } else {
+      // Every part runs on one clock, so the first to finish ends them all.
+      animations[0].addEventListener?.('finish', end);
+    }
+  };
+  if (motion.kind === 'fade') {
+    playAll(
+      motion.durationMs,
+      t => (t <= 0 ? 0 : 1),
+      () => NO_RIDE,
+      {easing: motion.easing},
+      shape => [shape(0), shape(motion.durationMs)],
+    );
+    return end;
+  }
+  const {progress} = motion;
+  const progressAt = (t: number) => 1 - progress.remaining(t);
+  if (rideWith == null) {
+    playAll(
+      progress.durationMs,
+      progressAt,
+      () => NO_RIDE,
+      {easing: 'linear'},
+      shape => sampleOver(progress.durationMs, shape),
+    );
+    return end;
+  }
+  // After this commit's glides start (the batch flushes in a microtask queued
+  // before this one), before the frame paints: every part plays over the
+  // ridden element's glide, told how far it has moved from where it showed.
+  queueMicrotask(() => {
+    if (isDone) {
+      return;
+    }
+    const glide = glides.get(rideWith.element);
+    const durationMs = glide?.durationMs ?? progress.durationMs;
+    const rideAt = (t: number): LayoutRide => {
+      if (glide == null) {
+        return {x: -rideWith.travel.x, y: -rideWith.travel.y};
+      }
+      const now = glide.offsetAt(t);
+      const start = glide.offsetAt(0);
+      return {x: now.x - start.x, y: now.y - start.y};
+    };
+    playAll(durationMs, progressAt, rideAt, {easing: 'linear'}, shape =>
+      sampleOver(durationMs, shape),
+    );
+  });
+  return end;
+}
+
+/**
+ * After a change commits, before paint: elements the page already renders
+ * play frames over the change's progress on FR4's one motion, with no copy,
+ * such as a surface reaching over a gap a glide opens. Under Reduce Motion
+ * with a coarse pointer, only opacity changes; under an immediate change,
+ * nothing plays. Returns what ends them at once.
+ */
+export function playLayoutFrames(
+  handle: AnimatedLayout | null | undefined,
+  parts: LayoutSwapMotion['incoming'],
+): () => void {
+  const area = handle?.[AREA]() ?? null;
+  const motion = area == null ? null : layoutMotion(area);
+  if (motion == null || motion.kind === 'instant') {
+    return () => {};
+  }
+  const animations: Animation[] = [];
+  for (const {element, frames: shape} of parts) {
+    const animation =
+      motion.kind === 'spring'
+        ? safeAnimate(
+            element,
+            sampleKeyframes(motion.progress, remaining =>
+              shape(1 - remaining, NO_RIDE),
+            ),
+            {
+              duration: motion.progress.durationMs,
+              easing: 'linear',
+              fill: 'both',
+            },
+          )
+        : safeAnimate(element, [{opacity: 0}, {opacity: 1}], {
+            duration: motion.durationMs,
+            easing: motion.easing,
+          });
+    if (animation != null) {
+      animations.push(animation);
+    }
+  }
+  // Held through the motion, then released: every part shares one clock, so
+  // the first to finish ends them all and each element shows its own styles.
+  const end = () => animations.forEach(animation => animation.cancel());
+  animations[0]?.addEventListener?.('finish', end);
+  return end;
 }
 
 /**

@@ -111,6 +111,9 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
         'playLayoutChange',
         'applyLayoutChangeTransition',
         'createAnimatedLayout',
+        'holdLayoutSwap',
+        'playLayoutSwap',
+        'playLayoutFrames',
       ]) {
         expect(
           source,
@@ -118,6 +121,16 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
         ).not.toMatch(new RegExp(`\\b${name}\\b`));
       }
     }
+  });
+
+  it("keeps the swap's copy mechanism private to the module", () => {
+    const users = sourceFiles(coreSrc)
+      .filter(path =>
+        /from '[./]+(motion\/)?transientCopy'/.test(readFileSync(path, 'utf8')),
+      )
+      .map(path => relative(coreSrc, path))
+      .sort();
+    expect(users).toEqual(['motion/animatedLayout.ts']);
   });
 
   it('is used only by the hook and the components that adopt it', () => {
