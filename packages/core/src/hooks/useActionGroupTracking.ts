@@ -221,11 +221,13 @@ export function useActionGroupTracking(
 }
 
 /**
- * The recognizer's should-receive delegate. It also picks the clock for the
- * pointer that starts a press: a finger inside a scroller waits the scroll
- * view's content-touch delay and fails past the press slop, so the scroller
- * takes a flick; a mouse or a pen, and a finger anywhere else, begins at once
- * with no movement limit (`spec:AST-094` FR11: the wait is a finger's).
+ * The recognizer's should-receive delegate: it declines a touch the caller
+ * rejects and a press with a modifier key held, which the browser handles.
+ * It also picks the clock for the pointer that starts a press: a finger
+ * inside a scroller waits the scroll view's content-touch delay and fails
+ * past the press slop, so the scroller takes a flick; a mouse or a pen, and a
+ * finger anywhere else, begins at once with no movement limit (`spec:AST-094`
+ * FR11: the wait is a finger's).
  */
 function receiveTouch(
   recognizer: LongPressGestureRecognizer,
@@ -233,6 +235,12 @@ function receiveTouch(
   options: ActionGroupTrackingOptions,
 ): boolean {
   if (options.shouldTrack?.(touch.target) === false) {
+    return false;
+  }
+  // A press with a modifier key held is the browser's: on a link it opens a
+  // new tab or window, and an action's own click must see the key. The group
+  // tracks nothing, runs no click of its own and swallows none.
+  if (touch.ctrlKey || touch.metaKey || touch.shiftKey || touch.altKey) {
     return false;
   }
   if (recognizer.numberOfTouches === 0) {
