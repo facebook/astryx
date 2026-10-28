@@ -181,7 +181,10 @@ those contracts.
   sibling outside the band the changes in a frame can bring into view (the
   area's visible part plus one viewport, or the changed elements' summed size
   if larger, above and below), so its cost grows with depth plus the
-  siblings near the visible part, never with the length of a list. Changes in one area in the same frame are measured together. A
+  siblings near the visible part, never with the length of a list. Where the
+  scroll container opts out of scroll anchoring, a change above the band
+  walks forward to the band; that cost grows with the distance. Changes in
+  one area in the same frame are measured together. A
   component reports a change through an internal, non-exported function that
   takes the `useAnimatedLayout` handle, so the handle stays member-free, and
   each moving element is one the page already renders
