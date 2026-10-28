@@ -78,3 +78,4 @@ export {
   springs,
 } from './springs';
 export {registerTimingTable, timing} from './timing';
+export {zoomMedia} from './zoomMedia';
