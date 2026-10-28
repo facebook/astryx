@@ -551,7 +551,8 @@ export const AnimatedEditModes: StoryObj<{align?: 'center' | 'start'}> = {
                   ) : undefined
                 }
                 endContent={
-                  mode !== 'delete' ? undefined : confirming === label ? (
+                  mode === 'delete' &&
+                  (confirming === label ? (
                     <Button
                       key="delete"
                       label="Delete"
@@ -572,7 +573,7 @@ export const AnimatedEditModes: StoryObj<{align?: 'center' | 'start'}> = {
                       icon={<Icon icon={MinusCircleIcon} />}
                       onClick={() => setConfirming(label)}
                     />
-                  )
+                  ))
                 }
               />
             ))}

@@ -11,7 +11,7 @@
  *   the row's target without scrolling), which swaps in place, and when the
  *   row changes at once
  * @position Unit tests for List/listItemSlotMotion.tsx; the motion itself is
- *   proven in List/__tests__/ListItemSlots.interaction.browser.spec.ts
+ *   proven in List/__tests__/ListItemSlots.a11y.browser.spec.ts
  */
 
 import {useRef, useState} from 'react';

@@ -70,15 +70,13 @@ function typeIdOf(type: unknown): string {
 
 /**
  * What a slot shows, as an identity that changes only when its content is
- * replaced: the element's type and key, or the text itself. Null for an
- * empty slot (Item wraps any content but null and undefined).
+ * replaced: the element's type and key, or the text itself. Null for a slot
+ * that shows nothing: null, undefined, or a boolean (`condition &&
+ * control`), which Item may still wrap in an empty box.
  */
 function identityOf(node: ReactNode): string | null {
-  if (node == null) {
+  if (node == null || typeof node === 'boolean') {
     return null;
-  }
-  if (typeof node === 'boolean') {
-    return `bool:${node}`;
   }
   if (typeof node === 'string' || typeof node === 'number') {
     return `text:${node}`;
@@ -180,7 +178,8 @@ interface PendingSlot {
   readonly kind: Kind;
   /** The leaving or replaced content as one inert copy, to play out. */
   readonly swap: LayoutSwap | null;
-  readonly hadFocus: boolean;
+  /** The focused element inside the slot, if any, before the change. */
+  readonly focused: Element | null;
 }
 
 interface Pending {
@@ -271,12 +270,14 @@ export function useListItemSlotMotion(
             : was.identity !== will.identity
               ? 'swap'
               : 'resize';
-      const hadFocus =
-        element != null && active != null && element.contains(active);
+      const focused =
+        element != null && active != null && element.contains(active)
+          ? active
+          : null;
       if (kind === 'exit' && element != null && setsRowHeight(element, row)) {
         // It hides at once, and the row and the rows after it take their
         // places at once: nothing is reported for it.
-        slots.push({slot, kind, swap: null, hadFocus});
+        slots.push({slot, kind, swap: null, focused});
         continue;
       }
       slots.push({
@@ -286,7 +287,7 @@ export function useListItemSlotMotion(
           (kind === 'exit' || kind === 'swap') && element != null
             ? holdLayoutSwap(animatedLayout, element)
             : null,
-        hadFocus,
+        focused,
       });
       targets.add(
         (kind === 'swap' || kind === 'resize') && element != null
@@ -319,7 +320,7 @@ export function useListItemSlotMotion(
     for (const change of pending.changes) {
       change.animate();
     }
-    for (const {slot, kind, swap, hadFocus} of pending.slots) {
+    for (const {slot, kind, swap, focused} of pending.slots) {
       const live = slotOf(row, slot);
       if (kind === 'enter' && live != null) {
         playLayoutChange(animatedLayout, live);
@@ -346,7 +347,9 @@ export function useListItemSlotMotion(
           });
         }
       }
-      if (hadFocus) {
+      // Only a control that left hands its focus on: one that stays (a
+      // Checkbox toggling, a control resizing) keeps it.
+      if (focused != null && !focused.isConnected) {
         focusRow(row);
       }
     }

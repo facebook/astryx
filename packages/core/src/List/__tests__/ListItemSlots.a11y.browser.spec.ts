@@ -152,13 +152,15 @@ test('a leaving control plays out where it was, inert and out of the accessibili
   // The leaving controls fade out as inert copies.
   expect(played.some(entry => entry.target === 'copy')).toBe(true);
   const leaving = await page.evaluate(() =>
-    [...document.querySelectorAll('li [data-astryx-item-slot="end"]')].map(
-      element => ({
-        left: Math.round(element.getBoundingClientRect().left),
-        isInert: (element as HTMLElement).inert,
-        isHidden: element.getAttribute('aria-hidden') === 'true',
-      }),
-    ),
+    [
+      ...document.querySelectorAll(
+        'li [data-astryx-item-slot="end"]:not(:empty)',
+      ),
+    ].map(element => ({
+      left: Math.round(element.getBoundingClientRect().left),
+      isInert: (element as HTMLElement).inert,
+      isHidden: element.getAttribute('aria-hidden') === 'true',
+    })),
   );
   expect(leaving.length).toBe(before.length);
   expect(leaving.every(entry => entry.isInert && entry.isHidden)).toBe(true);
@@ -166,10 +168,9 @@ test('a leaving control plays out where it was, inert and out of the accessibili
   expect(leaving.map(entry => entry.left)).toEqual(before);
   await expect(page.getByRole('button', {name: /^Remove /})).toHaveCount(0);
   // Gone once the exit ends.
-  await expect(page.locator('li [data-astryx-item-slot="end"]')).toHaveCount(
-    0,
-    {timeout: 3000},
-  );
+  await expect(
+    page.locator('li [data-astryx-item-slot="end"]:not(:empty)'),
+  ).toHaveCount(0, {timeout: 3000});
 });
 
 test("an end slot that sets its row's height goes at once, the last row's too", async ({
@@ -179,10 +180,29 @@ test("an end slot that sets its row's height goes at once, the last row's too", 
   await page.getByRole('button', {name: 'Edit'}).click();
   await page.waitForTimeout(800);
   // The remove buttons are taller than the labels: each sets its row's
-  // height, the last row's (nothing after it) included.
+  // height, the last row's (nothing after it) included. The story writes
+  // the slot as `mode === 'delete' && control`, so it leaves as `false`.
   const played = await clickAndRead(page, 'Done');
   expect(played).toHaveLength(0);
-  await expect(page.locator('li [data-astryx-item-slot="end"]')).toHaveCount(0);
+  await expect(
+    page.locator('li [data-astryx-item-slot="end"]:not(:empty)'),
+  ).toHaveCount(0);
+});
+
+test('a Checkbox toggled from the keyboard keeps its focus', async ({page}) => {
+  await mount(page);
+  await page.getByRole('button', {name: 'Select'}).click();
+  await page.waitForTimeout(800);
+  const box = page.getByRole('checkbox', {name: 'Select Drafts'});
+  await box.focus();
+  await page.keyboard.press('Space');
+  await expect(box).toBeChecked();
+  // Still on the checkbox: a second Space unchecks it, not the row.
+  expect(
+    await box.evaluate(element => element === document.activeElement),
+  ).toBe(true);
+  await page.keyboard.press('Space');
+  await expect(box).not.toBeChecked();
 });
 
 test('a Checkbox toggling at the same size plays nothing', async ({page}) => {
@@ -221,7 +241,7 @@ for (const align of ['center', 'start']) {
     // take their places at once.
     expect(played).toHaveLength(0);
     await expect(
-      page.locator('li [data-astryx-item-slot="start"]'),
+      page.locator('li [data-astryx-item-slot="start"]:not(:empty)'),
     ).toHaveCount(0);
   });
 }
