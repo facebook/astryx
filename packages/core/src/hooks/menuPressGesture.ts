@@ -87,7 +87,15 @@ export type MenuPressState<T> =
    * release or cancel, but nothing it does highlights or acts.
    * @internal Not public contract.
    */
-  | {phase: 'withdrawn'; pointerType: MenuPressPointerType};
+  | {
+      phase: 'withdrawn';
+      pointerType: MenuPressPointerType;
+      /**
+       * Withdrawn while it was still a press on the trigger: its tap's click
+       * is what opens the menu, so its release lets that click through.
+       */
+      fromTrigger?: true;
+    };
 
 /** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export type MenuPressInput<T> =
@@ -254,12 +262,15 @@ export function menuPressTransition<T>(
 function withdraw<T>(
   pointerType: MenuPressPointerType,
   litRow: T | null,
+  fromTrigger = false,
 ): MenuPressTransition<T> {
   if (!isFinger(pointerType)) {
     return idle({type: 'settle', stray: false, dismiss: false});
   }
   return {
-    gesture: {phase: 'withdrawn', pointerType},
+    gesture: fromTrigger
+      ? {phase: 'withdrawn', pointerType, fromTrigger: true}
+      : {phase: 'withdrawn', pointerType},
     effect:
       litRow != null ? {type: 'withdraw', clear: true} : {type: 'withdraw'},
   };
@@ -273,8 +284,14 @@ function stepWithdrawn<T>(
     case 'up':
       // The withdrawn finger lifts: nothing acts, and the click the browser
       // reports for it is still this gesture's, so it is swallowed (module
-      // FR5). Its listeners come off as the gesture ends.
-      return idle({type: 'settle', stray: true, dismiss: false});
+      // FR5). Its listeners come off as the gesture ends. A tap on the
+      // trigger keeps its click, which is what opens the menu (the pointer
+      // model, or FR29's open at a scroll view's lift).
+      return idle({
+        type: 'settle',
+        stray: gesture.fromTrigger !== true,
+        dismiss: false,
+      });
     case 'cancel':
       return idle({type: 'settle', stray: false, dismiss: false});
     case 'down':
@@ -348,7 +365,7 @@ function stepTriggerPress<T>(
       // takes it back off. No click follows a cancelled pointer.
       return idle({type: 'settle', stray: false, dismiss: false});
     case 'withdraw':
-      return withdraw<T>(gesture.pointerType, null);
+      return withdraw<T>(gesture.pointerType, null, true);
     case 'down':
     case 'move':
       return {gesture, effect: NONE};
