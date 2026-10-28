@@ -100,7 +100,7 @@ This table is a review projection; the body below is authoritative.
 | FR5 | Label icons, tooltip anchors, required/optional text, and description content preserve source order. The label element uses a horizontal flex row; the optional label/description wrapper uses block flow. All component-owned spacing is logical or direction-neutral.                                   | Established public interface and source observation                  |
 | FR6 | Accepted data, ARIA, DOM, class, style, event, and `xstyle` inputs compose on the label element without replacing the component-owned target or association. When a description renders, the outer wrapper is layout-only and caller props stay on the inner label element.                               | `architecture:public-component-api/INV5–INV7`                        |
 | FR7 | The public ref and label-element props MUST describe the element FieldLabel renders in each mode; which root element and public type group mode uses is OQ1. Implementation gap: group mode renders a `<span>` while the public BaseProps and ref types are fixed to `HTMLLabelElement`.                  | `architecture:public-component-api/INV8,INV9`; current runtime/types |
-| FR8 | The optional tooltip's explanatory content MUST be reachable by keyboard and available to assistive technology with the associated field. Implementation gap: it anchors to an anonymous, nonfocusable info icon, so the content is pointer-only.                                                         | WCAG 2.2 SC 2.1.1; `spec:AST-020/FR1`                                |
+| FR8 | The optional tooltip's explanatory content MUST be reachable by keyboard (WCAG 2.2 SC 2.1.1) and its trigger MUST have an accessible name and role (WCAG 2.2 SC 4.1.2). Implementation gap: it anchors to an anonymous, nonfocusable info icon, so the content is pointer-only.                           | WCAG 2.2 SC 2.1.1, SC 4.1.2; `spec:AST-020/FR1`                      |
 
 ### Allowed variation
 
@@ -134,7 +134,8 @@ This table is a review projection; the body below is authoritative.
 - **AR2 — Description separation.** Description content stays outside the label so it is not duplicated in the accessible name and exposes an ID for caller-owned `aria-describedby`.
 - **AR3 — Hidden labels.** Visually hidden label and description content remain programmatically available.
 - **AR4 — Activation boundary.** Description activation never hijacks interactive descendants and never forwards from a group label to one control.
-- **AR5 — Tooltip reachability.** Tooltip content MUST be reachable by keyboard and screen-reader users (FR8). Implementation gap: the anonymous, nonfocusable anchor exposes it only to a pointer.
+- **AR5 — Tooltip reachability.** Tooltip content MUST be reachable by keyboard
+  (WCAG 2.2 SC 2.1.1) through a named trigger (SC 4.1.2) (FR8). Implementation gap: the anonymous, nonfocusable anchor exposes it only to a pointer.
 
 ## Design relationships
 
@@ -166,7 +167,7 @@ No current repository design record governs component-local visual tuning. The i
   props and ref are typed for `HTMLLabelElement`, against
   `architecture:public-component-api` INV8 and INV9; the fix is OQ1.
 - **Tooltip reachability (FR8, AR5).** The label tooltip is pointer-only,
-  against WCAG 2.2 SC 2.1.1.
+  against WCAG 2.2 SC 2.1.1 and 4.1.2.
 
 ## Decision log
 
