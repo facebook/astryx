@@ -634,4 +634,19 @@ describe('handing a swap copy over', () => {
     expect(copy?.isConnected).toBe(true);
     expect(end.handOff()).toBeNull();
   });
+
+  it('calls onEnd once when the swap ends', () => {
+    const {handle, content, host} = setup();
+    const swap = holdLayoutSwap(handle, content);
+    const onEnd = vi.fn();
+    const end = playLayoutSwap(swap!, {
+      host,
+      copy: travel,
+      incoming: [],
+      onEnd,
+    });
+    played[0].finish?.();
+    end();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
 });
