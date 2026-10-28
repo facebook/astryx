@@ -217,7 +217,8 @@ export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
    */
   description?: ReactNode;
   /**
-   * Whether this individual radio item is disabled.
+   * Whether this individual radio item is disabled. It stays focusable with
+   * `aria-disabled` and refuses selection, and the group's arrow keys skip it.
    * @default false
    */
   isDisabled?: boolean;

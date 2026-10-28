@@ -169,7 +169,8 @@ export interface RadioListProps extends Omit<
    */
   orientation?: 'vertical' | 'horizontal';
   /**
-   * Whether all radio items are disabled.
+   * Whether all radio items are disabled. Disabled radios stay focusable
+   * with `aria-disabled`, refuse selection, and submit no value.
    * @default false
    */
   isDisabled?: boolean;
@@ -184,8 +185,9 @@ export interface RadioListProps extends Omit<
    * Explains why the radio group is disabled. Applies to the whole-group
    * disabled state (`isDisabled`), not individual items. When set together with
    * `isDisabled`, the group shows a tooltip with this text on hover and keyboard
-   * focus, and its radios stay focusable (via `aria-disabled`) so the reason is
-   * discoverable by keyboard and assistive technology. Selection stays blocked.
+   * focus. Disabled radios stay focusable (via `aria-disabled`) with or without
+   * a reason, so the reason is discoverable by keyboard. Selection stays
+   * blocked.
    *
    * Use this instead of wrapping a disabled group in `Tooltip` — disabled
    * controls don't emit the pointer events an external tooltip needs.
