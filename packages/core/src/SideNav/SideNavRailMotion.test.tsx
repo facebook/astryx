@@ -291,6 +291,40 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(start).toBeLessThan(EXPANDED - COLLAPSED);
   });
 
+  it('continues what the rail and the page show when a change reverses a running one', async () => {
+    render(<Shell />);
+    await toggle();
+    // 40 ms into the collapse: the old labels still show, fading.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      value: {currentTime: 1040},
+    });
+    recorded = [];
+    await toggle();
+    const opacityOf = (entry: Recorded | undefined) =>
+      Number(entry?.keyframes[0].opacity);
+    // The real labels start where the old ones were, not from nothing.
+    const label = recorded.find(
+      entry =>
+        !entry.element.closest('[inert]') &&
+        entry.element.textContent === 'Projects' &&
+        'opacity' in entry.keyframes[0],
+    );
+    expect(opacityOf(label)).toBeGreaterThan(0.2);
+    // The collapsed rail had not shown yet, so its held copy starts unseen.
+    const collapsedCopy = recorded.find(
+      entry =>
+        entry.element.hasAttribute('inert') &&
+        entry.element.querySelector('button[aria-label="Projects"]') != null,
+    );
+    expect(opacityOf(collapsedCopy)).toBeLessThan(0.2);
+    // The page: the wrap held now showed partly, the entering wrap the rest.
+    const heading = recorded.find(
+      entry => entry.element.textContent === 'Projects page',
+    );
+    expect(opacityOf(heading)).toBeGreaterThan(0);
+  });
+
   it('leaves the real collapsed rail and no copies once the motion ends', async () => {
     render(<Shell />);
     await toggle();

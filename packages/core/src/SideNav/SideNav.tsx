@@ -497,20 +497,24 @@ export function SideNav({
   const motionRef = useRef<{rail: RailMotion; endContent: () => void} | null>(
     null,
   );
-  const measureRail = useCallback(() => {
-    // A change during a running motion starts from what the rail shows.
-    const running = motionRef.current;
-    const visible = running?.rail.visibleWidth() ?? Number.NaN;
-    running?.rail.end();
-    running?.endContent();
-    motionRef.current = null;
-    railSnapshotRef.current = snapshotRail(
-      shell?.rail() ?? navRef.current,
-      shell?.animatedLayout ?? ownLayout,
-      Number.isFinite(visible) ? visible : null,
-    );
-    shell?.beforeRailChange();
-  }, [shell, ownLayout]);
+  const measureRail = useCallback(
+    (wasCollapsed: boolean) => {
+      // A change during a running motion starts from what the rail shows.
+      const running = motionRef.current;
+      const shown = running?.rail.shown() ?? null;
+      running?.rail.end();
+      running?.endContent();
+      motionRef.current = null;
+      railSnapshotRef.current = snapshotRail(
+        shell?.rail() ?? navRef.current,
+        shell?.animatedLayout ?? ownLayout,
+        shown,
+        wasCollapsed,
+      );
+      shell?.beforeRailChange();
+    },
+    [shell, ownLayout],
+  );
   useLayoutEffect(() => {
     const snapshot = railSnapshotRef.current;
     railSnapshotRef.current = null;

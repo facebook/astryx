@@ -24,8 +24,9 @@
  *   fading in over the last 60% so no label shows at the collapsed width,
  *   under the old, collapsed rail held by the same swap, which fades over the
  *   first 60%: the first frame is the frame before the click.
- * - A change made during a running motion starts from the width the rail
- *   shows, so the rail stays continuous.
+ * - A change made during a running motion starts from what the rail shows:
+ *   its width, its labels' opacity and its collapsed icons' opacity, so the
+ *   rail stays continuous.
  * - Every starting clip applies in the commit's layout effect, before the
  *   first frame paints.
  * - Under Reduce Motion it follows `design:reduced-motion`: opacity only
@@ -69,11 +70,20 @@ export function createRailLayout(
   return createAnimatedLayout(() => rail()?.parentElement ?? null);
 }
 
+/** What a rail shows: at rest, or partway through a motion. */
+export interface RailShown {
+  readonly width: number;
+  /** The labels' opacity. */
+  readonly labels: number;
+  /** The collapsed rail's opacity (its icons). */
+  readonly collapsed: number;
+}
+
 export interface RailSnapshot {
   readonly rail: HTMLElement;
   readonly railRect: DOMRect;
-  /** The width the rail shows: its own, or a running motion's. */
-  readonly visibleWidth: number;
+  /** What the rail shows when the change lands. */
+  readonly shown: RailShown;
   /** The old rail, held by the swap. */
   readonly swap: LayoutSwap | null;
 }
@@ -82,15 +92,19 @@ export interface RailSnapshot {
 export interface RailMotion {
   /** Ends it at once (a new change, an unmount). */
   end(): void;
-  /** The width the rail shows now. */
-  visibleWidth(): number;
+  /** What the rail shows now, or null once it has settled. */
+  shown(): RailShown | null;
 }
 
-/** Before the change commits: the old rail, where it was and what it shows. */
+/**
+ * Before the change commits: the old rail, where it was, and what it shows,
+ * from a running motion or at rest.
+ */
 export function snapshotRail(
   rail: HTMLElement | null,
   handle: AnimatedLayout,
-  visibleWidth: number | null,
+  running: RailShown | null,
+  isCollapsed: boolean,
 ): RailSnapshot | null {
   if (rail == null || typeof rail.animate !== 'function') {
     return null;
@@ -99,7 +113,11 @@ export function snapshotRail(
   return {
     rail,
     railRect,
-    visibleWidth: visibleWidth ?? railRect.width,
+    shown: running ?? {
+      width: railRect.width,
+      labels: isCollapsed ? 0 : 1,
+      collapsed: isCollapsed ? 1 : 0,
+    },
     swap: holdLayoutSwap(handle, rail),
   };
 }
@@ -115,7 +133,7 @@ function textElements(rail: HTMLElement): Element[] {
   );
 }
 
-const AT_REST: RailMotion = {end: () => {}, visibleWidth: () => Number.NaN};
+const AT_REST: RailMotion = {end: () => {}, shown: () => null};
 
 /**
  * After the change commits, before paint: play the rail's motion from the
@@ -126,7 +144,7 @@ export function playRail(
   current: HTMLElement | null,
   handle: AnimatedLayout,
 ): RailMotion {
-  const {railRect, swap, visibleWidth: from} = snapshot;
+  const {railRect, swap, shown: from} = snapshot;
   // The rail as it is now: a resizable rail's nav remounts when its resize
   // wrapper comes and goes with the collapse.
   const rail = current?.isConnected === true ? current : snapshot.rail;
@@ -135,22 +153,36 @@ export function playRail(
   }
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
-  if (motion.kind === 'instant' || Math.abs(next.width - from) < 0.5) {
+  if (motion.kind === 'instant' || Math.abs(next.width - from.width) < 0.5) {
     return AT_REST;
   }
+  const isCollapse = next.width < from.width;
+  // The labels and the collapsed icons over the motion's progress, from what
+  // the rail showed.
+  const labelsAt = (p: number) =>
+    isCollapse
+      ? from.labels * (1 - clamp(p / 0.4))
+      : from.labels + (1 - from.labels) * clamp((p - 0.4) / 0.6);
+  const collapsedAt = (p: number) =>
+    isCollapse
+      ? from.collapsed + (1 - from.collapsed) * clamp((p - 0.7) / 0.3)
+      : from.collapsed * (1 - clamp(p / 0.6));
   const now = () => Number(rail.ownerDocument.timeline?.currentTime ?? 0);
   const startedAt = now();
   const durationMs =
     motion.kind === 'spring' ? motion.progress.durationMs : motion.durationMs;
-  const visibleWidth = () => {
+  const shown = (): RailShown | null => {
     const elapsed = now() - startedAt;
     if (elapsed >= durationMs) {
-      // Settled: the rail shows its own width.
-      return Number.NaN;
+      return null;
     }
     const p =
       motion.kind === 'spring' ? 1 - motion.progress.remaining(elapsed) : 0;
-    return from + (next.width - from) * p;
+    return {
+      width: from.width + (next.width - from.width) * p,
+      labels: labelsAt(p),
+      collapsed: collapsedAt(p),
+    };
   };
   const rtl = getComputedStyle(rail).direction === 'rtl';
   const inset = (px: number) =>
@@ -165,13 +197,13 @@ export function playRail(
   });
   const host = rail.parentElement;
 
-  if (next.width < from) {
+  if (isCollapse) {
     // A collapse covers the old rail, held by the swap, from the width it
-    // shows down to the new one.
+    // shows down to the new one; the real, collapsed rail fades in under it.
     if (swap == null || host == null) {
       return AT_REST;
     }
-    const startInset = railRect.width - from;
+    const startInset = railRect.width - from.width;
     const endInset = railRect.width - next.width;
     const end = playLayoutSwap(
       {...swap, rect: at},
@@ -182,18 +214,16 @@ export function playRail(
           clipPath: inset(startInset + (endInset - startInset) * p),
           opacity: 1 - clamp((p - 0.7) / 0.3),
         }),
-        copyText: p => 1 - clamp(p / 0.4),
-        incoming: [
-          {element: rail, frames: p => ({opacity: clamp((p - 0.7) / 0.3)})},
-        ],
+        copyText: labelsAt,
+        incoming: [{element: rail, frames: p => ({opacity: collapsedAt(p)})}],
       },
     );
-    return {end, visibleWidth};
+    return {end, shown};
   }
 
   // An expand reveals the real rail from the width it showed, its text fading
   // in late, under the old, collapsed rail fading early.
-  const reveal = next.width - from;
+  const reveal = next.width - from.width;
   const incoming = [
     {
       element: rail,
@@ -201,7 +231,7 @@ export function playRail(
     },
     ...textElements(rail).map(element => ({
       element,
-      frames: (p: number) => ({opacity: clamp((p - 0.4) / 0.6)}),
+      frames: (p: number) => ({opacity: labelsAt(p)}),
     })),
   ];
   const end =
@@ -211,10 +241,10 @@ export function playRail(
           {
             host,
             isOpaque: true,
-            copy: p => ({opacity: 1 - clamp(p / 0.6)}),
+            copy: p => ({opacity: collapsedAt(p)}),
             incoming,
           },
         )
       : playLayoutFrames(handle, incoming);
-  return {end, visibleWidth};
+  return {end, shown};
 }

@@ -773,7 +773,12 @@ export function AppShell({
     change: LayoutChange;
     swap: LayoutSwap | null;
     before: DOMRect;
+    /** How far the old wrap had faded in a running swap (0 at rest). */
+    shown: number;
   } | null>(null);
+  // When the last swap started, so a change made during it starts its
+  // cross-fade from what the content shows.
+  const lastSwapRef = useRef<{startedAt: number} | null>(null);
   const sideNavShell = useMemo<SideNavShell>(
     () => ({
       animatedLayout: contentLayout,
@@ -785,10 +790,24 @@ export function AppShell({
         }
         const change = reportLayoutChange(contentLayout, railRef);
         change.measureBefore();
+        let shown = 0;
+        const motion = layoutMotionFor(main);
+        const last = lastSwapRef.current;
+        if (last != null && motion.kind === 'spring') {
+          const elapsed =
+            Number(main.ownerDocument.timeline?.currentTime ?? 0) -
+            last.startedAt;
+          shown = 1 - motion.progress.remaining(elapsed);
+          if (elapsed >= motion.progress.durationMs) {
+            shown = 0;
+          }
+        }
+        lastSwapRef.current = null;
         pendingContentRef.current = {
           change,
           swap: holdLayoutSwap(contentLayout, main, {isVisiblePart: true}),
           before: main.getBoundingClientRect(),
+          shown,
         };
       },
       afterRailChange() {
@@ -835,14 +854,21 @@ export function AppShell({
         if (pending.swap == null || column.parentElement == null) {
           return playLayoutFrames(contentLayout, cover);
         }
+        // From what the content shows: mid-swap, the wrap now held showed at
+        // `shown` and the wrap entering at the rest.
+        const held = pending.shown > 0 ? pending.shown : 1;
+        const entering = pending.shown > 0 ? 1 - pending.shown : 0;
+        lastSwapRef.current = {
+          startedAt: Number(main.ownerDocument.timeline?.currentTime ?? 0),
+        };
         return playLayoutSwap(pending.swap, {
           host: column.parentElement,
-          copy: p => ({opacity: 1 - p}),
+          copy: p => ({opacity: held * (1 - p)}),
           rideWith: {element: column, travel: {x: travel, y: 0}},
           incoming: [
             ...Array.from(main.children, element => ({
               element,
-              frames: (p: number) => ({opacity: p}),
+              frames: (p: number) => ({opacity: entering + (1 - entering) * p}),
             })),
             ...cover,
           ],
