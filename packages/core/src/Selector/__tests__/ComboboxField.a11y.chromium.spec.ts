@@ -41,6 +41,7 @@ test.afterAll(async () => {
 
 const STORY = {
   search: 'core-hooks-usecombobox--search-field',
+  layer: 'core-hooks-usecombobox--assignee-field',
   dialog: 'core-hooks-usecombobox--in-dialog',
 } as const;
 
@@ -122,6 +123,15 @@ const SCENARIOS: ReadonlyArray<Scenario> = [
     arrange: async page => {
       await page.keyboard.type('no');
       await page.keyboard.press('ArrowDown');
+    },
+  },
+  {
+    id: 'input-shown-in-layer',
+    story: STORY.layer,
+    name: 'Assignee',
+    open: true,
+    arrange: async page => {
+      await page.keyboard.type('ar');
     },
   },
   {
@@ -319,4 +329,128 @@ test('hovering makes an option active and a press picks it, with focus kept in t
   await expect(page.getByText('Shared with Margaret Hamilton')).toBeVisible();
   await expect(page.getByRole('listbox')).toHaveCount(0);
   expect(await hasFocus(field)).toBe(true);
+});
+
+/**
+ * Records every non-empty text written to a polite region, by where it is:
+ * the page body's shared region, or an open dialog's own.
+ */
+async function recordPoliteWrites(
+  page: Page,
+): Promise<() => Promise<{body: string[]; dialog: string[]}>> {
+  await page.addInitScript(() => {
+    const writes = {body: [] as string[], dialog: [] as string[]};
+    (window as unknown as {__writes: typeof writes}).__writes = writes;
+    new MutationObserver(records => {
+      for (const record of records) {
+        const target = record.target;
+        if (!(target instanceof Element)) {
+          continue;
+        }
+        const where = target.matches('[data-astryx-live-region="polite"]')
+          ? 'body'
+          : target.matches('[data-astryx-modal-live-region="polite"]')
+            ? 'dialog'
+            : null;
+        for (const node of where == null ? [] : record.addedNodes) {
+          if (node.textContent) {
+            writes[where as 'body' | 'dialog'].push(node.textContent);
+          }
+        }
+      }
+    }).observe(document, {childList: true, subtree: true});
+  });
+  return async () =>
+    page.evaluate(() => {
+      const writes = (
+        window as unknown as {__writes: {body: string[]; dialog: string[]}}
+      ).__writes;
+      return {body: [...writes.body], dialog: [...writes.dialog]};
+    });
+}
+
+/** Two frames: the shared channel joins messages written within one (AST-086 FR9). */
+async function nextFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    async () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+}
+
+test('the search story announces each new query’s count, and the words it shows for none', async ({
+  page,
+}) => {
+  const writes = await recordPoliteWrites(page);
+  await openStory(page, STORY.search);
+  await page.getByRole('combobox', {name: 'Search settings'}).click();
+  // Nothing is announced on mount.
+  await nextFrames(page);
+  await page.waitForTimeout(300);
+  expect(await writes()).toEqual({body: [], dialog: []});
+  const expected: string[] = [];
+  for (const [key, words] of [
+    ['n', '5 results'],
+    ['o', '2 results'],
+    ['z', 'No settings match'],
+  ] as const) {
+    await page.keyboard.press(key);
+    expected.push(words);
+    await expect.poll(writes).toEqual({body: expected, dialog: []});
+    await nextFrames(page);
+  }
+  await expect(
+    page.locator('p').filter({hasText: /^No settings match$/}),
+  ).toBeVisible();
+  // A trailing space leaves the query unchanged, so nothing new is announced.
+  await page.keyboard.press(' ');
+  await nextFrames(page);
+  await page.waitForTimeout(300);
+  expect(await writes()).toEqual({body: expected, dialog: []});
+});
+
+test('in a layer, the active option crosses into it, focus stays in the input, and Escape hides only the layer', async ({
+  page,
+}) => {
+  await openStory(page, STORY.layer);
+  const field = page.getByRole('combobox', {name: 'Assignee'});
+  await field.click();
+  await page.keyboard.type('ar');
+  const listbox = page.getByRole('listbox', {name: 'People'});
+  await expect(listbox).toBeVisible();
+  await expect(field).toHaveAttribute('aria-expanded', 'true');
+  await expect(field).toHaveAttribute(
+    'aria-controls',
+    (await listbox.getAttribute('id')) ?? '',
+  );
+  expect(await activeOptionName(page, field)).toBe('Barbara Liskov');
+  await page.keyboard.press('ArrowDown');
+  expect(await activeOptionName(page, field)).toBe('Margaret Hamilton');
+  expect(await hasFocus(field)).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect(listbox).toHaveCount(0);
+  await expect(field).toHaveAttribute('aria-expanded', 'false');
+  expect(await hasFocus(field)).toBe(true);
+  await expect(page.getByText('Unassigned', {exact: true})).toBeVisible();
+});
+
+test('the dialog story announces in the dialog’s own live region, never the page body’s', async ({
+  page,
+}) => {
+  const writes = await recordPoliteWrites(page);
+  await openStory(page, STORY.dialog);
+  await page.getByRole('combobox', {name: 'Add people'}).click();
+  const expected: string[] = [];
+  for (const [key, words] of [
+    ['a', '7 results'],
+    ['l', '1 result'],
+    ['z', 'No one matches'],
+  ] as const) {
+    await page.keyboard.press(key);
+    expected.push(words);
+    await expect.poll(writes).toEqual({body: [], dialog: expected});
+    await nextFrames(page);
+  }
 });
