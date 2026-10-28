@@ -55,6 +55,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
+import {TOUCH_QUERY} from '../utils/touchQueries';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
@@ -558,6 +559,23 @@ const densityStyles = stylex.create({
  * />
  * ```
  */
+/**
+ * Whether a click came from a finger: the click's own pointer type where the
+ * engine reports one, else the primary pointer (TOUCH_QUERY, one touch
+ * model).
+ */
+function isTouchClick(event: MouseEvent): boolean {
+  const {pointerType} = event as Partial<PointerEvent>;
+  if (typeof pointerType === 'string' && pointerType !== '') {
+    return pointerType === 'touch';
+  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(TOUCH_QUERY).matches
+  );
+}
+
 export function Item({
   as: Component = 'div',
   marker,
@@ -729,6 +747,12 @@ export function Item({
     </>
   );
 
+  // The pointer of the last press on a link row, which its click inherits:
+  // WebKit reports a click a finger made with the pointer type `mouse`, while
+  // the press itself says `touch`.
+  const pressPointerRef = useRef<string | null>(null);
+  const isLinkRow = onClick == null && href != null && !isLinkRoot;
+
   const handleContainerClick = (e: React.MouseEvent) => {
     if (isDisabled) {
       return;
@@ -737,22 +761,26 @@ export function Item({
     if (target.closest('button, a, input, select, textarea')) {
       return;
     }
-    if (onClick == null && href != null && !isLinkRoot) {
-      // A tap in a link row's touch hit area under a finger (the band past
-      // the row's box, `spec:AST-094` FR42) follows its link: it goes to the
-      // row's anchor, with its modifier keys, so the link component and the
-      // browser decide the destination as for a tap on the label. A click
-      // inside the row's box but outside its anchor does nothing, as before,
-      // for every pointer; so does a click with no pointer behind it.
+    if (isLinkRow) {
+      // Under a finger, a link row's whole touch target follows its link: a
+      // tap in its own padding, outside the anchor, and a tap in its touch
+      // hit area, the band past its box (`spec:AST-094` FR42). It goes to
+      // the row's anchor, with its modifier keys, so the link component and
+      // the browser decide the destination as for a tap on the label. A
+      // fine-pointer click in the padding does nothing, as before
+      // (`spec:AST-017` FR59); so does a click with no pointer behind it.
       const row = e.currentTarget as HTMLElement;
       const box = row.getBoundingClientRect();
       const isInBand =
-        e.detail > 0 &&
-        (e.clientX < box.left ||
-          e.clientX > box.right ||
-          e.clientY < box.top ||
-          e.clientY > box.bottom);
-      if (isInBand) {
+        e.clientX < box.left ||
+        e.clientX > box.right ||
+        e.clientY < box.top ||
+        e.clientY > box.bottom;
+      const isTouch =
+        pressPointerRef.current != null
+          ? pressPointerRef.current === 'touch'
+          : isTouchClick(e.nativeEvent);
+      if (e.detail > 0 && (isInBand || isTouch)) {
         row.querySelector<HTMLElement>('[data-astryx-row-link]')?.dispatchEvent(
           new MouseEvent('click', {
             bubbles: true,
@@ -899,6 +927,14 @@ export function Item({
       {...restProps}
       {...swipeHandlers}
       {...linkRootProps}
+      {...(isInteractive && isLinkRow
+        ? {
+            onPointerDownCapture: (event: React.PointerEvent<HTMLElement>) => {
+              pressPointerRef.current = event.pointerType;
+              restProps.onPointerDownCapture?.(event);
+            },
+          }
+        : null)}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
       // bare div, etc.). For those, convey selection via aria-current — valid
