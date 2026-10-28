@@ -6,42 +6,46 @@
  * @file useZoomStage.ts
  * @input The zoom core (useZoomCore.ts), the stage element ref, the element
  *   the recognizers attach to (the stage, or a gallery's track), whether the
- *   finger paths are on, the current item's key, and callbacks for taps
+ *   gestures are on, the current item's key, and callbacks for taps
  *   outside the photo and drags
- * @output Exports `useZoomStage`: Lightbox's touch layer, the finger paths
- *   of a zooming UIScrollView — pinch about the fingers with the pan riding
- *   along, the give past the zoom limits and the eased return, double tap to
- *   the tapped point (Photos' aspect fill), a zoomed pan with UIScrollView's
- *   rubber band and coast, and a finger catching a moving photo — on top of
- *   the core, whose API it returns
- * @position Lightbox's touch module (internal, one import site:
+ * @output Exports `useZoomStage`: Lightbox's gestures, those of a zooming
+ *   UIScrollView for every pointer — pinch about the fingers with the pan
+ *   riding along, the give past the zoom limits and the eased return, double
+ *   tap to the tapped point (Photos' aspect fill), a zoomed pan with
+ *   UIScrollView's rubber band and coast, and a press catching a moving
+ *   photo — on top of the core, whose API it returns
+ * @position Lightbox's gesture module (internal, one import site:
  *   Lightbox.tsx); built on the gesture recognizers (../gestures) and the
  *   core's compositor animator, with the geometry in zoomStage.ts
  *
- * Only fingers and pens reach these recognizers; the mouse and the keyboard
- * are the core's. Finger tracking writes the photo's `translate` and `scale`
- * once per input event (no React render, no layout read after a gesture
- * begins); every release and double tap runs on the compositor as baked
- * keyframes. A finger landing on a moving photo takes it from its
+ * These recognizers take every pointer, a mouse, a pen and a finger alike
+ * (spec:AST-094 FR43): the pinch is the fingers' (a ctrl-wheel pinches too;
+ * a pen does not), the pan also takes a wheel's or a trackpad's scroll, and
+ * the keyboard is the core's. Tracking writes the photo's `translate` and
+ * `scale` once per input event (no React render, no layout read after a
+ * gesture begins); every release and double tap runs on the compositor as
+ * baked keyframes. A press landing on a moving photo takes it from its
  * presentation value.
  *
  * Recognizers on the stage, as UIScrollView arranges its own:
  * - pinch, simultaneous with the pan, so two fingers zoom and move at once
  *   and a finger left down after the pinch keeps panning;
- * - pan (one or two fingers), moving a zoomed photo. As UIScrollView's, it
- *   begins only when the photo can move that way: with two fingers down, or
- *   on a zoomed photo not already at its edge on the side the drag heads to;
- *   any other drag is left to an outer pager. As a scroll view's, its
- *   coast reads the pan's scroll-view release (`scrollVelocity()`, the
- *   shared filter, spec:AST-100), at rest after a silent hold;
- * - double tap: zoom in as Photos does (until the photo fills the stage,
- *   the tapped point brought to the centre), or back to the fitted size;
+ * - pan (one or two fingers, a mouse's or a pen's drag, or a scroll),
+ *   moving a zoomed photo. As UIScrollView's, it begins only when the photo
+ *   can move that way: with two fingers down, or on a zoomed photo not
+ *   already at its edge on the side the drag heads to; any other drag is
+ *   left to an outer pager. As a scroll view's, its coast reads the pan's
+ *   scroll-view release (`scrollVelocity()`, the shared filter,
+ *   spec:AST-100), at rest after a silent hold;
+ * - double tap (a double-click too): zoom in as Photos does (until the
+ *   photo fills the stage, the tapped point brought to the centre), or back
+ *   to the fitted size;
  * - single tap, which waits for the double tap to fail: a tap that lands
  *   outside the photo is reported (Lightbox closes on it);
  * - a zero-duration press beside them all (UIKit's touch-down idiom): a
- *   finger landing on a moving photo stops it where it shows, as a scroll
+ *   press landing on a moving photo stops it where it shows, as a scroll
  *   view stops its deceleration, and a lift with no drag lets it settle. It
- *   only claims a touch on a moving photo, so a still one leaves the touch
+ *   only claims a press on a moving photo, so a still one leaves the press
  *   to an outer pager's own catch;
  * - with `dismiss`, a one-finger pan that begins only downward on a photo
  *   at its fitted size (Photos' drag to dismiss): the photo's centre follows
@@ -113,7 +117,7 @@ export interface UseZoomStageOptions {
   stageRef: RefObject<HTMLElement | null>;
   /** Where the recognizers attach: the stage by default, a pager's track. */
   surfaceRef?: RefObject<HTMLElement | null>;
-  /** The finger paths are on (zoom is on, under a finger). */
+  /** The gestures are on (zoom is on), for every pointer. */
   isEnabled: boolean;
   /** Changes when another item shows: a gesture in progress ends. */
   itemKey: unknown;
@@ -164,7 +168,7 @@ interface PinchSession {
 }
 
 interface PanSession {
-  /** The finger-travel transform when the session started. */
+  /** The pointer-travel transform when the session started. */
   readonly raw: ZoomTransform;
   readonly translation: Point;
 }
