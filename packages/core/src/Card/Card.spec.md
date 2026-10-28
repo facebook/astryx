@@ -72,8 +72,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   to the published inset, on any edge — a full-bleed Divider, a Layout, or a
   List `outset` or `bleed` box — overshoots the padding edge by the border
   width. A fixed-height card holding such a child scrolls by that amount on
-  both axes, and with nothing focusable inside, Chromium makes it an unnamed
-  tab stop even when its content fits. `architecture:container-padding` INV11
+  each axis the child bleeds on (both for a Layout) and becomes an unnamed tab
+  stop even when its content fits: in Chromium when it holds nothing
+  focusable, in Firefox even when it holds a focusable child. `architecture:container-padding` INV11
   has a host publish its applied padding, and `component:List` FR8 counts a
   Card's content area as such a host, so a `default` card at nonzero padding
   does not yet meet List FR8: List `outset` and `bleed` rows cross its padding
