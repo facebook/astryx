@@ -2,7 +2,11 @@
 
 import {describe, it, expect, expectTypeOf, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
-import type {DefinedTheme, ResolvedDefinedTheme} from './defineTheme';
+import type {
+  DefinedTheme,
+  DefineThemeInput,
+  ResolvedDefinedTheme,
+} from './defineTheme';
 import {
   defineTheme,
   generateThemeCSS,
@@ -1794,6 +1798,36 @@ describe('defineTheme extends', () => {
       expectTypeOf<DefinedTheme['iconVariants']>().toEqualTypeOf<
         ReadonlyArray<string> | undefined
       >();
+    });
+
+    it('keeps resolved themes with and without lists assignable to each other', () => {
+      const shared: DefineThemeInput = {name: 'variants-shared'};
+      const unlisted = defineTheme({name: 'variants-active'});
+      // Each annotation is the check: these assignments compiled before
+      // iconVariants existed and must keep compiling.
+      const fromShared: typeof unlisted = defineTheme(shared);
+      const fromListed: typeof unlisted = defineTheme({
+        name: 'variants-listed-active',
+        iconVariants: ['outline'],
+      });
+      const listed = defineTheme({
+        name: 'variants-listed',
+        iconVariants: ['outline', 'filled'],
+      });
+      const fromUnlisted: typeof listed = defineTheme({
+        name: 'variants-unlisted',
+      });
+      const resolved: ResolvedDefinedTheme = fromUnlisted;
+
+      expect(
+        [unlisted, fromShared, fromListed, listed, resolved].map(t => t.name),
+      ).toEqual([
+        'variants-active',
+        'variants-shared',
+        'variants-listed-active',
+        'variants-listed',
+        'variants-unlisted',
+      ]);
     });
 
     it('passes no variant to entry functions', () => {

@@ -62,7 +62,7 @@ type ThemeIconEntries<Variant extends string> = Partial<
  */
 type BaseThemeIconVariant<Base> = Base extends DefinedTheme
   ? '__iconVariant' extends keyof Base
-    ? Base extends {name: string; readonly __iconVariant?: infer Variant}
+    ? Base extends {name: string; __iconVariant?(variant: infer Variant): void}
       ? Extract<Variant, string>
       : string
     : string
@@ -587,10 +587,12 @@ export type ResolvedDefinedTheme<IconVariant extends string = string> =
     __axes: ThemeGenerativeAxes;
     /**
      * Type-only: the names in `iconVariants`, so a theme that `extends` this
-     * one types its icon entries by the list it inherits. Never set.
+     * one types its icon entries by the list it inherits. Never set. Method
+     * syntax keeps resolved themes with different lists assignable to each
+     * other, as they were before the list existed.
      * @internal
      */
-    readonly __iconVariant?: IconVariant;
+    __iconVariant?(variant: IconVariant): void;
   };
 
 // =============================================================================
@@ -773,8 +775,7 @@ export function defineTheme<
   };
 
   registerTheme(theme);
-  // `iconVariants` holds exactly the names this theme's entries are typed for.
-  return theme as ResolvedDefinedTheme<ThemeIconVariant<IconVariants, Base>>;
+  return theme;
 }
 
 /**
