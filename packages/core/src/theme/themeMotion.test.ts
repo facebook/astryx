@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
+import {generateAdaptationCSS} from './generateThemeRules';
 import {expandMotionScale} from './expandMotionScale';
 import {
   CHARACTER_EASE,
@@ -239,6 +240,96 @@ describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
     );
     expect(motion.easings['--ease-entrance']).toBe(CHARACTER_EASE.expressive);
     expect(motion.easings['--ease-standard']).toBe(STANDARD);
+  });
+});
+
+describe('a layer\u2019s own durations reach the busy loops under an enclosing tempo (spec:AST-108 FR4)', () => {
+  it('a theme with a duration scale and no tempo writes the loops\u2019 copies of its durations', () => {
+    const theme = defineTheme({
+      name: 'ScaledNested',
+      motion: {fast: 100, medium: 250, ratio: 0.75},
+    });
+    for (const name of ['--duration-fast', '--duration-medium-max']) {
+      expect(
+        theme.tokens[name.replace('--duration-', '--pre-tempo-duration-')],
+      ).toBe(theme.tokens[name]);
+    }
+  });
+
+  it('an explicit duration with no tempo writes its copy too', () => {
+    const theme = defineTheme({
+      name: 'ExplicitNested',
+      tokens: {'--duration-slow': '800ms'},
+    });
+    expect(theme.tokens['--pre-tempo-duration-slow']).toBe('800ms');
+  });
+
+  it('an adaptation rule\u2019s own durations write their copies', () => {
+    const css = generateAdaptationCSS(
+      defineTheme({
+        name: 'AdaptiveDurations',
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {tokens: {'--duration-medium': '300ms'}},
+            },
+          ],
+        },
+      }),
+    ).component;
+    expect(css).toContain('--pre-tempo-duration-medium: 300ms');
+  });
+});
+
+describe('a child of an installed built theme (spec:AST-108 FR5, INV15)', () => {
+  it('keeps the base\u2019s explicit motion tokens, as a child of a defined theme does', () => {
+    const base = defineTheme({
+      name: 'BuiltBase',
+      motion: {tempo: 0.8},
+      tokens: {'--duration-medium': '333ms', '--ease-entrance': 'linear'},
+    });
+    // A built module carries the resolved tokens and the axes, not the input.
+    const built = {...base, __inputTokens: undefined};
+    const child = defineTheme({
+      name: 'BuiltChild',
+      extends: built,
+      motion: {tempo: 1.2},
+    });
+    expect(child.tokens['--duration-medium']).toBe('333ms');
+    expect(child.tokens['--ease-entrance']).toBe('linear');
+    // What the base only generated, the child regenerates at its tempo.
+    expect(child.tokens['--duration-fast']).toBe(`${Math.round(175 * 1.2)}ms`);
+  });
+});
+
+describe('an explicit --ease-standard (spec:AST-108 FR2)', () => {
+  it('is what --ease-entrance and --ease-move equal at standard, in the tokens and resolveThemeMotion alike', () => {
+    const curve = 'cubic-bezier(0.3, 0, 0.2, 1)';
+    for (const motion of [
+      undefined,
+      {character: 'standard' as const},
+      {tempo: 1.2},
+    ]) {
+      const theme = defineTheme({
+        name: 'OwnStandard',
+        motion,
+        tokens: {'--ease-standard': curve},
+      });
+      expect(theme.tokens['--ease-entrance'], JSON.stringify(motion)).toBe(
+        curve,
+      );
+      expect(theme.tokens['--ease-move'], JSON.stringify(motion)).toBe(curve);
+      expect(resolveThemeMotion(theme).easings['--ease-entrance']).toBe(curve);
+    }
+  });
+});
+
+describe('resolveThemeMotion reads a defined theme\u2019s motion (spec:AST-108 FR6)', () => {
+  it('takes the knobs a child inherits from its base', () => {
+    const base = defineTheme({name: 'KnobBase', motion: {tempo: 1.2}});
+    const child = defineTheme({name: 'KnobChild', extends: base});
+    expect(resolveThemeMotion(child).knobs.tempo).toBe(1.2);
   });
 });
 

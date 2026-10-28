@@ -171,7 +171,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: "Some motion never follows the knobs, because it tracks a finger or the system: finger tracking, momentum and the rubber band, the on-screen keyboard, the press model's clocks, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cross-fade.",
+          text: "Some motion never follows the knobs, because it tracks a finger or the system: finger tracking, momentum and the rubber band, the on-screen keyboard, the press model's onset delay, cancel distance and tap flash (its release fade follows tempo), hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cross-fade.",
         },
         {
           type: 'prose',

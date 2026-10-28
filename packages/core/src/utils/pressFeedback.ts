@@ -108,17 +108,17 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * The tempo of the theme `element` is in: the nearest
- * `data-astryx-motion-tempo`, which a theme with a `tempo` writes, as the
- * stylesheet's `--_astryx-motion-tempo` inherits; 1 outside one. The release
- * fade scales by it (`spec:AST-108` FR4, `component:Button` FR15); the onset
- * delay and the tap flash stay fixed.
+ * The tempo the release fade plays at on `element`: the
+ * `--_astryx-motion-tempo` its stylesheet reads, which a theme or an
+ * adaptation rule with a `tempo` writes and every element under it inherits;
+ * 1 without one. Read once, at the release (`spec:AST-108` FR4,
+ * `component:Button` FR15); the onset delay and the tap flash stay fixed.
  */
 function themeTempo(element: Element): number {
-  const value = element
-    .closest('[data-astryx-motion-tempo]')
-    ?.getAttribute('data-astryx-motion-tempo');
-  const tempo = value == null ? Number.NaN : Number(value);
+  const value = getComputedStyle(element)
+    .getPropertyValue('--_astryx-motion-tempo')
+    .trim();
+  const tempo = value === '' ? Number.NaN : Number(value);
   return Number.isFinite(tempo) && tempo > 0 ? tempo : 1;
 }
 

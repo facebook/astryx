@@ -534,6 +534,87 @@ function describeBadBase(value: unknown): string {
   return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
 }
 
+/** The slow band's duration tokens. */
+const SLOW_BAND = [
+  '--duration-slow-min',
+  '--duration-slow',
+  '--duration-slow-max',
+] as const;
+
+/**
+ * The base's slow-band tokens a child keeps (spec:AST-108 FR5): a child that
+ * sets its own `ratio` but no `slow` regenerates only the fast and medium
+ * bands, so an inherited slow band stays at the base's ratio, as the base's
+ * tokens hold it.
+ */
+function inheritedSlowBand(
+  base: DefinedTheme,
+  baseMotion: ThemeMotionConfig,
+  own: ThemeMotionConfig,
+): Partial<Record<string, TokenValue>> | undefined {
+  if (!('slow' in baseMotion) || 'slow' in own || !('ratio' in own)) {
+    return undefined;
+  }
+  const tokens = base.tokens as Record<string, string | undefined>;
+  return Object.fromEntries(
+    SLOW_BAND.flatMap(name =>
+      tokens[name] !== undefined ? [[name, tokens[name]]] : [],
+    ),
+  );
+}
+
+/** A motion token: a duration or an easing (spec:AST-108 FR5). */
+function isMotionToken(name: string): boolean {
+  return name.startsWith('--duration-') || name.startsWith('--ease-');
+}
+
+/**
+ * The explicit motion tokens of a base's lineage, which keep winning over
+ * what a child's knobs regenerate (spec:AST-108 FR5;
+ * `architecture:theme-authoring-contract` INV15). A defined theme keeps its
+ * input tokens. A built theme module carries its resolved tokens and its axes
+ * but not its input: there, a motion token that differs from what its own
+ * motion generates was written explicitly, except the entrance and move
+ * curves that follow an explicit --ease-standard at 'standard' (FR2).
+ */
+function lineageExplicitMotionTokens(
+  base: DefinedTheme | undefined,
+): Partial<Record<string, TokenValue>> | undefined {
+  if (base == null) {
+    return undefined;
+  }
+  if (base.__inputTokens != null) {
+    return Object.fromEntries(
+      Object.entries(base.__inputTokens).filter(([name]) =>
+        isMotionToken(name),
+      ),
+    );
+  }
+  const motion = base.__axes?.motion;
+  const generated: Record<string, string> = {
+    ...durationDefaults,
+    ...easeDefaults,
+    ...(motion != null ? resolveThemeValues({motion}).tokens : undefined),
+  };
+  const tokens = base.tokens as Record<string, string | undefined>;
+  const standard = tokens['--ease-standard'];
+  const character =
+    motion != null && 'character' in motion ? motion.character : undefined;
+  const followsStandard = (name: string, value: string) =>
+    (name === '--ease-entrance' || name === '--ease-move') &&
+    value === standard &&
+    (character === undefined || character === 'standard');
+  return Object.fromEntries(
+    Object.entries(tokens).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== undefined &&
+        isMotionToken(entry[0]) &&
+        entry[1] !== generated[entry[0]] &&
+        !followsStandard(entry[0], entry[1]),
+    ),
+  );
+}
+
 /**
  * Create an Astryx theme.
  *
@@ -567,20 +648,22 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
   // Motion inherits field by field (spec:AST-108 FR5): a duration-scale field
   // or knob the child leaves unset keeps its base's value, so the child's
   // motion tokens come from the merged configuration, and the lineage's
-  // explicit motion tokens keep winning over what that regenerates.
+  // explicit motion tokens keep winning over what that regenerates. A child's
+  // `ratio` regenerates only the bands it sets: an inherited slow band keeps
+  // the base's tokens.
   const baseMotion = base?.__axes?.motion;
   const motion: ThemeMotionConfig | undefined =
     input.motion != null && baseMotion != null
       ? {...baseMotion, ...input.motion}
       : input.motion;
   const lineageMotionTokens =
-    input.motion != null && base?.__inputTokens != null
-      ? Object.fromEntries(
-          Object.entries(base.__inputTokens).filter(
-            ([name]) =>
-              name.startsWith('--duration-') || name.startsWith('--ease-'),
-          ),
-        )
+    input.motion != null
+      ? {
+          ...(base != null && baseMotion != null
+            ? inheritedSlowBand(base, baseMotion, input.motion)
+            : undefined),
+          ...lineageExplicitMotionTokens(base),
+        }
       : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,

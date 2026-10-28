@@ -300,18 +300,31 @@ describe('the release', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('scales the fade by the tempo of the theme the row is in (spec:AST-108 FR4, component:Button FR15)', () => {
-    const theme = document.createElement('div');
-    theme.setAttribute('data-astryx-theme', 'slow');
-    theme.setAttribute('data-astryx-motion-tempo', '1.5');
-    document.body.appendChild(theme);
-    theme.appendChild(scroller);
+  it('scales the fade by the tempo its stylesheet reads, a theme\u2019s or an adaptation rule\u2019s (spec:AST-108 FR4, component:Button FR15)', () => {
+    // A rule writes the tempo (a media-query adaptation, say); browsers
+    // inherit it from the theme, jsdom only reads it where it is declared.
+    const style = document.createElement('style');
+    style.textContent = '.slow-row { --_astryx-motion-tempo: 1.5; }';
+    document.head.appendChild(style);
+    rows[0].classList.add('slow-row');
+    try {
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(PRESS_FADE_MS / 2);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('keeps the 200 ms fade without a tempo', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     press(rows[0], 'pointerup', 10, 10);
     vi.advanceTimersByTime(PRESS_FADE_MS);
-    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(PRESS_FADE_MS / 2);
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
