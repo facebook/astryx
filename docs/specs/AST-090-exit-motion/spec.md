@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-26
+approved_at: 2026-10-28
 phase: accepted
 owners: [ernestt, cixzhang]
 affects_architecture: [architecture:theme-tokens, architecture:layer-runtime]
@@ -76,9 +76,9 @@ components read through two shared primitives is a system fact.
   motion, whose roles stay internal (`spec:AST-094` FR4, DEC-11).
 - Surfaces that already animate out (`Drawer`, `BottomSheet`, `MobileNav`,
   `Toast`, and the `TopNavMegaMenu` panel) keep their exits, durations, and
-  curves. `BottomSheet`'s close in a pointer presentation reads `--ease-exit`
-  at the curve it uses (FR12); moving the others onto the exit vocabulary is a
-  visual change for a separate decision.
+  curves. `BottomSheet`'s CSS-timed close reads `--ease-exit` at the curve it
+  uses (FR12); moving the others onto the exit vocabulary is a visual change
+  for a separate decision.
 - Layers with no entrance (`Typeahead` suggestions, `MultiSelector`,
   `Tokenizer`, the date and time pickers, the `TabList` overflow menu, the
   `TopNav` and `SideNav` menus, and Chat trigger menus) gain no exit here.
@@ -117,7 +117,9 @@ governs them in a touch presentation.
   duration. A dialog shrinks back toward the element that opened it, or
   downward when none did; a fullscreen dialog only fades; a layer shrinks back
   toward its anchor, mirrored in right-to-left layouts as its entrance is. A
-  dialog's backdrop fades out over the same duration.
+  dialog's backdrop fades out over the same duration. `--ease-exit` applies to
+  CSS-timed exits; a spring-driven exit plays its own exit role, and a CSS part
+  beside it takes the spring's settle time (`spec:AST-108` FR3, FR4a).
 - **FR4 — A leaving surface takes no input.** From the moment its close begins,
   no pointer press or key activates anything in a leaving surface's own content.
   Toasts that a leaving dialog hosts are not its content (FR13).
@@ -155,8 +157,8 @@ governs them in a touch presentation.
   until the surface is hidden.
 - **FR12 — The exit vocabulary.** `--ease-exit` defaults to
   `cubic-bezier(0.3, 0, 0.6, 0.6)`, a curve that moves off slowly and leaves
-  fast. Dialog and layer exits use it, and so does `BottomSheet`'s close in a
-  pointer presentation.
+  fast. Dialog and layer exits use it, and so does `BottomSheet`'s CSS-timed
+  close.
   `--duration-exit` defaults to `var(--duration-fast)` and is the standard
   dismissal duration. A theme turns a kind on by setting its exit duration to
   `var(--duration-exit)` or to any other duration.
@@ -212,6 +214,10 @@ governs them in a touch presentation.
   FR8 give it (FR14), and its motion roles stay internal (FR4, DEC-11). The exit
   tokens here time pointer presentations, which its non-goals leave to the
   theme's duration and easing tokens.
+- `spec:AST-108`: no claim changes. Its FR2 admits `--ease-exit` at the same
+  curve at every `character`; a spring-driven exit plays its own exit role and
+  a CSS part beside it takes the spring's settle time (FR3, FR4a); and an exit
+  duration set as a reference to a tempo-scaled token follows `tempo` (FR5).
 - `design:reduced-motion`: no claim changes. Under reduced motion a pointer
   presentation's exit completes at once (DR3, FR10), and a touch presentation's
   exit cross-fades through `spec:AST-094` FR8 (DR2).
@@ -224,8 +230,8 @@ governs them in a touch presentation.
   states when the return happens.
 - `component:Popover`: AR4 keeps its focus-return claim; FR6 states when the
   return happens for a layer.
-- `component:BottomSheet`: its closing curve in a pointer presentation reads
-  `--ease-exit`.
+- `component:BottomSheet`: its CSS-timed close reads `--ease-exit`; a
+  spring-driven close plays its own exit role (FR3).
 - Consumer docs: `motion` describes both curves, that exits are off by default
   in a pointer presentation, how a theme turns each kind on, that touch
   presentations keep their native exits, and that callers keep content rendered
@@ -257,7 +263,7 @@ governs them in a touch presentation.
 ### DEC-1 — Exits ship off, and a theme turns them on
 
 **Reference:** `spec:AST-090/DEC-1`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
 Turning exits on changes how every pointer-presented dialog and layer closes in
 every product at once, so the capability ships switched off and a theme opts
@@ -271,7 +277,7 @@ Rejected: an exit prop on each component, which restates timing at every call si
 ### DEC-2 — One switch per kind of surface
 
 **Reference:** `spec:AST-090/DEC-2`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
 A person closes a dialog deliberately, and its exit shows what it uncovered. A
 layer is dismissed as attention moves on, often many times a minute
@@ -283,7 +289,7 @@ Rejected: one switch for every surface.
 ### DEC-3 — An exit retraces its entrance on an accelerating curve
 
 **Reference:** `spec:AST-090/DEC-3`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
 An animated exit follows its entrance's path back, as the motion docs ask. It
 runs on its own curve: a decelerating curve spends its travel in the first
@@ -296,7 +302,7 @@ Rejected: the entrance played backwards on `--ease-standard`.
 ### DEC-4 — A layer's exit plays where the layer was drawn
 
 **Reference:** `spec:AST-090/DEC-4`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
 The browser hides a light-dismissed layer before Core hears of it, so a layer's
 exit cannot hold the live layer open. The exit plays on what the layer showed
@@ -313,7 +319,7 @@ Rejected: holding the live layer in the top layer with an `overlay` transition, 
 ### DEC-5 — Touch presentations keep their native exit
 
 **Reference:** `spec:AST-090/DEC-5`
-**Decider:** `cixzhang`, `2026-10-26`
+**Decider:** `cixzhang`, `2026-10-28`
 
 On a touch device a surface moves the way its native counterpart does, by
 default and with no opt-in (`spec:AST-094`), and that record leaves pointer
