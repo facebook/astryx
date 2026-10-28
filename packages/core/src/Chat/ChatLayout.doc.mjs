@@ -113,7 +113,7 @@ export const docs = {
         name: 'Frosted glass dock',
         required: true,
         description:
-          'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer; on a touch screen it is a group named "Message composer", and under a mouse a plain container. While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it. When the keyboard\u2019s Done ends typing, focus rests on this group (it is no tab stop), so the next tap or Tab starts from the composer.',
+          'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer. While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it.',
       },
       {
         name: 'Scroll-to-bottom button',
@@ -125,7 +125,7 @@ export const docs = {
         name: 'Composer',
         required: true,
         description:
-          'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer.',
+          'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer. On a touch screen its wrapper (without the scroll button) is a group named "Message composer", and under a mouse a plain container. When the keyboard\u2019s Done ends typing, focus rests on that group (it is no tab stop), so the next tap or Tab starts from the composer.',
       },
       {
         name: 'Empty state',
