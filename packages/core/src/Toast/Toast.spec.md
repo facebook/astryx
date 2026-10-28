@@ -30,7 +30,14 @@ architecture:
   ]
 contributing: []
 system_specs:
-  [spec:AST-086, spec:AST-003, spec:AST-094, spec:AST-100, spec:AST-059]
+  [
+    spec:AST-086,
+    spec:AST-003,
+    spec:AST-094,
+    spec:AST-100,
+    spec:AST-059,
+    spec:AST-027,
+  ]
 ---
 
 # Toast component contract
