@@ -69,7 +69,7 @@ export const docs = {
     ],
   },
   description:
-    'Modal dialog using the native <dialog> element. Modal and inline content starts with theme body text defaults. Ancestor surface/group membership ends as a whole, including group-owned state. Explicit props and unrelated contexts remain unchanged. Place intentional groups and complete required providers inside the dialog. With reduced motion the dialog never slides or scales in: on a touch screen it fades in, in 200 ms or less, and with a mouse it appears at once.',
+    'Modal dialog using the native <dialog> element. Modal and inline content starts with theme body text defaults and the primary text color for its surface. Existing root styling props and dialog theme overrides can request a different foreground. Ancestor surface/group membership ends as a whole, including group-owned state. Explicit props and unrelated contexts remain unchanged. Place intentional groups and complete required providers inside the dialog. With reduced motion the dialog never slides or scales in: on a touch screen it fades in, in 200 ms or less, and with a mouse it appears at once.',
   props: [
     {
       name: 'isOpen',
@@ -285,7 +285,7 @@ export const docsDense = {
     'modal overlay that blocks page interaction until the user responds',
   usage: {
     description:
-      'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance. Modal and inline content uses theme body defaults and exits ancestor surface/group membership as a whole; explicit props and unrelated contexts remain unchanged. Provide intentional groups and complete required providers inside the dialog.',
+      'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance. Modal and inline content uses theme body defaults and the primary surface foreground and exits ancestor surface/group membership as a whole; explicit props and unrelated contexts remain unchanged. Provide intentional groups and complete required providers inside the dialog.',
     bestPractices: [
       {
         guidance: true,

@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
+import {Banner} from '@astryxdesign/core/Banner';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   Layout,
@@ -111,6 +112,58 @@ function BasicModalExample() {
 
 export const Default: Story = {
   render: () => <BasicModalExample />,
+};
+
+function BannerModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Banner
+      status="error"
+      title="Validation failed"
+      description="Review the results before running validation again."
+      endContent={
+        <>
+          <Button
+            label="Review results"
+            variant="ghost"
+            onClick={() => setIsOpen(true)}
+          />
+          <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+            <Layout
+              header={
+                <DialogHeader
+                  title="Review validation"
+                  onOpenChange={setIsOpen}
+                />
+              }
+              content={
+                <LayoutContent>
+                  <Text type="body" color="inherit">
+                    The dialog uses its own surface foreground, not the banner's
+                    status color.
+                  </Text>
+                </LayoutContent>
+              }
+              footer={
+                <LayoutFooter>
+                  <Button
+                    label="Close review"
+                    variant="secondary"
+                    onClick={() => setIsOpen(false)}
+                  />
+                </LayoutFooter>
+              }
+            />
+          </Dialog>
+        </>
+      }
+    />
+  );
+}
+
+export const FromBanner: Story = {
+  render: () => <BannerModalExample />,
 };
 
 /**

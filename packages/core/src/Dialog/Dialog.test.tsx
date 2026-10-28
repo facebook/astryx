@@ -110,6 +110,49 @@ beforeEach(() => {
 });
 
 describe('Dialog', () => {
+  it.each([false, true])(
+    'owns its foreground under a colored ancestor (isInline=%s)',
+    isInline => {
+      render(
+        <div style={{color: 'rgb(180, 0, 0)'}}>
+          <Dialog
+            isOpen
+            isInline={isInline}
+            onOpenChange={() => {}}
+            aria-label="Independent surface"
+            data-testid="dialog-surface">
+            <p>Dialog content</p>
+          </Dialog>
+        </div>,
+      );
+
+      expect(getComputedStyle(screen.getByTestId('dialog-surface')).color).toBe(
+        'var(--color-text-primary)',
+      );
+    },
+  );
+
+  it.each([false, true])(
+    'preserves an explicit foreground override (isInline=%s)',
+    isInline => {
+      render(
+        <Dialog
+          isOpen
+          isInline={isInline}
+          onOpenChange={() => {}}
+          aria-label="Custom surface"
+          style={{color: 'rgb(0, 100, 0)'}}
+          data-testid="dialog-surface">
+          <p>Dialog content</p>
+        </Dialog>,
+      );
+
+      expect(getComputedStyle(screen.getByTestId('dialog-surface')).color).toBe(
+        'rgb(0, 100, 0)',
+      );
+    },
+  );
+
   it('restores focus to the opener when content mounts in the open commit', () => {
     function Harness({
       open,

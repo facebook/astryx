@@ -24,6 +24,10 @@
  * (docs/architecture/interaction-modality.md INV1): the shared focus indicator
  * is hidden after a pointer press and shown after a key press.
  *
+ * Modal and inline surfaces pair their background with the active theme's
+ * primary text color rather than borrowing a trigger's status foreground.
+ * Explicit component and consumer styles retain their existing precedence.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
@@ -183,6 +187,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: colorVars['--color-background-surface'],
+    color: colorVars['--color-text-primary'],
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
@@ -274,6 +279,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: colorVars['--color-background-surface'],
+    color: colorVars['--color-text-primary'],
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
