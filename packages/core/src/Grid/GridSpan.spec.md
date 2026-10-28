@@ -61,7 +61,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The wrapper `div`, its `grid-span` target, and its column and row spans.
+- The wrapper `div`, which carries the `grid-span` target that
+  `component:Grid` publishes and maps, and its column and row spans.
 - The wrapper's single-track inner grid and zero minimum width.
 
 **Does not own / non-goals**
@@ -122,8 +123,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ---------------- | ------------------------------------------------ | ------------------------ | -------------- | ------------------ |
 | Spanning item    | One item covering several tracks; geometry only. | Current source and docs  | Supporting     | FR1, FR2, AR2      |
 
-Theming: the wrapper is the single `grid-span` target. `GridSpan.doc.mjs`
-declares no anatomy of its own, so no anatomy-theming block is declared.
+Theming: the wrapper carries the `grid-span` target, which `Grid.doc.mjs`
+declares and `component:Grid` maps. `GridSpan.doc.mjs` declares no anatomy of
+its own, so no anatomy-theming block is declared here.
 
 ## Family and system relationships
 

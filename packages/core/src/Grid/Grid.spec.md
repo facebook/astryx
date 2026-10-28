@@ -66,15 +66,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - Grid's root container, `grid` target, track construction, axis gaps, item alignment, and explicit box dimensions.
+- The `grid-span` target that GridSpan's wrapper carries, which `Grid.doc.mjs` declares and the anatomy map below lists.
 - Root prop and style composition on the Grid root.
 
 **Does not own / non-goals**
 
 - Caller content, item semantics, surfaces, or interaction — owned by the product callsite or rendered child component.
 - A shared breakpoint or automatic reflow for numeric columns — responsiveness is selected by Grid's object form.
-- The GridSpan wrapper, its `grid-span` target, and one item's row and column
-  participation — owned by `component:GridSpan`, which has its own consumer doc
-  and record.
+- The GridSpan wrapper's behavior and one item's row and column participation —
+  owned by `component:GridSpan`, which has its own consumer doc and record.
 
 ## Public concepts
 
