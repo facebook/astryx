@@ -3,7 +3,7 @@
 /**
  * @file DateInput.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput component
- * @output Unit tests for DateInput component behavior
+ * @output DateInput behavior tests, including disabled open-picker selection
  * @position Testing; validates DateInput.tsx implementation
  *
  * SYNC: When DateInput.tsx changes, update tests to match new behavior
@@ -21,7 +21,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
-import {DateInput} from './DateInput';
+import {DateInput, type DateInputProps} from './DateInput';
 import {Icon} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
@@ -564,6 +564,67 @@ describe('DateInput', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
     const button = getButton('Open calendar');
     fireEvent.click(button);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('blocks selection in an open picker after the field becomes disabled', async () => {
+    const user = userEvent.setup();
+    const props = {
+      label: 'Date',
+      value: '2026-10-15',
+      presentation: 'popover',
+      onChange: vi.fn(),
+      changeAction: vi.fn(),
+    } satisfies DateInputProps;
+    const {rerender} = render(<DateInput {...props} />);
+    const input = screen.getByRole('combobox');
+    act(() => input.focus());
+    await user.keyboard('{ArrowDown}');
+    const day = getButton(/October 16, 2026/);
+    act(() => day.focus());
+
+    rerender(<DateInput {...props} isDisabled />);
+    expect(day).toHaveFocus();
+    await user.click(day);
+    await user.keyboard(' ');
+
+    rerender(
+      <DateInput
+        {...props}
+        isDisabled
+        disabledMessage="Scheduling is locked"
+      />,
+    );
+    expect(day).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(props.onChange).not.toHaveBeenCalled();
+    expect(props.changeAction).not.toHaveBeenCalled();
+    expect(input).toHaveValue('October 15, 2026');
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(day).toHaveFocus();
+  });
+
+  it('dismisses an open picker without committing while loading', async () => {
+    const user = userEvent.setup();
+    const props = {
+      label: 'Date',
+      value: '2026-10-15',
+      presentation: 'popover',
+      onChange: vi.fn(),
+      changeAction: vi.fn(),
+    } satisfies DateInputProps;
+    const {rerender} = render(<DateInput {...props} />);
+    await user.click(getButton('Open calendar'));
+    const day = getButton(/October 16, 2026/);
+
+    rerender(<DateInput {...props} isLoading />);
+    await user.click(day);
+    expect(props.onChange).not.toHaveBeenCalled();
+    expect(props.changeAction).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox')).toHaveValue('October 15, 2026');
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
       'false',

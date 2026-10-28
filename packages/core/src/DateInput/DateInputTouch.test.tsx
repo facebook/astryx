@@ -3,7 +3,7 @@
 /**
  * @file DateInputTouch.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput and its helpers
- * @output Behavior coverage for the responsive date picker
+ * @output Responsive date picker coverage, including disabled/busy picker actions
  * @position Test file for /packages/core/src/DateInput/
  *
  * What jsdom can and cannot see here matters, and the split is deliberate:
@@ -29,6 +29,7 @@ import {
   afterEach,
 } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -275,6 +276,81 @@ function weekdayRow(): HTMLElement {
   }
   return row as HTMLElement;
 }
+
+describe('DateInput — open-sheet disablement', () => {
+  it('blocks selection after the open sheet becomes disabled, retaining value and focus', () => {
+    const onChange = vi.fn();
+    const changeAction = vi.fn();
+    const props = {initial: '2026-02-21' as const, onChange, changeAction};
+    withLayout(() => {
+      const {rerender} = render(<Controlled {...props} />);
+      fireEvent.click(field());
+      const day = within(pane('February 2026')).getByRole('button', {
+        name: /February 22, 2026/,
+      });
+      act(() => day.focus());
+      rerender(<Controlled {...props} isDisabled />);
+      expect(day).toHaveFocus();
+      fireEvent.click(day);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+      expect(field()).toHaveValue('February 21, 2026');
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+      expect(day).toHaveFocus();
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('February 2026');
+
+      rerender(<Controlled {...props} />);
+      fireEvent.click(day);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith('2026-02-22');
+      expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-02-22');
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('blocks reset while the open sheet is disabled or loading, retaining value and focus', () => {
+    const onChange = vi.fn();
+    const changeAction = vi.fn();
+    const props = {initial: '2026-02-21' as const, onChange, changeAction};
+    withLayout(() => {
+      const {rerender} = render(<Controlled {...props} />);
+      fireEvent.click(field());
+      const reset = screen.getByRole('button', {name: 'Reset'});
+      act(() => reset.focus());
+      rerender(<Controlled {...props} isDisabled />);
+      expect(reset).toHaveFocus();
+      fireEvent.click(reset);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+      expect(field()).toHaveValue('February 21, 2026');
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+      expect(reset).toHaveFocus();
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('February 2026');
+
+      rerender(<Controlled {...props} isLoading />);
+      fireEvent.click(reset);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+      expect(field()).toHaveValue('February 21, 2026');
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+      expect(reset).toHaveFocus();
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('February 2026');
+
+      rerender(<Controlled {...props} />);
+      fireEvent.click(reset);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(undefined);
+      expect(changeAction).toHaveBeenCalledExactlyOnceWith(undefined);
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Which surface, and why

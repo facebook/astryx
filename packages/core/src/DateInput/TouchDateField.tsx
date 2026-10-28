@@ -41,6 +41,7 @@
  * Reset is chrome, so it sits in the header beside the arrows rather than in
  * the footer: the footer is where the task ends, and an undo of equal weight
  * beside Save is a mis-tap that throws away the date just chosen.
+ * Disabled or busy fields reject both Reset's value change and month navigation.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateInput/DateInput.tsx
@@ -772,7 +773,7 @@ export function TouchDateField({
 
   const fireChange = useCallback(
     (newValue: ISODateString | undefined) => {
-      if (isBusy) {
+      if (isEffectivelyDisabled) {
         return;
       }
       onChange?.(newValue);
@@ -783,7 +784,13 @@ export function TouchDateField({
         });
       }
     },
-    [isBusy, onChange, changeAction, startTransition, setOptimisticValue],
+    [
+      isEffectivelyDisabled,
+      onChange,
+      changeAction,
+      startTransition,
+      setOptimisticValue,
+    ],
   );
 
   const openSheet = useCallback(() => {
@@ -841,6 +848,11 @@ export function TouchDateField({
    * value is still cleared either way — that half never depends on the range.
    */
   const handleResetInSheet = useCallback(() => {
+    // Disabled or busy: reject the entire reset, including month navigation,
+    // while leaving the open sheet and focus owner intact.
+    if (isEffectivelyDisabled) {
+      return;
+    }
     fireChange(undefined);
     const currentMonth = monthIndexOf(today);
     if (currentMonth < minMonthIndex || currentMonth > maxMonthIndex) {
@@ -851,7 +863,14 @@ export function TouchDateField({
     }
     setMonthIndex(currentMonth);
     scrollerHandleRef.current?.scrollToMonth(currentMonth, 'smooth');
-  }, [fireChange, today, monthIndex, minMonthIndex, maxMonthIndex]);
+  }, [
+    isEffectivelyDisabled,
+    fireChange,
+    today,
+    monthIndex,
+    minMonthIndex,
+    maxMonthIndex,
+  ]);
 
   // Selection commits on the tap and leaves the sheet up, so a mistake can be
   // corrected in place and a nearby date reconsidered without reopening.
