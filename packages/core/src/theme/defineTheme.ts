@@ -596,7 +596,9 @@ export type ResolvedDefinedTheme<IconVariant extends string = string> =
      * Type-only: the names in `iconVariants`, so a theme that `extends` this
      * one types its icon entries by the list it inherits. Never set. Method
      * syntax keeps resolved themes with different lists assignable to each
-     * other, as they were before the list existed.
+     * other, as they were before the list existed. `astryx theme build` writes
+     * the same marker into a built theme's declaration.
+     * SYNC: packages/cli/api/theme/build/build.mjs (builtThemeType)
      * @internal
      */
     __iconVariant?(variant: IconVariant): void;
