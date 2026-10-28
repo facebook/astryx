@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, layout, accessibility]
 verified_by:
   [
     packages/core/src/ToggleButton/ToggleButton.test.tsx,
+    packages/core/src/ToggleButton/ToggleButtonGroupTracking.test.tsx,
+    packages/core/src/ToggleButton/__tests__/ToggleButtonGroupTracking.interaction.browser.spec.ts,
     packages/core/src/ToggleButton/__tests__/ToggleButton.a11y.test.tsx,
     packages/core/src/ToggleButton/__tests__/ToggleButton.a11y.chromium.spec.ts,
     packages/core/src/Layer/layerScopedContext.test.tsx,
@@ -69,11 +71,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Selection: which valued members are pressed, and the next selection a member
   activation requests.
 - The default size and disabled state valued and unvalued members read.
+- The press across members while it tracks a held pointer
+  (`family:action-groups`): the press painted on the member under the
+  pointer, the lift that runs only that member's click, and the hit layer that
+  grows the members' touch targets toward 44 px.
 
 **Does not own / non-goals**
 
-- Each member's surface, `aria-pressed`, paint, and disabled rendering — owned
-  by `component:ToggleButton` and `component:Button`.
+- Each member's surface, `aria-pressed`, hover and selected paint, and
+  disabled rendering — owned by `component:ToggleButton` and
+  `component:Button`.
 - Connected geometry and a shared elevation — not provided; members are
   separate surfaces (`family:buttons` FR12).
 - Roving focus — not provided; each member is a Tab stop (`family:buttons`
@@ -129,9 +136,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Performance and resources
 
-- **PR1 — Group listeners only for press tracking.** The group adds no
-  observer or measurement, and no event listener beyond the press tracking
-  `family:action-groups` FR5 gives it.
+- **PR1 — Listeners and measurement only for press tracking.** The group adds
+  no event listener beyond the press tracking `family:action-groups` FR5 gives
+  it, and one measurement: while it tracks under a coarse primary pointer, it
+  watches its members' boxes to size its hit layer. With a fine primary
+  pointer, or while disabled, it measures nothing.
 
 ## Accessibility contract
 
@@ -163,17 +172,18 @@ No design record governs ToggleButtonGroup. Its root carries the
 
 ## Verification map
 
-| Contract                     | Verification                                                                                                                                                                    | Representative states                                   | Mutation or failure expectation                                                                                                                                                  | Audit section                           |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| FR1, AR1                     | `ToggleButton.test.tsx` group role and label cases                                                                                                                              | Single and multiple                                     | A missing name or role fails. Evidence gap: no test asserts the root target, `data-testid`, or `xstyle`.                                                                         | `audit:ToggleButtonGroup/accessibility` |
-| FR3–FR5, ORD1                | `ToggleButton.test.tsx` single and multiple suites                                                                                                                              | Select, switch, deselect, add, remove                   | A wrong pressed member or a wrong `onChange` payload fails.                                                                                                                      | `audit:ToggleButtonGroup/behavior`      |
-| FR6                          | `ToggleButton.test.tsx` group-ownership cases                                                                                                                                   | Members with standalone handlers and `onClick`          | A member Action runs, or pressed state moves before `value`, fails.                                                                                                              | `audit:ToggleButtonGroup/behavior`      |
-| FR7, ORD3, AR3               | `ToggleButton.test.tsx` disabled suite; `ToggleButton.a11y.test.tsx`                                                                                                            | Member disabled; group disabled; tooltip-bearing member | A disabled member that toggles, or a re-enabled member, fails. The shared disabled states expect native `disabled`, matching the FR7 gap.                                        | `audit:ToggleButtonGroup/accessibility` |
-| FR2                          | `ToggleButton.test.tsx` grouped elevation case                                                                                                                                  | Member with its own elevation                           | A member losing its elevation inside the group fails. Evidence gap: no test asserts the spacing or the unpainted wrapper. Evidence gap: no test reads a member's painted shadow. | `audit:ToggleButtonGroup/layout`        |
-| FR9 (selection)              | `layerScopedContext.test.tsx` "ends ancestor selection and callbacks while honoring explicit toggle props"                                                                      | Member inside a fixed Layer and an inline Dialog        | A member inside a layer that follows the outer group's selection or callbacks fails.                                                                                             | `audit:ToggleButtonGroup/behavior`      |
-| FR8, FR9 (size and disabled) | Evidence gap: no test of member Tab order, or of size and disabled scoping at a layer                                                                                           | —                                                       | —                                                                                                                                                                                | `audit:ToggleButtonGroup/accessibility` |
-| FR7 (size), ORD2, PR1        | Evidence gap: no test asserts the group size default, member size precedence, or that the group adds no listeners beyond the press tracking `family:action-groups` FR5 gives it | —                                                       | —                                                                                                                                                                                | `audit:ToggleButtonGroup/behavior`      |
-| AR2                          | `ToggleButton.a11y.test.tsx` and `ToggleButton.a11y.chromium.spec.ts` operable and focusable facts for the single- and multiple-group states                                    | Group members                                           | A group member that is not operable or that Tab does not reach fails.                                                                                                            | `audit:ToggleButtonGroup/accessibility` |
+| Contract                     | Verification                                                                                                                                                                                        | Representative states                                   | Mutation or failure expectation                                                                                                                                                  | Audit section                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| FR1, AR1                     | `ToggleButton.test.tsx` group role and label cases                                                                                                                                                  | Single and multiple                                     | A missing name or role fails. Evidence gap: no test asserts the root target, `data-testid`, or `xstyle`.                                                                         | `audit:ToggleButtonGroup/accessibility` |
+| FR3–FR5, ORD1                | `ToggleButton.test.tsx` single and multiple suites                                                                                                                                                  | Select, switch, deselect, add, remove                   | A wrong pressed member or a wrong `onChange` payload fails.                                                                                                                      | `audit:ToggleButtonGroup/behavior`      |
+| FR6                          | `ToggleButton.test.tsx` group-ownership cases                                                                                                                                                       | Members with standalone handlers and `onClick`          | A member Action runs, or pressed state moves before `value`, fails.                                                                                                              | `audit:ToggleButtonGroup/behavior`      |
+| FR7, ORD3, AR3               | `ToggleButton.test.tsx` disabled suite; `ToggleButton.a11y.test.tsx`                                                                                                                                | Member disabled; group disabled; tooltip-bearing member | A disabled member that toggles, or a re-enabled member, fails. The shared disabled states expect native `disabled`, matching the FR7 gap.                                        | `audit:ToggleButtonGroup/accessibility` |
+| FR2                          | `ToggleButton.test.tsx` grouped elevation case                                                                                                                                                      | Member with its own elevation                           | A member losing its elevation inside the group fails. Evidence gap: no test asserts the spacing or the unpainted wrapper. Evidence gap: no test reads a member's painted shadow. | `audit:ToggleButtonGroup/layout`        |
+| FR9 (selection)              | `layerScopedContext.test.tsx` "ends ancestor selection and callbacks while honoring explicit toggle props"                                                                                          | Member inside a fixed Layer and an inline Dialog        | A member inside a layer that follows the outer group's selection or callbacks fails.                                                                                             | `audit:ToggleButtonGroup/behavior`      |
+| FR8, FR9 (size and disabled) | Evidence gap: no test of member Tab order, or of size and disabled scoping at a layer                                                                                                               | —                                                       | —                                                                                                                                                                                | `audit:ToggleButtonGroup/accessibility` |
+| FR7 (size), ORD2             | Evidence gap: no test asserts the group size default or member size precedence                                                                                                                      | —                                                       | —                                                                                                                                                                                |
+| PR1                          | `ToggleButtonGroupTracking.test.tsx` "marks each toggle as a tracked action, and marks none while the group is disabled"; `ToggleButtonGroupTracking.interaction.browser.spec.ts` 44 px target case | Group tracking under a finger; group disabled           | A disabled group that tracks, or a toggle whose target does not reach 44 px under a finger, fails. Evidence gap: no test asserts that a fine primary pointer measures nothing.   |
+| AR2                          | `ToggleButton.a11y.test.tsx` and `ToggleButton.a11y.chromium.spec.ts` operable and focusable facts for the single- and multiple-group states                                                        | Group members                                           | A group member that is not operable or that Tab does not reach fails.                                                                                                            | `audit:ToggleButtonGroup/accessibility` |
 
 ## Current-state impact
 
