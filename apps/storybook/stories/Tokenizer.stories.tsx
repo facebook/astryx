@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import type {TokenizerOverflowBehavior} from '@astryxdesign/core/Tokenizer';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {Button} from '@astryxdesign/core/Button';
 import {Token} from '@astryxdesign/core/Token';
@@ -47,6 +48,12 @@ const slowUserSource: SearchSource = {
     new Promise(resolve => setTimeout(() => resolve(users.slice(0, 5)), 1200)),
 };
 
+const overflowBehaviors: TokenizerOverflowBehavior[] = [
+  'none',
+  'unfocusedInline',
+  'unfocusedLayer',
+];
+
 const meta: Meta<typeof Tokenizer> = {
   title: 'Core/Tokenizer',
   component: Tokenizer,
@@ -68,6 +75,14 @@ const meta: Meta<typeof Tokenizer> = {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
       description: 'Input size',
+    },
+    tokenOverflowBehavior: {
+      control: 'radio',
+      options: overflowBehaviors,
+      // Docgen cannot read Tokenizer's prop types through its overloaded
+      // signature, and Storybook drops a URL arg whose argType names no type.
+      // The browser end-lane contract sets this one from the URL.
+      type: {name: 'enum', value: overflowBehaviors},
     },
   },
   decorators: [
