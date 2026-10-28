@@ -1026,14 +1026,19 @@ no comment, reaction, label, or status supplies it.
   path, changes the fingerprint and restarts the content clock. Every earlier
   act stops counting until the owner comments `/spec ok` again.
 - **Status.** While approval is missing, `spec-owner-approval` is `pending`
-  and reads:
+  and names who can still give it, from the owner groups above:
 
-  `⏳ Waiting for human spec approval: reply /spec ok`
+  | Groups still missing                     | Status text                                                                    |
+  | ---------------------------------------- | ------------------------------------------------------------------------------ |
+  | engineering (alone or with design/theme) | `⏳ Waiting for human spec approval: an eng owner can reply /spec ok`          |
+  | design or theme only                     | `⏳ Waiting for human spec approval: a design or eng owner can reply /spec ok` |
 
-  Once every required owner group approves the current content, it is
-  `success` and reads `✅ Spec approved by @owner`. Its details list each
-  changed record with its id, title, and authority change, the changed paths,
-  and the fingerprint. After a reset they name the change: "Spec changed after
+  Each group counts only its own approvers, and every required group approves
+  the same fingerprint; an ENGOWNER approval satisfies every group. Once all
+  required groups approve, the status is `success` and reads
+  `✅ Spec approved by @owner`. Its details list each changed record with its id, title,
+  authority change, and the group it needs, plus the changed paths and the
+  fingerprint. After a reset they name the change: "Spec changed after
   approval at {time}; reply /spec ok again." A missing approval is never a
   failure. A pull request that changes no knowledge record is `success`.
 
