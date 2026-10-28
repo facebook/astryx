@@ -1166,8 +1166,9 @@ export function playLayoutSwap(
     play(copy, travels ? how.copy : p => ({opacity: 1 - p}));
   }
   const {copyText} = how;
-  if (travels && copyText != null) {
-    for (const span of wrapText(copy)) {
+  const fadedText = travels && copyText != null ? wrapText(copy) : [];
+  if (copyText != null) {
+    for (const span of fadedText) {
       play(span, p => ({opacity: copyText(p)}));
     }
   }
@@ -1186,10 +1187,25 @@ export function playLayoutSwap(
     if (isDone) {
       return null;
     }
-    const {opacity} = getComputedStyle(copy);
+    // What the running frames show, written inline before they end: the
+    // copy's opacity, travel and clip, and its text's fade.
+    const shown = getComputedStyle(copy);
+    const frozen = {
+      opacity: shown.opacity,
+      translate: shown.translate,
+      clipPath: shown.clipPath,
+    };
+    const texts = fadedText.map(
+      element => [element, getComputedStyle(element).opacity] as const,
+    );
     isDone = true;
     animations.forEach(animation => animation.cancel());
-    copy.style.opacity = opacity;
+    copy.style.opacity = frozen.opacity;
+    copy.style.translate = frozen.translate;
+    copy.style.clipPath = frozen.clipPath;
+    for (const [element, opacity] of texts) {
+      (element as HTMLElement | SVGElement).style.opacity = opacity;
+    }
     return copy;
   };
   return Object.assign(end, {handOff});

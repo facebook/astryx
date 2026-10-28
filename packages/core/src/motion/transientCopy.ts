@@ -253,6 +253,11 @@ export function wrapText(copy: HTMLElement): Element[] {
   const faded = new Set<Element>();
   for (const text of texts) {
     const parent = text.parentElement;
+    // Text that is not rendered as text (a style sheet, a script, a
+    // textarea's default value, a title) stays where it is.
+    if (parent?.closest('style, script, textarea, title, noscript') != null) {
+      continue;
+    }
     if (parent?.namespaceURI === SVG) {
       const svgText = parent.closest('text');
       if (svgText != null) {
