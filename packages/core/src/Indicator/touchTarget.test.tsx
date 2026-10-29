@@ -2,27 +2,28 @@
 
 /**
  * @file touchTarget.test.tsx
- * @input vitest, the theme's touch target size (`--size-touch-target`) and
- *   the controls that read it (CheckboxInput, RadioList)
- * @output Holds the token's default to the platform's control size, and
- *   asserts what each
- *   control ships under a coarse pointer: a CheckboxInput row and a RadioList
- *   row at least the touch target tall, the checkbox's native input at least
- *   that each way, and a vertical list's gap turned into its rows' padding;
- *   nothing for a mouse
- * @position Unit test beside Indicator/touchTarget.stylex.ts; the
- *   real-engine geometry and taps are
+ * @input CheckboxInput, RadioList and CheckboxList rendered in jsdom, the
+ *   stylesheet StyleX injects for them, the shared touch hit layer and the
+ *   size token defaults
+ * @output Holds the touch target token's default to the platform's control
+ *   size, and that under a coarse pointer nothing grows (spec:AST-094 FR42,
+ *   List FR10): a labelled CheckboxInput's row, each RadioList row and its
+ *   list's gap, and every CheckboxList row at every density keep their
+ *   geometry, while each carries the coarse-only invisible hit layer
+ *   (utils/touchHitArea.stylex.ts) that gives the target; a tap on a
+ *   checkbox's layer toggles it
+ * @position Stylesheet layer of the touch hit areas; the real-engine layer is
  *   Indicator/__tests__/TouchTargets.interaction.browser.spec.ts
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {render, screen} from '@testing-library/react';
-import {describe, expect, it} from 'vitest';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {describe, expect, it, vi} from 'vitest';
 import {CheckboxInput} from '../CheckboxInput';
 import {CheckboxList, CheckboxListItem} from '../CheckboxList';
 import {RadioList, RadioListItem} from '../RadioList';
 import {sizeDefaults} from '../theme/tokens.stylex';
-import {touchTargetStyles} from './touchTarget.stylex';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
 interface Declared {
   media: string | null;
@@ -74,8 +75,26 @@ function valueOf(
   return undefined;
 }
 
+/** Whether `el` carries every class of the shared touch hit layer. */
+function hasHitLayer(el: Element): boolean {
+  const layer = (stylex.props(touchHitAreaStyles.layer).className ?? '')
+    .split(/\s+/)
+    .filter(Boolean);
+  if (layer.length === 0) {
+    throw new Error('the hit layer has no classes');
+  }
+  return layer.every(name => el.classList.contains(name));
+}
+
+function closestOrThrow(el: Element, selector: string): Element {
+  const found = el.closest(selector);
+  if (found == null) {
+    throw new Error(`no ${selector} around the control`);
+  }
+  return found;
+}
+
 const TOUCH = '(pointer: coarse)';
-const TARGET = 'var(--size-touch-target)';
 
 describe('touch target size', () => {
   it('is a theme metric whose default is the platform’s control size', () => {
@@ -86,61 +105,110 @@ describe('touch target size', () => {
 });
 
 describe('CheckboxInput under a finger', () => {
-  it('makes the row at least the control size tall and the input at least that square', () => {
+  it('keeps a labelled checkbox’s row at its size and gives it the hit layer (FR42)', () => {
     render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
-    const input = screen.getByRole('checkbox', {name: 'Accept terms'});
-    const row = input.closest('[data-astryx-pressable]');
-    if (row == null) {
-      throw new Error('the checkbox has no row');
-    }
-    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
-    // jsdom drops logical sizes from its style objects, so the input is
-    // checked for the control target's classes; the engines measure it.
-    const control = (stylex.props(touchTargetStyles.control).className ?? '')
-      .split(/\s+/)
-      .filter(Boolean);
-    expect(control.length).toBeGreaterThan(0);
-    for (const name of control) {
-      expect(input.classList.contains(name)).toBe(true);
-    }
-    // A mouse keeps the drawn sizes.
+    const row = closestOrThrow(
+      screen.getByRole('checkbox', {name: 'Accept terms'}),
+      '[data-astryx-pressable]',
+    );
+    expect(valueOf(row, 'min-height', TOUCH)).toBeUndefined();
     expect(valueOf(row, 'min-height', null)).toBeUndefined();
+    expect(hasHitLayer(row)).toBe(true);
+    // The row holds the layer only under a finger; a mouse sees no change.
+    expect(valueOf(row, 'position', TOUCH)).toBe('relative');
+    expect(valueOf(row, 'position', null)).toBeUndefined();
+  });
+
+  it('gives a label-hidden, disabled or read-only checkbox no hit layer', () => {
+    render(
+      <>
+        <CheckboxInput
+          label="Marker"
+          isLabelHidden
+          value={false}
+          onChange={() => {}}
+        />
+        <CheckboxInput
+          label="Disabled"
+          isDisabled
+          value={false}
+          onChange={() => {}}
+        />
+        <CheckboxInput
+          label="Read-only"
+          isReadOnly
+          value={false}
+          onChange={() => {}}
+        />
+      </>,
+    );
+    for (const name of ['Marker', 'Disabled', 'Read-only']) {
+      const input = screen.getByRole('checkbox', {name});
+      const row =
+        input.closest('[data-astryx-pressable]') ?? input.parentElement;
+      if (row == null) {
+        throw new Error(`no row for ${name}`);
+      }
+      expect(hasHitLayer(row), name).toBe(false);
+    }
+  });
+
+  it('toggles on a tap that lands on the hit layer, outside the row’s box, and not on one inside it', () => {
+    const onChange = vi.fn();
+    render(
+      <CheckboxInput label="Accept terms" value={false} onChange={onChange} />,
+    );
+    const row = closestOrThrow(
+      screen.getByRole('checkbox', {name: 'Accept terms'}),
+      '[data-astryx-pressable]',
+    );
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({x: 10, y: 10, width: 200, height: 24}),
+    );
+    // Inside the row's own box (the gap between box and label): unchanged.
+    fireEvent.click(row, {clientX: 30, clientY: 20});
+    expect(onChange).not.toHaveBeenCalled();
+    // Just above it, on the layer's band.
+    fireEvent.click(row, {clientX: 30, clientY: 5});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toBe(true);
   });
 });
 
 describe('CheckboxList under a finger', () => {
   function rowOf(name: string): Element {
-    const row = screen.getByRole('checkbox', {name}).closest('li');
-    if (row == null) {
-      throw new Error(`no row for ${name}`);
-    }
-    return row;
+    return closestOrThrow(screen.getByRole('checkbox', {name}), 'li');
   }
 
-  it('makes a compact list’s rows that toggle at least the touch target tall', () => {
-    // A standalone CheckboxList is a touch target whatever its density
-    // (requirement 2 of the target-size decision).
-    render(
-      <CheckboxList
-        label="Notifications"
-        value={['email']}
-        onChange={() => {}}
-        density="compact">
-        <CheckboxListItem label="Email" value="email" />
-        <CheckboxListItem label="SMS" value="sms" isDisabled />
-      </CheckboxList>,
-    );
-    for (const name of ['Email', 'SMS']) {
-      expect(valueOf(rowOf(name), 'min-height', TOUCH)).toBe(TARGET);
-      expect(valueOf(rowOf(name), 'min-height', null)).toBeUndefined();
+  it('sets no touch row height at any density: List keeps row geometry (FR10)', () => {
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {unmount} = render(
+        <CheckboxList
+          label={`Notifications ${density}`}
+          value={['email']}
+          onChange={() => {}}
+          density={density}>
+          <CheckboxListItem
+            label={`Email ${density}`}
+            value="email"
+            description="Weekly digest"
+          />
+          <CheckboxListItem label={`SMS ${density}`} value="sms" />
+        </CheckboxList>,
+      );
+      for (const name of [`Email ${density}`, `SMS ${density}`]) {
+        expect(valueOf(rowOf(name), 'min-height', TOUCH), name).toBeUndefined();
+        expect(paddingBlockOf(rowOf(name), TOUCH), name).toEqual([]);
+        // A row that toggles takes List's invisible hit area instead.
+        expect(hasHitLayer(rowOf(name)), name).toBe(true);
+      }
+      unmount();
     }
   });
 
   it('keeps a read-only compact list at its pitch, as Markdown’s task list', () => {
-    // A read-only row with no action of its own is not a target
-    // (requirement 3: Markdown's task items do not grow).
     render(
       <CheckboxList
         label="Tasks"
@@ -154,92 +222,50 @@ describe('CheckboxList under a finger', () => {
       </CheckboxList>,
     );
     expect(valueOf(rowOf('Open'), 'min-height', TOUCH)).toBeUndefined();
-  });
-
-  it('makes balanced rows that toggle at least the taller of the touch target and the list’s row height', () => {
-    // A theme that raises the touch target raises these rows too; at the
-    // default they keep List's touch row heights (52 px, 62 px with a
-    // description).
-    render(
-      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
-        <CheckboxListItem label="Email" value="email" />
-        <CheckboxListItem
-          label="SMS"
-          value="sms"
-          description="Standard rates apply"
-        />
-      </CheckboxList>,
-    );
-    // StyleX writes the value without the space after the comma.
-    const touchFloor = (name: string) =>
-      valueOf(rowOf(name), 'min-height', TOUCH)?.replace(/\s+/g, '');
-    expect(touchFloor('Email')).toBe(`max(${TARGET},52px)`);
-    expect(touchFloor('SMS')).toBe(`max(${TARGET},62px)`);
-    expect(valueOf(rowOf('Email'), 'min-height', null)).toBeUndefined();
-  });
-
-  it('keeps a read-only balanced list on the list’s row height', () => {
-    render(
-      <CheckboxList
-        label="Tasks"
-        value={['done']}
-        onChange={() => {}}
-        isReadOnly>
-        <CheckboxListItem label="Done" value="done" />
-      </CheckboxList>,
-    );
-    expect(valueOf(rowOf('Done'), 'min-height', TOUCH)).toBe('52px');
+    expect(paddingBlockOf(rowOf('Open'), TOUCH)).toEqual([]);
   });
 });
 
 describe('RadioList under a finger', () => {
-  it('makes each row at least the touch target tall, sharing the list’s gap as padding', () => {
+  it('keeps each row’s size and the list’s gap: no touch height, padding or gap (FR42)', () => {
+    for (const orientation of ['vertical', 'horizontal'] as const) {
+      const {unmount} = render(
+        <RadioList
+          label={`Plan ${orientation}`}
+          value="a"
+          orientation={orientation}
+          onChange={() => {}}>
+          <RadioListItem label={`Option A ${orientation}`} value="a" />
+          <RadioListItem label={`Option B ${orientation}`} value="b" />
+        </RadioList>,
+      );
+      const row = closestOrThrow(
+        screen.getByRole('radio', {name: `Option B ${orientation}`}),
+        '.astryx-item',
+      );
+      expect(valueOf(row, 'min-height', TOUCH)).toBeUndefined();
+      expect(paddingBlockOf(row, TOUCH)).toEqual([]);
+      const touchGaps = declaredFor(screen.getByRole('radiogroup')).filter(
+        rule =>
+          rule.media?.startsWith(TOUCH) === true &&
+          /(?:^|;\s*)(?:row-)?gap:/.test(rule.text),
+      );
+      expect(touchGaps).toEqual([]);
+      unmount();
+    }
+  });
+
+  it('gives each enabled option the hit layer and a disabled one none (FR42)', () => {
     render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
-        <RadioListItem label="Option B" value="b" />
+        <RadioListItem label="Option B" value="b" isDisabled />
       </RadioList>,
     );
-    const radio = screen.getByRole('radio', {name: 'Option B'});
-    const row = radio.closest('.astryx-item');
-    const group = screen.getByRole('radiogroup');
-    if (row == null) {
-      throw new Error('the radio has no row');
-    }
-    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
-    expect(valueOf(row, 'min-height', null)).toBeUndefined();
-    // The gap becomes the rows' own: half of it above and below each row.
-    // StyleX keeps the gap's arms exclusive.
-    const gaps = declaredFor(group).filter(rule =>
-      /(?:^|;\s*)(?:row-)?gap:/.test(rule.text),
-    );
-    const touchGap = gaps.find(rule => rule.media?.startsWith(TOUCH));
-    expect(touchGap?.text).toMatch(/gap:\s*0(px)?\b/);
-    const halfGap = 'calc(var(--spacing-2) / 2)';
-    expect(paddingBlockOf(row, TOUCH)).toEqual([halfGap, halfGap]);
-    // A mouse keeps the bare row.
-    expect(paddingBlockOf(row, null)).toEqual(['0', '0']);
-  });
-
-  it('keeps a horizontal option’s row floor without the gap padding', () => {
-    render(
-      <RadioList
-        label="Plan"
-        value="a"
-        orientation="horizontal"
-        onChange={() => {}}>
-        <RadioListItem label="Option A" value="a" />
-        <RadioListItem label="Option B" value="b" />
-      </RadioList>,
-    );
-    const row = screen
-      .getByRole('radio', {name: 'Option B'})
-      .closest('.astryx-item');
-    if (row == null) {
-      throw new Error('the radio has no row');
-    }
-    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
-    expect(paddingBlockOf(row, TOUCH)).toEqual([]);
+    const rowOf = (name: string) =>
+      closestOrThrow(screen.getByRole('radio', {name}), '.astryx-item');
+    expect(hasHitLayer(rowOf('Option A'))).toBe(true);
+    expect(hasHitLayer(rowOf('Option B'))).toBe(false);
   });
 });
 
