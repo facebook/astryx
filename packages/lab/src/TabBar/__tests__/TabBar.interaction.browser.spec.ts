@@ -3416,6 +3416,36 @@ test.describe('search tab, active above the keyboard', () => {
     await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('Cancel back to the tab search was chosen from: the field holds above the keyboard until it is reported down (spec:AST-099 FR5)', async ({
+    page,
+  }) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+    await waitForRest(searchFieldEnd(page));
+    await showKeyboard(page);
+    const top = await page.evaluate(k => window.innerHeight - k, KEYBOARD);
+    const bottom = async () => {
+      await page.evaluate(
+        () =>
+          new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+      );
+      const host = await searchHost(page).boundingBox();
+      return host == null ? null : Math.round(host.y + host.height);
+    };
+    expect(await bottom()).toBe(Math.round(top - 8));
+    // The story's Cancel returns to the tab search was chosen from.
+    await page.getByRole('button', {name: 'Cancel'}).click();
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    // The keyboard is still up: the field keeps its place above it.
+    expect(await bottom()).toBe(Math.round(top - 8));
+    // Reported down, the hold ends and the bar is back.
+    await showKeyboard(page, 0);
+    await expect.poll(() => keyboardListeners(page)).toBe(0);
+    expect(await bottom()).not.toBe(Math.round(top - 8));
+  });
+
   test("in Chrome on Android the field reads the browser's own keyboard report while it has focus", async ({
     page,
   }) => {
