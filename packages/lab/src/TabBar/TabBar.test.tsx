@@ -107,6 +107,32 @@ describe('TabBar', () => {
     vi.restoreAllMocks();
   });
 
+  it('names its tab list "Tabs" when it is given no name', () => {
+    render(<Bar label={undefined} />);
+    expect(screen.getByRole('tablist', {name: 'Tabs'})).toBeInTheDocument();
+  });
+
+  it('gives aria-label to the tab list, not the root', () => {
+    render(<Bar label={undefined} aria-label="Main sections" />);
+    expect(
+      screen.getByRole('tablist', {name: 'Main sections'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('bar')).not.toHaveAttribute('aria-label');
+  });
+
+  it('names the tab list after the element aria-labelledby points at', () => {
+    render(
+      <>
+        <h2 id="sections-heading">Sections heading</h2>
+        <Bar label="Ignored" aria-labelledby="sections-heading" />
+      </>,
+    );
+    expect(
+      screen.getByRole('tablist', {name: 'Sections heading'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('bar')).not.toHaveAttribute('aria-labelledby');
+  });
+
   it('is a named tablist of tabs with the selected one marked', () => {
     render(<Bar initial="library" />);
     const list = screen.getByRole('tablist', {name: 'Sections'});

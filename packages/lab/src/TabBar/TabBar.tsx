@@ -44,7 +44,7 @@
  * across the items, and the lift chooses the item nearest the finger; a
  * selection made with the keys slides it on UIKit's spring
  * (`tabBar.lensTravel`). Everything runs on the compositor, keeps its speed
- * when retargeted, and plays each spring as the theme sets its motion role.
+ * when retargeted, and plays each spring as measured (uikit/tabBar.ts).
  * That motion is TabBar's touch layer (TabBarTouch.ts), its one import site.
  * Under a mouse (a fine pointer) the lens slides on the theme's duration and
  * easing (a CSS transition on `translate`, run by the compositor), the
@@ -144,8 +144,16 @@ export interface TabBarProps extends Omit<
    * navigation stack to the root, as iOS does.
    */
   onReselect?: (value: string) => void;
-  /** Names the tab bar for assistive technology. */
+  /**
+   * Names the tab bar for assistive technology. Without it, or `aria-label`
+   * or `aria-labelledby`, the tab list is named "Tabs" in the reader's
+   * language, as TabList's is.
+   */
   label?: string;
+  /** Names the tab list, as `label` does; it wins over `label`. */
+  'aria-label'?: string;
+  /** Names the tab list after another element; it wins over both. */
+  'aria-labelledby'?: string;
   /** The tabs: `TabBarItem` elements, in order. */
   children: ReactNode;
 }
@@ -524,6 +532,8 @@ export function TabBar({
   onChange,
   onReselect,
   label,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   children,
   xstyle,
   className,
@@ -532,6 +542,12 @@ export function TabBar({
   ...props
 }: TabBarProps) {
   const t = useTranslator();
+  // The tab list always has a name, and the aria naming props reach it rather
+  // than the root, as TabList's do.
+  const tabListLabel =
+    ariaLabelledBy != null
+      ? undefined
+      : (ariaLabel ?? label ?? t('@astryx.tabList.label'));
   const items = readItems(children);
   const count = items.length;
   const selectedIndex = items.findIndex(item => item.value === value);
@@ -587,7 +603,8 @@ export function TabBar({
       <div
         ref={mergedCapsuleRef}
         role="tablist"
-        aria-label={label}
+        aria-label={tabListLabel}
+        aria-labelledby={ariaLabelledBy}
         aria-orientation="horizontal"
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}

@@ -57,9 +57,9 @@
  * compositor; a finger's moves retarget them, so the lens keeps moving
  * through a busy main thread. Under Reduce Motion the animator cross-fades
  * instead of moving and a press scales nothing (design:reduced-motion).
- * Each spring is handed to the animator as a table entry, so it plays as the
- * theme sets its motion role. Under a mouse this hook writes nothing:
- * TabBar's CSS slides the lens and a click is a plain click.
+ * Each spring plays as measured, from the UIKit table. Under a mouse this
+ * hook writes nothing: TabBar's CSS slides the lens and a click is a plain
+ * click.
  *
  * SYNC: When modified, update TabBar.tsx, tabBarModel.ts and
  * __tests__/TabBar.interaction.browser.spec.ts.
@@ -174,8 +174,8 @@ export function useTabBarLens({
   isTouch,
   onLift,
 }: UseTabBarLensOptions): TabBarLensRefs {
-  // The table's springs become motion roles before this hook's first
-  // animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isTouch) {
     registerTabBarTable();
   }
@@ -479,6 +479,8 @@ export function useTabBarLens({
     }
   }, [isTouch]);
 
+  // Synchronizes the lens's compositor animations (the animator's Web
+  // Animations on its body and copy) with the selected tab.
   // A new selection: the resting place jumped to the new item (CSS, this
   // frame); the body starts where the lens was on screen. After a lift it
   // continues the settle the lift started; otherwise it slides from rest.
