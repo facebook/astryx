@@ -329,6 +329,40 @@ const ARIA_SELECTED_ROLES = new Set([
  */
 const SWIPE_ROLES = new Set(['listitem']);
 
+/**
+ * Whether a row serves swipe actions, and so is a stacking context at rest
+ * (its root isolates and translates, `styles.swipeRoot`). Swipe actions exist
+ * where the row's role permits interactive descendants (a swipe panel's
+ * buttons are such descendants): a `listitem`, or no role at all. A root that
+ * is itself a link, a row whose role forbids them, a disabled row, a row with
+ * no entry on either side, and a row that is the enlarged target of a nested
+ * control are not served. Internal: List/ListItem.tsx raises such a row under
+ * a finger, so its touch band is above the rows after it.
+ */
+export function servesSwipeActions({
+  swipeActions,
+  isDisabled,
+  isDelegate,
+  isLinkRoot,
+  role,
+}: {
+  readonly swipeActions: ItemSwipeActions | undefined;
+  readonly isDisabled: boolean;
+  readonly isDelegate: boolean;
+  readonly isLinkRoot: boolean;
+  readonly role: string | null | undefined;
+}): boolean {
+  return (
+    swipeActions != null &&
+    ((swipeActions.leading?.length ?? 0) > 0 ||
+      (swipeActions.trailing?.length ?? 0) > 0) &&
+    !isDisabled &&
+    !isDelegate &&
+    !isLinkRoot &&
+    (role == null || SWIPE_ROLES.has(role))
+  );
+}
+
 /** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
 const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
 /** The settle clock, `0s` while the finger drives the row. */
@@ -544,22 +578,6 @@ const densityStyles = stylex.create({
 // =============================================================================
 
 /**
- * A universal item primitive that unifies the "start content + label +
- * description + end content" layout pattern. Use as a building block for list items,
- * menu items, contact rows, notification items, and more.
- *
- * @example
- * ```
- * <Item
- *   startContent={<Avatar src={user.avatar} size="sm" />}
- *   label={user.name}
- *   description={user.role}
- *   endContent={<Badge>Admin</Badge>}
- *   onClick={() => navigate(`/users/${user.id}`)}
- * />
- * ```
- */
-/**
  * Whether a click came from a finger: the click's own pointer type where the
  * engine reports one, else the primary pointer (TOUCH_QUERY, one touch
  * model).
@@ -576,6 +594,22 @@ function isTouchClick(event: MouseEvent): boolean {
   );
 }
 
+/**
+ * A universal item primitive that unifies the "start content + label +
+ * description + end content" layout pattern. Use as a building block for list items,
+ * menu items, contact rows, notification items, and more.
+ *
+ * @example
+ * ```
+ * <Item
+ *   startContent={<Avatar src={user.avatar} size="sm" />}
+ *   label={user.name}
+ *   description={user.role}
+ *   endContent={<Badge>Admin</Badge>}
+ *   onClick={() => navigate(`/users/${user.id}`)}
+ * />
+ * ```
+ */
 export function Item({
   as: Component = 'div',
   marker,
@@ -640,19 +674,16 @@ export function Item({
   // and the invisible anchor below is not rendered.
   const isLinkRoot = typeof Component !== 'string' && href != null;
 
-  // Swipe actions exist where the row's role permits interactive descendants
-  // (a swipe panel's buttons are such descendants): a `listitem`, or no role
-  // at all. A root that is itself a link, a row whose role forbids them, and
-  // a row that is the enlarged target of a nested control are not served.
+  // Which rows serve swipe actions: servesSwipeActions, above.
   const leadingSwipe = swipeActions?.leading ?? [];
   const trailingSwipe = swipeActions?.trailing ?? [];
-  const hasSwipe =
-    swipeActions != null &&
-    (leadingSwipe.length > 0 || trailingSwipe.length > 0) &&
-    !isDisabled &&
-    !isDelegate &&
-    !isLinkRoot &&
-    (role == null || SWIPE_ROLES.has(role));
+  const hasSwipe = servesSwipeActions({
+    swipeActions,
+    isDisabled,
+    isDelegate,
+    isLinkRoot,
+    role,
+  });
   useDevWarning(
     'Item',
     '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +

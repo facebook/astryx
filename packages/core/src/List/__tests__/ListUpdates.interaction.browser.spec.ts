@@ -98,14 +98,23 @@ async function snapshot(
   });
 }
 
-/** The start times of the animations running under `root`, in ms. */
+/**
+ * The start times of the animations on the list and its rows, in ms: the
+ * update's own, whatever drives them. An animation outside the list (a
+ * pressed button's release) is not part of the update.
+ */
 async function startTimes(page: Page): Promise<number[]> {
-  return page.evaluate(() =>
-    document
+  return page.evaluate(() => {
+    const list = document.querySelector('#storybook-root ul');
+    return document
       .getAnimations()
+      .filter(animation => {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        return list != null && target != null && list.contains(target);
+      })
       .map(animation => Number(animation.startTime))
-      .filter(time => Number.isFinite(time)),
-  );
+      .filter(time => Number.isFinite(time));
+  });
 }
 
 /** The distance between two consecutive rows' tops, in px. */
@@ -209,8 +218,9 @@ test('an insert: the new row enters in the same frame the rows after it and the 
       0,
     );
   }
-  // One frame: every part started together.
-  expect(starts.length).toBeGreaterThan(5);
+  // One frame: the new row's entrance and the glides of the four rows after
+  // it started together.
+  expect(starts.length, JSON.stringify(starts)).toBe(5);
   expect(
     Math.max(...starts) - Math.min(...starts),
     JSON.stringify(starts),
@@ -431,28 +441,118 @@ test('removing the last row: its exit never paints over the content after the li
   await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
 });
 
-test('the glides do no Layout or Paint per frame', async ({
-  page,
-  browserName,
-}) => {
-  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
-  await open(page);
-  let window = {from: 0, to: 0};
-  const trace = await traceRendering(page, async () => {
-    await press(page, 'Insert a row second');
-    const starts = await startTimes(page);
-    const durations = await page.evaluate(() =>
-      document
-        .getAnimations()
-        .map(animation => Number(animation.effect?.getTiming().duration)),
-    );
-    const from = Math.min(...starts);
-    window = {from, to: from + Math.max(...durations)};
-    await page.waitForTimeout(Math.max(...durations) + 100);
+for (const [change, button] of [
+  ['an insert', 'Insert a row second'],
+  ['a removal', 'Remove the second row'],
+  ['a reorder', 'Move the last row first'],
+] as const) {
+  test(`${change}: the motion does no Layout or Paint per frame`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+    await open(page);
+    let window = {from: 0, to: 0};
+    const trace = await traceRendering(page, async () => {
+      await press(page, button);
+      const starts = await startTimes(page);
+      const durations = await page.evaluate(() =>
+        document
+          .getAnimations()
+          .map(animation => Number(animation.effect?.getTiming().duration)),
+      );
+      const from = Math.min(...starts);
+      window = {from, to: from + Math.max(...durations)};
+      await page.waitForTimeout(Math.max(...durations) + 100);
+    });
+    const during = countBetween(trace, window.from + 30, window.to - 30);
+    expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
+    expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
   });
-  const during = countBetween(trace, window.from + 30, window.to - 30);
-  expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
-  expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
+}
+
+/**
+ * Presses one of the swipe story's move buttons and freezes the motion
+ * halfway, then reports which row the browser hit-tests where the moved row
+ * overlaps a row it crosses.
+ */
+async function crossingHit(page: Page, button: string) {
+  await press(page, button);
+  return page.evaluate(() => {
+    const list = document.querySelector('#storybook-root ul');
+    for (const animation of document.getAnimations()) {
+      const target = (animation.effect as KeyframeEffect | null)?.target;
+      if (list != null && target != null && list.contains(target)) {
+        animation.pause();
+        animation.currentTime =
+          Number(animation.effect?.getComputedTiming().duration) / 2;
+      }
+    }
+    const label = (row: Element | null | undefined) => {
+      if (row == null) {
+        return null;
+      }
+      const copy = row.cloneNode(true) as Element;
+      for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+        panel.remove();
+      }
+      return copy.textContent?.trim() ?? '';
+    };
+    const rows = [...document.querySelectorAll('#storybook-root li')];
+    const moved = rows.find(row => row.hasAttribute('data-astryx-travelling'));
+    if (moved == null) {
+      return null;
+    }
+    const m = moved.getBoundingClientRect();
+    const crossed = rows.find(row => {
+      const r = row.getBoundingClientRect();
+      return row !== moved && r.top < m.bottom - 4 && r.bottom > m.top + 4;
+    });
+    if (crossed == null) {
+      return {moved: label(moved), crossed: null, hit: null};
+    }
+    const c = crossed.getBoundingClientRect();
+    const y = (Math.max(m.top, c.top) + Math.min(m.bottom, c.bottom)) / 2;
+    const hit = document.elementFromPoint(m.left + 40, y)?.closest('li');
+    return {moved: label(moved), crossed: label(crossed), hit: label(hit)};
+  });
+}
+
+test('a reorder among swipeable rows: the moved row rides above the rows it crosses, under a finger and with a mouse', async ({
+  page,
+  browser,
+}) => {
+  await open(page, SWIPE_STORY);
+  const touch = await crossingHit(page, 'Move Archive first');
+  expect(touch?.moved, JSON.stringify(touch)).toBe('Archive');
+  expect(touch?.crossed, JSON.stringify(touch)).not.toBeNull();
+  expect(touch?.hit, JSON.stringify(touch)).toBe('Archive');
+  const mouse = await withMouse(browser, async mousePage => {
+    await open(mousePage, SWIPE_STORY);
+    return crossingHit(mousePage, 'Move Archive first');
+  });
+  expect(mouse?.crossed, JSON.stringify(mouse)).not.toBeNull();
+  expect(mouse?.hit, JSON.stringify(mouse)).toBe('Archive');
+});
+
+test('a row without swipe actions, moved across swipeable rows, rides above them, under a finger and with a mouse', async ({
+  page,
+  browser,
+}) => {
+  await open(page, SWIPE_STORY);
+  // Notes has no swipe actions; the rows it crosses do, and under a finger
+  // each of them is raised.
+  await expect(row(page, 'Notes').locator('[data-swipe-panel]')).toHaveCount(0);
+  const touch = await crossingHit(page, 'Move Notes first');
+  expect(touch?.moved, JSON.stringify(touch)).toBe('Notes');
+  expect(touch?.crossed, JSON.stringify(touch)).not.toBeNull();
+  expect(touch?.hit, JSON.stringify(touch)).toBe('Notes');
+  const mouse = await withMouse(browser, async mousePage => {
+    await open(mousePage, SWIPE_STORY);
+    return crossingHit(mousePage, 'Move Notes first');
+  });
+  expect(mouse?.crossed, JSON.stringify(mouse)).not.toBeNull();
+  expect(mouse?.hit, JSON.stringify(mouse)).toBe('Notes');
 });
 
 test('a row swiped away with a removal action exits in place as it was on screen, as itself with no element added, while the rows after it glide up', async ({

@@ -54,6 +54,7 @@ async function rowsOf(page: Page): Promise<Row[]> {
     elements.map(el => {
       const box = el.getBoundingClientRect();
       const layer = getComputedStyle(el, '::after');
+      const own = getComputedStyle(el);
       return {
         text: el.textContent?.trim() ?? '',
         top: box.top,
@@ -62,10 +63,21 @@ async function rowsOf(page: Page): Promise<Row[]> {
         x: box.left + box.width / 2,
         layer: {
           content: layer.content,
-          // How far the layer reaches past the row, px (its insets negated).
-          top: layer.content === 'none' ? 0 : 0 - Number.parseFloat(layer.top),
+          // How far the layer reaches past the row's border box, px: its
+          // offsets are from the row's padding box, so past a border (a
+          // divided row's) it reaches that much less.
+          top:
+            layer.content === 'none'
+              ? 0
+              : 0 -
+                Number.parseFloat(layer.top) -
+                Number.parseFloat(own.borderTopWidth),
           bottom:
-            layer.content === 'none' ? 0 : 0 - Number.parseFloat(layer.bottom),
+            layer.content === 'none'
+              ? 0
+              : 0 -
+                Number.parseFloat(layer.bottom) -
+                Number.parseFloat(own.borderBottomWidth),
           paint: [
             layer.backgroundColor,
             layer.backgroundImage,
@@ -241,6 +253,171 @@ test('under a finger, the row’s own content keeps its taps', async ({page}) =>
     }),
   );
   expect(hits).toEqual([true, true, true]);
+});
+
+test('under a finger, a row’s end control keeps its taps, and the interactive rows beside it grow short of it', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-list--with-end-controls');
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  const rows = await measuredRowsOf(page);
+  // (The switch's own hidden label repeats the row's text, and Network's
+  // swipe action adds its own.)
+  expect(rows.map(row => row.text)).toEqual([
+    expect.stringMatching(/^Network/),
+    expect.stringMatching(/^Wi-Fi/),
+    expect.stringMatching(/^Bluetooth/),
+  ]);
+  // The control's row is not interactive: it has no hit area of its own.
+  expect(rows[1].layer.content, JSON.stringify(rows)).toBe('none');
+  const toggle = page.getByRole('switch', {name: 'Wi-Fi'});
+  await expect(toggle).toBeChecked();
+  const control = await toggle.evaluate(input => {
+    const box = (input.parentElement ?? input).getBoundingClientRect();
+    const own = input.getBoundingClientRect();
+    return {
+      top: box.top,
+      bottom: box.bottom,
+      x: own.left + own.width / 2,
+      y: own.top + own.height / 2,
+    };
+  });
+  // The rows beside it grow toward the touch target only short of it: to
+  // half the gap to the control, the control's half being the control's.
+  const [above, , below] = rows;
+  expect(above.layer.bottom, JSON.stringify({rows, control})).toBeCloseTo(
+    (control.top - above.bottom) / 2,
+    1,
+  );
+  expect(below.layer.top, JSON.stringify({rows, control})).toBeCloseTo(
+    (below.top - control.bottom) / 2,
+    1,
+  );
+  expect(
+    above.bottom + above.layer.bottom,
+    JSON.stringify({rows, control}),
+  ).toBeLessThanOrEqual(control.top);
+  expect(
+    below.top - below.layer.top,
+    JSON.stringify({rows, control}),
+  ).toBeGreaterThanOrEqual(control.bottom);
+  // The browser sends a tap in Network's band to Network, over the static
+  // row after it, up to the band's end; and one in Bluetooth's band to
+  // Bluetooth. Network is swipeable, so it is a stacking context at rest,
+  // and its band still wins. (Hit tests, not taps: a touch engine's own
+  // touch adjustment may move a tap a few pixels onto a target.)
+  const owner = async (y: number) =>
+    page.evaluate(
+      ({x, y: at}) => {
+        const row = document
+          .elementFromPoint(x, at)
+          ?.closest('#storybook-root li');
+        if (row == null) {
+          return null;
+        }
+        // The row's own text, without its swipe actions' labels.
+        const copy = row.cloneNode(true) as Element;
+        for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+          panel.remove();
+        }
+        return (copy.textContent ?? '').trim().split(/\s+/)[0] ?? null;
+      },
+      {x: above.x, y},
+    );
+  expect(
+    await page
+      .locator('#storybook-root li')
+      .first()
+      .evaluate(row => getComputedStyle(row).isolation),
+  ).toBe('isolate');
+  expect(above.layer.bottom, JSON.stringify(rows)).toBeGreaterThan(1);
+  expect(await owner(above.bottom + 0.5)).toBe('Network');
+  expect(await owner(above.bottom + above.layer.bottom - 0.5)).toBe('Network');
+  expect(await owner(above.bottom + above.layer.bottom + 0.5)).toBe('Wi-Fi');
+  expect(await owner(below.top - below.layer.top + 0.5)).toBe('Bluetooth');
+  // The browser hit-tests the control there, and a real tap toggles it,
+  // with no tap reaching the rows beside it.
+  expect(
+    await page.evaluate(
+      ({x, y}) =>
+        document.elementFromPoint(x, y)?.closest('[role="switch"]') != null,
+      control,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => {
+    const taps: string[] = [];
+    (window as unknown as {taps: string[]}).taps = taps;
+    for (const row of document.querySelectorAll('#storybook-root li')) {
+      row.addEventListener('click', event => {
+        if (
+          !(event.target instanceof Element) ||
+          event.target.closest('[role="switch"]') == null
+        ) {
+          taps.push(row.textContent?.trim() ?? '');
+        }
+      });
+    }
+  });
+  await page.touchscreen.tap(control.x, control.y);
+  await expect(toggle).not.toBeChecked();
+  expect(
+    await page.evaluate(() => (window as unknown as {taps: string[]}).taps),
+  ).toEqual([]);
+});
+
+test('under a finger, a row’s band takes no tap from a control near the list: a button in its header, or a button just after it', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-list--with-end-controls');
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  const rows = await measuredRowsOf(page);
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const box = async (name: string) =>
+    page.getByRole('button', {name, exact: true}).evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return {top: r.top, bottom: r.bottom, x: r.left + r.width / 2};
+    });
+  const edit = await box('Edit');
+  const more = await box('Load more');
+  // What the browser hit-tests at a point: a button's name, or a row's
+  // first word.
+  const hit = async (x: number, y: number) =>
+    page.evaluate(
+      ({x: px, y: py}) => {
+        const el = document.elementFromPoint(px, py);
+        const button = el?.closest('button');
+        if (button != null && button.closest('li') == null) {
+          return button.textContent?.trim() ?? '';
+        }
+        return (
+          (el?.closest('#storybook-root li')?.textContent ?? '')
+            .trim()
+            .split(/\s+/)[0] || null
+        );
+      },
+      {x, y},
+    );
+  // The button 4 px after the list: the last row's band stops at half that
+  // gap, so the button keeps every point of its own box, and the band keeps
+  // its half.
+  expect(more.top - last.bottom, JSON.stringify({rows, more})).toBeCloseTo(
+    4,
+    0,
+  );
+  expect(last.layer.bottom, JSON.stringify({rows, more})).toBeLessThanOrEqual(
+    (more.top - last.bottom) / 2 + 0.01,
+  );
+  expect(await hit(more.x, more.top + 0.5)).toBe('Load more');
+  expect(await hit(last.x, last.bottom + last.layer.bottom - 0.5)).toBe(
+    'Bluetooth',
+  );
+  // The header's button above the first row keeps its own box too.
+  expect(
+    first.top - first.layer.top,
+    JSON.stringify({rows, edit}),
+  ).toBeGreaterThanOrEqual(edit.bottom - 0.01);
+  expect(await hit(edit.x, edit.bottom - 0.5)).toBe('Edit');
 });
 
 test('under a finger, a row already as tall as the touch target gains nothing, rows that touch take nothing from each other, and a disabled row has no layer', async ({

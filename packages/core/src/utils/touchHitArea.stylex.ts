@@ -21,12 +21,25 @@
  * rendering never overlap a neighbor. The host is the layer's containing
  * block: a host that is not positioned sets `position: relative` itself.
  *
+ * The insets are measured from the host's border box, while the layer is
+ * offset from its padding box, so a host that draws a border declares its
+ * width on that side (`--_hit-border-{top,right,bottom,left}`, 0 by
+ * default): a divided list row declares its divider's, and its band starts
+ * at the divider's outer edge.
+ *
  * The layer is clipped to the band past the host's own box (an even-odd clip
  * path whose hole is the host), so the host's content and its own controls
- * keep their taps, and a tap in the band resolves to the host. It paints
- * nothing and leaves the host's stacking as it was, with no isolation and no
- * z-index: a list row's press layer (utils/rowPressLayer.ts) relies on a row
- * at rest being no stacking context. With a mouse none of it applies.
+ * keep their taps, and a tap in the band resolves to the host. The layer
+ * itself is above the content after the host (`z-index: 1`): a later sibling
+ * that is positioned with no z-index (the next list row) would otherwise
+ * paint and hit-test over the band. The host stays as it was, with no
+ * isolation and no z-index of its own: a list row's press layer
+ * (utils/rowPressLayer.ts) relies on a row at rest being no stacking context.
+ * A host that is a stacking context anyway (a swipeable list row) orders the
+ * layer only inside itself, so it raises itself instead (ListItem). The
+ * host's container bounds what rises: a List isolates its rows, so they stay
+ * below a page-level sticky header. The layer paints nothing. With a mouse
+ * none of it applies.
  *
  * Under a finger the host's `::after` is this layer, so decorate the host
  * with a child instead. The insets are measured in the viewport, so the
@@ -52,26 +65,32 @@ export const touchHitAreaStyles = stylex.create({
     '::after': {
       content: {default: null, [TOUCH]: '""'},
       position: {default: null, [TOUCH]: 'absolute'},
+      zIndex: {default: null, [TOUCH]: 1},
       top: {
         default: null,
-        [TOUCH]: 'calc(var(--astryx-hit-inset-top, 0px) * -1)',
+        [TOUCH]:
+          'calc((var(--astryx-hit-inset-top, 0px) + var(--_hit-border-top, 0px)) * -1)',
       },
       bottom: {
         default: null,
-        [TOUCH]: 'calc(var(--astryx-hit-inset-bottom, 0px) * -1)',
+        [TOUCH]:
+          'calc((var(--astryx-hit-inset-bottom, 0px) + var(--_hit-border-bottom, 0px)) * -1)',
       },
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the insets are measured in the viewport, so the left inset grows the left edge in either direction
       left: {
         default: null,
-        [TOUCH]: 'calc(var(--astryx-hit-inset-left, 0px) * -1)',
+        [TOUCH]:
+          'calc((var(--astryx-hit-inset-left, 0px) + var(--_hit-border-left, 0px)) * -1)',
       },
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the insets are measured in the viewport, so the right inset grows the right edge in either direction
       right: {
         default: null,
-        [TOUCH]: 'calc(var(--astryx-hit-inset-right, 0px) * -1)',
+        [TOUCH]:
+          'calc((var(--astryx-hit-inset-right, 0px) + var(--_hit-border-right, 0px)) * -1)',
       },
       // Only the band past the host: the outer rectangle, then the host's own
-      // box as a hole (even-odd), so the host's content stays on top for taps.
+      // box (its border box: the layer's box less the insets) as a hole
+      // (even-odd), so the host's content stays on top for taps.
       clipPath: {
         default: null,
         [TOUCH]:

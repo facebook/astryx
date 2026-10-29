@@ -163,6 +163,11 @@ const styles = stylex.create({
     // `hidden`: hidden makes a scroll container, which fights the list's
     // vertical scroller. (StyleX emits the physical longhand of this axis.)
     overflowInline: 'clip',
+    // The isolation boundary for what rises inside the list: a row's touch
+    // band and a swipeable row (utils/touchHitArea.stylex.ts, ListItem) order
+    // above the rows after them and stay below a page-level sticky header at
+    // the same z-index (`spec:AST-027` DEC-1, DEC-2).
+    isolation: 'isolate',
   },
   // 'outset' and 'bleed' rows reach into the container's padding. The list
   // reaches the container's padding edge on each inline edge first, so its

@@ -37,6 +37,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {servesSwipeActions} from '../Item/Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -177,10 +178,13 @@ const styles = stylex.create({
   // and the row's content, so the row's divider and its press stay visible;
   // a selected row keeps its own fill. It takes no pseudo-element: under a
   // finger the row's `::after` is its hit layer (List/listRow.stylex.ts).
+  // Its z-index, 2, is above a swipeable row's raise under a finger (1,
+  // `swipeRaised`), so it rides above the swipeable rows it crosses whether
+  // it has swipe actions of its own or not.
   travelling: {
     zIndex: {
       default: null,
-      '[data-astryx-travelling]': 1,
+      '[data-astryx-travelling]': 2,
     },
     boxShadow: {
       default: null,
@@ -219,6 +223,26 @@ const styles = stylex.create({
       'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
     borderRadius: 0,
   },
+  // A swipeable row is a stacking context at rest (Item isolates and
+  // translates its swipe root), so its touch band's own z-index orders only
+  // inside it: under a finger the row itself rises above the rows after it,
+  // whose boxes its band reaches into. The list isolates, so it stays below
+  // a sticky header (List.tsx).
+  //
+  // StyleX keeps one zIndex per element, and this style comes after
+  // `travelling`, so it carries the travelling raise too, above its own: a
+  // row an update slides across swipeable rows (each at 1 under a finger)
+  // still rides above them, with a mouse as under a finger.
+  swipeRaised: {
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 2,
+      '@media (pointer: coarse)': {
+        default: 1,
+        '[data-astryx-travelling]': 2,
+      },
+    },
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
@@ -229,6 +253,12 @@ const styles = stylex.create({
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
+    },
+    // The touch hit layer's band starts past the divider, the edge of the box
+    // its insets are measured from (utils/touchHitArea.stylex.ts).
+    '--_hit-border-bottom': {
+      default: borderVars['--border-width'],
+      ':last-child': '0px',
     },
   },
 });
@@ -391,6 +421,18 @@ export function ListItem({
   const isTouchTarget =
     (onClick != null || href != null || interactiveRef != null) && !isDisabled;
   useTouchHitArea(rowRef, isTouchTarget);
+  // A row Item serves swipe actions on is a stacking context at rest, so its
+  // band's own z-index orders only inside it: under a finger, the row raises
+  // itself (styles.swipeRaised). Its root is its `<li>`, never a link.
+  const isRaisedSwipeRow =
+    isTouchTarget &&
+    servesSwipeActions({
+      swipeActions: restProps.swipeActions,
+      isDisabled,
+      isDelegate: interactiveRef != null,
+      isLinkRoot: false,
+      role: restProps.role,
+    });
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -457,6 +499,7 @@ export function ListItem({
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           isTouchTarget && touchHitAreaStyles.layer,
+          isRaisedSwipeRow && styles.swipeRaised,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
