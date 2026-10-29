@@ -62,8 +62,8 @@ export function useTabBarLens({
   selectedIndex,
   isTouch,
 }: UseTabBarLensOptions): TabBarLens {
-  // The table's springs become motion roles before this hook's first
-  // animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isTouch) {
     registerTabBarTable();
   }
