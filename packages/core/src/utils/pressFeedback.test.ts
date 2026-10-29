@@ -12,6 +12,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {TEMPO_RANGE, expandThemeMotion} from '../theme/themeMotion';
 import {readFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -407,6 +408,24 @@ describe('the release', () => {
       rows[0].classList.remove('marked-slow', 'marked-quick');
       style.remove();
     }
+  });
+
+  it('bounds the release’s tempo at its own maximum, so outside the mark the bound changes nothing', () => {
+    // The clock's 1.5 is TEMPO_RANGE.max, and every tempo a theme writes is
+    // clamped to it: a theme asking for 3 writes 1.5.
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    expect(source).toContain(
+      `min(var(--_astryx-motion-tempo, 1), ${TEMPO_RANGE.max} - ${TEMPO_RANGE.max - 1} * var(--_astryx-reduced-motion, 0))`,
+    );
+    expect(expandThemeMotion({tempo: 3})['--_astryx-motion-tempo']).toBe(
+      String(TEMPO_RANGE.max),
+    );
   });
 
   it('caps the stylesheet’s release fade under the mark’s custom property too', () => {
