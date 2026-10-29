@@ -6,8 +6,8 @@
  *   TimeInput stories, real touch input and the interaction harness
  * @output Interaction proofs for the sheet's time wheels following
  *   UIDatePicker: a drag of the hour from 11 to 12 turns AM to PM, the AM/PM
- *   column turning on UIDatePicker's own curve (`datePicker.wheels.columnTurn`:
- *   0.3 s on a sinusoid) after the hour commits; the turn keeps advancing every
+ *   column turning on the wheel's own spin (`picker.tapSpin`: 0.3 s on
+ *   `timing.curves.move`) after the hour commits; the turn keeps advancing every
  *   frame through a blocked main thread; under Reduced Motion it cross-fades
  *   instead (design:reduced-motion DR2); a finger on the AM/PM column
  *   mid-turn stops it, and the lift rests it on the nearest row, which the
@@ -46,15 +46,17 @@ import {
   type TouchDriver,
   type TrackedFrame,
 } from '@astryxdesign/interaction-harness';
-import {datePicker} from '../../motion/uikit/datePicker';
+import {cubicBezier} from '../../motion/bezier';
+import {picker} from '../../motion/uikit/picker';
+import {timing} from '../../motion/uikit/timing';
 import {WHEEL_ROW_PITCH} from '../../DateInput/wheelLook';
 
 const storybook = withStorybook(test);
 
-const TURN_MS = datePicker.wheels.columnTurn.durationMs;
-/** The column turn's oracle: ½ − ½ cos(πt), independent of the bézier. */
-const sinusoid = (t: number) =>
-  t >= TURN_MS ? 1 : 0.5 - 0.5 * Math.cos((Math.PI * Math.max(t, 0)) / TURN_MS);
+const TURN_MS = picker.tapSpin.durationMs;
+const move = cubicBezier(timing.curves.move);
+/** The column turn's oracle: the wheel's spin, `timing.curves.move` over `picker.tapSpin`. */
+const spin = (t: number) => (t >= TURN_MS ? 1 : move(Math.max(t, 0) / TURN_MS));
 
 interface OpenWheels {
   driver: TouchDriver;
@@ -143,7 +145,7 @@ test('the AM/PM column follows the hour from 11 to 12 on UIDatePicker’s turn',
     t,
     value: (value - start) / (end - start),
   }));
-  const fit = compareCurve(progress, sinusoid, 0.02);
+  const fit = compareCurve(progress, spin, 0.02);
   expect(fit.pass, JSON.stringify(fit.worst)).toBe(true);
   await releaseAnimations(page);
   await thawTimers(page);

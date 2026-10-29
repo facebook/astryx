@@ -22,6 +22,8 @@ import {
   type WheelHandle,
   type WheelOption,
 } from './Wheel';
+import {SCROLL_QUIET_MS} from './useScrollSettle';
+import {restingStep} from './wheelOptions';
 
 const ROW = 28;
 
@@ -62,6 +64,37 @@ describe('nearestEnabledIndex', () => {
   it('stays on the committed row when no row is enabled', () => {
     const none = HOURS.map(option => ({...option, isDisabled: true}));
     expect(nearestEnabledIndex(none, 3, 10)).toBe(10);
+  });
+});
+
+describe('restingStep', () => {
+  // A year of months; only January and February in the bounds.
+  const MONTHS: WheelOption[] = Array.from({length: 12}, (_, month) => ({
+    value: month,
+    label: String(month + 1),
+    isDisabled: month > 1,
+  }));
+
+  it('stays on an enabled row', () => {
+    expect(restingStep(MONTHS, 1, 0, true)).toBe(0);
+  });
+
+  it('turns the shorter way round a loop, across its seam', () => {
+    // December: January is one row on, February ten rows back.
+    expect(restingStep(MONTHS, 11, 0, true)).toBe(1);
+    // Without the loop, the list ends at December: back to February.
+    expect(restingStep(MONTHS, 11, 0)).toBe(-10);
+  });
+
+  it('breaks a tie around the loop toward the committed row', () => {
+    // Only January and July enabled: October is three rows from July (back)
+    // and from January (on, across the seam).
+    const TWO = MONTHS.map(option => ({
+      ...option,
+      isDisabled: option.value !== 0 && option.value !== 6,
+    }));
+    expect(restingStep(TWO, 9, 0, true)).toBe(3);
+    expect(restingStep(TWO, 9, 6, true)).toBe(-3);
   });
 });
 
@@ -146,6 +179,23 @@ describe('Wheel — where it comes to rest', () => {
     const {onChange, scrollTo, stopOn} = renderWheel(8);
     stopOn(8);
     expect(scrollTo).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('turns onto a value set while it is shown, as a bound clamping the time after another wheel turned (component:DateInput FR13)', () => {
+    // 22:00 past a 17:00 maximum: the field clamps to 17:00, and the hour
+    // wheel, at rest on 22, turns onto 17 as UIDatePicker's does; it never
+    // jumps there, and it commits nothing of its own.
+    const {onChange, scrollTo, rerender} = renderWheel(22);
+    scrollTo.mockClear();
+    rerender(
+      <Wheel label="Hour" options={HOURS} value={17} onChange={onChange} />,
+    );
+    expect(scrollTo).toHaveBeenCalledWith({top: 17 * ROW, behavior: 'smooth'});
+    expect(scrollTo).not.toHaveBeenCalledWith({
+      top: 17 * ROW,
+      behavior: 'auto',
+    });
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -344,6 +394,79 @@ describe('Wheel — where it comes to rest', () => {
       expect(scrollTo).toHaveBeenCalledWith({top: 9 * ROW, behavior: 'auto'});
     });
 
+    /** A primary mouse press, move or release, as usePointerDragScroll reads it. */
+    const mouse = (type: string, y: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperties(event, {
+        clientY: {value: y},
+        pointerId: {value: 1},
+        pointerType: {value: 'mouse'},
+        button: {value: 0},
+      });
+      return event;
+    };
+
+    /** jsdom has no pointer capture, which a mouse drag takes. */
+    const capturable = (scroller: HTMLElement) => {
+      scroller.setPointerCapture = () => {};
+      scroller.releasePointerCapture = () => {};
+      scroller.hasPointerCapture = () => true;
+    };
+
+    it('travels at once after a mouse drag that follows a touch, on a fine pointer', () => {
+      // usePointerDragScroll keeps a primary mouse press from bubbling (it must
+      // not reach BottomSheet's own drag), so the wheel reads the pointer on
+      // the way down, before that.
+      stubReducedMotion('fine');
+      vi.useFakeTimers();
+      const {scrollTo, stopOn} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      capturable(scroller);
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerdown', 200));
+        // Pulled down three rows: 7, below the minimum.
+        scroller.dispatchEvent(mouse('pointermove', 200 + 3 * ROW));
+        scroller.dispatchEvent(mouse('pointerup', 200 + 3 * ROW));
+      });
+      stopOn(7);
+      expect(animate).not.toHaveBeenCalled();
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 9 * ROW,
+        behavior: 'auto',
+      });
+    });
+
+    it('waits for a mouse drag’s release before travelling back inside the bounds', () => {
+      // Each scrollTop the drag assigns ends in its own scrollend in Chromium,
+      // and the hand can pause with the button down: neither is rest.
+      stubReducedMotion('fine');
+      vi.useFakeTimers();
+      const {scrollTo, onChange} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      capturable(scroller);
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerdown', 200));
+        scroller.dispatchEvent(mouse('pointermove', 200 + 3 * ROW));
+        scroller.dispatchEvent(new Event('scroll'));
+        scroller.dispatchEvent(new Event('scrollend'));
+        vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+      });
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(onChange).not.toHaveBeenCalled();
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerup', 200 + 3 * ROW));
+        scroller.dispatchEvent(new Event('scrollend'));
+      });
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 9 * ROW,
+        behavior: 'auto',
+      });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('travels at once after a trackpad scroll that follows a touch, on a fine pointer', () => {
       stubReducedMotion('fine');
       const {scrollTo, stopOn} = renderWheel(10);
@@ -466,6 +589,27 @@ describe('Wheel — by pointer', () => {
     // A disabled row is not a place to rest.
     await expect(ref.current?.spinTo(3)).resolves.toBe(false);
     expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a spin onto a row the owner’s rest moves off, as the touch column does', async () => {
+    stubDevice({ios: false, coarse: false});
+    const ref = createRef<WheelHandle>();
+    const onChange = vi.fn();
+    render(
+      <Wheel
+        ref={ref}
+        label="Hour"
+        options={HOURS}
+        value={12}
+        onChange={onChange}
+        resolveRest={index => (index % 2 === 0 ? index : index + 1)}
+      />,
+    );
+    await expect(ref.current?.spinTo(13)).resolves.toBe(false);
+    await expect(ref.current?.spinTo(24)).resolves.toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    await expect(ref.current?.spinTo(14)).resolves.toBe(true);
+    expect(onChange).toHaveBeenCalledWith(14);
   });
 });
 
