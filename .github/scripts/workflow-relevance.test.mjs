@@ -42,6 +42,7 @@ function triggersOf(name) {
 const CODE_TRIGGERS = ['push', 'pull_request', 'pull_request_target'];
 /** Events about reviews, comments, checks and deployments, never a code path. */
 const REVIEW_EVENTS = new Set([
+  // Allowed only with a recorded reason (see the review-event case).
   'pull_request_target',
   'pull_request_review',
   'issue_comment',
@@ -152,6 +153,16 @@ describe('every workflow declares why it runs (spec:AST-030 FR14)', () => {
             REVIEW_EVENTS.has(event),
             `${name}: ${event} is a code trigger`,
           ).toBe(true);
+        }
+        // A pull_request_target trigger answers every pull-request update.
+        // It is relevant only for review state (reporting a review status,
+        // re-requesting review), and the registry says which.
+        if (events.includes('pull_request_target')) {
+          const {pullRequestUpdates} = registry.workflows[name];
+          expect(
+            pullRequestUpdates?.length ?? 0,
+            `${name}: say why every pull-request update is relevant`,
+          ).toBeGreaterThan(10);
         }
         break;
       }

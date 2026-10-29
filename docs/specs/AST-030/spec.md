@@ -246,7 +246,10 @@ they are separately named.
   classifier's positive surfaces (FR1–FR5) choose the work inside it, and a job
   whose suite does not apply reports success without running it (FR7). A push
   to `main`, a schedule, a manual dispatch, and review, comment, check and
-  deployment events are relevance conditions of their own. No workflow uses
+  deployment events are relevance conditions of their own. A
+  `pull_request_target` trigger answers every pull-request update, so it is
+  relevant only for review state (reporting a review status, re-requesting
+  review) and records why. No workflow uses
   `paths-ignore` or another exclusion list, which would run on any path no one
   thought to exclude. `.github/workflow-relevance.json` records each workflow's
   kind and reason, and a contract test holds every workflow to its entry.
