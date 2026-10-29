@@ -80,6 +80,7 @@ describe('native Swift routing', () => {
       '.github/scripts/native-swift.sh',
       'packages/native/apple/Package.swift',
       'packages/native/swift-ios-1/core/Button/AstryxButton.swift',
+      '.github/actions/test-scope/action.yml',
     ]) {
       expect(pattern.test(touched), touched).toBe(true);
     }

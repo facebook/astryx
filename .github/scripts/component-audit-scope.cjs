@@ -40,7 +40,9 @@ function classifyComponentAuditScope(paths, componentPackages) {
     file === 'playwright.config.ts';
   const isRtlHarness = file =>
     file.startsWith('apps/storybook/rtl-audit/') ||
-    file === '.github/scripts/rtl-audit-coverage.test.mjs';
+    file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
+    file === '.github/scripts/weekly-rtl-summary.test.mjs' ||
+    file === '.github/workflows/rtl-weekly.yml';
   // These are positively owned surfaces that neither component browser audit
   // can observe. Keep this list narrow: unmatched paths still fail closed.
   const isKnownNonComponentSurface = file =>

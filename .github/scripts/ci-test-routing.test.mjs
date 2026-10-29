@@ -403,12 +403,24 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
-  it('audits every component package in full, with no component classification job', () => {
+  it('decides component scope inside each audit job, with no classification job', () => {
     expect(workflow.jobs['check-components']).toBeUndefined();
     for (const job of Object.values(workflow.jobs)) {
       expect(JSON.stringify(job)).not.toContain('needs.check-components');
     }
-    expect(runLines(shard)).toContain('--force-full true');
+    for (const job of [shard, join, workflow.jobs['pr-rtl-merge']]) {
+      const scope = job.steps.find(step => step.id === 'scope');
+      expect(scope.with['component-audit']).toBe('true');
+    }
+    expect(runLines(shard)).toContain(
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
+    );
+    expect(runLines(shard)).toContain(
+      '--has-components "${{ steps.scope.outputs.has_rtl_components }}"',
+    );
+    expect(runLines(shard)).toContain(
+      '--has-harness "${{ steps.scope.outputs.has_rtl_harness }}"',
+    );
   });
 
   it('binds component evidence source, Storybook bytes, and RTL code to the PR head', () => {
@@ -521,7 +533,12 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('needs.pr-rtl-shard.result');
     expect(commands).toContain('.github/scripts/rtl-join.mjs');
     expect(commands).toContain('--reports-dir rtl-shard-reports');
-    expect(commands).toContain('--force-full true');
+    expect(commands).toContain(
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
+    );
+    expect(commands).toContain(
+      '--check-components "${{ steps.scope.outcome }}"',
+    );
     const download = join.steps.find(
       step => step.name === 'Download applicable RTL shard reports',
     );
@@ -804,8 +821,23 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
     );
   });
 
-  it('runs the broad stable visual plan whenever the gate runs', () => {
+  it("scopes the stable visual plan from the PR's own files", () => {
     const visual = stepNamed('Run the visual gate for the touched components');
-    expect(visual.env.BROAD_STABLE_VISUAL).toBe('true');
+    expect(visual.env.BROAD_STABLE_VISUAL).toBe(
+      '${{ steps.visual-scope.outputs.broad_stable_visual }}',
+    );
+    expect(visual.if).toContain(
+      "steps.visual-scope.outputs.has_stable_visual == 'true'",
+    );
+    const decide = stepNamed('Decide stable visual scope');
+    expect(decide.env.SCOPED).toBe(
+      "${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}",
+    );
+    expect(decide.run).toContain(
+      'if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi',
+    );
+    expect(decide.run).toContain(
+      'visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"',
+    );
   });
 });
