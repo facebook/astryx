@@ -68,6 +68,35 @@ test('a finger slid from Bold across Italic to Underline toggles only Underline 
   await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
 });
 
+/** The accessible name of the focused element, or `body`. */
+const focusedName = async (page: Page) =>
+  page.evaluate(() => {
+    const element = document.activeElement;
+    return element == null || element === document.body
+      ? 'body'
+      : (element.getAttribute('aria-label') ?? element.textContent ?? '');
+  });
+
+test('after a finger slides from Bold to Underline, Underline has focus, as a tap on it leaves it (family:action-groups FR1)', async ({
+  page,
+}) => {
+  const {group, bold, underline} = await open(page);
+  const driver = await touchDriver(page);
+  await driver.play(slide(await centerOf(bold), await centerOf(underline)));
+  await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
+  expect(await focusedName(page)).toBe('Underline');
+});
+
+test('a finger tap on Italic leaves Italic with focus, as a tap on any button does (family:action-groups FR1)', async ({
+  page,
+}) => {
+  const {group, italic} = await open(page);
+  const driver = await touchDriver(page);
+  await driver.play(tap(await centerOf(italic), {holdMs: 60}));
+  await expect.poll(async () => pressed(group)).toEqual([false, true, false]);
+  expect(await focusedName(page)).toBe('Italic');
+});
+
 test('a finger lifted outside the group toggles nothing (family:action-groups FR3)', async ({
   page,
 }) => {
