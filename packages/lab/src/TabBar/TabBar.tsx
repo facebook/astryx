@@ -281,6 +281,31 @@ function hasBadge(badge: string | number | undefined): boolean {
   return badge != null && badge !== '';
 }
 
+/**
+ * The tab leaving search returns to: `from` (the tab search was chosen from)
+ * or, when the app has disabled it, the enabled tab nearest it, the leading
+ * one on a tie, so leaving search never chooses a disabled tab. -1 when no
+ * tab is enabled.
+ */
+function returnIndex(
+  items: ReadonlyArray<{isDisabled?: boolean}>,
+  from: number,
+): number {
+  const start = Math.min(Math.max(from, 0), items.length - 1);
+  for (let distance = 0; distance < items.length; distance++) {
+    for (const index of [start - distance, start + distance]) {
+      if (
+        index >= 0 &&
+        index < items.length &&
+        items[index].isDisabled !== true
+      ) {
+        return index;
+      }
+    }
+  }
+  return -1;
+}
+
 // =============================================================================
 // Geometry, as CSS on the capsule (a size container: 100cqw is its width)
 // =============================================================================
@@ -925,6 +950,8 @@ export function TabBar({
     [value, onChange, onReselect, search],
   );
   const isSearchSelected = search != null && search.value === value;
+  // Every tab a search can be left back to.
+  const allTabs: ReadonlyArray<{value: string; isDisabled?: boolean}> = items;
   // The tab the search tab was chosen from: the leading circle holds it while
   // searching, and choosing it leaves the search tab.
   // Kept in state and adjusted during render as the selection changes (a
@@ -933,7 +960,11 @@ export function TabBar({
   if (!isSearchSelected && selectedIndex >= 0 && lastTabValue !== value) {
     setLastTabValue(value);
   }
-  const previousIndex = items.findIndex(item => item.value === lastTabValue);
+  // When the app has disabled it, the enabled tab nearest it.
+  const previousIndex = returnIndex(
+    items,
+    items.findIndex(item => item.value === lastTabValue),
+  );
   // Under a finger, while searching, the leading circle holds the tab search
   // was chosen from; under a mouse the search tab is selected in place.
   const shownIndex =
@@ -1444,10 +1475,19 @@ export function TabBar({
               if (isTouch || event.key !== 'Escape' || lastTabValue == null) {
                 return;
               }
+              // A tab the app has disabled is never chosen: the enabled tab
+              // nearest it instead (see returnIndex).
+              const last = allTabs.find(item => item.value === lastTabValue);
+              const back =
+                last != null && last.isDisabled !== true
+                  ? last
+                  : items[previousIndex];
+              if (back == null) {
+                return;
+              }
               event.preventDefault();
-              const back = lastTabValue;
               flushSync(() => {
-                choose({value: back});
+                choose(back);
               });
               capsuleRef.current
                 ?.querySelector<HTMLElement>(
