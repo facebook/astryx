@@ -21,6 +21,7 @@ import {
   type WheelOption,
 } from './Wheel';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
+import {restingStep} from './wheelOptions';
 
 const ROW = 28;
 
@@ -61,6 +62,37 @@ describe('nearestEnabledIndex', () => {
   it('stays on the committed row when no row is enabled', () => {
     const none = HOURS.map(option => ({...option, isDisabled: true}));
     expect(nearestEnabledIndex(none, 3, 10)).toBe(10);
+  });
+});
+
+describe('restingStep', () => {
+  // A year of months; only January and February in the bounds.
+  const MONTHS: WheelOption[] = Array.from({length: 12}, (_, month) => ({
+    value: month,
+    label: String(month + 1),
+    isDisabled: month > 1,
+  }));
+
+  it('stays on an enabled row', () => {
+    expect(restingStep(MONTHS, 1, 0, true)).toBe(0);
+  });
+
+  it('turns the shorter way round a loop, across its seam', () => {
+    // December: January is one row on, February ten rows back.
+    expect(restingStep(MONTHS, 11, 0, true)).toBe(1);
+    // Without the loop, the list ends at December: back to February.
+    expect(restingStep(MONTHS, 11, 0)).toBe(-10);
+  });
+
+  it('breaks a tie around the loop toward the committed row', () => {
+    // Only January and July enabled: October is three rows from July (back)
+    // and from January (on, across the seam).
+    const TWO = MONTHS.map(option => ({
+      ...option,
+      isDisabled: option.value !== 0 && option.value !== 6,
+    }));
+    expect(restingStep(TWO, 9, 0, true)).toBe(3);
+    expect(restingStep(TWO, 9, 6, true)).toBe(-3);
   });
 });
 

@@ -115,7 +115,7 @@ import {
   type WheelCurve,
   type WheelLayout,
 } from './wheelPhysics';
-import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+import {restingStep, type WheelProps} from './wheelOptions';
 
 /** Today's row pitch, px: the touch column draws today's look (wheelLook.ts). */
 const ROW_HEIGHT = WHEEL_ROW_PITCH;
@@ -420,13 +420,20 @@ export function PickerWheel({
       );
       // Resting on the committed row is not a stop to correct
       // (component:DateInput FR13): a committed value outside the bounds stays
-      // until a person moves the wheel off it, as in the scrolling column.
-      const resolved =
+      // until a person moves the wheel off it, as in the scrolling column. On
+      // a loop the nearest enabled row is measured around the seam, and the
+      // wheel turns the shorter way to it.
+      const step =
         row === committed
-          ? row
-          : nearestEnabledIndex(current.options, row, Math.max(0, committed));
-      if (resolved !== row && current.options[resolved] != null) {
-        const target = position + (resolved - row);
+          ? 0
+          : restingStep(
+              current.options,
+              row,
+              Math.max(0, committed),
+              Boolean(current.layout.looping),
+            );
+      if (step !== 0) {
+        const target = position + step;
         move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
@@ -560,6 +567,21 @@ export function PickerWheel({
     paintRow,
     move,
   ]);
+
+  // A short loop's mark is painted, never rendered, so a change in which
+  // rows are enabled (the bounds moved under a resting wheel) repaints the
+  // band's row in its new colour.
+  useIsomorphicLayoutEffect(() => {
+    if (
+      copies === 1 ||
+      !isActive ||
+      dragRef.current != null ||
+      motion.isMoving()
+    ) {
+      return;
+    }
+    paintRow(nearestIndex(motion.offset(), layout));
+  }, [options, copies, isActive, layout, motion, paintRow]);
 
   // A hidden wheel keeps no motion running and holds no drag. Hiding it
   // mid-drag ends the pan without calling its listener (the toggle's owner
@@ -837,10 +859,17 @@ export function PickerWheel({
       }
       // The first enabled row from the target onwards; failing that (the
       // target is past the bounds), the enabled row nearest it on the way
-      // back, short of the row it started from.
+      // back, short of the row it started from. On a loop the search onwards
+      // stops half a turn from the start (or at the target, when the key
+      // moves further): past it a row is nearer the other way round, so a
+      // key never turns the long way round onto it, as a rest never does.
+      const reach = Math.max(Math.abs(delta), Math.floor(count / 2));
       let found: number | null = null;
       for (let index = next, tries = 0; tries < count; tries++, index += step) {
         if (!looping && (index < 0 || index >= count)) {
+          break;
+        }
+        if (looping && Math.abs(index - from) > reach) {
           break;
         }
         if (isEnabled(index)) {
