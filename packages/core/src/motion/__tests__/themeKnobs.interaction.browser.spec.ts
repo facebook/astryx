@@ -146,7 +146,8 @@ test('a spring started in a nested theme plays at the enclosing theme\u2019s tem
     async () =>
       new Promise<{nested: number; loose: number; started: boolean}>(
         resolve => {
-          const {createAnimator, END_HOLD_MS, springs} = window.ThemeKnobs;
+          const {createMotionAnimator, END_HOLD_MS, springs} =
+            window.ThemeKnobs;
           // A busy main thread: a large tree whose layout is dirty when the
           // springs start.
           const filler = document.createElement('div');
@@ -163,7 +164,7 @@ test('a spring started in a nested theme plays at the enclosing theme\u2019s tem
             /** A spring's settle time: its animation, less the end hold. */
             const start = (id: string) => {
               const element = document.getElementById(id) as HTMLElement;
-              void createAnimator(element).animate(
+              void createMotionAnimator(element).animate(
                 {x: 100},
                 {spring: springs.menuOpen},
               );
