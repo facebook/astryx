@@ -378,7 +378,7 @@ jobs:
         if: steps.scope.outputs.tooling_only != 'true'
 
       - name: Validate spec records
-        if: steps.scope.outputs.spec_only == 'true'
+        if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')
         run: node scripts/check-knowledge.mjs
 
       - name: Install Playwright
@@ -1437,14 +1437,31 @@ jobs:
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify evidence checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
@@ -1452,22 +1469,26 @@ jobs:
       # Dependencies are installed later, together with the Playwright browser,
       # because the analysis artifact has to be downloaded first.
       - name: Setup Node and pnpm
+        if: steps.scope.outputs.has_components == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: steps.scope.outputs.has_components == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # Fails on axe violations not present in the checked-in baseline
@@ -1476,7 +1497,7 @@ jobs:
       # Release checks scan the full roster in pr-a11y-shard and gate it in
       # pr-a11y-audit; this job keeps the scoped PR audit and the guards.
       - name: Run accessibility audit
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         run: |
           SCOPE_ARGS=()
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
@@ -1497,7 +1518,7 @@ jobs:
       # if: always() so the report artifact (and the PR comment built from it)
       # still exists when the gate above fails.
       - name: Upload a11y artifact
-        if: always() && github.event_name == 'pull_request'
+        if: (always() && github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report
@@ -1510,6 +1531,7 @@ jobs:
       # and this Chromium probe is the guard. Runs after the upload above so an
       # a11y failure still publishes its report.
       - name: Run modal close visibility guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
       # A public component var can be documented, read, and emitted into the
@@ -1520,6 +1542,7 @@ jobs:
       # checkable. The source-side wiring half lives in
       # packages/cli/foundation/discovery/theming-targets.test.mjs.
       - name: Run theme var reachability guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
 
       # A story play function is where geometry assertions live (they need
@@ -1530,6 +1553,7 @@ jobs:
       # throw. Hosted here with the sibling Chromium guards because pr-a11y is
       # the blocking job that runs whenever components change.
       - name: Run story play guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
   # Browser accessibility specs get their own budget. The scoped axe sweep and
@@ -1544,35 +1568,56 @@ jobs:
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify evidence checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
+        if: steps.scope.outputs.has_components == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: steps.scope.outputs.has_components == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # The runner runs every spec playwright.config.ts matches whose own
@@ -1580,7 +1625,7 @@ jobs:
       # routing lines come from the merge commit these steps come from, so an
       # older PR head is routed by current policy while specs run at that head.
       - name: Run browser accessibility specs
-        if: ${{ !cancelled() }}
+        if: (!cancelled()) && steps.scope.outputs.has_components == 'true'
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -1593,7 +1638,7 @@ jobs:
           node "$runner"
 
       - name: Upload browser accessibility evidence
-        if: ${{ !cancelled() }}
+        if: (!cancelled()) && steps.scope.outputs.has_components == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -2054,13 +2099,13 @@ jobs:
           install: 'false'
 
       - name: Download analysis artifact
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
+        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
@@ -2069,7 +2114,7 @@ jobs:
       # The artifact carries the themes and the Core dist they import, built
       # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
-        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
+        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -2079,7 +2124,7 @@ jobs:
       # Only a complete set: the gate refuses a partial or mismatched one, and
       # without any it scouts inline as before.
       - name: Download scout shards
-        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success'
+        if: ((github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           pattern: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-*
@@ -2352,28 +2397,32 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify RTL checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # The D7 native-size regression test lives on the PR head. A head cut
@@ -2382,7 +2431,7 @@ jobs:
       # so and passes; a head that has the file always runs it, and a failure
       # fails. ci-rtl-d7.test.mjs keeps the path pointing at a real file.
       - name: Verify D7 native target regression
-        if: matrix.package == 'core' && matrix.part == 1
+        if: (matrix.package == 'core' && matrix.part == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         env:
           ASTRYX_RTL_BROWSER: '1'
         run: |
@@ -2399,6 +2448,7 @@ jobs:
       # step can run. An ordinary harness-only change uses the bounded routing
       # smoke scope.
       - name: Resolve RTL shard scope
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         id: rtl-scope
         run: |
           node .github/scripts/rtl-shard-scope.mjs \
@@ -2412,7 +2462,7 @@ jobs:
 
       - name: Run RTL audit
         id: rtl
-        if: steps.rtl-scope.outputs.should_run == 'true'
+        if: (steps.rtl-scope.outputs.should_run == 'true') && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         continue-on-error: true
         run: |
           PACKAGE=${{ matrix.package }}
@@ -2436,7 +2486,7 @@ jobs:
             "${FILTER_ARGS[@]}"
 
       - name: Require completed RTL shard report
-        if: always()
+        if: always() && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: |
           SCOPE_OUTCOME="${{ steps.rtl-scope.outcome }}"
           SHOULD_RUN="${{ steps.rtl-scope.outputs.should_run }}"
@@ -2470,14 +2520,14 @@ jobs:
           fi
 
       - name: Write scorecard summary
-        if: always() && steps.rtl-scope.outputs.should_run == 'true' && matrix.parts == 1
+        if: (always() && steps.rtl-scope.outputs.should_run == 'true' && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: |
           node .github/scripts/rtl-scorecard-summary.mjs \
             --report rtl-audit-report.json \
             --scope "${{ steps.rtl-scope.outputs.components }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL shard evidence
-        if: always() && matrix.parts == 1
+        if: (always() && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-${{ matrix.package }}
@@ -2488,7 +2538,7 @@ jobs:
           retention-days: 1
 
       - name: Upload RTL part
-        if: always() && matrix.parts > 1
+        if: (always() && matrix.parts > 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}

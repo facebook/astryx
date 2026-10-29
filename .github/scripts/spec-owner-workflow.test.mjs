@@ -185,6 +185,11 @@ describe('spec-only workflow contract', () => {
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
+    // It validates on the spec-only lane, and whenever its own scope step
+    // could not decide, so an undecided lane never skips validation.
+    expect(docsiteJob.slice(validate, validate + 200)).toContain(
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
 
     const heavy = docsiteJob.slice(
       docsiteJob.indexOf('- name: Install Playwright'),
