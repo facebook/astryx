@@ -6,12 +6,6 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 
-import {
-  probeVercelPreview,
-  resolveVercelPreview,
-  waitForPreviewRoutes,
-} from './vercel-preview.mjs';
-
 export const PR_ANALYSIS_MARKER = '<!-- astryx-pr-analysis -->';
 
 function headMarker(sha) {
@@ -25,6 +19,31 @@ const GENERATOR = path.resolve(
   '..',
   'generate-pr-comment.js',
 );
+
+// Vercel keeps a branch alias, `<project>-git-<branch>-<team>.vercel.app`
+// (`git-fork-<owner>-<branch>` for a fork), that serves the branch's latest
+// deployment. It is known before any deployment finishes, so the report links
+// it at once. A label past DNS's 63 characters is shortened by Vercel with a
+// hash no one can compute, and then the report links nothing.
+const VERCEL_PROJECT = 'astryx';
+const VERCEL_TEAM = 'fbopensource';
+
+function vercelSlug(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function branchPreviewOrigin({headRef, headRepository, baseRepository}) {
+  const owner = headRepository.split('/')[0];
+  const branch =
+    headRepository === baseRepository
+      ? vercelSlug(headRef)
+      : `fork-${vercelSlug(owner)}-${vercelSlug(headRef)}`;
+  const label = `${VERCEL_PROJECT}-git-${branch}-${VERCEL_TEAM}`;
+  return label.length <= 63 ? `https://${label}.vercel.app` : null;
+}
 
 function refuse(message) {
   throw new Error(`PR preview refused: ${message}`);
@@ -403,8 +422,7 @@ function previewState(storybook, sandbox) {
   return 'none';
 }
 
-// Both preview links come from one verified exact-head Vercel deployment.
-// No branch-backed preview is considered a link source.
+// Both preview links come from the branch's Vercel alias.
 function safeCurrentBody({
   identity,
   runUrl,
@@ -487,9 +505,6 @@ export async function reconcilePrComment({
   visualPath = 'trusted-visual/verdict.json',
   createIfMissing = true,
   fallbackMessage,
-  lookupPreview = resolveVercelPreview,
-  probePreview = probeVercelPreview,
-  probeWaitMs = 90_000,
   generator = GENERATOR,
   execute = execFileSync,
 }) {
@@ -514,34 +529,8 @@ export async function reconcilePrComment({
     identity,
     core,
   });
-  const candidateOrigin =
-    createIfMissing && !identity.draft
-      ? await lookupPreview({
-          github,
-          owner,
-          repo,
-          prNumber: identity.prNumber,
-          headSha: identity.headSha,
-        })
-      : null;
-  const routesReady =
-    candidateOrigin &&
-    (await waitForPreviewRoutes(candidateOrigin, {
-      probe: probePreview,
-      waitMs: probeWaitMs,
-    }));
   const previewOrigin =
-    routesReady &&
-    (await lookupPreview({
-      github,
-      owner,
-      repo,
-      prNumber: identity.prNumber,
-      headSha: identity.headSha,
-      waitMs: 0,
-    })) === candidateOrigin
-      ? candidateOrigin
-      : null;
+    createIfMissing && !identity.draft ? branchPreviewOrigin(identity) : null;
   const storybook = previewOrigin !== null;
   const sandbox = storybook;
   const comments = await allComments(github, owner, repo, identity.prNumber);
@@ -610,10 +599,9 @@ export async function reconcilePrComment({
     });
   }
 
-  // Vercel readiness can take minutes after the source run finishes. Confirm
-  // the reported attempt's identity again, and stand down if a newer attempt
-  // of the run has started since: an earlier attempt's report must not replace
-  // the latest attempt's.
+  // Rendering takes a moment. Confirm the reported attempt's identity again,
+  // and stand down if a newer attempt of the run has started since: an
+  // earlier attempt's report must not replace the latest attempt's.
   if (
     (await confirmOrStandDown({
       github,
@@ -626,20 +614,6 @@ export async function reconcilePrComment({
     return {action: 'none', body: null, identity};
   }
   if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
-    return {action: 'none', body: null, identity};
-  }
-  if (
-    previewOrigin &&
-    (await lookupPreview({
-      github,
-      owner,
-      repo,
-      prNumber: identity.prNumber,
-      headSha: identity.headSha,
-      waitMs: 0,
-    })) !== previewOrigin
-  ) {
-    core.info('A newer exact-head deployment superseded this preview.');
     return {action: 'none', body: null, identity};
   }
   if (botComment) {
@@ -661,126 +635,4 @@ export async function reconcilePrComment({
   });
   core.info(`Posted PR Analysis Report on #${identity.prNumber}.`);
   return {action: 'created', body, identity};
-}
-
-export async function reconcileEarlyPreviewComment({
-  github,
-  owner,
-  repo,
-  prNumber,
-  headSha,
-  origin,
-  lookupPreview = resolveVercelPreview,
-  probePreview = probeVercelPreview,
-  probeWaitMs = 90_000,
-}) {
-  const currentOrigin = await lookupPreview({
-    github,
-    owner,
-    repo,
-    prNumber,
-    headSha,
-    waitMs: 0,
-  });
-  if (
-    currentOrigin !== origin ||
-    !(await waitForPreviewRoutes(origin, {
-      probe: probePreview,
-      waitMs: probeWaitMs,
-    }))
-  )
-    return {action: 'none'};
-
-  const comments = await allComments(github, owner, repo, prNumber);
-  const existing = comments.find(
-    comment =>
-      comment.user?.type === 'Bot' &&
-      comment.body?.includes(PR_ANALYSIS_MARKER),
-  );
-  const links = `[View Storybook for this PR](${origin}/storybook/) · [View Sandbox for this PR](${origin}/sandbox/)`;
-  const marker = headMarker(headSha);
-  const legacySandboxURL = `https://${owner}.github.io/${repo}/pr/${prNumber}/sandbox/`;
-  let body = `## PR Analysis Report\n${PR_ANALYSIS_MARKER}\n${marker}\n\n> **Previews ready:** Storybook and Sandbox were built with this PR's docsite. CI evidence will be added when available.\n\n${links}\n`;
-  if (existing?.body.includes(marker)) {
-    if (
-      existing.body.includes(`${origin}/storybook/`) &&
-      existing.body.includes(`${origin}/sandbox/`)
-    ) {
-      return {action: 'unchanged'};
-    }
-    const oldOrigins = new Set(
-      existing.body.match(
-        /https:\/\/astryx-[a-z0-9]{9}-fbopensource\.vercel\.app/g,
-      ) ?? [],
-    );
-    if (
-      oldOrigins.size === 1 &&
-      existing.body.includes('View Storybook for this PR')
-    ) {
-      // Same-head redeploy: preserve existing CI/a11y/visual content and
-      // change only the exact-head preview URLs.
-      body = existing.body
-        .replaceAll([...oldOrigins][0], origin)
-        .replaceAll(legacySandboxURL, `${origin}/sandbox/`);
-      if (!body.includes(`${origin}/sandbox/`)) {
-        body = body.replace(
-          marker,
-          `${marker}\n\n[View Sandbox for this PR](${origin}/sandbox/)`,
-        );
-      }
-    } else if (!existing.body.includes('View Storybook for this PR')) {
-      // CI may finish before Vercel; add links to the current-head report.
-      body = existing.body
-        .replace(/^> \*\*Preview availability:\*\*[^\n]*\n\n/m, '')
-        .replace('The exact-head preview is not available yet.', '')
-        .replace(marker, `${marker}\n\n${links}`);
-    }
-  }
-
-  // Replace older same-head preview URLs without dropping CI, a11y, or visual
-  // evidence in the surrounding report.
-  body = body
-    .replaceAll(legacySandboxURL, `${origin}/sandbox/`)
-    .replace(/^> \*\*Preview availability:\*\*[^\n]*\n\n/m, '');
-
-  const {data: current} = await github.rest.pulls.get({
-    owner,
-    repo,
-    pull_number: prNumber,
-  });
-  if (
-    current.state !== 'open' ||
-    current.draft ||
-    current.head?.sha !== headSha
-  ) {
-    return {action: 'none'};
-  }
-  if (
-    (await lookupPreview({
-      github,
-      owner,
-      repo,
-      prNumber,
-      headSha,
-      waitMs: 0,
-    })) !== origin
-  ) {
-    return {action: 'none'};
-  }
-  if (existing) {
-    await github.rest.issues.updateComment({
-      owner,
-      repo,
-      comment_id: existing.id,
-      body,
-    });
-    return {action: 'updated', body};
-  }
-  await github.rest.issues.createComment({
-    owner,
-    repo,
-    issue_number: prNumber,
-    body,
-  });
-  return {action: 'created', body};
 }

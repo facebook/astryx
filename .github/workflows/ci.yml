@@ -1049,9 +1049,8 @@ jobs:
       - name: Write PR comment metadata
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         run: |
-          # PR Comment reads this exact-run analysis. Storybook preview links
-          # come from the exact-head Vercel deployment; the Sandbox artifact
-          # remains on Pages until its separate migration.
+          # PR Comment reads this exact-run analysis. Storybook and Sandbox
+          # preview links are the branch's Vercel alias.
           cat > pr-meta.json <<EOF
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
@@ -1084,6 +1083,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      actions: read
       contents: read
       pull-requests: read
     steps:
@@ -1137,11 +1137,41 @@ jobs:
           echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
           echo "found=true" >> "$GITHUB_OUTPUT"
 
-      # Core and its build tooling always build, because the other component
-      # packages depend on them; another package builds only when the PR
-      # changes its source.
-      - name: Build the merge base's component packages
+      # Main keeps each commit's package builds for 14 days. A merge base on
+      # main within that window is measured from them, with no install or
+      # build.
+      - name: Find main's build of the merge base
+        id: cached
+        continue-on-error: true
         if: (steps.merge-base.outputs.found == 'true') && steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
+        uses: actions/github-script@v9
+        env:
+          BASE_SHA: ${{ steps.merge-base.outputs.sha }}
+        with:
+          retries: 3
+          script: |
+            const name = `dists-main-${process.env.BASE_SHA}`;
+            const {data} = await github.rest.actions.listArtifactsForRepo({...context.repo, name, per_page: 1});
+            const artifact = data.artifacts.find(candidate => !candidate.expired);
+            core.setOutput('run_id', artifact ? String(artifact.workflow_run.id) : '');
+            core.info(artifact ? `Using ${name} from run ${artifact.workflow_run.id}.` : `No ${name}; building the merge base.`);
+
+      - name: Download main's build of the merge base
+        id: download
+        if: steps.cached.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: dists-main-${{ steps.merge-base.outputs.sha }}
+          run-id: ${{ steps.cached.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: .size-base/packages
+
+      # Without a kept build: core and its build tooling always build, because
+      # the other component packages depend on them; another package builds
+      # only when the PR changes its source.
+      - name: Build the merge base's component packages
+        if: (steps.merge-base.outputs.found == 'true') && steps.download.outcome != 'success' && steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
         working-directory: .size-base
         env:
           BASE_SHA: ${{ steps.merge-base.outputs.sha }}
@@ -1365,8 +1395,8 @@ jobs:
           esac
 
   # CI keeps Storybook's static artifact for visual, accessibility, and RTL
-  # checks. The exact-head Vercel deployment independently hosts both human
-  # Storybook and Sandbox previews; no branch-backed preview is published.
+  # checks. Vercel independently hosts both human Storybook and Sandbox
+  # previews; the PR report links them through the branch's alias.
 
   # Accessibility audit
   # Skipped when no components changed. Depends only on build-storybook, so it

@@ -230,6 +230,30 @@ describe('Node-tooling CI routing', () => {
     );
   });
 
+  it("measures the merge base from main's kept build, building it only without one", () => {
+    const main = load('.github/workflows/deploy.yml');
+    const keep = step(
+      main.jobs.typecheck,
+      "Keep this commit's package builds for PR size reports",
+    );
+    expect(keep.with.name).toBe(
+      'dists-main-${{ needs.main-commit.outputs.sha }}',
+    );
+    const job = ci.jobs['size-base'];
+    expect(job.permissions.actions).toBe('read');
+    expect(
+      step(job, "Find main's build of the merge base")['continue-on-error'],
+    ).toBe(true);
+    const download = step(job, "Download main's build of the merge base");
+    expect(download['continue-on-error']).toBe(true);
+    expect(download.with.name).toBe(
+      'dists-main-${{ steps.merge-base.outputs.sha }}',
+    );
+    expect(step(job, "Build the merge base's component packages").if).toContain(
+      "steps.download.outcome != 'success'",
+    );
+  });
+
   it('keeps removed preview publication out of the tooling lane', () => {
     expect(prComment.jobs.resolve.outputs.tooling_only).toContain(
       'steps.identity.outputs.tooling_only',
