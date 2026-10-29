@@ -251,7 +251,9 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
     });
     for (const name of ['--duration-fast', '--duration-medium-max']) {
       expect(
-        theme.tokens[name.replace('--duration-', '--pre-tempo-duration-')],
+        theme.tokens[
+          name.replace('--duration-', '--_astryx-pre-tempo-duration-')
+        ],
       ).toBe(theme.tokens[name]);
     }
   });
@@ -261,7 +263,7 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
       name: 'ExplicitNested',
       tokens: {'--duration-slow': '800ms'},
     });
-    expect(theme.tokens['--pre-tempo-duration-slow']).toBe('800ms');
+    expect(theme.tokens['--_astryx-pre-tempo-duration-slow']).toBe('800ms');
   });
 
   it('an adaptation rule\u2019s own durations write their copies', () => {
@@ -278,7 +280,7 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
         },
       }),
     ).component;
-    expect(css).toContain('--pre-tempo-duration-medium: 300ms');
+    expect(css).toContain('--_astryx-pre-tempo-duration-medium: 300ms');
   });
 });
 
@@ -326,6 +328,29 @@ describe('an explicit --ease-standard (spec:AST-108 FR2)', () => {
       expect(theme.tokens['--ease-move'], JSON.stringify(motion)).toBe(curve);
       expect(resolveThemeMotion(theme).easings['--ease-entrance']).toBe(curve);
     }
+    // A child, and a rule, that set 'standard' match the --ease-standard
+    // beneath them: the base's, or the theme's.
+    const base = defineTheme({
+      name: 'EaseBase',
+      tokens: {'--ease-standard': curve},
+    });
+    const standard = {character: 'standard' as const};
+    const child = defineTheme({
+      name: 'EaseChild',
+      extends: base,
+      motion: standard,
+    });
+    const ruled = defineTheme({
+      name: 'EaseRule',
+      tokens: {'--ease-standard': curve},
+      adaptations: {
+        rules: [{when: {pointer: 'coarse'}, value: {motion: standard}}],
+      },
+    });
+    for (const tokens of [child.tokens, ruled.__adaptationRules?.[0]?.tokens]) {
+      expect(tokens?.['--ease-entrance']).toBe(curve);
+      expect(tokens?.['--ease-move']).toBe(curve);
+    }
   });
 });
 
@@ -353,8 +378,8 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
     'at tempo %s the pre-tempo durations stay today\u2019s while the tokens scale',
     tempo => {
       const tokens = expandThemeMotion({tempo});
-      expect(tokens['--pre-tempo-duration-slow-min']).toBe('730ms');
-      expect(tokens['--pre-tempo-duration-medium-max']).toBe('550ms');
+      expect(tokens['--_astryx-pre-tempo-duration-slow-min']).toBe('730ms');
+      expect(tokens['--_astryx-pre-tempo-duration-medium-max']).toBe('550ms');
       expect(tokens['--duration-slow-min']).toBe(
         `${Math.round(730 * tempo)}ms`,
       );
@@ -364,7 +389,7 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
   it('a duration scale still times the loops, and an explicit token too', () => {
     const scale = {fast: 100, medium: 250, ratio: 0.75};
     const tokens = expandThemeMotion({...scale, tempo: 1.5});
-    expect(tokens['--pre-tempo-duration-medium-max']).toBe(
+    expect(tokens['--_astryx-pre-tempo-duration-medium-max']).toBe(
       expandMotionScale(scale)['--duration-medium-max'],
     );
     const theme = defineTheme({
@@ -372,22 +397,65 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
       motion: {tempo: 1.5},
       tokens: {'--duration-medium-max': '600ms'},
     });
-    expect(theme.tokens['--pre-tempo-duration-medium-max']).toBe('600ms');
+    expect(theme.tokens['--_astryx-pre-tempo-duration-medium-max']).toBe(
+      '600ms',
+    );
+  });
+
+  it('names every property it writes beside the core tokens privately, with --_astryx- (architecture:theme-tokens INV1)', () => {
+    const core = new Set([
+      ...Object.keys(durationDefaults),
+      ...Object.keys(easeDefaults),
+    ]);
+    const tokens = expandThemeMotion({
+      fast: 100,
+      medium: 250,
+      ratio: 0.75,
+      tempo: 1.2,
+      character: 'crisp',
+    });
+    const extra = Object.keys(tokens).filter(name => !core.has(name));
+    expect(extra.length).toBeGreaterThan(0);
+    for (const name of extra) {
+      expect(name).toMatch(/^--_astryx-/);
+    }
   });
 
   it('Spinner and Skeleton read the pre-tempo duration first', () => {
     const read = (file: string) =>
       fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     expect(read('Spinner/Spinner.tsx')).toContain(
-      "`var(--pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`",
+      "`var(--_astryx-pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`",
     );
     expect(read('Skeleton/Skeleton.tsx')).toContain(
-      "`var(--pre-tempo-duration-medium-max, ${durationVars['--duration-medium-max']})`",
+      "`var(--_astryx-pre-tempo-duration-medium-max, ${durationVars['--duration-medium-max']})`",
     );
   });
 });
 
 describe('an extending theme inherits motion field by field (spec:AST-108 FR5)', () => {
+  it('a child that sets no easing keeps its base\u2019s --ease-standard, an explicit one included', () => {
+    const base = defineTheme({
+      name: 'EasingBase',
+      motion: {fast: 150, medium: 300, ratio: 0.75, easing: 'ease-in'},
+      tokens: {'--ease-standard': 'linear'},
+    });
+    expect(base.tokens['--ease-standard']).toBe('linear');
+    const child = defineTheme({
+      name: 'EasingChild',
+      extends: base,
+      motion: {tempo: 1.2},
+    });
+    expect(child.tokens['--ease-standard']).toBe('linear');
+    // A child that sets its own easing generates it.
+    const own = defineTheme({
+      name: 'EasingOwn',
+      extends: base,
+      motion: {fast: 150, medium: 300, ratio: 0.75, easing: 'ease-out'},
+    });
+    expect(own.tokens['--ease-standard']).toBe('ease-out');
+  });
+
   it('a grandchild that adds only a knob keeps the slow band its parent inherited', () => {
     const base = defineTheme({
       name: 'SlowBase',
@@ -506,5 +574,30 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       `${Math.round(175 * 0.8)}ms`,
     );
     expect(crisper.tokens['--ease-entrance']).toBe(CHARACTER_EASE.crisp);
+  });
+});
+
+describe('the knobs the springs read from CSS (spec:AST-108 FR3, FR5)', () => {
+  it('a theme or a rule that sets a character writes it beside the tempo', () => {
+    const character = '--_astryx-motion-character';
+    const tempo = '--_astryx-motion-tempo';
+    expect(expandThemeMotion({character: 'expressive'})[character]).toBe(
+      'expressive',
+    );
+    expect(expandThemeMotion({character: 'standard'})[character]).toBe(
+      'standard',
+    );
+    expect(expandThemeMotion({tempo: 1.2})[character]).toBeUndefined();
+    expect(expandThemeMotion({tempo: 1.2})[tempo]).toBe('1.2');
+    expect(expandThemeMotion({})[character]).toBeUndefined();
+    const ruled = defineTheme({
+      name: 'RuleKnobs',
+      adaptations: {
+        rules: [
+          {when: {pointer: 'coarse'}, value: {motion: {character: 'crisp'}}},
+        ],
+      },
+    });
+    expect(ruled.__adaptationRules?.[0]?.tokens?.[character]).toBe('crisp');
   });
 });

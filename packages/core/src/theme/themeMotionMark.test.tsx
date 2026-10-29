@@ -9,9 +9,7 @@
  *   hydration) and, for the root theme, `<html>`, so portaled layers reduce
  *   their motion; `'system'` marks nothing; an ancestor's mark reaches every
  *   nested theme, whose component CSS stays reduced; a child theme inherits
- *   the setting from the theme it extends; the mark leaves with the theme; a theme that
- *   sets tempo or character writes them, for the animator, on the same
- *   elements
+ *   the setting from the theme it extends; the mark leaves with the theme
  * @position Testing; validates Theme.tsx's use of themeMotion.ts
  */
 
@@ -21,6 +19,7 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
 import {generateAdaptationCSS} from './generateThemeRules';
 import {Theme} from './Theme';
+import {REDUCED_MOTION_PROPERTY} from './themeMotion';
 
 const MARK = 'data-astryx-reduced-motion';
 
@@ -47,6 +46,41 @@ describe('the reduced-motion mark (spec:AST-108 FR6)', () => {
     expect(document.documentElement.hasAttribute(MARK)).toBe(true);
     unmount();
     expect(document.documentElement.hasAttribute(MARK)).toBe(false);
+  });
+
+  it('the mark carries its custom property, on the wrapper and at the root on <html>, so styles that cannot key a selector on it read it (FR6)', () => {
+    const {container, unmount} = render(
+      <Theme theme={always}>
+        <p>content</p>
+      </Theme>,
+    );
+    const wrapper = container.querySelector('[data-astryx-theme]');
+    expect(wrapper).not.toBeNull();
+    expect(
+      getComputedStyle(wrapper as Element)
+        .getPropertyValue(REDUCED_MOTION_PROPERTY)
+        .trim(),
+    ).toBe('1');
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('1');
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('');
+    const {container: plain} = render(
+      <Theme theme={system}>
+        <p>content</p>
+      </Theme>,
+    );
+    expect(
+      getComputedStyle(plain.querySelector('[data-astryx-theme]') as Element)
+        .getPropertyValue(REDUCED_MOTION_PROPERTY)
+        .trim(),
+    ).toBe('');
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('');
   });
 
   it("'system' marks nothing", () => {
@@ -163,68 +197,5 @@ describe('the reduced-motion mark (spec:AST-108 FR6)', () => {
     );
     expect(marked).toContain(`${MARK}=""`);
     expect(plain).not.toContain(MARK);
-  });
-});
-
-describe('the motion knobs the animator reads (spec:AST-108 FR3)', () => {
-  const TEMPO = 'data-astryx-motion-tempo';
-  const CHARACTER = 'data-astryx-motion-character';
-  const html = () => document.documentElement;
-
-  afterEach(() => {
-    html().removeAttribute(TEMPO);
-    html().removeAttribute(CHARACTER);
-  });
-
-  it('a theme that sets tempo or character writes them on its wrapper and, at the root, <html>; they leave with the theme', () => {
-    const lively = defineTheme({
-      name: 'KnobsLively',
-      motion: {tempo: 1.2, character: 'crisp'},
-    });
-    const {container, unmount} = render(
-      <Theme theme={lively}>
-        <p>content</p>
-      </Theme>,
-    );
-    const wrapper = container.querySelector('[data-astryx-theme]');
-    expect(wrapper?.getAttribute(TEMPO)).toBe('1.2');
-    expect(wrapper?.getAttribute(CHARACTER)).toBe('crisp');
-    expect(html().getAttribute(TEMPO)).toBe('1.2');
-    expect(html().getAttribute(CHARACTER)).toBe('crisp');
-    unmount();
-    expect(html().hasAttribute(TEMPO)).toBe(false);
-    expect(html().hasAttribute(CHARACTER)).toBe(false);
-  });
-
-  it('writes tempo clamped, and nothing for a theme that sets neither or only a duration scale', () => {
-    const knobsOf = (motion: Parameters<typeof defineTheme>[0]['motion']) => {
-      const wrapper = render(
-        <Theme theme={defineTheme({name: 'KnobsOf', motion})}>
-          <p>content</p>
-        </Theme>,
-      ).container.querySelector('[data-astryx-theme]');
-      return [wrapper?.getAttribute(TEMPO), wrapper?.getAttribute(CHARACTER)];
-    };
-    expect(knobsOf({tempo: 3})).toEqual(['1.5', null]);
-    expect(knobsOf({character: 'standard'})).toEqual([null, null]);
-    expect(knobsOf({fast: 100, medium: 250, ratio: 0.75})).toEqual([
-      null,
-      null,
-    ]);
-    expect(knobsOf(undefined)).toEqual([null, null]);
-  });
-
-  it('the server renders them, so hydration changes nothing', () => {
-    const markup = renderToString(
-      <Theme
-        theme={defineTheme({
-          name: 'KnobsServer',
-          motion: {tempo: 0.8, character: 'expressive'},
-        })}>
-        <p>content</p>
-      </Theme>,
-    );
-    expect(markup).toContain(`${TEMPO}="0.8"`);
-    expect(markup).toContain(`${CHARACTER}="expressive"`);
   });
 });

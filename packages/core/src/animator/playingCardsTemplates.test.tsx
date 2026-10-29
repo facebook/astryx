@@ -151,3 +151,12 @@ describe.each(EXAMPLES)('$name', ({mount, card, announced}) => {
     });
   });
 });
+
+describe('the createAnimator example', () => {
+  it('colours its card from the theme\u2019s surface and text tokens, so it reads in a dark theme', () => {
+    render(<AnimatorPlayingCardsVanilla />);
+    const {style} = screen.getByLabelText('Top card');
+    expect(style.backgroundColor).toBe('var(--color-background-surface)');
+    expect(style.color).toBe('var(--color-text-primary)');
+  });
+});

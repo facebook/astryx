@@ -296,9 +296,11 @@ export interface DefineThemeInput<
    *   the theme's CSS durations and the springs of its touch motion alike.
    * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
    *   entrance and move curves and how lively a spring is; exits and fades
-   *   never overshoot.
-   * - `reducedMotion` (`'system'` or `'always'`) reduces motion for
-   *   everyone when `'always'`; nothing loosens a person's own setting.
+   *   keep their measured bounce.
+   * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
+   *   for everyone; so far the theme's motion-keyed adaptation rules, the
+   *   press release fade and the animator follow it, not yet components'
+   *   other Reduce Motion styles. Nothing loosens a person's own setting.
    *
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over
@@ -671,22 +673,30 @@ const SLOW_BAND = [
 ] as const;
 
 /**
- * The base's slow-band tokens a child keeps (spec:AST-108 FR5): a child that
- * sets no `slow` of its own regenerates only the fast and medium bands, so an
- * inherited slow band stays as the base's tokens hold it, at the ratio it was
- * made with, however many themes down it is inherited.
+ * The base's tokens for the duration-scale fields a child leaves unset
+ * (spec:AST-108 FR5, field by field): a child that sets no `slow` of its own
+ * regenerates only the fast and medium bands, so an inherited slow band stays
+ * as the base's tokens hold it, at the ratio it was made with; and a child
+ * that sets no `easing` keeps the base's `--ease-standard`, an explicit one
+ * included, however many themes down either is inherited.
  */
-function inheritedSlowBand(
+function inheritedScaleTokens(
   base: DefinedTheme,
   baseMotion: ThemeMotionConfig,
   own: ThemeMotionConfig,
 ): Partial<Record<string, TokenValue>> | undefined {
-  if (!('slow' in baseMotion) || 'slow' in own) {
+  const names = [
+    ...('slow' in baseMotion && !('slow' in own) ? SLOW_BAND : []),
+    ...('easing' in baseMotion && !('easing' in own)
+      ? (['--ease-standard'] as const)
+      : []),
+  ];
+  if (names.length === 0) {
     return undefined;
   }
   const tokens = base.tokens as Record<string, string | undefined>;
   return Object.fromEntries(
-    SLOW_BAND.flatMap(name =>
+    names.flatMap(name =>
       tokens[name] !== undefined ? [[name, tokens[name]]] : [],
     ),
   );
@@ -732,16 +742,16 @@ export function defineTheme<
   // motion tokens come from the merged configuration. They resolve base first,
   // then generated (`architecture:theme-authoring-contract`): what the child
   // generates replaces the base's tokens, its explicit ones included. A
-  // child's motion regenerates only the bands it sets: an inherited slow band
-  // keeps the base's tokens.
+  // child's motion regenerates only what it sets: an inherited slow band and
+  // an inherited easing keep the base's tokens.
   const baseMotion = base?.__axes?.motion;
   const motion: ThemeMotionConfig | undefined =
     input.motion != null && baseMotion != null
       ? {...baseMotion, ...input.motion}
       : input.motion;
-  const slowBand =
+  const inheritedScale =
     input.motion != null && base != null && baseMotion != null
-      ? inheritedSlowBand(base, baseMotion, input.motion)
+      ? inheritedScaleTokens(base, baseMotion, input.motion)
       : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
@@ -750,8 +760,8 @@ export function defineTheme<
     motion,
     syntax: input.syntax,
     tokens:
-      slowBand != null && Object.keys(slowBand).length > 0
-        ? {...slowBand, ...input.tokens}
+      inheritedScale != null && Object.keys(inheritedScale).length > 0
+        ? {...inheritedScale, ...input.tokens}
         : input.tokens,
     components: input.components,
   };

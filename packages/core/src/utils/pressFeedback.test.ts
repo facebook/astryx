@@ -12,6 +12,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {TEMPO_RANGE, expandThemeMotion} from '../theme/themeMotion';
 import {readFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -449,6 +450,124 @@ describe('the release', () => {
     }
   });
 
+  it('under Reduce Motion a tempo may shorten the fade but never lengthens it past 200 ms (spec:AST-108 FR4)', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string): MediaQueryList =>
+        ({
+          matches: /prefers-reduced-motion:\s*reduce/.test(query),
+          media: query,
+          onchange: null,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+    const style = document.createElement('style');
+    style.textContent =
+      '.slow-row { --_astryx-motion-tempo: 1.5; } .quick-row { --_astryx-motion-tempo: 0.75; }';
+    document.head.appendChild(style);
+    try {
+      rows[0].classList.add('slow-row');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+      rows[0].classList.replace('slow-row', 'quick-row');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS * 0.75);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      rows[0].classList.remove('slow-row', 'quick-row');
+      style.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('under a theme’s reducedMotion: "always" mark, with the setting off, the cap holds too (spec:AST-108 FR4, FR6)', () => {
+    // The mark's custom property, which a marked theme's wrapper and <html>
+    // carry and every element under them inherits; jsdom only reads it where
+    // it is declared.
+    const style = document.createElement('style');
+    style.textContent =
+      '.marked-slow { --_astryx-motion-tempo: 1.5; --_astryx-reduced-motion: 1; } .marked-quick { --_astryx-motion-tempo: 0.75; --_astryx-reduced-motion: 1; }';
+    document.head.appendChild(style);
+    expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(
+      false,
+    );
+    try {
+      rows[0].classList.add('marked-slow');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+      rows[0].classList.replace('marked-slow', 'marked-quick');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS * 0.75);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      rows[0].classList.remove('marked-slow', 'marked-quick');
+      style.remove();
+    }
+  });
+
+  it('bounds the release’s tempo at its own maximum, so outside the mark the bound changes nothing', () => {
+    // The clock's 1.5 is TEMPO_RANGE.max, and every tempo a theme writes is
+    // clamped to it: a theme asking for 3 writes 1.5.
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    expect(source).toContain(
+      `min(var(--_astryx-motion-tempo, 1), ${TEMPO_RANGE.max} - ${TEMPO_RANGE.max - 1} * var(--_astryx-reduced-motion, 0))`,
+    );
+    expect(expandThemeMotion({tempo: 3})['--_astryx-motion-tempo']).toBe(
+      String(TEMPO_RANGE.max),
+    );
+  });
+
+  it('caps the stylesheet’s release fade under the mark’s custom property too', () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    // Outside Reduce Motion the tempo may reach 1.5, its own maximum; under
+    // the mark (--_astryx-reduced-motion: 1) it stops at 1.
+    expect(source).toMatch(
+      /calc\(\$\{pressConsts\.releaseMs\}ms \* min\(var\(--_astryx-motion-tempo, 1\), 1\.5 - 0\.5 \* var\(--_astryx-reduced-motion, 0\)\)\)/,
+    );
+  });
+
+  it('caps the stylesheet’s release fade the same way under Reduce Motion', () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    expect(source).toMatch(
+      /min\(\$\{pressConsts\.releaseMs\}ms, calc\(\$\{pressConsts\.releaseMs\}ms \* var\(--_astryx-motion-tempo, 1\)\)\)/,
+    );
+    expect(source).toMatch(
+      /'@media \(prefers-reduced-motion: reduce\)': PRESS_RELEASE_DURATION_REDUCED/,
+    );
+  });
+
   it('keeps the 200 ms fade without a tempo', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
@@ -468,7 +587,7 @@ describe('the release', () => {
       'utf8',
     );
     expect(source).toMatch(
-      /calc\(\$\{pressConsts\.releaseMs\}ms \* var\(--_astryx-motion-tempo, 1\)\)/,
+      /calc\(\$\{pressConsts\.releaseMs\}ms \* min\(var\(--_astryx-motion-tempo, 1\),/,
     );
   });
 

@@ -185,13 +185,16 @@ export const myTheme = defineTheme({
    * springs alike:
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
-   *     curves and how lively a spring is. Exits and fades never overshoot.
-   *   reducedMotion — 'always' reduces motion for everyone; 'system' (the
-   *     default) follows each person's setting.
+   *     curves and how lively a spring is. Exits and fades keep their
+   *     measured bounce.
+   *   reducedMotion — 'always' reduces motion for everyone (so far the
+   *     theme's motion-keyed adaptation rules, the press release fade and the
+   *     animator, not yet components' other Reduce Motion styles); 'system'
+   *     (the default) follows each person's setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
    * Finger tracking, momentum, the keyboard, hover, the press's onset delay
    * and tap flash, and busy loops never follow them; the press release fade
-   * follows tempo.
+   * follows tempo, up to the 200 ms Reduce Motion cap.
    *
    * A duration scale in ms wins over tempo for the durations it sets. Each of
    * fast/medium/slow also gets a -min and -max sibling computed with `ratio`

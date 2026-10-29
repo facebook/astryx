@@ -171,18 +171,23 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * The tempo the release fade plays at on `element`: the
- * `--_astryx-motion-tempo` its stylesheet reads, which a theme or an
- * adaptation rule with a `tempo` writes and every element under it inherits;
- * 1 without one. Read once, at the release (`spec:AST-108` FR4,
- * `component:Button` FR15); the onset delay and the tap flash stay fixed.
+ * The release fade's clock on `element`, read once, at the release, from the
+ * properties its stylesheet reads: the theme's `--_astryx-motion-tempo` and,
+ * under its `reducedMotion: 'always'` mark, `--_astryx-reduced-motion`
+ * (`spec:AST-108` FR4, FR6; `component:Button` FR15). Under Reduce Motion a
+ * tempo may shorten the fade, never lengthen it past 200 ms.
  */
-function themeTempo(element: Element): number {
-  const value = getComputedStyle(element)
-    .getPropertyValue('--_astryx-motion-tempo')
-    .trim();
-  const tempo = value === '' ? Number.NaN : Number(value);
-  return Number.isFinite(tempo) && tempo > 0 ? tempo : 1;
+function fadeMs(element: Element): number {
+  const style = getComputedStyle(element);
+  const value = style.getPropertyValue('--_astryx-motion-tempo').trim();
+  const read = value === '' ? Number.NaN : Number(value);
+  const tempo = Number.isFinite(read) && read > 0 ? read : 1;
+  const scaled = PRESS_FADE_MS * tempo;
+  const reduced =
+    style.getPropertyValue('--_astryx-reduced-motion').trim() === '1' ||
+    (typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  return reduced ? Math.min(scaled, PRESS_FADE_MS) : scaled;
 }
 
 const TIMER_EVENT = {
@@ -346,7 +351,7 @@ function apply(slot: Slot, step: PressStep): void {
       },
       // The release fade follows the theme's tempo (`spec:AST-108` FR4,
       // `component:Button` FR15); the onset delay and the tap flash do not.
-      TIMER_MS[kind] * (kind === 'fade' ? themeTempo(live.element) : 1),
+      kind === 'fade' ? fadeMs(live.element) : TIMER_MS[kind],
     );
   }
 }

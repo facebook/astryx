@@ -26,7 +26,7 @@ export const docs = {
       name: 'element',
       type: 'HTMLElement',
       description:
-        'The element to animate. The animator writes its `translate`, `scale`, `rotate` and `opacity` and nothing else, so lay it out and style it as usual. Use one animator per element: two on one element overwrite each other.',
+        'The element to animate. The animator writes its `translate`, `scale`, `rotate` and `opacity`, and while it moves an inline `will-change` for them, merged with any it already has and restored 500 ms after its last motion; nothing else, so lay it out and style it as usual. Use one animator per element: two on one element overwrite each other.',
       required: true,
     },
   ],

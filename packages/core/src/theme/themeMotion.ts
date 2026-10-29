@@ -12,9 +12,12 @@
  *
  * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
  * picks the entrance and move curves (and, in the animator, offsets a spring
- * role's bounce by its weight). `reducedMotion: 'always'` applies the Reduce
- * Motion policy for everyone; `'system'` follows each person's setting. With
- * the defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ * role's bounce by its weight; the animator reads both from the theme's root,
+ * motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
+ * far motion-keyed adaptation rules, the press release fade and the animator
+ * read the mark, not yet components' other Reduce Motion styles. `'system'`
+ * follows each person's setting. With the defaults (tempo 1, `'standard'`,
+ * `'system'`) every token is today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
  * win over `tempo` (FR5); explicit `tokens` win over both in
@@ -86,6 +89,19 @@ function msOf(value: string): number {
  */
 export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
 
+/**
+ * The character a theme or an adaptation rule sets, which the animator's
+ * springs read beside `MOTION_TEMPO_PROPERTY` (`spec:AST-108` FR3).
+ */
+export const MOTION_CHARACTER_PROPERTY = '--_astryx-motion-character';
+
+/**
+ * The private custom property the reduced-motion mark carries, 1 under it
+ * (`spec:AST-108` FR6), for a style that cannot key a selector on the mark,
+ * such as the press release's shared clock (utils/interactionOverlay.stylex.ts).
+ */
+export const REDUCED_MOTION_PROPERTY = '--_astryx-reduced-motion';
+
 /** The duration tokens at `tempo`: today's values times it, to the ms. */
 export function durationTokensAt(tempo: number): Record<string, string> {
   const tokens: Record<string, string> = {};
@@ -96,13 +112,15 @@ export function durationTokensAt(tempo: number): Record<string, string> {
 }
 
 /**
- * The custom property holding a duration token's value before `tempo`
- * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
- * (Spinner, Skeleton) read it, falling back to the token, so their timing
- * follows a duration scale or an explicit token but never `tempo` (FR4).
+ * The private custom property holding a duration token's value before
+ * `tempo` scaled it (`--duration-slow` → `--_astryx-pre-tempo-duration-slow`).
+ * Busy loops (Spinner, Skeleton) read it, falling back to the token, so their
+ * timing follows a duration scale or an explicit token but never `tempo`
+ * (FR4). Private, like every property the knobs add beside the core tokens
+ * (`architecture:theme-tokens` INV1).
  */
 export function preTempoName(token: string): string {
-  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+  return token.replace(/^--duration-/, '--_astryx-pre-tempo-duration-');
 }
 
 /**
@@ -124,8 +142,12 @@ export function expandThemeMotion(
       tokens[preTempoName(name)] = value;
     }
     // The press release fade, a fixed clock in the stylesheet, scales by the
-    // tempo itself (FR4; `component:Button` FR15), read where it plays.
+    // tempo itself (FR4; `component:Button` FR15), read where it plays, and
+    // so do the springs (FR3).
     tokens[MOTION_TEMPO_PROPERTY] = String(knobs.tempo);
+  }
+  if (config.character != null) {
+    tokens[MOTION_CHARACTER_PROPERTY] = knobs.character;
   }
   if (isScaleConfig(config)) {
     const scale = expandMotionScale(config);
