@@ -37,6 +37,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {servesSwipeActions} from '../Item/Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -354,6 +355,18 @@ export function ListItem({
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
   useTouchHitArea(rowRef, isTouchTarget);
+  // A row Item serves swipe actions on is a stacking context at rest, so its
+  // band's own z-index orders only inside it: under a finger, the row raises
+  // itself (styles.swipeRaised). Its root is its `<li>`, never a link.
+  const isRaisedSwipeRow =
+    isTouchTarget &&
+    servesSwipeActions({
+      swipeActions: restProps.swipeActions,
+      isDisabled,
+      isDelegate: interactiveRef != null,
+      isLinkRoot: false,
+      role: restProps.role,
+    });
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -419,7 +432,7 @@ export function ListItem({
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           isTouchTarget && touchHitAreaStyles.layer,
-          isTouchTarget && restProps.swipeActions != null && styles.swipeRaised,
+          isRaisedSwipeRow && styles.swipeRaised,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
