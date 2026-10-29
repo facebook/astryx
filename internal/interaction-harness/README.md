@@ -48,19 +48,19 @@ committed: a pull request links or attaches it.
 
 ## Instruments
 
-| Module          | What it gives a spec                                                                                                                                                                                                                                                         |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`.                                                |
-| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                                                               |
-| `webInput.ts`   | `webInputDriver(page)`: `wheel({x, y, dx, dy, ctrl})` and `pen(points)` as real engine input, for proofs across pointers (`spec:AST-100` FR4); `wheel` resolves once the page has the step; read back through the input log.                                                 |
-| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                                                                              |
-| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                                                                             |
-| `trace.ts`      | `traceRendering(page, body)`: main-thread counts of UpdateLayoutTree / Layout / PrePaint / Paint / Layerize / UpdateLayer / ScrollLayer / HitTest, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents. |
-| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                                                                       |
-| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`.                                                |
-| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                                                                           |
-| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                                                                    |
-| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                                                                      |
+| Module          | What it gives a spec                                                                                                                                                                                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`.                                                                                                                                |
+| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                                                                                                                                               |
+| `webInput.ts`   | `webInputDriver(page)`: `wheel({x, y, dx, dy, ctrl})` and `pen(points)` as real engine input, for proofs across pointers (`spec:AST-100` FR4); `wheel` resolves once the page has the step; read back through the input log.                                                                                                                                 |
+| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                                                                                                                                                              |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames; `startBusyControl` and `control` judge it against a compositor-only control in the same window; `pooledBusyProof(runs)` judges a short animation over several runs, pooled. |
+| `trace.ts`      | `traceRendering(page, body)`: main-thread counts of UpdateLayoutTree / Layout / PrePaint / Paint / Layerize / UpdateLayer / ScrollLayer / HitTest, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents.                                                                                 |
+| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                                                                                                                                                       |
+| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`.                                                                                                                                |
+| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                                                                                                                                                           |
+| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                                                                                                                                                    |
+| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                                                                                                                                                      |
 
 ## The proofs
 
@@ -158,6 +158,30 @@ raw numbers for the report. Frames are judged in presentation order: a loaded
 machine can deliver them out of order. `castStoryboard` turns the frames of the
 block into a filmstrip.
 
+On a two-core runner the software compositor and the screencast share the core
+the block spins on, so every compositor animation presents fewer frames there:
+Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
+7 of 10 runs while it moved on every frame the compositor presented. Judge such
+a proof against a control instead of a rate: `startBusyControl(page)` shows a
+small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
+dialog opened before it; `raise()` after one opened later) whose transform
+moves it along the top edge for as long as the page runs. Track it from the
+same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
+as `control`: the component passes when it moved on at least 90% of the frames
+the control moved (one miss allowed) and its longest stall is at most one
+interval longer than the control's; a window in which the control moved on
+fewer than four frames fails, since the machine presented too little to judge.
+A main-thread animation still fails: the control moves and it does not.
+
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on 90% of them, and in each run its
+longest stall may be at most one interval longer than that run's control's,
+since a stall belongs to its run.
+
 A just-started animation can reach the screen after the block began (50–100 ms
 later in WebKit on a loaded machine). When the cast saw the element at rest
 before the block (wait for `cast.frameCount()` to pass 0 before starting the
@@ -244,26 +268,29 @@ in all, and lists each retake under `recaptures` in the trace.
 
 ## Engine limits (measured with Playwright 1.61)
 
-|                                                        | Chromium 149 | WebKit 26.5 (Linux build)                                                                                                                          |
-| ------------------------------------------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trusted touch + pointer events, multi-touch            | yes          | yes (a `touchstart` lists only the fingers that landed in it; pointer events exact)                                                                |
-| Page sees the scripted timestamps                      | yes, exactly | no: real dispatch time; real-time pacing keeps velocities within ~1 ms                                                                             |
-| Sub-pixel touch positions                              | yes          | no: integer CSS px                                                                                                                                 |
-| Native scroll, fling, pinch-zoom from injected touches | yes          | no                                                                                                                                                 |
-| Lifting one finger while others stay down              | yes          | pointer events right, but that `touchend` lists no remaining `touches`: skip with `PARTIAL_LIFT_SKIP`                                              |
-| Click synthesised from a touch                         | yes          | only from `driver.tap` (WebKit's tap gesture), not from a raw touch sequence                                                                       |
-| Curve sampling, storyboards, input log                 | yes          | yes                                                                                                                                                |
-| Screencast frame evidence (busy main thread)           | yes          | yes (WebKit's own screencast; frames keep coming while the main thread is blocked)                                                                 |
-| Rendering trace, long tasks                            | yes          | no (Playwright exposes neither)                                                                                                                    |
-| Compositor presentation record                         | yes          | no: `stop()` resolves to `[]`; the busy verdict judges the screencast alone                                                                        |
-| Wheel steps, exact CSS px deltas (`webInput.ts`)       | yes          | desktop context only (`isMobile: false`): skip with `WHEEL_SKIP`; the step also moves the mouse there (a `pointermove`) and holds Control as a key |
-| Pen strokes, pressure, scripted timestamps             | yes          | no: skip with `PEN_SKIP`                                                                                                                           |
+|                                                        | Chromium 149                                                                                                                             | WebKit 26.5 (Linux build)                                                                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trusted touch + pointer events, multi-touch            | yes                                                                                                                                      | yes (a `touchstart` lists only the fingers that landed in it; pointer events exact)                                                                |
+| Page sees the scripted timestamps                      | yes, exactly                                                                                                                             | no: real dispatch time; real-time pacing keeps velocities within ~1 ms                                                                             |
+| Sub-pixel touch positions                              | yes                                                                                                                                      | no: integer CSS px                                                                                                                                 |
+| Native scroll, fling, pinch-zoom from injected touches | yes                                                                                                                                      | no                                                                                                                                                 |
+| Lifting one finger while others stay down              | yes                                                                                                                                      | pointer events right, but that `touchend` lists no remaining `touches`: skip with `PARTIAL_LIFT_SKIP`                                              |
+| Click synthesised from a touch                         | yes                                                                                                                                      | only from `driver.tap` (WebKit's tap gesture), not from a raw touch sequence: skip with `SCRIPTED_CLICK_SKIP`                                      |
+| Curve sampling, storyboards, input log                 | yes                                                                                                                                      | yes                                                                                                                                                |
+| Screencast frame evidence (busy main thread)           | yes                                                                                                                                      | yes (WebKit's own screencast; frames keep coming while the main thread is blocked)                                                                 |
+| Rendering trace, long tasks                            | yes                                                                                                                                      | no (Playwright exposes neither)                                                                                                                    |
+| Compositor presentation record                         | yes                                                                                                                                      | no: `stop()` resolves to `[]`; the busy verdict judges the screencast alone                                                                        |
+| Wheel steps, exact CSS px deltas (`webInput.ts`)       | yes                                                                                                                                      | desktop context only (`isMobile: false`): skip with `WHEEL_SKIP`; the step also moves the mouse there (a `pointermove`) and holds Control as a key |
+| Pen strokes, pressure, scripted timestamps             | yes                                                                                                                                      | no: skip with `PEN_SKIP`                                                                                                                           |
+| Playwright's own `page.mouse.wheel` at DPR 3           | delivers a third of each delta (divided by the device-pixel ratio): use `driver.wheel`, which sends the page exactly the requested delta | throws in a mobile context; exact in a desktop one                                                                                                 |
 
 What WebKit cannot show here — native scroll hand-off, flings, a finger
 lifting while another stays down, finger tracking under a busy main thread, and
 anything iOS-only — needs Mobile Safari itself, on a device or the iOS
 simulator. Skip such a proof on the driver's flag, citing the reason:
-`test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`.
+`test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP)`. A tap that must click
+uses `driver.tap` in both engines; a proof that needs the click of a scripted
+touch skips with `test.skip(!driver.synthesizesClicks, SCRIPTED_CLICK_SKIP)`. WebKit sends injected touches the pointer events but neither the compatibility mouse events nor the click, and its tap path is a whole tap of its own (its own `touchstart` and `touchend`), so a scripted sequence cannot end through it.
 
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.
