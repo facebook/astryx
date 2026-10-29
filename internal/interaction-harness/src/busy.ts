@@ -390,11 +390,12 @@ export interface BusyProof extends FrameStats {
  * A run of frames with no new component position counts as moved when the
  * change that ends it is a single cast step (`stepPx`): the component moves
  * under one step per frame there, as on an easing tail, which the cast cannot
- * show on every frame. A freeze ends in a catch-up of more than one step, and
- * a run that no change ends stays a miss. The component still has to show a
- * new position on at least `minJudgedFrames` of the control's frames, so a
- * frame-counted animation that stalls for the whole block and resumes slowly
- * fails too.
+ * show on every frame. The run also has to read as a slowing curve, at most
+ * one frame longer than the component's run before it. A freeze ends in a
+ * catch-up of more than one step, a stall in a frame-counted animation is
+ * longer than its runs before it, and a run that no change ends stays a miss.
+ * The component still has to show a new position on at least
+ * `minJudgedFrames` of the control's frames.
  * A main-thread animation still fails: the control moves and it does not.
  * `maxMedianFrameMs`, when given, still applies; `minMovedFraction` and the
  * absolute stall, frame and motion limits do not.
@@ -634,10 +635,16 @@ export function busyWindowProof(
     .slice(1)
     .map((p, i) => Math.abs(p - partValues[i]))
     .filter(d => d > 0.25);
+  // With no change to read, the finest step: a coarser one would let a larger
+  // jump pass for a single step.
   const stepPx =
-    [2, 1, 0.5].find(step =>
-      stepChanges.every(d => Math.abs(d / step - Math.round(d / step)) < 0.01),
-    ) ?? 0.5;
+    stepChanges.length === 0
+      ? 0.5
+      : ([2, 1, 0.5].find(step =>
+          stepChanges.every(
+            d => Math.abs(d / step - Math.round(d / step)) < 0.01,
+          ),
+        ) ?? 0.5);
   const judgedValues = tracked.flatMap(f =>
     f.box != null && f.t >= judged.from && f.t <= judged.to
       ? [{t: f.t, value: f.box[axis]}]
@@ -696,22 +703,37 @@ export function busyWindowProof(
       f.box == null ? [] : [{t: f.t, value: f.box[axis]}],
     );
     const seriesIndex = new Map(series.map((f, i) => [f.t, i]));
+    const same = (a: number, b: number) =>
+      Math.abs(series[a].value - series[b].value) <= 0.25;
+    // The first frame of the run of equal positions that holds frame i.
+    const runStart = (i: number): number => {
+      let s = i;
+      while (s > 0 && same(s - 1, i)) {
+        s -= 1;
+      }
+      return s;
+    };
     const underStep = (t: number): boolean => {
       const i = seriesIndex.get(t);
       if (i == null || changed.has(t)) {
         return false;
       }
+      const start = runStart(i);
       let k = i + 1;
-      while (
-        k < series.length &&
-        Math.abs(series[k].value - series[i].value) <= 0.25
-      ) {
+      while (k < series.length && same(k, i)) {
         k += 1;
       }
-      return (
-        k < series.length &&
-        Math.abs(series[k].value - series[i].value) < 1.5 * stepPx
-      );
+      if (
+        k >= series.length ||
+        Math.abs(series[k].value - series[i].value) >= 1.5 * stepPx
+      ) {
+        return false;
+      }
+      // A slowing curve lengthens its runs a frame at a time: a run more than
+      // one frame longer than the one before it is a stall.
+      const unchanged = k - 1 - start;
+      const before = start > 0 ? start - 1 - runStart(start - 1) : 0;
+      return unchanged <= before + 1;
     };
     const componentEdges = [
       judged.from,

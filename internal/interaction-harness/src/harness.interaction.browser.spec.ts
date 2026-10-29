@@ -435,12 +435,16 @@ test.describe('frame evidence', () => {
     expect(compositor.verdict.failures, compositor.summary).toEqual([]);
     expect(compositor.control?.moved).toBeGreaterThanOrEqual(4);
 
-    // The mutant: a main-thread animation freezes while the control moves.
+    // The mutant: a main-thread animation freezes while the control moves. A
+    // frame presented as the block starts can still show its last step, so
+    // it can read as moved on one of the control's frames; never on the rest.
     const raf = await run('raf');
     expect(raf.verdict.pass, raf.summary).toBe(false);
-    expect(raf.verdict.failures.join('\n')).toMatch(
-      /moved on 0 of the \d+ frames the control moved/,
+    const rafFailures = raf.verdict.failures.join('\n');
+    expect(rafFailures).toMatch(
+      /moved on [01] of the \d+ frames the control moved/,
     );
+    expect(rafFailures).toMatch(/longest stall .* longer than the control's/);
 
     // A slower screencast samples the control and the component alike.
     const slow = await run('compositor', 6);
@@ -450,7 +454,7 @@ test.describe('frame evidence', () => {
     await control.remove();
   });
 
-  test('a block too short to judge alone is judged over pooled runs: a compositor animation passes and a rAF one fails', async ({
+  test('a block too short to judge alone is judged over pooled runs: a compositor animation passes, and a rAF one fails, timed or frame-counted', async ({
     page,
   }, testInfo) => {
     await busyFixture(page);
@@ -461,7 +465,9 @@ test.describe('frame evidence', () => {
     // Six 70 ms blocks: each judged part (20 ms margins, 30 ms) holds at most
     // three frames even at WebKit's 14 ms cast, under the four one window
     // needs, as a short fade's does.
-    const runs = async (driver: 'compositor' | 'raf') => {
+    const runs = async (
+      driver: 'compositor' | 'raf' | 'counted 1' | 'counted 2',
+    ) => {
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
@@ -475,12 +481,27 @@ test.describe('frame evidence', () => {
               direction: 'alternate',
             },
           );
-        } else {
+        } else if (how === 'raf') {
           const start = performance.now();
           // The same back-and-forth on the main thread.
           const step = (now: number) => {
             const p = ((now - start) / 1600) % 2;
             el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        } else {
+          // A fixed step a frame, counted rather than timed: after a block it
+          // goes on from where it stood instead of catching up.
+          const px = how === 'counted 1' ? 1 : 2;
+          let y = 0;
+          let direction = 1;
+          const step = () => {
+            if (y + direction * px > 560 || y + direction * px < 0) {
+              direction = -direction;
+            }
+            y += direction * px;
+            el.style.transform = `translateY(${y}px)`;
             requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
@@ -525,6 +546,17 @@ test.describe('frame evidence', () => {
     expect(raf.verdict.failures.join('\n')).toMatch(
       /moved on \d+ of the \d+ frames the control moved over 6 runs/,
     );
+
+    // A frame-counted loop stalls in every block too and then steps on, one
+    // cast step a frame at 1 px: its stall is longer than its runs before it.
+    for (const counted of ['counted 1', 'counted 2'] as const) {
+      const proof = pooledBusyProof(await runs(counted), {axis: 'y'});
+      testInfo.annotations.push({
+        type: `busy-pooled ${counted}`,
+        description: proof.summary,
+      });
+      expect(proof.verdict.pass, `${counted}: ${proof.summary}`).toBe(false);
+    }
     await control.remove();
   });
 

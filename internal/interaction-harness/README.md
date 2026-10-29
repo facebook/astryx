@@ -170,9 +170,11 @@ which the control moved on fewer than four frames fails, since the machine
 presented too little to judge. A run of frames with no new position counts as
 moved when the change that ends it is a single cast step: the component moves
 under one step a frame there, as on an easing tail, which the cast cannot show
-on every frame. A freeze ends in a catch-up of more than one step, and a run
-that no change ends stays a miss. The component still has to show a new
-position on at least four of the control's frames. The cast step (`stepPx`)
+on every frame. The run must also read as a slowing curve, at most one frame
+longer than the component's run before it. A freeze ends in a catch-up of more
+than one step, a stall in a frame-counted animation is longer than its runs
+before it, and a run that no change ends stays a miss. The component still has
+to show a new position on at least four of the control's frames. The cast step (`stepPx`)
 is read from the value's changes in the judged part, so a position the page
 commits off the grid once the block ends does not shrink it.
 A main-thread animation still fails: the control moves and it does not.
