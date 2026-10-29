@@ -45,7 +45,7 @@ import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
-import {resolveMotionKnobs} from './themeMotion';
+import {REDUCED_MOTION_PROPERTY, resolveMotionKnobs} from './themeMotion';
 
 /**
  * Theme provider props
@@ -67,6 +67,11 @@ const wrapperStyles = stylex.create({
     display: 'contents',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
+  },
+  // The reduced-motion mark's custom property (REDUCED_MOTION_PROPERTY in
+  // themeMotion.ts), which every element under the mark inherits (FR6).
+  reducedMotion: {
+    '--_astryx-reduced-motion': '1',
   },
   light: {
     colorScheme: 'light',
@@ -196,17 +201,14 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
  * - 'system' → removes data-theme (reset.css defaults to color-scheme: light dark)
  *
  * A theme with `reducedMotion: 'always'` also marks `<html>` with
- * `data-astryx-reduced-motion`, so layers portaled outside the wrapper reduce
- * their motion too (spec:AST-108 FR6), and a theme that sets `tempo` or
- * `character` writes them there for the animator (FR3).
+ * `data-astryx-reduced-motion` and its custom property, so layers portaled
+ * outside the wrapper reduce their motion too (spec:AST-108 FR6).
  */
 function useRootThemeSync(
   isNested: boolean,
   mode: ThemeMode,
   themeName: string,
   reducesMotion: boolean,
-  motionTempo: string | undefined,
-  motionCharacter: string | undefined,
 ): void {
   useIsomorphicLayoutEffect(() => {
     if (isNested) {
@@ -225,30 +227,22 @@ function useRootThemeSync(
 
     // Sync theme name so @scope rules reach portals/fallback viewports.
     document.documentElement.setAttribute(dataAttr('theme'), themeName);
+    // The mark and its custom property, which portaled layers inherit.
     if (reducesMotion) {
       document.documentElement.setAttribute(dataAttr('reduced-motion'), '');
+      document.documentElement.style.setProperty(REDUCED_MOTION_PROPERTY, '1');
     } else {
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
-    }
-    for (const [name, value] of [
-      ['motion-tempo', motionTempo],
-      ['motion-character', motionCharacter],
-    ] as const) {
-      if (value != null) {
-        document.documentElement.setAttribute(dataAttr(name), value);
-      } else {
-        document.documentElement.removeAttribute(dataAttr(name));
-      }
+      document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
     }
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.removeAttribute(dataAttr('theme'));
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
-      document.documentElement.removeAttribute(dataAttr('motion-tempo'));
-      document.documentElement.removeAttribute(dataAttr('motion-character'));
+      document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
     };
-  }, [isNested, mode, themeName, reducesMotion, motionTempo, motionCharacter]);
+  }, [isNested, mode, themeName, reducesMotion]);
 }
 
 // =============================================================================
@@ -278,23 +272,14 @@ export function Theme({
   registerTheme(theme);
 
   useThemeStyleInjection(theme);
-  // spec:AST-108 FR6: 'always' marks the theme's root; every component style
-  // keyed on prefers-reduced-motion also keys on the mark. FR3: the tempo and
-  // character a theme sets ride on the same elements, where the animator
-  // reads them without importing the theme.
+  // spec:AST-108 FR6: 'always' marks the theme's root. So far motion-keyed
+  // adaptation rules, the press release fade, the animator, the layout glide
+  // and reducedMotionFade() key reduced motion on the mark; components' other
+  // Reduce Motion styles don't yet (a known gap in
+  // `architecture:theme-authoring-contract`).
   const knobs = resolveMotionKnobs(theme.__axes?.motion);
   const reducesMotion = knobs.reducedMotion === 'always';
-  const motionTempo = knobs.tempoIsSet ? String(knobs.tempo) : undefined;
-  const motionCharacter =
-    knobs.character !== 'standard' ? knobs.character : undefined;
-  useRootThemeSync(
-    isNested,
-    mode,
-    theme.name,
-    reducesMotion,
-    motionTempo,
-    motionCharacter,
-  );
+  useRootThemeSync(isNested, mode, theme.name, reducesMotion);
 
   // Get color-scheme style
   const colorSchemeStyle =
@@ -311,11 +296,13 @@ export function Theme({
     <ThemeContext value={ctxValue}>
       <ThemeNestingContext value={true}>
         <div
-          {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
+          {...stylex.props(
+            wrapperStyles.base,
+            colorSchemeStyle,
+            reducesMotion && wrapperStyles.reducedMotion,
+          )}
           data-astryx-theme={theme.name}
           data-astryx-reduced-motion={reducesMotion ? '' : undefined}
-          data-astryx-motion-tempo={motionTempo}
-          data-astryx-motion-character={motionCharacter}
           data-theme={mode === 'system' ? undefined : mode}>
           {children}
         </div>

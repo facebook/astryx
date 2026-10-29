@@ -336,7 +336,7 @@ const styles = stylex.create({
     animationDuration: {
       // The loop reads the duration before a theme's tempo scales it
       // (spec:AST-108 FR4).
-      default: `var(--pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`,
+      default: `var(--_astryx-pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`,
       '@media (prefers-reduced-motion: reduce)': '3s',
     },
     animationIterationCount: 'infinite',

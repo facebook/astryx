@@ -10,21 +10,21 @@
  *   the knobs, and the animator treats a theme that reduces motion for
  *   everyone as the person's Reduce Motion setting
  *
- * The theme an element is in is its nearest `data-astryx-theme` scope: the
- * Theme wrapper, or `<html>` for the root theme. Theme writes the knobs it
- * sets on that scope as attributes: `data-astryx-motion-tempo` when the theme
- * sets `tempo` (already clamped), `data-astryx-motion-character` when its
- * character is not `'standard'`, and `data-astryx-reduced-motion` for
- * `reducedMotion: 'always'`. A scope without them plays Astryx's own motion,
- * so a nested theme never inherits an outer theme's knobs. Everything here
- * reads DOM attributes only: no theme module, no style or layout read,
- * nothing on import, nothing on the server, so the foundation still loads in
+ * The knobs are the private custom properties a theme or an adaptation rule
+ * that sets them writes beside its duration tokens: `--_astryx-motion-tempo`
+ * (already clamped) and `--_astryx-motion-character`. The springs read them
+ * where the durations do, so they inherit into a nested theme that sets
+ * neither and follow a rule where its condition holds. One
+ * `getComputedStyle` read at each motion start reads custom properties only,
+ * which forces no layout. `reducedMotion: 'always'` marks the theme's root
+ * with `data-astryx-reduced-motion`. Nothing here runs on import or on the
+ * server, and no theme module is imported, so the foundation still loads in
  * plain Node.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/motion/themeKnobs.test.ts
+ * - /packages/core/src/motion/themeKnobs.test.tsx
  * - /packages/core/src/motion/resolveMotion.ts
- * - /packages/core/src/theme/Theme.tsx (writes the attributes)
+ * - /packages/core/src/theme/themeMotion.ts (writes the properties)
  */
 
 /** How lively a theme's motion feels. */
@@ -42,7 +42,6 @@ export interface ThemeMotionKnobsAt {
   readonly character: ThemeMotionCharacter;
 }
 
-const THEME_SCOPE = '[data-astryx-theme]';
 const REDUCED_MOTION_MARK = '[data-astryx-reduced-motion]';
 
 const DEFAULT_KNOBS: ThemeMotionKnobsAt = {
@@ -52,22 +51,23 @@ const DEFAULT_KNOBS: ThemeMotionKnobsAt = {
 };
 
 /**
- * The motion knobs of the theme `element` is in: Astryx's own (tempo 1,
- * `'standard'`) outside any theme, or for a theme that sets none.
+ * The motion knobs `element` plays: the ones it inherits from its theme or an
+ * adaptation rule, else Astryx's own (tempo 1, `'standard'`).
  */
 export function themeMotionKnobs(
   element: Element | null | undefined,
 ): ThemeMotionKnobsAt {
-  const scope = element?.closest?.(THEME_SCOPE);
-  if (scope == null) {
+  if (element == null || typeof getComputedStyle !== 'function') {
     return DEFAULT_KNOBS;
   }
-  const tempoValue = Number(scope.getAttribute('data-astryx-motion-tempo'));
-  const tempoIsSet =
-    scope.hasAttribute('data-astryx-motion-tempo') &&
-    Number.isFinite(tempoValue) &&
-    tempoValue > 0;
-  const characterValue = scope.getAttribute('data-astryx-motion-character');
+  const style = getComputedStyle(element);
+  const tempoValue = Number.parseFloat(
+    style.getPropertyValue('--_astryx-motion-tempo'),
+  );
+  const tempoIsSet = Number.isFinite(tempoValue) && tempoValue > 0;
+  const characterValue = style
+    .getPropertyValue('--_astryx-motion-character')
+    .trim();
   const character: ThemeMotionCharacter =
     characterValue === 'crisp' || characterValue === 'expressive'
       ? characterValue

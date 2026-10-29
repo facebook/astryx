@@ -4,17 +4,22 @@
  * @file themeMotion.ts
  * @input A theme's motion configuration: the three knobs (`tempo`,
  *   `character`, `reducedMotion`), the existing `MotionScaleConfig`, or both
- * @output The resolved knobs, the motion tokens they generate, and
- *   `resolveThemeMotion`, the internal resolver the animator and server code
- *   read (`spec:AST-108` FR1, FR2, FR5, FR6)
+ * @output The resolved knobs, the motion tokens and knob properties they
+ *   generate, and `resolveThemeMotion`, the internal resolver server code
+ *   reads (`spec:AST-108` FR1, FR2, FR3, FR5, FR6)
  * @position Theme utility; consumed by resolveThemeValues.ts. Pure: no DOM,
  *   no import-time work, safe on the server.
  *
  * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
  * picks the entrance and move curves (and, in the animator, offsets a spring
- * role's bounce by its weight). `reducedMotion: 'always'` applies the Reduce
- * Motion policy for everyone; `'system'` follows each person's setting. With
- * the defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ * role's bounce by its weight). A theme or rule that sets them writes
+ * `--_astryx-motion-tempo` and `--_astryx-motion-character`, which the
+ * animator reads where an element inherits them (motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
+ * far motion-keyed adaptation rules, the press release fade, the animator, its
+ * layout glide and reducedMotionFade() read the mark, not yet components'
+ * other Reduce Motion styles. `'system'`
+ * follows each person's setting. With the defaults (tempo 1, `'standard'`,
+ * `'system'`) every token is today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
  * win over `tempo` (FR5); explicit `tokens` win over both in
@@ -86,6 +91,19 @@ function msOf(value: string): number {
  */
 export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
 
+/**
+ * The character a theme or an adaptation rule sets, which the animator's
+ * springs read beside `MOTION_TEMPO_PROPERTY` (`spec:AST-108` FR3).
+ */
+export const MOTION_CHARACTER_PROPERTY = '--_astryx-motion-character';
+
+/**
+ * The private custom property the reduced-motion mark carries, 1 under it
+ * (`spec:AST-108` FR6), for a style that cannot key a selector on the mark,
+ * such as the press release's shared clock (utils/interactionOverlay.stylex.ts).
+ */
+export const REDUCED_MOTION_PROPERTY = '--_astryx-reduced-motion';
+
 /** The duration tokens at `tempo`: today's values times it, to the ms. */
 export function durationTokensAt(tempo: number): Record<string, string> {
   const tokens: Record<string, string> = {};
@@ -96,13 +114,15 @@ export function durationTokensAt(tempo: number): Record<string, string> {
 }
 
 /**
- * The custom property holding a duration token's value before `tempo`
- * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
- * (Spinner, Skeleton) read it, falling back to the token, so their timing
- * follows a duration scale or an explicit token but never `tempo` (FR4).
+ * The private custom property holding a duration token's value before
+ * `tempo` scaled it (`--duration-slow` → `--_astryx-pre-tempo-duration-slow`).
+ * Busy loops (Spinner, Skeleton) read it, falling back to the token, so their
+ * timing follows a duration scale or an explicit token but never `tempo`
+ * (FR4). Private, like every property the knobs add beside the core tokens
+ * (`architecture:theme-tokens` INV1).
  */
 export function preTempoName(token: string): string {
-  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+  return token.replace(/^--duration-/, '--_astryx-pre-tempo-duration-');
 }
 
 /**
@@ -124,8 +144,12 @@ export function expandThemeMotion(
       tokens[preTempoName(name)] = value;
     }
     // The press release fade, a fixed clock in the stylesheet, scales by the
-    // tempo itself (FR4; `component:Button` FR15), read where it plays.
+    // tempo itself (FR4; `component:Button` FR15), read where it plays, and
+    // so do the springs (FR3).
     tokens[MOTION_TEMPO_PROPERTY] = String(knobs.tempo);
+  }
+  if (config.character != null) {
+    tokens[MOTION_CHARACTER_PROPERTY] = knobs.character;
   }
   if (isScaleConfig(config)) {
     const scale = expandMotionScale(config);
@@ -163,16 +187,20 @@ export interface ThemeMotion {
 }
 
 /**
- * A theme's motion values, for the animator and for server code (FR6): the
- * knobs, and the duration and easing tokens they resolve to with the theme's
- * explicit tokens applied. Pure: it reads only `theme`.
+ * A theme's motion values, for server code (FR6): the knobs, and the duration
+ * and easing tokens they resolve to with the theme's explicit tokens applied.
+ * Pure: it reads only `theme`. The animator reads the knobs from the custom
+ * properties the theme writes instead (motion/themeKnobs.ts).
  */
 export function resolveThemeMotion(theme: {
   readonly motion?: ThemeMotionConfig;
+  readonly __axes?: {readonly motion?: ThemeMotionConfig};
   readonly tokens?: Readonly<Record<string, string | undefined>>;
 }): ThemeMotion {
-  const knobs = resolveMotionKnobs(theme.motion);
-  const generated = theme.motion ? expandThemeMotion(theme.motion) : {};
+  // A defined theme's motion is its axes': its own merged with its base's.
+  const config = theme.__axes?.motion ?? theme.motion;
+  const knobs = resolveMotionKnobs(config);
+  const generated = config ? expandThemeMotion(config) : {};
   const value = (name: string, fallback: string): string =>
     theme.tokens?.[name] ?? generated[name] ?? fallback;
   const durations: Record<string, string> = {};

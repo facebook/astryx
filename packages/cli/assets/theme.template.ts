@@ -91,9 +91,11 @@ export const myTheme = defineTheme({
 
   /**
    * Start from another theme instead of the defaults. Tokens are copied then
-   * overridden, `components` deep-merge, `icons` shallow-merge — but the scale
-   * configs below REPLACE the base's rather than merging, because they are
-   * inputs to a generator, not values.
+   * overridden, `components` deep-merge, `icons` shallow-merge — but the
+   * typography, radius and color scale configs below REPLACE the base's rather
+   * than merging, because they are inputs to a generator, not values. `motion`
+   * inherits field by field: `fast`, `medium` and `ratio` regenerate the fast
+   * and medium durations, and a `slow` or `easing` left unset keeps the base's.
    *
    * Reference: `astryx theme list` (themes you can install and extend).
    */
@@ -183,12 +185,17 @@ export const myTheme = defineTheme({
    * springs alike:
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
-   *     curves and how lively a spring is. Exits and fades never overshoot.
-   *   reducedMotion — 'always' reduces motion for everyone; 'system' (the
-   *     default) follows each person's setting.
+   *     curves and how lively a spring is. Exits and fades keep their
+   *     measured bounce.
+   *   reducedMotion — 'always' reduces motion for everyone (so far the
+   *     theme's motion-keyed adaptation rules, the press release fade and the
+   *     animator, with its layout glide and Reduce Motion fade, not yet
+   *     components' other Reduce Motion styles); 'system' (the default)
+   *     follows each person's setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
-   * Finger tracking, momentum, the keyboard, press and hover clocks and busy
-   * loops never follow them.
+   * Finger tracking, momentum, the keyboard, hover, the press's onset delay
+   * and tap flash, and busy loops never follow them; the press release fade
+   * follows tempo, up to the 200 ms Reduce Motion cap.
    *
    * A duration scale in ms wins over tempo for the durations it sets. Each of
    * fast/medium/slow also gets a -min and -max sibling computed with `ratio`
@@ -324,10 +331,21 @@ export const myTheme = defineTheme({
 
   /**
    * Swap the artwork behind semantic icon names — every component that asks
-   * for `check`, `close`, `chevron-down` gets yours.
+   * for `check`, `close`, `chevron-down` gets yours. An entry may also be a
+   * pure function of `{size, variant}` that picks artwork for the size Icon
+   * renders at.
    * Reference: `astryx docs icons` lists the names.
    */
-  // icons: {check: <MyCheck />, close: <MyClose />},
+  // icons: {check: <MyCheck />, info: ({size}) => <MyInfo bold={size === 'sm'} />},
+
+  /**
+   * The icon variant names this theme supports, listed once for the whole
+   * theme. An icon entry function receives `variant` typed as these names.
+   * A theme that sets the list replaces the one it would inherit; omit it to
+   * inherit the base's list.
+   * Reference: `astryx docs icons`.
+   */
+  // iconVariants: ['outline', 'filled'],
 
   /**
    * Replace the small components that DRAW control state — the checkbox box,

@@ -5,16 +5,18 @@
  * @input vitest (jsdom), React Testing Library, Theme and defineTheme, the
  *   springs and timing tables, resolveMotion, the motion animator and
  *   reducedMotionFade
- * @output Checks `spec:AST-108` FR3, FR4, FR5 and FR6 on the animator side,
- *   through a rendered Theme: a role's spring and duration follow the knobs
- *   of the theme the element is in (tempo scales the duration; character
- *   moves the bounce by the role's weight, never for an exit), a nested theme
- *   that sets no knob plays Astryx's own motion, finger-following motion
- *   never follows the knobs, a duration scale alone leaves the springs alone,
+ * @output Checks `spec:AST-108` FR3, FR4, FR5 and FR6 on the animator side:
+ *   the knobs are the custom properties an element carries, and a role's
+ *   spring and duration follow them (tempo scales the duration; character
+ *   moves the bounce by the role's weight, never for an exit),
+ *   finger-following motion never follows the knobs, a duration scale alone
+ *   leaves the springs alone,
  *   Astryx's own knobs give the table value itself, and a theme that reduces
  *   motion for everyone counts as the person's Reduce Motion setting
  * @position Testing; validates themeKnobs.ts and resolveMotion.ts against
- *   the attributes Theme.tsx writes
+ *   the properties a theme writes; inheritance into nested themes and
+ *   adaptation rules is checked in a browser
+ *   (__tests__/themeKnobs.interaction.browser.spec.ts)
  */
 
 import {cleanup, render} from '@testing-library/react';
@@ -62,11 +64,22 @@ afterEach(() => {
   window.matchMedia = originalMatchMedia;
 });
 
-/** An element rendered inside a Theme whose motion is `motion`. */
+/**
+ * An element rendered inside a Theme whose motion is `motion`, carrying the
+ * motion knobs that theme writes. A browser inherits them from the theme's
+ * root (themeKnobs.interaction.browser.spec.ts); jsdom reads a custom
+ * property only where it is declared.
+ */
 function inTheme(name: string, motion?: DefineThemeInput['motion']) {
+  const theme = defineTheme({name, motion});
+  const knobs = Object.fromEntries(
+    Object.entries(theme.tokens).filter(([property]) =>
+      property.startsWith('--_astryx-motion-'),
+    ),
+  );
   const {getByTestId} = render(
-    <Theme theme={defineTheme({name, motion})}>
-      <div data-testid="moving" />
+    <Theme theme={theme}>
+      <div data-testid="moving" style={knobs} />
     </Theme>,
   );
   return getByTestId('moving');
@@ -74,7 +87,7 @@ function inTheme(name: string, motion?: DefineThemeInput['motion']) {
 
 const shape = (spring: SpringDescription) => durationBounceOf(toSpring(spring));
 
-describe('the knobs of the theme an element is in (FR6)', () => {
+describe('the knobs an element inherits from its theme (FR3, FR6)', () => {
   it('are Astryx\u2019s own outside a theme and in a theme that sets none', () => {
     const loose = document.createElement('div');
     document.body.append(loose);
@@ -92,34 +105,17 @@ describe('the knobs of the theme an element is in (FR6)', () => {
     loose.remove();
   });
 
-  it('are the nearest theme\u2019s, and a nested theme that sets none plays Astryx\u2019s own', () => {
-    const {getByTestId} = render(
-      <Theme theme={defineTheme({name: 'KnobOuter', motion: {tempo: 0.8}})}>
-        <div data-testid="outer" />
-        <Theme
-          theme={defineTheme({
-            name: 'KnobInner',
-            motion: {character: 'expressive'},
-          })}>
-          <div data-testid="inner" />
-          <Theme theme={defineTheme({name: 'KnobInnermost'})}>
-            <div data-testid="innermost" />
-          </Theme>
-        </Theme>
-      </Theme>,
-    );
-    expect(themeMotionKnobs(getByTestId('outer'))).toMatchObject({
-      tempo: 0.8,
+  it('are the custom properties the element\u2019s theme or adaptation rule writes, which nested themes inherit', () => {
+    const element = document.createElement('div');
+    element.style.setProperty('--_astryx-motion-tempo', '1.25');
+    element.style.setProperty('--_astryx-motion-character', 'crisp');
+    document.body.append(element);
+    expect(themeMotionKnobs(element)).toEqual({
+      tempo: 1.25,
       tempoIsSet: true,
+      character: 'crisp',
     });
-    expect(themeMotionKnobs(getByTestId('inner'))).toEqual({
-      tempo: 1,
-      tempoIsSet: false,
-      character: 'expressive',
-    });
-    expect(themeMotionKnobs(getByTestId('innermost')).character).toBe(
-      'standard',
-    );
+    element.remove();
   });
 
   it('say a theme reduces motion for everyone from its root mark', () => {
