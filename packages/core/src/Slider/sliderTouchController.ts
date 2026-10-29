@@ -187,8 +187,13 @@ interface Interaction {
   readonly geometry: Geometry;
   /** The value when the pan began; null until it does. */
   startValue: number | null;
-  /** Which way along the axis the pan began (its threshold's side). */
-  beganSign: 1 | -1;
+  /**
+   * Where the pan's threshold lies along the axis, px from the touch-down
+   * point: the hysteresis on the side a finger's pan began, or for a mouse,
+   * whose pan begins in any direction, the threshold's projection on the
+   * axis.
+   */
+  beganOffset: number;
   /** The last value reported (or rendered when the finger landed). */
   value: number;
   /** Whether the finger is inside the control's tracking bounds. */
@@ -306,9 +311,7 @@ export class SliderTouchController {
         direction: this.model.isHorizontal ? 'horizontal' : 'vertical',
         maximumNumberOfTouches: 1,
         cancelsTouchesInView: false,
-        // A mouse drag on a thumb is a pan too, claimed after the same
-        // hysteresis (`spec:AST-094` FR43, FR19).
-        allowedPointerTypes: ['touch', 'pen', 'mouse'],
+        allowedPointerTypes: ['touch', 'pen'],
         // A control's thumb is no pan: it takes no wheel or trackpad scroll
         // in any direction, as a range input takes none (UISlider is a
         // UIControl), so a scroll over the slider stays the page's.
@@ -319,13 +322,30 @@ export class SliderTouchController {
         // FR41).
         selectionLock: lockSelection,
       });
+      // A mouse drag on a thumb is a pan too, claimed after the same
+      // hysteresis (`spec:AST-094` FR43, FR19), but in any direction: a
+      // mouse has no page scroll to yield to, so a drag that starts off the
+      // travel still moves the thumb, by its travel along it.
+      const mousePan = new PanGestureRecognizer({
+        name: `slider-thumb-${owner}-mouse`,
+        maximumNumberOfTouches: 1,
+        cancelsTouchesInView: false,
+        allowedPointerTypes: ['mouse'],
+        allowedScrollTypes: [],
+        selectionLock: lockSelection,
+      });
       const removeListener = pan.addListener(current =>
+        this.handlePan(owner, current),
+      );
+      const removeMouseListener = mousePan.addListener(current =>
         this.handlePan(owner, current),
       );
       detachers.push(
         host.attachConsumer(hit, tracker),
         host.attach(hit, pan),
+        host.attach(hit, mousePan),
         removeListener,
+        removeMouseListener,
         () => tracker.dispose(),
       );
     });
@@ -504,8 +524,16 @@ export class SliderTouchController {
     switch (pan.state) {
       case 'began':
         interaction.startValue = interaction.value;
-        interaction.beganSign =
-          pan.totalTranslation()[interaction.geometry.axis] < 0 ? -1 : 1;
+        {
+          const total = pan.totalTranslation();
+          const along = total[interaction.geometry.axis];
+          const distance = Math.hypot(total.x, total.y);
+          interaction.beganOffset = interaction.isMouse
+            ? distance > 0
+              ? (pan.hysteresis * along) / distance
+              : 0
+            : (along < 0 ? -1 : 1) * pan.hysteresis;
+        }
         if (!interaction.isMouse) {
           this.lift(interaction.index);
         }
@@ -572,7 +600,7 @@ export class SliderTouchController {
       index: owner,
       geometry,
       startValue: null,
-      beganSign: 1,
+      beganOffset: 0,
       value,
       isInside: true,
       atEnd: this.endOf(value),
@@ -588,11 +616,10 @@ export class SliderTouchController {
     const {geometry} = interaction;
     const {min, max, isRange} = this.model;
     // UISlider counts the translation from the threshold itself (the
-    // touch-down point plus the hysteresis along the axis), so the travel
-    // of the event that crossed it already counts.
+    // touch-down point plus the hysteresis, taken along the axis), so the
+    // travel of the event that crossed it already counts.
     const translation =
-      (pan.totalTranslation()[geometry.axis] -
-        interaction.beganSign * pan.hysteresis) *
+      (pan.totalTranslation()[geometry.axis] - interaction.beganOffset) *
       geometry.sign;
     const startValue = interaction.startValue ?? interaction.value;
     const raw =
@@ -726,7 +753,7 @@ export class SliderTouchController {
       index,
       geometry: this.measure(parts),
       startValue: null,
-      beganSign: 1,
+      beganOffset: 0,
       value,
       isInside: true,
       atEnd: this.endOf(value),
