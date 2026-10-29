@@ -851,3 +851,48 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
     );
   });
 });
+
+describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
+  const workflow = load('ci.yml');
+  const RTL =
+    "(steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')";
+  const gates = {
+    'pr-a11y-guards': "steps.scope.outputs.has_components == 'true'",
+    'pr-a11y-specs': "steps.scope.outputs.has_components == 'true'",
+    'pr-rtl-shard': RTL,
+    'pr-visual': "steps.visual-scope.outputs.has_stable_visual == 'true'",
+  };
+
+  it.each(Object.entries(gates))(
+    '%s downloads the PR analysis only inside its component scope',
+    (name, gate) => {
+      const download = workflow.jobs[name].steps.find(
+        step => step.name === 'Download analysis artifact',
+      );
+      expect(download.if).toContain(gate);
+    },
+  );
+
+  it('reports no stable visual work on a specialized lane', () => {
+    for (const name of ['visual-scout', 'pr-visual']) {
+      const decide = workflow.jobs[name].steps.find(
+        step => step.name === 'Decide stable visual scope',
+      );
+      expect(decide.env.SPECIALIZED, name).toContain(
+        "steps.scope.outputs.spec_only == 'true'",
+      );
+      expect(decide.run.indexOf('"$SPECIALIZED" = true'), name).toBeLessThan(
+        decide.run.indexOf('!= pull_request'),
+      );
+    }
+  });
+
+  it('validates spec records whenever docsite-test cannot decide its scope', () => {
+    const validate = workflow.jobs['docsite-test'].steps.find(
+      step => step.name === 'Validate spec records',
+    );
+    expect(validate.if).toBe(
+      "(steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
+  });
+});

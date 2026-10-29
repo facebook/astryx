@@ -2032,7 +2032,12 @@ jobs:
         env:
           FILES: ${{ steps.scope.outputs.changed_files }}
           SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
+          SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
         run: |
+          if [ "$SPECIALIZED" = true ]; then
+            printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
             printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
             exit 0
@@ -2137,7 +2142,12 @@ jobs:
         env:
           FILES: ${{ steps.scope.outputs.changed_files }}
           SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
+          SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
         run: |
+          if [ "$SPECIALIZED" = true ]; then
+            printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
             printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
             exit 0

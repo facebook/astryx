@@ -359,6 +359,19 @@ describe('per-job scope step', () => {
       expect(contentCalls).toContainEqual({file: AUDIT_FILE, ref: BASE_SHA});
     });
 
+    it('applies no audit to a release-branch pull request', async () => {
+      const {outputs} = await decide({
+        context: pullRequestContext('release/v1.2.3'),
+        inputs,
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'false',
+        has_rtl_components: 'false',
+        has_rtl_harness: 'false',
+        force_full_component_audits: 'false',
+      });
+    });
+
     it('applies no audit on a specialized lane', async () => {
       const {outputs} = await decide({
         files: changed('docs/specs/AST-030/spec.md'),

@@ -154,7 +154,15 @@ runs:
           const pr = context.payload.pull_request;
           if (pr.base.ref.startsWith('release/v')) {
             core.info('Release-branch pull request: the generated version bump.');
-            report({...everything, spec_only: 'true', tooling_only: 'true', release_bump: 'true', touches: 'false', applies: 'false'});
+            report({
+              ...everything,
+              ...(audit ? auditNone : {}),
+              spec_only: 'true',
+              tooling_only: 'true',
+              release_bump: 'true',
+              touches: 'false',
+              applies: 'false',
+            });
             return;
           }
 
