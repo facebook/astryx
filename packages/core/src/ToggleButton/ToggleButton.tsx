@@ -367,9 +367,13 @@ export function ToggleButton({
       style={style}
       onClick={handleClick}
       clickAction={clickAction}
-      // A toggle its group tracks carries the group item marker: the group's
-      // tracker paints its press and runs its click (family:action-groups).
-      {...(group?.tracksPress === true ? pressGroupItemProps : undefined)}
+      // A toggle with a value carries the group item marker when its group
+      // tracks presses: the group's tracker paints its press and runs its
+      // click (family:action-groups). A toggle without a value stays
+      // standalone (AV1), so its press stays its own.
+      {...(group?.tracksPress === true && value != null
+        ? pressGroupItemProps
+        : undefined)}
       {...props}>
       {labelContent}
     </Button>
