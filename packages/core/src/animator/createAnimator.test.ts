@@ -209,13 +209,14 @@ describe('createAnimator', () => {
   });
 
   it('animate follows the tempo and character of the theme the element is in (spec:AST-108 FR3)', async () => {
-    // What Theme writes for a theme that sets the knobs.
+    // What a theme that sets the knobs writes. A browser inherits it from the
+    // theme's root; jsdom reads a custom property only where it is declared.
     const scope = document.createElement('div');
     scope.setAttribute('data-astryx-theme', 'Unhurried');
-    scope.setAttribute('data-astryx-motion-tempo', '1.5');
-    scope.setAttribute('data-astryx-motion-character', 'expressive');
     document.body.append(scope);
     const box = document.createElement('div');
+    box.style.setProperty('--_astryx-motion-tempo', '1.5');
+    box.style.setProperty('--_astryx-motion-character', 'expressive');
     scope.append(box);
     const animator = createAnimator(box);
     void animator.animate({x: 120});
