@@ -517,6 +517,24 @@ export function registerMenuSprings(): void {
   });
 }
 
+// UIKit's sub-menu springs under their table paths, for registerSubMenuSprings.
+const subMenuSpringRoles = {
+  subMenuOpen: SUB_MENU_OPEN_SPRING,
+  subMenuBack: SUB_MENU_BACK_SPRING,
+};
+
+/**
+ * Registers only UIKit's sub-menu springs as their roles, `springs.subMenuOpen`
+ * and `springs.subMenuBack` (spec:AST-094 FR4), for DropdownMenu's in-place
+ * sub-menu, which plays them without the rest of the table: its bundle
+ * carries these two springs and no other.
+ */
+export function registerSubMenuSprings(): void {
+  registerMotionTable('springs', subMenuSpringRoles, {
+    roles: Object.keys(subMenuSpringRoles),
+  });
+}
+
 /**
  * Registers the springs spec:AST-094 FR4 names as internal motion roles
  * (motion/roles.ts), by their row names (`springs.settle`). Every other

@@ -5,8 +5,8 @@
 /**
  * @file DropdownMenuTouch.ts
  * @input menuSurfaceMotion.ts (UIMenu's grow and collapse on the animator),
- *   menuDrillInMotion.ts (UIMenu's in-place sub-menu), the menu springs'
- *   register function and the springs table's
+ *   menuDrillInMotion.ts (UIMenu's in-place sub-menu), and the register
+ *   functions of the menu springs and the sub-menu springs
  * @output DropdownMenu's touch layer: createMenuSurfaceMotion and its type,
  *   and createMenuDrillInMotion
  * @position The one module DropdownMenu imports touch-only code through, and
@@ -14,15 +14,15 @@
  *   it, so a desktop build can swap it for a no-op (AST-080 FR8).
  *
  * UIKit's two menu springs register here as their roles before the grow's
- * first animation, and the springs table before the in-place sub-menu's:
- * nothing registers on import.
+ * first animation, and its two sub-menu springs before the in-place
+ * sub-menu's: nothing registers on import, and no other spring ships with it.
  *
  * SYNC: When modified, keep every touch-only import of DropdownMenu.tsx here.
  */
 
 import {
   registerMenuSprings,
-  registerSpringsTable,
+  registerSubMenuSprings,
 } from '../motion/uikit/springs';
 import {createMenuDrillInMotion as createDrillInMotion} from './menuDrillInMotion';
 import {
@@ -55,6 +55,6 @@ export function createMenuSurfaceMotion(
 export function createMenuDrillInMotion(
   ...args: Parameters<typeof createDrillInMotion>
 ): ReturnType<typeof createDrillInMotion> {
-  registerSpringsTable();
+  registerSubMenuSprings();
   return createDrillInMotion(...args);
 }
