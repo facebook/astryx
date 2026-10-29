@@ -159,11 +159,12 @@ describe('Node-tooling CI routing', () => {
       step(ci.jobs['docsite-test'], 'Skip docsite work for Node tooling').if,
     ).toContain(TOOLING_TRUE);
     for (const name of [
-      'Build core package',
-      'Build canary component packages',
-      'Generate and test docsite data',
+      'Build docsite workspace dependencies',
+      'Build the docsite',
+      'test-docsite (start the data tests)',
+      'test-docsite-e2e (browser contracts)',
     ]) {
-      expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
+      expect(step(ci.jobs['docsite-test'], name).if).toContain(TOOLING_FALSE);
     }
 
     expect(step(ci.jobs['build-sandbox'], 'Build Sandbox').if).toContain(

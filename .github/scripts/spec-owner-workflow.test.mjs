@@ -170,40 +170,26 @@ describe('spec-only workflow contract', () => {
       expect(from, start).toBeGreaterThanOrEqual(0);
       return ci.slice(from, ci.indexOf(`\n  ${end}:`, from));
     };
-    // docsite-test validates spec records itself; the heavy generation lives
-    // in docsite-data, which the spec-only lane never starts.
-    const docsiteJob = block('docsite-test', 'docsite-data');
-    const dataJob = block('docsite-data', 'docsite-browser');
+    // docsite-test validates spec records itself and gates its docsite build
+    // and tests off for the spec-only lane.
+    const docsiteJob = block('docsite-test', 'test-ui');
 
     const checkout = docsiteJob.indexOf('- uses: actions/checkout@v7');
     const setup = docsiteJob.indexOf('- uses: ./.github/actions/setup');
     const validate = docsiteJob.indexOf('- name: Validate spec records');
-
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
-    expect(docsiteJob.slice(setup, validate)).toContain(
-      "if: steps.scope.outputs.spec_only == 'true'",
-    );
-    expect(docsiteJob).not.toContain('- name: Build core package');
-    expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
 
-    const setupStep = dataJob.slice(
-      dataJob.indexOf('- uses: ./.github/actions/setup'),
+    const heavy = docsiteJob.slice(
+      docsiteJob.indexOf('- name: Install Playwright'),
+      docsiteJob.indexOf('- name: test-docsite (data test results)'),
     );
-    expect(setupStep.slice(0, 200)).toContain(
-      "steps.scope.outputs.spec_only != 'true'",
-    );
-    const build = dataJob.indexOf('- name: Build core package');
-    const generate = dataJob.indexOf('- name: Generate and test docsite data');
-    expect(build).toBeGreaterThanOrEqual(0);
-    expect(generate).toBeGreaterThan(build);
-    expect(dataJob.slice(build, generate)).toContain(
-      "if: steps.scope.outputs.spec_only != 'true'",
-    );
-    expect(dataJob.slice(generate)).toContain(
-      "if: steps.scope.outputs.spec_only != 'true'",
-    );
+    const heavySteps = heavy.split('\n      - name: ');
+    expect(heavySteps.length).toBe(5);
+    for (const step of heavySteps) {
+      expect(step).toContain("if: steps.scope.outputs.spec_only != 'true'");
+    }
   });
 
   it('skips every Storybook build command for spec-only changes', () => {
@@ -225,7 +211,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') }}",
     );
     const action = read('.github/actions/test-scope/action.yml');
     expect(action).toContain(
