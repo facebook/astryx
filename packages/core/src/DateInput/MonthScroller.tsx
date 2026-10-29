@@ -440,6 +440,12 @@ export function MonthScroller({
         // re-snapped by WebKit one pane further on every frame. A scroll that
         // lands on the centre row reports nothing.
         const land = () => {
+          // The landing is the newest steer: an earlier one whose scroll
+          // never arrived (the re-assert when the wheels close, onto the
+          // month already in view) would otherwise hide every scroll after
+          // it, a trackpad's included. The landing's own scroll reports
+          // nothing, as it lands on the centre row.
+          steeredRowRef.current = null;
           if (row === centerRowRef.current) {
             scroller.scrollTo({left, behavior: 'auto'});
             return;
