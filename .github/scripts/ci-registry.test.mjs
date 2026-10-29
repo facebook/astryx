@@ -15,7 +15,7 @@ import yaml from 'yaml';
 const root = path.resolve(import.meta.dirname, '../..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const spec = read('docs/specs/AST-030/spec.md');
-const block = spec.match(/<!-- ci-registry:v1 -->\s*```json\n([\s\S]*?)\n```/);
+const block = spec.match(/<!-- ci-registry:v1 -->[^`]*```json\n([\s\S]*?)\n```/);
 const registry = JSON.parse(block[1]);
 const FREE = new Set(registry.freeRunners);
 

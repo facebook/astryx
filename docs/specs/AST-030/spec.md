@@ -273,15 +273,10 @@ they are separately named.
 ### CI registry
 
 <!-- ci-registry:v1 -->
-
+<!-- prettier-ignore -->
 ```json
 {
-  "freeRunners": [
-    "ubuntu-latest",
-    "ubuntu-slim",
-    "ubuntu-24.04",
-    "ubuntu-24.04-arm"
-  ],
+  "freeRunners": ["ubuntu-latest", "ubuntu-slim", "ubuntu-24.04", "ubuntu-24.04-arm"],
   "requiredContexts": {
     "build": "ci.yml/build",
     "test": "ci.yml/test",
@@ -296,14 +291,8 @@ they are separately named.
       "tiers": ["manual", "schedule"],
       "reason": "Weekly full accessibility sweep of main.",
       "jobs": {
-        "audit": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "report-issue": {
-          "kind": "report"
-        }
+        "audit": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "report-issue": {"kind": "report"}
       },
       "scripts": ["accessibility-audit.js", "weekly-a11y-summary.js"]
     },
@@ -311,197 +300,52 @@ they are separately named.
       "tiers": ["merge-queue", "pr", "release"],
       "reason": "Reports the required build, test and docsite-test contexts on every pull request; the trusted classifier's positive surfaces choose the work inside them (FR1-FR13).",
       "jobs": {
-        "maintenance-request": {
-          "kind": "report"
-        },
-        "check-scope": {
-          "kind": "report"
-        },
-        "release-bump": {
-          "kind": "release",
-          "runnerReason": "TODO"
-        },
-        "release-merge-back": {
-          "kind": "release",
-          "runnerReason": "TODO"
-        },
-        "docsite-test": {
-          "kind": "join",
-          "runnerReason": "TODO"
-        },
-        "docsite-data": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "docsite-browser": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "check-components": {
-          "kind": "report"
-        },
-        "test-ui": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "test-node": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "native-swift-scope": {
-          "kind": "report"
-        },
-        "test-native-swift": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "registry-contract": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "test": {
-          "kind": "join"
-        },
-        "build-storybook": {
-          "kind": "build",
-          "runnerReason": "TODO"
-        },
-        "size-base": {
-          "kind": "build"
-        },
-        "typecheck": {
-          "kind": "build",
-          "runnerReason": "TODO"
-        },
-        "build-sandbox": {
-          "kind": "build",
-          "runnerReason": "TODO"
-        },
-        "build": {
-          "kind": "join"
-        },
-        "pr-a11y-shard": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-a11y-audit": {
-          "kind": "join",
-          "runnerReason": "TODO"
-        },
-        "pr-a11y-guards": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-a11y-specs": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-a11y": {
-          "kind": "join"
-        },
-        "a11y-contracts-shard": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "a11y-contracts": {
-          "kind": "join"
-        },
-        "interaction-scope": {
-          "kind": "report"
-        },
-        "pr-interaction": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "test-build": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "fixture-contrast": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "visual-scout": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-visual": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-rtl-shard": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "pr-rtl-merge": {
-          "kind": "join",
-          "runnerReason": "TODO"
-        },
-        "pr-rtl": {
-          "kind": "join"
-        },
-        "ci-duration": {
-          "kind": "report"
-        },
-        "release-check": {
-          "kind": "join"
-        }
+        "maintenance-request": {"kind": "report"},
+        "check-scope": {"kind": "report"},
+        "release-bump": {"kind": "release", "runnerReason": "TODO"},
+        "release-merge-back": {"kind": "release", "runnerReason": "TODO"},
+        "docsite-test": {"kind": "join", "runnerReason": "TODO"},
+        "docsite-data": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "docsite-browser": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "check-components": {"kind": "report"},
+        "test-ui": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "test-node": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "native-swift-scope": {"kind": "report"},
+        "test-native-swift": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "registry-contract": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "test": {"kind": "join"},
+        "build-storybook": {"kind": "build", "runnerReason": "TODO"},
+        "size-base": {"kind": "build"},
+        "typecheck": {"kind": "build", "runnerReason": "TODO"},
+        "build-sandbox": {"kind": "build", "runnerReason": "TODO"},
+        "build": {"kind": "join"},
+        "pr-a11y-shard": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-a11y-audit": {"kind": "join", "runnerReason": "TODO"},
+        "pr-a11y-guards": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-a11y-specs": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-a11y": {"kind": "join"},
+        "a11y-contracts-shard": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "a11y-contracts": {"kind": "join"},
+        "interaction-scope": {"kind": "report"},
+        "pr-interaction": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "test-build": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "fixture-contrast": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "visual-scout": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-visual": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-rtl-shard": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "pr-rtl-merge": {"kind": "join", "runnerReason": "TODO"},
+        "pr-rtl": {"kind": "join"},
+        "ci-duration": {"kind": "report"},
+        "release-check": {"kind": "join"}
       },
-      "scripts": [
-        "a11y-contract-shard.mjs",
-        "a11y-pr-contracts.mjs",
-        "a11y-pr-scope.mjs",
-        "accessibility-audit.js",
-        "analyze-pr.js",
-        "build-packages-and-storybook.mjs",
-        "change-scope.cjs",
-        "ci-test-join.mjs",
-        "cli-api-types-verify.mjs",
-        "component-audit-scope.cjs",
-        "fs-guard-tests.mjs",
-        "knowledge-paths.cjs",
-        "modal-close-visibility.js",
-        "native-swift.sh",
-        "pr-scope-touches.sh",
-        "rtl-join.mjs",
-        "rtl-report-completion.mjs",
-        "rtl-scorecard-summary.mjs",
-        "rtl-shard-scope.mjs",
-        "story-play-guard.js",
-        "theme-var-reachability.js",
-        "typecheck-predating-head.sh",
-        "visual-maintenance-source.mjs",
-        "visual-scope.mjs",
-        "visual-gate/gate.mjs"
-      ]
+      "scripts": ["a11y-contract-shard.mjs", "a11y-pr-contracts.mjs", "a11y-pr-scope.mjs", "accessibility-audit.js", "analyze-pr.js", "build-packages-and-storybook.mjs", "change-scope.cjs", "ci-test-join.mjs", "cli-api-types-verify.mjs", "component-audit-scope.cjs", "fs-guard-tests.mjs", "knowledge-paths.cjs", "modal-close-visibility.js", "native-swift.sh", "pr-scope-touches.sh", "rtl-join.mjs", "rtl-report-completion.mjs", "rtl-scorecard-summary.mjs", "rtl-shard-scope.mjs", "story-play-guard.js", "theme-var-reachability.js", "typecheck-predating-head.sh", "visual-maintenance-source.mjs", "visual-scope.mjs", "visual-gate/gate.mjs"]
     },
     "cli-global-mode-smoke.yml": {
       "tiers": ["manual"],
       "reason": "On-demand smoke test of the globally installed CLI.",
       "jobs": {
-        "pack": {
-          "kind": "build"
-        },
-        "smoke": {
-          "kind": "test",
-          "scope": ["TODO"]
-        }
+        "pack": {"kind": "build"},
+        "smoke": {"kind": "test", "scope": ["TODO"]}
       },
       "scripts": ["cli-global-mode-smoke.mjs"]
     },
@@ -509,44 +353,15 @@ they are separately named.
       "tiers": ["merge-queue", "pr"],
       "reason": "Every package the CLI discovers, the workspace's dependency and TypeScript configuration, the setup action and the smoke scripts.",
       "jobs": {
-        "smoke-test": {
-          "kind": "test",
-          "scope": [
-            "packages/**",
-            "package.json",
-            "pnpm-lock.yaml",
-            "pnpm-workspace.yaml",
-            "tsconfig*.json",
-            ".nvmrc",
-            ".github/actions/setup/**",
-            ".github/scripts/cli-smoke-test.mjs",
-            ".github/scripts/cli-json-smoke-test.mjs",
-            ".github/scripts/api-cli-parity-test.mjs",
-            ".github/scripts/cdn-template-smoke-test.mjs",
-            ".github/scripts/lib/cdn-*.mjs",
-            ".github/workflows/cli-smoke-test.yml"
-          ],
-          "runnerReason": "TODO"
-        }
+        "smoke-test": {"kind": "test", "scope": ["packages/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig*.json", ".nvmrc", ".github/actions/setup/**", ".github/scripts/cli-smoke-test.mjs", ".github/scripts/cli-json-smoke-test.mjs", ".github/scripts/api-cli-parity-test.mjs", ".github/scripts/cdn-template-smoke-test.mjs", ".github/scripts/lib/cdn-*.mjs", ".github/workflows/cli-smoke-test.yml"], "runnerReason": "TODO"}
       },
-      "scripts": [
-        "api-cli-parity-test.mjs",
-        "cdn-template-smoke-test.mjs",
-        "change-scope.cjs",
-        "cli-json-smoke-test.mjs",
-        "cli-smoke-test.mjs",
-        "knowledge-paths.cjs"
-      ]
+      "scripts": ["api-cli-parity-test.mjs", "cdn-template-smoke-test.mjs", "change-scope.cjs", "cli-json-smoke-test.mjs", "cli-smoke-test.mjs", "knowledge-paths.cjs"]
     },
     "codemod-verify.yml": {
       "tiers": ["pr"],
       "reason": "The CLI's codemods.",
       "jobs": {
-        "verify-codemods": {
-          "kind": "test",
-          "scope": ["packages/cli/assets/codemods/**"],
-          "runnerReason": "TODO"
-        }
+        "verify-codemods": {"kind": "test", "scope": ["packages/cli/assets/codemods/**"], "runnerReason": "TODO"}
       },
       "scripts": ["codemod-verify.mjs"]
     },
@@ -554,76 +369,40 @@ they are separately named.
       "tiers": ["pr"],
       "reason": "Translated Core locale catalogs.",
       "jobs": {
-        "validate": {
-          "kind": "test",
-          "scope": ["packages/core/locales/*.json"],
-          "runnerReason": "TODO"
-        }
+        "validate": {"kind": "test", "scope": ["packages/core/locales/*.json"], "runnerReason": "TODO"}
       }
     },
     "crowdin-upload.yml": {
       "tiers": ["main", "manual"],
       "reason": "The English Core locale catalog, uploaded from main.",
       "jobs": {
-        "upload": {
-          "kind": "report",
-          "runnerReason": "TODO"
-        }
+        "upload": {"kind": "report", "runnerReason": "TODO"}
       }
     },
     "deploy.yml": {
       "tiers": ["main", "manual"],
       "reason": "Main's post-merge validation: every landed commit can change what main ships.",
       "jobs": {
-        "main-commit": {
-          "kind": "report"
-        },
-        "sync-exports": {
-          "kind": "report"
-        },
-        "test-ui": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "test-node": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "typecheck": {
-          "kind": "build",
-          "runnerReason": "TODO"
-        },
-        "test": {
-          "kind": "join"
-        }
+        "main-commit": {"kind": "report"},
+        "sync-exports": {"kind": "report"},
+        "test-ui": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "test-node": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "typecheck": {"kind": "build", "runnerReason": "TODO"},
+        "test": {"kind": "join"}
       }
     },
     "hardening-issue.yml": {
       "tiers": ["pr"],
       "reason": "A merged pull request that can add a Core component directory.",
       "jobs": {
-        "create-hardening-issues": {
-          "kind": "report"
-        }
+        "create-hardening-issues": {"kind": "report"}
       }
     },
     "internal-registry.yml": {
       "tiers": ["merge-queue", "pr"],
       "reason": "Dependency declarations and the lockfile.",
       "jobs": {
-        "dependency-check": {
-          "kind": "test",
-          "scope": [
-            "pnpm-lock.yaml",
-            "pnpm-workspace.yaml",
-            "**/package.json",
-            "**/package-lock.json",
-            ".github/workflows/internal-registry.yml"
-          ],
-          "runnerReason": "TODO"
-        }
+        "dependency-check": {"kind": "test", "scope": ["pnpm-lock.yaml", "pnpm-workspace.yaml", "**/package.json", "**/package-lock.json", ".github/workflows/internal-registry.yml"], "runnerReason": "TODO"}
       },
       "scripts": ["change-scope.cjs", "knowledge-paths.cjs"]
     },
@@ -631,10 +410,7 @@ they are separately named.
       "tiers": ["main", "pr"],
       "reason": "Reports the required lint context on every pull request and push to main; the trusted classifier chooses the work inside it.",
       "jobs": {
-        "lint": {
-          "kind": "lint",
-          "runnerReason": "TODO"
-        }
+        "lint": {"kind": "lint", "runnerReason": "TODO"}
       },
       "scripts": ["change-scope.cjs", "knowledge-paths.cjs"]
     },
@@ -642,72 +418,42 @@ they are separately named.
       "tiers": ["manual"],
       "reason": "On-demand removal of old canary versions.",
       "jobs": {
-        "prune": {
-          "kind": "report"
-        }
+        "prune": {"kind": "report"}
       }
     },
     "pages-deploy.yml": {
       "tiers": ["main", "manual"],
       "reason": "The GitHub Pages site sources.",
       "jobs": {
-        "deploy": {
-          "kind": "report"
-        }
+        "deploy": {"kind": "report"}
       }
     },
     "pr-comment.yml": {
       "tiers": ["event"],
       "reason": "Posts the analysis comment after a CI run completes or a preview deploys.",
       "jobs": {
-        "resolve": {
-          "kind": "report"
-        },
-        "resolve-preview": {
-          "kind": "report"
-        },
-        "preview-comment": {
-          "kind": "report"
-        },
-        "spec-only-reconcile": {
-          "kind": "report"
-        },
-        "comment": {
-          "kind": "report",
-          "runnerReason": "TODO"
-        },
-        "report": {
-          "kind": "report"
-        }
+        "resolve": {"kind": "report"},
+        "resolve-preview": {"kind": "report"},
+        "preview-comment": {"kind": "report"},
+        "spec-only-reconcile": {"kind": "report"},
+        "comment": {"kind": "report", "runnerReason": "TODO"},
+        "report": {"kind": "report"}
       },
-      "scripts": [
-        "change-scope.cjs",
-        "lib/pr-preview.mjs",
-        "lib/vercel-preview.mjs",
-        "visual-gate/publish-pr-report.mjs"
-      ]
+      "scripts": ["change-scope.cjs", "lib/pr-preview.mjs", "lib/vercel-preview.mjs", "visual-gate/publish-pr-report.mjs"]
     },
     "prune-branches.yml": {
       "tiers": ["manual", "schedule"],
       "reason": "Scheduled cleanup of merged branches.",
       "jobs": {
-        "prune": {
-          "kind": "report"
-        }
+        "prune": {"kind": "report"}
       }
     },
     "release.yml": {
       "tiers": ["main", "release"],
       "reason": "Canary publishing from each landed commit on main, and the dispatched release (spec:AST-017).",
       "jobs": {
-        "publish": {
-          "kind": "release",
-          "runnerReason": "TODO"
-        },
-        "canary": {
-          "kind": "release",
-          "runnerReason": "TODO"
-        }
+        "publish": {"kind": "release", "runnerReason": "TODO"},
+        "canary": {"kind": "release", "runnerReason": "TODO"}
       }
     },
     "rerequest-review-on-update.yml": {
@@ -715,18 +461,14 @@ they are separately named.
       "reason": "Re-requests review when a pull request's head changes.",
       "pullRequestUpdates": "Re-requests review from a reviewer who requested changes, once the head changes.",
       "jobs": {
-        "rerequest-review": {
-          "kind": "report"
-        }
+        "rerequest-review": {"kind": "report"}
       }
     },
     "review-clear.yml": {
       "tiers": ["event"],
       "reason": "Clears or keeps the required review-required status after the review-signal run.",
       "jobs": {
-        "clear": {
-          "kind": "report"
-        }
+        "clear": {"kind": "report"}
       },
       "scripts": ["review-signal-decision.cjs"]
     },
@@ -735,12 +477,8 @@ they are separately named.
       "reason": "Computes the required review-required status from pull-request and review events.",
       "pullRequestUpdates": "Recomputes the required review-required status for the new head.",
       "jobs": {
-        "flag": {
-          "kind": "report"
-        },
-        "review-anchor": {
-          "kind": "report"
-        }
+        "flag": {"kind": "report"},
+        "review-anchor": {"kind": "report"}
       },
       "scripts": ["review-signal-decision.cjs", "lib/classify-visual.js"]
     },
@@ -748,14 +486,8 @@ they are separately named.
       "tiers": ["manual", "schedule"],
       "reason": "Weekly full RTL sweep of main.",
       "jobs": {
-        "audit": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        },
-        "report-issue": {
-          "kind": "report"
-        }
+        "audit": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"},
+        "report-issue": {"kind": "report"}
       },
       "scripts": ["weekly-rtl-summary.js"]
     },
@@ -764,9 +496,7 @@ they are separately named.
       "reason": "Posts the required spec-owner-approval status from pull-request, review and approval-comment events.",
       "pullRequestUpdates": "Reposts the required spec-owner-approval status for the new head, which an exact-head approval must cover.",
       "jobs": {
-        "reconcile": {
-          "kind": "report"
-        }
+        "reconcile": {"kind": "report"}
       },
       "scripts": ["spec-owner-reconcile.cjs"]
     },
@@ -774,15 +504,8 @@ they are separately named.
       "tiers": ["manual"],
       "reason": "On-demand screenshots for vibe tests.",
       "jobs": {
-        "build-previews": {
-          "kind": "build",
-          "runnerReason": "TODO"
-        },
-        "screenshot": {
-          "kind": "test",
-          "scope": ["TODO"],
-          "runnerReason": "TODO"
-        }
+        "build-previews": {"kind": "build", "runnerReason": "TODO"},
+        "screenshot": {"kind": "test", "scope": ["TODO"], "runnerReason": "TODO"}
       }
     }
   },
@@ -793,40 +516,7 @@ they are separately named.
     "visual-gate/README.md": "Documentation for the visual gate scripts.",
     "visual-gate/visual-gate.config.json": "Configuration the visual gate reads at run time."
   },
-  "sharedScripts": [
-    "component-design-decisions.cjs",
-    "disabled-cursor-audit.js",
-    "disabled-hover-audit.js",
-    "knowledge-frontmatter.cjs",
-    "lib/a11y-baseline.js",
-    "lib/a11y-format.js",
-    "lib/a11y-shards.js",
-    "lib/a11y-story-identity.js",
-    "lib/a11y-story-readiness.js",
-    "lib/cdn-asset-priming.mjs",
-    "lib/cdn-page-render.mjs",
-    "lib/cdn-version.mjs",
-    "lib/component-size.js",
-    "lib/report-text.js",
-    "lib/visual-format.js",
-    "press-release-fade.js",
-    "pressed-overlay-cascade.js",
-    "spec-owner-decision.cjs",
-    "theme-family-cascade.js",
-    "theme-layer-cascade.js",
-    "visual-gate/generate-probe-theme.mjs",
-    "visual-gate/lib/baseline.mjs",
-    "visual-gate/lib/canonical-png.mjs",
-    "visual-gate/lib/capture.mjs",
-    "visual-gate/lib/compare-worker.mjs",
-    "visual-gate/lib/compare.mjs",
-    "visual-gate/lib/plan.mjs",
-    "visual-gate/lib/probe-axes.mjs",
-    "visual-gate/lib/probe-theme.mjs",
-    "visual-gate/lib/report.mjs",
-    "visual-gate/lib/scout-shards.mjs",
-    "visual-gate/lib/sources.mjs"
-  ],
+  "sharedScripts": ["component-design-decisions.cjs", "disabled-cursor-audit.js", "disabled-hover-audit.js", "knowledge-frontmatter.cjs", "lib/a11y-baseline.js", "lib/a11y-format.js", "lib/a11y-shards.js", "lib/a11y-story-identity.js", "lib/a11y-story-readiness.js", "lib/cdn-asset-priming.mjs", "lib/cdn-page-render.mjs", "lib/cdn-version.mjs", "lib/component-size.js", "lib/report-text.js", "lib/visual-format.js", "press-release-fade.js", "pressed-overlay-cascade.js", "spec-owner-decision.cjs", "theme-family-cascade.js", "theme-layer-cascade.js", "visual-gate/generate-probe-theme.mjs", "visual-gate/lib/baseline.mjs", "visual-gate/lib/canonical-png.mjs", "visual-gate/lib/capture.mjs", "visual-gate/lib/compare-worker.mjs", "visual-gate/lib/compare.mjs", "visual-gate/lib/plan.mjs", "visual-gate/lib/probe-axes.mjs", "visual-gate/lib/probe-theme.mjs", "visual-gate/lib/report.mjs", "visual-gate/lib/scout-shards.mjs", "visual-gate/lib/sources.mjs"],
   "migrations": []
 }
 ```
