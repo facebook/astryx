@@ -107,13 +107,15 @@ export function durationTokensAt(tempo: number): Record<string, string> {
 }
 
 /**
- * The custom property holding a duration token's value before `tempo`
- * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
- * (Spinner, Skeleton) read it, falling back to the token, so their timing
- * follows a duration scale or an explicit token but never `tempo` (FR4).
+ * The private custom property holding a duration token's value before
+ * `tempo` scaled it (`--duration-slow` → `--_astryx-pre-tempo-duration-slow`).
+ * Busy loops (Spinner, Skeleton) read it, falling back to the token, so their
+ * timing follows a duration scale or an explicit token but never `tempo`
+ * (FR4). Private, like every property the knobs add beside the core tokens
+ * (`architecture:theme-tokens` INV1).
  */
 export function preTempoName(token: string): string {
-  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+  return token.replace(/^--duration-/, '--_astryx-pre-tempo-duration-');
 }
 
 /**
