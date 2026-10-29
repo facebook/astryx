@@ -19,7 +19,7 @@
  *           - D6 (directional-decoration): single-glyph, aria-hidden decorations
  *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
- *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse hit alignment),
+ *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse native size/alignment),
  *         D8 (logical inline-edge mirroring), and D9 (logical grouped corners):
  *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
@@ -100,7 +100,10 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const VERIFIED_NA_PATH =
   getArg('verified-not-applicable') ||
   path.join(HERE, 'verified-not-applicable.json');
-const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+const FILTER = (getArg('filter') || '')
+  .split(',')
+  .map(s => s.trim().toLowerCase())
+  .filter(Boolean);
 const PACKAGE_FILTER = (getArg('packages') || '')
   .split(',')
   .map(value => value.trim().toLowerCase())
@@ -111,21 +114,25 @@ const invalidPackages = PACKAGE_FILTER.filter(
 if (invalidPackages.length > 0) {
   throw new Error(`unknown audited package(s): ${invalidPackages.join(', ')}`);
 }
-const ACTIVE_PACKAGE_NAMES = PACKAGE_FILTER.length > 0
-  ? PACKAGE_FILTER
-  : AUDITED_PACKAGE_NAMES;
+const ACTIVE_PACKAGE_NAMES =
+  PACKAGE_FILTER.length > 0 ? PACKAGE_FILTER : AUDITED_PACKAGE_NAMES;
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
 // Story-id prefixes the auto-discovery layer sweeps come from the same
 // canonical package registry used for source discovery below.
-const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
+const AUDITED_STORY_PREFIX = new RegExp(
+  `^(?:${AUDITED_STORY_PREFIXES.join('|')})`,
+);
 // Worker pool size. Each worker holds one Playwright page at a time; stories
 // are independent, and the run is dominated by page-load latency rather than
 // CPU. A worker whose story fails gets a fresh page before its next story
 // (rtl-audit-pool.mjs), so one unusable page cannot fail the stories after it.
 // Defaults to 1 (serial) so the per-PR job's behaviour is unchanged while the
 // suite is still soft-gated; rtl-weekly.yml opts into 4 for the full sweep.
-const CONCURRENCY = Math.max(1, Number(getArg('concurrency') || process.env.RTL_CONCURRENCY || 1));
+const CONCURRENCY = Math.max(
+  1,
+  Number(getArg('concurrency') || process.env.RTL_CONCURRENCY || 1),
+);
 // D5 positional-mirror reveal: opening interaction-gated surfaces on EVERY core
 // story (1365 stories) is expensive and, at that scale, a flake/timeout risk
 // during the soft-gate window. The fully-validated bug class (Avatar status-dot,
@@ -154,10 +161,18 @@ if (SHARD !== null && MERGE_SHARDS !== null) {
 // static file server (same shape as accessibility-audit.js)
 // ---------------------------------------------------------------------------
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
-  '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
-  '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff',
-  '.ttf': 'font/ttf', '.map': 'application/json', '.ico': 'image/x-icon',
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json',
+  '.ico': 'image/x-icon',
 };
 function serve(root) {
   return new Promise(resolve => {
@@ -174,11 +189,15 @@ function serve(root) {
           res.writeHead(404);
           return res.end('Not found');
         }
-        res.writeHead(200, {'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream'});
+        res.writeHead(200, {
+          'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream',
+        });
         res.end(data);
       });
     });
-    server.listen(0, '127.0.0.1', () => resolve({server, port: server.address().port}));
+    server.listen(0, '127.0.0.1', () =>
+      resolve({server, port: server.address().port}),
+    );
   });
 }
 
@@ -231,7 +250,11 @@ async function doSetup(page, t) {
   }
   if (t?.setup?.click) {
     for (const sel of [].concat(t.setup.click)) {
-      await page.locator(sel).first().click({timeout: 2500}).catch(() => {});
+      await page
+        .locator(sel)
+        .first()
+        .click({timeout: 2500})
+        .catch(() => {});
       await page.waitForTimeout(300);
     }
   }
@@ -256,7 +279,8 @@ const REVEAL_TRIGGERS = [
   '[role="combobox"][aria-expanded="false"]',
   'button[aria-expanded="false"][aria-haspopup]',
 ];
-const REVEALED_CONTENT = '[role="dialog"], [role="menu"], [role="listbox"], [popover], [data-radix-popper-content-wrapper]';
+const REVEALED_CONTENT =
+  '[role="dialog"], [role="menu"], [role="listbox"], [popover], [data-radix-popper-content-wrapper]';
 
 async function revealInteractionGated(page) {
   try {
@@ -288,7 +312,10 @@ async function boxOf(page, sel, nth = 0) {
   const loc = page.locator(sel).nth(nth);
   await loc.waitFor({state: 'visible', timeout: 2500}).catch(() => {});
   if ((await loc.count()) === 0) return null;
-  const b = await loc.first().boundingBox().catch(() => null);
+  const b = await loc
+    .first()
+    .boundingBox()
+    .catch(() => null);
   return b ? {cx: b.x + b.width / 2, cy: b.y + b.height / 2, ...b} : null;
 }
 
@@ -298,7 +325,12 @@ function isFlipMatrix(transform) {
   const m = transform.match(/matrix\(([^)]+)\)/);
   if (!m) return false;
   const [a, b, c, d] = m[1].split(',').map(v => parseFloat(v.trim()));
-  return Math.abs(a + 1) < 0.01 && Math.abs(b) < 0.01 && Math.abs(c) < 0.01 && Math.abs(d - 1) < 0.01;
+  return (
+    Math.abs(a + 1) < 0.01 &&
+    Math.abs(b) < 0.01 &&
+    Math.abs(c) < 0.01 &&
+    Math.abs(d - 1) < 0.01
+  );
 }
 // Is `rtl` the mirror of `ltr`? i.e. rtl == scaleX(-1) . ltr, comparing the
 // linear part only (translation does not affect mirroring). Pre-multiplying by
@@ -316,7 +348,12 @@ function isIdentityTransform(transform) {
   const m = transform.match(/matrix\(([^)]+)\)/);
   if (!m) return true;
   const [a, b, c, d] = m[1].split(',').map(v => parseFloat(v.trim()));
-  return Math.abs(a - 1) < 0.01 && Math.abs(b) < 0.01 && Math.abs(c) < 0.01 && Math.abs(d - 1) < 0.01;
+  return (
+    Math.abs(a - 1) < 0.01 &&
+    Math.abs(b) < 0.01 &&
+    Math.abs(c) < 0.01 &&
+    Math.abs(d - 1) < 0.01
+  );
 }
 
 async function wrapperTransform(page, sel) {
@@ -464,18 +501,31 @@ async function detectDirectionalDecorations(page) {
 // from one LTR and (only when LTR found a candidate) one RTL measurement taken
 // by measureAutoStory() below.
 function decorationCard(component, storyId, ltr, rtl) {
-  const card = {component, storyId, dim: 'D6-decoration', verdict: 'N-A', notes: [], decorations: 0, results: []};
+  const card = {
+    component,
+    storyId,
+    dim: 'D6-decoration',
+    verdict: 'N-A',
+    notes: [],
+    decorations: 0,
+    results: [],
+  };
   if (ltr.decorations.length === 0) {
-    if (ltr.revealed) card.notes.push('opened an interaction-gated surface before scanning');
+    if (ltr.revealed)
+      card.notes.push('opened an interaction-gated surface before scanning');
     card.notes.push('no contextual directional decorations');
     return card;
   }
-  const evaluated = evaluateDirectionalDecorations(ltr.decorations, rtl.decorations);
+  const evaluated = evaluateDirectionalDecorations(
+    ltr.decorations,
+    rtl.decorations,
+  );
   card.verdict = evaluated.verdict;
   card.notes.push(...evaluated.notes);
   card.results = evaluated.results;
   card.decorations = Math.max(ltr.decorations.length, rtl.decorations.length);
-  if (ltr.revealed || rtl.revealed) card.notes.unshift('opened an interaction-gated surface before scanning');
+  if (ltr.revealed || rtl.revealed)
+    card.notes.unshift('opened an interaction-gated surface before scanning');
   return card;
 }
 
@@ -578,7 +628,15 @@ async function detectPositioned(page) {
 const PM_TOL = Number(process.env.PM_TOL || 3); // px tolerance (signal gap was ~10x)
 
 function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
-  const card = {component, storyId, dim: 'D5-positional', verdict: 'N-A', notes: [], candidates: 0, fails: []};
+  const card = {
+    component,
+    storyId,
+    dim: 'D5-positional',
+    verdict: 'N-A',
+    notes: [],
+    candidates: 0,
+    fails: [],
+  };
   const ltr = ltrMeasure.positioned;
   const revealedL = PM_REVEAL && ltrMeasure.revealed;
 
@@ -588,14 +646,16 @@ function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
   // cost. Checking `ltr && rtl` here instead would report a vacuous "pass" —
   // the compare loop runs min(ltr, rtl) = 0 times and never sets anyFail.
   if (ltr.length === 0) {
-    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+    if (revealedL)
+      card.notes.push('opened an interaction-gated surface before scanning');
     card.notes.push('no logical-anchor + physical-transform candidates in LTR');
     return card;
   }
 
   const rtl = rtlMeasure.positioned;
   const revealedR = PM_REVEAL && rtlMeasure.revealed;
-  if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
+  if (revealedL || revealedR)
+    card.notes.push('opened an interaction-gated surface before scanning');
 
   // Same reasoning in the other direction: zero comparisons is not a pass.
   if (rtl.length === 0) {
@@ -614,7 +674,8 @@ function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
   let anyFail = false;
   const perEl = [];
   for (let i = 0; i < n; i++) {
-    const L = ltr[i], R = rtl[i];
+    const L = ltr[i],
+      R = rtl[i];
     const expectedRtlCX = L.parentW - L.relCenterX; // mirror about parent center
     const delta = Math.abs(R.relCenterX - expectedRtlCX);
     const mirrored = delta <= PM_TOL;
@@ -630,7 +691,12 @@ function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
         delta: Math.round(delta * 10) / 10,
       });
     }
-    perEl.push({idx: i, cls: L.cls, delta: Math.round(delta * 10) / 10, mirrored});
+    perEl.push({
+      idx: i,
+      cls: L.cls,
+      delta: Math.round(delta * 10) / 10,
+      mirrored,
+    });
   }
   card.perEl = perEl;
   if (anyFail) {
@@ -638,12 +704,17 @@ function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
     card.notes.push(
       `positioned element(s) land on the wrong side in RTL: ` +
         card.fails
-          .map(f => `${f.cls || f.tag} (LTR cx ${f.ltrRelCenterX} → RTL cx ${f.rtlRelCenterX}, expected ~${f.expectedRtlCenterX}, Δ${f.delta}px)`)
+          .map(
+            f =>
+              `${f.cls || f.tag} (LTR cx ${f.ltrRelCenterX} → RTL cx ${f.rtlRelCenterX}, expected ~${f.expectedRtlCenterX}, Δ${f.delta}px)`,
+          )
           .join('; '),
     );
   } else {
     card.verdict = 'pass';
-    card.notes.push(`every positioned candidate mirrors about its parent center (≤${PM_TOL}px)`);
+    card.notes.push(
+      `every positioned candidate mirrors about its parent center (≤${PM_TOL}px)`,
+    );
   }
   return card;
 }
@@ -653,26 +724,44 @@ function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
 // always did: D5 before the reveal step (unless --pm-reveal), D6 after it. The
 // RTL load runs only when either dimension found an LTR candidate, which is
 // when each of them used to load RTL on its own.
-async function measureAutoStory(page, port, storyId, rtl, {positioned, decorations}) {
-  await page.goto(storyUrl(port, storyId, rtl), {waitUntil: 'domcontentloaded'});
+async function measureAutoStory(
+  page,
+  port,
+  storyId,
+  rtl,
+  {positioned, decorations},
+) {
+  await page.goto(storyUrl(port, storyId, rtl), {
+    waitUntil: 'domcontentloaded',
+  });
   await settle(page);
   const measure = {positioned: [], decorations: [], revealed: false};
-  if (positioned && !PM_REVEAL) measure.positioned = await detectPositioned(page);
+  if (positioned && !PM_REVEAL)
+    measure.positioned = await detectPositioned(page);
   if (decorations || (positioned && PM_REVEAL)) {
     measure.revealed = await revealInteractionGated(page);
   }
-  if (positioned && PM_REVEAL) measure.positioned = await detectPositioned(page);
-  if (decorations) measure.decorations = await detectDirectionalDecorations(page);
+  if (positioned && PM_REVEAL)
+    measure.positioned = await detectPositioned(page);
+  if (decorations)
+    measure.decorations = await detectDirectionalDecorations(page);
   return measure;
 }
 
 async function autoPositionalAndDecorations(page, port, storyId, component) {
-  const ltr = await measureAutoStory(page, port, storyId, false, {positioned: true, decorations: true});
+  const ltr = await measureAutoStory(page, port, storyId, false, {
+    positioned: true,
+    decorations: true,
+  });
   const needPositioned = ltr.positioned.length > 0;
   const needDecorations = ltr.decorations.length > 0;
-  const rtl = needPositioned || needDecorations
-    ? await measureAutoStory(page, port, storyId, true, {positioned: needPositioned, decorations: needDecorations})
-    : null;
+  const rtl =
+    needPositioned || needDecorations
+      ? await measureAutoStory(page, port, storyId, true, {
+          positioned: needPositioned,
+          decorations: needDecorations,
+        })
+      : null;
   return {
     positional: positionalCard(component, storyId, ltr, rtl),
     decoration: decorationCard(component, storyId, ltr, rtl),
@@ -681,16 +770,28 @@ async function autoPositionalAndDecorations(page, port, storyId, component) {
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
 async function autoD1(page, port, storyId, component) {
-  const card = {component, storyId, dim: 'D1', verdict: 'N-A', notes: [], icons: 0};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
+  const card = {
+    component,
+    storyId,
+    dim: 'D1',
+    verdict: 'N-A',
+    notes: [],
+    icons: 0,
+  };
+  await page.goto(storyUrl(port, storyId, false), {
+    waitUntil: 'domcontentloaded',
+  });
   await settle(page);
   const revealedL = await revealInteractionGated(page);
   const ltr = await detectDirectionalIcons(page);
-  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
+  await page.goto(storyUrl(port, storyId, true), {
+    waitUntil: 'domcontentloaded',
+  });
   await settle(page);
   const revealedR = await revealInteractionGated(page);
   const rtl = await detectDirectionalIcons(page);
-  if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
+  if (revealedL || revealedR)
+    card.notes.push('opened an interaction-gated surface before scanning');
 
   if (ltr.length === 0 && rtl.length === 0) {
     card.verdict = 'N-A';
@@ -702,7 +803,8 @@ async function autoD1(page, port, storyId, component) {
   // Pair LTR<->RTL directional icons by aria-context (fallback: positional
   // index) and evaluate EACH pair, so a two-button name-swap (prev/next) is
   // seen per-button rather than washed out by a global multiset.
-  const keyOf = (i, idx) => (i.aria && i.aria.trim() ? 'aria:' + i.aria.trim() : 'idx:' + idx);
+  const keyOf = (i, idx) =>
+    i.aria && i.aria.trim() ? 'aria:' + i.aria.trim() : 'idx:' + idx;
   const ltrBy = new Map();
   ltr.forEach((i, idx) => ltrBy.set(keyOf(i, idx), i));
   const rtlBy = new Map();
@@ -714,7 +816,8 @@ async function autoD1(page, port, storyId, component) {
   let anyDoubleFlip = false;
   const perIcon = [];
   for (const k of keys) {
-    const L = ltrBy.get(k), R = rtlBy.get(k);
+    const L = ltrBy.get(k),
+      R = rtlBy.get(k);
     // transform-mirror: the glyph's COMPOSED transform under RTL equals its LTR
     // transform pre-multiplied by scaleX(-1). This is the general form of "the
     // glyph is mirrored", and it holds whether the mirror lives on its own
@@ -725,18 +828,32 @@ async function autoD1(page, port, storyId, component) {
     // produces even though it renders correctly.
     const mirrored = R && isMirrorOf(R.matrix, L?.matrix);
     // name-swap: the rendered glyph direction changed left<->right for this icon
-    const swapped = L && R && L.dir !== R.dir && L.dir !== null && R.dir !== null;
+    const swapped =
+      L && R && L.dir !== R.dir && L.dir !== null && R.dir !== null;
     // double-flip: flip present in BOTH dirs -> nets to no visible mirror
     // A glyph flipped in BOTH directions nets to no visible mirror. Only a
     // concern when the two are actually equal — a composed mirror has a
     // different RTL matrix and is caught by `mirrored` above.
     const doubleFlip =
-      L && R && L.flip && R.flip &&
+      L &&
+      R &&
+      L.flip &&
+      R.flip &&
       L.matrix.every((v, i) => Math.abs(v - R.matrix[i]) < 0.01);
     if (mirrored || swapped) anyMirrored = true;
-    else if (doubleFlip) { anyDoubleFlip = true; anyUnhandled = true; }
-    else anyUnhandled = true;
-    perIcon.push({icon: k, ltrDir: L?.dir, rtlDir: R?.dir, ltrMatrix: L?.matrix, rtlMatrix: R?.matrix, mirrored: !!mirrored, swapped: !!swapped});
+    else if (doubleFlip) {
+      anyDoubleFlip = true;
+      anyUnhandled = true;
+    } else anyUnhandled = true;
+    perIcon.push({
+      icon: k,
+      ltrDir: L?.dir,
+      rtlDir: R?.dir,
+      ltrMatrix: L?.matrix,
+      rtlMatrix: R?.matrix,
+      mirrored: !!mirrored,
+      swapped: !!swapped,
+    });
   }
 
   // A component is RTL-ready for D1 iff EVERY directional icon is handled
@@ -744,10 +861,14 @@ async function autoD1(page, port, storyId, component) {
   // not-RTL (the "shipped without RTL handling" signal).
   if (!anyUnhandled && anyMirrored) {
     card.verdict = 'pass';
-    card.notes.push('every directional icon mirrors (transform-flip and/or name-swap)');
+    card.notes.push(
+      'every directional icon mirrors (transform-flip and/or name-swap)',
+    );
   } else if (anyDoubleFlip) {
     card.verdict = 'fail';
-    card.notes.push('double-flip: a directional icon is flipped in BOTH LTR and RTL (nets to no mirror)');
+    card.notes.push(
+      'double-flip: a directional icon is flipped in BOTH LTR and RTL (nets to no mirror)',
+    );
   } else {
     card.verdict = 'fail';
     const bad = perIcon.filter(p => !p.mirrored && !p.swapped).map(p => p.icon);
@@ -764,91 +885,184 @@ async function autoD1(page, port, storyId, component) {
 // ===========================================================================
 async function checkD2(page, port, t, card) {
   const {prev, next} = t.selectors;
-  await page.goto(storyUrl(port, t.storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page); await doSetup(page, t);
-  const pL = await boxOf(page, prev), nL = await boxOf(page, next);
-  await page.goto(storyUrl(port, t.storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page); await doSetup(page, t);
-  const pR = await boxOf(page, prev), nR = await boxOf(page, next);
-  if (!pL || !nL || !pR || !nR) { card.dims.D2 = 'N-A'; card.notes.push('D2: prev/next not found'); return; }
-  const ltrOk = pL.cx < nL.cx, rtlOk = pR.cx > nR.cx;
+  await page.goto(storyUrl(port, t.storyId, false), {
+    waitUntil: 'domcontentloaded',
+  });
+  await settle(page);
+  await doSetup(page, t);
+  const pL = await boxOf(page, prev),
+    nL = await boxOf(page, next);
+  await page.goto(storyUrl(port, t.storyId, true), {
+    waitUntil: 'domcontentloaded',
+  });
+  await settle(page);
+  await doSetup(page, t);
+  const pR = await boxOf(page, prev),
+    nR = await boxOf(page, next);
+  if (!pL || !nL || !pR || !nR) {
+    card.dims.D2 = 'N-A';
+    card.notes.push('D2: prev/next not found');
+    return;
+  }
+  const ltrOk = pL.cx < nL.cx,
+    rtlOk = pR.cx > nR.cx;
   card.dims.D2 = ltrOk && rtlOk ? 'pass' : ltrOk || rtlOk ? 'partial' : 'fail';
-  card.notes.push(`D2 prev/next cx: LTR ${pL.cx.toFixed(0)}<${nL.cx.toFixed(0)}=${ltrOk}; RTL ${pR.cx.toFixed(0)}>${nR.cx.toFixed(0)}=${rtlOk}`);
+  card.notes.push(
+    `D2 prev/next cx: LTR ${pL.cx.toFixed(0)}<${nL.cx.toFixed(0)}=${ltrOk}; RTL ${pR.cx.toFixed(0)}>${nR.cx.toFixed(0)}=${rtlOk}`,
+  );
 }
 async function checkD3Scroll(page, port, t, card) {
   const {scroller, nextButton} = t.selectors;
   const run = async rtl => {
-    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
-    await settle(page); await doSetup(page, t);
-    const before = await page.locator(scroller).first().evaluate(el => el.scrollLeft).catch(() => null);
-    await page.locator(nextButton).first().click({timeout: 2500}).catch(() => {});
+    await page.goto(storyUrl(port, t.storyId, rtl), {
+      waitUntil: 'domcontentloaded',
+    });
+    await settle(page);
+    await doSetup(page, t);
+    const before = await page
+      .locator(scroller)
+      .first()
+      .evaluate(el => el.scrollLeft)
+      .catch(() => null);
+    await page
+      .locator(nextButton)
+      .first()
+      .click({timeout: 2500})
+      .catch(() => {});
     await page.waitForTimeout(500);
-    const after = await page.locator(scroller).first().evaluate(el => el.scrollLeft).catch(() => null);
+    const after = await page
+      .locator(scroller)
+      .first()
+      .evaluate(el => el.scrollLeft)
+      .catch(() => null);
     return before == null || after == null ? null : after - before;
   };
-  const dL = await run(false), dR = await run(true);
-  if (dL == null || dR == null) { card.dims.D3 = 'N-A'; card.notes.push('D3: scroller/next not found'); return; }
-  const ltrOk = dL > 1, rtlOk = dR < -1;
+  const dL = await run(false),
+    dR = await run(true);
+  if (dL == null || dR == null) {
+    card.dims.D3 = 'N-A';
+    card.notes.push('D3: scroller/next not found');
+    return;
+  }
+  const ltrOk = dL > 1,
+    rtlOk = dR < -1;
   card.dims.D3 = ltrOk && rtlOk ? 'pass' : ltrOk || rtlOk ? 'partial' : 'fail';
-  card.notes.push(`D3 scroll delta on next: LTR ${dL.toFixed(0)} (>0=${ltrOk}); RTL ${dR.toFixed(0)} (<0=${rtlOk})`);
+  card.notes.push(
+    `D3 scroll delta on next: LTR ${dL.toFixed(0)} (>0=${ltrOk}); RTL ${dR.toFixed(0)} (<0=${rtlOk})`,
+  );
 }
 async function checkD4(page, port, t, card) {
   const {overlay, overlayRoot} = t.selectors;
-  await page.goto(storyUrl(port, t.storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page); await doSetup(page, t);
-  const oL = await boxOf(page, overlay), rL = await boxOf(page, overlayRoot || 'body');
-  await page.goto(storyUrl(port, t.storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page); await doSetup(page, t);
-  const oR = await boxOf(page, overlay), rR = await boxOf(page, overlayRoot || 'body');
-  if (!oL || !rL || !oR || !rR) { card.dims.D4 = 'N-A'; card.notes.push('D4: overlay/root not found'); return; }
-  const sideL = (oL.cx - rL.x) / rL.width, sideR = (oR.cx - rR.x) / rR.width;
-  const flipped = sideL < 0.5 !== sideR < 0.5 && Math.abs(sideR - (1 - sideL)) < 0.25;
-  card.dims.D4 = flipped ? 'pass' : Math.abs(sideR - sideL) < 0.05 ? 'fail' : 'partial';
-  card.notes.push(`D4 overlay side frac: LTR ${sideL.toFixed(2)} RTL ${sideR.toFixed(2)} flipped=${flipped}`);
+  await page.goto(storyUrl(port, t.storyId, false), {
+    waitUntil: 'domcontentloaded',
+  });
+  await settle(page);
+  await doSetup(page, t);
+  const oL = await boxOf(page, overlay),
+    rL = await boxOf(page, overlayRoot || 'body');
+  await page.goto(storyUrl(port, t.storyId, true), {
+    waitUntil: 'domcontentloaded',
+  });
+  await settle(page);
+  await doSetup(page, t);
+  const oR = await boxOf(page, overlay),
+    rR = await boxOf(page, overlayRoot || 'body');
+  if (!oL || !rL || !oR || !rR) {
+    card.dims.D4 = 'N-A';
+    card.notes.push('D4: overlay/root not found');
+    return;
+  }
+  const sideL = (oL.cx - rL.x) / rL.width,
+    sideR = (oR.cx - rR.x) / rR.width;
+  const flipped =
+    sideL < 0.5 !== sideR < 0.5 && Math.abs(sideR - (1 - sideL)) < 0.25;
+  card.dims.D4 = flipped
+    ? 'pass'
+    : Math.abs(sideR - sideL) < 0.05
+      ? 'fail'
+      : 'partial';
+  card.notes.push(
+    `D4 overlay side frac: LTR ${sideL.toFixed(2)} RTL ${sideR.toFixed(2)} flipped=${flipped}`,
+  );
 }
 
 async function checkD7CoarseHit(page, port, t, card) {
   const wrapperSel = t.selectors?.wrapperSelector;
   const sizes = t.sizes || ['md'];
+  const minimumTargetSize = t.minimumTargetSize;
+  if (
+    !['width', 'height'].every(
+      axis =>
+        Number.isFinite(minimumTargetSize?.[axis]) &&
+        minimumTargetSize[axis] > 0,
+    )
+  ) {
+    throw new Error(
+      'D7 requires positive minimumTargetSize width and height from the owning target contract',
+    );
+  }
 
   const testDir = async (rtl, size) => {
-    const inputSel = t.selectors?.inputSelectorBySize?.[size] ||
-      t.selectors?.inputSelector || 'input[type="checkbox"], input[type="radio"]';
-    await page.goto(storyUrl(port, t.storyId, rtl, {size}), {waitUntil: 'domcontentloaded'});
+    const inputSel =
+      t.selectors?.inputSelectorBySize?.[size] ||
+      t.selectors?.inputSelector ||
+      'input[type="checkbox"], input[type="radio"]';
+    await page.goto(storyUrl(port, t.storyId, rtl, {size}), {
+      waitUntil: 'domcontentloaded',
+    });
     await settle(page);
     await doSetup(page, t);
 
-    return page.evaluate(({inputSel, wrapperSel, size, rtl}) => {
-      const coarse = window.matchMedia('(pointer: coarse)').matches;
-      const touchPoints = navigator.maxTouchPoints;
-      const inputs = Array.from(document.querySelectorAll(inputSel));
-      if (inputs.length === 0) return {coarse, touchPoints, size, rtl, count: 0, allHitsOk: false};
+    return page
+      .evaluate(
+        ({inputSel, wrapperSel, size, rtl, minimumTargetSize}) => {
+          const coarse = window.matchMedia('(pointer: coarse)').matches;
+          const touchPoints = navigator.maxTouchPoints;
+          const inputs = Array.from(document.querySelectorAll(inputSel));
+          if (inputs.length === 0)
+            return {coarse, touchPoints, size, rtl, count: 0, allHitsOk: false};
 
-      let allHitsOk = true;
-      let count = 0;
-      const centers = [];
-      for (const input of inputs) {
-        const wrapper = wrapperSel ? input.closest(wrapperSel) : input.parentElement;
-        if (!wrapper) continue;
-        const b = wrapper.getBoundingClientRect();
-        const inputBox = input.getBoundingClientRect();
-        if (b.width < 1 || b.height < 1) continue;
-        const cx = b.x + b.width / 2;
-        const cy = b.y + b.height / 2;
-        const hit = document.elementFromPoint(cx, cy);
-        const isHit = hit === input || input.contains(hit);
-        const isCentered = Math.abs(inputBox.x + inputBox.width / 2 - cx) < 0.5 &&
-          Math.abs(inputBox.y + inputBox.height / 2 - cy) < 0.5;
-        if (!isHit || !isCentered) allHitsOk = false;
-        centers.push({
-          wrapper: {x: b.x, y: b.y, width: b.width, height: b.height},
-          hit: isHit,
-          centered: isCentered,
-        });
-        count++;
-      }
-      return {coarse, touchPoints, size, rtl, count, allHitsOk, centers};
-    }, {inputSel, wrapperSel, size, rtl}).catch(() => null);
+          let allHitsOk = true;
+          let count = 0;
+          const centers = [];
+          for (const input of inputs) {
+            const wrapper = wrapperSel
+              ? input.closest(wrapperSel)
+              : input.parentElement;
+            if (!wrapper) continue;
+            const b = wrapper.getBoundingClientRect();
+            const inputBox = input.getBoundingClientRect();
+            if (b.width < 1 || b.height < 1) continue;
+            const cx = b.x + b.width / 2;
+            const cy = b.y + b.height / 2;
+            const hit = document.elementFromPoint(cx, cy);
+            const isHit = hit === input || input.contains(hit);
+            const isCentered =
+              Math.abs(inputBox.x + inputBox.width / 2 - cx) < 0.5 &&
+              Math.abs(inputBox.y + inputBox.height / 2 - cy) < 0.5;
+            const meetsMinimum =
+              inputBox.width >= minimumTargetSize.width &&
+              inputBox.height >= minimumTargetSize.height;
+            if (!isHit || !isCentered || !meetsMinimum) allHitsOk = false;
+            centers.push({
+              wrapper: {x: b.x, y: b.y, width: b.width, height: b.height},
+              native: {
+                x: inputBox.x,
+                y: inputBox.y,
+                width: inputBox.width,
+                height: inputBox.height,
+              },
+              hit: isHit,
+              centered: isCentered,
+              meetsMinimum,
+            });
+            count++;
+          }
+          return {coarse, touchPoints, size, rtl, count, allHitsOk, centers};
+        },
+        {inputSel, wrapperSel, size, rtl, minimumTargetSize},
+      )
+      .catch(() => null);
   };
 
   const results = [];
@@ -857,44 +1071,71 @@ async function checkD7CoarseHit(page, port, t, card) {
     results.push(await testDir(true, size));
   }
 
-  if (results.some(result => result === null || !result.coarse || result.touchPoints < 1 || result.count === 0)) {
+  if (
+    results.some(
+      result =>
+        result === null ||
+        !result.coarse ||
+        result.touchPoints < 1 ||
+        result.count === 0,
+    )
+  ) {
     card.dims.D7 = 'N-A';
-    card.notes.push('D7: coarse-pointer context or input/wrapper targets not verified');
+    card.notes.push(
+      'D7: coarse-pointer context or input/wrapper targets not verified',
+    );
     return;
   }
 
+  card.coarseHits = {minimumTargetSize, results};
   const pass = results.every(result => result.allHitsOk);
   card.dims.D7 = pass ? 'pass' : 'fail';
   const formatTarget = target => {
     const {width, height} = target.wrapper;
     const cx = target.wrapper.x + width / 2;
     const cy = target.wrapper.y + height / 2;
-    return `${width}x${height}@(${cx.toFixed(0)},${cy.toFixed(0)})->${target.hit && target.centered ? 'HIT' : 'MISS'}`;
+    return `wrapper ${width}x${height}@(${cx.toFixed(0)},${cy.toFixed(0)}) native ${target.native.width}x${target.native.height} hit=${target.hit} centered=${target.centered} size=${target.meetsMinimum}`;
   };
-  card.notes.push(`D7 coarse hit-target center: ${results.map(result => `${result.rtl ? 'RTL' : 'LTR'} ${result.size}:${result.centers.map(formatTarget).join(',')}`).join('; ')}`);
+  card.notes.push(
+    `D7 coarse native target (minimum ${minimumTargetSize.width}x${minimumTargetSize.height}): ${results.map(result => `${result.rtl ? 'RTL' : 'LTR'} ${result.size}:${result.centers.map(formatTarget).join(',')}`).join('; ')}`,
+  );
 }
 
 async function measureLogicalInlineSubject(page, subject) {
   const subjects = page.locator(subject);
   const count = await subjects.count();
   if (count !== 1) return {count, visible: false};
-  return subjects.first().evaluate(element => {
-    const style = getComputedStyle(element);
-    const rect = element.getBoundingClientRect();
-    const number = value => Number.parseFloat(value);
-    const visible = typeof element.checkVisibility === 'function'
-      ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
-      : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
-    return {
-      count: 1, visible, width: rect.width, height: rect.height,
-      direction: style.direction,
-      writingMode: style.writingMode,
-      inlineStart: number(style.paddingInlineStart),
-      inlineEnd: number(style.paddingInlineEnd),
-      top: number(style.paddingTop), right: number(style.paddingRight),
-      bottom: number(style.paddingBottom), left: number(style.paddingLeft),
-    };
-  }).catch(() => null);
+  return subjects
+    .first()
+    .evaluate(element => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const number = value => Number.parseFloat(value);
+      const visible =
+        typeof element.checkVisibility === 'function'
+          ? element.checkVisibility({
+              checkOpacity: true,
+              checkVisibilityCSS: true,
+            })
+          : style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            Number(style.opacity) !== 0;
+      return {
+        count: 1,
+        visible,
+        width: rect.width,
+        height: rect.height,
+        direction: style.direction,
+        writingMode: style.writingMode,
+        inlineStart: number(style.paddingInlineStart),
+        inlineEnd: number(style.paddingInlineEnd),
+        top: number(style.paddingTop),
+        right: number(style.paddingRight),
+        bottom: number(style.paddingBottom),
+        left: number(style.paddingLeft),
+      };
+    })
+    .catch(() => null);
 }
 
 async function verifyD8BrowserContract(page) {
@@ -904,13 +1145,17 @@ async function verifyD8BrowserContract(page) {
   `);
   const verifyPair = async subject => {
     const ltr = await measureLogicalInlineSubject(page, subject);
-    await page.locator(subject).evaluate(element => { element.dir = 'rtl'; });
+    await page.locator(subject).evaluate(element => {
+      element.dir = 'rtl';
+    });
     const rtl = await measureLogicalInlineSubject(page, subject);
     return {ltr, rtl, result: classifyLogicalInlinePair(ltr, rtl)};
   };
   const horizontal = await verifyPair('#d8-horizontal');
   const vertical = await verifyPair('#d8-vertical');
-  await page.locator('#d8-horizontal').evaluate(element => { element.style.display = 'none'; });
+  await page.locator('#d8-horizontal').evaluate(element => {
+    element.style.display = 'none';
+  });
   const hidden = await measureLogicalInlineSubject(page, '#d8-horizontal');
   const hiddenVerdict = classifyLogicalInlinePair(hidden, hidden);
   if (
@@ -931,55 +1176,78 @@ async function verifyD8BrowserContract(page) {
 
 async function checkD8LogicalInline(page, port, t, card) {
   const subject = t.selectors?.subject;
-  if (!subject) { card.dims.D8 = 'N-A'; card.notes.push('D8: no subject selector configured'); return; }
+  if (!subject) {
+    card.dims.D8 = 'N-A';
+    card.notes.push('D8: no subject selector configured');
+    return;
+  }
   const run = async rtl => {
-    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
-    await settle(page); await doSetup(page, t);
+    await page.goto(storyUrl(port, t.storyId, rtl), {
+      waitUntil: 'domcontentloaded',
+    });
+    await settle(page);
+    await doSetup(page, t);
     return measureLogicalInlineSubject(page, subject);
   };
-  const ltr = await run(false), rtl = await run(true);
-  if (ltr == null || rtl == null) { card.dims.D8 = 'N-A'; card.notes.push('D8: logical inline-edge subject was not measurable'); return; }
+  const ltr = await run(false),
+    rtl = await run(true);
+  if (ltr == null || rtl == null) {
+    card.dims.D8 = 'N-A';
+    card.notes.push('D8: logical inline-edge subject was not measurable');
+    return;
+  }
   const result = classifyLogicalInlinePair(ltr, rtl);
   card.dims.D8 = result.verdict;
   const formatPhysical = measurement =>
     `${measurement.top}/${measurement.right}/${measurement.bottom}/${measurement.left}px`;
   card.notes.push(
     `D8 logical inline edges: ${result.reason}; writing-mode ${ltr.writingMode}; ` +
-    `LTR start/end ${ltr.inlineStart}/${ltr.inlineEnd}px T/R/B/L ${formatPhysical(ltr)}; ` +
-    `RTL start/end ${rtl.inlineStart}/${rtl.inlineEnd}px T/R/B/L ${formatPhysical(rtl)}`,
+      `LTR start/end ${ltr.inlineStart}/${ltr.inlineEnd}px T/R/B/L ${formatPhysical(ltr)}; ` +
+      `RTL start/end ${rtl.inlineStart}/${rtl.inlineEnd}px T/R/B/L ${formatPhysical(rtl)}`,
   );
 }
 
 async function measureGroupedCorners(page, group) {
-  return page.evaluate(({first, middle, last}) => {
-    const selectors = [first, middle, last];
-    const boxes = selectors.map(selector => {
-      const elements = document.querySelectorAll(selector);
-      if (elements.length !== 1) return null;
-      const element = elements[0];
-      const style = getComputedStyle(element);
-      const rect = element.getBoundingClientRect();
-      const number = value => Number.parseFloat(value);
-      const visible = typeof element.checkVisibility === 'function'
-        ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
-        : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+  return page
+    .evaluate(({first, middle, last}) => {
+      const selectors = [first, middle, last];
+      const boxes = selectors.map(selector => {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length !== 1) return null;
+        const element = elements[0];
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        const number = value => Number.parseFloat(value);
+        const visible =
+          typeof element.checkVisibility === 'function'
+            ? element.checkVisibility({
+                checkOpacity: true,
+                checkVisibilityCSS: true,
+              })
+            : style.display !== 'none' &&
+              style.visibility !== 'hidden' &&
+              Number(style.opacity) !== 0;
+        return {
+          visible,
+          width: rect.width,
+          height: rect.height,
+          direction: style.direction,
+          writingMode: style.writingMode,
+          corners: {
+            topLeft: number(style.borderTopLeftRadius),
+            topRight: number(style.borderTopRightRadius),
+            bottomRight: number(style.borderBottomRightRadius),
+            bottomLeft: number(style.borderBottomLeftRadius),
+          },
+        };
+      });
       return {
-        visible, width: rect.width, height: rect.height,
-        direction: style.direction, writingMode: style.writingMode,
-        corners: {
-          topLeft: number(style.borderTopLeftRadius),
-          topRight: number(style.borderTopRightRadius),
-          bottomRight: number(style.borderBottomRightRadius),
-          bottomLeft: number(style.borderBottomLeftRadius),
-        },
+        direction: boxes.find(Boolean)?.direction ?? null,
+        writingMode: boxes.find(Boolean)?.writingMode ?? null,
+        boxes,
       };
-    });
-    return {
-      direction: boxes.find(Boolean)?.direction ?? null,
-      writingMode: boxes.find(Boolean)?.writingMode ?? null,
-      boxes,
-    };
-  }, group).catch(() => null);
+    }, group)
+    .catch(() => null);
 }
 
 async function checkD9GroupedCorners(page, port, t, card) {
@@ -990,25 +1258,40 @@ async function checkD9GroupedCorners(page, port, t, card) {
     return;
   }
   const run = async rtl => {
-    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
-    await settle(page); await doSetup(page, t);
+    await page.goto(storyUrl(port, t.storyId, rtl), {
+      waitUntil: 'domcontentloaded',
+    });
+    await settle(page);
+    await doSetup(page, t);
     return Promise.all(groups.map(group => measureGroupedCorners(page, group)));
   };
-  const ltr = await run(false), rtl = await run(true);
+  const ltr = await run(false),
+    rtl = await run(true);
   const results = groups.map((group, index) => ({
     name: group.name,
     logicalSide: group.logicalSide,
     ...classifyLogicalGroupedCorners(ltr[index], rtl[index], group.logicalSide),
   }));
-  card.dims.D9 = results.every(result => result.verdict === 'pass') ? 'pass' : 'fail';
-  card.notes.push(...results.map(result => `D9 ${result.name ?? result.logicalSide}: ${result.reason}`));
+  card.dims.D9 = results.every(result => result.verdict === 'pass')
+    ? 'pass'
+    : 'fail';
+  card.notes.push(
+    ...results.map(
+      result => `D9 ${result.name ?? result.logicalSide}: ${result.reason}`,
+    ),
+  );
   card.groupedCorners = results;
 }
 
 // `pages` is the curated page pair (rtl-audit-pool.mjs). A dim that throws is
 // recorded as an ERROR, and the page it ran on is replaced before the next dim.
 async function scoreCurated(pages, port, t) {
-  const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
+  const card = {
+    component: t.component,
+    storyId: t.storyId,
+    dims: {},
+    notes: [],
+  };
   await runSteps(t.dims, pages, {
     pageFor: dim => (dim === 'D7' ? 'coarse' : 'main'),
     run: async (dim, page) => {
@@ -1029,7 +1312,14 @@ async function scoreCurated(pages, port, t) {
   const vals = Object.entries(card.dims).filter(([, v]) => v !== 'N-A');
   const anyFail = vals.some(([, v]) => v === 'fail' || v === 'ERROR');
   const allPass = vals.length > 0 && vals.every(([, v]) => v === 'pass');
-  card.rollup = vals.length === 0 ? 'N-A' : allPass ? 'RTL-ready' : anyFail ? 'not-RTL' : 'partial';
+  card.rollup =
+    vals.length === 0
+      ? 'N-A'
+      : allPass
+        ? 'RTL-ready'
+        : anyFail
+          ? 'not-RTL'
+          : 'partial';
   return card;
 }
 
@@ -1041,7 +1331,9 @@ function matchesFilter(component) {
 }
 
 function belongsToActivePackage(route) {
-  return filterStoryRoutesByPackages([route], ACTIVE_PACKAGE_NAMES).length === 1;
+  return (
+    filterStoryRoutesByPackages([route], ACTIVE_PACKAGE_NAMES).length === 1
+  );
 }
 
 const runtime = {
@@ -1066,19 +1358,27 @@ async function cleanupRuntime() {
 
   let entries;
   try {
-    const index = JSON.parse(fs.readFileSync(path.join(DIST, 'index.json'), 'utf8'));
+    const index = JSON.parse(
+      fs.readFileSync(path.join(DIST, 'index.json'), 'utf8'),
+    );
     entries = index.entries ?? index.stories;
   } catch (error) {
     throw new Error(`cannot read index.json: ${String(error).slice(0, 120)}`, {
       cause: error,
     });
   }
-  if (entries == null || typeof entries !== 'object' || Array.isArray(entries)) {
+  if (
+    entries == null ||
+    typeof entries !== 'object' ||
+    Array.isArray(entries)
+  ) {
     throw new Error('index.json does not contain a Storybook entries object');
   }
 
   let targets = [];
-  try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
+  try {
+    targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8'));
+  } catch {}
 
   const storyIds = Object.keys(entries).filter(
     id =>
@@ -1096,9 +1396,10 @@ async function cleanupRuntime() {
     try {
       const pkg = componentPackage(packageName);
       if (!pkg) throw new Error('package is missing from component registry');
-      const componentNames = pkg.layout === 'flat'
-        ? flatPackageComponentNames(PROJECT_ROOT, pkg)
-        : nestedPackageComponentNames(PROJECT_ROOT, pkg);
+      const componentNames =
+        pkg.layout === 'flat'
+          ? flatPackageComponentNames(PROJECT_ROOT, pkg)
+          : nestedPackageComponentNames(PROJECT_ROOT, pkg);
       publicComponentsByPackage[packageName] = componentNames;
       if (ACTIVE_PACKAGE_NAMES.includes(packageName)) {
         sourceComponents.push(
@@ -1106,7 +1407,9 @@ async function cleanupRuntime() {
         );
       }
     } catch (error) {
-      console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
+      console.error(
+        `WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`,
+      );
     }
   }
   const storyRoutes = buildStoryComponentRoutes({
@@ -1114,9 +1417,13 @@ async function cleanupRuntime() {
     targets,
     publicComponentsByPackage,
   }).filter(belongsToActivePackage);
-  const scopedStoryRoutes = storyRoutes.filter(route => matchesFilter(route.component));
+  const scopedStoryRoutes = storyRoutes.filter(route =>
+    matchesFilter(route.component),
+  );
   if (scopedStoryRoutes.length === 0) {
-    throw new Error(`no runnable stories resolved for ${ACTIVE_PACKAGE_NAMES.join(',')} scope`);
+    throw new Error(
+      `no runnable stories resolved for ${ACTIVE_PACKAGE_NAMES.join(',')} scope`,
+    );
   }
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
@@ -1133,9 +1440,14 @@ async function cleanupRuntime() {
   for (const {component, id} of scopedStoryRoutes) {
     if (!perComponent.has(component)) perComponent.set(component, id);
   }
-  const d1Targets = [...perComponent]
-    .map(([component, id]) => ({comp: component, id}));
-  const storyTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
+  const d1Targets = [...perComponent].map(([component, id]) => ({
+    comp: component,
+    id,
+  }));
+  const storyTargets = scopedStoryRoutes.map(({id, component}) => ({
+    id,
+    comp: component,
+  }));
   const curatedTargets = [];
   for (const t of targets) {
     const component = componentFromTarget(
@@ -1156,7 +1468,9 @@ async function cleanupRuntime() {
   }
   const plan = {
     d1: CURATED_ONLY ? [] : d1Targets.map(({comp, id}) => `${comp}::${id}`),
-    stories: CURATED_ONLY ? [] : storyTargets.map(({comp, id}) => `${comp}::${id}`),
+    stories: CURATED_ONLY
+      ? []
+      : storyTargets.map(({comp, id}) => `${comp}::${id}`),
     curated: AUTO_ONLY
       ? []
       : curatedTargets.map(({t, component}) => `${component}::${t.storyId}`),
@@ -1176,14 +1490,19 @@ async function cleanupRuntime() {
   let pageRecoveries;
 
   if (MERGE_SHARDS !== null) {
-    const merged = mergeRtlShards(readShardFiles(MERGE_SHARDS), {plan, storybookSha});
+    const merged = mergeRtlShards(readShardFiles(MERGE_SHARDS), {
+      plan,
+      storybookSha,
+    });
     autoResults.push(...merged.d1);
     pmResults.push(...merged.stories.map(cards => cards.positional));
     decorationResults.push(...merged.stories.map(cards => cards.decoration));
     curatedResults.push(...merged.curated);
     d8BrowserContract = merged.d8BrowserContract;
     pageRecoveries = merged.pageRecoveries;
-    console.error(`MERGED ${MERGE_SHARDS}: ${autoResults.length} D1, ${pmResults.length} story, ${curatedResults.length} curated cards`);
+    console.error(
+      `MERGED ${MERGE_SHARDS}: ${autoResults.length} D1, ${pmResults.length} story, ${curatedResults.length} curated cards`,
+    );
   } else {
     const {server, port} = await serve(path.resolve(DIST));
     runtime.server = server;
@@ -1192,7 +1511,10 @@ async function cleanupRuntime() {
     const pool = await createPagePool({
       size: CONCURRENCY,
       openPage: () =>
-        browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
+        browser.newPage({
+          viewport: {width: 1100, height: 760},
+          deviceScaleFactor: 1,
+        }),
     });
     runtime.pool = pool;
     // Curated dims run serially on the first slot's current page.
@@ -1216,49 +1538,97 @@ async function cleanupRuntime() {
     // ---- (A) auto-discovery over every audited-package story ----
     if (!CURATED_ONLY) {
       const d1Positions = mine(d1Targets);
-      const d1Cards = await mapPool(d1Positions.map(position => d1Targets[position]), pool, {
-        scan: async ({comp, id}, workerPage) => {
-          const card = await autoD1(workerPage, port, id, comp);
-          if (card.verdict !== 'N-A') {
-            console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
-          }
-          return card;
+      const d1Cards = await mapPool(
+        d1Positions.map(position => d1Targets[position]),
+        pool,
+        {
+          scan: async ({comp, id}, workerPage) => {
+            const card = await autoD1(workerPage, port, id, comp);
+            if (card.verdict !== 'N-A') {
+              console.error(
+                `AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`,
+              );
+            }
+            return card;
+          },
+          onError: ({comp, id}, e) => {
+            console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
+            return {
+              component: comp,
+              storyId: id,
+              dim: 'D1',
+              verdict: 'ERROR',
+              notes: [String(e).slice(0, 160)],
+              icons: 0,
+            };
+          },
+          describe: ({id}) => ({phase: 'D1', storyId: id}),
         },
-        onError: ({comp, id}, e) => {
-          console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
-        },
-        describe: ({id}) => ({phase: 'D1', storyId: id}),
-      });
+      );
       autoResults.push(...d1Cards);
-      d1Positions.forEach((position, i) => shardCards.d1.set(position, d1Cards[i]));
+      d1Positions.forEach((position, i) =>
+        shardCards.d1.set(position, d1Cards[i]),
+      );
       // D5 positional-mirror and D6 contextual decorations over every audited
       // story, sharing one LTR load per story (see measureAutoStory).
       const storyPositions = mine(storyTargets);
-      const storyCards = await mapPool(storyPositions.map(position => storyTargets[position]), pool, {
-        scan: async ({id, comp}, workerPage) => {
-          const cards = await autoPositionalAndDecorations(workerPage, port, id, comp);
-          if (cards.positional.verdict !== 'N-A') {
-            console.error(`PM   ${cards.positional.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${cards.positional.candidates}`);
-          }
-          if (cards.decoration.verdict !== 'N-A') {
-            console.error(`DEC  ${cards.decoration.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${cards.decoration.decorations}`);
-          }
-          return cards;
+      const storyCards = await mapPool(
+        storyPositions.map(position => storyTargets[position]),
+        pool,
+        {
+          scan: async ({id, comp}, workerPage) => {
+            const cards = await autoPositionalAndDecorations(
+              workerPage,
+              port,
+              id,
+              comp,
+            );
+            if (cards.positional.verdict !== 'N-A') {
+              console.error(
+                `PM   ${cards.positional.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${cards.positional.candidates}`,
+              );
+            }
+            if (cards.decoration.verdict !== 'N-A') {
+              console.error(
+                `DEC  ${cards.decoration.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${cards.decoration.decorations}`,
+              );
+            }
+            return cards;
+          },
+          onError: ({id, comp}, e) => {
+            console.error(
+              `PM+DEC ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`,
+            );
+            const notes = [String(e).slice(0, 160)];
+            return {
+              positional: {
+                component: comp,
+                storyId: id,
+                dim: 'D5-positional',
+                verdict: 'ERROR',
+                notes,
+                candidates: 0,
+                fails: [],
+              },
+              decoration: {
+                component: comp,
+                storyId: id,
+                dim: 'D6-decoration',
+                verdict: 'ERROR',
+                notes: [...notes],
+                decorations: 0,
+                results: [],
+              },
+            };
+          },
+          describe: ({id}) => ({phase: 'D5+D6', storyId: id}),
         },
-        onError: ({id, comp}, e) => {
-          console.error(`PM+DEC ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-          const notes = [String(e).slice(0, 160)];
-          return {
-            positional: {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes, candidates: 0, fails: []},
-            decoration: {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [...notes], decorations: 0, results: []},
-          };
-        },
-        describe: ({id}) => ({phase: 'D5+D6', storyId: id}),
-      });
+      );
       pmResults.push(...storyCards.map(cards => cards.positional));
       decorationResults.push(...storyCards.map(cards => cards.decoration));
-      storyPositions.forEach((position, i) => shardCards.stories.set(position, storyCards[i]));
+      storyPositions.forEach((position, i) =>
+        shardCards.stories.set(position, storyCards[i]),
+      );
     }
 
     // ---- (B) curated precision dims ----
@@ -1269,17 +1639,29 @@ async function cleanupRuntime() {
       for (const position of mine(curatedTargets)) {
         const {t, component, dims, missing} = curatedTargets[position];
         if (missing) {
-          const card = {component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']};
+          const card = {
+            component,
+            storyId: t.storyId,
+            rollup: 'MISSING-STORY',
+            dims: {},
+            notes: ['story not in index.json'],
+          };
           curatedResults.push(card);
           shardCards.curated.set(position, card);
           continue;
         }
         // scoreCurated records each dim's failure itself; what escapes it is a
         // page that could not be replaced, which ends the run.
-        const card = await scoreCurated(curatedPages, port, {...t, component, dims});
+        const card = await scoreCurated(curatedPages, port, {
+          ...t,
+          component,
+          dims,
+        });
         curatedResults.push(card);
         shardCards.curated.set(position, card);
-        console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
+        console.error(
+          `CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`,
+        );
       }
     }
     pageRecoveries = pool.recoveries;
@@ -1298,7 +1680,9 @@ async function cleanupRuntime() {
           }),
         ),
       );
-      console.error(`WROTE ${SHARD_OUTPUT} (shard ${SHARD.index}/${SHARD.count})`);
+      console.error(
+        `WROTE ${SHARD_OUTPUT} (shard ${SHARD.index}/${SHARD.count})`,
+      );
       return;
     }
   }
@@ -1307,7 +1691,8 @@ async function cleanupRuntime() {
   let verifiedNaError = null;
   try {
     const parsed = JSON.parse(fs.readFileSync(VERIFIED_NA_PATH, 'utf8'));
-    if (!Array.isArray(parsed)) throw new Error('verified-not-applicable registry must be a JSON array');
+    if (!Array.isArray(parsed))
+      throw new Error('verified-not-applicable registry must be a JSON array');
     verifiedNa = parsed;
   } catch (error) {
     verifiedNaError = String(error).slice(0, 200);
@@ -1326,12 +1711,18 @@ async function cleanupRuntime() {
   });
   if (verifiedNaError) coverage.registryError = verifiedNaError;
 
-  const autoFails = autoResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
+  const autoFails = autoResults.filter(
+    r => r.verdict === 'fail' || r.verdict === 'ERROR',
+  );
   // No allowlist: every not-RTL component is a surprise. The RTL migration is
   // complete, so any directional icon that fails to mirror is a real regression.
   const surprises = autoFails;
-  const pmFails = pmResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
-  const decorationFails = decorationResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
+  const pmFails = pmResults.filter(
+    r => r.verdict === 'fail' || r.verdict === 'ERROR',
+  );
+  const decorationFails = decorationResults.filter(
+    r => r.verdict === 'fail' || r.verdict === 'ERROR',
+  );
   const report = {
     generatedAt: new Date().toISOString(),
     scope: {
@@ -1339,7 +1730,9 @@ async function cleanupRuntime() {
       filters: FILTER,
     },
     completion: {
-      plannedComponentScans: new Set(scopedStoryRoutes.map(route => route.component)).size,
+      plannedComponentScans: new Set(
+        scopedStoryRoutes.map(route => route.component),
+      ).size,
       completedComponentScans: autoResults.length,
       plannedStoryScans: scopedStoryRoutes.length,
       completedPositionalScans: pmResults.length,
@@ -1347,8 +1740,12 @@ async function cleanupRuntime() {
       plannedComponentIdentities: [
         ...new Set(scopedStoryRoutes.map(route => route.component)),
       ].sort(),
-      completedComponentIdentities: autoResults.map(result => result.component).sort(),
-      plannedD1Identities: d1Targets.map(target => `${target.comp}::${target.id}`).sort(),
+      completedComponentIdentities: autoResults
+        .map(result => result.component)
+        .sort(),
+      plannedD1Identities: d1Targets
+        .map(target => `${target.comp}::${target.id}`)
+        .sort(),
       completedD1Identities: autoResults
         .map(result => `${result.component}::${result.storyId}`)
         .sort(),
@@ -1400,19 +1797,37 @@ async function cleanupRuntime() {
   };
   fs.writeFileSync(OUT, JSON.stringify(report, null, 2));
   console.error(`\nWROTE ${OUT}`);
-  console.error(`AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`);
-  console.error(`PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`);
-  console.error(`DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`);
-  console.error(`POOL: ${pageRecoveries.length} page replacement(s) after a failed story`);
-  console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`);
+  console.error(
+    `AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`,
+  );
+  console.error(
+    `PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`,
+  );
+  console.error(
+    `DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`,
+  );
+  console.error(
+    `POOL: ${pageRecoveries.length} page replacement(s) after a failed story`,
+  );
+  console.error(
+    `COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`,
+  );
   // Non-zero exit only signals CI (which is soft/continue-on-error). Surface a
   // signal but never let it hard-block during the stability window.
   const anySignal =
     autoFails.length > 0 ||
     pmFails.length > 0 ||
     decorationFails.length > 0 ||
-    (coverage.enforced && (coverage.gaps > 0 || coverage.staleVerifiedNa > 0 || coverage.registryError != null)) ||
-    curatedResults.some(r => r.rollup === 'not-RTL' || r.rollup === 'ERROR' || r.rollup === 'MISSING-STORY');
+    (coverage.enforced &&
+      (coverage.gaps > 0 ||
+        coverage.staleVerifiedNa > 0 ||
+        coverage.registryError != null)) ||
+    curatedResults.some(
+      r =>
+        r.rollup === 'not-RTL' ||
+        r.rollup === 'ERROR' ||
+        r.rollup === 'MISSING-STORY',
+    );
   process.exitCode = anySignal ? 1 : 0;
 })()
   .catch(error => {

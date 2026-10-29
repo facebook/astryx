@@ -440,6 +440,43 @@ test('a bar removed as the finger lifts reports nothing after it is gone', async
   );
 });
 
+test('a press ends without a choice when the tab list changes under it', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const {driver, bar} = await openBar(page, 'drops-last-tab');
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  const profile = await itemCenter(page, 'Profile');
+  await driver.play(tapScript(profile, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts; the app then drops Profile,
+      // the tab under the finger.
+      await waitForAnimation(bar);
+      await page.evaluate(() =>
+        window.dispatchEvent(new Event('tabbar:drop-last')),
+      );
+      await expect(tab(page, 'Profile')).toHaveCount(0);
+    },
+  });
+  await page.waitForTimeout(400);
+  expect(errors).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    ),
+  ).toEqual([]);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  // The lens settled back onto Home, in the three-tab bar.
+  const home = await itemCenter(page, 'Home');
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(1);
+});
+
 test('the bar sets no page-level stacking rank: its layers order inside it', async ({
   page,
 }) => {
