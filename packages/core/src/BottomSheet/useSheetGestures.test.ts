@@ -178,6 +178,37 @@ function travel(el: HTMLElement): number {
   return Number.parseFloat(y);
 }
 
+/** A keyframe's vertical travel, px (its `translate`). */
+function translateYOf(frame: Keyframe): number {
+  return Number.parseFloat(String(frame.translate).split(' ')[1]);
+}
+
+/**
+ * The keyframes a recorded animation plays up to `untilMs` after its start,
+ * as (ms, value). The animator compiles a curve into keyframes on a 30 Hz
+ * grid, splitting each chord until it is within a quarter of a pixel of the
+ * curve: every keyframe lies on the curve, and a point between two is the
+ * browser's interpolation, so a curve is checked at its keyframes.
+ */
+function keyframesUntil(
+  animation: {keyframes: Keyframe[]; options: KeyframeAnimationOptions},
+  read: (frame: Keyframe) => number,
+  untilMs: number,
+): {t: number; value: number}[] {
+  const duration = animation.options.duration as number;
+  const frames = animation.keyframes
+    .map(frame => ({
+      t: (frame.offset as number) * duration,
+      value: read(frame),
+    }))
+    .filter(frame => frame.t <= untilMs);
+  // The grid puts a keyframe in every 30 Hz interval.
+  expect(frames.length).toBeGreaterThanOrEqual(
+    Math.floor(untilMs / (1000 / 30)),
+  );
+  return frames;
+}
+
 /**
  * A finger moving from `from` to `to` (px) between `t0` and `t1` (ms) on
  * pointer events every `step` ms (60 Hz by default): the estimator reads
@@ -2227,9 +2258,9 @@ describe('useSheetGestures: the release on the compositor', () => {
       to: 200,
       velocity: 600,
     });
-    // On the closed-form spring, frame by frame ...
-    for (const ms of [0, 16, 50, 100, 200, 300, 400]) {
-      expect(travelAt(played[0], ms)).toBeCloseTo(curve.value(ms / 1000), 1);
+    // On the closed-form spring, at every keyframe ...
+    for (const {t: ms, value} of keyframesUntil(played[0], translateYOf, 400)) {
+      expect(value).toBeCloseTo(curve.value(ms / 1000), 1);
     }
     // ... which is the spring handed the finger's 600 px/s (M3): one
     // started at rest would trail it by more than 5 px 16 ms in.
@@ -2242,6 +2273,13 @@ describe('useSheetGestures: the release on the compositor', () => {
     // Composited: keyframes played linearly on one Web Animation, so the
     // main thread is not involved.
     expect(played[0].options).toMatchObject({easing: 'linear'});
+    // The inline style holds what is on screen while the spring runs, and the
+    // end is written when it retires.
+    expect(travel(t)).toBe(60);
+    expect(translateYOf(played[0].keyframes.at(-1) as Keyframe)).toBe(200);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
     expect(travel(t)).toBe(200);
   });
 
@@ -2266,11 +2304,12 @@ describe('useSheetGestures: the release on the compositor', () => {
       to: 200,
       velocity: speed,
     });
-    for (const ms of [16, 50, 100, 200]) {
-      expect(travelAt(played.at(-1) as Played, ms)).toBeCloseTo(
-        curve.value(ms / 1000),
-        1,
-      );
+    for (const {t: ms, value} of keyframesUntil(
+      played.at(-1) as Played,
+      translateYOf,
+      200,
+    )) {
+      expect(value).toBeCloseTo(curve.value(ms / 1000), 1);
     }
   });
 
@@ -2453,17 +2492,22 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(exit).not.toBeNull();
     // Rested at the open detent, so the resting transform is none.
     expect(exit?.transform).toBe('none');
-    // Gone: the sheet's whole 400px below where it rests open.
-    expect(travel(t)).toBe(400);
+    // The inline style holds what is on screen while the spring runs, and the
+    // end is written when it retires: no frame shows where it is going. The
+    // played curve ends gone, the sheet's whole 400px below where it rests
+    // open.
+    expect(travel(t)).toBe(150);
+    expect(translateYOf(played[0].keyframes.at(-1) as Keyframe)).toBe(400);
     const curve = solveSpring(toSpring(springs.sheetDismissSwipe), {
       from: 150,
       to: 400,
       velocity: 1500,
     });
     expect(travelAt(played[0], 50)).toBeCloseTo(curve.value(0.05), 1);
-    // The exit ends when the spring lands.
+    // The exit ends when the spring lands, and the end is written then.
     vi.advanceTimersByTime(2000);
     await expect(exit?.finished).resolves.toBe(true);
+    expect(travel(t)).toBe(400);
   });
 
   it('keeps a fast throw onto the tallest detent within the reserve below the screen', () => {
@@ -2690,9 +2734,15 @@ describe('useSheetGestures: the release on the compositor', () => {
       }
       return bez(1, 1, (lo + hi) / 2);
     };
-    for (const ms of [0, 50, 100, 200, 300, 409]) {
-      expect(travelAt(played[0], ms)).toBeCloseTo(60 + 140 * ease(ms / 410), 1);
+    for (const {t: ms, value} of keyframesUntil(played[0], translateYOf, 409)) {
+      expect(value).toBeCloseTo(60 + 140 * ease(ms / 410), 1);
     }
+    // The inline style holds what is on screen while the curve runs, and the
+    // end is written when it retires.
+    expect(travel(t)).toBe(60);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
     expect(travel(t)).toBe(200);
   });
 
