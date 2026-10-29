@@ -41,6 +41,10 @@
       "kind": "change-scope",
       "reason": "Reports the required lint context on every pull request and push to main; the trusted classifier chooses the work inside it."
     },
+    "main-heavy-lanes.yml": {
+      "kind": "landed-commit",
+      "reason": "Dispatches the full visual, accessibility and RTL release-check on every landed commit (spec:AST-030 DEC-7)."
+    },
     "npm-canary-cleanup.yml": {
       "kind": "manual",
       "reason": "On-demand removal of old canary versions."
