@@ -5,10 +5,11 @@
  * @input Uses StyleX defineConsts
  * @output Exports touchKeys: the touch presentation resolver's queries as
  *   StyleX at-rule keys
- * @position The one place a core style spells a touch, compact or iOS-gate
- *   condition (`spec:AST-012` FR2: touch is resolved once, through the
- *   shared resolver); utils/touchPresentation.ts holds the same queries for
- *   script (matchMedia)
+ * @position The reference spellings of the touch, compact and iOS-gate
+ *   conditions. Core styles write these as literal keys wherever they need
+ *   them (`spec:AST-094` FR13, `spec:AST-012` FR9), and a test pins each
+ *   literal to these values; utils/touchPresentation.ts holds the same
+ *   queries for script (matchMedia)
  *
  * These are the spellings to match. A style that changes with these
  * conditions writes the same literal key (`'@media (pointer: coarse)'`, the
