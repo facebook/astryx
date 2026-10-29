@@ -77,6 +77,21 @@ export interface DragToSnapPoints {
   destroy(): void;
 }
 
+/**
+ * Where `element` is drawn now, from the inline `translate` an animator
+ * left on it (a drag destroyed to be created again leaves the element where
+ * it stopped); 0 on an axis it does not set.
+ */
+function drawnAt(element: HTMLElement): {x: number; y: number} {
+  const [x = 0, y = 0] = element.style
+    .getPropertyValue('translate')
+    .trim()
+    .split(/\s+/)
+    .map(part => Number.parseFloat(part))
+    .map(value => (Number.isFinite(value) ? value : 0));
+  return {x, y};
+}
+
 /** The usable snap points, ascending: `snapPoints` is sorted before use. */
 function sortedSnapPoints(snapPoints: ReadonlyArray<number>): number[] {
   const usable = snapPoints.filter(point => Number.isFinite(point));
@@ -120,11 +135,14 @@ export function createDragToSnapPoints(
     );
     return {settleTo() {}, destroy() {}};
   }
-  const animator = createMotionAnimator(element);
+  // It starts where the element is drawn, so a drag created again to
+  // change its options moves on from there instead of jumping.
+  const drawn = drawnAt(element);
+  const animator = createMotionAnimator(element, {initial: drawn});
   // The snap point the element rests on, or is settling toward.
   let index = resolveSnapPoint({
     points,
-    position: 0,
+    position: drawn[axis],
     velocity: 0,
     flickThreshold,
   }).index;
@@ -169,7 +187,8 @@ export function createDragToSnapPoints(
     );
     void handle.finished.then(arrived => {
       if (arrived && mine === turn && !destroyed) {
-        onSettle(target);
+        // The point it reached, renumbered if new snap points came mid-settle.
+        onSettle(index);
       }
     });
   };
