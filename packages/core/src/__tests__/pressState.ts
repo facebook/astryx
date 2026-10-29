@@ -177,22 +177,11 @@ export function declaresPressPaint(el: Element): boolean {
   );
 }
 
-/** `.2s`, `200ms`, `0.2s` → 200. */
+/** `.2s`, `200ms`, `0.2s` → 200; a scaled clock reads its base, at tempo 1. */
 export function durationToMs(value: string): number {
-  // A clock scaled by the theme's tempo reads at tempo 1, outside any
-  // reduced-motion mark: the press release is
-  // `calc(<ms> * min(var(--_astryx-motion-tempo, 1), 1.5 - 0.5 * var(--_astryx-reduced-motion, 0)))`,
-  // and under Reduce Motion `min(<ms>, calc(<ms> * var(--_astryx-motion-tempo, 1)))`
-  // (`spec:AST-108` FR4, FR6).
-  const trimmed = value.trim();
-  const scaled =
-    trimmed.match(
-      /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*min\(\s*var\(--_astryx-motion-tempo,\s*1\)\s*,\s*1\.5\s*-\s*0?\.5\s*\*\s*var\(--_astryx-reduced-motion,\s*0\)\s*\)\s*\)$/,
-    ) ??
-    trimmed.match(
-      /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
-    );
-  const match = scaled ?? trimmed.match(/^([\d.]+)(ms|s)$/);
+  // The press release scales its base clock by the theme's tempo, capped under
+  // Reduce Motion: `calc(<ms> * …)`, `min(<ms>, …)` (`spec:AST-108` FR4).
+  const match = value.trim().match(/^(?:(?:calc|min)\(\s*)?([\d.]+)(ms|s)\b/);
   if (match == null) {
     return Number.NaN;
   }
@@ -216,8 +205,7 @@ export function hasReleaseFade(el: Element): boolean {
   const onArmAnimates = rulesWithSelector(el, '[data-astryx-press="on"]').some(
     rule => rule.includes('animation'),
   );
-  // One duration, and its Reduce Motion cap beside it: both the machine's
-  // clock at tempo 1.
+  // One duration and its Reduce Motion cap: both the machine's clock.
   return (
     named &&
     durations.length >= 1 &&
