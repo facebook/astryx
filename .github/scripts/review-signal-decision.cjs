@@ -154,12 +154,14 @@ function newestTrusted(statuses, contextName) {
 
 /**
  * The spec half of the review gate, from the newest trusted
- * `spec-owner-approval` status. `known: false` means the spec-owner job has
- * not published for this head yet; it composes the gate when it does.
+ * `spec-owner-approval` status. With no status yet (the spec-owner job has
+ * not published for this head, or the read failed) the half fails closed: the
+ * gate waits, and the spec-owner job composes it when it publishes.
  */
 function readSpecGate(statuses) {
   const status = newestTrusted(statuses, SPEC_GATE_CONTEXT);
-  if (!status) return {known: false, satisfied: true, text: null};
+  if (!status)
+    return {known: false, satisfied: false, text: SPEC_CHECKING_TEXT};
   const description = status.description ?? '';
   if (description.startsWith(SPEC_MIRROR_PREFIX)) {
     const rest = description.slice(SPEC_MIRROR_PREFIX.length);

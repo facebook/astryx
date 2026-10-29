@@ -35,7 +35,15 @@ async function runSignal({
   reviews = [],
   reviewApp = '',
   permission = 'write',
-  specStatuses = [],
+  // The spec-owner job's decision for a PR that changes no spec record.
+  specStatuses = [
+    {
+      context: 'spec-owner-approval',
+      state: 'success',
+      description: 'Mirrors review-required · spec ok',
+      creator: {login: 'github-actions[bot]'},
+    },
+  ],
 } = {}) {
   const pr = {
     number: 42,
@@ -90,7 +98,10 @@ async function runSignal({
       repos: {
         getContent,
         createCommitStatus: mutations.createCommitStatus,
-        listCommitStatusesForRef: vi.fn(async () => ({data: specStatuses})),
+        listCommitStatusesForRef: vi.fn(async () => ({
+          data:
+            typeof specStatuses === 'function' ? specStatuses() : specStatuses,
+        })),
         getCollaboratorPermissionLevel: vi.fn(async () => {
           if (permission instanceof Error) throw permission;
           return {data: {permission}};
@@ -156,6 +167,33 @@ function expectTrustedHelperRead(getContent) {
 }
 
 describe('one review gate', () => {
+  it('waits for the spec decision, then picks it up after writing', async () => {
+    let reads = 0;
+    const h = await runSignal({
+      eventName: 'pull_request_target',
+      // The spec-owner job publishes between this job's two reads.
+      specStatuses: () =>
+        reads++ === 0
+          ? []
+          : [
+              {
+                context: 'spec-owner-approval',
+                state: 'pending',
+                description: 'Mirrors review-required · spec waiting (eng)',
+                creator: {login: 'github-actions[bot]'},
+              },
+            ],
+    });
+    expect(
+      h.mutations.createCommitStatus.mock.calls.map(
+        ([input]) => input.description,
+      ),
+    ).toEqual([
+      'Waiting on code review: community contribution (+ spec approval)',
+    ]);
+    expect(reads).toBe(2);
+  });
+
   it('carries a missing spec approval behind code review', async () => {
     const h = await runSignal({
       eventName: 'pull_request_target',

@@ -232,25 +232,33 @@ jobs:
             // job mirrors in spec-owner-approval. Code review leads; success
             // needs both. A missing approval is pending, never a failure.
             async function publishReviewGate(codeGated, codeDescription) {
-              let statuses = [];
-              try {
-                statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
-                  owner, repo, ref: pr.head.sha, per_page: 100,
+              // Write, then read the spec half once more: the spec-owner job
+              // writes its half before it reads this one, so one of the two
+              // always sees the other's latest write.
+              let gate = null;
+              for (let pass = 0; pass < 2; pass++) {
+                let statuses = [];
+                try {
+                  statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
+                    owner, repo, ref: pr.head.sha, per_page: 100,
+                  });
+                } catch (e) {
+                  core.warning(`Could not read the spec decision: ${e.message}`);
+                }
+                const next = reviewDecision.composeReviewGate({
+                  codeGated,
+                  codeDescription,
+                  spec: reviewDecision.readSpecGate(statuses),
                 });
-              } catch (e) {
-                core.warning(`Could not read the spec decision: ${e.message}`);
+                if (gate && next.state === gate.state && next.description === gate.description) break;
+                gate = next;
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: pr.head.sha,
+                  context: 'review-required',
+                  state: gate.state,
+                  description: gate.description,
+                });
               }
-              const gate = reviewDecision.composeReviewGate({
-                codeGated,
-                codeDescription,
-                spec: reviewDecision.readSpecGate(statuses),
-              });
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'review-required',
-                state: gate.state,
-                description: gate.description,
-              });
               return gate;
             }
 

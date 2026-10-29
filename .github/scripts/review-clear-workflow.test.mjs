@@ -59,6 +59,13 @@ const appReview = (state, commitId = head2) => ({
   commit_id: commitId,
 });
 const ungatedSuccess = gateStatus('success', 'No code review required.');
+// The spec-owner job's decision for a PR that changes no spec record.
+const specOk = {
+  context: 'spec-owner-approval',
+  state: 'success',
+  description: 'Mirrors review-required · spec ok',
+  creator: {login: 'github-actions[bot]'},
+};
 
 function harness(
   reviews,
@@ -82,7 +89,7 @@ function harness(
     labels: labels.map(name => ({name})),
   };
   const methods = {
-    listCommitStatusesForRef: async () => ({data: statuses}),
+    listCommitStatusesForRef: async () => ({data: [...statuses, specOk]}),
     listReviews: async () => ({data: reviews}),
   };
   const github = {

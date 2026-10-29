@@ -127,11 +127,11 @@ describe('one review gate', () => {
       },
     ],
     [
-      'no spec decision yet keeps the code half',
+      'no spec decision yet fails closed',
       false,
       noCode,
       [],
-      {state: 'success', description: noCode},
+      {state: 'pending', description: '⏳ Checking for spec changes…'},
     ],
   ])('%s', (_name, codeGated, codeDescription, statuses, expected) => {
     expect(

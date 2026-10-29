@@ -128,7 +128,14 @@ function resolveOwnerDecision({
 
   for (const review of reviews) {
     const login = review.user?.login?.toLowerCase();
-    if (!login || !approvesCurrentContent(review.commit_id)) continue;
+    // An approval counts only for the current spec content; a request for
+    // changes or a dismissal withdraws whatever content it names (DEC-14).
+    if (
+      !login ||
+      (review.state === 'APPROVED' && !approvesCurrentContent(review.commit_id))
+    ) {
+      continue;
+    }
     if (
       !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)
     ) {
@@ -160,7 +167,7 @@ function resolveOwnerDecision({
     if (!isDispatchableOwnerCommand(comment.body)) continue;
     const target = parseOwnerCommandTarget(comment.body);
     if (target == null) continue;
-    if (target.sha && !approvesCurrentContent(target.sha)) continue;
+    if (target.approved && !approvesCurrentContent(target.sha)) continue;
     consider(login, {
       approved: target.approved,
       at: comment.created_at,

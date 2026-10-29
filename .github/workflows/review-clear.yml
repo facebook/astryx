@@ -244,24 +244,34 @@ jobs:
             // compose the code review with the spec decision mirrored in
             // spec-owner-approval. Code review leads; success needs both.
             async function publishReviewGate(codeGated, codeDescription) {
-              let statuses = [];
-              try {
-                statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
-                  owner, repo, ref: headSha, per_page: 100,
+              // Write, then read the spec half once more: the spec-owner job
+              // writes its half before it reads this one, so one of the two
+              // always sees the other's latest write.
+              let gate = null;
+              for (let pass = 0; pass < 2; pass++) {
+                let statuses = [];
+                try {
+                  statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
+                    owner, repo, ref: headSha, per_page: 100,
+                  });
+                } catch (e) {
+                  core.warning(`Could not read the spec decision: ${e.message}`);
+                }
+                const next = decision.composeReviewGate({
+                  codeGated,
+                  codeDescription,
+                  spec: decision.readSpecGate(statuses),
                 });
-              } catch (e) {
-                core.warning(`Could not read the spec decision: ${e.message}`);
+                if (gate && next.state === gate.state && next.description === gate.description) break;
+                gate = next;
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: headSha,
+                  context: 'review-required',
+                  state: gate.state,
+                  description: gate.description,
+                });
               }
-              const gate = decision.composeReviewGate({
-                codeGated,
-                codeDescription,
-                spec: decision.readSpecGate(statuses),
-              });
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: headSha, context: 'review-required',
-                state: gate.state,
-                description: gate.description,
-              });
+              return gate;
             }
 
             if (codeWithdrawn) {

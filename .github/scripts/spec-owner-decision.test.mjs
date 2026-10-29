@@ -567,6 +567,48 @@ describe('spec owner decision', () => {
       expect(decide(sha => sha === head || sha === earlier)).toBe(true);
     });
 
+    it('withdraws on a revoke or request for changes naming other spec content', () => {
+      const earlier = '1111111111111111111111111111111111111111';
+      const approve = {
+        user: owner,
+        body: `/approve-spec ${head}`,
+        created_at: '2026-08-30T10:00:00Z',
+      };
+      const decide = ({comments = [approve], reviews = []}) =>
+        resolveOwnerDecision({
+          reviews,
+          comments,
+          owners: ['cixzhang'],
+          headSha: head,
+          approvesCurrentContent: sha => sha === head,
+        }).approved;
+
+      expect(
+        decide({
+          comments: [
+            approve,
+            {
+              user: owner,
+              body: `/revoke-spec ${earlier}`,
+              created_at: '2026-08-30T10:01:00Z',
+            },
+          ],
+        }),
+      ).toBe(false);
+      expect(
+        decide({
+          reviews: [
+            {
+              user: owner,
+              state: 'CHANGES_REQUESTED',
+              commit_id: earlier,
+              submitted_at: '2026-08-30T10:01:00Z',
+            },
+          ],
+        }),
+      ).toBe(false);
+    });
+
     it('withdraws with a bare /revoke-spec and approves again after it', () => {
       const decide = bodies =>
         resolveOwnerDecision({
