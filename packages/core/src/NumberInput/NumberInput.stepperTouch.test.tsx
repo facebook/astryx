@@ -919,7 +919,7 @@ describe('NumberInput steppers losing a held press', () => {
 });
 
 describe('NumberInput steppers where the primary pointer is fine', () => {
-  it('the column listens through the gesture host alone: its passive pointerdown and its claiming touchmove, no page listener while idle, no warning (spec:AST-094 FR43, FR24)', () => {
+  it('the column listens through the gesture host alone: its passive pointerdown while idle and its claiming touchmove once a press is held, no page listener, no warning (spec:AST-094 FR43, FR24)', () => {
     // A fine pointer: this test's context has no coarse pointer.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     const added: {target: EventTarget; type: string; passive: boolean}[] = [];
@@ -960,19 +960,18 @@ describe('NumberInput steppers where the primary pointer is fine', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {onChange, increment} = setup();
     const column = increment.parentElement as HTMLElement;
-    // Idle: the column carries the gesture host's passive pointerdown and,
-    // as a press that keeps its touch, its blocking touchmove (FR24, for
-    // every pointer); nothing else listens for touch on the page or the
-    // field, and the press's page listeners are not there.
+    // Idle: the column carries the gesture host's passive pointerdown alone.
+    // Where the primary pointer is fine, a press that keeps its touch takes
+    // its blocking touchmove only once the press is armed, since that
+    // press's pointerdown comes before any touch it brings (FR24, for every
+    // pointer). Nothing else listens for touch on the page or the field, and
+    // the press's page listeners are not there.
     expect(
       added
         .filter(entry => entry.target === column)
         .map(({type, passive}) => ({type, passive}))
         .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0)),
-    ).toEqual([
-      {type: 'pointerdown', passive: true},
-      {type: 'touchmove', passive: false},
-    ]);
+    ).toEqual([{type: 'pointerdown', passive: true}]);
     const field = column.closest('div:has(input)') ?? column.parentElement;
     expect(
       added.filter(
@@ -991,6 +990,12 @@ describe('NumberInput steppers where the primary pointer is fine', () => {
     const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
     fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
     expect(press(increment)).toBe('on');
+    // Held, the press claims touch moves on the column itself (FR24).
+    expect(
+      added
+        .filter(entry => entry.target === column && entry.type === 'touchmove')
+        .map(({passive}) => passive),
+    ).toEqual([false]);
     wait(600);
     fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
     expect(committed(onChange)).toEqual([6]);
