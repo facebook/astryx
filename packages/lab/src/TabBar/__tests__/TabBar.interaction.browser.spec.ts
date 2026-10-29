@@ -3540,7 +3540,7 @@ test.describe('search tab, the cancel button', () => {
     await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('search ending while it is still pressed plays the circle back: it rests at its bar size (62 px), not pressed', async ({
+  test('search ending while it is still pressed plays the circle back: it rests at its own size, not pressed', async ({
     page,
   }) => {
     const {driver} = await openBar(page, 'search-tab');
@@ -3570,17 +3570,20 @@ test.describe('search tab, the cancel button', () => {
             .poll(async () => (await circleGlass.boundingBox())?.width ?? 0)
             .toBeGreaterThan(55);
           await page.getByRole('searchbox', {name: 'Search'}).press('Escape');
-          await expect(cancel).not.toHaveAttribute(
-            'data-tab-bar-search-cancel',
-            '',
+          await expect(searchHost(page)).not.toHaveAttribute(
+            'data-tab-bar-search-field',
+            'active',
           );
         },
       },
     );
-    await expect.poll(() => isMinimized(page)).toBe(false);
+    // It rests at its own size, not pressed (63.65 px collapsed, about 82 px
+    // once a bar that expands grows it): 48 px while the bar stays collapsed
+    // on the search tab, 62 px once it expands.
     await waitForRest(page.locator('[data-tab-bar-search]'));
     await waitForRest(circleGlass);
-    expect((await circleGlass.boundingBox())?.width ?? 0).toBeCloseTo(62, 0);
+    const size = (await isMinimized(page)) ? MINIMIZED_SIZE : 62;
+    expect((await circleGlass.boundingBox())?.width ?? 0).toBeCloseTo(size, 0);
   });
 
   test.describe('with Reduce Motion (design:reduced-motion)', () => {
