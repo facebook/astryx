@@ -48,10 +48,10 @@ permissions: {}
 #
 # Runners: every job uses GitHub's standard hosted runners, except the release
 # path, which keeps a paid larger-runner pool so pull request load can never
-# starve a release: release-merge-back and release-bump always, and the jobs a
-# release-check dispatch runs when a person or the release tooling dispatches it
-# (not the main-push dispatcher in main-heavy-lanes.yml, whose runs come from
-# github-actions[bot]). Arm jobs stay arm and x64 stay x64 on both pools, so
+# starve a release: release-bump, release-merge-back on a merge-back branch
+# (chore/merge-v*), and the jobs a release-check runs when a person or the
+# release tooling dispatches it. A release-check dispatched by
+# github-actions[bot] (an automated main-push check) uses standard runners. Arm jobs stay arm and x64 stay x64 on both pools, so
 # visual baselines and native builds see the same architecture.
 #
 # One group per pull request (a fork's branch name can repeat across forks),
@@ -300,7 +300,7 @@ jobs:
     name: release-merge-back
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
-    runs-on: 4-core-ubuntu
+    runs-on: ${{ startsWith(github.head_ref, 'chore/merge-v') && '4-core-ubuntu' || 'ubuntu-latest' }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -643,9 +643,9 @@ jobs:
     # every leg passed.
     strategy:
       fail-fast: false
-      # A pull request runs at most two legs at a time, so many open pull
-      # requests cannot flood the organization's shared runner pool; the
-      # legs still all run.
+      # A pull request or merge-queue entry runs at most two legs at a time,
+      # so many open pull requests cannot flood the organization's shared
+      # runner pool; the legs still all run, in two waves.
       max-parallel: 2
       matrix:
         shard: [1, 2, 3, 4]
@@ -746,9 +746,9 @@ jobs:
     # the files across the legs; `test` joins them.
     strategy:
       fail-fast: false
-      # A pull request runs at most two legs at a time, so many open pull
-      # requests cannot flood the organization's shared runner pool; the
-      # legs still all run.
+      # A pull request or merge-queue entry runs at most two legs at a time,
+      # so many open pull requests cannot flood the organization's shared
+      # runner pool; the legs still all run, in two waves.
       max-parallel: 2
       matrix:
         shard: [1, 2, 3, 4]

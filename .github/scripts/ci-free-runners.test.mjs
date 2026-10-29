@@ -91,15 +91,19 @@ function labelsOf(job) {
           ? [
               ...[m[key] ?? []].flat(),
               ...[m.include ?? []].flat().map(entry => entry?.[key]),
+              // A computed include can add any runner: fail closed.
+              ...(typeof m.include === 'string' ? [value] : []),
             ]
               .filter(item => item != null)
               .map(String)
           : [];
       labels.push(...(found.length > 0 ? found : [value]));
     } else if (value.includes('${{')) {
-      const found = [...value.matchAll(/'([^']+)'/g)]
-        .map(match => match[1])
-        .filter(label => /^(ubuntu|macos|windows|\d+-core)/.test(label));
+      // The literals an && or || selects are the runners; comparison operands
+      // ('workflow_dispatch', 'release-check') are not.
+      const found = [...value.matchAll(/(?:&&|\|\|)\s*'([^']+)'/g)].map(
+        match => match[1],
+      );
       labels.push(...(found.length > 0 ? found : [value]));
     } else {
       labels.push(value);
@@ -120,6 +124,23 @@ describe('runner labels', () => {
     expect(labelsOf({'runs-on': '${{ vars.BIG_RUNNER }}'})).toEqual([
       '${{ vars.BIG_RUNNER }}',
     ]);
+    expect(
+      labelsOf({
+        'runs-on':
+          "${{ github.event_name == 'push' && 'linux-large' || 'ubuntu-latest' }}",
+      }),
+    ).toEqual(['linux-large', 'ubuntu-latest']);
+    expect(
+      labelsOf({
+        'runs-on': '${{ matrix.os }}',
+        strategy: {
+          matrix: {
+            os: ['ubuntu-latest'],
+            include: '${{ fromJSON(needs.plan.outputs.extra) }}',
+          },
+        },
+      }),
+    ).toContain('${{ matrix.os }}');
     expect(
       labelsOf({
         'runs-on': '${{ matrix.os }}',
@@ -169,9 +190,10 @@ describe('runner labels', () => {
     for (const key of Object.keys(PAID_ALLOWED)) {
       const [name, id] = key.split('/');
       expect(byName[name].jobs[id], key).toBeDefined();
-      expect(FREE.has(byName[name].jobs[id]['runs-on']), key).toBe(false);
+      expect(FREE.has(labelsOf(byName[name].jobs[id])[0]), key).toBe(false);
     }
-    expect(byName['ci.yml'].jobs['release-merge-back']['runs-on']).toBe(
+    // A merge-back branch runs on the stable publisher's runner (byte parity).
+    expect(labelsOf(byName['ci.yml'].jobs['release-merge-back'])[0]).toBe(
       byName['release.yml'].jobs.publish['runs-on'],
     );
   });
