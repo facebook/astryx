@@ -53,6 +53,7 @@ import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {resolveHitTarget} from '../utils/hitArea';
+import {IOS_SUPPORTS_QUERY} from '../utils/touchPresentation';
 import {
   createActionGroupTracker,
   type ActionGroupTarget,
@@ -103,6 +104,21 @@ export interface ActionGroupTrackingOptions {
 }
 
 const PRESS = UIKIT_PRESS;
+
+/**
+ * Whether a tap on a button gives it focus here. A tap's focusing runs on the
+ * mousedown that follows the touch, which the claimed touch cancels with its
+ * click, so the group does it for the lifted action. iOS WebKit focuses no
+ * tapped button; Chromium and Firefox do.
+ */
+function tapFocusesButtons(): boolean {
+  // Not every environment has `CSS.supports` (jsdom has `CSS.escape` only).
+  return !(
+    typeof CSS !== 'undefined' &&
+    typeof CSS.supports === 'function' &&
+    CSS.supports(IOS_SUPPORTS_QUERY)
+  );
+}
 
 /** The actions the tracker skips, as its own measure does. */
 const DISABLED = ':disabled, [aria-disabled="true"]';
@@ -279,24 +295,32 @@ export function useActionGroupTracking(
         }
         case 'ended': {
           const beganOn = tracker.beganOn;
-          // Whether the press's own pointerdown focused the action it began
-          // on, as an engine that focuses a pressed button does (Safari's
-          // buttons take no focus from a press).
-          const pressFocused =
-            beganOn != null && beganOn.ownerDocument.activeElement === beganOn;
+          const doc = ref.current?.ownerDocument;
+          const focusedBefore = doc?.activeElement ?? null;
+          // Whether a click on the lifted action would focus it. A mouse's or
+          // a pen's press shows the engine's answer: its own pointerdown
+          // focused the action it began on, as an engine that focuses a
+          // pressed button does (Safari's buttons take no focus from a
+          // press). A finger's tap does its focusing after the lift, on the
+          // mousedown the claimed touch cancels, so it is the platform's.
+          const clickFocuses =
+            pointerRef.current === 'touch'
+              ? tapFocusesButtons()
+              : beganOn != null && focusedBefore === beganOn;
           const lifted = tracker.end();
           disabledRef.current = NO_TARGETS;
-          // After a slide, focus does what a click on the lifted action does
+          // After the lift, focus does what a click on the lifted action does
           // (`family:action-groups` FR1): the lift runs that action's own
-          // `click()`, which moves no focus, so focus moves to it where the
-          // press focused the action it began on, unless that click moved
-          // focus itself. The press was a pointer's, so no keyboard ring.
+          // `click()`, which moves no focus, so focus moves to it, unless that
+          // click moved focus itself. The press was a pointer's, so no
+          // keyboard ring.
           if (
-            pressFocused &&
+            clickFocuses &&
             lifted != null &&
-            lifted !== beganOn &&
             lifted.isConnected &&
-            lifted.ownerDocument.activeElement === beganOn
+            doc != null &&
+            doc.activeElement === focusedBefore &&
+            focusedBefore !== lifted
           ) {
             lifted.focus({preventScroll: true, focusVisible: false});
           }
