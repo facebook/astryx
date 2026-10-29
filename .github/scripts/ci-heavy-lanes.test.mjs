@@ -72,16 +72,19 @@ function runs(job, {event, operation = '', labels = []}) {
     'needs',
     'always',
     'cancelled',
+    'startsWith',
     `return Boolean(${expression});`,
   )(
     {
       event_name: event,
+      base_ref: event === 'pull_request' ? 'main' : '',
       event: {pull_request: {labels: labels.map(name => ({name}))}},
     },
     {operation, 'release-branch': 'main'},
     needs,
     () => true,
     () => false,
+    (value, prefix) => String(value ?? '').startsWith(prefix),
   );
 }
 

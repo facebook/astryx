@@ -115,16 +115,13 @@ describe('CI baseline maintenance routing', () => {
     expect(runs(visual, {needs})).toBe(false);
   });
 
-  it('preserves focused PR routing on an opted-in pull request when the maintenance guard is skipped', () => {
+  it('runs on an opted-in pull request when the maintenance guard is skipped', () => {
     const needs = dependencies(visual);
     needs['maintenance-request'].result = 'skipped';
     const optedIn = {event: 'pull_request', needs, labels: ['ci:heavy-lanes']};
     expect(runs(visual, optedIn)).toBe(true);
     // Without the opt-in label a pull request update runs no visual owner.
     expect(runs(visual, {event: 'pull_request', needs})).toBe(false);
-    needs['check-components'].outputs.has_stable_visual = 'false';
-    expect(runs(visual, optedIn)).toBe(false);
-    needs['check-components'].outputs.has_stable_visual = 'true';
     needs['build-storybook'].result = 'failure';
     expect(runs(visual, optedIn)).toBe(false);
     expect(runs(visual, {event: 'merge_group', needs})).toBe(false);

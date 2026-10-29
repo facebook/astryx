@@ -15,10 +15,9 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 describe('spec-only workflow contract', () => {
   it('keeps classification in one tested helper', () => {
     for (const workflow of [
-      '.github/workflows/ci.yml',
+      '.github/actions/test-scope/action.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -31,11 +30,20 @@ describe('spec-only workflow contract', () => {
   });
 
   it('packages every dependency for trusted-base isolated classification', () => {
+    // ci.yml's jobs read the same three files from the base commit through
+    // the scope action (the GitHub API, no history needed).
+    const action = read('.github/actions/test-scope/action.yml');
+    for (const file of [
+      '.github/scripts/change-scope.cjs',
+      '.github/scripts/knowledge-paths.cjs',
+      'scripts/component-packages.cjs',
+    ]) {
+      expect(action).toContain(`'${file}'`);
+    }
+    expect(action).toContain('ref: pr.base.sha');
     for (const workflow of [
-      '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -104,10 +112,7 @@ describe('spec-only workflow contract', () => {
 
   it('routes spec-only changes without unrelated CI commands', () => {
     const ci = read('.github/workflows/ci.yml');
-    expect(ci).toContain(
-      'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
-    );
-    expect(ci).toContain('spec_only: ${{ steps.scope.outputs.spec_only }}');
+    expect(ci).toContain('uses: ./.test-scope/.github/actions/test-scope');
 
     const jobBlock = name => {
       const start = ci.indexOf(`  ${name}:`);
@@ -115,18 +120,10 @@ describe('spec-only workflow contract', () => {
       const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
-    const unrelatedJobs = [
-      'check-components',
-      'test-ui',
-      'test-node',
-      'registry-contract',
-      'test',
-      'build-storybook',
-      'pr-rtl',
-    ];
+    const unrelatedJobs = ['test-ui', 'test-node', 'test', 'build-storybook'];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
-        "needs.check-scope.outputs.spec_only != 'true'",
+        "steps.scope.outputs.spec_only != 'true'",
       );
     }
     expect(jobBlock('build')).toContain(
@@ -134,17 +131,14 @@ describe('spec-only workflow contract', () => {
     );
 
     const docsite = jobBlock('docsite-test');
-    expect(docsite).toContain("needs.check-scope.outputs.spec_only == 'true'");
+    expect(docsite).toContain("steps.scope.outputs.spec_only == 'true'");
     expect(docsite).toContain('node scripts/check-knowledge.mjs');
 
     const lint = read('.github/workflows/lint.yml');
     expect(lint).toContain('.github/scripts/change-scope.cjs');
     expect(lint).not.toContain('node scripts/check-knowledge.mjs');
 
-    for (const workflow of [
-      '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
-    ]) {
+    for (const workflow of ['.github/workflows/cli-smoke-test.yml']) {
       const source = read(workflow);
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
@@ -189,22 +183,26 @@ describe('spec-only workflow contract', () => {
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
     expect(docsiteJob.slice(setup, validate)).toContain(
-      "if: needs.check-scope.outputs.spec_only == 'true'",
+      "if: steps.scope.outputs.spec_only == 'true'",
     );
     expect(docsiteJob).not.toContain('- name: Build core package');
     expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
 
-    const header = dataJob.slice(0, dataJob.indexOf('steps:'));
-    expect(header).toContain("needs.check-scope.outputs.spec_only != 'true'");
+    const setupStep = dataJob.slice(
+      dataJob.indexOf('- uses: ./.github/actions/setup'),
+    );
+    expect(setupStep.slice(0, 200)).toContain(
+      "steps.scope.outputs.spec_only != 'true'",
+    );
     const build = dataJob.indexOf('- name: Build core package');
     const generate = dataJob.indexOf('- name: Generate and test docsite data');
     expect(build).toBeGreaterThanOrEqual(0);
     expect(generate).toBeGreaterThan(build);
     expect(dataJob.slice(build, generate)).toContain(
-      "if: needs.check-scope.outputs.spec_only != 'true'",
+      "if: steps.scope.outputs.spec_only != 'true'",
     );
     expect(dataJob.slice(generate)).toContain(
-      "if: needs.check-scope.outputs.spec_only != 'true'",
+      "if: steps.scope.outputs.spec_only != 'true'",
     );
   });
 
@@ -220,16 +218,20 @@ describe('spec-only workflow contract', () => {
 
     expect(commandSteps.length).toBeGreaterThan(0);
     for (const step of commandSteps) {
-      expect(step).toContain("needs.check-scope.outputs.spec_only != 'true'");
+      expect(step).toContain("steps.scope.outputs.spec_only != 'true'");
     }
   });
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
+      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
     );
-    expect(ci).toContain("if: needs.check-scope.result != 'success'");
+    const action = read('.github/actions/test-scope/action.yml');
+    expect(action).toContain(
+      "throw new Error('GitHub truncated the file list at 3000')",
+    );
+    expect(action).toContain('core.setFailed(');
 
     const reviewSignal = read('.github/workflows/review-signal.yml');
     expect(reviewSignal).toContain('allFiles.length !== pr.changed_files');

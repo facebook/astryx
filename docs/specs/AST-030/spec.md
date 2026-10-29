@@ -37,7 +37,7 @@ affects_consumer_docs: []
     ".github/workflows/**",
     ".github/scripts/change-scope.*",
     ".github/scripts/*routing*.test.mjs",
-    ".github/scripts/pr-scope-touches.*",
+    ".github/actions/test-scope/**",
     ".github/workflow-relevance.json",
     ".github/scripts/workflow-relevance.test.mjs"
   ]

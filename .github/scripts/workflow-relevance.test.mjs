@@ -132,8 +132,10 @@ describe('every workflow declares why it runs (spec:AST-030 FR14)', () => {
         // classifier, loaded from the base, picks the work inside them.
         expect(events).toContain('pull_request');
         expect(triggers.pull_request?.paths).toBeUndefined();
-        expect(source(name)).toContain(
-          'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
+        // Directly, or through the per-job scope action, which reads it
+        // from the PR's base commit.
+        expect(source(name)).toMatch(
+          /git show "origin\/\$\{\{ github\.base_ref \}\}:\.github\/scripts\/change-scope\.cjs"|uses: \.\/\.test-scope\/\.github\/actions\/test-scope/,
         );
         break;
       }

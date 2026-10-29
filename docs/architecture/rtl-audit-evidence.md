@@ -14,9 +14,7 @@ applies_to:
     apps/storybook/rtl-audit/,
     scripts/component-packages.cjs,
     .github/workflows/ci.yml,
-    .github/workflows/rtl-weekly.yml,
     .github/scripts/rtl-audit-coverage.test.mjs,
-    .github/scripts/weekly-rtl-summary.js,
     .github/scripts/rtl-join.mjs,
     .github/scripts/rtl-report-completion.mjs,
     .github/scripts/rtl-shard-scope.mjs,
@@ -27,7 +25,6 @@ verified_by:
   [
     .github/scripts/rtl-audit-coarse-hit.browser.test.mjs,
     .github/scripts/rtl-audit-coverage.test.mjs,
-    .github/scripts/weekly-rtl-summary.test.mjs,
     .github/scripts/rtl-join.test.mjs,
     .github/scripts/rtl-report-completion.test.mjs,
     .github/scripts/rtl-shard-scope.test.mjs,
@@ -278,7 +275,8 @@ component/composition contract; absent or invalid dimensions produce an error.
 - `.github/scripts/rtl-scorecard-summary.mjs` — review-facing scorecard projection;
   report completeness and exclusion visibility remain requirements, not authority
   to suppress findings.
-- `.github/workflows/rtl-weekly.yml` — full-roster scheduled audit.
+- `.github/workflows/ci.yml` release-check — the full-roster audit on every push
+  to main.
 - `internal/eslint-plugin-astryx/no-physical-properties.js` — source-provable
   physical/logical declaration constraints.
 - `design:bidirectionality` — human product intent, owned separately.
