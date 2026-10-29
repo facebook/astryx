@@ -340,6 +340,61 @@ describe('the release', () => {
     }
   });
 
+  it('under Reduce Motion a tempo may shorten the fade but never lengthens it past 200 ms (spec:AST-108 FR4)', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string): MediaQueryList =>
+        ({
+          matches: /prefers-reduced-motion:\s*reduce/.test(query),
+          media: query,
+          onchange: null,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+    const style = document.createElement('style');
+    style.textContent =
+      '.slow-row { --_astryx-motion-tempo: 1.5; } .quick-row { --_astryx-motion-tempo: 0.75; }';
+    document.head.appendChild(style);
+    try {
+      rows[0].classList.add('slow-row');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+      rows[0].classList.replace('slow-row', 'quick-row');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS * 0.75);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      rows[0].classList.remove('slow-row', 'quick-row');
+      style.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('caps the stylesheet’s release fade the same way under Reduce Motion', () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    expect(source).toMatch(
+      /min\(\$\{pressConsts\.releaseMs\}ms, calc\(\$\{pressConsts\.releaseMs\}ms \* var\(--_astryx-motion-tempo, 1\)\)\)/,
+    );
+    expect(source).toMatch(
+      /'@media \(prefers-reduced-motion: reduce\)': PRESS_RELEASE_DURATION_REDUCED/,
+    );
+  });
+
   it('keeps the 200 ms fade without a tempo', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
