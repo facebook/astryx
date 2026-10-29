@@ -46,7 +46,7 @@
 import {cubicBezier} from '../motion/bezier';
 import {projectDistance} from '../motion/projection';
 import {solveDecay} from '../motion/decay';
-import {rubberBand} from '../motion/rubberBand';
+import {rubberBand, rubberBandInverse} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {picker} from '../motion/uikit/picker';
 import {scroll} from '../motion/uikit/scroll';
@@ -132,8 +132,7 @@ export function offsetBounds({rowHeight, rowCount, looping}: WheelLayout): {
  */
 export function dragOffset(offset: number, layout: WheelLayout): number {
   const {min, max} = offsetBounds(layout);
-  const dimension =
-    picker.geometry.rubberBandDimension * scaleFor(layout.rowHeight);
+  const dimension = rubberBandDimension(layout);
   if (offset < min) {
     return min + rubberBand(offset - min, dimension);
   }
@@ -141,6 +140,28 @@ export function dragOffset(offset: number, layout: WheelLayout): number {
     return max + rubberBand(offset - max, dimension);
   }
   return offset;
+}
+
+/**
+ * The finger's offset for a shown one, `dragOffset`'s inverse: past an end,
+ * the travel that the rubber band shows as `shown`, so a finger that catches
+ * the wheel in a bounce carries on from where it is drawn (spec:AST-094 FR6).
+ */
+export function fingerOffset(shown: number, layout: WheelLayout): number {
+  const {min, max} = offsetBounds(layout);
+  const dimension = rubberBandDimension(layout);
+  if (shown < min) {
+    return min + rubberBandInverse(shown - min, dimension);
+  }
+  if (shown > max) {
+    return max + rubberBandInverse(shown - max, dimension);
+  }
+  return shown;
+}
+
+/** The rubber band's dimension: UIPickerView's, scaled to the rows. */
+function rubberBandDimension(layout: WheelLayout): number {
+  return picker.geometry.rubberBandDimension * scaleFor(layout.rowHeight);
 }
 
 /** The nearest row to `offset` (clamped to the rows unless looping). */

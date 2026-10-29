@@ -29,6 +29,7 @@ import {
   afterEach,
 } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -55,6 +56,7 @@ import {
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
 import {picker} from '../motion/uikit';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
@@ -2279,6 +2281,55 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   /**
+   * Every `scrollTop` the drag assigns ends in its own `scrollend` in
+   * Chromium, and the hand can rest with the button still down. Neither is
+   * rest: the month the wheel lands on commits at the release, as it does
+   * when a finger lifts.
+   */
+  it('commits nothing while a mouse drag holds the wheel, and commits at the release', () => {
+    vi.useFakeTimers();
+    try {
+      // A year of months, so May is reachable (the default range ends in April).
+      renderAndOpen(
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
+      );
+      fireEvent.click(title());
+      withWheelLayout(() => {
+        const el = wheel();
+        trackable(el);
+        // March, the committed month, sits under the band.
+        el.scrollTop = 2 * 28;
+        const selected = () =>
+          el.querySelector('[aria-selected="true"]')?.textContent;
+        el.dispatchEvent(pointer('pointerdown', {y: 200}));
+        // Two rows on: May is under the band.
+        el.dispatchEvent(pointer('pointermove', {y: 144}));
+        fireEvent.scroll(el);
+        el.dispatchEvent(new Event('scrollend'));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('March');
+        expect(title()).toHaveTextContent('March 2026');
+
+        el.dispatchEvent(pointer('pointerup', {y: 144}));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('May');
+        expect(title()).toHaveTextContent('May 2026');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /**
    * BottomSheet starts its own drag-to-dismiss from a `pointerdown` on its
    * body and CAPTURES the pointer for it, which retargets every later pointer
    * event — including the click. Measured before this: a click on a wheel row
@@ -2611,25 +2662,85 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     ]);
   });
 
-  it('sizes the touch wheels as UIPickerView, with the large text of the theme', () => {
+  it('puts the touch wheels on UIPickerView’s cylinder, with the large text of the theme', () => {
     // StyleX inlines only literals, so the picker's geometry is repeated in
-    // its constants; they must stay the UIKit table's.
+    // its constants; the cylinder, its perspective, the picker's height and
+    // the band's inset and magnification must stay the UIKit table's.
     const tokens = read('wheelGeometry.stylex.ts');
     const {geometry} = picker;
     expect(tokens).toContain(`pickerHeight: '${geometry.height}px'`);
-    expect(tokens).toContain(`rowHeight: '${geometry.rowHeight}px'`);
-    expect(tokens).toContain(`rowHalfHeight: '${geometry.rowHeight / 2}px'`);
     expect(tokens).toContain(`rowOriginDepth: '-${geometry.cylinderRadius}px'`);
     expect(tokens).toContain(`perspective: '${geometry.perspective}px'`);
-    expect(tokens).toContain(`bandHeight: '${geometry.bandHeight}px'`);
     expect(tokens).toContain(`bandInset: '${geometry.bandInset}px'`);
     expect(tokens).toContain(
       `bandMagnification: '${geometry.bandMagnification.toFixed(3)}'`,
     );
-    expect(tokens).toContain(`outerOpacity: '${geometry.outerOpacity}'`);
     expect(read('PickerWheel.tsx')).toContain(
       "fontSize: typeScaleVars['--text-large-size']",
     );
+  });
+
+  it('keeps the touch rows and the band at the default look’s 28 px row (spec:AST-094 FR42, DEC-20)', () => {
+    // The default look grows no box for touch: the rows and the band keep
+    // today's 28 px, set on UIPickerView's cylinder.
+    expect(WHEEL_ROW_PITCH).toBe(28);
+    const tokens = read('wheelGeometry.stylex.ts');
+    expect(tokens).toContain(`rowHeight: '${WHEEL_ROW_PITCH}px'`);
+    expect(tokens).toContain(`rowHalfHeight: '${WHEEL_ROW_PITCH / 2}px'`);
+    expect(tokens).toContain(`bandHeight: '${WHEEL_ROW_PITCH}px'`);
+  });
+
+  it('draws the rows off the band at 4.5:1 or more against the surface, light and dark (spec:AST-020 FR9)', () => {
+    // WCAG 1.4.3: the rows above and below the band are text. Their colour,
+    // after any opacity, must read at 4.5:1 on the sheet's surface in both
+    // schemes of the theme.
+    const row = declarations(read('PickerWheel.tsx'), 'row');
+    const token = /^color: colorVars\['(--color-[\w-]+)'\]$/.exec(
+      row.find(line => line.startsWith('color: ')) ?? '',
+    )?.[1];
+    expect(token).toBeDefined();
+    const opacityLine = row.find(line => line.startsWith('opacity: '));
+    const outer = /outerOpacity: '([\d.]+)'/.exec(
+      read('wheelGeometry.stylex.ts'),
+    )?.[1];
+    const opacity =
+      opacityLine == null
+        ? 1
+        : opacityLine === 'opacity: wheelGeometry.outerOpacity'
+          ? Number(outer)
+          : Number(opacityLine.slice('opacity: '.length));
+    const theme = read('../theme/tokens.stylex.ts');
+    const schemes = (name: string) => {
+      const match = new RegExp(
+        `'${name}': 'light-dark\\((#[0-9A-Fa-f]{6}), (#[0-9A-Fa-f]{6})\\)'`,
+      ).exec(theme);
+      expect(match).not.toBeNull();
+      return [match![1], match![2]] as const;
+    };
+    const rgb = (hex: string) =>
+      [1, 3, 5].map(at => Number.parseInt(hex.slice(at, at + 2), 16));
+    const luminance = (channels: number[]) => {
+      const [r, g, b] = channels.map(channel => {
+        const value = channel / 255;
+        return value <= 0.04045
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const text = schemes(token!);
+    const surface = schemes('--color-background-surface');
+    const ratios = [0, 1].map(scheme => {
+      const back = rgb(surface[scheme]);
+      const front = rgb(text[scheme]).map(
+        (channel, at) => channel * opacity + back[at] * (1 - opacity),
+      );
+      const [light, dark] = [luminance(front), luminance(back)].sort(
+        (a, b) => b - a,
+      );
+      return (light + 0.05) / (dark + 0.05);
+    });
+    expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('draws the dimmed rows on the cylinder, in perspective, with the band cut out', () => {

@@ -21,6 +21,7 @@ import {
   MAX_PLAN_SECONDS,
   coastCurve,
   dragOffset,
+  fingerOffset,
   nearestIndex,
   planRelease,
   projectRelease,
@@ -316,6 +317,20 @@ describe('past an end', () => {
     expect(dragOffset(end + 110, MINUTES) - end).toBeCloseTo(50.1, 1);
     expect(dragOffset(-50, MINUTES)).toBeCloseTo(-25.1, 1);
     expect(dragOffset(500, MINUTES)).toBe(500);
+  });
+
+  it('finds the finger for a shown offset, the exact inverse of the rubber band, at any row', () => {
+    // A finger catching a bounce must carry on from where the wheel is drawn.
+    for (const layout of [MINUTES, {rowHeight: 28, rowCount: 60}]) {
+      const end = 59 * layout.rowHeight;
+      for (const finger of [-200, -50, -1, end + 1, end + 50, end + 200]) {
+        expect(fingerOffset(dragOffset(finger, layout), layout)).toBeCloseTo(
+          finger,
+          6,
+        );
+      }
+      expect(fingerOffset(500, layout)).toBe(500);
+    }
   });
 
   it('returns to the end it was released past, keeping any velocity', () => {

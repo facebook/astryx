@@ -25,15 +25,21 @@ import {
   it,
   vi,
 } from 'vitest';
-import {timing} from '../motion/uikit';
+import {picker, timing} from '../motion/uikit';
 import {PickerWheel} from './PickerWheel';
 import {WheelGroup, useWheelGroup} from './WheelGroup';
 import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
 import {rowTransform} from './wheelDrum';
 import {timeColumns} from './wheelColumns';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 
-const ROW = 32;
-const RADIUS = 97.2;
+/** The default look's row (AST-094 FR42), on UIPickerView's cylinder. */
+const ROW = WHEEL_ROW_PITCH;
+const RADIUS = picker.geometry.cylinderRadius;
+/** Rows on the cylinder's front, each side of the band. */
+const FRONT_REACH = Math.floor(((Math.PI / 2) * RADIUS) / ROW);
+/** Rows the drum draws each side of the band: its front half and a buffer of 2. */
+const WINDOW_REACH = Math.ceil(((Math.PI / 2) * RADIUS) / ROW) + 2;
 /** The column is laid out 216 px tall, its band's centre 108 px down. */
 const CENTRE = 108;
 
@@ -259,16 +265,62 @@ describe('PickerWheel — at rest', () => {
     expect(row('08').style.transform).toBe(rowTransform(0));
   });
 
-  it('shows a value set from outside without motion', () => {
-    const {rerender, onChange, row} = renderWheel();
-    rerender(
+  it('turns onto a value set from outside while it is shown, as a bound clamping the time (component:DateInput FR13)', () => {
+    // jsdom runs no Web Animations: record what the wheel asks of its strip.
+    const strips: Keyframe[][] = [];
+    Element.prototype.animate = vi.fn(function animate(
+      this: Element,
+      keyframes: Keyframe[],
+    ) {
+      if (this.hasAttribute('data-wheel-strip')) {
+        strips.push(keyframes);
+      }
+      return {cancel: () => {}} as unknown as Animation;
+    });
+    try {
+      const {rerender, row, onChange} = renderWheel();
+      rerender(
+        <PickerWheel
+          label="Hour"
+          options={HOURS}
+          value={14}
+          onChange={onChange}
+        />,
+      );
+      // From 10 onto 14 through the rows between: a turn, never a jump.
+      expect(strips).toHaveLength(1);
+      const ys = strips[0].map(frame =>
+        Number(/translateY\((-?[\d.]+)px\)/.exec(String(frame.transform))?.[1]),
+      );
+      const from = ys[0];
+      const to = ys[ys.length - 1];
+      expect(Math.abs(to - from)).toBeCloseTo(4 * ROW, 0);
+      const [lo, hi] = [Math.min(from, to), Math.max(from, to)];
+      expect(
+        ys.filter(y => y > lo + 1 && y < hi - 1).length,
+      ).toBeGreaterThanOrEqual(4);
+      advance(2000);
+      expect(row('14').style.transform).toBe(rowTransform(0));
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'animate');
+    }
+  });
+
+  it('parks a value set while it is hidden at once when it is shown again', () => {
+    const {rerender, row, onChange} = renderWheel();
+    const wheel = (value: number, isActive: boolean) => (
       <PickerWheel
         label="Hour"
         options={HOURS}
-        value={14}
+        value={value}
         onChange={onChange}
-      />,
+        isActive={isActive}
+      />
     );
+    rerender(wheel(10, false));
+    rerender(wheel(14, false));
+    rerender(wheel(14, true));
     expect(row('14').style.transform).toBe(rowTransform(0));
   });
 });
@@ -317,6 +369,19 @@ describe('PickerWheel — a finger', () => {
     expect(onChange).toHaveBeenCalledWith(11);
   });
 
+  it('rests back on the committed row after a nudge that eases back onto it', () => {
+    const {column, row, onChange} = renderWheel();
+    // 10 px of hysteresis + a third of a row, held still, lifted.
+    drag(column, 150, 150 - (10 + ROW / 3), {
+      steps: 10,
+      interval: 40,
+      hold: 300,
+    });
+    advance(2000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(row('10').style.transform).toBe(rowTransform(0));
+  });
+
   it('turns on to the minimum after resting below it, and commits that', () => {
     const {column, onChange, row} = renderWheel();
     // Down 3 rows (+10 px of hysteresis): the wheel rests on 07, disabled.
@@ -354,6 +419,38 @@ describe('PickerWheel — a finger', () => {
     advance(2000);
     expect(onChange).not.toHaveBeenCalledWith(23);
     expect(row('17').style.transform).toBe(rowTransform(0));
+  });
+
+  it('is held where it shows by a finger that catches it in its rubber band, then follows that finger (spec:AST-094 FR6)', () => {
+    const {column, row} = renderWheel({
+      options: MINUTES,
+      value: 59,
+      label: 'Minute',
+    });
+    /** The wheel's offset, from its last row's angle on the cylinder. */
+    const offsetOf = () => 59 * ROW - angleOf(row('59')) * RADIUS;
+    // Up past the last row (10 px of hysteresis and 180 more), held, lifted:
+    // the wheel starts back out of its rubber band.
+    drag(column, 200, 10, {steps: 30, interval: 30, hold: 300});
+    // A finger lands while the bounce is still far out: the wheel stops
+    // there, drawn where it was (the return runs on the compositor, so the
+    // catch is what draws it here).
+    advance(16);
+    touch('touchstart', column, 150);
+    advance(16);
+    const caught = offsetOf();
+    expect(caught - 59 * ROW).toBeGreaterThan(40);
+    // The hysteresis, then 6 px more up: the band gives a little of it, never
+    // a jump back.
+    touch('touchmove', column, 140);
+    advance(16);
+    touch('touchmove', column, 134);
+    advance(16);
+    const moved = offsetOf() - caught;
+    expect(moved).toBeGreaterThan(0.5);
+    expect(moved).toBeLessThan(6);
+    touch('touchend', column, 134);
+    advance(2000);
   });
 
   it('is stopped where it is by a finger that lands on it, and commits nothing', () => {
@@ -466,6 +563,42 @@ describe('PickerWheel — keyboard and clicks', () => {
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.keyDown(column, {key: 'End'});
     expect(onChange).toHaveBeenLastCalledWith(17);
+  });
+
+  it('stays on the last row when a key has nowhere further to go', () => {
+    const {column, row, onChange} = renderWheel({
+      options: MINUTES,
+      value: 59,
+      label: 'Minute',
+    });
+    fireEvent.keyDown(column, {key: 'ArrowDown'});
+    advance(1000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(row('59').style.transform).toBe(rowTransform(0));
+  });
+
+  it('never steps the long way round a loop onto the far side of a disabled stretch', () => {
+    // A year of months, looping, with only January and February enabled:
+    // up from January is December, and the nearest enabled row to it is
+    // January again, so the key stays where it is rather than turning
+    // eleven rows round to February.
+    const MONTHS: WheelOption[] = Array.from({length: 12}, (_, month) => ({
+      value: month,
+      label: `M${String(month + 1).padStart(2, '0')}`,
+      isDisabled: month > 1,
+    }));
+    const {column, row, onChange} = renderWheel({
+      options: MONTHS,
+      value: 0,
+      label: 'Month',
+      isLooping: true,
+    });
+    fireEvent.keyDown(column, {key: 'ArrowUp'});
+    advance(1000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(row('M01').style.transform).toBe(rowTransform(0));
+    fireEvent.keyDown(column, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(1);
   });
 
   it('takes Home and End to the first and last enabled rows, even mid-coast', () => {
@@ -647,7 +780,7 @@ describe('PickerWheel — a scroll wheel', () => {
     }
   });
 
-  it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR43)', () => {
+  it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR10, FR43)', () => {
     const {column, onChange} = renderWheel();
     expect(wheel(column, 64, true)).toBe(false);
     advance(1000);
@@ -796,7 +929,7 @@ describe('PickerWheel — under reduced motion', () => {
     advance(FADE_MS);
   });
 
-  it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
+  it('fades for a tap, a key and a spin', async () => {
     const ref = createRef<WheelHandle>();
     const {column, onChange} = renderWheel({ref});
     const below = CENTRE + RADIUS * Math.sin(ROW / RADIUS);
@@ -811,7 +944,7 @@ describe('PickerWheel — under reduced motion', () => {
     advance(FADE_MS);
     let arrived: boolean | undefined;
     act(() => {
-      void ref.current!.spinTo(15, {duration: 2}).then(value => {
+      void ref.current!.spinTo(15).then(value => {
         arrived = value;
       });
     });
@@ -861,6 +994,38 @@ describe('PickerWheel — mechanics for its owners', () => {
     await act(async () => {});
     expect(arrived).toBe(true);
     expect(onChange).toHaveBeenCalledWith(15);
+  });
+
+  it('turns nothing and reports false for a spin onto a row a rest would not keep', async () => {
+    // As the scrolling column answers: a disabled row, an index outside the
+    // rows, and a row the owner's rest moves off.
+    const ref = createRef<WheelHandle>();
+    const {row, onChange} = renderWheel({
+      ref,
+      resolveRest: index => (index % 2 === 0 ? index : index + 1),
+    });
+    for (const index of [3, 24, -1, 11]) {
+      let arrived: boolean | undefined;
+      act(() => {
+        void ref.current!.spinTo(index).then(value => {
+          arrived = value;
+        });
+      });
+      await act(async () => {});
+      expect(arrived, `spinTo(${index})`).toBe(false);
+    }
+    advance(1000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(row('10').style.transform).toBe(rowTransform(0));
+  });
+
+  it('reports false for a spin still turning when the wheel goes away', async () => {
+    const ref = createRef<WheelHandle>();
+    const {unmount} = renderWheel({ref});
+    const spin = ref.current!.spinTo(15);
+    advance(100);
+    unmount();
+    await expect(spin).resolves.toBe(false);
   });
 
   it('reports a spin a finger interrupted', async () => {
@@ -980,10 +1145,10 @@ describe('PickerWheel — a window of rows', () => {
   it('draws only the rows around the band, and lists every option', () => {
     const {column} = renderWheel({options: YEARS, value: 2000, label: 'Year'});
     const drawn = drumIndices(column);
-    // The cylinder's front half (5 rows each side) and a buffer of 2.
-    expect(drawn).toHaveLength(15);
-    expect(Math.min(...drawn)).toBe(93);
-    expect(Math.max(...drawn)).toBe(107);
+    // The cylinder's front half and a buffer of 2, each side.
+    expect(drawn).toHaveLength(2 * WINDOW_REACH + 1);
+    expect(Math.min(...drawn)).toBe(100 - WINDOW_REACH);
+    expect(Math.max(...drawn)).toBe(100 + WINDOW_REACH);
     // The band copy: the row under the band, one each side, and the buffer.
     expect(stripLabels(column)).toEqual([
       '1997',
@@ -1003,7 +1168,7 @@ describe('PickerWheel — a window of rows', () => {
   it('stops the window at the first and last rows', () => {
     const {column} = renderWheel({options: YEARS, value: 1900, label: 'Year'});
     expect(drumIndices(column)).toEqual(
-      Array.from({length: 8}, (_, index) => index),
+      Array.from({length: WINDOW_REACH + 1}, (_, index) => index),
     );
   });
 
@@ -1024,8 +1189,8 @@ describe('PickerWheel — a window of rows', () => {
     expect(Math.min(...during)).toBeLessThanOrEqual(104 - 5);
     expect(Math.max(...during)).toBeGreaterThanOrEqual(rest + 5);
     const after = drumIndices(column);
-    expect(after).toHaveLength(15);
-    expect(Math.min(...after)).toBe(rest - 7);
+    expect(after).toHaveLength(2 * WINDOW_REACH + 1);
+    expect(Math.min(...after)).toBe(rest - WINDOW_REACH);
   });
 
   it('moves the window through a drag without rendering the column (spec:AST-094 FR9)', () => {
@@ -1082,13 +1247,13 @@ describe('PickerWheel — a window of rows', () => {
       isLooping: true,
     });
     const drawn = drumIndices(column);
-    // 59 ± 7, wrapping: 52-59, then 00-06.
-    expect(drawn).toHaveLength(15);
+    // 59 ± the window, wrapping past 59 into 00, 01…
+    expect(drawn).toHaveLength(2 * WINDOW_REACH + 1);
     expect(drawn).toContain(0);
-    expect(drawn).toContain(6);
-    expect(drawn).toContain(52);
-    expect(drawn).not.toContain(7);
-    expect(drawn).not.toContain(51);
+    expect(drawn).toContain(WINDOW_REACH - 1);
+    expect(drawn).toContain(59 - WINDOW_REACH);
+    expect(drawn).not.toContain(WINDOW_REACH);
+    expect(drawn).not.toContain(59 - WINDOW_REACH - 1);
     // The band strip runs on past 59 into 00, 01…
     const labels = stripLabels(column);
     expect(labels.indexOf('00')).toBe(labels.indexOf('59') + 1);
@@ -1132,6 +1297,13 @@ describe('PickerWheel — a short looping list', () => {
       .map(({label}) => label);
   }
 
+  /** The front of the drum around `labels[at]`: the list run round it. */
+  const around = (labels: string[], at: number) =>
+    Array.from({length: 2 * FRONT_REACH + 1}, (_, index) => {
+      const n = labels.length;
+      return labels[(((at + index - FRONT_REACH) % n) + n) % n];
+    });
+
   /** The position of the copy under the band. */
   function bandPosition(column: HTMLElement): number {
     const row = drumRowsOf(column).find(
@@ -1147,18 +1319,9 @@ describe('PickerWheel — a short looping list', () => {
       label: 'Minute',
       isLooping: true,
     });
-    // UIKit at :45, top to bottom: 45 · 00 · 15 · 30 · 45 · 00 · 15 · 30 · 45.
-    expect(frontLabels(column)).toEqual([
-      '45',
-      '00',
-      '15',
-      '30',
-      '45',
-      '00',
-      '15',
-      '30',
-      '45',
-    ]);
+    // At :45, top to bottom, the list runs round the whole front:
+    // … 30 · 45 · 00 · 15 · 30 · 45 · 00 · 15 · 30 · 45 · 00 …
+    expect(frontLabels(column)).toEqual(around(['00', '15', '30', '45'], 3));
     // One option per value for assistive technology.
     expect(within(column).getAllByRole('option')).toHaveLength(4);
   });
@@ -1170,17 +1333,7 @@ describe('PickerWheel — a short looping list', () => {
       label: 'Minute',
       isLooping: true,
     });
-    expect(frontLabels(column)).toEqual([
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-      '00',
-      '30',
-    ]);
+    expect(frontLabels(column)).toEqual(around(['00', '30'], 1));
     const start = bandPosition(column);
     // Two rows below the band: the next copy of 30.
     const twoBelow = CENTRE + RADIUS * Math.sin((2 * ROW) / RADIUS);
@@ -1222,6 +1375,61 @@ describe('PickerWheel — a short looping list', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('turns the shorter way round from a rest beside the seam onto the nearest enabled row', () => {
+    // :00 and :15 disabled. One row on from :45 rests on :00, across the
+    // seam: :45 is one row back, :30 two rows on, so it turns back to :45
+    // and commits nothing.
+    const {column, onChange} = renderWheel({
+      options: QUARTERS.map(option => ({
+        ...option,
+        isDisabled: option.value === 0 || option.value === 15,
+      })),
+      value: 45,
+      label: 'Minute',
+      isLooping: true,
+    });
+    /** The label of the drum row drawn at the band. */
+    const atBand = () =>
+      [...column.querySelectorAll<HTMLElement>('[data-wheel-drum] > *')].find(
+        drawn => drawn.style.transform === rowTransform(0),
+      )?.dataset.label;
+    expect(atBand()).toBe('45');
+    // 10 px of hysteresis + a row, held still, lifted.
+    drag(column, 150, 150 - (10 + ROW), {steps: 25, interval: 40, hold: 300});
+    advance(2000);
+    expect(atBand()).toBe('45');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('redraws the band’s row in its new colour when the bounds change under it', () => {
+    const {column, rerender, onChange} = renderWheel({
+      options: QUARTERS,
+      value: 15,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const bandCopy = () =>
+      column.querySelector<HTMLElement>('[data-wheel-strip] [data-label="15"]')!
+        .className;
+    const enabled = bandCopy();
+    const wheel = (isDisabled: boolean) => (
+      <PickerWheel
+        label="Minute"
+        options={QUARTERS.map(option => ({
+          ...option,
+          isDisabled: isDisabled && option.value === 15,
+        }))}
+        value={15}
+        onChange={onChange}
+        isLooping
+      />
+    );
+    rerender(wheel(true));
+    expect(bandCopy()).not.toBe(enabled);
+    rerender(wheel(false));
+    expect(bandCopy()).toBe(enabled);
+  });
+
   it('never turns a whole revolution when no other row is enabled', () => {
     // Only :15 is enabled, so an arrow key has nowhere to go.
     const {column, onChange} = renderWheel({
@@ -1252,7 +1460,7 @@ describe('PickerWheel — a short looping list', () => {
     advance(4000);
     // More than one turn of the list past the seam, and a full cylinder.
     expect(bandPosition(column)).toBeGreaterThan(4);
-    expect(frontLabels(column)).toHaveLength(9);
+    expect(frontLabels(column)).toHaveLength(2 * FRONT_REACH + 1);
     const rested = QUARTERS[((bandPosition(column) % 4) + 4) % 4].value;
     if (rested === 0) {
       expect(onChange).not.toHaveBeenCalled();

@@ -37,7 +37,8 @@
  * - A trackpad's scroll and a mouse wheel drive the same pan as a contact
  *   moving with the rows, so the wheel coasts and rests by the same release
  *   (`spec:AST-094` FR43); a ctrl-wheel, as a trackpad pinch arrives, is a
- *   pinch's input and stays the page's zoom.
+ *   pinch's input, and with no pinch of its own the wheel leaves it to the
+ *   page's zoom (FR10).
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A row `resolveRest` moves away from (by default, a
  *   disabled one: outside the bounds) is followed by a turn onto the row it
@@ -54,8 +55,9 @@
  *   travel: the rows cross-fade onto their row, opacity only, on the
  *   animator's Reduce Motion fade (`reducedMotionFade`).
  *
- * The rows are drawn twice, as UIKit draws them: dimmed on a cylinder seen
- * in perspective above and below the band (wheelDrum.ts), and flat and
+ * The rows are drawn twice, as UIKit draws them: dimmed, in the theme's
+ * secondary text colour (4.5:1 on the sheet, spec:AST-020 FR9), on a
+ * cylinder seen in perspective above and below the band (wheelDrum.ts), and flat and
  * magnified inside it, each label about its own centre, so the band's row
  * stays in line with its column. In a WheelGroup every column is drawn
  * towards the group's centre, and a column given its place (`column`,
@@ -103,7 +105,6 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isRtlElement} from '../hooks/isRtlElement';
-import {rubberBandInverse} from '../motion/rubberBand';
 import {resolveMotion} from '../motion/resolveMotion';
 import {picker} from '../motion/uikit/picker';
 import {registerScrollTable, scroll} from '../motion/uikit/scroll';
@@ -119,14 +120,15 @@ import {wheelGeometry} from './wheelGeometry.stylex';
 import {lockSelection} from '../gestures/selectionLock';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useWheelListbox} from './useWheelListbox';
-import {drumGeometry, rowAtPoint} from './wheelDrum';
+import {drumGeometry, rowAtPoint, type DrumGeometry} from './wheelDrum';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
 import {WheelRows, type WheelRange, type WheelRowClasses} from './wheelRows';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {
   dragOffset,
+  fingerOffset,
   nearestIndex,
-  offsetBounds,
   planRelease,
   spinCurve,
   wrapIndex,
@@ -136,14 +138,23 @@ import {
 import {useWheelGroup, wheelGroupStyles} from './WheelGroup';
 import type {WheelColumn} from './wheelColumns';
 import {
-  nearestEnabledIndex,
+  canSpinTo,
+  loopStep,
+  restingStep,
   type WheelProps,
-  type WheelSpinOptions,
 } from './wheelOptions';
 
-/** UIKit's row pitch, px: the wheel's geometry is UIPickerView's. */
-const ROW_HEIGHT = picker.geometry.rowHeight;
-const GEOMETRY = drumGeometry(ROW_HEIGHT);
+/**
+ * The rows' pitch, px: the default look's row (spec:AST-094 FR42), on
+ * UIPickerView's cylinder, perspective and height, which keep their size.
+ * The band is one row tall.
+ */
+const ROW_HEIGHT = WHEEL_ROW_PITCH;
+const GEOMETRY: DrumGeometry = {
+  ...drumGeometry(picker.geometry.rowHeight),
+  rowHeight: ROW_HEIGHT,
+  bandHeight: ROW_HEIGHT,
+};
 const styles = stylex.create({
   column: {
     position: 'relative',
@@ -184,10 +195,10 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     transformOrigin: `50% 50% ${wheelGeometry.rowOriginDepth}`,
     backfaceVisibility: 'hidden',
-    opacity: wheelGeometry.outerOpacity,
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-primary'],
+    // Text read at rest: 4.5:1 on the sheet in every scheme (AST-020 FR9).
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
   },
@@ -267,22 +278,20 @@ function registerWheelTables(): void {
 }
 
 /**
- * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * picker's tap spin (`picker.tapSpin.durationMs`) on `timing.curves.move` as
- * resolved under `column` when the turn starts.
+ * A turn onto `to` on the picker's tap spin (`picker.tapSpin.durationMs`),
+ * on `timing.curves.move` as resolved under `column` when the turn starts.
  */
 function turnCurve(
   column: Element | null,
   from: number,
   to: number,
-  spin: WheelSpinOptions = {},
 ): WheelCurve {
   registerWheelTables();
   return spinCurve(
     from,
     to,
-    spin.duration ?? picker.tapSpin.durationMs / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.move),
+    picker.tapSpin.durationMs / 1000,
+    resolveMotion(column, timing.curves.move),
   );
 }
 
@@ -391,7 +400,7 @@ export function PickerWheel({
     () => ({rowHeight: ROW_HEIGHT, rowCount, looping: loops}),
     [rowCount, loops],
   );
-  const [motion] = useState(() => new WheelMotion(layout));
+  const [motion] = useState(() => new WheelMotion(layout, GEOMETRY));
   const selectedIndex = Math.max(
     0,
     options.findIndex(option => option.value === value),
@@ -402,6 +411,8 @@ export function PickerWheel({
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
+  // The latest props, for the motion's and the gesture listeners' callbacks,
+  // which are attached once and outlive a render.
   const latestRef = useRef({options, value, onChange, resolveRest, layout});
   useIsomorphicLayoutEffect(() => {
     latestRef.current = {options, value, onChange, resolveRest, layout};
@@ -493,15 +504,31 @@ export function PickerWheel({
       );
       // Resting on the committed row is not a stop to correct
       // (component:DateInput FR13): a committed value outside the bounds stays
-      // until a person moves the wheel off it, as in the scrolling column.
-      const resolved =
-        row === committed
-          ? row
-          : current.resolveRest
-            ? current.resolveRest(row)
-            : nearestEnabledIndex(current.options, row, Math.max(0, committed));
-      if (resolved !== row && current.options[resolved] != null) {
-        const target = position + (resolved - row);
+      // until a person moves the wheel off it, as in the scrolling column. On
+      // a loop the nearest enabled row is measured around the seam, and the
+      // wheel turns the shorter way to it.
+      const count = current.options.length;
+      const isLooping = Boolean(current.layout.looping);
+      let step = 0;
+      if (row !== committed) {
+        if (current.resolveRest) {
+          // The owner's rest: the row it names, reached the shorter way
+          // round on a loop.
+          const resolved = current.resolveRest(row);
+          if (current.options[resolved] != null) {
+            step = isLooping ? loopStep(row, resolved, count) : resolved - row;
+          }
+        } else {
+          step = restingStep(
+            current.options,
+            row,
+            Math.max(0, committed),
+            isLooping,
+          );
+        }
+      }
+      if (step !== 0) {
+        const target = position + step;
         play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
@@ -559,21 +586,37 @@ export function PickerWheel({
     motion.attach(rows.drumRows(), strip);
   }, [motion, layout, options, rowClasses]);
 
+  // The motion's animations and timers end with the wheel.
   useEffect(() => () => motion.dispose(), [motion]);
 
-  // Park the committed row under the band when the wheel is shown or the
-  // value changes from outside (the calendar moved to another month). Never
-  // while a finger or a motion owns the wheel.
+  // Park the committed row under the band when the wheel is shown, at once. A
+  // value changed from outside while it is shown (a bound clamping the time
+  // after another wheel turned, the calendar moved to another month) turns
+  // the wheel onto its row instead, as UIDatePicker turns onto its maximum
+  // (component:DateInput FR13): it never jumps there. Never while a finger or
+  // a motion owns the wheel.
+  const parkedRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
-    if (!isActive || dragRef.current != null || motion.isMoving()) {
+    if (!isActive) {
+      parkedRef.current = false;
+      return;
+    }
+    if (dragRef.current != null || motion.isMoving()) {
       return;
     }
     const position = nearestPosition(selectedIndex, motion.offset(), layout);
-    showRows(position, position);
-    if (Math.abs(motion.offset() - position * ROW_HEIGHT) > 0.01) {
-      motion.setOffset(position * ROW_HEIGHT);
+    const target = position * ROW_HEIGHT;
+    const isAway = Math.abs(motion.offset() - target) > 0.01;
+    if (isAway && parkedRef.current) {
+      play(turnCurve(columnRef.current, motion.offset(), target));
+      return;
     }
-  }, [isActive, selectedIndex, layout, motion, showRows]);
+    showRows(position, position);
+    if (isAway) {
+      motion.setOffset(target);
+    }
+    parkedRef.current = true;
+  }, [isActive, selectedIndex, layout, motion, showRows, play]);
 
   // A hidden wheel keeps no motion running and holds no drag. Hiding it
   // mid-drag ends the pan without calling its listener (the toggle's owner
@@ -639,6 +682,7 @@ export function PickerWheel({
     [motion],
   );
 
+  // The latest touch-down handler, for the gesture listener attached once.
   const onTouchDownRef = useRef(onTouchDown);
   useIsomorphicLayoutEffect(() => {
     onTouchDownRef.current = onTouchDown;
@@ -798,12 +842,24 @@ export function PickerWheel({
     return () => column.removeEventListener('pointerdown', keep);
   }, [isActive]);
 
+  // A spin turns only onto a row a rest would keep (canSpinTo), so its
+  // arrival commits that row and nothing turns on past it: it reports the
+  // row it was asked for, as the scrolling column does.
   const spinTo = useCallback(
-    async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>
+    async (index: number): Promise<boolean> =>
       new Promise(resolve => {
+        const {
+          layout: currentLayout,
+          options: currentOptions,
+          resolveRest: currentResolveRest,
+        } = latestRef.current;
+        if (!canSpinTo(currentOptions, index, currentResolveRest)) {
+          resolve(false);
+          return;
+        }
         const offset = motion.offset();
-        const target = nearestPosition(index, offset, latestRef.current.layout);
-        play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT, spin), {
+        const target = nearestPosition(index, offset, currentLayout);
+        play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
               arrive(end);
@@ -873,10 +929,17 @@ export function PickerWheel({
       }
       // The first enabled row from the target onwards; failing that (the
       // target is past the bounds), the enabled row nearest it on the way
-      // back, short of the row it started from.
+      // back, short of the row it started from. On a loop the search onwards
+      // stops half a turn from the start (or at the target, when the key
+      // moves further): past it a row is nearer the other way round, so a
+      // key never turns the long way round onto it, as a rest never does.
+      const reach = Math.max(Math.abs(delta), Math.floor(count / 2));
       let found: number | null = null;
       for (let index = next, tries = 0; tries < count; tries++, index += step) {
         if (!looping && (index < 0 || index >= count)) {
+          break;
+        }
+        if (looping && Math.abs(index - from) > reach) {
           break;
         }
         if (isEnabled(index)) {
@@ -1005,8 +1068,11 @@ export function PickerWheel({
 
 PickerWheel.displayName = 'PickerWheel';
 
-/** wheelColumns.ts's pt, at this wheel's rows. */
-const PLACE_SCALE = ROW_HEIGHT / picker.geometry.rowHeight;
+/**
+ * wheelColumns.ts's pt, on this wheel's cylinder: UIKit's, so the places keep
+ * their size with the labels they sit by.
+ */
+const PLACE_SCALE = GEOMETRY.radius / picker.geometry.cylinderRadius;
 
 /** A placed column's flex basis: its span of the group (wheelColumns.ts). */
 function spanBasis(span: WheelColumn['span']): string {
@@ -1069,21 +1135,4 @@ function placeShift(
     from = atLeft ? columnBox.left + inset : columnBox.right - inset;
   }
   return target - from;
-}
-
-/**
- * The finger's offset for a shown one: past an end, the travel that the
- * rubber band shows as `shown` (so a drag that starts in a bounce continues
- * without a jump).
- */
-function fingerOffset(shown: number, layout: WheelLayout): number {
-  const {min, max} = offsetBounds(layout);
-  const dimension = GEOMETRY.rubberBandDimension;
-  if (shown < min) {
-    return min + rubberBandInverse(shown - min, dimension);
-  }
-  if (shown > max) {
-    return max + rubberBandInverse(shown - max, dimension);
-  }
-  return shown;
 }

@@ -26,8 +26,22 @@ import {
   waitForRest,
   withStorybook,
 } from '@astryxdesign/interaction-harness';
+import {picker} from '../../motion/uikit';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 
 const storybook = withStorybook(test);
+
+/**
+ * The most rows a touch column draws: its cylinder's front half and a buffer
+ * of 2, each side of the band.
+ */
+const WINDOW_ROWS =
+  2 *
+    (Math.ceil(
+      ((Math.PI / 2) * picker.geometry.cylinderRadius) / WHEEL_ROW_PITCH,
+    ) +
+      2) +
+  1;
 
 /** A phone CPU against the machine running the proof. */
 const THROTTLE = 4;
@@ -153,7 +167,7 @@ test('the month and year wheels draw the same rows for 200 years as for 2, and o
   expect(narrow.yearRowsDrawn).toBe(2);
   // The cylinder's front half and a buffer: the same rows for any range
   // (before, every one of the 200).
-  expect(wide.yearRowsDrawn).toBeLessThanOrEqual(15);
+  expect(wide.yearRowsDrawn).toBeLessThanOrEqual(WINDOW_ROWS);
   if (throttle) {
     // A guard, not a measure: the long range may cost its plain options
     // (and the frame clock is coarse), never a cost per drawn year again.
