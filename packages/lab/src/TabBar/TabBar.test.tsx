@@ -304,6 +304,21 @@ describe('TabBar', () => {
     ).not.toBeNull();
   });
 
+  it('mounts the circle and the split glass only when minimizing is on', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const {unmount} = render(<Bar />);
+    expect(document.querySelector('[data-tab-bar-circle]')).toBeNull();
+    expect(
+      document.querySelector('[data-tab-bar-platter]')?.children,
+    ).toHaveLength(1);
+    unmount();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    expect(document.querySelector('[data-tab-bar-circle]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-tab-bar-platter]')?.children,
+    ).toHaveLength(3);
+  });
+
   it('carries the stable theme classes and the selected state', () => {
     render(<Bar initial="browse" />);
     expect(screen.getByTestId('bar')).toHaveClass('astryx-tab-bar');

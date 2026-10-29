@@ -1505,6 +1505,60 @@ test.describe('minimize on scroll', () => {
     await expect.poll(() => isMinimized(page)).toBe(false);
   });
 
+  test('expanded by a tap, the bar minimizes again only after another 66 px down', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    // Less than the distance down: still expanded.
+    const from = await pageScroll(page);
+    await scrollByFinger(page, driver, 40);
+    expect((await pageScroll(page)) - from).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    // The rest of the distance minimizes it again.
+    await scrollByFinger(page, driver, 60);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('where the browser sends no scrollend, the watch ends with the person’s scroll: a script’s scroll after it counts for nothing', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      // A browser without scrollend: no handler property to detect, and
+      // no event delivered.
+      for (const proto of [
+        Window.prototype,
+        Document.prototype,
+        Element.prototype,
+        HTMLElement.prototype,
+      ]) {
+        delete (proto as unknown as {onscrollend?: unknown}).onscrollend;
+      }
+      window.addEventListener(
+        'scrollend',
+        event => event.stopImmediatePropagation(),
+        {capture: true},
+      );
+    });
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    expect(await page.evaluate(() => 'onscrollend' in window)).toBe(false);
+    await scrollByFinger(page, driver, 40);
+    expect(await isMinimized(page)).toBe(false);
+    // Past the reader's fallback after the last scroll event.
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollBy(0, 120));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBeGreaterThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+  });
+
   test('a script scrolling the page to the top leaves it minimized', async ({
     page,
   }) => {
@@ -1532,6 +1586,49 @@ test.describe('minimize on scroll', () => {
     await expect.poll(() => isMinimized(page)).toBe(false);
     expect(await pageScroll(page)).toBe(scrolled);
     await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('minimized, the accessibility tree holds no empty tab list beside the circle', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'reads Chromium’s accessibility tree',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const cdp = await page.context().newCDPSession(page);
+    const {nodes} = await cdp.send('Accessibility.getFullAXTree');
+    const roles = nodes
+      .filter(node => node.ignored !== true)
+      .map(node => node.role?.value);
+    expect(roles).not.toContain('tablist');
+    expect(roles).toContain('button');
+  });
+
+  test('minimized, the circle alone stands for the bar: the selected tab, collapsed; the keys expand it onto that tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const button = page.getByRole('button', {name: 'Library'});
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    // The tabs are inert: out of reach of assistive technology and focus.
+    const tabsInert = () =>
+      page
+        .getByRole('tablist')
+        .evaluate(list =>
+          [...list.querySelectorAll<HTMLElement>('[role="tab"]')].map(
+            element => element.inert,
+          ),
+        );
+    expect(await tabsInert()).toEqual([true, true, true, true]);
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(tab(page, 'Library')).toBeFocused();
+    expect(await tabsInert()).toEqual([false, false, false, false]);
   });
 
   test('expanded again, the lens carries no copy at rest, and a slide’s copy lines up with the items', async ({
