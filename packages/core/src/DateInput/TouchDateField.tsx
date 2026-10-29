@@ -41,7 +41,6 @@
  * Reset is chrome, so it sits in the header beside the arrows rather than in
  * the footer: the footer is where the task ends, and an undo of equal weight
  * beside Save is a mis-tap that throws away the date just chosen.
- * Disabled or busy fields reject both Reset's value change and month navigation.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateInput/DateInput.tsx

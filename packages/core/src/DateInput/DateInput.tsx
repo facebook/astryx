@@ -5,7 +5,7 @@
 /**
  * @file DateInput.tsx
  * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, Calendar, usePopover, InputGroupContext
- * @output Exports DateInput and DateInputProps; disabled open pickers reject selection without moving focus
+ * @output Exports DateInput component, DateInputProps
  * @position Core implementation; consumed by index.ts, tested by DateInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:

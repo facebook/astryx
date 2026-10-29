@@ -3,7 +3,7 @@
 /**
  * @file DateInput.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput component
- * @output DateInput behavior tests, including disabled open-picker selection
+ * @output Unit tests for DateInput component behavior
  * @position Testing; validates DateInput.tsx implementation
  *
  * SYNC: When DateInput.tsx changes, update tests to match new behavior
