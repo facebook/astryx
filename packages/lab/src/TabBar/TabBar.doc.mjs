@@ -51,7 +51,8 @@ export const docs = {
         {
           name: 'label',
           type: 'string',
-          description: 'Names the tab bar for assistive technology.',
+          description:
+            'Names the tab bar for assistive technology. Without it, or aria-label or aria-labelledby (which win over it and reach the tab list), the tab list is named "Tabs" in the reader\'s language.',
         },
         {
           name: 'minimizeBehavior',

@@ -109,6 +109,32 @@ describe('TabBar', () => {
     vi.restoreAllMocks();
   });
 
+  it('names its tab list "Tabs" when it is given no name', () => {
+    render(<Bar label={undefined} />);
+    expect(screen.getByRole('tablist', {name: 'Tabs'})).toBeInTheDocument();
+  });
+
+  it('gives aria-label to the tab list, not the root', () => {
+    render(<Bar label={undefined} aria-label="Main sections" />);
+    expect(
+      screen.getByRole('tablist', {name: 'Main sections'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('bar')).not.toHaveAttribute('aria-label');
+  });
+
+  it('names the tab list after the element aria-labelledby points at', () => {
+    render(
+      <>
+        <h2 id="sections-heading">Sections heading</h2>
+        <Bar label="Ignored" aria-labelledby="sections-heading" />
+      </>,
+    );
+    expect(
+      screen.getByRole('tablist', {name: 'Sections heading'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('bar')).not.toHaveAttribute('aria-labelledby');
+  });
+
   it('is a named tablist of tabs with the selected one marked', () => {
     render(<Bar initial="library" />);
     const list = screen.getByRole('tablist', {name: 'Sections'});
@@ -277,6 +303,21 @@ describe('TabBar', () => {
         .getByRole('tab', {name: 'Browse'})
         .querySelector('[data-testid="icon-browse"]'),
     ).not.toBeNull();
+  });
+
+  it('mounts the circle and the split glass only when minimizing is on', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const {unmount} = render(<Bar />);
+    expect(document.querySelector('[data-tab-bar-circle]')).toBeNull();
+    expect(
+      document.querySelector('[data-tab-bar-platter]')?.children,
+    ).toHaveLength(1);
+    unmount();
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    expect(document.querySelector('[data-tab-bar-circle]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-tab-bar-platter]')?.children,
+    ).toHaveLength(3);
   });
 
   it('carries the stable theme classes and the selected state', () => {

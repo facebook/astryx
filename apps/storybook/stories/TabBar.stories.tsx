@@ -333,6 +333,33 @@ export const RemovedOnLift: Story = {
   render: () => <RemovedOnLiftDemo />,
 };
 
+/**
+ * The app drops its last tab on the window event `tabbar:drop-last`, sent
+ * while a finger holds the bar: the press ends without choosing a tab (each
+ * choice would be listed on `window.__tabBarChanges`).
+ */
+function DropsLastTabDemo() {
+  const [sections, setSections] = useState(SECTIONS);
+  useEffect(() => {
+    const drop = () => setSections(current => current.slice(0, -1));
+    window.addEventListener('tabbar:drop-last', drop);
+    return () => window.removeEventListener('tabbar:drop-last', drop);
+  }, []);
+  return (
+    <Bar
+      sections={sections}
+      onChange={value => {
+        const log = window as unknown as {__tabBarChanges?: string[]};
+        log.__tabBarChanges = [...(log.__tabBarChanges ?? []), value];
+      }}
+    />
+  );
+}
+
+export const DropsLastTab: Story = {
+  render: () => <DropsLastTabDemo />,
+};
+
 export const Badges: Story = {
   render: () => <BadgesDemo />,
 };

@@ -166,7 +166,14 @@ function useScrollMinimize(isEnabled: boolean) {
     runRef.current = {lastY: window.scrollY, downFrom: null};
     return () => watchRef.current?.stop();
   }, [isEnabled]);
-  const expand = useCallback(() => setIsMinimized(false), []);
+  // Expanding starts the downward run over (in place: a watch running now
+  // holds the same run), so an expanded bar takes another
+  // `minimizeDistance` down before it minimizes again.
+  const expand = useCallback(() => {
+    runRef.current.lastY = window.scrollY;
+    runRef.current.downFrom = null;
+    setIsMinimized(false);
+  }, []);
   return {isMinimized: isEnabled && isMinimized, expand};
 }
 
@@ -179,8 +186,9 @@ interface ScrollRun {
 /**
  * Follows one scroll of the page by the person, from the finger's pan to the
  * page's rest: `lift` when the finger lifts; the listeners go at the
- * `scrollend` that follows, or at once if the person's scroll has already
- * ended (`isFingerScroll`, the gesture host's reader).
+ * `scrollend` that follows (where the browser sends none, when the reader
+ * says the person's scroll ended), or at once if it has already ended
+ * (`isFingerScroll`, the gesture host's reader).
  */
 function watchScroll(
   run: ScrollRun,
@@ -222,7 +230,21 @@ function watchScroll(
       finish();
     }
   };
+  // Where the browser sends no `scrollend`, the person's scroll ends when
+  // the gesture host's reader says so (its own fallback after the last
+  // scroll event), read once a frame from the lift.
+  let frame = 0;
+  const waitForReader = () => {
+    frame = requestAnimationFrame(() => {
+      if (isFingerScroll()) {
+        waitForReader();
+      } else {
+        finish();
+      }
+    });
+  };
   const stop = () => {
+    cancelAnimationFrame(frame);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('scrollend', onScrollEnd);
     onStop();
@@ -241,6 +263,8 @@ function watchScroll(
       isLifted = true;
       if (!isFingerScroll()) {
         finish();
+      } else if (!('onscrollend' in window)) {
+        waitForReader();
       }
     },
     stop,
@@ -251,8 +275,8 @@ export function useTabBarMinimize({
   capsuleRef,
   isEnabled,
 }: UseTabBarMinimizeOptions): TabBarMinimize {
-  // The table's springs become motion roles before this hook's first
-  // animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isEnabled) {
     registerTabBarTable();
   }
