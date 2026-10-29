@@ -53,18 +53,12 @@ export interface ListProps extends BaseProps<
    * - 'compact': Tighter spacing for dense UIs
    * - 'balanced': Standard spacing
    * - 'spacious': Extra spacing for readability
-   *
-   * Under a finger (iOS and Android alike), rows are at least 52px tall,
-   * 62px with a description, as iOS table rows are; a compact list and a
-   * list with markers keep their rows.
    * @default 'balanced'
    */
   density?: ListDensity;
 
   /**
-   * Whether to show dividers between list items. Under a finger, a touch
-   * press hides the dividers on either side of the pressed row until the
-   * finger lifts, as iOS lists do.
+   * Whether to show dividers between list items.
    * @default false
    */
   hasDividers?: boolean;
@@ -153,6 +147,11 @@ const styles = stylex.create({
     // `hidden`: hidden makes a scroll container, which fights the list's
     // vertical scroller. (StyleX emits the physical longhand of this axis.)
     overflowInline: 'clip',
+    // The isolation boundary for what rises inside the list: a row's touch
+    // band and a swipeable row (utils/touchHitArea.stylex.ts, ListItem) order
+    // above the rows after them and stay below a page-level sticky header at
+    // the same z-index (`spec:AST-027` DEC-1, DEC-2).
+    isolation: 'isolate',
   },
   // 'outset' and 'bleed' rows reach into the container's padding. The list
   // reaches the container's padding edge on each inline edge first, so its

@@ -54,10 +54,9 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {cellPressableProps} from '../utils/pressFeedback';
 import {rowPressLayerStyles} from '../utils/rowPressLayer';
+import {TOUCH_QUERY} from '../utils/touchQueries';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
 // The gesture and the panels, loaded only by a row that has swipe actions: a
@@ -330,6 +329,40 @@ const ARIA_SELECTED_ROLES = new Set([
  */
 const SWIPE_ROLES = new Set(['listitem']);
 
+/**
+ * Whether a row serves swipe actions, and so is a stacking context at rest
+ * (its root isolates and translates, `styles.swipeRoot`). Swipe actions exist
+ * where the row's role permits interactive descendants (a swipe panel's
+ * buttons are such descendants): a `listitem`, or no role at all. A root that
+ * is itself a link, a row whose role forbids them, a disabled row, a row with
+ * no entry on either side, and a row that is the enlarged target of a nested
+ * control are not served. Internal: List/ListItem.tsx raises such a row under
+ * a finger, so its touch band is above the rows after it.
+ */
+export function servesSwipeActions({
+  swipeActions,
+  isDisabled,
+  isDelegate,
+  isLinkRoot,
+  role,
+}: {
+  readonly swipeActions: ItemSwipeActions | undefined;
+  readonly isDisabled: boolean;
+  readonly isDelegate: boolean;
+  readonly isLinkRoot: boolean;
+  readonly role: string | null | undefined;
+}): boolean {
+  return (
+    swipeActions != null &&
+    ((swipeActions.leading?.length ?? 0) > 0 ||
+      (swipeActions.trailing?.length ?? 0) > 0) &&
+    !isDisabled &&
+    !isDelegate &&
+    !isLinkRoot &&
+    (role == null || SWIPE_ROLES.has(role))
+  );
+}
+
 /** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
 const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
 /** The settle clock, `0s` while the finger drives the row. */
@@ -545,6 +578,23 @@ const densityStyles = stylex.create({
 // =============================================================================
 
 /**
+ * Whether a click came from a finger: the click's own pointer type where the
+ * engine reports one, else the primary pointer (TOUCH_QUERY, one touch
+ * model).
+ */
+function isTouchClick(event: MouseEvent): boolean {
+  const {pointerType} = event as Partial<PointerEvent>;
+  if (typeof pointerType === 'string' && pointerType !== '') {
+    return pointerType === 'touch';
+  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(TOUCH_QUERY).matches
+  );
+}
+
+/**
  * A universal item primitive that unifies the "start content + label +
  * description + end content" layout pattern. Use as a building block for list items,
  * menu items, contact rows, notification items, and more.
@@ -590,10 +640,6 @@ export function Item({
   ...restProps
 }: ItemProps) {
   const pressable = usePressFeedback();
-  // A selection hold (List/selectionHold.ts) returns focus to this row after
-  // a pop; its ring follows how the user last interacted, so a finger's pop
-  // shows none.
-  useInteractionModalityTracking();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -628,19 +674,16 @@ export function Item({
   // and the invisible anchor below is not rendered.
   const isLinkRoot = typeof Component !== 'string' && href != null;
 
-  // Swipe actions exist where the row's role permits interactive descendants
-  // (a swipe panel's buttons are such descendants): a `listitem`, or no role
-  // at all. A root that is itself a link, a row whose role forbids them, and
-  // a row that is the enlarged target of a nested control are not served.
+  // Which rows serve swipe actions: servesSwipeActions, above.
   const leadingSwipe = swipeActions?.leading ?? [];
   const trailingSwipe = swipeActions?.trailing ?? [];
-  const hasSwipe =
-    swipeActions != null &&
-    (leadingSwipe.length > 0 || trailingSwipe.length > 0) &&
-    !isDisabled &&
-    !isDelegate &&
-    !isLinkRoot &&
-    (role == null || SWIPE_ROLES.has(role));
+  const hasSwipe = servesSwipeActions({
+    swipeActions,
+    isDisabled,
+    isDelegate,
+    isLinkRoot,
+    role,
+  });
   useDevWarning(
     'Item',
     '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +
@@ -735,12 +778,52 @@ export function Item({
     </>
   );
 
+  // The pointer of the last press on a link row, which its click inherits:
+  // WebKit reports a click a finger made with the pointer type `mouse`, while
+  // the press itself says `touch`.
+  const pressPointerRef = useRef<string | null>(null);
+  const isLinkRow = onClick == null && href != null && !isLinkRoot;
+
   const handleContainerClick = (e: React.MouseEvent) => {
     if (isDisabled) {
       return;
     }
     const target = e.target as HTMLElement;
     if (target.closest('button, a, input, select, textarea')) {
+      return;
+    }
+    if (isLinkRow) {
+      // Under a finger, a link row's whole touch target follows its link: a
+      // tap in its own padding, outside the anchor, and a tap in its touch
+      // hit area, the band past its box (`spec:AST-094` FR42). It goes to
+      // the row's anchor, with its modifier keys, so the link component and
+      // the browser decide the destination as for a tap on the label. A
+      // fine-pointer click in the padding does nothing, as before
+      // (`spec:AST-017` FR59); so does a click with no pointer behind it.
+      const row = e.currentTarget as HTMLElement;
+      const box = row.getBoundingClientRect();
+      const isInBand =
+        e.clientX < box.left ||
+        e.clientX > box.right ||
+        e.clientY < box.top ||
+        e.clientY > box.bottom;
+      const isTouch =
+        pressPointerRef.current != null
+          ? pressPointerRef.current === 'touch'
+          : isTouchClick(e.nativeEvent);
+      if (e.detail > 0 && (isInBand || isTouch)) {
+        row.querySelector<HTMLElement>('[data-astryx-row-link]')?.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey,
+            shiftKey: e.shiftKey,
+            altKey: e.altKey,
+            button: e.button,
+          }),
+        );
+      }
       return;
     }
     onClick?.(e);
@@ -776,6 +859,7 @@ export function Item({
           href={href}
           target={target}
           rel={rel}
+          data-astryx-row-link=""
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
@@ -874,6 +958,14 @@ export function Item({
       {...restProps}
       {...swipeHandlers}
       {...linkRootProps}
+      {...(isInteractive && isLinkRow
+        ? {
+            onPointerDownCapture: (event: React.PointerEvent<HTMLElement>) => {
+              pressPointerRef.current = event.pointerType;
+              restProps.onPointerDownCapture?.(event);
+            },
+          }
+        : null)}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
       // bare div, etc.). For those, convey selection via aria-current — valid
@@ -884,7 +976,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
-      {...(isInteractive ? {...pressable, ...cellPressableProps} : undefined)}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(

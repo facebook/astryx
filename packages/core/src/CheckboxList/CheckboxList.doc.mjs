@@ -130,8 +130,7 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description:
-        "Spacing density for list items. On a touch screen (a coarse primary pointer), a list's rows that toggle are at least the theme's touch target tall (`--size-touch-target`, 44 px by default) in every density. Balanced and spacious rows keep their 52 px touch height (62 px with a description) when that is taller.",
+      description: 'Spacing density for list items.',
       default: "'balanced'",
     },
     {
@@ -179,14 +178,12 @@ export const docs = {
     {
       name: 'containerClassName',
       type: 'string',
-      description:
-        'Class name for the field container. Same targeting as `containerXstyle`.',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'containerStyle',
       type: 'CSSProperties',
-      description:
-        'Inline styles for the field container. Same targeting as `containerXstyle`.',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'controlXstyle',
