@@ -590,6 +590,27 @@ describe('Wheel — by pointer', () => {
     await expect(ref.current?.spinTo(3)).resolves.toBe(false);
     expect(onChange).toHaveBeenCalledTimes(1);
   });
+
+  it('refuses a spin onto a row the owner’s rest moves off, as the touch column does', async () => {
+    stubDevice({ios: false, coarse: false});
+    const ref = createRef<WheelHandle>();
+    const onChange = vi.fn();
+    render(
+      <Wheel
+        ref={ref}
+        label="Hour"
+        options={HOURS}
+        value={12}
+        onChange={onChange}
+        resolveRest={index => (index % 2 === 0 ? index : index + 1)}
+      />,
+    );
+    await expect(ref.current?.spinTo(13)).resolves.toBe(false);
+    await expect(ref.current?.spinTo(24)).resolves.toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    await expect(ref.current?.spinTo(14)).resolves.toBe(true);
+    expect(onChange).toHaveBeenCalledWith(14);
+  });
 });
 
 describe('Wheel — markup', () => {
