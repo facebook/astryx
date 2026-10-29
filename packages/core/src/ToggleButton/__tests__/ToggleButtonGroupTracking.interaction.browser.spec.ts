@@ -193,6 +193,31 @@ test.describe('with a mouse', () => {
     }
   });
 
+  test('a press that starts on a keyboard-focused toggle lights only the toggle under the mouse (family:action-groups FR2)', async ({
+    page,
+  }) => {
+    const {bold, underline} = await open(page);
+    await bold.focus();
+    expect(await bold.evaluate(el => el.matches(':focus-visible'))).toBe(true);
+    const from = await centerOf(bold);
+    const to = await centerOf(underline);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, {steps: 8});
+    await expect
+      .poll(async () => underline.getAttribute('data-astryx-press'))
+      .toBe('on');
+    // Bold keeps its focus ring, but neither the press scale nor the
+    // pressed overlay beside Underline's.
+    const look = await bold.evaluate(el => {
+      const style = getComputedStyle(el);
+      return {image: style.backgroundImage, transform: style.transform};
+    });
+    expect(look.image).toBe('none');
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(look.transform);
+    await page.mouse.up();
+  });
+
   test('holding Space on a focused toggle scales it, as on any button (family:action-groups FR5: the keyboard is unchanged)', async ({
     page,
   }) => {
