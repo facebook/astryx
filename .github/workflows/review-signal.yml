@@ -88,10 +88,6 @@ on:
   # other comment before a runner starts.
   issue_comment:
     types: [created]
-  # A review app relays an owner's exact-head decision. The reconciler accepts
-  # it only from the app named in the SPEC_DECISION_APP repository variable.
-  repository_dispatch:
-    types: [spec-owner-decision]
   # Manual re-trigger. The App only auto-runs on the PR events above, so if it
   # ever misses one (e.g. the workflow was added after a PR was opened, leaving
   # the required "review-required" check stuck as Expected/pending), this is the
@@ -120,7 +116,6 @@ env:
   COMMUNITY_LABEL: 'community'
   REVIEW_LABEL: needs:spec-owner-review
   AUTO_MERGE_LABEL: spec-auto-merge
-  SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}
 
 jobs:
   # ---------------------------------------------------------------------------

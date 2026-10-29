@@ -145,7 +145,9 @@ function runFixture(
         // let the OS assign a free one.
         '--port',
         '0',
-        ...(readySelector == null ? [] : ['--ready-selector', readySelector]),
+        ...(readySelector == null
+          ? []
+          : ['--ready-selector', readySelector]),
         ...(stories == null ? [] : ['--stories', stories]),
       ],
       {
@@ -154,8 +156,7 @@ function runFixture(
         env: {
           ...process.env,
           A11Y_TEST_SCENARIO: scenario,
-          NODE_OPTIONS:
-            `${process.env.NODE_OPTIONS ?? ''} --require=${mock}`.trim(),
+          NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --require=${mock}`.trim(),
         },
       },
     );
@@ -283,10 +284,16 @@ describe.sequential('accessibility-audit CLI readiness', () => {
   });
 
   it('routes a11y contract fixtures to canonical owners and legacy aliases', () => {
-    const result = runFixture('delayed', PATTERN_INDEX, 'core/ClickableCard');
+    const result = runFixture(
+      'delayed',
+      PATTERN_INDEX,
+      'core/ClickableCard',
+    );
     expect(result.status).toBe(0);
     expect(result.report.ownerStoryRoutes).toEqual({
-      'core/ClickableCard': ['a11y-button-pattern--clickable-card-disabled'],
+      'core/ClickableCard': [
+        'a11y-button-pattern--clickable-card-disabled',
+      ],
     });
     expect(result.report.legacyBaselineAliases).toEqual({
       'ClickableCard::Disabled': [
@@ -311,14 +318,18 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     expect(result.report).toBeNull();
   });
 
-  it('fails an attached but empty Storybook root without writing a report', () => {
-    const result = runFixture('empty', VALID_INDEX);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain(
-      'Storybook root did not render story content before timeout',
-    );
-    expect(result.report).toBeNull();
-  }, 10000);
+  it(
+    'fails an attached but empty Storybook root without writing a report',
+    () => {
+      const result = runFixture('empty', VALID_INDEX);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        'Storybook root did not render story content before timeout',
+      );
+      expect(result.report).toBeNull();
+    },
+    10000,
+  );
 
   it('fails an invalid index before browser readiness or routing', () => {
     const result = runFixture('delayed', '{invalid json');

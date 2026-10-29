@@ -345,19 +345,6 @@ describe('spec-only workflow contract', () => {
     }
   });
 
-  it('accepts relayed owner decisions only from the configured review app', () => {
-    const workflow = read('.github/workflows/review-signal.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain(
-      'repository_dispatch:\n    types: [spec-owner-decision]',
-    );
-    expect(workflow).toContain(
-      'SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}',
-    );
-    expect(reconciler).toContain('appLogin: env.SPEC_DECISION_APP');
-  });
-
   it('offers a backfill dispatch that publishes status without landing', () => {
     const workflow = read('.github/workflows/review-signal.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');

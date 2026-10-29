@@ -63,9 +63,6 @@ Every knowledge record declares `authority: draft | current | archived`.
   it. An eligible owner approves by commenting `/approve-spec <full-sha>`,
   which the author may do, or through a GitHub review when they are not the
   author; `/revoke-spec` withdraws.
-- A configured review app may relay an eligible owner's exact-head decision;
-  the gate counts it as that owner's command. `.github/REVIEW_GATE.md`
-  describes the relay.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative

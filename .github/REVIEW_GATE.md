@@ -65,18 +65,6 @@ the status links to, give the current head's command to copy, list each changed
 record and the owner group it needs, and say why an earlier approval stopped
 counting.
 
-A review app may also relay an owner's decision, for owners who decide from
-the app's own pull request view. It sends a `spec-owner-decision` repository
-dispatch naming the pull request, the full head SHA, the owner's GitHub login,
-`approve` or `revoke`, and a request key. The gate accepts it only when the
-sender is the app named in the `SPEC_DECISION_APP` repository variable, the
-owner is in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`, and the SHA is the
-live head; with the variable unset, every relay is ignored. An accepted relay
-is published as the trusted status `spec-owner-decision/<owner>`, and the gate
-counts it like that owner's exact-head command: it satisfies only the groups
-that owner may approve, the owner's latest decision wins, and it applies to the
-head it names.
-
 The command must start the comment, unindented, because the workflow trigger
 matches the raw comment body — an indented command never starts the workflow, so
 the parser refuses it too rather than counting a comment nobody's run ever saw.
