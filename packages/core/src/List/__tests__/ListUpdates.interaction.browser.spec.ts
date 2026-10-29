@@ -472,12 +472,12 @@ for (const [change, button] of [
 }
 
 /**
- * Moves the swipe story's last row first and freezes the motion halfway,
- * then reports which row the browser hit-tests where the moved row overlaps
- * a row it crosses.
+ * Presses one of the swipe story's move buttons and freezes the motion
+ * halfway, then reports which row the browser hit-tests where the moved row
+ * overlaps a row it crosses.
  */
-async function crossingHit(page: Page) {
-  await press(page, 'Move the last row first');
+async function crossingHit(page: Page, button: string) {
+  await press(page, button);
   return page.evaluate(() => {
     const list = document.querySelector('#storybook-root ul');
     for (const animation of document.getAnimations()) {
@@ -523,16 +523,36 @@ test('a reorder among swipeable rows: the moved row rides above the rows it cros
   browser,
 }) => {
   await open(page, SWIPE_STORY);
-  const touch = await crossingHit(page);
+  const touch = await crossingHit(page, 'Move Archive first');
   expect(touch?.moved, JSON.stringify(touch)).toBe('Archive');
   expect(touch?.crossed, JSON.stringify(touch)).not.toBeNull();
   expect(touch?.hit, JSON.stringify(touch)).toBe('Archive');
   const mouse = await withMouse(browser, async mousePage => {
     await open(mousePage, SWIPE_STORY);
-    return crossingHit(mousePage);
+    return crossingHit(mousePage, 'Move Archive first');
   });
   expect(mouse?.crossed, JSON.stringify(mouse)).not.toBeNull();
   expect(mouse?.hit, JSON.stringify(mouse)).toBe('Archive');
+});
+
+test('a row without swipe actions, moved across swipeable rows, rides above them, under a finger and with a mouse', async ({
+  page,
+  browser,
+}) => {
+  await open(page, SWIPE_STORY);
+  // Notes has no swipe actions; the rows it crosses do, and under a finger
+  // each of them is raised.
+  await expect(row(page, 'Notes').locator('[data-swipe-panel]')).toHaveCount(0);
+  const touch = await crossingHit(page, 'Move Notes first');
+  expect(touch?.moved, JSON.stringify(touch)).toBe('Notes');
+  expect(touch?.crossed, JSON.stringify(touch)).not.toBeNull();
+  expect(touch?.hit, JSON.stringify(touch)).toBe('Notes');
+  const mouse = await withMouse(browser, async mousePage => {
+    await open(mousePage, SWIPE_STORY);
+    return crossingHit(mousePage, 'Move Notes first');
+  });
+  expect(mouse?.crossed, JSON.stringify(mouse)).not.toBeNull();
+  expect(mouse?.hit, JSON.stringify(mouse)).toBe('Notes');
 });
 
 test('a row swiped away with a removal action exits in place as it was on screen, as itself with no element added, while the rows after it glide up', async ({

@@ -178,10 +178,13 @@ const styles = stylex.create({
   // and the row's content, so the row's divider and its press stay visible;
   // a selected row keeps its own fill. It takes no pseudo-element: under a
   // finger the row's `::after` is its hit layer (List/listRow.stylex.ts).
+  // Its z-index, 2, is above a swipeable row's raise under a finger (1,
+  // `swipeRaised`), so it rides above the swipeable rows it crosses whether
+  // it has swipe actions of its own or not.
   travelling: {
     zIndex: {
       default: null,
-      '[data-astryx-travelling]': 1,
+      '[data-astryx-travelling]': 2,
     },
     boxShadow: {
       default: null,

@@ -551,10 +551,25 @@ export const AnimatedChanges: Story = {
   },
 };
 
+/** The swipe story's row with no swipe actions. */
+const PLAIN_ROW = 'Notes';
+
 function AnimatedChangesSwipeDemo() {
-  const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    PLAIN_ROW,
+  ]);
   const containerRef = useRef<HTMLDivElement>(null);
   const animatedLayout = useAnimatedLayout({containerRef});
+  const moveFirst = (label: string) =>
+    setRows(current =>
+      current.includes(label)
+        ? [label, ...current.filter(row => row !== label)]
+        : current,
+    );
   return (
     <div ref={containerRef}>
       <List animatedLayout={animatedLayout} hasDividers>
@@ -564,29 +579,35 @@ function AnimatedChangesSwipeDemo() {
             itemKey={label}
             label={label}
             onClick={() => {}}
-            swipeActions={{
-              trailing: [
-                {
-                  label: 'Delete',
-                  variant: 'destructive',
-                  hasRemoval: true,
-                  onActivate: () =>
-                    setRows(current => current.filter(row => row !== label)),
-                },
-              ],
-            }}
+            swipeActions={
+              label === PLAIN_ROW
+                ? undefined
+                : {
+                    trailing: [
+                      {
+                        label: 'Delete',
+                        variant: 'destructive',
+                        hasRemoval: true,
+                        onActivate: () =>
+                          setRows(current =>
+                            current.filter(row => row !== label),
+                          ),
+                      },
+                    ],
+                  }
+            }
           />
         ))}
       </List>
       <Button
-        label="Move the last row first"
+        label="Move Archive first"
         variant="secondary"
-        onClick={() =>
-          setRows(current => [
-            current[current.length - 1],
-            ...current.slice(0, -1),
-          ])
-        }
+        onClick={() => moveFirst('Archive')}
+      />
+      <Button
+        label="Move Notes first"
+        variant="secondary"
+        onClick={() => moveFirst(PLAIN_ROW)}
       />
     </div>
   );
@@ -600,8 +621,9 @@ export const AnimatedChangesSwipe: Story = {
         story:
           'With `animatedLayout`, a row swiped away with a removal action ' +
           'collapses in place, its action showing, while the rows below ' +
-          'glide up into its gap on the shared motion. A row moved among ' +
-          'these swipeable rows rides above the rows it crosses.',
+          'glide up into its gap on the shared motion. A row moved up ' +
+          'across the swipeable rows, with swipe actions (Archive) or ' +
+          'without (Notes), rides above the rows it crosses.',
       },
     },
   },
