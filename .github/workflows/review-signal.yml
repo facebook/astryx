@@ -73,15 +73,7 @@ name: Review signal
 on:
   pull_request_target:
     branches: ['main']
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        converted_to_draft,
-        auto_merge_enabled,
-      ]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   pull_request_review:
     types: [submitted, dismissed]
   # Owner commands for the spec-owner job. The job-level filter skips every
@@ -99,14 +91,6 @@ on:
         description: 'PR number to re-flag (blank = all open PRs)'
         required: false
         type: string
-      backfill:
-        description: >-
-          Spec owner gate: publish the status only. Use this when backfilling
-          heads that predate the required check, so a reconcile cannot also
-          enable auto-merge on a pull request nobody asked to land.
-        required: false
-        default: false
-        type: boolean
 
 permissions: {}
 
@@ -115,7 +99,6 @@ env:
   DESIGN_LABEL: 'needs:design-review'
   COMMUNITY_LABEL: 'community'
   REVIEW_LABEL: needs:spec-owner-review
-  AUTO_MERGE_LABEL: spec-auto-merge
 
 jobs:
   # ---------------------------------------------------------------------------

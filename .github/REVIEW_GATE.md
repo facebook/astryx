@@ -77,22 +77,7 @@ merge publishes nothing, and neither does a run yielding to a newer one.
 GitHub has no conditional status write, so the window between the last read and
 the write cannot be closed; the gate makes it one API call wide by reading the
 live pull request last, and if a status still lands on a head that settled
-during that window, the run logs the status as unverified and stops before
-auto-merge.
-
-When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
-head **for the design-approval group only**. The attestation is published only
-for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
-is still in that file — a marker left by someone since removed, or published
-before this rule existed, authorizes nothing. It satisfies no other group: the
-non-design and theme groups always need a real review or command from someone in
-their own list. An engineering owner cannot attest their own head.
-
-The attestation does not grant auto-merge by itself. The existing gate may enable
-squash auto-merge only when every changed path is a recognized spec record,
-every required owner group has approved the current spec content, and all branch checks
-pass. Normative assets and indexes are outside that scope; adding any code path
-also prevents the spec-only auto-merge path.
+during that window, the run logs the status as unverified.
 
 A PR changes only spec records when every changed path is one of:
 
@@ -109,9 +94,9 @@ Pure spec-record PRs do not add Changesets because they do not release packages;
 CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks
 both sides of a rename. Pure spec-record PRs run knowledge validation, skip
-runtime/build/visual work with successful required-status acknowledgements, and
-enable squash auto-merge after owner approval. Mixed code/spec changes keep full
-CI and never gain this auto-merge path.
+runtime/build/visual work with successful required-status acknowledgements.
+Mixed code/spec changes keep full CI. The gate decides approval only; it never
+enables auto-merge.
 
 ## Sources of truth
 
@@ -211,39 +196,12 @@ button.** If the repository ever enables a merge queue, this gate also has to
 report on `merge_group` before the context is required, or queued entries stall
 waiting for a status nothing publishes.
 
-### Making it required (ordered; do not reorder)
+### The mirror
 
-An open PR whose head predates the gate has no `spec-owner-approval` status at
-all. Requiring the context first would block those heads on a status no event
-will produce, because the gate only runs on a new event. Backfill first.
-
-1. Land the gate changes, so the default branch has the `backfill` dispatch
-   input. `workflow_dispatch` always runs the default branch's copy.
-2. List the heads that would strand:
-
-   ```sh
-   gh pr list --state open --limit 300 --json number,headRefOid \
-     --jq '.[]|"\(.number) \(.headRefOid)"' \
-   | while read -r pr sha; do
-       state=$(gh api "repos/facebook/astryx/commits/$sha/status" \
-         --jq '[.statuses[]|select(.context=="spec-owner-approval")|.state]
-               | if length==0 then "MISSING" else .[0] end')
-       [ "$state" = MISSING ] && echo "$pr"
-     done
-   ```
-
-3. Backfill each one. `backfill=true` publishes the status and returns before
-   auto-merge, so a reconcile cannot land a PR nobody asked to land:
-
-   ```sh
-   gh workflow run review-signal.yml -f pr=<number> -f backfill=true
-   ```
-
-4. Re-run the step 2 query and confirm it prints nothing.
-5. Only then add `spec-owner-approval` to the required status checks on `main`.
-
-A `pending` result from the backfill is the correct outcome for a PR that
-genuinely awaits an owner, not a stranded head.
+`spec-owner-approval` now only mirrors the spec half of `review-required`.
+Remove it from the required status checks on `main`; `review-required` already
+blocks on a missing spec approval. To re-publish a head's statuses, run
+`gh workflow run review-signal.yml -f pr=<number>`.
 
 ## Why a commit status (not a check run)
 

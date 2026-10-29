@@ -9,7 +9,6 @@ const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
   GATE_STATUS_CONTEXT,
-  READY_STATUS_PREFIX,
   canonicalRunUrl,
   describeOwnerCommandProblem,
   newestGateRun,
@@ -17,7 +16,6 @@ const {
   parseAuthority,
   parseKind,
   parseOwnerFile,
-  parseReadyAttestations,
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
@@ -113,11 +111,6 @@ async function reconcileSpecOwnerGate({
   }
 
   const runId = BigInt(String(context.runId));
-  // A boolean workflow_dispatch input arrives as a real boolean; a string
-  // input arrives as text. Only an explicit true opts in.
-  const backfillOnly =
-    context.eventName === 'workflow_dispatch' &&
-    String(context.payload.inputs?.backfill ?? 'false') === 'true';
   const runUrl = canonicalRunUrl(
     repository,
     String(context.runId),
@@ -226,14 +219,6 @@ async function reconcileSpecOwnerGate({
     return newest === null || newest.runId <= runId;
   }
 
-  async function currentPullForRun(headSha) {
-    const current = await getPullRequest();
-    if (current.head.sha !== headSha) return null;
-    if (isSettled(current)) return null;
-    if (!(await isCurrentRun(headSha))) return null;
-    return current;
-  }
-
   /**
    * Publish the spec decision: `spec-owner-approval` as a mirror, then the
    * one review gate composed with the code review. `text` is what a
@@ -255,7 +240,7 @@ async function reconcileSpecOwnerGate({
       text: state === 'success' && approvers.length === 0 ? null : text,
     });
     // The write cannot be undone, so verify what it landed on. A success that
-    // raced a merge is reported loudly and stops this run before auto-merge.
+    // raced a merge is reported loudly.
     const after = await getPullRequest();
     if (isSettled(after) || after.head.sha !== headSha) {
       core.warning(
@@ -304,23 +289,6 @@ async function reconcileSpecOwnerGate({
         labels: [name],
       });
     }
-  }
-
-  async function disableAutoMerge(pr, {requireOwnership = true} = {}) {
-    if (requireOwnership && !labelNames(pr).has(env.AUTO_MERGE_LABEL)) {
-      return;
-    }
-    if (pr.auto_merge) {
-      await github.graphql(
-        `mutation($id: ID!) {
-          disablePullRequestAutoMerge(input: {pullRequestId: $id}) {
-            pullRequest { number }
-          }
-        }`,
-        {id: pr.node_id},
-      );
-    }
-    await removeLabel(env.AUTO_MERGE_LABEL);
   }
 
   async function readText(fullName, ref, filePath) {
@@ -629,48 +597,7 @@ async function reconcileSpecOwnerGate({
   });
   if (await restoreNewerStatus(initialHead)) return;
 
-  const actor = context.actor?.toLowerCase();
-  const eventHead = context.payload.pull_request?.head?.sha;
-  const eventTime = context.payload.pull_request?.updated_at;
-  // Only a DESIGNOWNER author may self-attest a head, and only for the design
-  // approval group (.github/DESIGNOWNERS). An engineering owner marking their
-  // own pull request ready is not an approval by anyone else.
-  if (
-    context.eventName === 'pull_request_target' &&
-    context.payload.action === 'ready_for_review' &&
-    actor &&
-    actor === initialPr.user.login.toLowerCase() &&
-    designOwners.includes(actor) &&
-    eventHead === initialHead &&
-    eventTime &&
-    !Number.isNaN(Date.parse(eventTime))
-  ) {
-    await createStatus({
-      sha: initialHead,
-      context: `${READY_STATUS_PREFIX}${actor}`,
-      state: 'success',
-      description: `Owner ready at ${new Date(eventTime).toISOString()}.`,
-    });
-  }
-
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();
-  const reviewAuthor = context.payload.review?.user?.login?.toLowerCase();
-  const explicitRevoke =
-    context.eventName === 'issue_comment' &&
-    commentAuthor &&
-    allOwners.has(commentAuthor) &&
-    parseOwnerCommandTarget(context.payload.comment.body ?? '')?.approved ===
-      false;
-  const currentReviewDismissal =
-    context.eventName === 'pull_request_review' &&
-    context.payload.action === 'dismissed' &&
-    reviewAuthor &&
-    allOwners.has(reviewAuthor) &&
-    context.payload.review.commit_id === initialHead;
-  if (explicitRevoke || currentReviewDismissal) {
-    await disableAutoMerge(initialPr);
-  }
-
   const snapshot = await fetchSnapshot();
   if (snapshot === null || snapshot.pr.head.sha !== initialHead) {
     core.info(
@@ -695,7 +622,6 @@ async function reconcileSpecOwnerGate({
       : null;
 
   if (!scope.touchesKnowledgeRecords) {
-    await disableAutoMerge(pr);
     await removeLabel(env.REVIEW_LABEL);
     await setFinalStatus(
       initialHead,
@@ -723,11 +649,6 @@ async function reconcileSpecOwnerGate({
   }
   const designApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
-  const readyAttestations = parseReadyAttestations(statuses, {
-    repository,
-    headSha: initialHead,
-    owners: designOwners,
-  });
 
   // --- The spec content an approval binds (DEC-14). ---
   const specPaths = [
@@ -788,17 +709,11 @@ async function reconcileSpecOwnerGate({
     headSha: initialHead,
     approvesCurrentContent,
   };
-  // A ready-for-review attestation is the design group's own self-attestation
-  // path. It is not evidence for the non-design or theme groups.
   const specDecision = requiredGroups.spec
     ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
   const designDecision = requiredGroups.design
-    ? resolveOwnerDecision({
-        ...decisionInput,
-        readyAttestations,
-        owners: designApprovers,
-      })
+    ? resolveOwnerDecision({...decisionInput, owners: designApprovers})
     : {approved: true, owner: null};
   const themeDecision = requiredGroups.theme
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
@@ -840,7 +755,6 @@ async function reconcileSpecOwnerGate({
   });
 
   if (ownerApprovalRequired && !approved) {
-    await disableAutoMerge(pr);
     if (!(await isCurrentRun(initialHead))) return;
     await ensureLabel(
       pr,
@@ -853,7 +767,6 @@ async function reconcileSpecOwnerGate({
   }
 
   if (pr.draft) {
-    await disableAutoMerge(pr);
     if (!(await isCurrentRun(initialHead))) return;
     await removeLabel(env.REVIEW_LABEL);
     await setFinalStatus(
@@ -867,81 +780,9 @@ async function reconcileSpecOwnerGate({
   const successDescription = statusText;
   approvedBy = ownerApprovalRequired ? approvingOwners : [];
 
-  if (!scope.specOnly) {
-    await disableAutoMerge(pr);
-    if (!(await isCurrentRun(initialHead))) return;
-    await removeLabel(env.REVIEW_LABEL);
-    await setFinalStatus(initialHead, 'success', successDescription);
-    return;
-  }
-
-  // Owner approval is the gate decision; auto-merge is an optional convenience.
-  // Publish the truthful terminal status first so an integration permission
-  // failure cannot leave an approved head stuck on "Reconciling".
-  if (!(await setFinalStatus(initialHead, 'success', successDescription))) {
-    return;
-  }
+  if (!(await isCurrentRun(initialHead))) return;
   await removeLabel(env.REVIEW_LABEL);
-
-  // A backfill exists to give an old head its missing status before the
-  // context becomes required. Landing the pull request is a separate decision
-  // its author has not asked this run to make.
-  if (backfillOnly) {
-    core.info('Backfill run: published the gate status without auto-merge.');
-    return;
-  }
-
-  let enabledAutoMergeByThisRun = false;
-  if (!pr.auto_merge) {
-    const beforeEnable = await currentPullForRun(initialHead);
-    if (beforeEnable === null || beforeEnable.auto_merge) return;
-    await ensureLabel(
-      beforeEnable,
-      env.AUTO_MERGE_LABEL,
-      'bfdadc',
-      'Auto-merge was enabled by the spec owner gate',
-    );
-    const afterLabel = await currentPullForRun(initialHead);
-    if (afterLabel === null || afterLabel.auto_merge) return;
-    try {
-      await github.graphql(
-        `mutation($id: ID!, $oid: GitObjectID!) {
-          enablePullRequestAutoMerge(input: {
-            pullRequestId: $id,
-            mergeMethod: SQUASH,
-            expectedHeadOid: $oid
-          }) {
-            pullRequest { number }
-          }
-        }`,
-        {id: pr.node_id, oid: initialHead},
-      );
-      enabledAutoMergeByThisRun = true;
-      core.info(`Enabled squash auto-merge for spec-only PR #${pullNumber}.`);
-    } catch (error) {
-      // Leave the conservative ownership marker intact. The failure may be an
-      // ambiguous response after a successful enable, or a newer run for the
-      // same or a newer head may already be using the global marker. A stale
-      // marker with auto-merge off is harmless: later reconciliation observes the real PR
-      // state and can retry or remove it without racing a newer owner.
-      core.warning(`Could not enable auto-merge: ${error.message}`);
-      return;
-    }
-  }
-
-  if (enabledAutoMergeByThisRun) {
-    const afterEnable = await newestRun(initialHead);
-    if (
-      afterEnable !== null &&
-      afterEnable.runId > runId &&
-      afterEnable.status.state !== 'success'
-    ) {
-      await disableAutoMerge(await getPullRequest(), {
-        requireOwnership: false,
-      });
-      return;
-    }
-  }
+  await setFinalStatus(initialHead, 'success', successDescription);
 }
 
 module.exports = {isCommandComment, reconcileSpecOwnerGate};
