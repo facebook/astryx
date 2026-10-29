@@ -42,29 +42,65 @@ const FREE = new Set([
 ]);
 
 /**
- * `workflow/job` → why that job needs a paid runner (a measured wall-time or
- * memory need). Empty: no job has one.
+ * `workflow/job` → why that job may use a paid larger runner. Only the release
+ * path does: a dedicated pool keeps pull request load from starving a release
+ * (release-check run 40603917516 on Oct 27 never got a 4-core runner behind
+ * our own pull request shards).
  */
-const PAID_ALLOWED = {};
+const RELEASE_POOL =
+  'release path: a dedicated paid pool so PR load never starves a release';
+const PAID_ALLOWED = {
+  'release.yml/publish': RELEASE_POOL,
+  'ci.yml/release-merge-back': `${RELEASE_POOL}; byte parity with the publisher`,
+  'ci.yml/release-bump': RELEASE_POOL,
+};
+/** Jobs that use the paid pool only for a release-check a person dispatches. */
+const RELEASE_CHECK_JOBS = [
+  'build-storybook',
+  'typecheck',
+  'pr-a11y-shard',
+  'pr-a11y-audit',
+  'pr-a11y-guards',
+  'pr-a11y-specs',
+  'a11y-contracts-shard',
+  'visual-scout',
+  'pr-visual',
+  'pr-rtl-shard',
+  'pr-rtl-merge',
+];
+const RELEASE_GATE =
+  "github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && github.triggering_actor != 'github-actions[bot]'";
 
-/** Every runner label a job can resolve to, matrix values included. */
+/**
+ * Every runner label a job can resolve to. Matrix values include `include`
+ * entries; an expression yields its quoted runner literals. Anything that does
+ * not resolve (`${{ vars.X }}`, `${{ inputs.X }}`, a computed matrix) is
+ * returned raw, so it fails the free-runner check instead of passing unseen.
+ */
 function labelsOf(job) {
   const runsOn = job['runs-on'];
   if (runsOn == null) return [];
-  const values = [runsOn].flat().map(String);
   const labels = [];
-  for (const value of values) {
-    const matrix = /\$\{\{\s*matrix\.([a-zA-Z0-9_-]+)\s*\}\}/.exec(value);
+  for (const value of [runsOn].flat().map(String)) {
+    const matrix = /^\$\{\{\s*matrix\.([a-zA-Z0-9_-]+)\s*\}\}$/.exec(value);
     if (matrix) {
-      labels.push(
-        ...[job.strategy?.matrix?.[matrix[1]] ?? []].flat().map(String),
-      );
+      const key = matrix[1];
+      const m = job.strategy?.matrix;
+      const found =
+        m && typeof m === 'object'
+          ? [
+              ...[m[key] ?? []].flat(),
+              ...[m.include ?? []].flat().map(entry => entry?.[key]),
+            ]
+              .filter(item => item != null)
+              .map(String)
+          : [];
+      labels.push(...(found.length > 0 ? found : [value]));
     } else if (value.includes('${{')) {
-      labels.push(
-        ...[...value.matchAll(/'([^']+)'/g)]
-          .map(m => m[1])
-          .filter(l => l !== 'true' && l !== 'false'),
-      );
+      const found = [...value.matchAll(/'([^']+)'/g)]
+        .map(match => match[1])
+        .filter(label => /^(ubuntu|macos|windows|\d+-core)/.test(label));
+      labels.push(...(found.length > 0 ? found : [value]));
     } else {
       labels.push(value);
     }
@@ -80,17 +116,70 @@ describe('runner labels', () => {
     expect(all.length).toBeGreaterThan(30);
   });
 
+  it('fails closed on a runner it cannot resolve', () => {
+    expect(labelsOf({'runs-on': '${{ vars.BIG_RUNNER }}'})).toEqual([
+      '${{ vars.BIG_RUNNER }}',
+    ]);
+    expect(
+      labelsOf({
+        'runs-on': '${{ matrix.os }}',
+        strategy: {matrix: {include: [{os: '4-core-ubuntu'}]}},
+      }),
+    ).toEqual(['4-core-ubuntu']);
+    expect(
+      labelsOf({
+        'runs-on': '${{ matrix.os }}',
+        strategy: {matrix: '${{ fromJSON(needs.plan.outputs.matrix) }}'},
+      }),
+    ).toEqual(['${{ matrix.os }}']);
+  });
+
   it.each(workflows)(
     '%s runs every job on a free standard runner',
     (name, wf) => {
       for (const [id, job] of Object.entries(wf.jobs ?? {})) {
         if (job.uses) continue; // a reusable workflow call names no runner
+        const key = `${name}/${id}`;
+        if (key in PAID_ALLOWED) continue;
+        if (name === 'ci.yml' && RELEASE_CHECK_JOBS.includes(id)) continue;
         for (const label of labelsOf(job)) {
-          const key = `${name}/${id}`;
-          if (key in PAID_ALLOWED) continue;
           expect(FREE.has(label), `${key} runs on ${label}`).toBe(true);
         }
       }
     },
   );
+
+  it('puts a release-check job on the paid pool only for a dispatched release gate, keeping its architecture', () => {
+    const ci = Object.fromEntries(workflows)['ci.yml'];
+    for (const id of RELEASE_CHECK_JOBS) {
+      const [paid, free] = labelsOf(ci.jobs[id]);
+      expect(ci.jobs[id]['runs-on'], id).toBe(
+        `\${{ (${RELEASE_GATE}) && '${paid}' || '${free}' }}`,
+      );
+      expect(FREE.has(free), id).toBe(true);
+      expect(FREE.has(paid), id).toBe(false);
+      expect(free.endsWith('-arm'), `${id} keeps its architecture`).toBe(
+        paid.endsWith('-arm'),
+      );
+    }
+  });
+
+  it('keeps the release path on the paid pool', () => {
+    const byName = Object.fromEntries(workflows);
+    for (const key of Object.keys(PAID_ALLOWED)) {
+      const [name, id] = key.split('/');
+      expect(byName[name].jobs[id], key).toBeDefined();
+      expect(FREE.has(byName[name].jobs[id]['runs-on']), key).toBe(false);
+    }
+    expect(byName['ci.yml'].jobs['release-merge-back']['runs-on']).toBe(
+      byName['release.yml'].jobs.publish['runs-on'],
+    );
+  });
+
+  it('caps a pull request at two unit-test legs at a time', () => {
+    const ci = Object.fromEntries(workflows)['ci.yml'];
+    for (const id of ['test-ui', 'test-node']) {
+      expect(ci.jobs[id].strategy['max-parallel'], id).toBe(2);
+    }
+  });
 });

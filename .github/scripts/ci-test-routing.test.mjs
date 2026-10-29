@@ -482,7 +482,9 @@ describe('ci.yml RTL package sharding', () => {
       );
       expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
     }
-    expect(shard['runs-on']).toBe('ubuntu-latest');
+    // Standard runner for pull requests; a dispatched release gate takes the
+    // paid release pool (ci-free-runners.test.mjs).
+    expect(shard['runs-on']).toContain("|| 'ubuntu-latest'");
     // Pull requests get the 15-minute PR budget; the full release roster, 30.
     expect(shard['timeout-minutes']).toBe(
       "${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}",
