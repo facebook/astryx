@@ -54,6 +54,10 @@ const IDLE_TIMEOUT_MS = 300;
  */
 export function useWheelsWarmUp(isSheetOpen: boolean): boolean {
   const [isWarm, setIsWarm] = useState(false);
+  // Synchronizes with the browser's clock and idle time: once the sheet's
+  // present motion has settled (a timer) and the main thread is idle (an idle
+  // callback, or a timer where there is none), the wheels warm; closing the
+  // sheet cancels both and cools them for the next opening.
   useEffect(() => {
     if (!isSheetOpen) {
       return undefined;
