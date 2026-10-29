@@ -33,6 +33,7 @@ import {
   type RefObject,
 } from 'react';
 import {
+  isClickGuardArmed,
   TapGestureRecognizer,
   useGestureRecognizer,
   useTouchPresentation,
@@ -500,12 +501,23 @@ export function useSearchFieldMotion({
   // cancelled touchend, aimed at whatever is under the finger by then (the
   // field has moved): the claimed tap swallows them, from its touchend until
   // that click, the next touch, pointer or key, or unmount. A click with no
-  // press behind it (`detail` 0, from a key) passes.
+  // press behind it (`detail` 0, from a key) passes. Where the gesture host
+  // armed its click guard at the claimed lift (utils/clickGuard.ts), the
+  // guard takes that click first, on the window's capture phase, so this
+  // swallow never sees it: once the guard has let go (its click, the next
+  // press, or its window), the late events are over and this one lets go too.
   const disarmRef = useRef<(() => void) | null>(null);
   const armSwallow = useCallback((doc: Document) => {
     disarmRef.current?.();
+    let sawGuard = false;
     const swallow = (event: Event) => {
       if (event.type === 'click' && (event as MouseEvent).detail === 0) {
+        return;
+      }
+      if (isClickGuardArmed(doc)) {
+        sawGuard = true;
+      } else if (sawGuard) {
+        disarm();
         return;
       }
       event.preventDefault();
