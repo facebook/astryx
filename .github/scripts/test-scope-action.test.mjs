@@ -435,6 +435,45 @@ describe('per-job scope step', () => {
       expect(backstop.messages.failed).toEqual([
         'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.',
       ]);
+      // The login as a whole stops at forty heavy runs a day.
+      const lanes = [...pulls('lane1/a', 'lane2/b'), mine];
+      const loginCap = await decide({
+        context,
+        files,
+        inputs: heavy,
+        open: lanes,
+        runs: [...runsOn(38, 'lane1/a'), ...runsOn(2, 'lane4/x')],
+      });
+      expect(loginCap.messages.failed).toEqual([
+        'Daily heavy-run cap reached, runs tomorrow or at pre-merge.',
+      ]);
+      const underLoginCap = await decide({
+        context,
+        files,
+        inputs: heavy,
+        open: lanes,
+        runs: [...runsOn(37, 'lane1/a'), ...runsOn(2, 'lane4/x')],
+      });
+      expect(underLoginCap.outputs.applies).toBe('true');
+    });
+
+    it('exempts bots and does not count the run deciding', async () => {
+      const bot = await decide({
+        context: pullRequestContext('main', {user: {login: 'dependabot[bot]'}}),
+        files,
+        inputs: heavy,
+        open: [...pulls('a', 'b', 'c'), me],
+      });
+      expect(bot.outputs.applies).toBe('true');
+      const context = {...pullRequestContext(), runId: 900};
+      const self = await decide({
+        context,
+        files,
+        inputs: heavy,
+        open: [me],
+        runs: [...runsOn(11), {id: 900, head_branch: 'fix/a'}],
+      });
+      expect(self.outputs.applies).toBe('true');
     });
 
     it('exempts the pre-merge re-run and runs the suite when the lookup fails', async () => {
