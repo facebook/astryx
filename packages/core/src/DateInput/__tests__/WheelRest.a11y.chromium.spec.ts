@@ -213,6 +213,49 @@ test('under reduced motion an arrow key step lands under its cross-fade, never a
   await expect(field).toHaveValue('11:00 AM');
 });
 
+test('a meridiem change past the maximum turns the hour wheel onto it, frame by frame (component:DateInput FR13)', async ({
+  page,
+}) => {
+  const {field, hours} = await openHourWheel(page);
+  const meridiem = page.getByRole('listbox', {name: 'AM/PM'});
+  // The touch column draws its rows on a strip it translates; its y, every
+  // frame from before the tap.
+  await hours.locator('[data-wheel-strip]').evaluate(strip => {
+    const ys: number[] = [];
+    (window as unknown as {stripYs: number[]}).stripYs = ys;
+    const sample = () => {
+      ys.push(new DOMMatrixReadOnly(getComputedStyle(strip).transform).m42);
+      if (ys.length < 150) {
+        requestAnimationFrame(sample);
+      }
+    };
+    requestAnimationFrame(sample);
+  });
+  // 10 PM is past the 5 PM maximum: the field clamps to it. A finger taps
+  // the PM row, one below the band (the options lie under the drawn rows,
+  // so the tap goes to the column's own recognizer, as a finger's does).
+  const pm = await meridiem
+    .getByRole('option', {name: 'PM'})
+    .evaluate(el => el.getBoundingClientRect().toJSON() as DOMRect);
+  await page.touchscreen.tap(pm.x + pm.width / 2, pm.y + pm.height / 2);
+  await expect(field).toHaveValue('5:00 PM', {timeout: 3000});
+  await expect(selectedHour(hours)).toHaveText('5');
+  await sleep(1000);
+  const ys = await page.evaluate(
+    () => (window as unknown as {stripYs: number[]}).stripYs,
+  );
+  // From 10 onto 5 through the rows between, as UIDatePicker turns onto its
+  // maximum, never a jump, and only ever one way: five rows down the strip.
+  const from = ys[0];
+  const to = ys[ys.length - 1];
+  expect(Math.abs(to - from - 5 * ROW)).toBeLessThan(1);
+  const between = ys.filter(y => y > from + 2 && y < to - 2);
+  expect(between.length).toBeGreaterThanOrEqual(4);
+  for (let i = 1; i < ys.length; i++) {
+    expect(ys[i]).toBeGreaterThanOrEqual(ys[i - 1] - 0.5);
+  }
+});
+
 test.describe('under a mouse', () => {
   // A desktop: today's column, in the sheet the story asks for.
   test.use({

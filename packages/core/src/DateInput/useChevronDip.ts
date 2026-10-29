@@ -58,13 +58,20 @@ export function useChevronDip(
     ) {
       return;
     }
-    // A second change within the dip restarts it from where it is rather
-    // than snapping the glyph back to opaque first. The fixed curve keeps the
-    // dip's middle on the turn's fixed delay (half the policy's duration) even
-    // when a theme retunes `timing.curves.move`.
-    dipRef.current?.cancel();
+    // A second change within the dip restarts it from where the glyph is
+    // rather than snapping it back to opaque first: the running dip's
+    // presented opacity is read before it is cancelled (a style read only in
+    // that case). The fixed curve keeps the dip's middle on the turn's fixed
+    // delay (half the policy's duration) even when a theme retunes
+    // `timing.curves.move`.
+    const running = dipRef.current;
+    const from =
+      running != null && running.playState === 'running'
+        ? Number(getComputedStyle(element).opacity)
+        : 1;
+    running?.cancel();
     dipRef.current = element.animate(
-      [{opacity: 1}, {opacity: 0}, {opacity: 1}],
+      [{opacity: from}, {opacity: 0}, {opacity: 1}],
       {duration: fade.duration, easing: reducedMotionFadeConsts.easing},
     );
   }, [state]);

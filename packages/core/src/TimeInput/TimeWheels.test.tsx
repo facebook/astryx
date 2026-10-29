@@ -227,6 +227,23 @@ describe('TimeWheels — bounds', () => {
     expect(restingLabel('Minute')).toBe('30');
   });
 
+  it('leave a disabled row on a looping column for the nearest enabled row around the loop', () => {
+    // Under min 13:00 and max 23:00 the hours 0 to 12 are disabled. One
+    // ArrowDown from 23 crosses the seam onto 0: around the loop the nearest
+    // enabled hour is 23 itself (13 is thirteen rows the other way), so
+    // nothing moves or commits.
+    const {onCommit} = renderWheels({
+      initial: at(23, 0),
+      hourFormat: '24h',
+      min: '13:00' as ISOTimeString,
+      max: '23:00' as ISOTimeString,
+    });
+    fireEvent.keyDown(column('Hour'), {key: 'ArrowDown'});
+    advance(400);
+    expect(restingLabel('Hour')).toBe('23');
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
   it('bring an AM/PM turn past the maximum back onto it', () => {
     const {onCommit} = renderWheels({
       initial: at(11, 30),
