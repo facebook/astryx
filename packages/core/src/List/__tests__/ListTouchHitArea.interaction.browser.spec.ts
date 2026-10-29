@@ -420,6 +420,58 @@ test('under a finger, a row’s band takes no tap from a control near the list: 
   expect(await hit(edit.x, edit.bottom - 0.5)).toBe('Edit');
 });
 
+test('under a finger, a sticky header above the list keeps its taps over the first row’s band: the list isolates what its rows raise (spec:AST-027 FR1–FR2)', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-list--compact');
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  const result = await page.evaluate(() => {
+    const first = document.querySelector<HTMLElement>('#storybook-root li');
+    const list = first?.parentElement;
+    if (first == null || list == null) {
+      throw new Error('no list row');
+    }
+    const reach =
+      parseFloat(
+        getComputedStyle(first).getPropertyValue('--astryx-hit-inset-top'),
+      ) || 0;
+    const top = first.getBoundingClientRect().top;
+    // A page header earlier in the document than the list, at z-index 1, as
+    // AppShell's sticky header is, ending halfway into the band above the
+    // first row: the list has scrolled under it.
+    const header = document.createElement('div');
+    Object.assign(header.style, {
+      position: 'fixed',
+      insetInline: '0',
+      top: '0',
+      height: `${top - reach / 2}px`,
+      zIndex: '1',
+    });
+    document.body.prepend(header);
+    const x = first.getBoundingClientRect().left + 40;
+    const y = top - (reach * 3) / 4;
+    const hit = () => {
+      const element = document.elementFromPoint(x, y);
+      return element === header
+        ? 'header'
+        : element?.closest('li') != null
+          ? 'row'
+          : String(element?.tagName);
+    };
+    const isolated = hit();
+    // The control: without the list's isolation the band, raised above the
+    // rows after it, would also rise above the header and take its tap.
+    list.style.isolation = 'auto';
+    const unisolated = hit();
+    list.style.isolation = '';
+    header.remove();
+    return {reach, isolated, unisolated};
+  });
+  expect(result.reach, JSON.stringify(result)).toBeGreaterThan(2);
+  expect(result.isolated, JSON.stringify(result)).toBe('header');
+  expect(result.unisolated, JSON.stringify(result)).toBe('row');
+});
+
 test('under a finger, a row already as tall as the touch target gains nothing, rows that touch take nothing from each other, and a disabled row has no layer', async ({
   page,
 }) => {
