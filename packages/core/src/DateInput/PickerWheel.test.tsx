@@ -837,7 +837,7 @@ describe('PickerWheel — under reduced motion', () => {
     expect(onChange).toHaveBeenLastCalledWith(9);
   });
 
-  it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
+  it('fades for a tap, a key and a spin', async () => {
     const ref = createRef<WheelHandle>();
     const {column, onChange} = renderWheel({ref});
     const below = CENTRE + ROW;
@@ -852,7 +852,7 @@ describe('PickerWheel — under reduced motion', () => {
     advance(FADE_MS);
     let arrived: boolean | undefined;
     act(() => {
-      void ref.current!.spinTo(15, {duration: 2}).then(value => {
+      void ref.current!.spinTo(15).then(value => {
         arrived = value;
       });
     });
@@ -902,6 +902,38 @@ describe('PickerWheel — mechanics for its owners', () => {
     await act(async () => {});
     expect(arrived).toBe(true);
     expect(onChange).toHaveBeenCalledWith(15);
+  });
+
+  it('turns nothing and reports false for a spin onto a row a rest would not keep', async () => {
+    // As the scrolling column answers: a disabled row, an index outside the
+    // rows, and a row the owner's rest moves off.
+    const ref = createRef<WheelHandle>();
+    const {option, onChange} = renderWheel({
+      ref,
+      resolveRest: index => (index % 2 === 0 ? index : index + 1),
+    });
+    for (const index of [3, 24, -1, 11]) {
+      let arrived: boolean | undefined;
+      act(() => {
+        void ref.current!.spinTo(index).then(value => {
+          arrived = value;
+        });
+      });
+      await act(async () => {});
+      expect(arrived, `spinTo(${index})`).toBe(false);
+    }
+    advance(1000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(option('10').style.transform).toBe(AT_BAND);
+  });
+
+  it('reports false for a spin still turning when the wheel goes away', async () => {
+    const ref = createRef<WheelHandle>();
+    const {unmount} = renderWheel({ref});
+    const spin = ref.current!.spinTo(15);
+    advance(100);
+    unmount();
+    await expect(spin).resolves.toBe(false);
   });
 
   it('reports a spin a finger interrupted', async () => {

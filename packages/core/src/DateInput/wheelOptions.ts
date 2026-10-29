@@ -3,7 +3,7 @@
 /**
  * @file wheelOptions.ts
  * @input Nothing; types and one pure function
- * @output WheelOption, WheelProps, WheelHandle, WheelSpinOptions and
+ * @output WheelOption, WheelProps, WheelHandle and
  *   nearestEnabledIndex: what both wheels share
  * @position Internal; read by Wheel.tsx (which re-exports all of it) and
  *   PickerWheel.tsx
@@ -14,7 +14,6 @@
  */
 
 import type {Ref} from 'react';
-import type {BezierPoints} from '../motion/bezier';
 
 export interface WheelOption {
   /** Stable numeric identity of the row (a month 1-12, or a year). */
@@ -29,25 +28,18 @@ export interface WheelOption {
 }
 
 /** Options for a programmatic turn. */
-export interface WheelSpinOptions {
-  /** Seconds. @default `picker.tapSpin.durationMs` (0.3 s, UIPickerView's) */
-  duration?: number;
-  /**
-   * Cubic-bézier control points.
-   * @default `timing.curves.move`
-   */
-  curve?: BezierPoints;
-}
-
 /** What a Wheel's `ref` exposes. */
 export interface WheelHandle {
   /**
-   * Turn the wheel onto `index` (an index into `options`), then commit it as
-   * a rest would. Resolves true on arrival, false if a finger or another
-   * turn interrupted it. Under a fine pointer the row commits at once and
-   * the column scrolls to it as it does for any new value.
+   * Turn the wheel onto `index` (an index into `options`) on the tap spin,
+   * then commit it as a rest would. Resolves true once that row is the
+   * committed one, false if a finger or another turn interrupted it or the
+   * wheel went away first. An index outside `options`, a disabled row, or a
+   * row `resolveRest` would move off resolves false at once and nothing
+   * turns. Under a fine pointer the row commits at once and the column
+   * scrolls to it as it does for any new value, on the same rule.
    */
-  spinTo(index: number, options?: WheelSpinOptions): Promise<boolean>;
+  spinTo(index: number): Promise<boolean>;
 }
 
 export interface WheelProps {
@@ -80,6 +72,24 @@ export interface WheelProps {
   resolveRest?: (index: number) => number;
   /** Programmatic turns: `spinTo(index)`. */
   ref?: Ref<WheelHandle>;
+}
+
+/**
+ * Whether `spinTo(index)` may turn onto `index`: a row of `options`, enabled,
+ * and one `resolveRest` (when given) keeps. The touch wheel and the scrolling
+ * column answer a spin by the same rule.
+ */
+export function canSpinTo(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  resolveRest?: (index: number) => number,
+): boolean {
+  const option = options[index];
+  return (
+    option != null &&
+    !option.isDisabled &&
+    (resolveRest == null || resolveRest(index) === index)
+  );
 }
 
 /**

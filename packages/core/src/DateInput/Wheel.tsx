@@ -76,14 +76,13 @@ import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
 import {useWheelListbox} from './useWheelListbox';
-import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+import {canSpinTo, nearestEnabledIndex, type WheelProps} from './wheelOptions';
 
 export {
   nearestEnabledIndex,
   type WheelHandle,
   type WheelOption,
   type WheelProps,
-  type WheelSpinOptions,
 } from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
@@ -276,22 +275,23 @@ function TodayWheel({
   value,
   onChange,
   isActive,
+  resolveRest,
 }: WheelProps) {
   useImperativeHandle(
     ref,
     () => ({
       spinTo: async index => {
-        const option = options[index];
-        if (option == null || option.isDisabled) {
+        if (!canSpinTo(options, index, resolveRest)) {
           return false;
         }
+        const option = options[index];
         if (option.value !== value) {
           onChange(option.value);
         }
         return true;
       },
     }),
-    [options, value, onChange],
+    [options, value, onChange, resolveRest],
   );
   return (
     <ScrollWheel

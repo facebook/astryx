@@ -124,10 +124,10 @@ import {
   type WheelLayout,
 } from './wheelPhysics';
 import {
+  canSpinTo,
   loopStep,
   restingStep,
   type WheelProps,
-  type WheelSpinOptions,
 } from './wheelOptions';
 
 /** Today's row pitch, px: the touch column draws today's look (wheelLook.ts). */
@@ -226,22 +226,20 @@ function registerWheelTables(): void {
 }
 
 /**
- * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * picker's tap spin (`picker.tapSpin.durationMs`) on `timing.curves.move` as
- * resolved under `column` when the turn starts.
+ * A turn onto `to` on the picker's tap spin (`picker.tapSpin.durationMs`),
+ * on `timing.curves.move` as resolved under `column` when the turn starts.
  */
 function turnCurve(
   column: Element | null,
   from: number,
   to: number,
-  spin: WheelSpinOptions = {},
 ): WheelCurve {
   registerWheelTables();
   return spinCurve(
     from,
     to,
-    spin.duration ?? picker.tapSpin.durationMs / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.move),
+    picker.tapSpin.durationMs / 1000,
+    resolveMotion(column, timing.curves.move),
   );
 }
 
@@ -830,19 +828,29 @@ export function PickerWheel({
     };
   }, [isActive, motion, move, onEnd]);
 
+  // A spin turns only onto a row a rest would keep (canSpinTo), so its
+  // arrival commits that row and nothing turns on past it: it reports the
+  // row it was asked for, as the scrolling column does.
   const spinTo = useCallback(
-    async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>
+    async (index: number): Promise<boolean> =>
       new Promise(resolve => {
+        const {
+          layout: currentLayout,
+          options: currentOptions,
+          resolveRest: currentResolveRest,
+        } = latestRef.current;
+        if (!canSpinTo(currentOptions, index, currentResolveRest)) {
+          resolve(false);
+          return;
+        }
         const offset = motion.offset();
-        const {layout: currentLayout, options: currentOptions} =
-          latestRef.current;
         const target = nearestPosition(
           index,
           offset,
           currentLayout,
           currentOptions.length,
         );
-        move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT, spin), {
+        move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
               arrive(end);

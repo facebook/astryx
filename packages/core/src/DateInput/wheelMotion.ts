@@ -511,6 +511,9 @@ export class WheelMotion {
       this.finish(motion);
       this.restingOffset = offset;
       this.render(offset, true);
+      // A turn still running when the wheel goes away ends as stopped, so
+      // whoever waits on it (a pending spinTo) hears that it did not arrive.
+      motion.onEnd?.('stopped', offset);
     }
   }
 
