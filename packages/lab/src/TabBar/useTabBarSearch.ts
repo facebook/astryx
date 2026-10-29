@@ -200,34 +200,45 @@ export function useTabBarSearch({
   useLayoutEffect(() => {
     pressTargetRef.current = isCancel ? cancelElementRef.current : null;
   });
-  usePressTracker(pressTargetRef, {
-    onHighlightChange: isPressed => {
-      const options = {touchRelease: !isPressed};
-      if (circle.animator.reducedMotion(options) !== 'off') {
-        return;
-      }
-      const now = performance.now();
-      const velocity = circle.animator.getVelocity('scale', now);
-      const handle = circle.animator.animate(
-        {
-          scale: isPressed
-            ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
-            : 1,
-        },
-        {
-          spring: isPressed
-            ? tabBar.searchCancelPress
-            : tabBar.searchCancelReturn,
-          velocity: {scale: velocity},
-        },
-        options,
-      );
-      if (!isPressed) {
-        const wobble = handle.curve('scale');
-        glassHoldRef.current = now + (wobble?.duration ?? 0) * 1000;
-      }
-    },
-  });
+  // Whether the circle shows the press: a search ending under the press
+  // (Escape in the field, say) takes the tracker's target with no release,
+  // so the circle's return then plays from the effect below.
+  const isPressedRef = useRef(false);
+  const playPress = (isPressed: boolean) => {
+    isPressedRef.current = isPressed;
+    const options = {touchRelease: !isPressed};
+    if (circle.animator.reducedMotion(options) !== 'off') {
+      return;
+    }
+    const now = performance.now();
+    const velocity = circle.animator.getVelocity('scale', now);
+    const handle = circle.animator.animate(
+      {
+        scale: isPressed
+          ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
+          : 1,
+      },
+      {
+        spring: isPressed
+          ? tabBar.searchCancelPress
+          : tabBar.searchCancelReturn,
+        velocity: {scale: velocity},
+      },
+      options,
+    );
+    if (!isPressed) {
+      const wobble = handle.curve('scale');
+      glassHoldRef.current = now + (wobble?.duration ?? 0) * 1000;
+    }
+  };
+  usePressTracker(pressTargetRef, {onHighlightChange: playPress});
+  const playPressRef = useRef(playPress);
+  playPressRef.current = playPress;
+  useLayoutEffect(() => {
+    if (!isCancel && isPressedRef.current) {
+      playPressRef.current(false);
+    }
+  }, [isCancel]);
 
   // Where the active field and its cancel button sit: above the keyboard as
   // of its last report, read once per report and committed as an offset (no
