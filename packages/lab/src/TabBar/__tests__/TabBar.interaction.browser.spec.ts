@@ -2520,8 +2520,10 @@ test.describe('search tab', () => {
       'active',
     );
     // Held as soon as the tap commits: in software-rendered WebKit the first
-    // frame of this many glass layers can take a second.
-    await holdAnimations(page);
+    // frame of this many glass layers can take a second. Only the field's own
+    // animations are held, so their start is the sampling origin, whatever
+    // frame the bar's other layers started in.
+    await holdAnimations(page, searchField(page));
     const times = Array.from({length: 31}, (_, i) => i * 16.667);
     const moved = await sampleCurve(searchField(page), times);
     const widened = await sampleCurve(searchFieldEnd(page), times);
