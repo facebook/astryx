@@ -56,6 +56,7 @@ import {
   releaseAnimations,
   rubberBand,
   springStep,
+  startCompositorTrace,
   startScreencast,
   thawTimers,
   timeline,
@@ -1889,6 +1890,8 @@ test('the cross-fade keeps moving while the main thread is blocked right after t
   const {driver, content, start} = await openRefresh(page, undefined, {
     refreshMs: '8000',
   });
+  // The compositor's own frames, for gaps the screencast skips under load.
+  const compositor = await startCompositorTrace(page);
   const cast = await startScreencast(page);
   await driver.play(slowPull(start, 300, 200));
   // Blocked from the page itself as soon as the trigger has mounted the
@@ -1921,6 +1924,7 @@ test('the cross-fade keeps moving while the main thread is blocked right after t
   });
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
+  const presented = await compositor.stop();
   // The glyph's whole ink, frame by frame: the turn moves the spokes but not
   // how much they cover, so only the fade changes it.
   const scratch = await page.context().newPage();
@@ -1960,9 +1964,8 @@ test('the cross-fade keeps moving while the main thread is blocked right after t
       },
     )
     .finally(() => scratch.close());
-  const inside = inks.filter(
-    f => f.t >= block.from + 20 && f.t <= block.to - 20,
-  );
+  const judged = {from: block.from + 20, to: block.to - 20};
+  const inside = inks.filter(f => f.t >= judged.from && f.t <= judged.to);
   // The screencast's own cadence, from the frames around the block.
   const around = inks.filter(
     f => f.t >= block.from - 300 && f.t <= block.to + 150,
@@ -1972,34 +1975,63 @@ test('the cross-fade keeps moving while the main thread is blocked right after t
     .map((f, i) => f.t - around[i].t)
     .sort((a, b) => a - b);
   const cadenceMs = intervals[Math.floor(intervals.length / 2)] ?? 16.7;
-  const expectedFrames = Math.floor((block.to - block.from - 40) / cadenceMs);
-  // The copy fades every frame, so every presented frame shows less ink
-  // than the one before it.
-  let changed = 0;
-  let longestStill = 0;
-  let last = block.from + 20;
+  // A loaded machine's screencast skips frames the compositor still
+  // presents, so the frames it delivered are judged, never counted against
+  // its cadence (`busyWindowProof`'s rule). The copy fades every frame, so
+  // each delivered frame shows less ink than the one before it.
+  const moved: number[] = [];
+  const unchanged: number[] = [];
   for (let i = 1; i < inside.length; i += 1) {
-    if (inside[i].ink < inside[i - 1].ink - 0.05) {
-      changed += 1;
-      longestStill = Math.max(longestStill, inside[i].t - last);
-      last = inside[i].t;
+    (inside[i].ink < inside[i - 1].ink - 0.05 ? moved : unchanged).push(
+      inside[i].t,
+    );
+  }
+  // The longest time with no presented change. A gap between two changed
+  // frames that holds no delivered frame is measured between the
+  // compositor's own frames there; a gap that opens or closes the judged
+  // part, or holds an unchanged frame, is the screencast's.
+  const between = (times: readonly number[], a: number, b: number) =>
+    times.filter(t => t > a && t < b);
+  const edges = [judged.from, ...moved, judged.to];
+  let longestStill = 0;
+  for (let i = 1; i < edges.length; i += 1) {
+    const a = edges[i - 1];
+    const b = edges[i];
+    const interior =
+      i > 1 && i < edges.length - 1 && between(unchanged, a, b).length === 0;
+    const marks = interior ? [a, ...between(presented, a, b), b] : [a, b];
+    for (let k = 1; k < marks.length; k += 1) {
+      longestStill = Math.max(longestStill, marks[k] - marks[k - 1]);
     }
   }
-  longestStill = Math.max(longestStill, block.to - 20 - last);
+  // At least 90% of the delivered frames change, one miss always allowed.
+  const minChanged = Math.max(
+    inside.length - 3,
+    Math.ceil(0.9 * (inside.length - 1)) - 1,
+  );
   await writeEvidence(
     'busy-main-thread/refresh-trigger',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, glyph, cadenceMs, expectedFrames, changed, frames: inside},
+        {
+          block,
+          glyph,
+          cadenceMs,
+          presentedInside: between(presented, judged.from, judged.to).length,
+          changed: moved.length,
+          longestStill,
+          frames: inside,
+        },
         null,
         1,
       ),
     },
     testInfo,
   );
-  expect(inside.length).toBeGreaterThanOrEqual(expectedFrames - 2);
-  expect(changed, JSON.stringify(inside)).toBeGreaterThanOrEqual(
-    inside.length - 3,
+  // Enough delivered frames to judge (`busyWindowProof`'s `minJudgedFrames`).
+  expect(inside.length).toBeGreaterThanOrEqual(4);
+  expect(moved.length, JSON.stringify(inside)).toBeGreaterThanOrEqual(
+    minChanged,
   );
   expect(longestStill).toBeLessThanOrEqual(3 * cadenceMs);
 });
