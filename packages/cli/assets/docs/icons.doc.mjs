@@ -15,7 +15,7 @@ export const docs = {
   sections: [
     {
       title: 'Available Names',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -60,7 +60,7 @@ export const docs = {
     },
     {
       title: 'Custom Icons',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -80,7 +80,7 @@ import { HeartIcon } from 'lucide-react';
     },
     {
       title: 'Theme Overrides',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -128,11 +128,11 @@ export const brandTheme = defineTheme({
     },
     {
       title: 'Icon Variants',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'A theme lists the icon variant names it supports once, with `iconVariants` in `defineTheme()`. The list belongs to the whole theme, never to one icon, and Astryx defines no names of its own. Inside `defineTheme`, an entry function receives `variant` typed as the listed names, or `undefined`, so a misspelled name is a type error. An entry that receives `undefined` draws its normal artwork.',
+          text: "A theme lists the icon variant names it supports once, with `iconVariants` in `defineTheme()`. The list belongs to the whole theme, never to one icon, and Astryx defines no names of its own. Inside `defineTheme`, an entry function receives `variant` typed as the listed names, or `undefined`, so a misspelled name is a type error. An entry that receives `undefined` draws its normal artwork.",
         },
         {
           type: 'code',
@@ -169,7 +169,7 @@ brandTheme.iconVariants; // ['outline', 'filled']`,
         },
         {
           type: 'prose',
-          text: "An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`. `astryx theme build` writes this augmentation for a built theme's list.",
+          text: 'An application declares the variant names it uses by augmenting `IconVariantMap` from `@astryxdesign/core/Icon`. `IconVariant` is those names, and an entry passed to `registerIcons()` receives `variant` typed as `IconVariant`. `astryx theme build` writes this augmentation for a built theme\'s list.',
         },
         {
           type: 'code',
