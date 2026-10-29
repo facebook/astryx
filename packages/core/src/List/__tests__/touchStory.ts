@@ -24,11 +24,15 @@ export async function openStory(
   page: Page,
   origin: string,
   storyId: string,
-  {globals}: {globals?: string} = {},
+  {globals, args}: {globals?: string; args?: string} = {},
 ): Promise<void> {
   const params = new URLSearchParams({id: storyId, viewMode: 'story'});
   if (globals != null) {
     params.set('globals', globals);
+  }
+  // Story args in Storybook's URL form, `name:value;other:value`.
+  if (args != null) {
+    params.set('args', args);
   }
   await page.goto(`${origin}/iframe.html?${params.toString()}`);
   await page
