@@ -59,7 +59,7 @@
     },
     "pr-comment.yml": {
       "kind": "review-event",
-      "reason": "Posts the analysis comment after a CI run completes or a preview deploys."
+      "reason": "Posts the analysis comment after a CI run completes."
     },
     "prune-branches.yml": {
       "kind": "schedule",
