@@ -64,6 +64,14 @@ const progress = (t: number) =>
 /** Where it settles: every sampled curve is judged up to here. */
 const SETTLE_MS =
   solveSpring(SPRING, {from: 0, to: 1}).settleTime(0.001) * 1000;
+/** The spring's fastest progress, as a share of its travel per ms. */
+const PEAK_RATE = (() => {
+  let peak = 0;
+  for (let t = 0; t < SETTLE_MS; t += 1) {
+    peak = Math.max(peak, Math.abs(progress(t + 1) - progress(t)));
+  }
+  return peak;
+})();
 
 /** A tree row by its item id (an ancestor row contains its label too). */
 const treeItem = (page: Page, id: string) =>
@@ -302,11 +310,15 @@ test('a toggle mid-motion turns the block and the chevron around from the frame 
 }) => {
   await open(page);
   const {group} = parts(page);
-  // Every frame's child offset and chevron turn, from the first tap on.
+  // Every frame's child offset and chevron turn, from the first tap on, with
+  // the frame's time: the values on screen at that time. On the first frame
+  // the expand moves the block, the page toggles the row again, so the turn
+  // around lands early in the curve, far from either end, under any load.
   await page.evaluate(() => {
-    const samples: {y: number; turn: number}[] = [];
+    const samples: {t: number; y: number; turn: number}[] = [];
     (window as unknown as {samples: typeof samples}).samples = samples;
-    const read = () => {
+    let turned = false;
+    const read = (t: number) => {
       const row = document.querySelector<HTMLElement>(
         '[data-tree-id="button"]',
       );
@@ -330,9 +342,20 @@ test('a toggle mid-motion turns the block and the chevron around from the frame 
         const [a = 1, b = 0] =
           matrix == null ? [] : matrix[1].split(',').map(Number);
         samples.push({
+          t,
           y: Number.parseFloat(y),
           turn: (Math.atan2(b, a) * 180) / Math.PI + additive,
         });
+        const height =
+          row.closest('[role="group"]')?.getBoundingClientRect().height ?? 0;
+        if (!turned && Number.parseFloat(y) > 1 - height) {
+          turned = true;
+          document
+            .querySelector<HTMLElement>(
+              '[data-tree-id="components"] > :not([role="group"]) [data-tree-toggle]',
+            )
+            ?.click();
+        }
       }
       requestAnimationFrame(read);
     };
@@ -340,27 +363,29 @@ test('a toggle mid-motion turns the block and the chevron around from the frame 
   });
   await tapToggle(page);
   const height = await group.evaluate(el => el.getBoundingClientRect().height);
-  // Mid-expand: the block is moving.
-  await expect
-    .poll(async () =>
-      page.evaluate(
-        () => (window as unknown as {samples: {y: number}[]}).samples.length,
-      ),
-    )
-    .toBeGreaterThan(3);
-  await tapToggle(page);
+  // The page turned it around mid-expand; the collapse then removes the group.
   await expect(group).toHaveCount(0, {timeout: 3000});
   const samples = await page.evaluate(
-    () => (window as unknown as {samples: {y: number; turn: number}[]}).samples,
+    () =>
+      (window as unknown as {samples: {t: number; y: number; turn: number}[]})
+        .samples,
   );
-  // No frame jumps: a turn around continues from the value on screen, with no
-  // restart from either end.
+  // No jumps: a turn around continues from the value on screen, with no
+  // restart from either end. Judged against the time between frames, so a
+  // frame the browser delays may carry more travel: between two frames the
+  // block and the chevron move at most twice the spring's peak speed (the
+  // old curve's and the new one's at a turn around), plus a pixel or a
+  // degree.
   for (let i = 1; i < samples.length; i++) {
+    const elapsed = samples[i].t - samples[i - 1].t;
+    const context = `frame ${i}: ${JSON.stringify(samples.slice(Math.max(0, i - 2), i + 2))}`;
+    expect(Math.abs(samples[i].y - samples[i - 1].y), context).toBeLessThan(
+      2 * PEAK_RATE * height * elapsed + 1,
+    );
     expect(
-      Math.abs(samples[i].y - samples[i - 1].y),
-      `frame ${i}: ${JSON.stringify(samples.slice(Math.max(0, i - 2), i + 2))}`,
-    ).toBeLessThan(0.35 * height);
-    expect(Math.abs(samples[i].turn - samples[i - 1].turn)).toBeLessThan(35);
+      Math.abs(samples[i].turn - samples[i - 1].turn),
+      context,
+    ).toBeLessThan(2 * PEAK_RATE * 90 * elapsed + 1);
   }
   // It did turn around: the block went down, then back up.
   const lowest = Math.max(...samples.map(sample => sample.y));
