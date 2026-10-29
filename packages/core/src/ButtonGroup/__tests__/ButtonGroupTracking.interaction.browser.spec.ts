@@ -214,6 +214,43 @@ test.describe('with a mouse', () => {
     }
   });
 
+  test('a press that starts on a keyboard-focused button lights only the button under the mouse (family:action-groups FR2)', async ({
+    page,
+  }) => {
+    const {group, cut, paste} = await open(page);
+    await cut.focus();
+    expect(await cut.evaluate(el => el.matches(':focus-visible'))).toBe(true);
+    const from = await centerOf(cut);
+    const to = await centerOf(paste);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, {steps: 8});
+    const looks = await group.getByRole('button').evaluateAll(buttons =>
+      buttons.map(button => ({
+        press: button.getAttribute('data-astryx-press'),
+        image: getComputedStyle(button).backgroundImage,
+      })),
+    );
+    // Cut keeps its focus ring, but not a pressed look beside Paste's.
+    expect(looks[0]).toEqual({press: null, image: 'none'});
+    expect(looks[2].press).toBe('on');
+    await page.mouse.up();
+  });
+
+  test('holding Space on a focused button still paints its pressed look (the keyboard is unchanged)', async ({
+    page,
+  }) => {
+    const {cut} = await open(page);
+    await cut.focus();
+    await page.keyboard.down('Space');
+    await expect
+      .poll(async () =>
+        cut.evaluate(el => getComputedStyle(el).backgroundImage),
+      )
+      .not.toBe('none');
+    await page.keyboard.up('Space');
+  });
+
   test('a menu trigger in the group keeps its own opening: a click on it opens its menu', async ({
     page,
   }) => {

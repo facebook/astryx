@@ -243,6 +243,25 @@ describe('useActionGroupTracking', () => {
     expect(onDelete).not.toHaveBeenCalled();
   });
 
+  it('marks the action a pointer press began on while the press runs, and clears the mark at the lift and at a cancel (family:action-groups FR2)', () => {
+    const POINTER_PRESS = 'data-astryx-pointer-press';
+    const {cancel, del} = mount();
+    const f = finger();
+    f.down(del, centerOf(DELETE));
+    expect(del.hasAttribute(POINTER_PRESS)).toBe(true);
+    f.move(del, centerOf(CANCEL));
+    // The press's own :active stays on Delete: the mark stays with it.
+    expect(del.hasAttribute(POINTER_PRESS)).toBe(true);
+    expect(cancel.hasAttribute(POINTER_PRESS)).toBe(false);
+    f.up(del, centerOf(CANCEL));
+    expect(del.hasAttribute(POINTER_PRESS)).toBe(false);
+    const g = finger();
+    g.down(cancel, centerOf(CANCEL));
+    expect(cancel.hasAttribute(POINTER_PRESS)).toBe(true);
+    g.cancel(cancel, centerOf(CANCEL));
+    expect(cancel.hasAttribute(POINTER_PRESS)).toBe(false);
+  });
+
   it('keeps no margin around an action: 1 px outside clears it and a lift there runs nothing', () => {
     const {del, onCancel, onDelete} = mount();
     const f = finger();
