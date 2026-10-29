@@ -50,6 +50,7 @@ import {
   releaseAnimations,
   sampleCurve,
   sampleRects,
+  seekAnimations,
   springStep,
   startScreencast,
   tap as tapScript,
@@ -2110,6 +2111,106 @@ test.describe('bottom accessory', () => {
     const back = await accessory(page).boundingBox();
     expect(back?.x ?? 0).toBeCloseTo(above.x, 0);
     expect(back?.y ?? 0).toBeCloseTo(above.y, 0);
+  });
+
+  test('expanding, its content stays inside its glass', async ({page}) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    await scrollByFinger(page, driver, 100);
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await page.waitForTimeout(1000);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await waitForAnimation(accessory(page));
+    await holdAnimations(page, accessory(page));
+    const overhangs: {t: number; overhang: number}[] = [];
+    for (const t of [0, 16.667, 50, 100, 140, 200, 300]) {
+      await seekAnimations(page, t);
+      const overhang = await accessory(page).evaluate(element => {
+        // The glass's trailing cap, and "Next" as it shows: its box cut by
+        // every clipping box between it and the accessory.
+        const glass = element.firstElementChild as HTMLElement;
+        const cap = (
+          glass.lastElementChild as HTMLElement
+        ).getBoundingClientRect();
+        const next = [...element.querySelectorAll('button')].find(
+          button =>
+            button.getAttribute('aria-label') === 'Next' ||
+            button.textContent === 'Next',
+        );
+        if (next == null) {
+          throw new Error('no Next');
+        }
+        let right = next.getBoundingClientRect().right;
+        for (
+          let node = next.parentElement;
+          node != null && node !== element.parentElement;
+          node = node.parentElement
+        ) {
+          if (getComputedStyle(node).overflow !== 'visible') {
+            right = Math.min(right, node.getBoundingClientRect().right);
+          }
+        }
+        return right - cap.right;
+      });
+      overhangs.push({t, overhang});
+    }
+    await releaseAnimations(page, {finish: true});
+    for (const {t, overhang} of overhangs) {
+      expect(overhang, JSON.stringify({t, overhangs})).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  test('turned around mid-move, it keeps its speed (spec:AST-094 FR6)', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    // Just past the trigger, so the page stops while it is still moving.
+    await scrollByFinger(page, driver, 80, {settle: false});
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await waitForScrollIdle(page);
+    expect(
+      await accessory(page).evaluate(element =>
+        element.getAnimations().some(a => a.playState === 'running'),
+      ),
+    ).toBe(true);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await holdAnimations(page, accessory(page));
+    const [first, second] = await sampleCurve(accessory(page), [0, 16.667]);
+    await releaseAnimations(page, {finish: true});
+    // It was moving down into its inline place: the turn keeps that speed,
+    // so its first frame back still carries it down (away from rest above),
+    // as a spring retargeted mid-flight does.
+    expect(
+      second.transform.translateY,
+      JSON.stringify({first, second}),
+    ).toBeGreaterThan(first.transform.translateY);
   });
 
   test('its content takes taps above the bar and inline, never choosing a tab', async ({
