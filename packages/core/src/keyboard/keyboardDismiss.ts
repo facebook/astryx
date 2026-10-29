@@ -36,6 +36,11 @@
  * UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
  * that dismisses the keyboard decides at its release (FR36).
  *
+ * A press is a drag only once it travels UIKit's pan hysteresis (10 px on
+ * either axis, motion/uikit/gestures.ts), as UIScrollView's drag begins with
+ * its pan: a tap that lands just above the line and drifts across it never
+ * dismisses.
+ *
  * Only a drag that starts above that line, outside the focused field, while
  * a software keyboard is up, is followed: a drag in the bar or in the text
  * (moving the caret, selecting), or with only a hardware keyboard, never
@@ -56,6 +61,7 @@
  */
 
 import {VelocityTracker} from '../gestures/VelocityTracker';
+import {UIKIT_PAN} from '../motion/uikit/gestures';
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
 import {blurAsDismissal, getKeyboardHeight} from './keyboardHeight';
 import {layoutViewportHeight} from '../utils/layoutViewport';
@@ -115,6 +121,25 @@ export function observeKeyboardDismiss(
   let touchId: number | null = null;
   let padding = 0;
   const tracker = new VelocityTracker();
+  // Where the followed press started, and whether it has travelled the pan
+  // hysteresis yet: until then it is a tap, and its lift decides nothing.
+  let startX = 0;
+  let startY = 0;
+  let dragging = false;
+  const begin = (clientX: number, clientY: number) => {
+    startX = clientX;
+    startY = clientY;
+    dragging = false;
+  };
+  const travel = (clientX: number, clientY: number) => {
+    const hysteresis = UIKIT_PAN.hysteresis.value;
+    if (
+      Math.abs(clientX - startX) >= hysteresis ||
+      Math.abs(clientY - startY) >= hysteresis
+    ) {
+      dragging = true;
+    }
+  };
 
   // Where an interactive dismissal commits, in the layout viewport's
   // coordinates (clientY and the keyboard height share them), read in layout
@@ -173,6 +198,7 @@ export function observeKeyboardDismiss(
       return;
     }
     touchId = touch.identifier;
+    begin(touch.clientX, touch.clientY);
     tracker.reset();
     tracker.add(touch.clientX, touch.clientY, event.timeStamp);
   };
@@ -192,6 +218,7 @@ export function observeKeyboardDismiss(
   const onTouchMove = (event: TouchEvent) => {
     const touch = followed(event);
     if (touch != null) {
+      travel(touch.clientX, touch.clientY);
       tracker.add(touch.clientX, touch.clientY, event.timeStamp);
     }
   };
@@ -202,8 +229,11 @@ export function observeKeyboardDismiss(
       return;
     }
     touchId = null;
+    travel(touch.clientX, touch.clientY);
     tracker.add(touch.clientX, touch.clientY, event.timeStamp);
-    decide(touch.clientY, event.timeStamp);
+    if (dragging) {
+      decide(touch.clientY, event.timeStamp);
+    }
   };
 
   // The browser cancelled the touch: no release, no decision.
@@ -218,6 +248,7 @@ export function observeKeyboardDismiss(
 
   const onPointerMove = (event: PointerEvent) => {
     if (event.pointerId === pointerId) {
+      travel(event.clientX, event.clientY);
       tracker.add(event.clientX, event.clientY, event.timeStamp);
     }
   };
@@ -226,8 +257,11 @@ export function observeKeyboardDismiss(
       return;
     }
     stopPointer();
+    travel(event.clientX, event.clientY);
     tracker.add(event.clientX, event.clientY, event.timeStamp);
-    decide(event.clientY, event.timeStamp);
+    if (dragging) {
+      decide(event.clientY, event.timeStamp);
+    }
   };
   // The browser took the pointer (a pen's scroll): no release, no decision.
   const onPointerCancel = (event: PointerEvent) => {
@@ -257,6 +291,7 @@ export function observeKeyboardDismiss(
       return;
     }
     pointerId = event.pointerId;
+    begin(event.clientX, event.clientY);
     tracker.reset();
     tracker.add(event.clientX, event.clientY, event.timeStamp);
     // On the document while the button is down, so a release past the

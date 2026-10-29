@@ -195,6 +195,24 @@ describe('observeKeyboardDismiss', () => {
       expect(document.activeElement).not.toBe(field);
     });
 
+    it('keeps the keyboard for a tap that lands just above the line and drifts onto it', () => {
+      // A drag begins only once the finger travels UIKit's 10 px pan
+      // hysteresis: a tap that drifts 8 px across the line is still a tap.
+      observe('interactive');
+      touch('touchstart', row, TRIGGER - 4, 0);
+      touch('touchmove', row, TRIGGER + 4, 16);
+      touch('touchend', row, TRIGGER + 4, 16 + REST_MS);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('dismisses once the drag has travelled the 10 px pan hysteresis', () => {
+      observe('interactive');
+      touch('touchstart', row, TRIGGER - 6, 0);
+      touch('touchmove', row, TRIGGER + 4, 16);
+      touch('touchend', row, TRIGGER + 4, 16 + REST_MS);
+      expect(document.activeElement).not.toBe(field);
+    });
+
     it('keeps the keyboard when the finger lifts at rest short of the line', () => {
       observe('interactive');
       const last = drag(row, 200, TRIGGER - 1);
@@ -346,6 +364,14 @@ describe('observeKeyboardDismiss', () => {
       last = pointerDrag(row, 200, TRIGGER + 60);
       pointer('pointermove', row, TRIGGER + 40, last + 16);
       pointer('pointerup', row, TRIGGER + 30, last + 24);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('keeps the keyboard for a mouse press that drifts onto the line under 10 px', () => {
+      observe('interactive');
+      pointer('pointerdown', row, TRIGGER - 4, 0);
+      pointer('pointermove', row, TRIGGER + 4, 16);
+      pointer('pointerup', row, TRIGGER + 4, 16 + REST_MS);
       expect(document.activeElement).toBe(field);
     });
 

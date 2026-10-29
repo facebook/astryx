@@ -139,6 +139,9 @@ at any time, for something that appears while the keyboard moves.
   lift.
 - UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
   that dismisses the keyboard decides at its release.
+- A press is a drag only once it travels UIKit's pan hysteresis (10 px on
+  either axis), so a tap that lands just above the line and drifts across it
+  keeps the keyboard.
 
 Only a drag that starts above that line and outside the focused editable,
 while a software keyboard is up (the keyboard module's height), is followed (a
