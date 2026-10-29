@@ -158,10 +158,16 @@ export function evaluateRtlJoin({
       message: 'All applicable RTL package shards produced reports.',
     };
   }
-  return shardResult === 'skipped'
+  // Out of scope, each shard either did not start or decided its own scope
+  // and did no work: it then reports success with no manifest or report.
+  const noOpShards =
+    shardResult === 'success' &&
+    evidence.scopes.length === 0 &&
+    evidence.reports.length === 0;
+  return shardResult === 'skipped' || noOpShards
     ? {
         ok: true,
-        message: 'No RTL-owned scope; package shards correctly skipped.',
+        message: 'No RTL-owned scope; package shards did no RTL work.',
       }
     : {
         ok: false,
