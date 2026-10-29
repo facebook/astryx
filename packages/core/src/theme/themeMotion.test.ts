@@ -576,3 +576,28 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
     expect(crisper.tokens['--ease-entrance']).toBe(CHARACTER_EASE.crisp);
   });
 });
+
+describe('the knobs the springs read from CSS (spec:AST-108 FR3, FR5)', () => {
+  it('a theme or a rule that sets a character writes it beside the tempo', () => {
+    const character = '--_astryx-motion-character';
+    const tempo = '--_astryx-motion-tempo';
+    expect(expandThemeMotion({character: 'expressive'})[character]).toBe(
+      'expressive',
+    );
+    expect(expandThemeMotion({character: 'standard'})[character]).toBe(
+      'standard',
+    );
+    expect(expandThemeMotion({tempo: 1.2})[character]).toBeUndefined();
+    expect(expandThemeMotion({tempo: 1.2})[tempo]).toBe('1.2');
+    expect(expandThemeMotion({})[character]).toBeUndefined();
+    const ruled = defineTheme({
+      name: 'RuleKnobs',
+      adaptations: {
+        rules: [
+          {when: {pointer: 'coarse'}, value: {motion: {character: 'crisp'}}},
+        ],
+      },
+    });
+    expect(ruled.__adaptationRules?.[0]?.tokens?.[character]).toBe('crisp');
+  });
+});
