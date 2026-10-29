@@ -138,49 +138,55 @@ test('an adaptation rule\u2019s knobs apply where its condition holds: a coarse 
   });
 });
 
-test('a spring started in a nested theme plays at the enclosing theme\u2019s tempo, and starts on its first frame on a busy main thread', async ({
+test('a spring started in a nested theme plays at the enclosing theme\u2019s tempo, and starts on its first frame while the layout is dirty', async ({
   page,
 }) => {
   await open(page);
   const read = await page.evaluate(
     () =>
-      new Promise<{plain: number; loose: number; started: boolean}>(resolve => {
-        const {createAnimator, springs} = window.ThemeKnobs;
-        // A busy main thread: a large tree whose layout is dirty when the
-        // springs start.
-        const filler = document.createElement('div');
-        for (let index = 0; index < 4000; index += 1) {
-          filler.append(
-            Object.assign(document.createElement('p'), {
-              textContent: `row ${index}`,
-            }),
-          );
-        }
-        document.body.append(filler);
-        requestAnimationFrame(() => {
-          filler.style.width = '321px';
-          const duration = (id: string) => {
-            const element = document.getElementById(id) as HTMLElement;
-            void createAnimator(element).animate(
-              {x: 100},
-              {spring: springs.menuOpen},
+      new Promise<{nested: number; loose: number; started: boolean}>(
+        resolve => {
+          const {createAnimator, END_HOLD_MS, springs} = window.ThemeKnobs;
+          // A busy main thread: a large tree whose layout is dirty when the
+          // springs start.
+          const filler = document.createElement('div');
+          for (let index = 0; index < 12000; index += 1) {
+            filler.append(
+              Object.assign(document.createElement('p'), {
+                textContent: `row ${index}`,
+              }),
             );
-            return element.getAnimations()[0];
-          };
-          const plain = duration('plain');
-          const loose = duration('loose');
+          }
+          document.body.append(filler);
           requestAnimationFrame(() => {
-            resolve({
-              plain: Number(plain.effect?.getTiming().duration),
-              loose: Number(loose.effect?.getTiming().duration),
-              started: plain.startTime != null && loose.startTime != null,
+            filler.style.width = '321px';
+            /** A spring's settle time: its animation, less the end hold. */
+            const start = (id: string) => {
+              const element = document.getElementById(id) as HTMLElement;
+              void createAnimator(element).animate(
+                {x: 100},
+                {spring: springs.menuOpen},
+              );
+              return element.getAnimations()[0];
+            };
+            // 'own' sets only character 'standard': its tempo is the outer 1.4.
+            const nested = start('own');
+            const loose = start('loose');
+            const settle = (animation: Animation) =>
+              Number(animation.effect?.getTiming().duration) - END_HOLD_MS;
+            requestAnimationFrame(() => {
+              resolve({
+                nested: settle(nested),
+                loose: settle(loose),
+                started: nested.startTime != null && loose.startTime != null,
+              });
             });
           });
-        });
-      }),
+        },
+      ),
   );
   expect(read.started).toBe(true);
-  expect(read.plain / read.loose).toBeCloseTo(1.4, 1);
+  expect(read.nested / read.loose).toBeCloseTo(1.4, 2);
 });
 
 test('reading the knobs forces no layout, where reading a size does (Chromium\u2019s Long Animation Frames)', async ({

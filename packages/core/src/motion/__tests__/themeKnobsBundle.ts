@@ -10,6 +10,6 @@
 
 export {defineTheme} from '../../theme/defineTheme';
 export {generateThemeCSS} from '../../theme/generateThemeRules';
-export {createAnimator} from '../animator';
+export {createAnimator, END_HOLD_MS} from '../animator';
 export {themeMotionKnobs} from '../themeKnobs';
 export {registerSpringsTable, springs} from '../uikit/springs';

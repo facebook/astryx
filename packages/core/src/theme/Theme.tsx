@@ -202,16 +202,13 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
  *
  * A theme with `reducedMotion: 'always'` also marks `<html>` with
  * `data-astryx-reduced-motion` and its custom property, so layers portaled
- * outside the wrapper reduce their motion too (spec:AST-108 FR6), and a theme that sets `tempo` or
- * `character` writes them there for the animator (FR3).
+ * outside the wrapper reduce their motion too (spec:AST-108 FR6).
  */
 function useRootThemeSync(
   isNested: boolean,
   mode: ThemeMode,
   themeName: string,
   reducesMotion: boolean,
-  motionTempo: string | undefined,
-  motionCharacter: string | undefined,
 ): void {
   useIsomorphicLayoutEffect(() => {
     if (isNested) {
@@ -238,26 +235,14 @@ function useRootThemeSync(
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
       document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
     }
-    for (const [name, value] of [
-      ['motion-tempo', motionTempo],
-      ['motion-character', motionCharacter],
-    ] as const) {
-      if (value != null) {
-        document.documentElement.setAttribute(dataAttr(name), value);
-      } else {
-        document.documentElement.removeAttribute(dataAttr(name));
-      }
-    }
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.removeAttribute(dataAttr('theme'));
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
       document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
-      document.documentElement.removeAttribute(dataAttr('motion-tempo'));
-      document.documentElement.removeAttribute(dataAttr('motion-character'));
     };
-  }, [isNested, mode, themeName, reducesMotion, motionTempo, motionCharacter]);
+  }, [isNested, mode, themeName, reducesMotion]);
 }
 
 // =============================================================================
@@ -290,22 +275,10 @@ export function Theme({
   // spec:AST-108 FR6: 'always' marks the theme's root. So far motion-keyed
   // adaptation rules and the press release fade key reduced motion on the
   // mark; components' other Reduce Motion styles don't yet (a known gap in
-  // `architecture:theme-authoring-contract`). FR3: the tempo and character a
-  // theme sets ride on the same elements, where the animator reads them
-  // without importing the theme.
+  // `architecture:theme-authoring-contract`).
   const knobs = resolveMotionKnobs(theme.__axes?.motion);
   const reducesMotion = knobs.reducedMotion === 'always';
-  const motionTempo = knobs.tempoIsSet ? String(knobs.tempo) : undefined;
-  const motionCharacter =
-    knobs.character !== 'standard' ? knobs.character : undefined;
-  useRootThemeSync(
-    isNested,
-    mode,
-    theme.name,
-    reducesMotion,
-    motionTempo,
-    motionCharacter,
-  );
+  useRootThemeSync(isNested, mode, theme.name, reducesMotion);
 
   // Get color-scheme style
   const colorSchemeStyle =
@@ -329,8 +302,6 @@ export function Theme({
           )}
           data-astryx-theme={theme.name}
           data-astryx-reduced-motion={reducesMotion ? '' : undefined}
-          data-astryx-motion-tempo={motionTempo}
-          data-astryx-motion-character={motionCharacter}
           data-theme={mode === 'system' ? undefined : mode}>
           {children}
         </div>
