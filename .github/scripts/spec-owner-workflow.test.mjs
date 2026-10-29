@@ -187,8 +187,10 @@ describe('spec-only workflow contract', () => {
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
+    // It validates on the spec-only lane, and whenever its own scope step
+    // could not decide, so an undecided lane never skips validation.
     expect(docsiteJob.slice(setup, validate)).toContain(
-      "if: steps.scope.outputs.spec_only == 'true'",
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
     );
     expect(docsiteJob).not.toContain('- name: Build core package');
     expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
