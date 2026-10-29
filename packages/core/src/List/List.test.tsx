@@ -552,11 +552,24 @@ describe('List', () => {
       for (const side of ['top', 'right', 'bottom', 'left'] as const) {
         expect(layer).toMatch(
           new RegExp(
-            `${side}: calc\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\* -1\\)`,
+            `${side}: calc\\(\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\+ var\\(--_hit-border-${side}, ?0px\\)\\) \\* -1\\)`,
           ),
         );
       }
-      expect(layer).not.toMatch(/background|border|box-shadow|outline|z-index/);
+      // Above the rows after it, so a later row does not hit-test over the
+      // band; painting nothing.
+      expect(layer).toMatch(/z-index: 1/);
+      expect(layer).not.toMatch(
+        /[{;]\s*(?:background|border|box-shadow|outline)[\w-]*\s*:/,
+      );
+      // The row itself takes no z-index: it stays no stacking context.
+      expect(
+        touch.filter(
+          rule =>
+            !rule.slice(0, rule.indexOf('{')).includes('::') &&
+            rule.includes('z-index'),
+        ),
+      ).toEqual([]);
       // At rest the row's stacking stays as it was: only a press isolates it
       // (the press layer, utils/rowPressLayer.ts).
       for (const rule of touch.filter(r => r.includes('isolation'))) {

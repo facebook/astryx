@@ -198,6 +198,12 @@ const styles = stylex.create({
     ':last-child': {
       borderBlockEndWidth: 0,
     },
+    // The touch hit layer's band starts past the divider, the edge of the box
+    // its insets are measured from (utils/touchHitArea.stylex.ts).
+    '--_hit-border-bottom': {
+      default: borderVars['--border-width'],
+      ':last-child': '0px',
+    },
   },
 });
 
