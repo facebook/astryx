@@ -278,7 +278,7 @@ export const docs = {
       name: 'autoCapitalize',
       type: "'none' | 'sentences' | 'words' | 'characters'",
       description:
-        'When a touch keyboard capitalizes as you type (the native `autocapitalize`). Unset, iOS capitalizes sentences except in password, email and URL fields.',
+        'When a touch keyboard capitalizes as you type (the native `autocapitalize`). Unset, iOS capitalizes sentences.',
     },
     {
       name: 'hasAutoCorrect',
@@ -581,7 +581,7 @@ export const docsZh = {
       name: 'autoCapitalize',
       type: "'none' | 'sentences' | 'words' | 'characters'",
       description:
-        '触屏键盘在输入时何时自动大写（原生 `autocapitalize`）。未设置时，iOS 会将句首大写，但密码、邮箱和 URL 字段除外。',
+        '触屏键盘在输入时何时自动大写（原生 `autocapitalize`）。未设置时，iOS 会将句首大写。',
     },
     {
       name: 'hasAutoCorrect',
