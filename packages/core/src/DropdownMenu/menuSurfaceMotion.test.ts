@@ -409,6 +409,27 @@ describe('createMenuSurfaceMotion', () => {
     });
   });
 
+  it('leaves the closed surface alone while its copy closes: no style write on it during the close or after, so no promotion ends inside the close', async () => {
+    const {element, motion} = create();
+    motion.enter(() => GEOMETRY);
+    // Closed while the open's promotion still lingers.
+    clock += 600;
+    vi.advanceTimersByTime(600);
+    motion.exit();
+    expect(ghostOf(element)).not.toBeNull();
+    // The close's own task, its microtasks included, may still write.
+    await Promise.resolve();
+    await Promise.resolve();
+    const observer = new MutationObserver(() => {});
+    observer.observe(element, {attributes: true, attributeFilter: ['style']});
+    // Through the close spring and the animator's promotion linger after it.
+    clock += 2000;
+    vi.advanceTimersByTime(2000);
+    const writes = observer.takeRecords();
+    observer.disconnect();
+    expect(writes).toHaveLength(0);
+  });
+
   it('reopened during the close, grows back from the frame on screen about the same origin', () => {
     const {element, motion} = create();
     motion.enter(() => GEOMETRY);
