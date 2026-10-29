@@ -9,6 +9,7 @@
  * SYNC: When modified, update this header
  */
 
+import {useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1110,6 +1111,23 @@ describe('List', () => {
   });
 });
 
+/** A row whose press goes to a control inside it (`interactiveRef`), with swipe actions. */
+function DelegateSwipeRow() {
+  const ref = useRef<HTMLButtonElement>(null);
+  return (
+    <ListItem
+      label="Delegate"
+      interactiveRef={ref}
+      endContent={
+        <button ref={ref} type="button">
+          Open
+        </button>
+      }
+      swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+    />
+  );
+}
+
 describe('List and swipe actions', () => {
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
@@ -1151,6 +1169,12 @@ describe('List and swipe actions', () => {
           label="Static"
           swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
         />
+        <ListItem
+          label="Empty sides"
+          onClick={() => {}}
+          swipeActions={{leading: [], trailing: []}}
+        />
+        <DelegateSwipeRow />
       </List>,
     );
     const row = (text: string) => screen.getByText(text).closest('li')!;
@@ -1172,6 +1196,11 @@ describe('List and swipe actions', () => {
     // z-index orders it), and a swipeable row with no band gets none.
     expect(rowZ(row('Pressable')).touch).toEqual([]);
     expect(rowZ(row('Static')).touch).toEqual([]);
+    // Item serves no swipe actions on a row with no entry on either side, or
+    // on a row whose press goes to a control inside it: neither is a stacking
+    // context, so neither is raised.
+    expect(rowZ(row('Empty sides')).touch).toEqual([]);
+    expect(rowZ(row('Delegate')).touch).toEqual([]);
   });
 
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
