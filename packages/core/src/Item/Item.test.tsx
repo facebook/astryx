@@ -1122,6 +1122,9 @@ describe('swipeActions', () => {
         );
         return <div ref={ref} data-testid="other" />;
       }
+      // Attached where the primary pointer is fine without reading each
+      // event's pointer, the other recognizer warns once in development (its
+      // misuse is this case's point); the row warns nothing.
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {row} = renderRow();
       render(<Other />);
@@ -1134,6 +1137,10 @@ describe('swipeActions', () => {
       dragLeading(row, 45);
       await settled();
       expect(xOf(row)).toBe(72);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('attached where the primary pointer is fine'),
+      );
       warn.mockRestore();
       // The control: on a phone's pointer the same tap is recognized.
       const coarse = pointerQuery(true);
@@ -1211,6 +1218,29 @@ describe('swipeActions', () => {
     await settled();
     expect(xOf(row)).toBe(72);
     expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+  });
+
+  it('keeps the rest a settle lands while a claimed touch holds the row, when that touch lifts before the swipe begins', async () => {
+    const {row} = renderRow();
+    // Released past half the panel: the row settles open.
+    dragLeading(row, 45);
+    // While it settles, a finger claims it and holds short of the swipe.
+    const f = finger(row);
+    f.down(150);
+    f.move(160);
+    // The settle lands under the held finger.
+    await settled();
+    expect(xOf(row)).toBe(72);
+    f.up();
+    await settled();
+    // The row rests open, its panel live, and it still closes.
+    expect(xOf(row)).toBe(72);
+    expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    const button = screen.getByRole('button', {name: 'Unread'});
+    button.focus();
+    fireEvent.keyDown(button, {key: 'Escape'});
+    await settled();
+    expect(xOf(row)).toBe(0);
   });
 
   it('springs back when the browser cancels a swipe in progress', async () => {
