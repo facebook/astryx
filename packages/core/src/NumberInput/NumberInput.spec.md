@@ -66,7 +66,8 @@ Consumer usage lives in `NumberInput.doc.mjs`.
   steppers, no clear, `size="md"`, `statusVariant="attached"`
 - Compatibility class: non-breaking presentation adaptation; public prop
   names, types, exports, numeric values and callbacks, validation, direct entry,
-  and keyboard stepping remain unchanged
+  and keyboard stepping remain unchanged under `spec:AST-017` FR3's numeric-stepper
+  presentation rule
 - Controlled/uncontrolled behavior: controlled only; `value` (`number`, `null`,
   or `undefined`) is the committed value, and NumberInput keeps only an
   uncommitted text draft of its own
