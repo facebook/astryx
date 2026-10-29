@@ -204,12 +204,12 @@ they are separately named.
   the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
   existing finding policies. A main-push workflow MUST dispatch that
-  release-check for every push to `main`, bound to the pushed commit, in one
-  concurrency group per workflow and ref that never cancels a running check: at
-  most one runs and one waits, and a burst of pushes is checked once, at its
-  newest commit. A commit `main` has already moved past leaves its check to the
-  newer push's run. That run MUST fail when the release-check does not succeed,
-  and a failure is fixed forward by an atomic pull request. Main's own fast
+  release-check for every push to `main`, bound to the pushed commit; the
+  dispatched checks share one concurrency group that never cancels a running
+  check: at most one runs and one waits, and a burst of pushes is checked once,
+  at its newest commit. A commit `main` has already moved past leaves its check
+  to the newer push. That release-check run is main's result, and a failure is
+  fixed forward by an atomic pull request. Main's own fast
   checks still run for every push. Release checks MUST NOT capture
   baseline candidates, publish baselines, or use a separate daily workflow or
   retroactive acceptance status.

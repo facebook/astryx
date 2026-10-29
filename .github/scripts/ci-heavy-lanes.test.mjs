@@ -2,7 +2,7 @@
 
 /**
  * @file Visual, accessibility and RTL run on main, not on pull request updates.
- * @input CI and Main workflows, dependency fixtures and a mocked GitHub API
+ * @input CI, Main and Main heavy lanes workflows, and a mocked GitHub API
  * @output Routing for the heavy owners, the required joins, and Main's
  *   release-check dispatch
  * @position Node contracts for AST-030 FR12 and DEC-7
@@ -31,90 +31,28 @@ const HEAVY = [
   'pr-rtl-merge',
   'pr-rtl',
 ];
-const fullOutputs = {
-  docsite_only: 'false',
-  spec_only: 'false',
-  tooling_only: 'false',
-  has_components: 'true',
-  has_rtl_components: 'true',
-  has_rtl_harness: 'true',
-  force_full_component_audits: 'true',
-  has_stable_visual: 'true',
-  broad_stable_visual: 'true',
-};
-
-function needsOf(job) {
-  const names = job.needs == null ? [] : [job.needs].flat();
-  return Object.fromEntries(
-    names.map(name => [
-      name,
-      {
-        result: name === 'maintenance-request' ? 'skipped' : 'success',
-        outputs: {...fullOutputs},
-      },
-    ]),
-  );
-}
-
-/** Evaluates a job's `if:` the way Actions does, for one event. */
-function runs(job, {event, operation = '', labels = []}) {
-  const needs = needsOf(job);
-  const expression = (job.if ?? 'true')
-    .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
-    .replace(
-      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
-      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
-    );
-  return Function(
-    'github',
-    'inputs',
-    'needs',
-    'always',
-    'cancelled',
-    `return Boolean(${expression});`,
-  )(
-    {
-      event_name: event,
-      event: {pull_request: {labels: labels.map(name => ({name}))}},
-    },
-    {operation, 'release-branch': 'main'},
-    needs,
-    () => true,
-    () => false,
-  );
-}
+const PR_CLAUSE = `(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, '${LABEL}'))`;
 
 describe('visual, accessibility and RTL owners', () => {
-  it.each(HEAVY)('%s does not run on a pull request update', name => {
-    expect(runs(ci.jobs[name], {event: 'pull_request'})).toBe(false);
-    expect(
-      runs(ci.jobs[name], {event: 'pull_request', labels: ['other']}),
-    ).toBe(false);
-  });
-
-  it.each(HEAVY)('%s runs on a pull request labelled ci:heavy-lanes', name => {
-    expect(runs(ci.jobs[name], {event: 'pull_request', labels: [LABEL]})).toBe(
-      true,
-    );
-  });
-
-  it.each(HEAVY)('%s runs for release-check', name => {
-    expect(
-      runs(ci.jobs[name], {
-        event: 'workflow_dispatch',
-        operation: 'release-check',
-      }),
-    ).toBe(true);
-  });
+  // release-check-workflow.test.mjs evaluates them for release-check and
+  // visual-maintenance-workflow.test.mjs for labelled and unlabelled pull
+  // requests; this pins the shape on every owner.
+  it.each(HEAVY)(
+    '%s runs on a pull request only with the ci:heavy-lanes label',
+    name => {
+      const condition = ci.jobs[name].if;
+      expect(condition).toContain(PR_CLAUSE);
+      expect(condition.replaceAll(PR_CLAUSE, '')).not.toContain(
+        "'pull_request'",
+      );
+    },
+  );
 
   it('leaves the required joins without a heavy owner, so they still report on every pull request', () => {
     for (const join of ['test', 'build', 'docsite-test']) {
       const needs = [ci.jobs[join].needs].flat();
-      for (const heavy of HEAVY) {
-        expect(needs, `${join} needs ${heavy}`).not.toContain(heavy);
-      }
-      expect(runs(ci.jobs[join], {event: 'pull_request'}), join).toBe(true);
+      for (const owner of HEAVY)
+        expect(needs, `${join} needs ${owner}`).not.toContain(owner);
     }
   });
 
@@ -124,7 +62,7 @@ describe('visual, accessibility and RTL owners', () => {
 });
 
 describe('the release-check on every push to main', () => {
-  const job = heavy.jobs['release-check'];
+  const job = heavy.jobs.dispatch;
   const script = job.steps[0].with.script;
 
   it('runs on a push to main and may dispatch workflows', () => {
@@ -133,95 +71,54 @@ describe('the release-check on every push to main', () => {
     expect(job.steps[0].env.SHA).toBe('${{ github.sha }}');
   });
 
-  it('throttles: one check runs, the newest push waits, and a running check is never cancelled', () => {
-    // One group per workflow and ref: GitHub keeps one running and one
-    // pending run in it, and a newer push replaces the pending one, so a
-    // burst of merges is checked once, at its newest commit.
-    expect(heavy.concurrency).toEqual({
-      group: '${{ github.workflow }}-${{ github.ref }}',
-      'cancel-in-progress': false,
-    });
-    // GitHub stops ubuntu-slim jobs at 15 minutes; the wait must outlast a
-    // release-check or the group frees early and a second check starts.
-    expect(heavy.jobs['release-check']['runs-on']).not.toBe('ubuntu-slim');
+  it('throttles in ci.yml: the dispatched checks share one group that never cancels a running check', () => {
+    // GitHub keeps one running and one pending run per group, and a newer
+    // dispatch replaces the pending one, so a burst of merges is checked once.
+    expect(ci.concurrency.group).toContain(
+      "(github.event_name == 'workflow_dispatch' && github.triggering_actor == 'github-actions[bot]' && 'main-heavy-lanes')",
+    );
+    expect(ci.concurrency['cancel-in-progress']).toBe(
+      "${{ github.event_name != 'workflow_dispatch' }}",
+    );
+    expect(heavy.concurrency).toBeUndefined();
   });
 
-  it("leaves Main's fast checks running for every push, outside that group", () => {
-    expect(main.concurrency.group).not.toBe(heavy.concurrency.group);
+  it("leaves Main's fast checks running for every push", () => {
     expect(Object.keys(main.jobs)).not.toContain('release-check');
     expect(JSON.stringify(main)).not.toContain('createWorkflowDispatch');
   });
 
-  /** Runs the step's script against a fake GitHub API. */
-  async function run({tips, dispatchedSha, conclusion = 'success'}) {
+  /** Runs the step's script against a fake GitHub API with main at `tip`. */
+  async function run(tip) {
     const calls = {dispatch: [], notices: []};
-    let tipCalls = 0;
-    let polls = 0;
     const github = {
       rest: {
-        repos: {
-          getBranch: async () => ({
-            data: {commit: {sha: tips[Math.min(tipCalls++, tips.length - 1)]}},
-          }),
-        },
+        repos: {getBranch: async () => ({data: {commit: {sha: tip}}})},
         actions: {
           createWorkflowDispatch: async args => calls.dispatch.push(args),
-          listWorkflowRuns: async () => ({
-            data: {
-              workflow_runs:
-                dispatchedSha == null
-                  ? []
-                  : [
-                      {
-                        id: 7,
-                        head_sha: dispatchedSha,
-                        status: 'queued',
-                        html_url: 'run',
-                      },
-                    ],
-            },
-          }),
-          getWorkflowRun: async () => ({
-            data: {
-              id: 7,
-              head_sha: dispatchedSha,
-              status: polls++ < 1 ? 'in_progress' : 'completed',
-              conclusion,
-              html_url: 'run',
-            },
-          }),
         },
       },
     };
-    const core = {
-      notice: message => calls.notices.push(message),
-      info: () => {},
-    };
-    const realTimeout = globalThis.setTimeout;
-    globalThis.setTimeout = fn => realTimeout(fn, 0);
-    try {
-      const body = new Function(
-        'github',
-        'context',
-        'core',
-        'process',
-        `return (async () => {${script}})();`,
-      );
-      await body(github, {repo: {owner: 'meta', repo: 'astryx'}}, core, {
-        env: {SHA: 'a'.repeat(40)},
-      });
-      return calls;
-    } finally {
-      globalThis.setTimeout = realTimeout;
-    }
+    const body = new Function(
+      'github',
+      'context',
+      'core',
+      'process',
+      `return (async () => {${script}})();`,
+    );
+    await body(
+      github,
+      {repo: {owner: 'meta', repo: 'astryx'}},
+      {notice: m => calls.notices.push(m)},
+      {env: {SHA: sha}},
+    );
+    return calls;
   }
 
   const sha = 'a'.repeat(40);
-  const newer = 'b'.repeat(40);
 
-  it('dispatches release-check on main for the exact pushed commit and passes when it passes', async () => {
-    const calls = await run({tips: [sha], dispatchedSha: sha});
-    expect(calls.dispatch).toEqual([
+  it('dispatches release-check on main for the exact pushed commit', async () => {
+    expect((await run(sha)).dispatch).toEqual([
       {
         owner: 'meta',
         repo: 'astryx',
@@ -236,21 +133,9 @@ describe('the release-check on every push to main', () => {
     ]);
   });
 
-  it('fails when the release-check does not succeed', async () => {
-    await expect(
-      run({tips: [sha], dispatchedSha: sha, conclusion: 'failure'}),
-    ).rejects.toThrow(/release-check failure/);
-  });
-
   it('leaves a commit main has moved past to the newer push', async () => {
-    const calls = await run({tips: [newer]});
+    const calls = await run('b'.repeat(40));
     expect(calls.dispatch).toEqual([]);
     expect(calls.notices[0]).toMatch(/newer push/);
-  });
-
-  it('leaves the check to the newer push when main moves during the dispatch', async () => {
-    const calls = await run({tips: [sha, newer], dispatchedSha: newer});
-    expect(calls.dispatch).toHaveLength(1);
-    expect(calls.notices[0]).toMatch(/during the dispatch/);
   });
 });

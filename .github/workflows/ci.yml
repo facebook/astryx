@@ -55,9 +55,11 @@ permissions: {}
 #
 # One group per pull request (a fork's branch name can repeat across forks),
 # so a new push cancels the superseded run. Merge-queue entries and dispatches
-# get their own groups and are never cancelled by a pull request.
+# get their own groups and are never cancelled by a pull request. The
+# release-checks main-heavy-lanes.yml dispatches (as github-actions[bot]) share
+# one group: one runs, the newest waits, and a running check is never cancelled.
 concurrency:
-  group: 'ci-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.run_id }}'
+  group: "ci-${{ github.event.pull_request.number || github.event.merge_group.head_sha || (github.event_name == 'workflow_dispatch' && github.triggering_actor == 'github-actions[bot]' && 'main-heavy-lanes') || github.run_id }}"
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
