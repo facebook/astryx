@@ -216,22 +216,28 @@ describe('useTouchHitArea', () => {
 });
 
 describe('touchHitAreaStyles.layer', () => {
-  it('is a coarse-only ::after grown on all four sides by the inset properties, the element as its clip-path hole, painting nothing and starting no stacking context', () => {
+  it('is a coarse-only ::after grown on all four sides by the inset properties past the host’s border, the element as its clip-path hole, above later siblings, painting nothing, and the host starting no stacking context', () => {
     render(<Host enabled={false} />);
     const {touch, other} = afterRules(screen.getByTestId('host'));
     const layer = touch.join('\n');
     expect(layer).toContain('position: absolute');
     for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+      // Offset from the host's padding box: the inset, plus the border the
+      // host declares on that side (the inset is measured from its border box).
       expect(layer).toMatch(
         new RegExp(
-          `${side}: calc\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\* -1\\)`,
+          `${side}: calc\\(\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\+ var\\(--_hit-border-${side}, ?0px\\)\\) \\* -1\\)`,
         ),
       );
       expect(layer).toContain(`var(${HIT_INSET_PROPERTIES[side]}`);
     }
     expect(layer).toMatch(/clip-path: polygon\(evenodd/);
+    // Above the content after the host, which would otherwise hit-test over
+    // the band.
+    expect(layer).toMatch(/z-index: 1/);
+    // It paints nothing: no paint declaration of its own.
     expect(layer).not.toMatch(
-      /background|border|box-shadow|outline|z-index|isolation/,
+      /[{;]\s*(?:background|border|box-shadow|outline|isolation)[\w-]*\s*:/,
     );
     // With a mouse: no pseudo-element.
     expect(other).toEqual([]);
