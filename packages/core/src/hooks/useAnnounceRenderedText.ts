@@ -89,16 +89,52 @@ export interface AnnounceRenderedTextOptions {
    * every other message polite (`spec:AST-086` FR5). Defaults to polite.
    */
   politeness?: AnnouncePoliteness;
+  /** Accessible name to announce when the element has no rendered text. */
+  fallbackText?: string;
 }
 
-/** The rendered text an assistive technology would read from `element`. */
+/**
+ * The rendered text an assistive technology would read from `element`. Block
+ * boxes read apart: a block tag, an element whose computed display is not
+ * inline, and any child of a flex or grid container (which the layout
+ * blockifies), so two stacked `Text` spans never run together
+ * (`spec:AST-086` FR7). Hidden parts are skipped; nothing on screen changes.
+ */
 export function renderedText(element: HTMLElement): string {
-  // Clone so removing the hidden parts cannot disturb what is on screen. The
-  // clone is never attached to the document.
-  const copy = element.cloneNode(true) as HTMLElement;
-  copy.querySelectorAll(HIDDEN).forEach(node => node.remove());
-  copy.querySelectorAll(BLOCKS).forEach(node => node.after(' ')); // blocks apart
-  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+  const view = element.ownerDocument.defaultView;
+  const displayOf = (node: Element) =>
+    view?.getComputedStyle(node).display ?? '';
+  const parts: string[] = [];
+  const walk = (node: Node, parentDisplay: string) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parts.push(node.textContent ?? '');
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+    const part = node as Element;
+    if (part.matches(HIDDEN)) {
+      return;
+    }
+    const display = displayOf(part);
+    const isBlock =
+      part.matches(BLOCKS) ||
+      (display !== '' &&
+        display !== 'contents' &&
+        !display.startsWith('inline')) ||
+      /\b(flex|grid)\b/.test(parentDisplay);
+    if (isBlock) {
+      parts.push(' ');
+    }
+    part.childNodes.forEach(child => walk(child, display));
+    if (isBlock) {
+      parts.push(' ');
+    }
+  };
+  const ownDisplay = displayOf(element);
+  element.childNodes.forEach(child => walk(child, ownDisplay));
+  return parts.join('').replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -128,6 +164,7 @@ export function useAnnounceRenderedText(
   {
     skipFirstRender = false,
     politeness = 'polite',
+    fallbackText,
   }: AnnounceRenderedTextOptions = {},
 ): void {
   const announce = useAnnounce();
@@ -163,7 +200,21 @@ export function useAnnounceRenderedText(
     if (skipFirstRender && element.parentElement?.closest(LIVE_CONTAINER)) {
       return;
     }
-    const text = skipFirstRender ? blockText(element) : renderedText(element);
+    let text = skipFirstRender ? blockText(element) : renderedText(element);
+    if (text === '' && fallbackText !== undefined) {
+      text =
+        (element.getAttribute('aria-labelledby') ?? '')
+          .split(/\s+/)
+          .map(id => {
+            // Each referenced element as read: its hidden parts dropped, as
+            // the accessible name drops them (AST-086 FR12).
+            const target = element.ownerDocument.getElementById(id);
+            return target == null ? '' : renderedText(target);
+          })
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim() || fallbackText;
+    }
     if (text === '') {
       // Nothing readable on screen either, so there is no announcement that
       // would match what the sighted user is seeing.

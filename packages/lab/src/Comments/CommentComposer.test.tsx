@@ -269,7 +269,7 @@ describe('CommentComposer', () => {
 
   it('refuses files that are not images', async () => {
     const onUploadImages = vi.fn();
-    render(
+    const {container} = render(
       <CommentComposer
         value=""
         onChange={() => {}}
@@ -289,7 +289,7 @@ describe('CommentComposer', () => {
       });
     });
     expect(onUploadImages).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toContain(
+    expect(within(container).getByRole('alert').textContent).toContain(
       'Only image files can be added',
     );
   });
@@ -297,7 +297,7 @@ describe('CommentComposer', () => {
   it('shows an error with Retry, and a quoted passage the viewer can remove', () => {
     const onRetry = vi.fn();
     const onAnchorDismiss = vi.fn();
-    render(
+    const {container} = render(
       <CommentComposer
         value="Draft"
         onChange={() => {}}
@@ -309,7 +309,7 @@ describe('CommentComposer', () => {
         highlightColor="green"
       />,
     );
-    const alert = screen.getByRole('alert');
+    const alert = within(container).getByRole('alert');
     fireEvent.click(within(alert).getByRole('button', {name: 'Retry'}));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(

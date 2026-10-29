@@ -57,9 +57,10 @@ import {Center} from '@astryxdesign/core/Center';
 import {Icon} from '@astryxdesign/core/Icon';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
-import {Spinner} from '@astryxdesign/core/Spinner';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {LoadingMessage} from '../LoadingMessage';
+import {useAnnounceBusyStart} from '../useAnnounceBusyStart';
 
 export interface EmojiOption {
   /** The emoji character, e.g. "🎉". */
@@ -405,6 +406,11 @@ export function EmojiPicker({
     t,
   ]);
   const firstMatch = sections[0]?.emojis[0];
+  // The ring is silent; the picker announces its own busy start (AST-086 FR8).
+  useAnnounceBusyStart(
+    isLoading && (queryWords.length === 0 || sections.length === 0),
+    t('@astryx.emojiPicker.loading'),
+  );
   const noResultsMessage =
     !isLoading && queryWords.length > 0 && sections.length === 0
       ? t('@astryx.emojiPicker.noResults', {query: query.trim()})
@@ -520,11 +526,17 @@ export function EmojiPicker({
           {sections.map(renderSection)}
           {queryWords.length > 0 && sections.length === 0 && isLoading ? (
             <Center>
-              <Spinner size="sm" label={t('@astryx.emojiPicker.loading')} />
+              <LoadingMessage
+                size="sm"
+                label={t('@astryx.emojiPicker.loading')}
+              />
             </Center>
           ) : queryWords.length === 0 && isLoading ? (
             <Center>
-              <Spinner size="sm" label={t('@astryx.emojiPicker.loading')} />
+              <LoadingMessage
+                size="sm"
+                label={t('@astryx.emojiPicker.loading')}
+              />
             </Center>
           ) : null}
           <HStack
