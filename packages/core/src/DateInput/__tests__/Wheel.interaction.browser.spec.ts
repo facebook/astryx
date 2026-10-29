@@ -879,9 +879,21 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
     requestAnimationFrame(sample);
   });
   // A quick scroll with no momentum of its own: eight 24 px steps about
-  // 16 ms apart, then nothing.
+  // 16 ms apart, then nothing. Straight through CDP, without the driver's
+  // wait for each step's delivery, which would space them several frames
+  // apart (Chromium divides a step's deltas by the page's scale, so they are
+  // multiplied back, as webInput.ts does).
+  const cdp = await page.context().newCDPSession(page);
+  const scale = await page.evaluate(
+    () => window.devicePixelRatio * (window.visualViewport?.scale ?? 1),
+  );
   for (let i = 0; i < 8; i++) {
-    await input.wheel({...at, dy: 24});
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseWheel',
+      ...at,
+      deltaX: 0,
+      deltaY: 24 * scale,
+    });
     await page.waitForTimeout(16);
   }
   await page.waitForTimeout(600);
@@ -907,11 +919,15 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
   if (moved == null) {
     throw new Error('the rows never moved on after the last wheel');
   }
-  // The host ends the pan 100 ms after the last wheel; the rows glide on
-  // within half again the stream's interval and a frame or two, long before.
-  expect(moved[0] - last, 'the rows held still after the scroll').toBeLessThan(
-    70,
-  );
+  // The host ends the pan 100 ms after the last wheel, six frames at 60 Hz.
+  // The rows glide on at the first frame after one with no wheel, and the
+  // compositor shows it within a frame or two more: counted in frames, which
+  // a busy page delays along with the timer that would end the pan.
+  const after = frames.filter(([time]) => time > last);
+  expect(
+    after.indexOf(moved),
+    'the frames the rows held still after the scroll',
+  ).toBeLessThan(4);
 });
 
 test.describe('under a mouse', () => {

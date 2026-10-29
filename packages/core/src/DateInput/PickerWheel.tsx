@@ -344,25 +344,14 @@ interface DragState {
   readonly start: number;
 }
 
-/**
- * A wheel stream that pauses this many of its own intervals has stopped:
- * the wheel glides on from there rather than waiting out the host's end.
- */
-const WHEEL_PAUSE_INTERVALS = 1.5;
-/** The pause that ends a wheel stream, ms: never shorter or longer. */
-const WHEEL_PAUSE_MIN_MS = 20;
-const WHEEL_PAUSE_MAX_MS = 50;
-
 /** A continuous wheel stream's state between its wheels. */
 interface WheelStream {
   /** The pan's translation at the last wheel, px. */
   translation: number;
-  /** When the last wheel arrived, ms (performance.now()). */
-  time: number;
-  /** The interval before it, ms. */
-  interval: number;
-  /** The pause timer, or the glide that followed it. */
-  timer: number | undefined;
+  /** Whether a wheel arrived since the last frame. */
+  sawWheel: boolean;
+  /** The frame that watches for the stream's pause. */
+  frame: number | undefined;
   isGliding: boolean;
 }
 
@@ -732,52 +721,61 @@ export function PickerWheel({
 
   // A trackpad's scroll or a smooth mouse wheel with no momentum of its own
   // stops sending wheel at its last step, and the host ends the pan only
-  // WHEEL_END_MS later (GestureHost.ts). The rows do not wait that out: once
-  // the stream pauses for half again its own interval, the wheel glides on
-  // from where it is with the stream's speed, as the release would, and a
-  // wheel that arrives during the glide takes the rows back.
+  // WHEEL_END_MS later (GestureHost.ts). The rows do not wait that out: a
+  // stream sends a wheel every frame it moves, so a whole frame with none is
+  // its pause, and the wheel glides on from where it is with the stream's
+  // speed, as the release would. A wheel that arrives during the glide takes
+  // the rows back. Frames, not a timer: the browser dispatches a frame's
+  // input before its animation frame callbacks, however busy the page is.
   const endWheelStream = useCallback((): WheelStream | null => {
     const stream = streamRef.current;
     streamRef.current = null;
-    if (stream != null && !stream.isGliding) {
-      window.clearTimeout(stream.timer);
+    if (stream?.frame != null) {
+      cancelAnimationFrame(stream.frame);
     }
     return stream;
   }, []);
 
   const followWheelStream = useCallback(
     (recognizer: PanGestureRecognizer, translation: number) => {
-      const now = performance.now();
-      const last = streamRef.current;
-      if (last != null && !last.isGliding) {
-        window.clearTimeout(last.timer);
+      let stream = streamRef.current;
+      if (stream == null || stream.isGliding) {
+        if (stream?.frame != null) {
+          cancelAnimationFrame(stream.frame);
+        }
+        stream = {
+          translation,
+          sawWheel: true,
+          frame: undefined,
+          isGliding: false,
+        };
+        streamRef.current = stream;
       }
-      const interval =
-        last == null ? WHEEL_PAUSE_MAX_MS : Math.max(0, now - last.time);
-      const stream: WheelStream = {
-        translation,
-        time: now,
-        interval,
-        timer: undefined,
-        isGliding: false,
-      };
-      streamRef.current = stream;
-      const pause = Math.min(
-        WHEEL_PAUSE_MAX_MS,
-        Math.max(WHEEL_PAUSE_MIN_MS, interval * WHEEL_PAUSE_INTERVALS),
-      );
-      stream.timer = window.setTimeout(() => {
-        if (streamRef.current !== stream || dragRef.current == null) {
+      stream.translation = translation;
+      stream.sawWheel = true;
+      if (stream.frame != null) {
+        return;
+      }
+      const current = stream;
+      const watch = () => {
+        current.frame = undefined;
+        if (streamRef.current !== current || dragRef.current == null) {
           return;
         }
-        stream.isGliding = true;
+        if (current.sawWheel) {
+          current.sawWheel = false;
+          current.frame = requestAnimationFrame(watch);
+          return;
+        }
+        current.isGliding = true;
         release(-recognizer.scrollVelocity().y);
-      }, pause);
+      };
+      current.frame = requestAnimationFrame(watch);
     },
     [release],
   );
 
-  // A wheel that goes away leaves no pause timer behind.
+  // A wheel that goes away leaves no frame watching behind.
   useEffect(() => () => void endWheelStream(), [endWheelStream]);
 
   const pan = useGestureRecognizer(
