@@ -32,14 +32,14 @@ export const docs = {
       name: 'options.snapPoints',
       type: 'number[]',
       description:
-        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. New ones create the drag again where the element is: a settle in flight carries on to its point, and a resting element whose point is gone moves to the nearest new one.",
+        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. New ones create the drag again and nothing more: the element stays where it is, a settle in flight included, and the next drag or `settleTo` starts there.",
       required: true,
     },
     {
       name: 'options.flickThreshold',
       type: 'number',
       description:
-        "A release faster than this, in px/s, carries to the next snap point in its direction. The default is the flick speed measured for UIKit's sheet.",
+        "A release faster than this, in px/s, carries to the next snap point in its direction. The default is the flick speed measured for UIKit's sheet. A new one creates the drag again, as new snap points do.",
       default: '1008',
       required: false,
     },
