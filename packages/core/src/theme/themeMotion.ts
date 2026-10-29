@@ -90,6 +90,12 @@ function msOf(value: string): number {
 export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
 
 /**
+ * The character a theme or an adaptation rule sets, which the animator's
+ * springs read beside `MOTION_TEMPO_PROPERTY` (`spec:AST-108` FR3).
+ */
+export const MOTION_CHARACTER_PROPERTY = '--_astryx-motion-character';
+
+/**
  * The private custom property the reduced-motion mark carries, 1 under it
  * (`spec:AST-108` FR6), for a style that cannot key a selector on the mark,
  * such as the press release's shared clock (utils/interactionOverlay.stylex.ts).
@@ -136,8 +142,12 @@ export function expandThemeMotion(
       tokens[preTempoName(name)] = value;
     }
     // The press release fade, a fixed clock in the stylesheet, scales by the
-    // tempo itself (FR4; `component:Button` FR15), read where it plays.
+    // tempo itself (FR4; `component:Button` FR15), read where it plays, and
+    // so do the springs (FR3).
     tokens[MOTION_TEMPO_PROPERTY] = String(knobs.tempo);
+  }
+  if (config.character != null) {
+    tokens[MOTION_CHARACTER_PROPERTY] = knobs.character;
   }
   if (isScaleConfig(config)) {
     const scale = expandMotionScale(config);
