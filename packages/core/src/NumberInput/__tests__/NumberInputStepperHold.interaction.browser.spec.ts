@@ -42,13 +42,13 @@ import {
 const storybook = withStorybook(test);
 
 const STORY = 'core-numberinput--with-number-steppers';
-/** How far a step may land from its scheduled time, ms (a timer's jitter plus a render). */
+/** How far a step may land from its beat, ms (a timer's jitter plus a render). */
 const SLACK = 45;
 /** UIStepper's first step of a hold, iOS 26.2, ms after touch-down. */
 const UIKIT_FIRST_STEP = 514;
 /**
- * A hold's steps, ms after touch-down (motion/uikit/stepper.ts): 500, then
- * 250 ms, each interval 0.9 of the one before.
+ * A hold's steps, ms after the press is delivered (motion/uikit/stepper.ts):
+ * 500, then 250 ms, each interval 0.9 of the one before.
  */
 const SCHEDULE = [
   500, 750, 975, 1177.5, 1359.75, 1523.775, 1671.3975, 1804.25775,
@@ -292,12 +292,25 @@ function expectOneCommitAtRelease(log: Log, value: number): void {
   expect(log.commits[0].t - release).toBeLessThan(SLACK);
 }
 
-function expectSchedule(times: number[], schedule: number[]): void {
+/**
+ * Checks each step against its own beat: the first `schedule[0]` after the
+ * press was delivered (its first paint, written when the hold is armed), and
+ * each later one its interval after the step before. The repeat arms every
+ * beat from the moment its step ran (stepperTracking.ts), so a beat that a
+ * loaded machine runs late moves the beats after it. Timed from touch-down,
+ * the input's dispatch delay and every earlier beat's lateness would count
+ * against each later step.
+ */
+function expectSchedule(log: Log, times: number[], schedule: number[]): void {
   expect(times, JSON.stringify(times)).toHaveLength(schedule.length);
+  const down = downTime(log);
+  const delivered = (log.paints[0]?.t ?? down) - down;
   schedule.forEach((at, i) => {
+    const due =
+      i === 0 ? delivered + at : times[i - 1] + (at - schedule[i - 1]);
     expect(
-      Math.abs(times[i] - at),
-      `step ${i + 1} at ${times[i]}`,
+      Math.abs(times[i] - due),
+      `step ${i + 1} at ${times[i]}, due ${Math.round(due)}: ${JSON.stringify(times)}`,
     ).toBeLessThanOrEqual(SLACK);
   });
 }
@@ -360,7 +373,7 @@ test('a hold shows a step at 0.5 s, then on one steady ramp, stops at the bound 
   // finger held on past it steps no more.
   expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
   const times = steps.map(s => Math.round(s.t));
-  expectSchedule(times, SCHEDULE);
+  expectSchedule(log, times, SCHEDULE);
   testInfo.annotations.push({
     type: 'uikit-parity',
     description: `first step at ${times[0]} ms; UIStepper's at ${UIKIT_FIRST_STEP} ms`,
@@ -398,6 +411,7 @@ test('a slide onto the other half carries the paint and the repeat', async ({
   // + at 500 and 750 ms, then − on the same ramp: 975, 1177.5, 1359.75 ms.
   expect(steps.map(s => s.value)).toEqual([3, 4, 3, 2, 1]);
   expectSchedule(
+    log,
     steps.map(s => Math.round(s.t)),
     SCHEDULE.slice(0, 5),
   );
@@ -432,6 +446,7 @@ test('a finger trembling on the edge during a hold adds no step', async ({
   // The steady hold's steps, on the steady hold's times.
   expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6]);
   expectSchedule(
+    log,
     steps.map(s => Math.round(s.t)),
     SCHEDULE.slice(0, 4),
   );
@@ -502,13 +517,16 @@ test('leaving the column pauses the repeat, and coming back resumes it with no s
   }
   expect(steps.map(s => s.value)).toEqual([3, 4, 5]);
   expectSchedule(
+    log,
     steps.slice(0, 2).map(s => Math.round(s.t)),
     [500, 750],
   );
   // Nothing while outside; back inside, the rest of the beat that was
-  // running when the finger left (975 ms) runs first: no step at once.
+  // running when the finger left (armed 225 ms after the second step) runs
+  // first: no step at once.
   expect(steps[2].t - back).toBeGreaterThan(40);
-  expect(Math.abs(steps[2].t - (back + (975 - out)))).toBeLessThanOrEqual(
+  const beat = steps[1].t + (SCHEDULE[2] - SCHEDULE[1]);
+  expect(Math.abs(steps[2].t - (back + (beat - out)))).toBeLessThanOrEqual(
     SLACK,
   );
   // The paint goes off when the finger leaves and comes back with it.
@@ -591,8 +609,9 @@ test('inside a scrolling page, a held press reaches the stepper after the conten
   expect(log.paints[0]).toMatchObject({half: 'increment', paint: 'on'});
   expect(Math.abs(log.paints[0].t - down - 150)).toBeLessThanOrEqual(SLACK);
   expectSchedule(
+    log,
     stepsOf(log).map(s => Math.round(s.t)),
-    [650, 900],
+    [500, 750],
   );
   expectOneCommitAtRelease(log, 4);
 });
@@ -642,6 +661,7 @@ test('with a mouse, a held press repeats like a finger and commits once, at the 
   const steps = stepsOf(log);
   expect(steps.map(s => s.value)).toEqual([3, 4, 5, 6]);
   expectSchedule(
+    log,
     steps.map(s => Math.round(s.t)),
     SCHEDULE.slice(0, 4),
   );
