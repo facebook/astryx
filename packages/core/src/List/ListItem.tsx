@@ -5,9 +5,8 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, the press layer (dividers beside a touch-pressed or held row
- *   hide and the layer reaches over the row's own), the touch hit area
- *   (utils/touchHitArea.ts and its layer), CheckboxInput, and the marker or task checkbox a
+ *   treatment, the touch hit area (utils/touchHitArea.ts and its layer),
+ *   CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -38,6 +37,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {servesSwipeActions} from '../Item/Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -188,29 +188,18 @@ const styles = stylex.create({
       'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
     borderRadius: 0,
   },
+  // A swipeable row is a stacking context at rest (Item isolates and
+  // translates its swipe root), so its touch band's own z-index orders only
+  // inside it: under a finger the row itself rises above the rows after it,
+  // whose boxes its band reaches into. The list isolates, so it stays below
+  // a sticky header (List.tsx).
+  swipeRaised: {
+    zIndex: {default: null, '@media (pointer: coarse)': 1},
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
-    // Under a finger (a coarse primary pointer, TOUCH_QUERY in
-    // utils/touchPresentation.ts), a touch press hides this row's divider
-    // and the one above it, in the frame the press is believed, with no
-    // transition, as a highlighted UIKit cell hides its separators; both
-    // come back in the first frame of the release, while the press is still
-    // fading. A selection hold (the row kept selected through a navigation
-    // push) hides them the same way until its deselect begins, and again
-    // after a cancel. With a mouse the dividers stay drawn.
-    borderBlockEndColor: {
-      default: colorVars['--color-border'],
-      '@media (pointer: coarse)': {
-        default: null,
-        '[data-astryx-press="on"]': 'transparent',
-        '[data-astryx-press="held"]:not([data-astryx-deselecting])':
-          'transparent',
-        ':has(+ [data-astryx-press="on"])': 'transparent',
-        ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
-          'transparent',
-      },
-    },
+    borderBlockEndColor: colorVars['--color-border'],
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
     // shorthand never reached the shipped CSS and the last item kept its
@@ -218,24 +207,11 @@ const styles = stylex.create({
     ':last-child': {
       borderBlockEndWidth: 0,
     },
-    // While its divider is hidden, the press layer (the `cell` style of
-    // utils/interactionOverlay.stylex.ts) reaches over it, so the whole row
-    // is pressed. The last row has no divider to cover.
-    '::before': {
-      insetBlockEnd: {
-        default: null,
-        '@media (pointer: coarse)': {
-          default: null,
-          '[data-astryx-press="on"]': {
-            default: `calc(-1 * ${borderVars['--border-width']})`,
-            ':last-child': 0,
-          },
-          '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
-            default: `calc(-1 * ${borderVars['--border-width']})`,
-            ':last-child': 0,
-          },
-        },
-      },
+    // The touch hit layer's band starts past the divider, the edge of the box
+    // its insets are measured from (utils/touchHitArea.stylex.ts).
+    '--_hit-border-bottom': {
+      default: borderVars['--border-width'],
+      ':last-child': '0px',
     },
   },
 });
@@ -372,13 +348,25 @@ export function ListItem({
   const ctx = use(ListContext);
   // Under a finger, an interactive row's hit target grows toward the touch
   // target where its neighbors leave room, with no visual or layout change
-  // (`spec:AST-094` FR42; `component:List` FR10, #8571): useTouchHitArea keeps the row's insets live, and
+  // (`spec:AST-094` FR42; `component:List` FR10): useTouchHitArea keeps the row's insets live, and
   // its invisible layer (touchHitAreaStyles.layer) reads them.
   const isTouchTarget =
     (onClick != null || href != null || interactiveRef != null) && !isDisabled;
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
   useTouchHitArea(rowRef, isTouchTarget);
+  // A row Item serves swipe actions on is a stacking context at rest, so its
+  // band's own z-index orders only inside it: under a finger, the row raises
+  // itself (styles.swipeRaised). Its root is its `<li>`, never a link.
+  const isRaisedSwipeRow =
+    isTouchTarget &&
+    servesSwipeActions({
+      swipeActions: restProps.swipeActions,
+      isDisabled,
+      isDelegate: interactiveRef != null,
+      isLinkRoot: false,
+      role: restProps.role,
+    });
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -444,6 +432,7 @@ export function ListItem({
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           isTouchTarget && touchHitAreaStyles.layer,
+          isRaisedSwipeRow && styles.swipeRaised,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,

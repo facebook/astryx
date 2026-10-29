@@ -9,6 +9,7 @@
  * SYNC: When modified, update this header
  */
 
+import {useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -524,75 +525,8 @@ describe('List', () => {
     expect(hrs).toHaveLength(0);
   });
 
-  it('hides a touch-pressed row’s divider and the one above it, with the press layer over its own, under a finger only', () => {
-    render(
-      <List hasDividers>
-        <ListItem label="Item 1" onClick={() => {}} />
-        <ListItem label="Item 2" onClick={() => {}} />
-      </List>,
-    );
-    const row = screen.getByText('Item 1').closest('li') as HTMLElement;
-    const {touch: rules, other} = touchGatedRules(row);
-    // Outside the touch gate (a mouse) no press arm touches the dividers.
-    expect(
-      other.some(
-        rule =>
-          rule.slice(0, rule.indexOf('{')).includes('data-astryx-press') &&
-          /border-(bottom|block-end)-color|(^|[;{\s])(bottom|inset-block-end):/.test(
-            rule,
-          ),
-      ),
-    ).toBe(false);
-    const selector = (rule: string) => rule.slice(0, rule.indexOf('{'));
-    const hides = (condition: string) =>
-      rules.some(
-        rule =>
-          selector(rule).includes(condition) &&
-          !selector(rule).includes('::before') &&
-          /border-(bottom|block-end)-color:\s*transparent/.test(rule),
-      );
-    // Its own divider while it is pressed, and the divider above the row
-    // being pressed: the row before a pressed sibling.
-    expect(hides('[data-astryx-press="on"]')).toBe(true);
-    expect(hides(':has(+ [data-astryx-press="on"])')).toBe(true);
-    // Only while the press is on: the release shows both again at once.
-    expect(hides('[data-astryx-press="fading"]')).toBe(false);
-    // The pressed row's layer reaches over the hidden divider, except on the
-    // last row, which has none.
-    const layer = rules.filter(
-      rule =>
-        selector(rule).includes('::before') &&
-        selector(rule).includes('[data-astryx-press="on"]') &&
-        /(bottom|inset-block-end):/.test(rule),
-    );
-    expect(layer.some(rule => /calc\(\s*-1\s*\*\s*var\(/.test(rule))).toBe(
-      true,
-    );
-    expect(
-      layer.some(
-        rule =>
-          selector(rule).includes(':last-child') &&
-          /(bottom|inset-block-end):\s*0(px)?[;}\s]/.test(rule),
-      ),
-    ).toBe(true);
-  });
-
-  it('leaves a list without dividers alone during a press', () => {
-    render(
-      <List>
-        <ListItem label="Item 1" onClick={() => {}} />
-      </List>,
-    );
-    const row = screen.getByText('Item 1').closest('li') as HTMLElement;
-    expect(
-      rulesDeclaredFor(row).some(rule =>
-        rule.slice(0, rule.indexOf('{')).includes(':has(+ [data-astryx-press'),
-      ),
-    ).toBe(false);
-  });
-
   // ===========================================================================
-  // Touch hit area (`spec:AST-094` FR42; `component:List` FR10, #8571)
+  // Touch hit area (`spec:AST-094` FR42; `component:List` FR10)
   // ===========================================================================
 
   /** The rules among `rules` whose selector reaches the row's `::after`. */
@@ -619,11 +553,24 @@ describe('List', () => {
       for (const side of ['top', 'right', 'bottom', 'left'] as const) {
         expect(layer).toMatch(
           new RegExp(
-            `${side}: calc\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\* -1\\)`,
+            `${side}: calc\\(\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\+ var\\(--_hit-border-${side}, ?0px\\)\\) \\* -1\\)`,
           ),
         );
       }
-      expect(layer).not.toMatch(/background|border|box-shadow|outline|z-index/);
+      // Above the rows after it, so a later row does not hit-test over the
+      // band; painting nothing.
+      expect(layer).toMatch(/z-index: 1/);
+      expect(layer).not.toMatch(
+        /[{;]\s*(?:background|border|box-shadow|outline)[\w-]*\s*:/,
+      );
+      // The row itself takes no z-index: it stays no stacking context.
+      expect(
+        touch.filter(
+          rule =>
+            !rule.slice(0, rule.indexOf('{')).includes('::') &&
+            rule.includes('z-index'),
+        ),
+      ).toEqual([]);
       // At rest the row's stacking stays as it was: only a press isolates it
       // (the press layer, utils/rowPressLayer.ts).
       for (const rule of touch.filter(r => r.includes('isolation'))) {
@@ -1164,6 +1111,23 @@ describe('List', () => {
   });
 });
 
+/** A row whose press goes to a control inside it (`interactiveRef`), with swipe actions. */
+function DelegateSwipeRow() {
+  const ref = useRef<HTMLButtonElement>(null);
+  return (
+    <ListItem
+      label="Delegate"
+      interactiveRef={ref}
+      endContent={
+        <button ref={ref} type="button">
+          Open
+        </button>
+      }
+      swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+    />
+  );
+}
+
 describe('List and swipe actions', () => {
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
@@ -1176,6 +1140,67 @@ describe('List and swipe actions', () => {
     // the same axis in horizontal writing modes.
     expect(rules.some(r => /overflow-(inline|x): clip/.test(r))).toBe(true);
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
+  });
+
+  it('isolates its rows, so what rises inside the list (a row’s touch band, a swipeable row) stays below a sticky header', () => {
+    render(
+      <List>
+        <ListItem label="A" onClick={() => {}} />
+      </List>,
+    );
+    // The list is the isolation boundary for its rows' z-index
+    // (`spec:AST-027` DEC-1, DEC-2): a page-level sticky header at z-index 1
+    // stays above every part of the list.
+    expect(getComputedStyle(screen.getByRole('list')).isolation).toBe(
+      'isolate',
+    );
+  });
+
+  it('under a finger, raises a swipeable interactive row above the rows after it: it is a stacking context, so its touch band’s own z-index orders only inside it', () => {
+    render(
+      <List>
+        <ListItem
+          label="Swipeable"
+          onClick={() => {}}
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+        <ListItem label="Pressable" onClick={() => {}} />
+        <ListItem
+          label="Static"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+        <ListItem
+          label="Empty sides"
+          onClick={() => {}}
+          swipeActions={{leading: [], trailing: []}}
+        />
+        <DelegateSwipeRow />
+      </List>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('li')!;
+    const rowZ = (el: Element) => {
+      const {touch, other} = touchGatedRules(el);
+      const own = (rules: string[]) =>
+        rules.filter(
+          rule =>
+            !rule.slice(0, rule.indexOf('{')).includes('::') &&
+            rule.includes('z-index:'),
+        );
+      return {touch: own(touch), other: own(other)};
+    };
+    const swipeable = rowZ(row('Swipeable'));
+    expect(swipeable.touch.join('\n')).toMatch(/z-index: 1/);
+    // With a mouse there is no band, and nothing changes.
+    expect(swipeable.other).toEqual([]);
+    // A row that is no stacking context needs no raise (its band's own
+    // z-index orders it), and a swipeable row with no band gets none.
+    expect(rowZ(row('Pressable')).touch).toEqual([]);
+    expect(rowZ(row('Static')).touch).toEqual([]);
+    // Item serves no swipe actions on a row with no entry on either side, or
+    // on a row whose press goes to a control inside it: neither is a stacking
+    // context, so neither is raised.
+    expect(rowZ(row('Empty sides')).touch).toEqual([]);
+    expect(rowZ(row('Delegate')).touch).toEqual([]);
   });
 
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
