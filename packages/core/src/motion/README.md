@@ -46,9 +46,11 @@ The motion roles are the springs, durations and curves `spec:AST-094` FR4
 names for their use (`springs.settle`, `timing.stateChangeMs`,
 `timing.curves.move`, …): a shared table lists them when it registers
 (`roles`), and every other value, a component's measured spring included, is
-a plain constant. Touch motion stays internal (`spec:AST-094` DEC-11): a role
-plays its table value, and nothing reads its CSS variable
-(`--motion-springs-settle`), so no page or theme style retunes it. A table's
+a plain constant. A role plays its table value, moved by the theme's tempo
+and character (`spec:AST-094` DEC-15, `spec:AST-108` FR3), which
+`resolveMotion` reads from the custom properties the theme writes; nothing
+reads a role's own CSS variable (`--motion-springs-settle`), so no page or
+theme style retunes one role (DEC-11). A table's
 roles exist once its `register<Name>Table()` has run: the animator registers
 the Reduce Motion fade's curve, and code that plays the shared springs calls
 `registerSpringsTable()` before its first motion. The animator resolves each
@@ -69,9 +71,8 @@ import {registerSpringsTable, springs} from '../motion/uikit';
 registerSpringsTable();
 
 const animator = createAnimator(sheet);
-// The animator plays a motion role (spec:AST-094 FR4), its table value while
-// touch motion stays internal (DEC-11); math on a spring reads the role with
-// resolveMotion.
+// The animator plays a motion role (spec:AST-094 FR4), its table value at the
+// theme's knobs; math on a spring reads the role with resolveMotion.
 const spring = springs.settle;
 
 // A drag writes one style per frame and never renders:
@@ -222,8 +223,12 @@ Chromium and WebKit on the phone profile.
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
   state.
-- A scope that sets `springs.settle`'s variable changes nothing: touch motion
-  stays internal (DEC-11), so the engine plays the table's spring there too.
+- A scope that sets `springs.settle`'s variable changes nothing: no role's own
+  variable retunes it (DEC-11), so the engine plays the table's spring there
+  too.
+- `__tests__/themeKnobs.interaction.browser.spec.ts`: a theme's or a rule's
+  tempo and character reach a spring inside nested themes, and reading them
+  forces no layout.
 
 ```
 pnpm test:interaction packages/core/src/motion

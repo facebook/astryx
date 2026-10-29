@@ -29,9 +29,10 @@ export interface ThemeMotionKnobs {
    */
   tempo?: number;
   /**
-   * `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own,
-   * `'expressive'` overshoots slightly on entrances and moves. Exits and
-   * fades keep their measured bounce. Default `'standard'`.
+   * `'crisp'` gives the entrance and move curves no overshoot and takes some
+   * bounce out of springs, `'standard'` is Astryx's own, and `'expressive'`
+   * overshoots slightly on entrances and moves and adds some bounce. Exits
+   * and fades keep their measured bounce. Default `'standard'`.
    */
   character?: MotionCharacter;
   /**

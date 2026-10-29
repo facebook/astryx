@@ -133,9 +133,10 @@
  * Roles: every spring and curve the animator plays passes through
  * resolveMotion.ts, which names the motion role it plays (`springs.settle`
  * once `registerSpringsTable()` has run, the Reduce Motion fade's curve,
- * which the animator registers alone). While touch motion stays internal
- * (`spec:AST-094` DEC-11), a role plays its table value: nothing reads a CSS
- * variable or the element's style for it. A spring written inline at the call
+ * which the animator registers alone). A role plays its table value, moved
+ * by the theme's tempo and character (`spec:AST-094` DEC-15, `spec:AST-108`
+ * FR3), which resolveMotion reads from the custom properties the theme writes;
+ * no role's own CSS variable retunes it (DEC-11). A spring written inline at the call
  * site, and a table never registered, play as given; the fade's length is not
  * a role.
  *
@@ -1941,7 +1942,7 @@ export function createAnimator(
     if (from === to && velocity === 0) {
       return null;
     }
-    // The motion role it plays: its table value while DEC-11 holds.
+    // The motion role it plays: its table value at the theme's knobs (FR3).
     const resolved = resolveMotion(target, spring);
     const curve = solveSpring(toSpring(resolved), {from, to, velocity});
     const duration = Math.min(

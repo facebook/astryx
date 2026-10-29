@@ -4,16 +4,17 @@
  * @file themeMotion.ts
  * @input A theme's motion configuration: the three knobs (`tempo`,
  *   `character`, `reducedMotion`), the existing `MotionScaleConfig`, or both
- * @output The resolved knobs, the motion tokens they generate, and
- *   `resolveThemeMotion`, the internal resolver the animator and server code
- *   read (`spec:AST-108` FR1, FR2, FR5, FR6)
+ * @output The resolved knobs, the motion tokens and knob properties they
+ *   generate, and `resolveThemeMotion`, the internal resolver server code
+ *   reads (`spec:AST-108` FR1, FR2, FR3, FR5, FR6)
  * @position Theme utility; consumed by resolveThemeValues.ts. Pure: no DOM,
  *   no import-time work, safe on the server.
  *
  * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
  * picks the entrance and move curves (and, in the animator, offsets a spring
- * role's bounce by its weight; the animator reads both from the theme's root,
- * motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
+ * role's bounce by its weight). A theme or rule that sets them writes
+ * `--_astryx-motion-tempo` and `--_astryx-motion-character`, which the
+ * animator reads where an element inherits them (motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
  * far motion-keyed adaptation rules, the press release fade and the animator
  * read the mark, not yet components' other Reduce Motion styles. `'system'`
  * follows each person's setting. With the defaults (tempo 1, `'standard'`,

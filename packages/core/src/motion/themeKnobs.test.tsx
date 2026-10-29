@@ -5,16 +5,18 @@
  * @input vitest (jsdom), React Testing Library, Theme and defineTheme, the
  *   springs and timing tables, resolveMotion, the motion animator and
  *   reducedMotionFade
- * @output Checks `spec:AST-108` FR3, FR4, FR5 and FR6 on the animator side,
- *   through a rendered Theme: a role's spring and duration follow the knobs
- *   of the theme the element is in (tempo scales the duration; character
- *   moves the bounce by the role's weight, never for an exit), a nested theme
- *   that sets no knob plays Astryx's own motion, finger-following motion
- *   never follows the knobs, a duration scale alone leaves the springs alone,
+ * @output Checks `spec:AST-108` FR3, FR4, FR5 and FR6 on the animator side:
+ *   the knobs are the custom properties an element carries, and a role's
+ *   spring and duration follow them (tempo scales the duration; character
+ *   moves the bounce by the role's weight, never for an exit),
+ *   finger-following motion never follows the knobs, a duration scale alone
+ *   leaves the springs alone,
  *   Astryx's own knobs give the table value itself, and a theme that reduces
  *   motion for everyone counts as the person's Reduce Motion setting
  * @position Testing; validates themeKnobs.ts and resolveMotion.ts against
- *   the attributes Theme.tsx writes
+ *   the properties a theme writes; inheritance into nested themes and
+ *   adaptation rules is checked in a browser
+ *   (__tests__/themeKnobs.interaction.browser.spec.ts)
  */
 
 import {cleanup, render} from '@testing-library/react';
@@ -76,7 +78,7 @@ function inTheme(name: string, motion?: DefineThemeInput['motion']) {
 
 const shape = (spring: SpringDescription) => durationBounceOf(toSpring(spring));
 
-describe('the knobs of the theme an element is in (FR6)', () => {
+describe('the knobs an element inherits from its theme (FR3, FR6)', () => {
   it('are Astryx\u2019s own outside a theme and in a theme that sets none', () => {
     const loose = document.createElement('div');
     document.body.append(loose);
