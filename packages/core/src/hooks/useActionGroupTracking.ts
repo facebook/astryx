@@ -6,9 +6,10 @@
  * @file useActionGroupTracking.ts
  * @input A ref to a group of sibling actions, the actions' selector, and the
  *   component's tracking constants
- * @output Exports useActionGroupTracking, ActionGroupTrackingOptions and
+ * @output Exports useActionGroupTracking, ActionGroupTrackingOptions,
  *   resolveNearestAction (the finger resolution every group whose targets
- *   grow shares)
+ *   grow shares) and POINTER_PRESS_ATTRIBUTE (the mark on the action a
+ *   pointer press began on)
  * @position Internal hook (not exported from the hooks entry): the long
  *   press that drives the shared action-group tracker
  *   (`hooks/actionGroupTracker.ts`) for a group a held pointer slides
@@ -126,6 +127,16 @@ const DISABLED = ':disabled, [aria-disabled="true"]';
 const NO_TARGETS: ReadonlyArray<ActionGroupTarget> = [];
 
 /**
+ * Marks the action a pointer press the group tracks began on, while that
+ * press runs. The press's `:active` stays on that action as the pointer
+ * slides away, so a tracked button's keyboard-press arms
+ * (`:active:focus-visible`, Button.tsx) step aside for it: a keyboard-focused
+ * action the press began on does not look pressed beside the one under the
+ * pointer (`family:action-groups` FR2).
+ */
+export const POINTER_PRESS_ATTRIBUTE = 'data-astryx-pointer-press';
+
+/**
  * The action under a finger: the nearest of the press's enabled actions whose
  * target, grown toward 44 px and clamped against its neighbours, holds the
  * point (utils/hitArea.ts `resolveHitTarget`). The disabled actions count as
@@ -208,6 +219,12 @@ export function useActionGroupTracking(
   // The group's disabled actions, read once when a finger's press begins,
   // for the caller's `resolveTarget`: nothing is read per move.
   const disabledRef = useRef(NO_TARGETS);
+  // The action the running pointer press began on, carrying the mark.
+  const markedRef = useRef<HTMLElement | null>(null);
+  const unmark = () => {
+    markedRef.current?.removeAttribute(POINTER_PRESS_ATTRIBUTE);
+    markedRef.current = null;
+  };
   const [tracker] = useState(() => {
     const resolveTarget = (
       x: number,
@@ -249,6 +266,7 @@ export function useActionGroupTracking(
     () => () => {
       tracker.cancel();
       tracker.dispose();
+      unmark();
     },
     [tracker, isEnabled],
   );
@@ -286,6 +304,8 @@ export function useActionGroupTracking(
               ? measureDisabled(ref.current, optionsRef.current.itemSelector)
               : NO_TARGETS;
           tracker.begin(x, y);
+          markedRef.current = tracker.beganOn;
+          markedRef.current?.setAttribute(POINTER_PRESS_ATTRIBUTE, '');
           break;
         }
         case 'changed': {
@@ -309,6 +329,7 @@ export function useActionGroupTracking(
               : beganOn != null && focusedBefore === beganOn;
           const lifted = tracker.end();
           disabledRef.current = NO_TARGETS;
+          unmark();
           // After the lift, focus does what a click on the lifted action does
           // (`family:action-groups` FR1): the lift runs that action's own
           // `click()`, which moves no focus, so focus moves to it, unless that
@@ -328,6 +349,7 @@ export function useActionGroupTracking(
         }
         case 'cancelled':
           disabledRef.current = NO_TARGETS;
+          unmark();
           tracker.cancel();
           break;
         case 'possible':

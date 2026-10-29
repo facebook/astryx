@@ -237,10 +237,16 @@ const elevationStyles = stylex.create({
  * through `data-astryx-press`. A mouse's bare `:active` would stay on the
  * button it went down on while the tracker lights another, so on a tracked
  * button only a keyboard press keeps `:active` (`:focus-visible`), and the
- * tracker's paint is the pointer's. The other arms are the overlay's own
+ * tracker's paint is the pointer's. A pointer press that starts on a
+ * keyboard-focused button marks it (`data-astryx-pointer-press`,
+ * hooks/useActionGroupTracking.ts) for the press, so the keyboard arm
+ * steps aside there too. The other arms are the overlay's own
  * (utils/interactionOverlay.stylex.ts `backgroundImage`), whose press
  * strength and paint variables this keeps reading.
  */
+/** `aria-haspopup` values of a trigger that keeps its own opening. */
+const MENU_POPUPS: ReadonlySet<string> = new Set(['true', 'menu', 'listbox']);
+
 const TRACKED_PRESSED_IMAGE = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 const TRACKED_HOVER_IMAGE = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
 const trackedStyles = stylex.create({
@@ -249,7 +255,7 @@ const trackedStyles = stylex.create({
       default: null,
       ':where(:not(:disabled,[aria-disabled="true"]))': {
         default: null,
-        ':active:focus-visible': {
+        ':active:focus-visible:where(:not([data-astryx-pointer-press]))': {
           default: TRACKED_PRESSED_IMAGE,
           '@media (pointer: coarse)': 'none',
         },
@@ -257,7 +263,8 @@ const trackedStyles = stylex.create({
           default: null,
           ':hover:where(:not(:disabled,[aria-disabled="true"]))':
             TRACKED_HOVER_IMAGE,
-          ':active:focus-visible': TRACKED_PRESSED_IMAGE,
+          ':active:focus-visible:where(:not([data-astryx-pointer-press]))':
+            TRACKED_PRESSED_IMAGE,
         },
         '[data-astryx-press="on"]': 'var(--_press-paint-image)',
         '[data-astryx-press="fading"]': 'var(--_press-paint-image)',
@@ -645,18 +652,16 @@ export function Button({
   const buttonGroup = useButtonGroup();
   const groupTracksPress = useButtonGroupTracksPress();
   // A group that tracks a held pointer across its buttons
-  // (`family:action-groups`) tracks this one, unless it opens a menu: a menu
-  // trigger keeps its own opening (`spec:AST-094` FR29) and the controller's
-  // press. A tracked button carries the group item marker, from its first
+  // (`family:action-groups`) tracks this one, unless it opens a menu (or a
+  // listbox, as a select-style trigger does): a menu keeps its own opening
+  // (`spec:AST-094` FR29) and the controller's press. A button that opens a
+  // dialog, a grid or a tree is an action like any other. A tracked button carries the group item marker, from its first
   // render, so the document press controller leaves its press to the group.
-  const opensPopup =
-    props['aria-haspopup'] != null &&
-    props['aria-haspopup'] !== false &&
-    props['aria-haspopup'] !== 'false';
+  const opensMenu = MENU_POPUPS.has(String(props['aria-haspopup']));
   // A caller that tracks its own group (an alert's actions, a toggle group's
   // buttons) spreads the marker on the button itself.
   const isGroupTracked =
-    (groupTracksPress && !opensPopup) || PRESS_GROUP_ITEM_ATTRIBUTE in props;
+    (groupTracksPress && !opensMenu) || PRESS_GROUP_ITEM_ATTRIBUTE in props;
   const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
