@@ -41,7 +41,7 @@ export const docs = {
           ['typography.scale', '--text-heading-*-size/weight/leading, --text-body-size/weight/leading', 'base (px), ratio'],
           ['typography.body/heading/code', '--font-family-body, --font-family-heading, --font-family-code', 'family, fallbacks?, url?, weight?'],
           ['radius', '--radius-inner, --radius-element, --radius-container, --radius-page, --radius-chat', 'base (px), multiplier (0–2)'],
-          ['motion', 'Every --duration-* token, --ease-entrance, --ease-move, and the springs of touch motion', 'tempo? (0.75–1.5), character? (crisp|standard|expressive), reducedMotion? (system|always); and/or a duration scale: fast (ms), medium (ms), ratio, slow?, easing?. The scale wins over tempo for the durations it sets. See {@link generic:motion}.'],
+          ['motion', 'Every --duration-* token, --ease-entrance and --ease-move (springs don\'t read them yet)', 'tempo? (0.75–1.5), character? (crisp|standard|expressive), reducedMotion? (system|always); and/or a duration scale: fast (ms), medium (ms), ratio, slow?, easing?. The scale wins over tempo for the durations it sets. See {@link generic:motion}.'],
         ]},
         {type: 'prose', text: 'For dark mode tuples in token values, see the Dark mode section of {@link generic:use-a-theme}.'},
       ],

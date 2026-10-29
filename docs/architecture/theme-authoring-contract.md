@@ -205,8 +205,9 @@ it, typed as that theme's listed names.
   field: a duration-scale field or knob the child leaves unset keeps its
   base's value. Each duration's
   value before `tempo` is kept for busy-indicator loops, which never follow
-  `tempo`. An adaptation rule may set `tempo` and `character`, never
-  `reducedMotion`.
+  `tempo`. `reducedMotion: 'always'` marks the theme's root, which only
+  motion-keyed adaptation rules read. An adaptation rule may set `tempo` and
+  `character`, never `reducedMotion`.
 
 This record does not own:
 
@@ -265,9 +266,11 @@ public surface belongs to
 ## Owning code
 
 - An internal, pure `resolveThemeMotion(theme)` returns a theme's motion
-  knobs, durations, easings, and role tables for the animator and for server
-  code; it touches no DOM and has no import-time side effects
-  (`spec:AST-108` FR6).
+  knobs, durations, and easings for the animator and for server code; it
+  touches no DOM and has no import-time side effects (`spec:AST-108` FR6).
+  FR6's role tables are accepted but unshipped: until they land, that part
+  of FR6 is current authority but not enforcement, and no spring reads the
+  knobs.
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
 - `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
