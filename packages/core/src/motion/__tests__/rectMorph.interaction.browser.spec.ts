@@ -304,9 +304,17 @@ async function trackAcrossSwitch(page: Page, restart: boolean) {
     {box: BOX, spring: SLOW, restart},
   );
   await page.waitForTimeout(100);
-  const tracked = (await trackMarker(page, await cast.stop())).filter(
+  const seen = (await trackMarker(page, await cast.stop())).filter(
     frame => frame.box != null,
   );
+  // A loaded page can open the screencast on the last frame composited before
+  // the present's first, with the box at rest; its step onto the path is not
+  // the switch. The present starts 240 px below rest, so the frames from the
+  // first one off the rest position on are the present's.
+  const onPath = seen.findIndex(
+    frame => (frame.box?.y ?? 0) > BOX.y + MARKER_INSET + 1,
+  );
+  const tracked = onPath < 0 ? seen : seen.slice(onPath);
   let rising = 0;
   let falling = 0;
   let worstStep = 0;
