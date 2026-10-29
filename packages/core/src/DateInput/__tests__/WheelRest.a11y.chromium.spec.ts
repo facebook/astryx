@@ -241,8 +241,13 @@ test('a meridiem change past the maximum turns the hour wheel onto it, frame by 
     };
     requestAnimationFrame(sample);
   });
-  // 10 PM is past the 5 PM maximum: the field clamps to it.
-  await meridiem.getByRole('option', {name: 'PM'}).tap();
+  // 10 PM is past the 5 PM maximum: the field clamps to it. A finger taps
+  // the PM row, one below the band (the options lie under the drawn rows,
+  // so the tap goes to the column's own recognizer, as a finger's does).
+  const pm = await meridiem
+    .getByRole('option', {name: 'PM'})
+    .evaluate(el => el.getBoundingClientRect().toJSON() as DOMRect);
+  await page.touchscreen.tap(pm.x + pm.width / 2, pm.y + pm.height / 2);
   await expect(field).toHaveValue('5:00 PM', {timeout: 3000});
   await expect(selectedHour(hours)).toHaveText('5');
   await sleep(1000);
