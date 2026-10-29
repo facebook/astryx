@@ -2,11 +2,10 @@
 
 /**
  * @file useTreeExpansionMotion.test.tsx
- * @input vitest, TreeList, a stubbed pointer (a finger, iOS and Android
- *   alike, or a mouse)
+ * @input vitest, TreeList, a stubbed pointer (a coarse primary pointer, or
+ *   a mouse)
  * @output Unit tests for the expansion's presence rules: with a mouse a
- *   collapse removes the children at once; under any finger (iOS and Android
- *   alike) they stay, inert and out of the arrow keys' reach, until they have
+ *   collapse removes the children at once; under a coarse primary pointer they stay, inert and out of the arrow keys' reach, until they have
  *   slid away, and an expand that interrupts the collapse keeps them; with no
  *   animated layout handle nothing outside the group moves, neither the rows
  *   after it in the tree nor the page content after the tree (both take their
@@ -78,8 +77,8 @@ const items: TreeListItemData[] = [
 ];
 
 /**
- * The page under a finger (a coarse primary pointer: one touch model, iOS
- * and Android alike) or a mouse.
+ * The page under a finger (a coarse primary pointer: one touch model) or a
+ * mouse.
  */
 function stubPointer(pointer: 'touch' | 'mouse') {
   vi.stubGlobal(

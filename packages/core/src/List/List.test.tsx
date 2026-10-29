@@ -1208,6 +1208,35 @@ describe('List and swipe actions', () => {
     expect(rowZ(row('Delegate')).touch).toEqual([]);
   });
 
+  it('raises nothing in a ListItem outside a List, where nothing isolates it: its touch band and a swipeable row take no z-index (spec:AST-027 FR1–FR2)', () => {
+    render(
+      <ul>
+        <ListItem
+          label="Outside"
+          onClick={() => {}}
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+      </ul>,
+    );
+    const {touch} = touchGatedRules(screen.getByText('Outside').closest('li')!);
+    // It keeps its touch target, the band past its box.
+    expect(
+      touch
+        .filter(rule => rule.slice(0, rule.indexOf('{')).includes('::after'))
+        .join('\n'),
+    ).toContain('position: absolute');
+    // But nothing it draws rises: not the band, not the row. (A press
+    // isolates the pressed row and orders its press layer inside it, which
+    // raises nothing past the row.)
+    expect(
+      touch.filter(
+        rule =>
+          rule.includes('z-index') &&
+          !rule.slice(0, rule.indexOf('{')).includes('[data-astryx-press'),
+      ),
+    ).toEqual([]);
+  });
+
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
     render(
       <List>

@@ -216,7 +216,7 @@ describe('useTouchHitArea', () => {
 });
 
 describe('touchHitAreaStyles.layer', () => {
-  it('is a coarse-only ::after grown on all four sides by the inset properties past the host’s border, the element as its clip-path hole, above later siblings, painting nothing, and the host starting no stacking context', () => {
+  it('is a coarse-only ::after grown on all four sides by the inset properties past the host’s border, the element as its clip-path hole, with no z-index of its own, painting nothing, and the host starting no stacking context', () => {
     render(<Host enabled={false} />);
     const {touch, other} = afterRules(screen.getByTestId('host'));
     const layer = touch.join('\n');
@@ -232,9 +232,9 @@ describe('touchHitAreaStyles.layer', () => {
       expect(layer).toContain(`var(${HIT_INSET_PROPERTIES[side]}`);
     }
     expect(layer).toMatch(/clip-path: polygon\(evenodd/);
-    // Above the content after the host, which would otherwise hit-test over
-    // the band.
-    expect(layer).toMatch(/z-index: 1/);
+    // No z-index of its own: what bounds a raise is the host's container's
+    // call (a List raises its rows' layers and isolates them, ListItem).
+    expect(layer).not.toMatch(/z-index/);
     // It paints nothing: no paint declaration of its own.
     expect(layer).not.toMatch(
       /[{;]\s*(?:background|border|box-shadow|outline|isolation)[\w-]*\s*:/,

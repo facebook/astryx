@@ -4,8 +4,8 @@
  * @file list.ts
  * @input `timing` (the press clocks the touch press model measured)
  * @output Exports `list`: the clocks and curves of UITableView and
- *   UICollectionView list cells (the cell highlight's release, the springs
- *   of list updates and outline expansion)
+ *   UICollectionView list cells (the cell highlight's release and the
+ *   outline expansion's spring)
  * @position The list domain of the UIKit constants table (motion/uikit);
  *   read by the row press layer (utils/rowPressLayer.ts,
  *   `rowPressLayerStyles.cell`) through its build-time mirror,
@@ -61,14 +61,5 @@ export const list = {
      *   the children, the rows below, the clip and the chevron), Oct 23 2026
      */
     outlineSpring: {mass: 1, stiffness: 631.655, damping: 50.265},
-    /**
-     * A table's row updates: insert, delete, move and reload (`.automatic`
-     * and `.fade`), batch updates, editing's slide-in and self-sizing
-     * growth (critically damped, response 0.3 s, 0.441 s to settle).
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
-     *   17 Pro, CAAnimation dump (CASpringAnimation m1 k438.649 c41.888),
-     *   Oct 23 2026
-     */
-    tableSpring: {mass: 1, stiffness: 438.649, damping: 41.888},
   },
 } as const;
