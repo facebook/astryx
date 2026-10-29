@@ -328,6 +328,29 @@ describe('an explicit --ease-standard (spec:AST-108 FR2)', () => {
       expect(theme.tokens['--ease-move'], JSON.stringify(motion)).toBe(curve);
       expect(resolveThemeMotion(theme).easings['--ease-entrance']).toBe(curve);
     }
+    // A child, and a rule, that set 'standard' match the --ease-standard
+    // beneath them: the base's, or the theme's.
+    const base = defineTheme({
+      name: 'EaseBase',
+      tokens: {'--ease-standard': curve},
+    });
+    const standard = {character: 'standard' as const};
+    const child = defineTheme({
+      name: 'EaseChild',
+      extends: base,
+      motion: standard,
+    });
+    const ruled = defineTheme({
+      name: 'EaseRule',
+      tokens: {'--ease-standard': curve},
+      adaptations: {
+        rules: [{when: {pointer: 'coarse'}, value: {motion: standard}}],
+      },
+    });
+    for (const tokens of [child.tokens, ruled.__adaptationRules?.[0]?.tokens]) {
+      expect(tokens?.['--ease-entrance']).toBe(curve);
+      expect(tokens?.['--ease-move']).toBe(curve);
+    }
   });
 });
 
