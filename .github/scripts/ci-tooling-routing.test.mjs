@@ -154,7 +154,6 @@ describe('Node-tooling CI routing', () => {
       expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
     }
 
-    expect(ci.jobs['build-sandbox'].if).toContain(TOOLING_FALSE);
     for (const candidate of [
       ...ci.jobs['build-storybook'].steps,
       ...ci.jobs.typecheck.steps,
@@ -184,11 +183,7 @@ describe('Node-tooling CI routing', () => {
       'test-native-swift',
       'pr-interaction',
     ]);
-    expect(ci.jobs.build.needs).toEqual([
-      'build-storybook',
-      'build-sandbox',
-      'typecheck',
-    ]);
+    expect(ci.jobs.build.needs).toEqual(['build-storybook', 'typecheck']);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
     expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
@@ -208,8 +203,10 @@ describe('Node-tooling CI routing', () => {
       ci.jobs.build,
       'Assert parallel builds succeeded',
     ).run;
-    expect(buildJoin).toContain('needs.build-storybook.result');
-    expect(buildJoin).toContain('needs.build-sandbox.result');
+    expect(buildJoin).toContain(
+      '[ "${{ needs.build-storybook.result }}" = "success" ] || exit 1',
+    );
+    expect(buildJoin).not.toContain('build-sandbox');
     expect(buildJoin).toContain(
       '[ "${{ needs.typecheck.result }}" = "success" ] || exit 1',
     );
