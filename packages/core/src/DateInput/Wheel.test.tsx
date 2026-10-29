@@ -20,6 +20,7 @@ import {
   Wheel,
   type WheelOption,
 } from './Wheel';
+import {SCROLL_QUIET_MS} from './useScrollSettle';
 
 const ROW = 28;
 
@@ -144,6 +145,23 @@ describe('Wheel — where it comes to rest', () => {
     const {onChange, scrollTo, stopOn} = renderWheel(8);
     stopOn(8);
     expect(scrollTo).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('turns onto a value set while it is shown, as a bound clamping the time after another wheel turned (component:DateInput FR13)', () => {
+    // 22:00 past a 17:00 maximum: the field clamps to 17:00, and the hour
+    // wheel, at rest on 22, turns onto 17 as UIDatePicker's does; it never
+    // jumps there, and it commits nothing of its own.
+    const {onChange, scrollTo, rerender} = renderWheel(22);
+    scrollTo.mockClear();
+    rerender(
+      <Wheel label="Hour" options={HOURS} value={17} onChange={onChange} />,
+    );
+    expect(scrollTo).toHaveBeenCalledWith({top: 17 * ROW, behavior: 'smooth'});
+    expect(scrollTo).not.toHaveBeenCalledWith({
+      top: 17 * ROW,
+      behavior: 'auto',
+    });
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -340,6 +358,79 @@ describe('Wheel — where it comes to rest', () => {
         vi.advanceTimersByTime(animate.mock.calls[0][1].duration / 2);
       });
       expect(scrollTo).toHaveBeenCalledWith({top: 9 * ROW, behavior: 'auto'});
+    });
+
+    /** A primary mouse press, move or release, as usePointerDragScroll reads it. */
+    const mouse = (type: string, y: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperties(event, {
+        clientY: {value: y},
+        pointerId: {value: 1},
+        pointerType: {value: 'mouse'},
+        button: {value: 0},
+      });
+      return event;
+    };
+
+    /** jsdom has no pointer capture, which a mouse drag takes. */
+    const capturable = (scroller: HTMLElement) => {
+      scroller.setPointerCapture = () => {};
+      scroller.releasePointerCapture = () => {};
+      scroller.hasPointerCapture = () => true;
+    };
+
+    it('travels at once after a mouse drag that follows a touch, on a fine pointer', () => {
+      // usePointerDragScroll keeps a primary mouse press from bubbling (it must
+      // not reach BottomSheet's own drag), so the wheel reads the pointer on
+      // the way down, before that.
+      stubReducedMotion('fine');
+      vi.useFakeTimers();
+      const {scrollTo, stopOn} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      capturable(scroller);
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerdown', 200));
+        // Pulled down three rows: 7, below the minimum.
+        scroller.dispatchEvent(mouse('pointermove', 200 + 3 * ROW));
+        scroller.dispatchEvent(mouse('pointerup', 200 + 3 * ROW));
+      });
+      stopOn(7);
+      expect(animate).not.toHaveBeenCalled();
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 9 * ROW,
+        behavior: 'auto',
+      });
+    });
+
+    it('waits for a mouse drag’s release before travelling back inside the bounds', () => {
+      // Each scrollTop the drag assigns ends in its own scrollend in Chromium,
+      // and the hand can pause with the button down: neither is rest.
+      stubReducedMotion('fine');
+      vi.useFakeTimers();
+      const {scrollTo, onChange} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      capturable(scroller);
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerdown', 200));
+        scroller.dispatchEvent(mouse('pointermove', 200 + 3 * ROW));
+        scroller.dispatchEvent(new Event('scroll'));
+        scroller.dispatchEvent(new Event('scrollend'));
+        vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+      });
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(onChange).not.toHaveBeenCalled();
+      act(() => {
+        scroller.dispatchEvent(mouse('pointerup', 200 + 3 * ROW));
+        scroller.dispatchEvent(new Event('scrollend'));
+      });
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 9 * ROW,
+        behavior: 'auto',
+      });
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('travels at once after a trackpad scroll that follows a touch, on a fine pointer', () => {
