@@ -75,11 +75,67 @@ export interface WheelProps {
   /**
    * The row the wheel rests on after stopping on `index`. When it differs,
    * the wheel turns on to it and commits that one. Under a finger only.
-   * @default the nearest enabled row (`nearestEnabledIndex`)
+   * @default the nearest enabled row, around the seam on a loop (`restingStep`)
    */
   resolveRest?: (index: number) => number;
   /** Programmatic turns: `spinTo(index)`. */
   ref?: Ref<WheelHandle>;
+}
+
+/**
+ * The shorter signed number of rows from `from` to `to` around a loop of
+ * `count` rows; a tie (exactly half a turn) goes forward.
+ */
+export function loopStep(from: number, to: number, count: number): number {
+  const ahead = (((to - from) % count) + count) % count;
+  return ahead <= count / 2 ? ahead : ahead - count;
+}
+
+/**
+ * How many rows, signed, a wheel resting on row `index` travels to the
+ * nearest enabled row: 0 when `index` is enabled. A tie goes toward
+ * `towardIndex` (the committed row). On a looping wheel distance runs around
+ * the seam, so a rest beside it turns the shorter way round and never the
+ * long way across the list. A wheel with no enabled row travels to
+ * `towardIndex`.
+ *
+ * @example
+ * ```
+ * // Months, looping, with only January and February enabled: a rest on
+ * // December turns one row on to January, not ten back to February.
+ * restingStep(monthOptions, 11, 0, true); // 1
+ * ```
+ */
+export function restingStep(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  towardIndex: number,
+  isLooping: boolean = false,
+): number {
+  const count = options.length;
+  if (!isLooping || count === 0) {
+    return nearestEnabledIndex(options, index, towardIndex) - index;
+  }
+  const isEnabled = (i: number) =>
+    !options[((i % count) + count) % count].isDisabled;
+  if (isEnabled(index)) {
+    return 0;
+  }
+  const toward = loopStep(index, towardIndex, count);
+  for (let distance = 1; distance <= count / 2; distance++) {
+    const isBelowEnabled = isEnabled(index - distance);
+    const isAboveEnabled = isEnabled(index + distance);
+    if (isBelowEnabled && isAboveEnabled) {
+      return toward < 0 ? -distance : distance;
+    }
+    if (isBelowEnabled) {
+      return -distance;
+    }
+    if (isAboveEnabled) {
+      return distance;
+    }
+  }
+  return toward;
 }
 
 /**
