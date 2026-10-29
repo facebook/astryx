@@ -116,7 +116,7 @@ Then open the package's trusted-publisher settings on npmjs.com
 (`https://www.npmjs.com/package/<name>/access`) and confirm the
 `meta/astryx` `release.yml` entry allows `npm publish`, not only
 `npm stage publish`. The same page is the manual path when the script cannot
-finish: add a GitHub Actions publisher with owner `facebook`, repository
+finish: add a GitHub Actions publisher with owner `meta`, repository
 `astryx`, workflow `release.yml`, no environment, and `npm publish` allowed.
 
 npm expires a new trusted publisher that no publish has validated within 48

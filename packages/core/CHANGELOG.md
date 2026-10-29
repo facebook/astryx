@@ -3459,7 +3459,7 @@ Thanks to everyone who contributed to this release:
   `height: '100%'`. With no sized parent, the skeleton collapsed to a zero-size
   (invisible) element. The doc now sets a `playground.defaults` of
   `width: 320` / `height: 80` so the shimmer placeholder renders visibly.
-- Update stale `facebookexperimental/xds` doc/JSDoc links to the current `meta/astryx` namespace in source comments (theme/syntax `@see` references). The old org 301-redirects, so these weren't broken — just stale — and this matches the canonical org used elsewhere
+- Update stale `facebookexperimental/xds` doc/JSDoc links to the then-current `facebook/astryx` namespace in source comments (theme/syntax `@see` references). The old org 301-redirects, so these weren't broken — just stale — and this matches the canonical org used elsewhere
 - Document Table's `verticalAlign` and `textOverflow` props, which were supported by the component but missing from the docsite properties tab
 - Document TabList's `layout` prop ('hug' | 'fill') for tab sizing, which was supported by the component but missing from the docsite properties tab
 - Document Text's `justify` prop, which was supported by the component but missing from the docsite properties tab (same omission previously fixed for Heading) (#2847-adjacent)
