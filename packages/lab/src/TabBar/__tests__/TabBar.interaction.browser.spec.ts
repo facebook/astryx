@@ -304,15 +304,27 @@ test('a finger landing before the last lift reaches the app keeps the lens headi
   const profile = await itemCenter(page, 'Profile');
   const library = await itemCenter(page, 'Library');
   const sampling = sampleRects(lensBody(page), 1400);
-  // A tap on Profile, then a finger held on Library from 20 ms after that
+  // A tap on Profile, then a finger held on Library from right after that
   // lift: inside the frames before the tap's choice reaches the app, which
-  // then moves the lens's resting place under the held finger.
-  await driver.play([
-    {t: 0, fingers: [{id: 0, ...profile}]},
-    {t: 60, fingers: []},
-    {t: 80, fingers: [{id: 1, ...library}]},
-    {t: 580, fingers: []},
-  ]);
+  // then moves the lens's resting place under the held finger. The events go
+  // back to back (no wall-clock gap a loaded box could stretch); the hold
+  // is a wait after the landing.
+  await driver.play(
+    [
+      {t: 0, fingers: [{id: 0, ...profile}]},
+      {t: 60, fingers: []},
+      {t: 80, fingers: [{id: 1, ...library}]},
+      {t: 580, fingers: []},
+    ],
+    {
+      realtime: false,
+      onEvent: async (_step, index) => {
+        if (index === 2) {
+          await page.waitForTimeout(500);
+        }
+      },
+    },
+  );
   await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
   const samples = (await sampling).flatMap(sample =>
     sample.box == null
