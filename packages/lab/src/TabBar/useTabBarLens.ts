@@ -64,8 +64,7 @@
  * compositor; a finger's moves retarget them, so the lens keeps moving
  * through a busy main thread. Under Reduce Motion the animator cross-fades
  * instead of moving and a press scales nothing (design:reduced-motion).
- * Each spring is handed to the animator as a table entry, so it plays as the
- * theme sets its motion role.
+ * Each spring plays as measured, from the UIKit table.
  *
  * Under a fine pointer (a mouse, a pen, or a finger on a screen whose primary
  * pointer is fine) the same press drags the lens in the mouse presentation
@@ -150,6 +149,8 @@ interface Press {
   readonly box: {left: number; right: number; top: number; bottom: number};
   /** The press is off the bar: its release cancels (a fine pointer's). */
   isOff: boolean;
+  /** The number of tabs the press measured. */
+  readonly count: number;
 }
 
 export interface UseTabBarLensOptions {
@@ -219,8 +220,8 @@ export function useTabBarLens({
   onLift,
   isDisabled,
 }: UseTabBarLensOptions): TabBarLensRefs {
-  // The table's springs become motion roles (a theme may retune them)
-  // before this hook's first animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isTouch) {
     registerTabBarTable();
   }
@@ -428,6 +429,7 @@ export function useTabBarLens({
         bottom: rootBox.top + element.offsetTop + element.offsetHeight,
       },
       isOff: false,
+      count,
     };
     // A fine pointer: nothing moves until the press drags.
     if (!isTouch) {
@@ -513,7 +515,7 @@ export function useTabBarLens({
     playCopy(at);
   };
 
-  const end = (isCancelled: boolean) => {
+  const end = (wasCancelled: boolean) => {
     const press = pressRef.current;
     pressRef.current = null;
     const selected = selectedRef.current;
@@ -521,6 +523,10 @@ export function useTabBarLens({
     if (press == null || press.isIgnored) {
       return;
     }
+    // The tab list changed under the press: its centres name the old list,
+    // so it ends as a cancel and the lens settles to its resting place.
+    const isStale = press.count !== count;
+    const isCancelled = wasCancelled || isStale;
     if (press.isFine) {
       // The release chooses the item nearest the press, a click's too: the
       // host swallows the browser's click for a press a recognizer took. The
@@ -554,7 +560,7 @@ export function useTabBarLens({
     const chosen = isChoosable ? nearest : selected;
     const at = performance.now();
     body.animator.animate(
-      {x: press.centers[chosen] - press.centers[selected]},
+      {x: isStale ? 0 : press.centers[chosen] - press.centers[selected]},
       {spring: tabBar.lensSettle},
       {at, touchRelease: true},
     );
@@ -735,6 +741,16 @@ export function useTabBarLens({
     return () => observer.disconnect();
   }, [isMinimized, capsuleRef, body, count]);
 
+  // The tab list changed under a held finger: the press ends here, as a
+  // cancel, rather than at the lift, so no move chases the old centres.
+  useLayoutEffect(() => {
+    if (pressRef.current != null && pressRef.current.count !== count) {
+      endRef.current(true);
+    }
+  }, [count]);
+
+  // Synchronizes the lens's compositor animations (the animator's Web
+  // Animations on its body and copy) with the selected tab.
   // A new selection: the resting place jumped to the new item (CSS, this
   // frame); the body starts where the lens was on screen. After a lift it
   // continues the settle the lift started; otherwise it slides from rest.

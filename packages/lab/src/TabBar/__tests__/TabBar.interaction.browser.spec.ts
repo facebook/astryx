@@ -53,6 +53,7 @@ import {
   releaseAnimations,
   sampleCurve,
   sampleRects,
+  seekAnimations,
   springStep,
   startScreencast,
   Storyboard,
@@ -318,15 +319,27 @@ test('a finger landing before the last lift reaches the app keeps the lens headi
   const profile = await itemCenter(page, 'Profile');
   const library = await itemCenter(page, 'Library');
   const sampling = sampleRects(lensBody(page), 1400);
-  // A tap on Profile, then a finger held on Library from 20 ms after that
+  // A tap on Profile, then a finger held on Library from right after that
   // lift: inside the frames before the tap's choice reaches the app, which
-  // then moves the lens's resting place under the held finger.
-  await driver.play([
-    {t: 0, fingers: [{id: 0, ...profile}]},
-    {t: 60, fingers: []},
-    {t: 80, fingers: [{id: 1, ...library}]},
-    {t: 580, fingers: []},
-  ]);
+  // then moves the lens's resting place under the held finger. The events go
+  // back to back (no wall-clock gap a loaded box could stretch); the hold
+  // is a wait after the landing.
+  await driver.play(
+    [
+      {t: 0, fingers: [{id: 0, ...profile}]},
+      {t: 60, fingers: []},
+      {t: 80, fingers: [{id: 1, ...library}]},
+      {t: 580, fingers: []},
+    ],
+    {
+      realtime: false,
+      onEvent: async (_step, index) => {
+        if (index === 2) {
+          await page.waitForTimeout(500);
+        }
+      },
+    },
+  );
   await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
   const samples = (await sampling).flatMap(sample =>
     sample.box == null
@@ -445,6 +458,43 @@ test('a bar removed as the finger lifts reports nothing after it is gone', async
   expect(log.filter(entry => entry !== '(removed)')).toEqual(
     log.length > 1 ? ['library'] : [],
   );
+});
+
+test('a press ends without a choice when the tab list changes under it', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const {driver, bar} = await openBar(page, 'drops-last-tab');
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  const profile = await itemCenter(page, 'Profile');
+  await driver.play(tapScript(profile, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts; the app then drops Profile,
+      // the tab under the finger.
+      await waitForAnimation(bar);
+      await page.evaluate(() =>
+        window.dispatchEvent(new Event('tabbar:drop-last')),
+      );
+      await expect(tab(page, 'Profile')).toHaveCount(0);
+    },
+  });
+  await page.waitForTimeout(400);
+  expect(errors).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    ),
+  ).toEqual([]);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  // The lens settled back onto Home, in the three-tab bar.
+  const home = await itemCenter(page, 'Home');
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(1);
 });
 
 test('the bar sets no page-level stacking rank: its layers order inside it', async ({
@@ -989,18 +1039,22 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
   );
   const {driver} = await openBar(page);
   const body = lensBody(page);
-  const cast = await startScreencast(page);
-  await driver.tap(await itemCenter(page, 'Profile'));
+  const profile = await itemCenter(page, 'Profile');
   await markElement(body);
-  const [slide] = await waitForAnimation(body, {minProgressMs: 16});
-  // Blocked by the page itself in the frame that sees the slide running.
-  const block = await blockMainThread(page, 600, {during: body});
+  const cast = await startScreencast(page);
+  // Armed before the tap, the page blocks itself in the frame that sees the
+  // slide running: one evaluate sees it and blocks, so no runner latency
+  // between the two can eat the slide first. The judged part ends where the
+  // lens settles (settledWithin).
+  const blocking = blockMainThread(page, 600, {during: body});
+  await driver.tap(profile);
+  const block = await blocking;
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
-    {from: block.from, to: Math.min(block.to, slide.to)},
+    {from: block.from, to: block.to},
     {
       axis: 'x',
       settledWithin: 2,
@@ -1012,7 +1066,7 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     'busy-main-thread/tabbar-lens-travel',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, slide, proof},
+        {block, proof},
         null,
         1,
       ),
@@ -1023,12 +1077,12 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     name: 'tabbar-lens-travel-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, slide.to) + 40,
+    to: proof.judged.to + 40,
     columns: 8,
     cellScale: 0.35,
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
-  await film.write(testInfo, {block, slide});
+  await film.write(testInfo, {block});
   // The harness's verdict: no stall past two dropped screencast frames,
   // and the frames moving (a loaded machine drops a frame
   // or two; a frozen slide presents none).
@@ -1773,13 +1827,13 @@ async function scrollByFinger(
   page: Page,
   driver: TouchDriver,
   dy: number,
-  {settle = true}: {settle?: boolean} = {},
+  {settle = true, restMs}: {settle?: boolean; restMs?: number} = {},
 ) {
   const from = {x: 200, y: dy > 0 ? 520 : 160};
   const to = {x: from.x, y: from.y - dy};
   const script = drag(from, to, {
     durationMs: Math.max(160, Math.abs(dy) * 3),
-    restMs: settle ? 150 : 0,
+    restMs: restMs ?? (settle ? 150 : 0),
   });
   if (driver.drivesNativeGestures) {
     await driver.play(script);
@@ -1931,6 +1985,62 @@ test.describe('minimize on scroll', () => {
     await scrollByFinger(page, driver, -400);
     expect(await pageScroll(page)).toBe(0);
     await expect.poll(() => isMinimized(page)).toBe(false);
+  });
+
+  test('expanded by a tap, the bar minimizes again only after another 66 px down', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    // Less than the distance down: still expanded.
+    const from = await pageScroll(page);
+    await scrollByFinger(page, driver, 40);
+    expect((await pageScroll(page)) - from).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    // The rest of the distance minimizes it again.
+    await scrollByFinger(page, driver, 60);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('where the browser sends no scrollend, the watch ends with the person’s scroll: a script’s scroll after it counts for nothing', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      // A browser without scrollend: no handler property to detect, and
+      // no event delivered.
+      // (On the global object the handler is an own property.)
+      for (const target of [
+        window,
+        Window.prototype,
+        Document.prototype,
+        Element.prototype,
+        HTMLElement.prototype,
+      ]) {
+        delete (target as unknown as {onscrollend?: unknown}).onscrollend;
+      }
+      window.addEventListener(
+        'scrollend',
+        event => event.stopImmediatePropagation(),
+        {capture: true},
+      );
+    });
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    expect(await page.evaluate(() => 'onscrollend' in window)).toBe(false);
+    await scrollByFinger(page, driver, 40);
+    expect(await isMinimized(page)).toBe(false);
+    // Past the reader's fallback after the last scroll event.
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollBy(0, 120));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBeGreaterThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
   });
 
   test('a script scrolling the page to the top leaves it minimized', async ({
@@ -2290,19 +2400,22 @@ test.describe('minimize on scroll', () => {
     const end = page.locator('[data-tab-bar-platter-end]');
     await markElement(end);
     const cast = await startScreencast(page);
-    // Just past the trigger, then block as soon as the collapse is running.
+    // Armed before the drag, the page blocks itself in the frame that sees
+    // the collapse running: one evaluate sees it and blocks, so no runner
+    // latency between the two can eat the collapse first. The judged part
+    // ends where the platter settles (settledWithin).
+    const blocking = blockMainThread(page, 600, {during: end});
+    // Just past the trigger.
     await driver.play(
       drag({x: 200, y: 520}, {x: 200, y: 420}, {durationMs: 300, restMs: 150}),
     );
-    const [collapse] = await waitForAnimation(end, {minProgressMs: 16});
-    // Blocked by the page itself in the frame that sees the collapse running.
-    const block = await blockMainThread(page, 600, {during: end});
+    const block = await blocking;
     await page.waitForTimeout(150);
     const castFrames = await cast.stop();
     const tracked = await trackMarker(page, castFrames);
     const proof = busyWindowProof(
       tracked,
-      {from: block.from, to: Math.min(block.to, collapse.to)},
+      {from: block.from, to: block.to},
       {
         axis: 'x',
         settledWithin: 2,
@@ -2376,6 +2489,13 @@ test(
 /** uikit/tabBar.ts: the accessory's springs. */
 const ACCESSORY_COLLAPSE = {response: 0.405, dampingFraction: 0.745};
 const ACCESSORY_EXPAND = {response: 0.329, dampingFraction: 0.731};
+/** A spring step's rate of change at `t` ms, per second. */
+function stepRate(
+  spring: {response: number; dampingFraction: number},
+  t: number,
+): number {
+  return (springStep(spring, t + 0.5) - springStep(spring, t - 0.5)) * 1000;
+}
 
 const accessory = (page: Page) => page.locator('[data-tab-bar-accessory]');
 
@@ -2476,6 +2596,129 @@ test.describe('bottom accessory', () => {
     const back = await accessory(page).boundingBox();
     expect(back?.x ?? 0).toBeCloseTo(above.x, 0);
     expect(back?.y ?? 0).toBeCloseTo(above.y, 0);
+  });
+
+  test('expanding, its content stays inside its glass', async ({page}) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    await scrollByFinger(page, driver, 100);
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await page.waitForTimeout(1000);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await waitForAnimation(accessory(page));
+    await holdAnimations(page, accessory(page));
+    const overhangs: {t: number; overhang: number}[] = [];
+    for (const t of [0, 16.667, 50, 100, 140, 200, 300]) {
+      await seekAnimations(page, t);
+      const overhang = await accessory(page).evaluate(element => {
+        // The glass's trailing cap, and "Next" as it shows: its box cut by
+        // every clipping box between it and the accessory.
+        const glass = element.firstElementChild as HTMLElement;
+        const cap = (
+          glass.lastElementChild as HTMLElement
+        ).getBoundingClientRect();
+        const next = [...element.querySelectorAll('button')].find(
+          button =>
+            button.getAttribute('aria-label') === 'Next' ||
+            button.textContent === 'Next',
+        );
+        if (next == null) {
+          throw new Error('no Next');
+        }
+        let right = next.getBoundingClientRect().right;
+        for (
+          let node = next.parentElement;
+          node != null && node !== element.parentElement;
+          node = node.parentElement
+        ) {
+          if (getComputedStyle(node).overflow !== 'visible') {
+            right = Math.min(right, node.getBoundingClientRect().right);
+          }
+        }
+        return right - cap.right;
+      });
+      overhangs.push({t, overhang});
+    }
+    await releaseAnimations(page, {finish: true});
+    for (const {t, overhang} of overhangs) {
+      expect(overhang, JSON.stringify({t, overhangs})).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  test('turned around mid-move, it keeps its speed (spec:AST-094 FR6)', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    // The latest start among the accessory's running animations, on the
+    // document timeline: the animator sets each one.
+    const startOf = () =>
+      accessory(page).evaluate(element => {
+        const starts = element
+          .getAnimations()
+          .filter(
+            animation =>
+              animation.playState === 'running' && animation.startTime != null,
+          )
+          .map(animation => Number(animation.startTime));
+        return starts.length === 0 ? null : Math.max(...starts);
+      });
+    // Just past the trigger, the finger at rest long enough that the page
+    // doesn't fling (a tap on a flinging page only stops it), then the circle
+    // tapped at once: the turn comes while the accessory still moves.
+    await scrollByFinger(page, driver, 80, {settle: false, restMs: 100});
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await expect.poll(startOf).not.toBeNull();
+    const collapseStart = Number(await startOf());
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await expect.poll(startOf).toBeGreaterThan(collapseStart);
+    const turnedAt = Number(await startOf()) - collapseStart;
+    await holdAnimations(page, accessory(page));
+    const [first, second] = await sampleCurve(accessory(page), [0, 16.667]);
+    await releaseAnimations(page, {finish: true});
+    // The collapse ran from rest: at the turn it had covered this share of
+    // its distance, so the offset it turns from gives the distance, and its
+    // rate there gives its speed.
+    const share = springStep(ACCESSORY_COLLAPSE, turnedAt);
+    const collapseSpeed =
+      (first.transform.translateY / share) *
+      stepRate(ACCESSORY_COLLAPSE, turnedAt);
+    // The expand spring from that offset with that speed (a spring's answer
+    // to a starting speed is its step's rate over its natural rate squared).
+    const naturalRate = (2 * Math.PI) / ACCESSORY_EXPAND.response;
+    const predicted =
+      first.transform.translateY * (1 - springStep(ACCESSORY_EXPAND, 16.667)) +
+      (collapseSpeed * stepRate(ACCESSORY_EXPAND, 16.667)) / naturalRate ** 2;
+    expect(
+      Math.abs(second.transform.translateY - predicted),
+      JSON.stringify({first, second, turnedAt, collapseSpeed, predicted}),
+    ).toBeLessThan(0.5);
   });
 
   test('its content takes taps above the bar and inline, never choosing a tab', async ({
@@ -2775,8 +3018,10 @@ test.describe('search tab', () => {
       'active',
     );
     // Held as soon as the tap commits: in software-rendered WebKit the first
-    // frame of this many glass layers can take a second.
-    await holdAnimations(page);
+    // frame of this many glass layers can take a second. Only the field's own
+    // animations are held, so their start is the sampling origin, whatever
+    // frame the bar's other layers started in.
+    await holdAnimations(page, searchField(page));
     const times = Array.from({length: 31}, (_, i) => i * 16.667);
     const moved = await sampleCurve(searchField(page), times);
     const widened = await sampleCurve(searchFieldEnd(page), times);
@@ -2994,6 +3239,25 @@ test.describe('search tab', () => {
     );
   });
 
+  test('searching from a disabled tab, the leading circle holds the enabled tab nearest it and returns there', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-from-disabled-tab');
+    await tapSearch(page, driver);
+    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    const held = page.locator('[data-tab-bar-circle]');
+    await expect(held).toHaveAccessibleName('Library');
+    await waitForRest(lensBody(page));
+    const box = await held.boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+  });
+
   test('right to left, the search circle sits at the left end and the field spans from the right', async ({
     page,
   }) => {
@@ -3064,6 +3328,26 @@ test.describe('search tab', () => {
       await tab(page, 'Search').focus();
       await page.keyboard.press('Enter');
       await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+    });
+
+    test('searching from a disabled tab, Escape returns to the enabled tab nearest it, never the disabled one', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openStory(
+        page,
+        storybook(),
+        'lab-tabbar--search-from-disabled-tab',
+      );
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      await page.getByRole('tab', {name: 'Search'}).click();
+      await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(tab(page, 'Library')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'false');
     });
   });
 
@@ -3211,6 +3495,35 @@ test.describe('More tab', () => {
     expect(Math.abs((await lensCenterX(page)) - more.x)).toBeLessThan(0.5);
     await driver.tap(more);
     await expect(page.getByRole('heading', {name: 'More'})).toBeVisible();
+  });
+
+  test('right to left, the More list’s disclosure chevrons point left, as Core’s disclosure rows’ do', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'more-tab');
+    await rightToLeft(page);
+    await driver.tap(await itemCenter(page, 'More'));
+    await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
+    const settings = page.getByRole('button', {name: /Settings/});
+    await expect(settings).toBeVisible();
+    // The row's last glyph is its chevron (beside the label's button): flipped
+    // on it or a wrapper.
+    const transform = await settings.evaluate(button => {
+      const row = button.closest('li') ?? button;
+      const glyphs = [...row.querySelectorAll('svg')];
+      for (
+        let node: Element | null = glyphs[glyphs.length - 1] ?? null;
+        node != null && node !== row;
+        node = node.parentElement
+      ) {
+        const value = getComputedStyle(node).transform;
+        if (value !== 'none') {
+          return value;
+        }
+      }
+      return 'none';
+    });
+    expect(transform).toBe('matrix(-1, 0, 0, 1, 0, 0)');
   });
 
   test.describe('under a mouse', () => {
@@ -3437,6 +3750,36 @@ test.describe('search tab, active above the keyboard', () => {
     await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('Cancel back to the tab search was chosen from: the field holds above the keyboard until it is reported down (spec:AST-099 FR5)', async ({
+    page,
+  }) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+    await waitForRest(searchFieldEnd(page));
+    await showKeyboard(page);
+    const top = await page.evaluate(k => window.innerHeight - k, KEYBOARD);
+    const bottom = async () => {
+      await page.evaluate(
+        () =>
+          new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+      );
+      const host = await searchHost(page).boundingBox();
+      return host == null ? null : Math.round(host.y + host.height);
+    };
+    expect(await bottom()).toBe(Math.round(top - 8));
+    // The story's Cancel returns to the tab search was chosen from.
+    await page.getByRole('button', {name: 'Cancel'}).click();
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    // The keyboard is still up: the field keeps its place above it.
+    expect(await bottom()).toBe(Math.round(top - 8));
+    // Reported down, the hold ends and the bar is back.
+    await showKeyboard(page, 0);
+    await expect.poll(() => keyboardListeners(page)).toBe(0);
+    expect(await bottom()).not.toBe(Math.round(top - 8));
+  });
+
   test("in Chrome on Android the field reads the browser's own keyboard report while it has focus", async ({
     page,
   }) => {
@@ -3527,6 +3870,52 @@ test.describe('search tab, the cancel button', () => {
     expect(widths.at(-1)).toBeCloseTo(62 / 48, 1);
     // The lift ran the cancel: back on the tab search was chosen from.
     await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('search ending while it is still pressed plays the circle back: it rests at its own size, not pressed', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    const cancel = page.getByRole('button', {name: 'Cancel'});
+    await expect(cancel).toHaveAttribute('data-tab-bar-search-cancel', '');
+    const circleGlass = page.locator('[data-tab-bar-search] > span').first();
+    await waitForRest(page.locator('[data-tab-bar-search]'));
+    await waitForRest(circleGlass);
+    const box = await cancel.boundingBox();
+    if (box == null) {
+      throw new Error('no cancel button');
+    }
+    await driver.play(
+      tapScript(
+        {x: box.x + box.width / 2, y: box.y + box.height / 2},
+        {holdMs: 900},
+      ),
+      {
+        onEvent: async (_step, index) => {
+          if (index !== 0) {
+            return;
+          }
+          // Pressed, the circle grows; then Escape in the field ends search
+          // under the held finger.
+          await expect
+            .poll(async () => (await circleGlass.boundingBox())?.width ?? 0)
+            .toBeGreaterThan(55);
+          await page.getByRole('searchbox', {name: 'Search'}).press('Escape');
+          await expect(searchHost(page)).not.toHaveAttribute(
+            'data-tab-bar-search-field',
+            'active',
+          );
+        },
+      },
+    );
+    // It rests at its own size, not pressed (63.65 px collapsed, about 82 px
+    // once a bar that expands grows it): 48 px while the bar stays collapsed
+    // on the search tab, 62 px once it expands.
+    await waitForRest(page.locator('[data-tab-bar-search]'));
+    await waitForRest(circleGlass);
+    const size = (await isMinimized(page)) ? MINIMIZED_SIZE : 62;
+    expect((await circleGlass.boundingBox())?.width ?? 0).toBeCloseTo(size, 0);
   });
 
   test.describe('with Reduce Motion (design:reduced-motion)', () => {

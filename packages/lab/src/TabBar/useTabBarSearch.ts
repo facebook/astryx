@@ -37,6 +37,7 @@
  * the keyboard's height (AST-099 FR2, and Chrome's own report, FR8) and each
  * report is committed once, as an offset, with no ride (a Lab surface,
  * INV11). Cancelling keeps that place until the keyboard is reported down
+ * (also when the cancel returns to the tab search was chosen from)
  * (FR5). Deactivating plays the morph back; leaving the search tab fades the
  * field out and the circle back in. These moves run on
  * UIKit's springs, under a finger only: under a mouse the search tab selects
@@ -74,7 +75,7 @@ export interface UseTabBarSearchOptions {
   readonly hostRef: RefObject<HTMLElement | null>;
   /** The search tab is selected. */
   readonly isSearching: boolean;
-  /** The search field is active (above the keyboard). */
+  /** The search field is active (widened to span the screen). */
   readonly isActive: boolean;
   /**
    * A finger drives the bar: only then does the field move (on UIKit's
@@ -125,8 +126,8 @@ export function useTabBarSearch({
   isTouch,
   glassHoldRef,
 }: UseTabBarSearchOptions): TabBarSearch {
-  // The table's springs become motion roles (a theme may retune them)
-  // before this hook's first animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isTouch) {
     registerTabBarTable();
   }
@@ -199,60 +200,71 @@ export function useTabBarSearch({
   useLayoutEffect(() => {
     pressTargetRef.current = isCancel ? cancelElementRef.current : null;
   });
-  usePressTracker(pressTargetRef, {
-    onHighlightChange: isPressed => {
-      const options = {touchRelease: !isPressed};
-      if (circle.animator.reducedMotion(options) !== 'off') {
-        return;
-      }
-      const now = performance.now();
-      const velocity = circle.animator.getVelocity('scale', now);
-      const handle = circle.animator.animate(
-        {
-          scale: isPressed
-            ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
-            : 1,
-        },
-        {
-          spring: isPressed
-            ? tabBar.searchCancelPress
-            : tabBar.searchCancelReturn,
-          velocity: {scale: velocity},
-        },
-        options,
-      );
-      if (!isPressed) {
-        const wobble = handle.curve('scale');
-        glassHoldRef.current = now + (wobble?.duration ?? 0) * 1000;
-      }
-    },
-  });
+  // Whether the circle shows the press: a search ending under the press
+  // (Escape in the field, say) takes the tracker's target with no release,
+  // so the circle's return then plays from the effect below.
+  const isPressedRef = useRef(false);
+  const playPress = (isPressed: boolean) => {
+    isPressedRef.current = isPressed;
+    const options = {touchRelease: !isPressed};
+    if (circle.animator.reducedMotion(options) !== 'off') {
+      return;
+    }
+    const now = performance.now();
+    const velocity = circle.animator.getVelocity('scale', now);
+    const handle = circle.animator.animate(
+      {
+        scale: isPressed
+          ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
+          : 1,
+      },
+      {
+        spring: isPressed
+          ? tabBar.searchCancelPress
+          : tabBar.searchCancelReturn,
+        velocity: {scale: velocity},
+      },
+      options,
+    );
+    if (!isPressed) {
+      const wobble = handle.curve('scale');
+      glassHoldRef.current = now + (wobble?.duration ?? 0) * 1000;
+    }
+  };
+  usePressTracker(pressTargetRef, {onHighlightChange: playPress});
+  const playPressRef = useRef(playPress);
+  playPressRef.current = playPress;
+  useLayoutEffect(() => {
+    if (!isCancel && isPressedRef.current) {
+      playPressRef.current(false);
+    }
+  }, [isCancel]);
 
   // Where the active field and its cancel button sit: above the keyboard as
   // of its last report, read once per report and committed as an offset (no
   // ride). After a cancel the place holds until the keyboard is reported
-  // down, so nothing jumps while it goes (AST-099 FR5).
+  // down, so nothing jumps while it goes (AST-099 FR5), also when the cancel
+  // returns to the tab search was chosen from, as the docs advise.
   // Measured only from the field's activation until the keyboard is
-  // reported down after it (one listener, while needed).
+  // reported down after it (one listener, while needed). The hold is
+  // adjusted during render (architecture:react-component-runtime INV1,
+  // INV3): set while the field is active, cleared once the keyboard is
+  // reported down after it.
+  const isFieldActive = isSearching && isActive;
   const [isHeld, setIsHeld] = useState(false);
-  const keyboardHeight = useKeyboardHeight(
-    isSearching && (isActive || isHeld),
-    hostRef,
-  );
-  useLayoutEffect(() => {
-    if (isSearching && isActive) {
-      setIsHeld(true);
-    } else if (keyboardHeight <= 0 || !isSearching) {
-      setIsHeld(false);
-    }
-  }, [isSearching, isActive, keyboardHeight]);
+  const keyboardHeight = useKeyboardHeight(isFieldActive || isHeld, hostRef);
+  if (isFieldActive && !isHeld) {
+    setIsHeld(true);
+  } else if (!isFieldActive && isHeld && keyboardHeight <= 0) {
+    setIsHeld(false);
+  }
   const [place, setPlace] = useState(REST);
   const placeRef = useRef(place);
   placeRef.current = place;
   useLayoutEffect(() => {
     const host = hostRef.current;
     const capsule = capsuleRef.current;
-    const isRaised = isSearching && (isActive || keyboardHeight > 0);
+    const isRaised = isFieldActive || (isHeld && keyboardHeight > 0);
     if (!isRaised || host == null || capsule == null) {
       setPlace(REST);
       return;
@@ -272,7 +284,7 @@ export function useTabBarSearch({
         ? previous
         : {lift, shift},
     );
-  }, [isSearching, isActive, keyboardHeight, hostRef, capsuleRef]);
+  }, [isFieldActive, isHeld, isActive, keyboardHeight, hostRef, capsuleRef]);
 
   // Activating (or not): the field's box changed in CSS this frame; its
   // glass starts where it was and springs to rest, squashing as it starts.
