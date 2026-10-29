@@ -30,14 +30,16 @@
  * The layer is clipped to the band past the host's own box (an even-odd clip
  * path whose hole is the host), so the host's content and its own controls
  * keep their taps, and a tap in the band resolves to the host. The layer
- * itself is above the content after the host (`z-index: 1`): a later sibling
- * that is positioned with no z-index (the next list row) would otherwise
- * paint and hit-test over the band. The host stays as it was, with no
- * isolation and no z-index of its own: a list row's press layer
- * (utils/rowPressLayer.ts) relies on a row at rest being no stacking context.
- * A host that is a stacking context anyway (a swipeable list row) orders the
- * layer only inside itself, so it raises itself instead (ListItem). The
- * host's container bounds what rises: a List isolates its rows, so they stay
+ * takes no z-index of its own: a later sibling that is positioned with no
+ * z-index (the next list row) paints and hit-tests over it, so a host whose
+ * container isolates its children raises it there (ListItem inside a List
+ * gives it `z-index: 1`), and a host outside such a container raises
+ * nothing, so its band never passes a page-level sticky header. The host
+ * stays as it was, with no isolation and no z-index of its own: a list row's
+ * press layer (utils/rowPressLayer.ts) relies on a row at rest being no
+ * stacking context. A host that is a stacking context anyway (a swipeable
+ * list row) orders the layer only inside itself, so it raises itself instead
+ * (ListItem). The host's container bounds what rises: a List isolates its rows, so they stay
  * below a page-level sticky header. The layer paints nothing. With a mouse
  * none of it applies.
  *
@@ -65,7 +67,6 @@ export const touchHitAreaStyles = stylex.create({
     '::after': {
       content: {default: null, [TOUCH]: '""'},
       position: {default: null, [TOUCH]: 'absolute'},
-      zIndex: {default: null, [TOUCH]: 1},
       top: {
         default: null,
         [TOUCH]:

@@ -377,14 +377,38 @@ describe('Item', () => {
     expect(followed).not.toHaveBeenCalled();
   });
 
-  it('follows the link on a tap in its own padding when the press was a finger’s, though the click says mouse (WebKit)', () => {
+  /** Runs `body` with the primary pointer coarse or fine. */
+  function withPrimaryPointer(coarse: boolean, body: () => void) {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: coarse && query === '(pointer: coarse)',
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    })) as unknown as typeof window.matchMedia;
+    try {
+      body();
+    } finally {
+      window.matchMedia = original;
+    }
+  }
+
+  it('decides a tap in a link row’s own padding by the primary pointer, not the pointer that made it (component:List FR10)', () => {
     const {followed, row} = linkRow();
-    fireEvent.pointerDown(row, {pointerType: 'touch'});
-    fireEvent.click(row, {clientX: 4, clientY: 30, detail: 1});
-    expect(followed).toHaveBeenCalledTimes(1);
-    // A mouse press after it: its click in the padding does nothing again.
-    fireEvent.pointerDown(row, {pointerType: 'mouse'});
-    fireEvent.click(row, {clientX: 4, clientY: 30, detail: 1});
+    // A fine primary pointer keeps today's target: a finger's tap in the
+    // padding (a touch screen beside a mouse) does nothing.
+    withPrimaryPointer(false, () => {
+      fireEvent.pointerDown(row, {pointerType: 'touch'});
+      fireEvent.click(row, {clientX: 4, clientY: 30, detail: 1});
+    });
+    expect(followed).not.toHaveBeenCalled();
+    // Under a coarse primary pointer the padding is part of the row's
+    // target, whatever pointer made the click (WebKit reports a finger's
+    // click as `mouse`).
+    withPrimaryPointer(true, () => {
+      fireEvent.pointerDown(row, {pointerType: 'mouse'});
+      fireEvent.click(row, {clientX: 4, clientY: 30, detail: 1});
+    });
     expect(followed).toHaveBeenCalledTimes(1);
   });
 
