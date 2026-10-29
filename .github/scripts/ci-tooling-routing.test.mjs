@@ -212,6 +212,25 @@ describe('Node-tooling CI routing', () => {
     );
   });
 
+  it('builds no Sandbox and builds Storybook once per pull-request run', () => {
+    // Vercel builds the Sandbox preview; nothing downloaded CI's copy.
+    expect(ci.jobs['build-sandbox']).toBeUndefined();
+    expect(ci.jobs['build-storybook'].outputs).not.toHaveProperty(
+      'sandbox_url',
+    );
+    const storybookBuilders = Object.entries(ci.jobs).flatMap(([name, job]) =>
+      (job.steps ?? [])
+        .filter(s =>
+          /storybook build|build-packages-and-storybook/.test(s.run ?? ''),
+        )
+        .filter(
+          s => !/^github\.event_name == 'workflow_dispatch'/.test(s.if ?? ''),
+        )
+        .map(() => name),
+    );
+    expect(storybookBuilders).toEqual(['build-storybook']);
+  });
+
   it('keeps removed preview publication out of the tooling lane', () => {
     expect(prComment.jobs.resolve.outputs.tooling_only).toContain(
       'steps.identity.outputs.tooling_only',
