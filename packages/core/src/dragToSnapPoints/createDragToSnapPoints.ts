@@ -125,8 +125,8 @@ export function createDragToSnapPoints(
   options: DragToSnapPointsOptions,
 ): DragToSnapPoints {
   const {axis, onSettle} = options;
-  let flickThreshold = options.flickThreshold ?? DEFAULT_FLICK_THRESHOLD;
-  let points = sortedSnapPoints(options.snapPoints);
+  const flickThreshold = options.flickThreshold ?? DEFAULT_FLICK_THRESHOLD;
+  const points = sortedSnapPoints(options.snapPoints);
   if (points.length === 0) {
     // Nothing to settle on: the drag does nothing (spec:AST-107 FR2).
     devWarn(
@@ -187,7 +187,6 @@ export function createDragToSnapPoints(
     );
     void handle.finished.then(arrived => {
       if (arrived && mine === turn && !destroyed) {
-        // The point it reached, renumbered if new snap points came mid-settle.
         onSettle(index);
       }
     });
@@ -271,56 +270,51 @@ export function createDragToSnapPoints(
       animator.dispose();
     },
   };
-  updates.set(snap, next => {
-    const nextPoints = sortedSnapPoints(next.snapPoints);
-    if (nextPoints.length === 0) {
-      return false;
-    }
-    if (destroyed) {
-      return true;
-    }
-    flickThreshold = next.flickThreshold ?? DEFAULT_FLICK_THRESHOLD;
-    const previous = points;
-    points = nextPoints;
-    const nearest = (offset: number) =>
-      resolveSnapPoint({points, position: offset, velocity: 0, flickThreshold})
-        .index;
-    if (drag != null) {
-      // The release decides; a cancel returns to the start's nearest point.
-      drag = {...drag, startIndex: nearest(previous[drag.startIndex])};
-    }
-    const target = previous[index];
-    index = nearest(target);
-    // The point it rests on or heads for is gone: on to the nearest one.
-    if (drag == null && points[index] !== target) {
-      settle(index, 0, false);
-    }
-    return true;
-  });
   return snap;
 }
 
-/** Each running drag's option update, for `updateDragToSnapPoints`. */
-const updates = new WeakMap<
-  DragToSnapPoints,
-  (
-    options: Pick<DragToSnapPointsOptions, 'snapPoints' | 'flickThreshold'>,
-  ) => boolean
->();
+/**
+ * The snap points as the factory uses them: the finite ones, ascending.
+ *
+ * @internal The hook maps `onSettle` and `settleTo` indices with it
+ *   (useDragToSnapPoints.ts); not exported from the package.
+ */
+export function snapOffsets(snapPoints: ReadonlyArray<number>): number[] {
+  return snapPoints
+    .filter(point => Number.isFinite(point))
+    .sort((a, b) => a - b);
+}
 
 /**
- * Gives a running drag new snap points and flick speed in place, so nothing
- * on screen jumps: the element keeps its place and any settle in flight, and
- * moves only when the snap point it rests on or heads for is gone, onto the
- * nearest new one. Returns false when the drag has to be created again
- * instead: it has no snap points, or would have none.
+ * The snap point nearest `offset` in `offsets` (ascending), or null when
+ * there is none.
  *
- * @internal The hook's option changes (useDragToSnapPoints.ts); not exported
- *   from the package.
+ * @internal The hook's choice of a point after it creates the drag again
+ *   (useDragToSnapPoints.ts); not exported from the package.
  */
-export function updateDragToSnapPoints(
-  snap: DragToSnapPoints,
-  options: Pick<DragToSnapPointsOptions, 'snapPoints' | 'flickThreshold'>,
-): boolean {
-  return updates.get(snap)?.(options) ?? false;
+export function nearestSnapPoint(
+  offsets: ReadonlyArray<number>,
+  offset: number,
+): {index: number; offset: number} | null {
+  if (offsets.length === 0) {
+    return null;
+  }
+  const {index} = resolveSnapPoint({
+    points: [...offsets],
+    position: offset,
+    velocity: 0,
+    flickThreshold: DEFAULT_FLICK_THRESHOLD,
+  });
+  return {index, offset: offsets[index]};
+}
+
+/**
+ * Where `element` is drawn along `axis` now, from the inline `translate`
+ * an animator left on it.
+ *
+ * @internal The hook reads it after destroying a drag to create it again
+ *   (useDragToSnapPoints.ts); not exported from the package.
+ */
+export function drawnOffset(element: HTMLElement, axis: 'x' | 'y'): number {
+  return drawnAt(element)[axis];
 }

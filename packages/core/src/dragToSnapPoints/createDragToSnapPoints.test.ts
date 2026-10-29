@@ -23,7 +23,6 @@ import {springs} from '../motion/uikit/springs';
 import {
   createDragToSnapPoints,
   DEFAULT_FLICK_THRESHOLD,
-  updateDragToSnapPoints,
 } from './createDragToSnapPoints';
 
 // Every animate call the factory's animator makes, as the factory made it.
@@ -380,25 +379,6 @@ describe('createDragToSnapPoints', () => {
     await vi.advanceTimersByTimeAsync(3000);
     expect(onSettle).toHaveBeenCalledWith(2);
     again.destroy();
-  });
-
-  it('onSettle names the snap point reached when new snap points renumber the settle in flight', async () => {
-    const element = sheet();
-    const onSettle = vi.fn();
-    const snap = createDragToSnapPoints(element, {
-      axis: 'y',
-      snapPoints: POINTS,
-      onSettle,
-    });
-    // Heading for 480, the third point, which becomes the fourth.
-    snap.settleTo(2);
-    expect(updateDragToSnapPoints(snap, {snapPoints: [0, 120, 240, 480]})).toBe(
-      true,
-    );
-    await vi.advanceTimersByTimeAsync(3000);
-    expect(onSettle).toHaveBeenCalledTimes(1);
-    expect(onSettle).toHaveBeenCalledWith(3);
-    snap.destroy();
   });
 
   it('destroyed during a settle, the element stays where it was, not where the settle began (spec:AST-107 FR6)', async () => {
