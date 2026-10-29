@@ -62,6 +62,7 @@ export type {
   TouchSample,
 } from '../gestures/types';
 export {useGestureRecognizer} from '../gestures/useGestureRecognizer';
+export {isClickGuardArmed} from '../utils/clickGuard';
 export {
   COMPACT_QUERY,
   COMPACT_TOUCH_QUERY,
