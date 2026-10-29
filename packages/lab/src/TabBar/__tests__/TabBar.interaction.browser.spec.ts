@@ -3159,6 +3159,33 @@ test.describe('More tab', () => {
     await expect(page.getByRole('heading', {name: 'More'})).toBeVisible();
   });
 
+  test('right to left, the More list’s disclosure chevrons point left, as Core’s disclosure rows’ do', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'more-tab');
+    await rightToLeft(page);
+    await driver.tap(await itemCenter(page, 'More'));
+    await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
+    const settings = page.getByRole('button', {name: /Settings/});
+    await expect(settings).toBeVisible();
+    // The row's last glyph is its chevron: flipped on it or a wrapper.
+    const transform = await settings.evaluate(row => {
+      const glyphs = [...row.querySelectorAll('svg')];
+      for (
+        let node: Element | null = glyphs[glyphs.length - 1] ?? null;
+        node != null && node !== row;
+        node = node.parentElement
+      ) {
+        const value = getComputedStyle(node).transform;
+        if (value !== 'none') {
+          return value;
+        }
+      }
+      return 'none';
+    });
+    expect(transform).toBe('matrix(-1, 0, 0, 1, 0, 0)');
+  });
+
   test.describe('under a mouse', () => {
     test.use({hasTouch: false, isMobile: false});
 
