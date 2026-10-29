@@ -3182,8 +3182,10 @@ test.describe('More tab', () => {
     await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
     const settings = page.getByRole('button', {name: /Settings/});
     await expect(settings).toBeVisible();
-    // The row's last glyph is its chevron: flipped on it or a wrapper.
-    const transform = await settings.evaluate(row => {
+    // The row's last glyph is its chevron (beside the label's button): flipped
+    // on it or a wrapper.
+    const transform = await settings.evaluate(button => {
+      const row = button.closest('li') ?? button;
       const glyphs = [...row.querySelectorAll('svg')];
       for (
         let node: Element | null = glyphs[glyphs.length - 1] ?? null;
