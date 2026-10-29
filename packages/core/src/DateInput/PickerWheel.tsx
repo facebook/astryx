@@ -34,8 +34,9 @@
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
  * - A scroll wheel turns the rows by its delta and snaps onto the nearest
- *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is left to
- *   the page's zoom (`spec:AST-094` FR43).
+ *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is a pinch
+ *   (`spec:AST-094` FR43), and with no pinch of its own the wheel leaves it
+ *   to the page's zoom (FR10).
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A rest on a disabled row (outside the bounds) is
  *   followed by a turn onto the nearest enabled row, which then commits; a
@@ -336,6 +337,9 @@ export function PickerWheel({
       {touchRelease = false, momentum = false, ...options}: MoveOptions = {},
     ) => {
       paintRow(null);
+      // The mark comes back from the row the motion reports nearest when it
+      // ends, even the row it began on.
+      motion.forgetNearest();
       const fadeTiming = momentum
         ? null
         : reducedMotionFade(columnRef.current, {touchRelease});
@@ -450,17 +454,31 @@ export function PickerWheel({
 
   useEffect(() => () => motion.dispose(), [motion]);
 
-  // Park the committed row under the band when the wheel is shown or the
-  // value changes from outside (the calendar moved to another month). Never
-  // while a finger or a motion owns the wheel.
+  // Park the committed row under the band when the wheel is shown, at once. A
+  // value changed from outside while it is shown (a bound clamping the time
+  // after another wheel turned, the calendar moved to another month) turns
+  // the wheel onto its row instead, as UIDatePicker turns onto its maximum
+  // (component:DateInput FR13): it never jumps there. Never while a finger or
+  // a motion owns the wheel.
+  const parkedRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
-    if (!isActive || dragRef.current != null || motion.isMoving()) {
+    if (!isActive) {
+      parkedRef.current = false;
       return;
     }
-    if (Math.abs(motion.offset() - selectedIndex * ROW_HEIGHT) > 0.01) {
-      motion.setOffset(selectedIndex * ROW_HEIGHT);
+    if (dragRef.current != null || motion.isMoving()) {
+      return;
     }
-  }, [isActive, selectedIndex, layout, motion]);
+    const target = selectedIndex * ROW_HEIGHT;
+    if (Math.abs(motion.offset() - target) > 0.01) {
+      if (parkedRef.current) {
+        move(turnCurve(columnRef.current, motion.offset(), target));
+      } else {
+        motion.setOffset(target);
+      }
+    }
+    parkedRef.current = true;
+  }, [isActive, selectedIndex, layout, motion, move]);
 
   // A hidden wheel keeps no motion running and holds no drag. Hiding it
   // mid-drag ends the pan without calling its listener (the toggle's owner
@@ -643,8 +661,9 @@ export function PickerWheel({
     }
     let idle: number | undefined;
     const onWheel = (event: WheelEvent) => {
-      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one): it zooms
-      // the page and never turns the wheel (`spec:AST-094` FR43).
+      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one,
+      // `spec:AST-094` FR43). The wheel has no pinch, so it stays the page's
+      // zoom (FR10) and never turns the wheel.
       if (event.ctrlKey) {
         return;
       }
