@@ -38,6 +38,7 @@ import {
   type ThemeMotionConfig,
 } from './themeMotion';
 import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
+import {easeDefaults} from './tokens.stylex';
 import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import {deepMergeComponents} from './mergeComponents';
 
@@ -279,6 +280,7 @@ export function resolveThemeValues(
   {
     strictTokens = false,
     inheritedCharacter,
+    standardBeneath,
   }: {
     strictTokens?: boolean;
     /**
@@ -286,6 +288,8 @@ export function resolveThemeValues(
      * the theme an adaptation rule belongs to, for a layer that sets none.
      */
     inheritedCharacter?: MotionCharacter;
+    /** The --ease-standard beneath a layer resolved without a seed: a rule's theme's. */
+    standardBeneath?: string;
   } = {},
 ): ResolvedThemeValues {
   const tokens: Record<string, string> = {...seed?.tokens};
@@ -351,22 +355,30 @@ export function resolveThemeValues(
         }
       }
     }
-    // At 'standard', --ease-entrance and --ease-move equal --ease-standard
-    // (spec:AST-108 FR2): an explicit one carries them, unless the layer sets
-    // them itself or a character, its own or the one it inherits, picks its
-    // own curve.
-    const character =
-      input.motion != null && 'character' in input.motion
-        ? input.motion.character
-        : inheritedCharacter;
-    if (
-      own['--ease-standard'] !== undefined &&
-      (character === undefined || character === 'standard')
-    ) {
-      for (const name of ['--ease-entrance', '--ease-move']) {
-        if (own[name] === undefined) {
-          tokens[name] = tokens['--ease-standard'];
-        }
+  }
+
+  // At 'standard', --ease-entrance and --ease-move equal the resolved
+  // --ease-standard (spec:AST-108 FR2): the layer's own, else the one beneath
+  // it. A layer that sets them itself, or whose character, its own or the one
+  // it inherits, picks its own curve, keeps them.
+  const own: Partial<Record<string, TokenValue>> = input.tokens ?? {};
+  const ownCharacter =
+    input.motion != null && 'character' in input.motion
+      ? input.motion.character
+      : undefined;
+  const character = ownCharacter ?? inheritedCharacter;
+  if (
+    ownCharacter === 'standard' ||
+    (own['--ease-standard'] !== undefined &&
+      (character === undefined || character === 'standard'))
+  ) {
+    const standard =
+      tokens['--ease-standard'] ??
+      standardBeneath ??
+      easeDefaults['--ease-standard'];
+    for (const name of ['--ease-entrance', '--ease-move']) {
+      if (own[name] === undefined) {
+        tokens[name] = standard;
       }
     }
   }
