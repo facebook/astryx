@@ -532,6 +532,68 @@ describe('useActionGroupTracking', () => {
       expect(document.activeElement).toBe(elsewhere);
       elsewhere.remove();
     });
+
+    /** A button outside the group that holds focus before the press. */
+    function focusOutside(): HTMLButtonElement {
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+      return outside;
+    }
+
+    it('under a finger, a slide leaves focus on the lifted action, as a tap on it does', () => {
+      // The tap's own focusing runs on the mousedown that follows a touch,
+      // which the claimed touch cancels with its click; a tap focuses a
+      // button outside iOS WebKit.
+      const outside = focusOutside();
+      const {cancel, del} = mount();
+      const f = finger();
+      f.down(del, centerOf(DELETE));
+      f.move(del, centerOf(CANCEL));
+      f.up(del, centerOf(CANCEL));
+      expect(document.activeElement).toBe(cancel);
+      outside.remove();
+    });
+
+    it('under a finger, a tap that never leaves its action focuses it', () => {
+      const outside = focusOutside();
+      const {cancel} = mount();
+      const f = finger();
+      f.down(cancel, centerOf(CANCEL));
+      f.up(cancel, centerOf(CANCEL), 80);
+      expect(document.activeElement).toBe(cancel);
+      outside.remove();
+    });
+
+    it('where a tap focuses no button (iOS WebKit), a finger leaves focus where it was', () => {
+      vi.stubGlobal('CSS', {
+        ...globalThis.CSS,
+        supports: (query: string) => query === '(-webkit-touch-callout: none)',
+      });
+      try {
+        const outside = focusOutside();
+        const {del} = mount();
+        const f = finger();
+        f.down(del, centerOf(DELETE));
+        f.move(del, centerOf(CANCEL));
+        f.up(del, centerOf(CANCEL));
+        expect(document.activeElement).toBe(outside);
+        outside.remove();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('under a finger, a lift outside the group moves no focus', () => {
+      const outside = focusOutside();
+      const {del} = mount();
+      const f = finger();
+      f.down(del, centerOf(DELETE));
+      f.move(del, {x: 150, y: 400});
+      f.up(del, {x: 150, y: 400});
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    });
   });
 
   it('expands the hit area for a finger only: a mouse hit-tests the exact rects (family:action-groups FR5)', () => {

@@ -86,6 +86,35 @@ test('a finger that presses Cut and slides to Paste runs Paste, once (family:act
   await expect(log).toHaveText('Pressed: Paste');
 });
 
+/** The accessible name of the focused element, or `body`. */
+const focusedName = async (page: Page) =>
+  page.evaluate(() => {
+    const element = document.activeElement;
+    return element == null || element === document.body
+      ? 'body'
+      : (element.getAttribute('aria-label') ?? element.textContent ?? '');
+  });
+
+test('after a finger slides from Cut to Paste, Paste has focus, as a tap on it leaves it (family:action-groups FR1)', async ({
+  page,
+}) => {
+  const {cut, paste, log} = await open(page);
+  const driver = await touchDriver(page);
+  await driver.play(slide(await centerOf(cut), await centerOf(paste)));
+  await expect(log).toHaveText('Pressed: Paste');
+  expect(await focusedName(page)).toBe('Paste');
+});
+
+test('a finger tap on Copy leaves Copy with focus, as a tap on any button does (family:action-groups FR1)', async ({
+  page,
+}) => {
+  const {copy, log} = await open(page);
+  const driver = await touchDriver(page);
+  await driver.play(tap(await centerOf(copy), {holdMs: 60}));
+  await expect(log).toHaveText('Pressed: Copy');
+  expect(await focusedName(page)).toBe('Copy');
+});
+
 test('a finger lifted outside the group runs nothing (family:action-groups FR3)', async ({
   page,
 }) => {
