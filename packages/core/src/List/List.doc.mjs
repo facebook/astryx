@@ -13,6 +13,9 @@ export const docs = {
       {className: 'astryx-list', visualProps: ['density', 'listStyle']},
       {className: 'astryx-list-item'},
     ],
+    vars: [
+      {name: '--_hit-border-bottom', description: "Width of the divider below a divided row (0 on the last row), which the row's touch hit layer adds to its offset so its band starts past the divider. Set by ListItem under hasDividers from --border-width; a theme changes the divider through that token.", default: '0px', private: true},
+    ],
   },
   description: 'List container with density, dividers, and header support.',
   props: [
