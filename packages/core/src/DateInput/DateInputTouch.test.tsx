@@ -2014,6 +2014,54 @@ describe('DateInput — month/year wheels', () => {
     expect(button('Done')).toBeInTheDocument();
   });
 
+  it('keeps the header actions and both footer actions out of reach while the toggle fades', async () => {
+    renderAndOpen();
+    // A running exit on both panels, so their own `inert` waits for the
+    // fade's end (useFadeInert).
+    for (const which of ['calendar', 'wheels'] as const) {
+      (panel(which) as HTMLElement).getAnimations = () =>
+        [
+          {transitionProperty: 'opacity', playState: 'running'},
+        ] as unknown as Animation[];
+    }
+    const button = (label: string) =>
+      [...document.querySelectorAll('dialog[open] button')].find(
+        el => el.textContent?.trim() === label,
+      );
+    const isBlocked = (element: Element | null | undefined) =>
+      element?.closest('[inert]') != null;
+    const actions = () =>
+      [
+        document.querySelector('[data-arrows="months"]'),
+        document.querySelector('[data-action="reset"]'),
+        button('Save'),
+        button('Done'),
+      ].map(isBlocked);
+    const fadeEnd = async (which: 'calendar' | 'wheels') => {
+      const event = new Event('transitionend', {bubbles: true});
+      Object.assign(event, {propertyName: 'opacity'});
+      act(() => {
+        panel(which).dispatchEvent(event);
+      });
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+    };
+
+    // Opening: the arrows, Reset and Save leave with the toggle, and Done
+    // waits for the fade, so a tap on Done cannot reach Save beneath it.
+    openWheels();
+    expect(actions()).toEqual([true, true, true, true]);
+    await fadeEnd('calendar');
+    expect(actions()).toEqual([true, true, true, false]);
+
+    // Closing: Done leaves with the toggle, and the calendar's actions wait.
+    fireEvent.click(title());
+    expect(actions()).toEqual([true, true, true, true]);
+    await fadeEnd('wheels');
+    expect(actions()).toEqual([false, false, false, true]);
+  });
+
   it('the year wheel keeps the month', () => {
     renderAndOpen(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
     openWheels();

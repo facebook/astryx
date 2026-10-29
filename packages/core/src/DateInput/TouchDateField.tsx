@@ -817,6 +817,13 @@ export function TouchDateField({
     wheelsPanelRef,
     isTouch,
   );
+  // The header's actions and the footer's two leave with the toggle and
+  // arrive with the fade's end. They sit outside the panels' shield, and only
+  // the panels' `inert` waits for the fade (flipping it restyles a panel's
+  // whole subtree), so these few controls go inert at once: a tap on Done
+  // during the fade would otherwise fall through the still-inert Done to Save.
+  const isCalendarActionsInert = isWheelOpen || isCalendarInert;
+  const isWheelsActionsInert = !isWheelOpen || isWheelsInert;
   // A finger pages the months like UIDatePicker (MonthPager) and toggles the
   // month/year wheels on its timing (the stylesheet's touch keys); a mouse
   // keeps today's native scroller and swap.
@@ -1299,7 +1306,7 @@ export function TouchDateField({
           // `inert` as well as the hidden styling: the fade keeps them
           // `visible` until it finishes, and a control that is on its way out
           // should not answer a click or a Tab in the meantime.
-          inert={isCalendarInert ? true : undefined}
+          inert={isCalendarActionsInert ? true : undefined}
           {...stylex.props(
             styles.monthArrows,
             isWheelOpen && styles.monthArrowsHidden,
@@ -1312,7 +1319,7 @@ export function TouchDateField({
             keeps its size, so the header cannot change height mid-swap. */}
         <span
           data-action="reset"
-          inert={isCalendarInert ? true : undefined}
+          inert={isCalendarActionsInert ? true : undefined}
           {...stylex.props(
             styles.headerReset,
             isWheelOpen && styles.headerResetHidden,
@@ -1409,7 +1416,7 @@ export function TouchDateField({
             belongs to a surface: Save finishes on the calendar, Done finishes
             the detour through the wheels. */}
         <div
-          inert={isCalendarInert ? true : undefined}
+          inert={isCalendarActionsInert ? true : undefined}
           {...stylex.props(
             styles.footerAction,
             styles.panelBeneath,
@@ -1418,7 +1425,7 @@ export function TouchDateField({
           {saveButton}
         </div>
         <div
-          inert={isWheelsInert ? true : undefined}
+          inert={isWheelsActionsInert ? true : undefined}
           {...stylex.props(
             styles.footerAction,
             styles.panelOverlay,

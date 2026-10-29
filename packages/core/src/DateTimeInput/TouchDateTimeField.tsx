@@ -365,7 +365,8 @@ const styles = stylex.create({
   },
   // No `pointerEvents` in these two: it is inherited, so flipping it in the
   // toggle's commit would restyle the whole calendar before the fade's first
-  // frame; `inert` (applied after that frame) and `visibility` cover it.
+  // frame; `inert` and `visibility` cover it (the surface's `inert` follows
+  // the fade's end, the header actions' the toggle).
   touchHeaderActionsHidden: {
     visibility: 'hidden',
     opacity: 0,
@@ -746,6 +747,11 @@ export function TouchDateTimeField({
     wheelsSurfaceRef,
     isTouch,
   );
+  // The header's arrows and Reset leave with the toggle and arrive with the
+  // fade's end. They sit outside the surfaces' shield, and only the surfaces'
+  // `inert` waits for the fade (flipping it restyles a surface's whole
+  // subtree), so these few controls go inert at once.
+  const isCalendarActionsInert = isWheelOpen || isCalendarInert;
   // A finger gets UIDatePicker's time wheels, month pager and month/year
   // cross-fade (the stylesheet's touch keys); a mouse keeps today's columns,
   // native month scroller and instant swap.
@@ -1269,7 +1275,7 @@ export function TouchDateTimeField({
               />
             </button>
             <span
-              inert={isCalendarInert ? true : undefined}
+              inert={isCalendarActionsInert ? true : undefined}
               {...stylex.props(
                 styles.touchHeaderActions,
                 isWheelOpen && styles.touchHeaderActionsHidden,
