@@ -456,7 +456,7 @@ export function Wheel({
   // once. A value changed from outside while it is shown (a bound clamping the
   // time after another wheel turned, the calendar scrolled to another month)
   // turns the wheel onto its row instead, as UIDatePicker turns onto its
-  // maximum (component:DateInput DEC-1): it never jumps there.
+  // maximum (component:DateInput FR13): it never jumps there.
   //
   // NEVER while the wheel is still moving. A scroller that is mid-gesture or
   // still carrying momentum is the user's, and repositioning it does not stop
@@ -597,7 +597,11 @@ export function Wheel({
         aria-activedescendant={`${id}-${options[activeIndex]?.value}`}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        onPointerDown={event => {
+        // Read on the way down: usePointerDragScroll stops a primary mouse
+        // press from bubbling (it must not reach BottomSheet's drag), so a
+        // bubbling handler would never see a mouse and would keep the last
+        // touch.
+        onPointerDownCapture={event => {
           lastPointerRef.current = event.pointerType;
         }}
         onWheel={() => {

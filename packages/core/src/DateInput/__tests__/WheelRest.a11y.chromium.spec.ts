@@ -171,7 +171,7 @@ test('under reduced motion an arrow key step lands under its cross-fade, never a
   await expect(field).toHaveValue('11:00 AM');
 });
 
-test('a meridiem change past the maximum turns the hour wheel onto it, frame by frame (component:DateInput DEC-1)', async ({
+test('a meridiem change past the maximum turns the hour wheel onto it, frame by frame (component:DateInput FR13)', async ({
   page,
 }) => {
   const {field, hours} = await openHourWheel(page);
