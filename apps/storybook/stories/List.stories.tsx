@@ -259,6 +259,50 @@ export const Links: Story = {
   ),
 };
 
+function EndControlsDemo() {
+  const [isWifiOn, setIsWifiOn] = useState(true);
+  return (
+    <List density="compact" hasDividers>
+      <ListItem
+        label="Network"
+        onClick={() => {}}
+        endContent={<Icon icon={ChevronRightIcon} />}
+      />
+      <ListItem
+        label="Wi-Fi"
+        endContent={
+          <Switch
+            label="Wi-Fi"
+            isLabelHidden
+            value={isWifiOn}
+            onChange={checked => setIsWifiOn(checked)}
+          />
+        }
+      />
+      <ListItem
+        label="Bluetooth"
+        onClick={() => {}}
+        endContent={<Icon icon={ChevronRightIcon} />}
+      />
+    </List>
+  );
+}
+
+export const WithEndControls: Story = {
+  render: () => <EndControlsDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact row whose end content is its own control, a switch, ' +
+          'between two interactive rows. Under a finger, the interactive rows grow ' +
+          'their touch targets only where nothing is near, never into the ' +
+          "control's row, and a tap on the switch stays the switch's.",
+      },
+    },
+  },
+};
+
 export const OrderedList: Story = {
   render: args => (
     <List listStyle="decimal" {...args}>
