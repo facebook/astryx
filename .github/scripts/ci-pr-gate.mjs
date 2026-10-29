@@ -1,32 +1,45 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The condition every job of a pull-request workflow starts with
- * (spec:AST-030 FR17). A draft runs no CI. An outside contributor's pull
- * request runs CI only once a maintainer labels it `ci:run`. A `labeled`
- * event runs CI only for that label. Every other event (a push to main, a
- * merge-group entry, a dispatch) passes.
+ * @file When a pull request runs CI (spec:AST-030 FR17). A draft runs
+ * nothing. A pull request runs CI when its branch lives in this repository
+ * (pushing one needs write access) or a maintainer has labelled it `ci:run`.
+ * Every other event (a push to main, a merge-group entry, a dispatch) passes.
+ *
+ * Jobs that report a required context keep only the draft skip: for a pull
+ * request CI does not run, their first step fails with the reason, because a
+ * skipped required check counts as passing.
  */
 
-export const PR_CI_GATE =
-  "(github.event_name != 'pull_request' || !github.event.pull_request.draft && " +
-  "(github.event.action != 'labeled' || github.event.label.name == 'ci:run') && " +
-  '(contains(fromJSON(\'["OWNER","MEMBER","COLLABORATOR"]\'), github.event.pull_request.author_association) || ' +
-  "contains(github.event.pull_request.labels.*.name, 'ci:run')))";
+const TRUSTED =
+  '(github.event.pull_request.head.repo.full_name == github.repository || ' +
+  "contains(github.event.pull_request.labels.*.name, 'ci:run'))";
 
-/** A job condition with the gate in front: `${{ GATE && (condition) }}`. */
-export function gated(condition) {
-  if (condition == null || condition === '') return PR_CI_GATE;
+/** Every job that can start on a pull request begins with this. */
+export const PR_CI_GATE = `(github.event_name != 'pull_request' || !github.event.pull_request.draft && ${TRUSTED})`;
+
+/** A job that reports a required context begins with this instead. */
+export const PR_REPORT_GATE =
+  "(github.event_name != 'pull_request' || !github.event.pull_request.draft)";
+
+/** The condition of a required job's first step, which fails with the reason. */
+export const PR_HELD = `github.event_name == 'pull_request' && !${TRUSTED}`;
+
+/** A job condition with a gate in front: `${{ GATE && (condition) }}`. */
+export function gated(condition, gate = PR_CI_GATE) {
+  if (condition == null || condition === '') return gate;
   const expression = condition.replace(/^\$\{\{\s*|\s*\}\}$/g, '');
-  const wrapped = `${PR_CI_GATE} && (${expression})`;
+  const wrapped = `${gate} && (${expression})`;
   return condition.startsWith('${{') ? `\${{ ${wrapped} }}` : wrapped;
 }
 
 /** The job's own condition, without the gate in front. */
 export function ungated(condition) {
   const expression = condition.replace(/^\$\{\{\s*|\s*\}\}$/g, '');
-  const prefix = `${PR_CI_GATE} && (`;
-  return expression.startsWith(prefix)
-    ? expression.slice(prefix.length, -1)
-    : expression;
+  for (const gate of [PR_CI_GATE, PR_REPORT_GATE]) {
+    const prefix = `${gate} && (`;
+    if (expression.startsWith(prefix))
+      return expression.slice(prefix.length, -1);
+  }
+  return expression;
 }

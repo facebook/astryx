@@ -122,9 +122,8 @@ describe('visual, accessibility and RTL owners', () => {
     }
   });
 
-  it('starts no run for its label: ci:heavy-lanes takes effect on the next push or reopen', () => {
-    // A `labeled` event runs CI only for ci:run (ci-pr-gate.test.mjs).
-    expect(ci.on.pull_request.types).toContain('labeled');
+  it('adds no label trigger: a label takes effect on the next push or reopen', () => {
+    expect(ci.on.pull_request.types).not.toContain('labeled');
   });
 });
 

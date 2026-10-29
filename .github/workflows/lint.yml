@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
 
 permissions: {}
@@ -14,19 +14,22 @@ permissions: {}
 # A new push to a pull request cancels its superseded run; each push to main
 # keeps its own uncancelled group.
 concurrency:
-  # A label other than ci:run starts a run that skips every job; its own
-  # group keeps it from cancelling a real run (spec:AST-030 FR17).
-  group: 'lint-${{ github.event.pull_request.number || github.run_id }}${{ github.event.action == ''labeled'' && github.event.label.name != ''ci:run'' && ''-other-label'' || '''' }}'
+  group: 'lint-${{ github.event.pull_request.number || github.run_id }}'
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
-    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'ci:run') && (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) || contains(github.event.pull_request.labels.*.name, 'ci:run')))
+    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
 
     steps:
+      - name: Require a branch in this repository or the ci:run label
+        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+        run: |
+          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          exit 1
       # Enough history for the merge commit to reach its merge base with the
       # base branch, as ci.yml's check-scope checks out. At depth 1 the merge
       # base is never found, and every pull request ran full lint.

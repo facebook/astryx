@@ -913,11 +913,15 @@ Storybook story for anything you added or altered.
 
 - **Drafts run no CI.** Marking the pull request ready for review starts a
   full run.
-- **Pull requests from outside the organization run CI once a maintainer
-  labels them `ci:run`.** Only maintainers can apply labels, so you don't need
-  to ask: a maintainer adds it after a first look, and the label starts the
-  run. CI then runs on each push while the label stays; a maintainer removes it
-  to stop. Pull requests from members and collaborators run without it.
+- **A pull request from a fork runs CI once a maintainer labels it
+  `ci:run`.** Only maintainers can apply labels, so you don't need to ask: a
+  maintainer adds it after a first look. The label takes effect on your next
+  push, or when the maintainer closes and reopens the pull request; CI then
+  runs on each push while the label stays. Until then the required checks fail
+  with "Waiting for a maintainer's ci:run label".
+- **Pull requests from a branch in this repository run CI without the label**,
+  since pushing a branch here needs write access. Maintainers who work from a
+  fork either push their branches here or apply `ci:run` themselves.
 - **Heavy browser suites are shared per author.** They run for an author's
   three oldest open pull requests, up to twelve such runs a day. A pull request
   past either limit shows a failing check that says why, and runs in full at

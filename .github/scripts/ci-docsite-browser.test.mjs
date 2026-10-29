@@ -11,7 +11,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
-import {gated} from './ci-pr-gate.mjs';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const {jobs} = yaml.parse(
@@ -35,6 +35,7 @@ describe('docsite browser required-check projection', () => {
     expect(owner.if).toBe(
       gated(
         "${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+        PR_REPORT_GATE,
       ),
     );
     // Each owner decides its own scope and gates every later step on it.

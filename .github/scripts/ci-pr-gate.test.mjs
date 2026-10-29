@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Pull-request CI runs only for a ready pull request from a member, or
- * one a maintainer labelled `ci:run` (spec:AST-030 FR17).
+ * @file A pull request runs CI when it is ready and its branch lives in this
+ * repository or a maintainer labelled it `ci:run` (spec:AST-030 FR17).
  */
 
 import fs from 'node:fs';
@@ -11,7 +11,7 @@ import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
-import {PR_CI_GATE} from './ci-pr-gate.mjs';
+import {PR_CI_GATE, PR_HELD, PR_REPORT_GATE} from './ci-pr-gate.mjs';
 
 const dir = path.resolve(import.meta.dirname, '../workflows');
 const workflows = fs
@@ -27,42 +27,49 @@ const workflows = fs
       pr !== undefined && !(pr?.types ?? []).every(type => type === 'closed')
     );
   });
+// The jobs that report a required context (build, test, docsite-test, lint).
+const REQUIRED = {
+  'ci.yml': ['build', 'docsite-test', 'test'],
+  'lint.yml': ['lint'],
+};
 
-/** Evaluates the gate as Actions would, for one event. */
-function allows({
-  event = 'pull_request',
-  action = 'synchronize',
-  draft = false,
-  association = 'MEMBER',
-  labels = [],
-  label,
-}) {
+const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const startsWith = gate => new RegExp(`^(\\$\\{\\{ )?${escape(gate)}`);
+
+/** Evaluates an expression as Actions would, for one event. */
+function evaluate(
+  expression,
+  {event = 'pull_request', draft = false, fork = false, labels = []},
+) {
   const github = {
     event_name: event,
+    repository: 'meta/astryx',
     event: {
-      action,
-      label: label && {name: label},
       pull_request:
         event === 'pull_request'
           ? {
               draft,
-              author_association: association,
+              head: {
+                repo: {full_name: fork ? 'someone/astryx' : 'meta/astryx'},
+              },
               labels: labels.map(name => ({name})),
             }
           : null,
     },
   };
-  const js = PR_CI_GATE.replace(
+  const js = expression.replace(
     /\.labels\.\*\.name/g,
     '.labels.map(l => l.name)',
   );
   return Function(
     'github',
     'contains',
-    'fromJSON',
     `return Boolean(${js});`,
-  )(github, (list, item) => list.includes(item), JSON.parse);
+  )(github, (list, item) => list.includes(item));
 }
+const runs = event => evaluate(PR_CI_GATE, event);
+const reports = event =>
+  evaluate(PR_REPORT_GATE, event) && !evaluate(PR_HELD, event);
 
 describe('pull-request CI gate (spec:AST-030 FR17)', () => {
   it('finds the pull-request workflows', () => {
@@ -77,17 +84,26 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
   });
 
   it.each(workflows)(
-    '%s starts on ready and on a label, and gates every job that can start',
+    '%s starts when a draft is marked ready, never on a label, and gates every job that can start',
     (name, value) => {
       expect((value.on ?? value[true]).pull_request.types).toEqual([
         'opened',
         'synchronize',
         'reopened',
         'ready_for_review',
-        'labeled',
       ]);
       for (const [id, job] of Object.entries(value.jobs)) {
         const condition = String(job.if ?? '');
+        if (REQUIRED[name]?.includes(id)) {
+          expect(condition, `${name}/${id}`).toMatch(
+            startsWith(PR_REPORT_GATE),
+          );
+          expect(job.steps[0], `${name}/${id}`).toMatchObject({
+            if: `\${{ ${PR_HELD} }}`,
+          });
+          expect(job.steps[0].run).toContain('exit 1');
+          continue;
+        }
         // A job that needs others is skipped with them, unless it asks to run
         // anyway; a dispatch-only job never starts on a pull request.
         if (
@@ -101,46 +117,32 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
           )
         )
           continue;
-        expect(condition.replace(/^\$\{\{\s*/, ''), `${name}/${id}`).toMatch(
-          new RegExp(`^${PR_CI_GATE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
-        );
+        expect(condition, `${name}/${id}`).toMatch(startsWith(PR_CI_GATE));
       }
-      expect(value.concurrency.group, name).toContain(
-        "github.event.action == 'labeled' && github.event.label.name != 'ci:run'",
-      );
     },
   );
 
-  it('runs a member pull request and a labelled outside one; never a draft', () => {
-    expect(allows({})).toBe(true);
-    expect(allows({association: 'COLLABORATOR'})).toBe(true);
-    expect(allows({association: 'CONTRIBUTOR'})).toBe(false);
-    expect(allows({association: 'FIRST_TIME_CONTRIBUTOR'})).toBe(false);
-    expect(allows({association: 'CONTRIBUTOR', labels: ['ci:run']})).toBe(true);
-    expect(allows({draft: true})).toBe(false);
-    expect(
-      allows({draft: true, association: 'CONTRIBUTOR', labels: ['ci:run']}),
-    ).toBe(false);
+  it('runs a pull request from a branch here, or from a fork once labelled; never a draft', () => {
+    expect(runs({})).toBe(true);
+    expect(runs({fork: true})).toBe(false);
+    expect(runs({fork: true, labels: ['ci:run']})).toBe(true);
+    expect(runs({fork: true, labels: ['ci:heavy-lanes']})).toBe(false);
+    expect(runs({draft: true})).toBe(false);
+    expect(runs({draft: true, fork: true, labels: ['ci:run']})).toBe(false);
   });
 
-  it('starts a full run when a draft is marked ready or labelled ci:run, and for no other label', () => {
-    expect(allows({action: 'ready_for_review'})).toBe(true);
-    expect(
-      allows({
-        action: 'labeled',
-        label: 'ci:run',
-        association: 'CONTRIBUTOR',
-        labels: ['ci:run'],
-      }),
-    ).toBe(true);
-    expect(allows({action: 'labeled', label: 'needs:spec-owner-review'})).toBe(
-      false,
-    );
+  it('fails the required checks of an unlabelled fork pull request instead of skipping them', () => {
+    expect(reports({})).toBe(true);
+    expect(reports({fork: true, labels: ['ci:run']})).toBe(true);
+    expect(evaluate(PR_REPORT_GATE, {fork: true})).toBe(true);
+    expect(evaluate(PR_HELD, {fork: true})).toBe(true);
+    expect(evaluate(PR_REPORT_GATE, {draft: true})).toBe(false);
   });
 
   it('passes every event that is not a pull request', () => {
     for (const event of ['push', 'merge_group', 'workflow_dispatch']) {
-      expect(allows({event}), event).toBe(true);
+      expect(runs({event}), event).toBe(true);
+      expect(reports({event}), event).toBe(true);
     }
   });
 });
