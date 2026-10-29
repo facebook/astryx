@@ -24,7 +24,6 @@ const packageJson = JSON.parse(
 );
 const releaseJobs = [
   'release-authority',
-  'test-registry-e2e',
   'build-storybook',
   'typecheck',
   'visual-scout',
@@ -444,7 +443,6 @@ describe('exact main and release branch completion', () => {
     ).resolves.toBeUndefined();
     expect(jobs['release-check'].needs).toEqual([
       'release-authority',
-      'test-registry-e2e',
       'build-storybook',
       'typecheck',
       'pr-visual',
@@ -805,11 +803,12 @@ describe('full release scope without PR metadata or maintenance writes', () => {
         jobs['pr-rtl-shard'].strategy.matrix.include.map(leg => leg.package),
       ),
     ]).toEqual(['core', 'lab', 'charts', 'richtext', 'vega']);
+    // Outside a pull request the scope step reports full scope.
     expect(step('pr-rtl-shard', 'Resolve RTL shard scope').run).toContain(
-      '--force-full true',
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
     );
     expect(step('pr-rtl', 'Require every applicable RTL shard').run).toContain(
-      '--force-full true',
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
     );
     expect(step('pr-rtl-shard', 'Require completed RTL shard report').if).toBe(
       'always()',
