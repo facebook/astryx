@@ -278,6 +278,8 @@ export function PickerWheel({
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
+  // The latest props, for the motion's and the gesture listeners' callbacks,
+  // which are attached once and outlive a render.
   const latestRef = useRef({options, value, onChange, layout});
   useIsomorphicLayoutEffect(() => {
     latestRef.current = {options, value, onChange, layout};
@@ -432,6 +434,7 @@ export function PickerWheel({
     });
   }, [motion, reducedMotion]);
 
+  // The band's mark follows the row the motion reports nearest the band.
   useIsomorphicLayoutEffect(() => {
     motion.onNearestChange(paintRow);
     return () => motion.onNearestChange(null);
@@ -452,6 +455,7 @@ export function PickerWheel({
     paintedRef.current.clear();
   });
 
+  // The motion's animations and timers end with the wheel.
   useEffect(() => () => motion.dispose(), [motion]);
 
   // Park the committed row under the band when the wheel is shown, at once. A
@@ -502,6 +506,7 @@ export function PickerWheel({
     [motion],
   );
 
+  // The latest touch-down handler, for the gesture listener attached once.
   const onTouchDownRef = useRef(onTouchDown);
   useIsomorphicLayoutEffect(() => {
     onTouchDownRef.current = onTouchDown;
