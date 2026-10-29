@@ -528,6 +528,105 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
     );
   });
 
+  it('a start the browser dates before the block (WebKit) moves to after it', async () => {
+    // WebKit dates a pending animation at its last frame time before the
+    // task that made it, so after a block its first frame would show the
+    // motion that far in; the call's first read of that start moves it to
+    // the read. Chromium's commit start (the case above) stays.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The task blocks for 300 ms; the browser dates the animation at 1000.
+      clock = 1300;
+      animation.startTime = 1000;
+      await commitFrame(1300);
+      await expect(handle.started).resolves.toBe(1300);
+      expect(animation.startTime).toBe(1300);
+      expect(animator.get('x', 1300)).toBeCloseTo(0, 9);
+      expect(animator.get('x', 1400)).toBeCloseTo(curve.value(0.1), 9);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a block shorter than two frames in the call\u2019s own task moves its start past the block', async () => {
+    // Core Animation dates an animation at the commit, when the calling task
+    // ends, however short the block before it.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The task blocks for 20 ms; the browser dates the animation at 1000.
+      clock = 1020;
+      animation.startTime = 1000;
+      await commitFrame(1020);
+      await expect(handle.started).resolves.toBe(1020);
+      expect(animation.startTime).toBe(1020);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a start the browser dates by the call stays when its own task ended at once, however late the first read', async () => {
+    // WebKit under load from other tasks: the call's task ends at once, and
+    // another task holds the main thread before the first frame. Nothing in
+    // the call's task delayed it, so its start stays the browser's and the
+    // calls a sequence chains on it keep their clock (design:reduced-motion
+    // DR2's 200 ms cross-fade, a cancel fading on the previous fade's end).
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The call's task ends; then another task runs for 100 ms, and the
+      // browser commits the animation after it, dated at the call.
+      await Promise.resolve();
+      clock = 1100;
+      animation.startTime = 1000;
+      await commitFrame(1100);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a start read after the first frame stays the browser\u2019s', async () => {
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // Paused before its first frame (a harness), then started late: the
+      // first frame passed with no start to read.
+      animation.paused = true;
+      await commitFrame(1016);
+      clock = 1600;
+      animation.paused = false;
+      animation.startTime = 1000;
+      await commitFrame(1600);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
   it('holds its start until the browser starts it', async () => {
     const {animator} = setup();
     animator.animate({x: 300}, {spring: springs.settle});
@@ -1047,6 +1146,39 @@ describe('start: when a call\u2019s animations start', () => {
     expect(animator.get('x', 1066 + 5000)).toBeCloseTo(200, 3);
   });
 
+  it('presented: a later presented call that takes part of a waiting call\u2019s channel starts the rest of it, from its own start', async () => {
+    const {animator} = setup();
+    const first = animator.animate(
+      {x: 100, y: 100},
+      {spring: springs.settle},
+      {start: 'presented'},
+    );
+    clock = 1016;
+    await commitFrame(1016);
+    animator.animate({x: 200}, {spring: springs.settle}, {start: 'presented'});
+    // The first call's second frame: its channel now holds the second call's
+    // curve, so nothing starts yet.
+    clock = 1033;
+    await commitFrame(1033);
+    expect(live('translate')).toHaveLength(0);
+    // The second call's second frame creates the channel, with the first
+    // call's y in it; the browser starts it at the next commit.
+    clock = 1050;
+    await commitFrame(1050);
+    expect(live('translate')).toHaveLength(1);
+    clock = 1066;
+    await commitFrame(1066);
+    await expect(first.started).resolves.toBe(1066);
+    // y was at rest on screen until then: its curve starts there, and the
+    // model reads what the screen shows.
+    const y = solveSpring(toSpring(springs.settle), {from: 0, to: 100});
+    expect(animator.get('y', 1166)).toBeCloseTo(y.value(0.1), 6);
+    expect(sampleAt(live('translate')[0], 'translate', 1166)[1]).toBeCloseTo(
+      y.value(0.1),
+      0,
+    );
+  });
+
   it('presented: another change before then creates the animations first', async () => {
     const {animator} = setup();
     animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
@@ -1549,6 +1681,52 @@ describe('finished', () => {
     const c = animator.animate({rotate: 40}, {spring: springs.quickChange});
     animator.stop(['rotate']);
     await expect(c.finished).resolves.toBe(false);
+  });
+
+  it('waits while a sampler holds the animation past the curve\u2019s end', async () => {
+    const {animator} = setup();
+    const handle = animator.animate({x: 40}, {spring: springs.quickChange});
+    let result: boolean | undefined;
+    void handle.finished.then(value => {
+      result = value;
+    });
+    await advance(16);
+    // A harness pauses it (holdAnimations) and keeps it held well past the
+    // end of the curve on the wall clock: the motion has not ended.
+    const [animation] = live('translate');
+    animation.paused = true;
+    await advance(5000);
+    expect(result).toBeUndefined();
+  });
+
+  it('resolves true once a held animation resumes and reaches its end', async () => {
+    const {animator} = setup();
+    const handle = animator.animate({x: 40}, {spring: springs.quickChange});
+    let result: boolean | undefined;
+    void handle.finished.then(value => {
+      result = value;
+    });
+    await advance(16);
+    const [animation] = live('translate');
+    animation.paused = true;
+    await advance(5000);
+    animation.paused = false;
+    await advance(1000);
+    expect(result).toBe(true);
+  });
+
+  it('resolves on time for an animation nobody holds', async () => {
+    const {animator} = setup();
+    const handle = animator.animate({x: 40}, {spring: springs.quickChange});
+    let result: boolean | undefined;
+    void handle.finished.then(value => {
+      result = value;
+    });
+    const end = (handle.curve('x')?.duration ?? NaN) * 1000;
+    await advance(end - 50);
+    expect(result).toBeUndefined();
+    await advance(100);
+    expect(result).toBe(true);
   });
 
   it('dispose cancels and settles everything', async () => {
