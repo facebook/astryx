@@ -187,6 +187,14 @@ const styles = stylex.create({
       'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
     borderRadius: 0,
   },
+  // A swipeable row is a stacking context at rest (Item isolates and
+  // translates its swipe root), so its touch band's own z-index orders only
+  // inside it: under a finger the row itself rises above the rows after it,
+  // whose boxes its band reaches into. The list isolates, so it stays below
+  // a sticky header (List.tsx).
+  swipeRaised: {
+    zIndex: {default: null, '@media (pointer: coarse)': 1},
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
@@ -411,6 +419,7 @@ export function ListItem({
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           isTouchTarget && touchHitAreaStyles.layer,
+          isTouchTarget && restProps.swipeActions != null && styles.swipeRaised,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
