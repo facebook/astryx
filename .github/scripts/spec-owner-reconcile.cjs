@@ -8,17 +8,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
-  DECISION_STATUS_PREFIX,
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
   canonicalRunUrl,
-  decisionStatusDescription,
   describeOwnerCommandProblem,
   newestGateRun,
   parseOwnerCommand,
-  parseDecisionStatuses,
   parseOwnerCommandIntent,
-  parseOwnerDecisionDispatch,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -102,32 +98,10 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  // A review app may relay an owner's decision as a repository dispatch. It
-  // decides the gate exactly like that owner's exact-head command, so it is
-  // held to the same eligibility before any API work.
-  let relayedDecision = null;
-  if (context.eventName === 'repository_dispatch') {
-    const relayed = parseOwnerDecisionDispatch(context.payload, {
-      appLogin: env.SPEC_DECISION_APP,
-    });
-    if (relayed.problem) {
-      core.info(`Ignoring a relayed owner decision: ${relayed.problem}.`);
-      return;
-    }
-    if (!allOwners.has(relayed.decision.owner)) {
-      core.info(
-        'Ignoring a relayed decision for someone outside the eligible owners.',
-      );
-      return;
-    }
-    relayedDecision = relayed.decision;
-  }
-
   const pullNumber = Number(
     context.payload.pull_request?.number ??
       context.payload.issue?.number ??
-      context.payload.inputs?.pr ??
-      relayedDecision?.pr,
+      context.payload.inputs?.pr,
   );
   if (!pullNumber) {
     throw new Error('Could not resolve a pull request number.');
@@ -479,24 +453,6 @@ async function reconcileSpecOwnerGate({
     });
   }
 
-  if (relayedDecision && relayedDecision.headSha !== initialHead) {
-    core.info(
-      `The relayed decision names ${relayedDecision.headSha.slice(0, 7)}, which is not the current head; it decides nothing.`,
-    );
-  } else if (relayedDecision) {
-    await createStatus({
-      sha: initialHead,
-      context: `${DECISION_STATUS_PREFIX}${relayedDecision.owner}`,
-      state: relayedDecision.approved ? 'success' : 'failure',
-      description: decisionStatusDescription({
-        approved: relayedDecision.approved,
-        at: now().toISOString(),
-        requestKey: relayedDecision.requestKey,
-      }),
-    });
-    if (!relayedDecision.approved) await disableAutoMerge(initialPr);
-  }
-
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();
   const reviewAuthor = context.payload.review?.user?.login?.toLowerCase();
   const explicitRevoke =
@@ -587,15 +543,9 @@ async function reconcileSpecOwnerGate({
     headSha: initialHead,
     owners: designOwners,
   });
-  const relayedDecisions = parseDecisionStatuses(statuses, {
-    repository,
-    headSha: initialHead,
-    owners: [...allOwners],
-  });
   const decisionInput = {
     reviews,
     comments,
-    relayedDecisions,
     dismissalEvents: timeline,
     headSha: initialHead,
   };
