@@ -74,7 +74,8 @@
  * TabBar's CSS transition, with no lift, no copy of the items and no spring.
  * The release chooses the item nearest the press, as a lift does, a click's
  * included (the gesture host swallows the browser's click for a press a
- * recognizer took), and the lens transitions onto it.
+ * recognizer took), and the lens transitions onto it; released off the bar,
+ * the press chooses nothing (`spec:AST-020` FR9).
  *
  * SYNC: When modified, update TabBar.tsx, tabBarModel.ts and
  * __tests__/TabBar.interaction.browser.spec.ts.
@@ -145,6 +146,10 @@ interface Press {
   isIgnored: boolean;
   /** A fine pointer's press: it drags the lens's resting place (CSS). */
   readonly isFine: boolean;
+  /** The capsule's box in client px, before the flex. */
+  readonly box: {left: number; right: number; top: number; bottom: number};
+  /** The press is off the bar: its release cancels (a fine pointer's). */
+  isOff: boolean;
 }
 
 export interface UseTabBarLensOptions {
@@ -416,6 +421,13 @@ export function useTabBarLens({
       hasLens: selected >= 0,
       isIgnored,
       isFine: !isTouch,
+      box: {
+        left,
+        right: left + element.offsetWidth,
+        top: rootBox.top + element.offsetTop,
+        bottom: rootBox.top + element.offsetTop + element.offsetHeight,
+      },
+      isOff: false,
     };
     // A fine pointer: nothing moves until the press drags.
     if (!isTouch) {
@@ -454,6 +466,14 @@ export function useTabBarLens({
     press.lastX = x;
     press.isDragging ||= Math.abs(x - press.startX) > DRAG_SLOP;
     if (press.isFine) {
+      // Off the bar, the release cancels (spec:AST-020 FR9: a control that
+      // selects keeps slide-off cancelling).
+      const location = recognizer.location();
+      press.isOff =
+        location.x < press.box.left ||
+        location.x > press.box.right ||
+        location.y < press.box.top ||
+        location.y > press.box.bottom;
       // A fine pointer's drag carries the lens's resting place, held on an
       // enabled tab like a finger's chase; from a disabled tab it counts
       // from here.
@@ -506,7 +526,11 @@ export function useTabBarLens({
       // host swallows the browser's click for a press a recognizer took. The
       // lens's resting place transitions onto the selection rendered.
       const nearest = nearestIndex(press.lastX, press.centers);
-      if (!isCancelled && isDisabledRef.current?.(nearest) !== true) {
+      if (
+        !isCancelled &&
+        !press.isOff &&
+        isDisabledRef.current?.(nearest) !== true
+      ) {
         flushSync(() => onLiftRef.current(nearest));
       }
       placeLens(null);
