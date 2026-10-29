@@ -21,15 +21,30 @@ const workflows = fs
     name,
     yaml.parse(fs.readFileSync(path.join(dir, name), 'utf8')),
   ]);
-const REQUIRED_CONTEXT_WORKFLOWS = ['ci.yml', 'lint.yml'];
+// The workflows that report the required contexts (build, test,
+// docsite-test, lint, spec-owner-approval, review-required).
+const REQUIRED_CONTEXT_WORKFLOWS = [
+  'ci.yml',
+  'lint.yml',
+  'review-signal.yml',
+  'spec-owner-gate.yml',
+];
+// `**`, `**/*`, `**/**`: a glob that matches every path is no allowlist.
+const MATCH_ALL = /^\*\*(\/\*+)*$/;
+
+it('names required-context workflows that exist', () => {
+  const names = workflows.map(([name]) => name);
+  for (const name of REQUIRED_CONTEXT_WORKFLOWS) expect(names).toContain(name);
+});
 
 it.each(workflows)('%s filters by positive paths only', (name, value) => {
   for (const [event, config] of Object.entries(value.on ?? value[true] ?? {})) {
     expect(config?.['paths-ignore'], `${name} ${event}`).toBeUndefined();
     for (const glob of config?.paths ?? []) {
-      expect(glob === '**' || glob.startsWith('!'), `${name}: ${glob}`).toBe(
-        false,
-      );
+      expect(
+        MATCH_ALL.test(glob) || glob.startsWith('!'),
+        `${name}: ${glob}`,
+      ).toBe(false);
     }
     if (REQUIRED_CONTEXT_WORKFLOWS.includes(name)) {
       expect(
