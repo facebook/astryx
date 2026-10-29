@@ -1132,9 +1132,8 @@ jobs:
       - name: Write PR comment metadata
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         run: |
-          # PR Comment reads this exact-run analysis. Storybook preview links
-          # come from the exact-head Vercel deployment; the Sandbox artifact
-          # remains on Pages until its separate migration.
+          # PR Comment reads this exact-run analysis. Storybook and Sandbox
+          # preview links come from the exact-head Vercel deployment.
           cat > pr-meta.json <<EOF
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
