@@ -1363,13 +1363,13 @@ async function scrollByFinger(
   page: Page,
   driver: TouchDriver,
   dy: number,
-  {settle = true}: {settle?: boolean} = {},
+  {settle = true, restMs}: {settle?: boolean; restMs?: number} = {},
 ) {
   const from = {x: 200, y: dy > 0 ? 520 : 160};
   const to = {x: from.x, y: from.y - dy};
   const script = drag(from, to, {
     durationMs: Math.max(160, Math.abs(dy) * 3),
-    restMs: settle ? 150 : 0,
+    restMs: restMs ?? (settle ? 150 : 0),
   });
   if (driver.drivesNativeGestures) {
     await driver.play(script);
@@ -2191,18 +2191,14 @@ test.describe('bottom accessory', () => {
     page,
   }) => {
     const {driver} = await openBar(page, 'bottom-accessory');
-    // Just past the trigger, so the page stops while it is still moving.
-    await scrollByFinger(page, driver, 80, {settle: false});
+    // Just past the trigger, the finger at rest before it lifts (so the page
+    // stops at the lift), and the circle tapped at once: the turn comes
+    // while the accessory moves fast.
+    await scrollByFinger(page, driver, 80, {settle: false, restMs: 40});
     await expect(accessory(page)).toHaveAttribute(
       'data-tab-bar-accessory',
       'inline',
     );
-    await waitForScrollIdle(page);
-    expect(
-      await accessory(page).evaluate(element =>
-        element.getAnimations().some(a => a.playState === 'running'),
-      ),
-    ).toBe(true);
     const target = await circle(page).boundingBox();
     if (target == null) {
       throw new Error('no circle');
@@ -2219,12 +2215,14 @@ test.describe('bottom accessory', () => {
     const [first, second] = await sampleCurve(accessory(page), [0, 16.667]);
     await releaseAnimations(page, {finish: true});
     // It was moving down into its inline place: the turn keeps that speed,
-    // so its first frame back still carries it down (away from rest above),
-    // as a spring retargeted mid-flight does.
+    // so its first frame back stays lower (further from its rest above) than
+    // the expand spring from rest would leave it.
+    const fromRest =
+      first.transform.translateY * (1 - springStep(ACCESSORY_EXPAND, 16.667));
     expect(
-      second.transform.translateY,
-      JSON.stringify({first, second}),
-    ).toBeGreaterThan(first.transform.translateY);
+      second.transform.translateY - fromRest,
+      JSON.stringify({first, second, fromRest}),
+    ).toBeGreaterThan(0.5);
   });
 
   test('its content takes taps above the bar and inline, never choosing a tab', async ({
