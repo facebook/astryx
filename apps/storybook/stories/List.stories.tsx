@@ -578,6 +578,16 @@ function AnimatedChangesSwipeDemo() {
           />
         ))}
       </List>
+      <Button
+        label="Move the last row first"
+        variant="secondary"
+        onClick={() =>
+          setRows(current => [
+            current[current.length - 1],
+            ...current.slice(0, -1),
+          ])
+        }
+      />
     </div>
   );
 }
@@ -590,7 +600,8 @@ export const AnimatedChangesSwipe: Story = {
         story:
           'With `animatedLayout`, a row swiped away with a removal action ' +
           'collapses in place, its action showing, while the rows below ' +
-          'glide up into its gap on the shared motion.',
+          'glide up into its gap on the shared motion. A row moved among ' +
+          'these swipeable rows rides above the rows it crosses.',
       },
     },
   },

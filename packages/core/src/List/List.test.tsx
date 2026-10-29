@@ -1190,8 +1190,13 @@ describe('List and swipe actions', () => {
     };
     const swipeable = rowZ(row('Swipeable'));
     expect(swipeable.touch.join('\n')).toMatch(/z-index: 1/);
-    // With a mouse there is no band, and nothing changes.
-    expect(swipeable.other).toEqual([]);
+    // With a mouse there is no band: the row's only z-index is an update's
+    // travelling raise, while it slides across other rows.
+    for (const rule of swipeable.other) {
+      expect(rule.slice(0, rule.indexOf('{'))).toContain(
+        '[data-astryx-travelling]',
+      );
+    }
     // A row that is no stacking context needs no raise (its band's own
     // z-index orders it), and a swipeable row with no band gets none.
     expect(rowZ(row('Pressable')).touch).toEqual([]);

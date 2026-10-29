@@ -225,8 +225,20 @@ const styles = stylex.create({
   // inside it: under a finger the row itself rises above the rows after it,
   // whose boxes its band reaches into. The list isolates, so it stays below
   // a sticky header (List.tsx).
+  //
+  // StyleX keeps one zIndex per element, and this style comes after
+  // `travelling`, so it carries the travelling raise too, above its own: a
+  // row an update slides across swipeable rows (each at 1 under a finger)
+  // still rides above them, with a mouse as under a finger.
   swipeRaised: {
-    zIndex: {default: null, '@media (pointer: coarse)': 1},
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 2,
+      '@media (pointer: coarse)': {
+        default: 1,
+        '[data-astryx-travelling]': 2,
+      },
+    },
   },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],

@@ -471,6 +471,70 @@ for (const [change, button] of [
   });
 }
 
+/**
+ * Moves the swipe story's last row first and freezes the motion halfway,
+ * then reports which row the browser hit-tests where the moved row overlaps
+ * a row it crosses.
+ */
+async function crossingHit(page: Page) {
+  await press(page, 'Move the last row first');
+  return page.evaluate(() => {
+    const list = document.querySelector('#storybook-root ul');
+    for (const animation of document.getAnimations()) {
+      const target = (animation.effect as KeyframeEffect | null)?.target;
+      if (list != null && target != null && list.contains(target)) {
+        animation.pause();
+        animation.currentTime =
+          Number(animation.effect?.getComputedTiming().duration) / 2;
+      }
+    }
+    const label = (row: Element | null | undefined) => {
+      if (row == null) {
+        return null;
+      }
+      const copy = row.cloneNode(true) as Element;
+      for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+        panel.remove();
+      }
+      return copy.textContent?.trim() ?? '';
+    };
+    const rows = [...document.querySelectorAll('#storybook-root li')];
+    const moved = rows.find(row => row.hasAttribute('data-astryx-travelling'));
+    if (moved == null) {
+      return null;
+    }
+    const m = moved.getBoundingClientRect();
+    const crossed = rows.find(row => {
+      const r = row.getBoundingClientRect();
+      return row !== moved && r.top < m.bottom - 4 && r.bottom > m.top + 4;
+    });
+    if (crossed == null) {
+      return {moved: label(moved), crossed: null, hit: null};
+    }
+    const c = crossed.getBoundingClientRect();
+    const y = (Math.max(m.top, c.top) + Math.min(m.bottom, c.bottom)) / 2;
+    const hit = document.elementFromPoint(m.left + 40, y)?.closest('li');
+    return {moved: label(moved), crossed: label(crossed), hit: label(hit)};
+  });
+}
+
+test('a reorder among swipeable rows: the moved row rides above the rows it crosses, under a finger and with a mouse', async ({
+  page,
+  browser,
+}) => {
+  await open(page, SWIPE_STORY);
+  const touch = await crossingHit(page);
+  expect(touch?.moved, JSON.stringify(touch)).toBe('Archive');
+  expect(touch?.crossed, JSON.stringify(touch)).not.toBeNull();
+  expect(touch?.hit, JSON.stringify(touch)).toBe('Archive');
+  const mouse = await withMouse(browser, async mousePage => {
+    await open(mousePage, SWIPE_STORY);
+    return crossingHit(mousePage);
+  });
+  expect(mouse?.crossed, JSON.stringify(mouse)).not.toBeNull();
+  expect(mouse?.hit, JSON.stringify(mouse)).toBe('Archive');
+});
+
 test('a row swiped away with a removal action exits in place as it was on screen, as itself with no element added, while the rows after it glide up', async ({
   page,
   browserName,
