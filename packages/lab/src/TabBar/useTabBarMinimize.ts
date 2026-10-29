@@ -39,7 +39,10 @@
  * (`accessoryCollapse`), ending before the search tab when there is one: its
  * box changes in CSS and it starts where it was, its glass drawn in the same
  * three pieces so its width changes with transforms too, its content laid
- * out at once for its new place. Expanding plays the same motion back
+ * out at once for its new place and shown through a window whose trailing
+ * edge rides the glass's trailing cap, so it never shows past the glass. A
+ * move turned around keeps its speed (`spec:AST-094` FR6). Expanding plays
+ * the same motion back
  * (`accessoryExpand` for the accessory). Choosing the search tab collapses
  * the bar the same way (useTabBarSearch.ts shows its field) and the
  * accessory steps aside. Every animation runs on the compositor, transforms
@@ -117,6 +120,10 @@ export interface TabBarMinimize {
   readonly accessoryEnd: (element: HTMLElement | null) => void;
   /** The search tab's glass: shrinks to the minimized size about its centre. */
   readonly searchGlass: (element: HTMLElement | null) => void;
+  /** The accessory content's window: its trailing edge rides the cap. */
+  readonly accessoryClip: (element: HTMLElement | null) => void;
+  /** The accessory's content: held in place inside its moving window. */
+  readonly accessoryContent: (element: HTMLElement | null) => void;
 }
 
 /** No scroller to watch: the server, or minimizing is off. */
@@ -192,7 +199,14 @@ function useScrollMinimize(isEnabled: boolean) {
     runRef.current = {lastY: window.scrollY, downFrom: null};
     return () => watchRef.current?.stop();
   }, [isEnabled]);
-  const expand = useCallback(() => setIsMinimized(false), []);
+  // Expanding starts the downward run over (in place: a watch running now
+  // holds the same run), so an expanded bar takes another
+  // `minimizeDistance` down before it minimizes again.
+  const expand = useCallback(() => {
+    runRef.current.lastY = window.scrollY;
+    runRef.current.downFrom = null;
+    setIsMinimized(false);
+  }, []);
   return {isMinimized: isEnabled && isMinimized, expand};
 }
 
@@ -205,8 +219,9 @@ interface ScrollRun {
 /**
  * Follows one scroll of the page by the person, from the finger's pan to the
  * page's rest: `lift` when the finger lifts; the listeners go at the
- * `scrollend` that follows, or at once if the person's scroll has already
- * ended (`isFingerScroll`, the gesture host's reader).
+ * `scrollend` that follows (where the browser sends none, when the reader
+ * says the person's scroll ended), or at once if it has already ended
+ * (`isFingerScroll`, the gesture host's reader).
  */
 function watchScroll(
   run: ScrollRun,
@@ -248,7 +263,21 @@ function watchScroll(
       finish();
     }
   };
+  // Where the browser sends no `scrollend`, the person's scroll ends when
+  // the gesture host's reader says so (its own fallback after the last
+  // scroll event), read once a frame from the lift.
+  let frame = 0;
+  const waitForReader = () => {
+    frame = requestAnimationFrame(() => {
+      if (isFingerScroll()) {
+        waitForReader();
+      } else {
+        finish();
+      }
+    });
+  };
   const stop = () => {
+    cancelAnimationFrame(frame);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('scrollend', onScrollEnd);
     onStop();
@@ -267,6 +296,8 @@ function watchScroll(
       isLifted = true;
       if (!isFingerScroll()) {
         finish();
+      } else if (!('onscrollend' in window)) {
+        waitForReader();
       }
     },
     stop,
@@ -280,8 +311,8 @@ export function useTabBarMinimize({
   isEnabled,
   searchGlassHoldRef,
 }: UseTabBarMinimizeOptions): TabBarMinimize {
-  // The table's springs become motion roles (a theme may retune them)
-  // before this hook's first animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isEnabled || isSearching) {
     registerTabBarTable();
   }
@@ -297,6 +328,8 @@ export function useTabBarMinimize({
   const accessoryMiddle = useAnimator();
   const accessoryEnd = useAnimator();
   const searchGlass = useAnimator();
+  const accessoryClip = useAnimator();
+  const accessoryContent = useAnimator();
 
   const previousRef = useRef(isCollapsed);
   useLayoutEffect(() => {
@@ -366,15 +399,57 @@ export function useTabBarMinimize({
     const middle =
       (accessoryMiddle.animator.get('scaleX', now) * (from.width - cap)) /
       (to.width - cap);
+    // A move turned around mid-flight keeps its speed (spec:AST-094 FR6):
+    // each spring starts from the velocity it had (the middle's scaled with
+    // its value).
+    const velocity = {
+      x: accessory.animator.getVelocity('x', now),
+      y: accessory.animator.getVelocity('y', now),
+      end: accessoryEnd.animator.getVelocity('x', now),
+      middle:
+        (accessoryMiddle.animator.getVelocity('scaleX', now) *
+          (from.width - cap)) /
+        (to.width - cap),
+    };
+    // The content is laid out at once for its new box: while the glass
+    // grows into it, the content's window keeps its trailing edge on the
+    // glass's trailing cap (the content counter-moves, so it stays put). A
+    // shrinking glass already holds the narrower content: no window then.
+    const clip = sign * Math.min(0, sign * end);
+    const clipVelocity = clip === 0 ? 0 : velocity.end;
     accessory.animator.set(moved);
     accessoryEnd.animator.set({x: end});
     accessoryMiddle.animator.set({scaleX: middle});
-    const move = {
-      spring: isCollapsed ? tabBar.accessoryCollapse : tabBar.accessoryExpand,
-    };
-    accessory.animator.animate({x: 0, y: 0}, move, options);
-    accessoryEnd.animator.animate({x: 0}, move, options);
-    accessoryMiddle.animator.animate({scaleX: 1}, move, options);
+    accessoryClip.animator.set({x: clip});
+    accessoryContent.animator.set({x: -clip});
+    const spring = isCollapsed
+      ? tabBar.accessoryCollapse
+      : tabBar.accessoryExpand;
+    accessory.animator.animate(
+      {x: 0, y: 0},
+      {spring, velocity: {x: velocity.x, y: velocity.y}},
+      options,
+    );
+    accessoryEnd.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: velocity.end}},
+      options,
+    );
+    accessoryMiddle.animator.animate(
+      {scaleX: 1},
+      {spring, velocity: {scaleX: velocity.middle}},
+      options,
+    );
+    accessoryClip.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: clipVelocity}},
+      options,
+    );
+    accessoryContent.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: -clipVelocity}},
+      options,
+    );
   }, [
     isCollapsed,
     capsuleRef,
@@ -389,6 +464,8 @@ export function useTabBarMinimize({
     accessoryEnd,
     searchGlass,
     hasSearch,
+    accessoryClip,
+    accessoryContent,
   ]);
 
   // Minimized, the bar's width can still change (a rotation, a split view):
@@ -443,5 +520,7 @@ export function useTabBarMinimize({
     accessoryMiddle: accessoryMiddle.ref,
     accessoryEnd: accessoryEnd.ref,
     searchGlass: searchGlass.ref,
+    accessoryClip: accessoryClip.ref,
+    accessoryContent: accessoryContent.ref,
   };
 }
