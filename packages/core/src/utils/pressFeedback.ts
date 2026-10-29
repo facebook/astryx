@@ -171,30 +171,25 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * The tempo the release fade plays at on `element`: the
- * `--_astryx-motion-tempo` its stylesheet reads, which a theme or an
- * adaptation rule with a `tempo` writes and every element under it inherits;
- * 1 without one. Read once, at the release (`spec:AST-108` FR4,
- * `component:Button` FR15); the onset delay and the tap flash stay fixed.
- */
-function themeTempo(element: Element): number {
-  const value = getComputedStyle(element)
-    .getPropertyValue('--_astryx-motion-tempo')
-    .trim();
-  const tempo = value === '' ? Number.NaN : Number(value);
-  return Number.isFinite(tempo) && tempo > 0 ? tempo : 1;
-}
-
-/**
- * The release fade's clock on `element`: the fade at its theme's tempo. Under
- * Reduce Motion the tempo may shorten it but never lengthens it past the
- * 200 ms cap (`spec:AST-108` FR4), as the stylesheet's release does.
+ * The release fade's clock on `element`, read once, at the release, from the
+ * two properties its stylesheet reads, which every element under a theme
+ * inherits: `--_astryx-motion-tempo`, which a theme or an adaptation rule
+ * with a `tempo` writes (1 without one), and `--_astryx-reduced-motion`, 1
+ * under a theme's `reducedMotion: 'always'` mark (`spec:AST-108` FR4, FR6;
+ * `component:Button` FR15). Under Reduce Motion, the person's setting or the
+ * mark, the tempo may shorten the fade but never lengthens it past the 200 ms
+ * cap. The onset delay and the tap flash stay fixed.
  */
 function fadeMs(element: Element): number {
-  const scaled = PRESS_FADE_MS * themeTempo(element);
+  const style = getComputedStyle(element);
+  const value = style.getPropertyValue('--_astryx-motion-tempo').trim();
+  const read = value === '' ? Number.NaN : Number(value);
+  const tempo = Number.isFinite(read) && read > 0 ? read : 1;
+  const scaled = PRESS_FADE_MS * tempo;
   const reduced =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    style.getPropertyValue('--_astryx-reduced-motion').trim() === '1' ||
+    (typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   return reduced ? Math.min(scaled, PRESS_FADE_MS) : scaled;
 }
 

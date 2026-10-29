@@ -205,9 +205,10 @@ it, typed as that theme's listed names.
   field: a duration-scale field or knob the child leaves unset keeps its
   base's value. Each duration's
   value before `tempo` is kept for busy-indicator loops, which never follow
-  `tempo`. `reducedMotion: 'always'` marks the theme's root, which only
-  motion-keyed adaptation rules read. An adaptation rule may set `tempo` and
-  `character`, never `reducedMotion`.
+  `tempo`. `reducedMotion: 'always'` marks the theme's root, and what keys
+  reduced motion on `prefers-reduced-motion` keys it on that mark as well
+  (`spec:AST-108` FR6). An adaptation rule may set `tempo` and `character`,
+  never `reducedMotion`.
 
 This record does not own:
 
@@ -268,9 +269,6 @@ public surface belongs to
 - An internal, pure `resolveThemeMotion(theme)` returns a theme's motion
   knobs, durations, and easings for the animator and for server code; it
   touches no DOM and has no import-time side effects (`spec:AST-108` FR6).
-  FR6's role tables are accepted but unshipped: until they land, that part
-  of FR6 is current authority but not enforcement, and no spring reads the
-  knobs.
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
 - `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
@@ -311,6 +309,17 @@ validator still requires the original theme-derived prefix and uses that prefix 
 classify local references. Until the implementation lands, INV8's prefix-independent
 clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
+
+`resolveThemeMotion`'s role tables are accepted but unshipped (`spec:AST-108`
+FR6): no spring reads the motion knobs yet. Until they land, that part of FR6
+is current authority but not enforcement.
+
+The reach of `reducedMotion: 'always'` is accepted but partly unshipped
+(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules and the press
+release fade key reduced motion on the mark; components' other Reduce Motion
+styles, the animator, and other script readers of `prefers-reduced-motion` do
+not yet. Until they do, that part of INV15 and FR6 is current authority but not
+enforcement.
 
 ## Verification
 

@@ -245,12 +245,17 @@ describe('build-css astryx.css', () => {
       // The release scales by the theme's tempo; it reads at tempo 1
       // (`calc(<ms> * var(--_astryx-motion-tempo, 1))`, and under Reduce
       // Motion `min(<ms>, calc(…))`, spec:AST-108 FR4).
+      // Outside a reduced-motion mark the tempo is capped at its own maximum
+      // (`min(var(--_astryx-motion-tempo, 1), 1.5 - 0.5 * var(--_astryx-reduced-motion, 0))`).
+      const trimmed = value.trim();
       const match =
-        value
-          .trim()
-          .match(
-            /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
-          ) ?? value.trim().match(/^([\d.]+)(ms|s)$/);
+        trimmed.match(
+          /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*min\(\s*var\(--_astryx-motion-tempo,\s*1\)\s*,\s*1\.5\s*-\s*0?\.5\s*\*\s*var\(--_astryx-reduced-motion,\s*0\)\s*\)\s*\)$/,
+        ) ??
+        trimmed.match(
+          /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
+        ) ??
+        trimmed.match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
