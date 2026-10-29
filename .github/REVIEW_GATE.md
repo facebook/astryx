@@ -60,16 +60,7 @@ live pull request last, and if a status still lands on a head that settled
 during that window, the run logs the status as unverified and stops before
 auto-merge.
 
-When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
-head **for the design-approval group only**. The attestation is published only
-for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
-is still in that file — a marker left by someone since removed, or published
-before this rule existed, authorizes nothing. It satisfies no other group: the
-non-design and theme groups always need a real exact-head review or command from
-someone in their own list. An engineering owner cannot attest their own head.
-
-The attestation does not grant auto-merge by itself. The existing gate may enable
-squash auto-merge only when every changed path is a recognized spec record,
+The gate may enable squash auto-merge only when every changed path is a recognized spec record,
 every required owner group has approved the exact head, and all branch checks
 pass. Normative assets and indexes are outside that scope; adding any code path
 also prevents the spec-only auto-merge path.

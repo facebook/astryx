@@ -301,13 +301,8 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).not.toContain(
       '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
     );
-    // Only a DESIGNOWNER author self-attests, and only the design group
-    // reads that attestation.
-    expect(reconciler).toContain('designOwners.includes(actor)');
-    expect(reconciler).not.toContain('allOwners.has(actor)');
-    expect(reconciler).toContain(
-      'readyAttestations,\n        owners: designApprovers',
-    );
+    // Every group approves through commands and reviews; no self-attestation.
+    expect(reconciler).not.toContain('spec-owner-ready');
     expect(reconciler).toContain('isSettled(initialPr)');
     expect(reconciler).toContain('isPublishable(headSha)');
     expect(reconciler).toContain('specDecision.approved');
@@ -387,14 +382,6 @@ describe('spec-only workflow contract', () => {
     expect(restore.indexOf('await isLiveHeadWritable(headSha)')).toBeLessThan(
       restore.indexOf('createStatus('),
     );
-  });
-
-  it('reads a ready attestation back only for a current design owner', () => {
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-    const decision = read('.github/scripts/spec-owner-decision.cjs');
-
-    expect(reconciler).toContain('owners: designOwners');
-    expect(decision).toContain('!allowed.has(owner)');
   });
 
   it('does not run the privileged visual-report path for spec-only PRs', () => {

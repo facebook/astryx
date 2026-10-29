@@ -908,8 +908,8 @@ remains in `docs/design/`.
 A team DESIGNOWNER may include the local decision, implementation, and evidence
 in one atomic appearance-only pull request. DD-only current-record changes route
 to design approval; mixing a DD edit with another component/module contract edit
-requires both design and engineering. A DESIGNOWNER's exact-head ready transition
-may satisfy the design group. The Core code gate is bypassed only when trusted-base
+requires both design and engineering. A DESIGNOWNER approves with an exact-head
+review or `/approve-spec <head>` like every other owner. The Core code gate is bypassed only when trusted-base
 classification proves an existing-file declaration-only appearance diff and no
 other code reason applies. Any uncertainty, contributor-authored change, behavior,
 JSX, API, package, barrel, new component, or unknown runtime path fails closed to

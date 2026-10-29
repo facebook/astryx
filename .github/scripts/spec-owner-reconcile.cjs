@@ -9,14 +9,12 @@ const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
   GATE_STATUS_CONTEXT,
-  READY_STATUS_PREFIX,
   canonicalRunUrl,
   describeOwnerCommandProblem,
   newestGateRun,
   parseOwnerCommand,
   parseOwnerCommandIntent,
   parseOwnerFile,
-  parseReadyAttestations,
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
@@ -429,30 +427,6 @@ async function reconcileSpecOwnerGate({
   });
   if (await restoreNewerStatus(initialHead)) return;
 
-  const actor = context.actor?.toLowerCase();
-  const eventHead = context.payload.pull_request?.head?.sha;
-  const eventTime = context.payload.pull_request?.updated_at;
-  // Only a DESIGNOWNER author may self-attest a head, and only for the design
-  // approval group (.github/DESIGNOWNERS). An engineering owner marking their
-  // own pull request ready is not an approval by anyone else.
-  if (
-    context.eventName === 'pull_request_target' &&
-    context.payload.action === 'ready_for_review' &&
-    actor &&
-    actor === initialPr.user.login.toLowerCase() &&
-    designOwners.includes(actor) &&
-    eventHead === initialHead &&
-    eventTime &&
-    !Number.isNaN(Date.parse(eventTime))
-  ) {
-    await createStatus({
-      sha: initialHead,
-      context: `${READY_STATUS_PREFIX}${actor}`,
-      state: 'success',
-      description: `Owner ready at ${new Date(eventTime).toISOString()}.`,
-    });
-  }
-
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();
   const reviewAuthor = context.payload.review?.user?.login?.toLowerCase();
   const explicitRevoke =
@@ -538,29 +512,17 @@ async function reconcileSpecOwnerGate({
   }
   const designApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
-  const readyAttestations = parseReadyAttestations(statuses, {
-    repository,
-    headSha: initialHead,
-    owners: designOwners,
-  });
   const decisionInput = {
     reviews,
     comments,
     dismissalEvents: timeline,
     headSha: initialHead,
   };
-  // A ready-for-review attestation is the design group's own self-attestation
-  // path. It is not evidence for the non-design or theme groups, which stay on
-  // real exact-head reviews and commands.
   const specDecision = requiredGroups.spec
     ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
   const designDecision = requiredGroups.design
-    ? resolveOwnerDecision({
-        ...decisionInput,
-        readyAttestations,
-        owners: designApprovers,
-      })
+    ? resolveOwnerDecision({...decisionInput, owners: designApprovers})
     : {approved: true, owner: null};
   const themeDecision = requiredGroups.theme
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})

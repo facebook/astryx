@@ -15,7 +15,6 @@ const {
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const GATE_STATUS_CONTEXT = 'spec-owner-approval';
-const READY_STATUS_PREFIX = 'spec-owner-ready/';
 const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 
 // The workflow trigger filters comments with GitHub's `startsWith` against the
@@ -83,7 +82,7 @@ function candidateTime(candidate) {
 
 function candidatePriority(candidate) {
   if (candidate.approved === false || candidate.approved === null) return 2;
-  return candidate.source === 'ready' ? 0 : 1;
+  return 1;
 }
 
 function latestDismissalAt(review, dismissalEvents) {
@@ -104,7 +103,6 @@ function latestDismissalAt(review, dismissalEvents) {
 function resolveOwnerDecision({
   reviews,
   comments,
-  readyAttestations = [],
   dismissalEvents = [],
   owners,
   headSha,
@@ -125,15 +123,6 @@ function resolveOwnerDecision({
     ) {
       latestByOwner.set(normalizedLogin, normalizedCandidate);
     }
-  }
-
-  for (const attestation of readyAttestations) {
-    if (attestation.headSha !== headSha) continue;
-    consider(attestation.owner, {
-      approved: true,
-      at: attestation.at,
-      source: 'ready',
-    });
   }
 
   for (const review of reviews) {
@@ -215,40 +204,6 @@ function isTrustedWorkflowStatus(status, repository) {
   );
 }
 
-function parseReadyAttestations(statuses, {repository, headSha, owners}) {
-  // A ready marker is only design-group evidence, and only from a handle that
-  // is a design owner *now*. Markers published before that rule existed, or
-  // by someone since removed from .github/DESIGNOWNERS, are historical noise
-  // and must not authorize anything.
-  const allowed = new Set((owners ?? []).map(owner => owner.toLowerCase()));
-  const attestations = [];
-  for (const status of statuses) {
-    if (
-      status.state !== 'success' ||
-      !status.context?.startsWith(READY_STATUS_PREFIX) ||
-      !isTrustedWorkflowStatus(status, repository)
-    ) {
-      continue;
-    }
-    const owner = status.context
-      .slice(READY_STATUS_PREFIX.length)
-      .toLowerCase();
-    if (!/^[a-z0-9-]+$/.test(owner) || !allowed.has(owner)) continue;
-    const match = status.description?.match(
-      /^Owner ready at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\.$/,
-    );
-    if (!match || Number.isNaN(Date.parse(match[1]))) continue;
-    attestations.push({
-      approved: true,
-      at: match[1],
-      headSha,
-      owner,
-      source: 'ready',
-    });
-  }
-  return attestations;
-}
-
 function newestGateRun(statuses, repository) {
   let newest = null;
   for (const status of statuses) {
@@ -326,7 +281,6 @@ function requiresOwnerApproval(records, options = {}) {
 module.exports = {
   GATE_STATUS_CONTEXT,
   OWNER_COMMAND_PREFIXES,
-  READY_STATUS_PREFIX,
   canonicalRunUrl,
   describeOwnerCommandProblem,
   isDispatchableOwnerCommand,
@@ -337,7 +291,6 @@ module.exports = {
   parseOwnerCommand,
   parseOwnerCommandIntent,
   parseOwnerFile,
-  parseReadyAttestations,
   requiredApprovalGroups,
   requiresOwnerApproval,
   resolveOwnerDecision,
