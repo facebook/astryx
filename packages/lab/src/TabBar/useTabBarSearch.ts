@@ -64,7 +64,7 @@ export interface UseTabBarSearchOptions {
   readonly hostRef: RefObject<HTMLElement | null>;
   /** The search tab is selected. */
   readonly isSearching: boolean;
-  /** The search field is active (above the keyboard). */
+  /** The search field is active (widened to span the screen). */
   readonly isActive: boolean;
   /**
    * A finger drives the bar: only then does the field move (on UIKit's
@@ -105,8 +105,8 @@ export function useTabBarSearch({
   isActive,
   isTouch,
 }: UseTabBarSearchOptions): TabBarSearch {
-  // The table's springs become motion roles (a theme may retune them)
-  // before this hook's first animation.
+  // The UIKit table registers (motion/roles.ts) before this hook's first
+  // animation; it lists no role, so each spring plays as measured.
   if (isTouch) {
     registerTabBarTable();
   }
