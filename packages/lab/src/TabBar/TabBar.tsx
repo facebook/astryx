@@ -382,6 +382,14 @@ const styles = stylex.create({
     inset: 0,
     pointerEvents: 'none',
   },
+  // The content's window: moved with the glass's trailing cap while the
+  // glass grows (useTabBarMinimize.ts), so the content never shows past it.
+  accessoryClip: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+    borderRadius: radiusVars['--radius-full'],
+  },
   accessoryContent: {
     position: 'absolute',
     inset: 0,
@@ -853,8 +861,15 @@ export function TabBar({
                 )}
               />
             </div>
-            <div {...stylex.props(styles.accessoryContent)}>
-              {accessoryContent}
+            <div
+              ref={minimize.accessoryClip}
+              data-tab-bar-accessory-clip=""
+              {...stylex.props(styles.accessoryClip)}>
+              <div
+                ref={minimize.accessoryContent}
+                {...stylex.props(styles.accessoryContent)}>
+                {accessoryContent}
+              </div>
             </div>
           </div>
         ) : null}

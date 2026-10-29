@@ -34,7 +34,10 @@
  * The bottom accessory moves down inline beside the circle
  * (`accessoryCollapse`): its box changes in CSS and it starts where it was,
  * its glass drawn in the same three pieces so its width changes with
- * transforms too, its content laid out at once for its new place. Expanding
+ * transforms too, its content laid out at once for its new place and shown
+ * through a window whose trailing edge rides the glass's trailing cap, so
+ * it never shows past the glass. A move turned around keeps its speed
+ * (`spec:AST-094` FR6). Expanding
  * plays the same motion back (`accessoryExpand` for the accessory). Every animation runs on the
  * compositor, transforms and opacity only.
  *
@@ -91,6 +94,10 @@ export interface TabBarMinimize {
   readonly accessoryMiddle: (element: HTMLElement | null) => void;
   /** The accessory glass's trailing cap: its width. */
   readonly accessoryEnd: (element: HTMLElement | null) => void;
+  /** The accessory content's window: its trailing edge rides the cap. */
+  readonly accessoryClip: (element: HTMLElement | null) => void;
+  /** The accessory's content: held in place inside its moving window. */
+  readonly accessoryContent: (element: HTMLElement | null) => void;
 }
 
 /** No scroller to watch: the server, or minimizing is off. */
@@ -290,6 +297,8 @@ export function useTabBarMinimize({
   const accessory = useAnimator();
   const accessoryMiddle = useAnimator();
   const accessoryEnd = useAnimator();
+  const accessoryClip = useAnimator();
+  const accessoryContent = useAnimator();
 
   const previousRef = useRef(isMinimized);
   useLayoutEffect(() => {
@@ -349,15 +358,57 @@ export function useTabBarMinimize({
     const middle =
       (accessoryMiddle.animator.get('scaleX', now) * (from.width - cap)) /
       (to.width - cap);
+    // A move turned around mid-flight keeps its speed (spec:AST-094 FR6):
+    // each spring starts from the velocity it had (the middle's scaled with
+    // its value).
+    const velocity = {
+      x: accessory.animator.getVelocity('x', now),
+      y: accessory.animator.getVelocity('y', now),
+      end: accessoryEnd.animator.getVelocity('x', now),
+      middle:
+        (accessoryMiddle.animator.getVelocity('scaleX', now) *
+          (from.width - cap)) /
+        (to.width - cap),
+    };
+    // The content is laid out at once for its new box: while the glass
+    // grows into it, the content's window keeps its trailing edge on the
+    // glass's trailing cap (the content counter-moves, so it stays put). A
+    // shrinking glass already holds the narrower content: no window then.
+    const clip = sign * Math.min(0, sign * end);
+    const clipVelocity = clip === 0 ? 0 : velocity.end;
     accessory.animator.set(moved);
     accessoryEnd.animator.set({x: end});
     accessoryMiddle.animator.set({scaleX: middle});
-    const move = {
-      spring: isMinimized ? tabBar.accessoryCollapse : tabBar.accessoryExpand,
-    };
-    accessory.animator.animate({x: 0, y: 0}, move, options);
-    accessoryEnd.animator.animate({x: 0}, move, options);
-    accessoryMiddle.animator.animate({scaleX: 1}, move, options);
+    accessoryClip.animator.set({x: clip});
+    accessoryContent.animator.set({x: -clip});
+    const spring = isMinimized
+      ? tabBar.accessoryCollapse
+      : tabBar.accessoryExpand;
+    accessory.animator.animate(
+      {x: 0, y: 0},
+      {spring, velocity: {x: velocity.x, y: velocity.y}},
+      options,
+    );
+    accessoryEnd.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: velocity.end}},
+      options,
+    );
+    accessoryMiddle.animator.animate(
+      {scaleX: 1},
+      {spring, velocity: {scaleX: velocity.middle}},
+      options,
+    );
+    accessoryClip.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: clipVelocity}},
+      options,
+    );
+    accessoryContent.animator.animate(
+      {x: 0},
+      {spring, velocity: {x: -clipVelocity}},
+      options,
+    );
   }, [
     isMinimized,
     capsuleRef,
@@ -370,6 +421,8 @@ export function useTabBarMinimize({
     accessory,
     accessoryMiddle,
     accessoryEnd,
+    accessoryClip,
+    accessoryContent,
   ]);
 
   // Minimized, the bar's width can still change (a rotation, a split view):
@@ -410,5 +463,7 @@ export function useTabBarMinimize({
     accessory: accessory.ref,
     accessoryMiddle: accessoryMiddle.ref,
     accessoryEnd: accessoryEnd.ref,
+    accessoryClip: accessoryClip.ref,
+    accessoryContent: accessoryContent.ref,
   };
 }
