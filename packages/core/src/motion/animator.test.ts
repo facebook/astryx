@@ -554,6 +554,55 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
     }
   });
 
+  it('a block shorter than two frames in the call\u2019s own task moves its start past the block', async () => {
+    // Core Animation dates an animation at the commit, when the calling task
+    // ends, however short the block before it.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The task blocks for 20 ms; the browser dates the animation at 1000.
+      clock = 1020;
+      animation.startTime = 1000;
+      await commitFrame(1020);
+      await expect(handle.started).resolves.toBe(1020);
+      expect(animation.startTime).toBe(1020);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a start the browser dates by the call stays when its own task ended at once, however late the first read', async () => {
+    // WebKit under load from other tasks: the call's task ends at once, and
+    // another task holds the main thread before the first frame. Nothing in
+    // the call's task delayed it, so its start stays the browser's and the
+    // calls a sequence chains on it keep their clock (design:reduced-motion
+    // DR2's 200 ms cross-fade, a cancel fading on the previous fade's end).
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The call's task ends; then another task runs for 100 ms, and the
+      // browser commits the animation after it, dated at the call.
+      await Promise.resolve();
+      clock = 1100;
+      animation.startTime = 1000;
+      await commitFrame(1100);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
   it('a start read after the first frame stays the browser\u2019s', async () => {
     Object.defineProperty(document, 'timeline', {
       configurable: true,
