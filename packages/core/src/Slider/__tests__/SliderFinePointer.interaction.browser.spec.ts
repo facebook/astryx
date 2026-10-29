@@ -350,3 +350,25 @@ test('a wheel or a trackpad’s scroll over a thumb leaves the value and the pag
   expect(await value()).toBe(start);
   expect(await prevented()).toBe(false);
 });
+
+test('a mouse drag that starts off the travel still moves the thumb, by its travel along it (spec:AST-094 FR43)', async ({
+  page,
+}) => {
+  const {center, value, length} = await openSlider(
+    page,
+    'core-slider--default',
+  );
+  const start = await value();
+  const at = await center();
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  // The first 12 px run straight across the travel: a mouse's pan claims
+  // after the same 10 px in any direction, since a mouse has no page scroll
+  // to yield to.
+  await page.mouse.move(at.x, at.y + 12, {steps: 3});
+  // Then 60 px along it: the threshold lies across the travel, so all 60
+  // count.
+  await page.mouse.move(at.x + 60, at.y + 12, {steps: 6});
+  await expect.poll(value).toBe(Math.round(start + (60 * 100) / length));
+  await page.mouse.up();
+});
