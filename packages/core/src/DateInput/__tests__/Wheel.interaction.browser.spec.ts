@@ -339,49 +339,73 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   const blockTo = when(1.25 * ROW);
   const blockFrom = blockTo - BLOCK_MS;
   expect(blockFrom, 'the coast runs the whole block').toBeGreaterThan(0);
-  // The row that crosses the band halfway through the block: in sight the
-  // whole time, from about four rows below the band to four above.
+  // UIPickerView's cylinder foreshortens a row as it turns away from the band
+  // and leaves the band's row to the band's copy, so no one row is in sight,
+  // moving a pixel a frame, for the whole second. Rows take turns: each is
+  // followed from three and a half rows below the band until it reaches the
+  // band's edge, where the next, three and a half rows below, takes over.
   const offsetAt = (t: number) =>
     points.find(point => point.t >= t)?.offset ?? rest;
-  const crossing = Math.round(
-    (offsetAt(blockFrom) + offsetAt(blockTo)) / 2 / ROW,
+  const reaches = (offset: number) =>
+    points.find(point => point.offset >= offset)?.t ?? coast.durationMs;
+  const RELAY_RGB = [
+    [255, 0, 255],
+    [0, 255, 255],
+    [255, 255, 0],
+  ] as const;
+  const relay: {row: number; from: number; to: number}[] = [];
+  for (let from = blockFrom; from < blockTo && relay.length < 3;) {
+    const row = Math.round(offsetAt(from) / ROW + 3.5);
+    const to = Math.min(blockTo, reaches((row - 0.6) * ROW));
+    relay.push({row, from: from - blockFrom, to: to - blockFrom});
+    from = to;
+  }
+  expect(relay[relay.length - 1].to, 'the relay covers the block').toBe(
+    BLOCK_MS,
   );
-  // The row as drawn on the cylinder (the options are transparent, over the
-  // band).
-  const marked = minutes.locator(
-    `[data-wheel-drum] [data-label="${String(crossing).padStart(2, '0')}"]`,
-  );
-  // The dimmed copy's rows are 44.7 % opaque, which washes out the marker
-  // chip's colour; this one row is drawn opaque for the evidence.
-  await marked.evaluate(element => {
-    for (const animation of element.getAnimations()) {
-      const effect = animation.effect;
-      if (effect instanceof KeyframeEffect) {
-        effect.setKeyframes(
-          effect.getKeyframes().map(frame => {
-            const {
-              opacity: _opacity,
-              computedOffset: _computed,
-              ...rest
-            } = frame;
-            return rest;
-          }),
-        );
+  const drawn = (row: number) =>
+    minutes.locator(
+      `[data-wheel-drum] [data-label="${String(row).padStart(2, '0')}"]`,
+    );
+  for (const [i, {row}] of relay.entries()) {
+    // The dimmed copy's rows are 44.7 % opaque, which washes out the marker
+    // chip's colour; each marked row is drawn opaque for the evidence.
+    await drawn(row).evaluate(element => {
+      for (const animation of element.getAnimations()) {
+        const effect = animation.effect;
+        if (effect instanceof KeyframeEffect) {
+          effect.setKeyframes(
+            effect.getKeyframes().map(frame => {
+              const {
+                opacity: _opacity,
+                computedOffset: _computed,
+                ...rest
+              } = frame;
+              return rest;
+            }),
+          );
+        }
       }
-    }
-    (element as HTMLElement).style.opacity = '1';
-  });
-  await markElement(marked);
+      (element as HTMLElement).style.opacity = '1';
+    });
+    await markElement(drawn(row), {rgb: RELAY_RGB[i]});
+  }
   await page.waitForTimeout(Math.max(0, coast.from + blockFrom - Date.now()));
   const block = await blockMainThread(page, Math.round(blockTo - blockFrom));
   await page.waitForTimeout(150);
   const presented = await compositor.stop();
   const castFrames = await cast.stop();
-  const tracked = await trackMarker(page, castFrames);
-  const proof = busyWindowProof(
-    tracked,
-    {from: block.from, to: Math.min(block.to, coast.to)},
-    {settledWithin: 1, presented},
+  const tracks: Awaited<ReturnType<typeof trackMarker>>[] = [];
+  for (const [i] of relay.entries()) {
+    tracks.push(await trackMarker(page, castFrames, {rgb: RELAY_RGB[i]}));
+  }
+  const end = Math.min(block.to, coast.to);
+  const proofs = relay.map(({from, to}, i) =>
+    busyWindowProof(
+      tracks[i],
+      {from: block.from + from, to: Math.min(end, block.from + to)},
+      {settledWithin: 1, presented},
+    ),
   );
   await writeEvidence(
     'busy-main-thread/wheel-coast',
@@ -390,10 +414,11 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
         {
           block,
           coast,
-          proof,
-          frames: tracked.map(f => ({
+          relay,
+          proofs,
+          frames: tracks[0].map((f, i) => ({
             t: +(f.t - block.from).toFixed(1),
-            y: f.box?.y ?? null,
+            y: tracks.map(track => track[i]?.box?.y ?? null),
           })),
         },
         null,
@@ -406,28 +431,36 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
     name: 'wheel-coast-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, coast.to) + 40,
+    to: end + 40,
     columns: 8,
     cellScale: 0.35,
-    data: t => ({y: tracked.find(f => f.t === t)?.box?.y ?? -1}),
+    data: t =>
+      Object.fromEntries(
+        tracks.map((track, i) => [
+          `y${i}`,
+          track.find(f => f.t === t)?.box?.y ?? -1,
+        ]),
+      ),
   });
   await film.write(testInfo, {block, coast});
-  // The harness's verdict: a new position on at least 90 % of the window's
-  // frame intervals, no stall over three of them, a median interval of at
-  // most 20 ms; a frozen coast shows one stall the length of the block.
-  // Frames the screencast skipped while the compositor presented them are
-  // recorder skips, not stalls (`presented`, startCompositorTrace).
-  expect(
-    proof.verdict.pass,
-    `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
-  ).toBe(true);
-  expect(proof.monotonic).toBe(true);
-  // Every frame the compositor presented while the main thread was blocked
-  // shows the coast moved. A frame the runner never drew is never presented,
-  // so a dropped frame (software compositing on a busy runner) proves nothing
-  // either way; a coast that stops shows presented frames that did not move,
-  // or none at all, which the verdict above rejects.
-  expect(proof.moved, proof.summary).toBe(proof.frames);
+  for (const proof of proofs) {
+    // The harness's verdict: a new position on at least 90 % of the window's
+    // frame intervals, no stall over three of them, a median interval of at
+    // most 20 ms; a frozen coast shows one stall the length of the block.
+    // Frames the screencast skipped while the compositor presented them are
+    // recorder skips, not stalls (`presented`, startCompositorTrace).
+    expect(
+      proof.verdict.pass,
+      `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
+    ).toBe(true);
+    expect(proof.monotonic).toBe(true);
+    // Every frame the compositor presented while the main thread was
+    // blocked shows the coast moved. A frame the runner never drew is never
+    // presented, so a dropped frame (software compositing on a busy runner)
+    // proves nothing either way; a coast that stops shows presented frames
+    // that did not move, or none at all, which the verdict above rejects.
+    expect(proof.moved, proof.summary).toBe(proof.frames);
+  }
 });
 
 test('the coast does no Layout or Paint per frame', async ({
