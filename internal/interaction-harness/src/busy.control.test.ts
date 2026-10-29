@@ -6,7 +6,8 @@
  * @output The busy-main-thread verdict against a control: a component that
  *   moves on the control's frames passes through a stall the compositor itself
  *   makes, and a frozen one, or one the control outpaces by a single frame,
- *   still fails. Runs
+ *   still fails. Unchanged frames under one cast step a frame count as
+ *   moved; a freeze, whose catch-up is more than one step, does not. Runs
  *   of a block too short to judge alone are judged pooled: the control over
  *   all of them, each run's stall against that run's control.
  * @position Unit test of ./busy's control judgment; the frames are
@@ -122,6 +123,106 @@ describe('busyWindowProof against a control', () => {
     expect(proof.control!.moved - proof.control!.movedWith).toBe(1);
   });
 
+  it('counts unchanged frames on a tail under one cast step a frame as moved: each run of them ends in a single step', () => {
+    // 3 px a frame, then half a pixel a frame from 1400 ms: the whole-pixel
+    // positions change every other frame, one step at a time.
+    const k = at(1400);
+    const tail = moving().map((f, i) =>
+      i < k
+        ? f
+        : ({
+            ...f,
+            box: {...f.box!, y: 3 * k + Math.floor((i - k) / 2)},
+          } as TrackedFrame),
+    );
+    const proof = busyWindowProof(tail, BLOCK, {control: asControl(moving())});
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.control?.belowStep).toBeGreaterThan(0);
+    expect(proof.summary).toMatch(/under one cast step a frame/);
+  });
+
+  it('still fails a slow component frozen on frames the control moved on: the change that ends the run catches up more than one step', () => {
+    // Half a pixel a frame throughout, frozen for 12 frames from 1200 ms, then
+    // back where its clock says: the change that ends the run is 6 steps.
+    const k = at(1200);
+    const slow = moving().map(
+      (f, i) =>
+        ({
+          ...f,
+          box: {
+            ...f.box!,
+            y: Math.floor((i >= k && i < k + 12 ? k - 1 : i) / 2),
+          },
+        }) as TrackedFrame,
+    );
+    const proof = busyWindowProof(slow, BLOCK, {control: asControl(moving())});
+    expect(proof.verdict.failures.join('\n')).toMatch(
+      /moved on \d+ of the \d+ frames the control moved/,
+    );
+  });
+
+  it('still fails a component that stops for good while the control moves: no change ends its run', () => {
+    const k = at(1300);
+    const stopped = moving().map((f, i) =>
+      i < k ? f : ({...f, box: {...f.box!, y: 3 * k}} as TrackedFrame),
+    );
+    const proof = busyWindowProof(stopped, BLOCK, {
+      control: asControl(moving()),
+    });
+    expect(proof.verdict.failures.join('\n')).toMatch(
+      /moved on \d+ of the \d+ frames the control moved/,
+    );
+  });
+
+  it('still fails a frame-counted component that stands still through the block and resumes one step a frame: it shows too little motion to judge', () => {
+    // 1 px a frame, counted per frame rather than by the clock: it stands
+    // still from the block's start to its end, then goes on one step a
+    // frame, so the change that ends the run is a single step.
+    const s0 = at(BLOCK.from);
+    const s1 = at(BLOCK.to);
+    const counted = moving().map(
+      (f, i) =>
+        ({
+          ...f,
+          box: {
+            ...f.box!,
+            y: i < s0 ? i : i <= s1 ? s0 - 1 : s0 - 1 + (i - s1),
+          },
+        }) as TrackedFrame,
+    );
+    const proof = busyWindowProof(counted, BLOCK, {
+      control: asControl(moving()),
+    });
+    expect(proof.verdict.failures.join('\n')).toMatch(
+      /too little motion in this window to judge/,
+    );
+  });
+
+  it('reads the cast step from changes, so a position committed off the grid once the block ends does not shrink it', () => {
+    // An ease-out on a 2 px grid, as WebKit casts one, that ends on 401 once
+    // the block is over: its tail shows runs of unchanged frames that end in
+    // a single 2 px step.
+    const eased = moving().map(
+      (f, i) =>
+        ({
+          ...f,
+          box: {
+            ...f.box!,
+            y:
+              f.t > BLOCK.to + 20
+                ? 401
+                : 2 * Math.round((400 - 400 * 0.93 ** i) / 2),
+          },
+        }) as TrackedFrame,
+    );
+    const proof = busyWindowProof(eased, BLOCK, {
+      control: asControl(moving()),
+    });
+    expect(proof.stepPx).toBe(2);
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.control?.belowStep).toBeGreaterThan(0);
+  });
+
   it('fails a window in which the control itself presented too little to judge', () => {
     const still = asControl(
       moving().map(f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame),
@@ -211,6 +312,26 @@ describe('pooledBusyProof', () => {
       /moved on \d+ of the \d+ frames the control moved over 3 runs/,
     );
     expect(pooled.control.moved - pooled.control.movedWith).toBe(1);
+  });
+
+  it("counts a pooled run's unchanged frames under one cast step a frame as moved, as one window does", () => {
+    const k = at(1000);
+    const tail = moving().map((f, i) =>
+      i < k
+        ? f
+        : ({
+            ...f,
+            box: {...f.box!, y: 3 * k + Math.floor((i - k) / 2)},
+          } as TrackedFrame),
+    );
+    const pooled = pooledBusyProof(
+      [1000, 1300, 1600].map(from => ({
+        tracked: tail,
+        control: asControl(moving()),
+        window: short(from),
+      })),
+    );
+    expect(pooled.verdict.failures, pooled.summary).toEqual([]);
   });
 
   it('judges the control over the pool too: runs in which it presented too little fail', () => {

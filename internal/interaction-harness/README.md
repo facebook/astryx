@@ -167,7 +167,14 @@ as `control`: the component passes when it moved on every frame the control
 moved and its longest stall is no longer than the control's. Both are read from
 the same screencast frames, so a compositor animation misses none. A window in
 which the control moved on fewer than four frames fails, since the machine
-presented too little to judge.
+presented too little to judge. A run of frames with no new position counts as
+moved when the change that ends it is a single cast step: the component moves
+under one step a frame there, as on an easing tail, which the cast cannot show
+on every frame. A freeze ends in a catch-up of more than one step, and a run
+that no change ends stays a miss. The component still has to show a new
+position on at least four of the control's frames. The cast step (`stepPx`)
+is read from the value's changes in the judged part, so a position the page
+commits off the grid once the block ends does not shrink it.
 A main-thread animation still fails: the control moves and it does not.
 
 An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
