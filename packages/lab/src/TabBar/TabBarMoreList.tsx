@@ -14,7 +14,7 @@
  *
  * With more than five tabs, TabBar shows the first four and a More tab; this
  * is what More shows: one row per remaining tab, its icon, its label and a
- * disclosure chevron, in order. Choosing a row hands its value to the app,
+ * disclosure chevron (mirrored right to left), in order. Choosing a row hands its value to the app,
  * which shows that section inside More's own navigation stack (back to
  * "More"); TabBar keeps More selected meanwhile, as iOS does. The app
  * passes the same TabBarItem children it gives TabBar, so the two agree on
@@ -39,6 +39,7 @@ import {
   radiusVars,
   typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
+import {rtlStyles} from '@astryxdesign/core/utils';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {overflowItems} from './TabBar';
 
@@ -127,7 +128,8 @@ export function TabBarMoreList({
                   {item.badge}
                 </span>
               ) : null}
-              <Icon icon="chevronRight" />
+              {/* Right to left it points left, as Core's disclosure rows' do. */}
+              <Icon icon="chevronRight" xstyle={rtlStyles.mirror} />
             </>
           }
           isSelected={item.value === value}
