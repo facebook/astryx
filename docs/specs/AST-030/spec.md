@@ -406,9 +406,10 @@ owner, so they run with it, after merge or on a labelled pull request. A
 failure on `main` is repaired forward with an atomic pull request, not reverted
 first. This supersedes DEC-5's choice to keep these checks off main pushes:
 running the browser suites on every update of every open pull request costs
-far more than running them once per merge burst on `main`. An opted-in
-pull request still runs on its merge commit, so DEC-6's concern about testing a
-head instead of the merged result does not apply.
+far more than running them once per merge burst on `main`. The label opts a
+pull request into the same head-scoped owners every pull request ran before; it
+adds no run of its own, and the merged result is checked on `main`, so it is not
+the label-triggered full run DEC-6 rejects.
 
 Rejected: keeping the suites on every pull request update (spend); a separate
 scheduled or daily owner (FR12 keeps one canonical workflow).
