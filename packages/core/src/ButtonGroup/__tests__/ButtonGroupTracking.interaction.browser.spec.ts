@@ -214,6 +214,29 @@ test.describe('with a mouse', () => {
     }
   });
 
+  test("a click on Cut keeps the page's text selection, so a copy or cut action has text to act on (spec:AST-094 FR41)", async ({
+    page,
+  }) => {
+    const {cut, log} = await open(page);
+    const text = 'Text a Cut or Copy action reads';
+    await page.evaluate(probe => {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = probe;
+      document.body.prepend(paragraph);
+      const range = document.createRange();
+      range.selectNodeContents(paragraph);
+      const selection = getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }, text);
+    const selected = async () => page.evaluate(() => String(getSelection()));
+    expect(await selected()).toBe(text);
+    const at = await centerOf(cut);
+    await page.mouse.click(at.x, at.y);
+    await expect(log).toHaveText('Pressed: Cut');
+    expect(await selected()).toBe(text);
+  });
+
   test('a press that starts on a keyboard-focused button lights only the button under the mouse (family:action-groups FR2)', async ({
     page,
   }) => {
