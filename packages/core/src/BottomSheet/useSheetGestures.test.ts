@@ -3492,11 +3492,8 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
       from: 400,
       to: 0,
     });
-    for (const ms of [0, 16, 50, 100, 200, 400]) {
-      expect(valueAt(travel, ms, travelOf)).toBeCloseTo(
-        curve.value(ms / 1000),
-        1,
-      );
+    for (const {t: ms, value} of keyframesUntil(travel, travelOf, 400)) {
+      expect(value).toBeCloseTo(curve.value(ms / 1000), 1);
     }
     // The dim rises with the spring's progress, clear below the screen.
     const dim = backdrop.at(-1) as Played;
@@ -3533,11 +3530,8 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
       from: 0,
       to: 400,
     });
-    for (const ms of [16, 50, 100, 200, 400]) {
-      expect(valueAt(travel, ms, travelOf)).toBeCloseTo(
-        curve.value(ms / 1000),
-        1,
-      );
+    for (const {t: ms, value} of keyframesUntil(travel, travelOf, 400)) {
+      expect(value).toBeCloseTo(curve.value(ms / 1000), 1);
     }
     const dim = backdrop.at(-1) as Played;
     for (const ms of [0, 50, 100, 200]) {
@@ -3719,11 +3713,8 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
         from: 0,
         to: 400,
       });
-      for (const ms of [16, 100, 200]) {
-        expect(valueAt(leave, ms, travelOf)).toBeCloseTo(
-          curve.value(ms / 1000),
-          1,
-        );
+      for (const {t: ms, value} of keyframesUntil(leave, travelOf, 200)) {
+        expect(value).toBeCloseTo(curve.value(ms / 1000), 1);
       }
       const fade = backdrop.at(-1) as Played;
       expect(valueAt(fade, 0, opacityOf)).toBeCloseTo(1, 2);
