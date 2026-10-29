@@ -53,9 +53,12 @@
  * - Reaching an end plays `slider.endHaptic` once per entry, during the drag
  *   and the coast, where the browser can vibrate.
  * - Under Reduce Motion (`design:reduced-motion`) the thumb does not lift (the
- *   press shows in its paint), and the animator turns a release's coast and a
- *   tap's spring into an opacity-only cross-fade of 200 ms to the same value.
- *   The finger's own tracking is direct movement and stays.
+ *   press shows in its paint) and a tap on the track sets its value at once
+ *   (DR2: an in-place value change). The finger's own tracking and a
+ *   release's coast, which continues the throw, are direct movement and stay.
+ * - During a drag each move writes the thumb's and the fill's positions
+ *   straight to their translates (spec:AST-094 FR9: one visual update per
+ *   move, with no component render); `onChange` still reports each value.
  * - A pan along the travel that starts on a thumb is the slider's: ancestor
  *   pans and swipes along that axis are vetoed for it (UISlider's
  *   `gestureRecognizerShouldBegin`), so a pager or a swipe row does not take
@@ -390,7 +393,8 @@ export class SliderTouchController {
       if (
         [...this.interactions.values()].some(
           interaction =>
-            interaction.coast != null && this.partsOf(interaction).has(element),
+            (interaction.coast != null || !interaction.released) &&
+            this.partsOf(interaction).has(element),
         )
       ) {
         continue;
@@ -594,6 +598,24 @@ export class SliderTouchController {
       }
     }
     this.report(interaction, this.model.constrain(interaction.index, raw));
+    this.place(interaction);
+  }
+
+  /**
+   * Writes the moving thumb's and the fill's positions for the
+   * interaction's value straight to their translates: one visual update per
+   * move, with no component render (spec:AST-094 FR9). The parts go back to
+   * the stylesheet when the interaction ends (`handBack`).
+   */
+  private place(interaction: Interaction): void {
+    const {geometry} = interaction;
+    const {min, max} = this.model;
+    const range = max - min;
+    const pxPerValue = range > 0 ? geometry.travel / range : 0;
+    const px = (interaction.value - min) * pxPerValue;
+    for (const {element, at} of this.partMaps(interaction)) {
+      this.animatorFor(element).set({[geometry.axis]: geometry.sign * at(px)});
+    }
   }
 
   /**
@@ -690,6 +712,14 @@ export class SliderTouchController {
       released: true,
     };
     this.interactions.set(index, interaction);
+    // A tap's value change happens in place, so under Reduce Motion it
+    // applies at once, with no spring and no cross-fade
+    // (design:reduced-motion DR2).
+    const thumb = parts.thumbs[index];
+    if (thumb != null && this.animatorFor(thumb).reducedMotion() !== 'off') {
+      this.finish(interaction, true, target);
+      return;
+    }
     this.coastTo(interaction, target, 0, false);
   }
 
@@ -698,8 +728,9 @@ export class SliderTouchController {
    * `velocityPx` (px/s along the travel), on the compositor and clamped:
    * `onChange` follows from the coast's fourth frame and the interaction
    * ends (`onChangeEnd`) on its last. `touchRelease`: a finger's release
-   * started it. Under Reduce Motion the animator replaces the spring with an
-   * opacity-only cross-fade (design:reduced-motion DR2).
+   * started it, so the coast continues the throw and keeps moving under
+   * Reduce Motion (design:reduced-motion DR2); a tap's spring never runs
+   * there (`handleTrackTap` sets the value at once).
    */
   private coastTo(
     interaction: Interaction,
@@ -771,62 +802,77 @@ export class SliderTouchController {
     curve: MotionCurve,
     touchRelease: boolean,
   ): MotionHandle[] {
+    const {axis, sign} = interaction.geometry;
+    const at = performance.now();
+    const handles: MotionHandle[] = [];
+    for (const {element, at: position, slope} of this.partMaps(interaction)) {
+      const partCurve: MotionCurve = {
+        duration: curve.duration,
+        at: t => sign * position(curve.at(t)),
+        velocity: t => sign * slope * curve.velocity(t),
+      };
+      const animator = this.animatorFor(element);
+      animator.set({[axis]: partCurve.at(0)});
+      // A release's coast continues the throw: momentum, which keeps moving
+      // under Reduce Motion (design:reduced-motion DR2). A tap's spring is a
+      // transition.
+      handles.push(
+        touchRelease
+          ? animator.decay({[axis]: partCurve}, {at, touchRelease})
+          : animator.play({[axis]: partCurve}, {at}),
+      );
+    }
+    return handles;
+  }
+
+  /**
+   * The parts that move with the interaction's thumb, each with its
+   * translate as a function of the thumb's px along the travel (`p`) and that
+   * function's slope: the same formulas as Slider's CSS.
+   */
+  private partMaps(interaction: Interaction): {
+    element: HTMLElement;
+    at: (p: number) => number;
+    slope: number;
+  }[] {
     const parts = this.getParts();
     if (parts == null) {
       return [];
     }
     const {geometry, index} = interaction;
-    const {axis, sign, length, travel} = geometry;
+    const {length, travel} = geometry;
     const inset = this.model.thumbSize / 2;
     const values = this.model.values();
     const {min, max, isRange} = this.model;
     const range = max - min;
     const pxPerValue = range > 0 ? travel / range : 0;
     const otherPx = ((values[index === 0 ? 1 : 0] ?? min) - min) * pxPerValue;
-    // Each part's translate is linear in the moving thumb's px (`p`), the
-    // same formulas as Slider's CSS, so each curve is that map of `curve`.
-    const map = (
+    const maps: {
+      element: HTMLElement;
+      at: (p: number) => number;
+      slope: number;
+    }[] = [];
+    const add = (
       element: HTMLElement | null | undefined,
       at: (p: number) => number,
       slope: number,
-    ): [HTMLElement, MotionCurve] | null =>
-      element == null
-        ? null
-        : [
-            element,
-            {
-              duration: curve.duration,
-              at: t => sign * at(curve.at(t)),
-              velocity: t => sign * slope * curve.velocity(t),
-            },
-          ];
-    const entries: ([HTMLElement, MotionCurve] | null)[] = [
-      map(parts.thumbs[index], p => p, 1),
-    ];
+    ) => {
+      if (element != null) {
+        maps.push({element, at, slope});
+      }
+    };
+    add(parts.thumbs[index], p => p, 1);
     if (isRange) {
       if (index === 0) {
-        entries.push(
-          map(parts.fillMover, p => inset + p, 1),
-          map(parts.fill, p => otherPx - p - length, -1),
-        );
+        add(parts.fillMover, p => inset + p, 1);
+        add(parts.fill, p => otherPx - p - length, -1);
       } else {
-        entries.push(map(parts.fill, p => p - otherPx - length, 1));
+        add(parts.fill, p => p - otherPx - length, 1);
       }
     } else {
-      entries.push(map(parts.fill, p => inset + p - length, 1));
+      add(parts.fill, p => inset + p - length, 1);
     }
-    const at = performance.now();
-    const handles: MotionHandle[] = [];
-    for (const entry of entries) {
-      if (entry == null) {
-        continue;
-      }
-      const [element, partCurve] = entry;
-      const animator = this.animatorFor(element);
-      animator.set({[axis]: partCurve.at(0)});
-      handles.push(animator.play({[axis]: partCurve}, {at, touchRelease}));
-    }
-    return handles;
+    return maps;
   }
 
   private stopCoast(interaction: Interaction): void {

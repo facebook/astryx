@@ -39,6 +39,11 @@ export interface UseSliderTouchOptions {
   readonly getParts: () => SliderTouchParts | null;
   /** Re-attaches when the thumbs or the orientation change. */
   readonly thumbCount: number;
+  /**
+   * Whether each thumb renders inside its value tooltip: changing it mounts
+   * new thumbs and touch targets, so the gestures re-attach.
+   */
+  readonly thumbsWrapped: boolean;
 }
 
 /**
@@ -51,14 +56,19 @@ export function useSliderTouch({
   model,
   getParts,
   thumbCount,
+  thumbsWrapped,
 }: UseSliderTouchOptions): boolean {
   const getPartsRef = useRef(getParts);
+  // Keeps the parts getter current for the controller, which reads it from
+  // gesture callbacks outside React's render.
   useIsomorphicLayoutEffect(() => {
     getPartsRef.current = getParts;
   });
   const [controller] = useState(
     () => new SliderTouchController(model, () => getPartsRef.current()),
   );
+  // Hands the controller this render's model: the values and callbacks it
+  // reads from gesture callbacks outside React's render.
   useIsomorphicLayoutEffect(() => {
     controller.setModel(model);
   });
@@ -72,7 +82,9 @@ export function useSliderTouch({
       return undefined;
     }
     return controller.attach();
-  }, [controller, isEnabled, thumbCount, isHorizontal]);
+  }, [controller, isEnabled, thumbCount, isHorizontal, thumbsWrapped]);
+  // Releases the controller's animators and gesture host listeners on
+  // unmount.
   useEffect(() => () => controller.dispose(), [controller]);
   return isEnabled;
 }

@@ -425,15 +425,22 @@ const styles = stylex.create({
     },
   },
   // A thumb's touch target under a finger (UISlider's hit area): invisible,
-  // centered on the thumb, larger than it.
+  // centered on the thumb, larger than it. Each side grows by the insets
+  // `thumbHitInsets` sets.
   thumbHit: {
     position: 'absolute',
-    top: '50%',
     pointerEvents: 'auto',
   },
-  thumbHitSize: (size: number) => ({
-    width: size,
-    height: size,
+  thumbHitInsets: (
+    top: string,
+    bottom: string,
+    inlineStart: string,
+    inlineEnd: string,
+  ) => ({
+    top,
+    bottom,
+    insetInlineStart: inlineStart,
+    insetInlineEnd: inlineEnd,
   }),
   thumbVertical: {
     bottom: 0,
@@ -1140,6 +1147,7 @@ export function Slider({ref, ...props}: SliderProps) {
     isEnabled: hasTouchTargets,
     model: touchModel,
     thumbCount: values.length,
+    thumbsWrapped: valueDisplay === 'tooltip' && !showsDisabledMessage,
     getParts: (): SliderTouchParts | null => {
       const control = trackRef.current;
       if (control == null) {
@@ -1158,6 +1166,8 @@ export function Slider({ref, ...props}: SliderProps) {
       };
     },
   });
+  // Tells the pointer handlers, which run outside React's render, whether
+  // the touch layer takes touches.
   useIsomorphicLayoutEffect(() => {
     touchLiveRef.current = isTouchLive;
   });
@@ -1271,6 +1281,28 @@ export function Slider({ref, ...props}: SliderProps) {
   };
 
   // Render a thumb
+  // Each thumb's touch target grows to UISlider's 48 pt around the thumb,
+  // but a range's two targets never reach into each other: on the side
+  // facing the other thumb, the growth stops at half the gap between the
+  // thumbs (spec:AST-094 FR42), so a finger takes the nearer thumb.
+  // Container units measure the travel, so the gap needs no layout read.
+  const hitGrowth = (UIKIT_SLIDER.thumbHitTarget - THUMB_SIZE) / 2;
+  const thumbHitInsets = (thumbIndex: number) => {
+    const full = `${-hitGrowth}px`;
+    let facing = full;
+    if (isRange && max > min) {
+      const spread = (values[1] - values[0]) / (max - min);
+      const travel = isHorizontal ? '100cqi' : '100cqb';
+      facing = `calc(-1 * clamp(0px, (${spread} * (${travel} - ${THUMB_SIZE}px) - ${THUMB_SIZE}px) / 2, ${hitGrowth}px))`;
+    }
+    // Values grow toward the inline end, and upward on a vertical slider.
+    const towardLower = isRange && thumbIndex === 1 ? facing : full;
+    const towardUpper = isRange && thumbIndex === 0 ? facing : full;
+    return isHorizontal
+      ? styles.thumbHitInsets(full, full, towardLower, towardUpper)
+      : styles.thumbHitInsets(towardUpper, towardLower, full, full);
+  };
+
   const renderThumb = (thumbIndex: number) => {
     const val = values[thumbIndex];
     const percent = getPercent(val, min, max);
@@ -1365,11 +1397,7 @@ export function Slider({ref, ...props}: SliderProps) {
           <span
             aria-hidden="true"
             {...{[SLIDER_HIT_ATTRIBUTE]: ''}}
-            {...stylex.props(
-              styles.thumbHit,
-              rtlStyles.centerInline('-50%'),
-              styles.thumbHitSize(UIKIT_SLIDER.thumbHitTarget),
-            )}
+            {...stylex.props(styles.thumbHit, thumbHitInsets(thumbIndex))}
           />
         )}
       </div>
