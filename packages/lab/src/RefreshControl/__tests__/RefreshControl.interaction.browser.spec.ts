@@ -65,6 +65,7 @@ import {
   releaseAnimations,
   rubberBand,
   springStep,
+  startCompositorTrace,
   startScreencast,
   thawTimers,
   timeline,
@@ -545,6 +546,10 @@ test('the settle keeps moving every frame while the main thread is blocked', asy
   });
   await markElement(content);
   const cast = await startScreencast(page);
+  // The compositor's own frames: a loaded machine's screencast skips frames
+  // the compositor still presents, and the verdict measures those gaps
+  // between the compositor's frames instead.
+  const compositor = await startCompositorTrace(page);
   await driver.play(slowPull(start, 300, 200));
   // The settle must be running (and composited) before the block: an
   // animation cannot start while the main thread is held.
@@ -552,11 +557,12 @@ test('the settle keeps moving every frame while the main thread is blocked', asy
   const block = await blockMainThread(page, 400);
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
+  const presented = await compositor.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, settle.to)},
-    {settledWithin: 3},
+    {settledWithin: 3, presented},
   );
   await writeEvidence(
     'busy-main-thread/refresh-settle',
@@ -578,12 +584,9 @@ test('the settle keeps moving every frame while the main thread is blocked', asy
     testInfo,
   );
   // The screencast resolves whole CSS pixels: judge until 3 px from rest.
-  // Its delivery rate is the screencast's, not the animation's: no bound on
-  // the median frame.
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
-  expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  // The harness's verdict judges stalls per delivered interval, so no
-  // absolute bound on the longest one.
+  // How many frames it delivers is the recorder's rate, not the settle's, so
+  // the harness's verdict alone judges them: every frame judged moved, and no
+  // stall where the compositor presented nothing.
   expect(proof.verdict.failures, proof.summary).toEqual([]);
 });
 
@@ -886,8 +889,23 @@ test('a finger catching the settle holds it where it is, then pulls on from ther
   // The settle back to the top is running: catch it 100 ms in.
   await waitForSettle(content);
   await page.waitForTimeout(100);
-  const caught = await shownPull(content);
-  expect(caught).toBeGreaterThan(5);
+  // Where the settle stood as the finger landed, read by a listener that runs
+  // before anything handles the touch: a reading taken earlier misses how far
+  // the settle moved before the touch arrived.
+  await content.evaluate(element => {
+    window.addEventListener(
+      'touchstart',
+      () => {
+        const value = getComputedStyle(element).translate;
+        element.dataset.caughtAt = String(
+          value === 'none' || value === ''
+            ? 0
+            : parseFloat(value.split(/\s+/)[1] ?? '0'),
+        );
+      },
+      {capture: true, once: true},
+    );
+  });
   const readings = await playReading(
     page,
     driver,
@@ -898,6 +916,10 @@ test('a finger catching the settle holds it where it is, then pulls on from ther
       {durationMs: 300, hz: 60, restMs: 100},
     ),
   );
+  const caught = Number(
+    await content.evaluate(element => element.dataset.caughtAt),
+  );
+  expect(caught).toBeGreaterThan(5);
   // No jump at the catch: the first reading is where the settle stood, and
   // the pull goes on from there.
   expect(Math.abs(readings[0].shown - caught)).toBeLessThan(6);
