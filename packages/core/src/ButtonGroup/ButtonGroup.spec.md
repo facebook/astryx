@@ -57,8 +57,10 @@ size and disabled state, and the group's single-Tab-stop keyboard model, as
 - Released default preserved: `yes`; `orientation="horizontal"`, `size="md"`,
   `elevation="none"`, `isDisabled={false}`
 - Compatibility class: no public prop, default, or export change; the DOM
-  gains the action-group item marker on each tracked button and, under a
-  coarse primary pointer, the hit layer's inset properties on the group
+  gains the action-group item marker on each tracked button, the gesture
+  host's `data-astryx-touch-action` marker on the group root while the group
+  tracks presses and, under a coarse primary pointer, the hit layer's inset
+  properties on the group
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
