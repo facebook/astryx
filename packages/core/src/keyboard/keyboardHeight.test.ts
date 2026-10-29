@@ -421,29 +421,46 @@ describe('one set of listeners per window (FR1, INV11)', () => {
       stopGuide();
     }
   });
-  it('reports focus moves through one pair of document focus listeners, however many subscribe (the keyboard layout guide reads them)', () => {
+  it('listens to focus moves only while a subscriber asks for them, through one pair of document listeners (spec:AST-094 FR24)', () => {
     const documentAdd = vi.spyOn(document, 'addEventListener');
-    const types: string[] = [];
-    const stopA = subscribeKeyboardHeight(window, event => {
-      types.push(event.type);
-    });
-    const stopB = subscribeKeyboardHeight(window, () => {});
+    const documentRemove = vi.spyOn(document, 'removeEventListener');
+    const focusCalls = (spy: typeof documentAdd) =>
+      spy.mock.calls
+        .filter(([type]) => String(type).startsWith('focus'))
+        .map(([type]) => type);
+    const viewportTypes: string[] = [];
+    const guideTypes: string[] = [];
     const input = document.createElement('input');
     document.body.append(input);
+    // A viewport reader (a Tall BottomSheet's hook) adds no focus listener.
+    const stopViewport = subscribeKeyboardHeight(window, event => {
+      viewportTypes.push(event.type);
+    });
     try {
-      expect(
-        documentAdd.mock.calls
-          .filter(([type]) => type.startsWith('focus'))
-          .map(([type]) => type),
-      ).toEqual(['focusin', 'focusout']);
+      expect(focusCalls(documentAdd)).toEqual([]);
+      // Readers of focus moves (the keyboard layout guide) share one pair.
+      const stopA = subscribeKeyboardHeight(
+        window,
+        event => {
+          guideTypes.push(event.type);
+        },
+        {focus: true},
+      );
+      const stopB = subscribeKeyboardHeight(window, () => {}, {focus: true});
+      expect(focusCalls(documentAdd)).toEqual(['focusin', 'focusout']);
       input.focus();
       input.blur();
-      expect(types).toEqual(['focusin', 'focusout']);
+      expect(guideTypes).toEqual(['focusin', 'focusout']);
+      expect(viewportTypes).toEqual([]);
+      stopA();
+      expect(focusCalls(documentRemove)).toEqual([]);
+      stopB();
+      expect(focusCalls(documentRemove)).toEqual(['focusin', 'focusout']);
     } finally {
       input.remove();
-      stopA();
-      stopB();
+      stopViewport();
       documentAdd.mockRestore();
+      documentRemove.mockRestore();
     }
   });
 

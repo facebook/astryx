@@ -27,8 +27,9 @@
  * Android) is measured the same way (FR6, DEC-4). It is 0 without a visual
  * viewport, and inside an iframe, whose visual viewport never shrinks for the
  * keyboard (FR7). One set of
- * listeners per window reads it (the visual viewport's resize and scroll, the
- * window's resize, and focus moves), however many components subscribe.
+ * listeners per window reads it (the visual viewport's resize and scroll and
+ * the window's resize, plus focus moves while a subscriber asks for them),
+ * however many components subscribe.
  *
  * Every route into a field has to reach it without the browser revealing it
  * (FR4). On iOS that reveal scrolls the DOCUMENT, and fixed content travels
@@ -135,7 +136,10 @@ export type KeyboardHeightEvent =
 interface KeyboardStore {
   height: number;
   listeners: Set<(event: KeyboardHeightEvent) => void>;
+  /** The subscribers that asked for focus moves too (the layout guide). */
+  focusListeners: Set<(event: KeyboardHeightEvent) => void>;
   detach: (() => void) | null;
+  detachFocus: (() => void) | null;
 }
 
 const stores = new WeakMap<Window, KeyboardStore>();
@@ -143,7 +147,13 @@ const stores = new WeakMap<Window, KeyboardStore>();
 function storeOf(win: Window): KeyboardStore {
   let store = stores.get(win);
   if (store == null) {
-    store = {height: 0, listeners: new Set(), detach: null};
+    store = {
+      height: 0,
+      listeners: new Set(),
+      focusListeners: new Set(),
+      detach: null,
+      detachFocus: null,
+    };
     stores.set(win, store);
   }
   return store;
@@ -151,35 +161,48 @@ function storeOf(win: Window): KeyboardStore {
 
 function attach(win: Window, store: KeyboardStore): () => void {
   const viewport = win.visualViewport;
-  const doc = win.document;
   store.height = measureKeyboardHeight(win);
-  const emit = (event: KeyboardHeightEvent) => {
-    for (const listener of [...store.listeners]) {
-      listener(event);
-    }
-  };
   const onViewport = (event: Event) => {
     store.height = measureKeyboardHeight(win);
-    emit({type: 'viewport', height: store.height, timeStamp: event.timeStamp});
+    const report: KeyboardHeightEvent = {
+      type: 'viewport',
+      height: store.height,
+      timeStamp: event.timeStamp,
+    };
+    for (const listener of [...store.listeners]) {
+      listener(report);
+    }
   };
+  viewport?.addEventListener('resize', onViewport);
+  viewport?.addEventListener('scroll', onViewport);
+  win.addEventListener('resize', onViewport);
+  return () => {
+    viewport?.removeEventListener('resize', onViewport);
+    viewport?.removeEventListener('scroll', onViewport);
+    win.removeEventListener('resize', onViewport);
+  };
+}
+
+// Focus moves, heard only while a subscriber asks for them: a viewport
+// reader (a Tall BottomSheet's hook, under any pointer) adds no document
+// listener (spec:AST-094 FR24).
+function attachFocus(win: Window, store: KeyboardStore): () => void {
+  const doc = win.document;
   const onFocus = (event: FocusEvent) => {
-    emit({
+    const report: KeyboardHeightEvent = {
       type: event.type === 'focusin' ? 'focusin' : 'focusout',
       height: store.height,
       timeStamp: event.timeStamp,
       target: event.target,
       relatedTarget: event.relatedTarget,
-    });
+    };
+    for (const listener of [...store.focusListeners]) {
+      listener(report);
+    }
   };
-  viewport?.addEventListener('resize', onViewport);
-  viewport?.addEventListener('scroll', onViewport);
-  win.addEventListener('resize', onViewport);
   doc.addEventListener('focusin', onFocus, true);
   doc.addEventListener('focusout', onFocus, true);
   return () => {
-    viewport?.removeEventListener('resize', onViewport);
-    viewport?.removeEventListener('scroll', onViewport);
-    win.removeEventListener('resize', onViewport);
     doc.removeEventListener('focusin', onFocus, true);
     doc.removeEventListener('focusout', onFocus, true);
   };
@@ -187,7 +210,10 @@ function attach(win: Window, store: KeyboardStore): () => void {
 
 /**
  * Calls `listener` with every report of `win`'s keyboard until the returned
- * function is called. All subscribers of a window share one set of listeners.
+ * function is called: the viewport's reports, and focus moves too when
+ * `focus` is set. All subscribers of a window share one set of listeners,
+ * and the document's focus listeners exist only while a subscriber asks for
+ * focus moves.
  *
  * @example
  * ```
@@ -199,14 +225,28 @@ function attach(win: Window, store: KeyboardStore): () => void {
 export function subscribeKeyboardHeight(
   win: Window,
   listener: (event: KeyboardHeightEvent) => void,
+  {focus = false}: {focus?: boolean} = {},
 ): () => void {
   const store = storeOf(win);
   store.listeners.add(listener);
   if (store.detach == null) {
     store.detach = attach(win, store);
   }
+  if (focus) {
+    store.focusListeners.add(listener);
+    if (store.detachFocus == null) {
+      store.detachFocus = attachFocus(win, store);
+    }
+  }
   return () => {
     store.listeners.delete(listener);
+    if (focus) {
+      store.focusListeners.delete(listener);
+      if (store.focusListeners.size === 0 && store.detachFocus != null) {
+        store.detachFocus();
+        store.detachFocus = null;
+      }
+    }
     if (store.listeners.size === 0 && store.detach != null) {
       store.detach();
       store.detach = null;

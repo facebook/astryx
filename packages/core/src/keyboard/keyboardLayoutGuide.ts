@@ -293,7 +293,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
         publish(model.blurred(event.timeStamp));
       }
     };
-    const unsubscribe = subscribeKeyboardHeight(win, onReport);
+    const unsubscribe = subscribeKeyboardHeight(win, onReport, {focus: true});
     return () => {
       unsubscribe();
       stopWatchingFrames();
