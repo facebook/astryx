@@ -10,9 +10,8 @@
  *   table (motion/uikit/list.ts)
  * @output `useTreeExpansionMotion`: whether a row renders its children, the
  *   ref its group attaches, and the expand and collapse played the way a UIKit
- *   outline list plays them, under any finger (a coarse primary pointer, iOS
- *   and Android alike); with a mouse the children come and go in one frame,
- *   as before
+ *   outline list plays them, under a coarse primary pointer; with a mouse the
+ *   children come and go in one frame, as before
  * @position TreeList internals; TreeListItem calls it for every row with
  *   children
  *
@@ -30,23 +29,27 @@
  * over its final CSS transform. Both are played by the animator on the
  * compositor, retargeted from the value on screen when the row is toggled
  * again mid-motion, and each releases its inline value when its own spring
- * arrives. A collapse keeps the children rendered until the block has slid
- * away, then the commit removes them.
+ * arrives. From rest, the block and the chevron start together when the
+ * browser commits them, on one clock (`spec:AST-108` FR4a). A collapse keeps
+ * the children rendered until the block has slid away, then the commit
+ * removes them.
  *
  * Nothing outside the group moves: with no animated layout handle, the rows
  * after the group and the content after the tree take their new places at
  * once, by layout, at the commit that inserts or removes the group
- * (`spec:AST-105` FR2; `spec:AST-094` FR5 forbids animating layout). An
- * unmount mid-motion leaves nothing moved.
+ * (`spec:AST-105` FR2; `spec:AST-094` FR5 forbids animating layout): at the
+ * expand, and on a collapse the frame its block is clipped, so they hold
+ * while it slides under the parent, as in UIKit (`component:TreeList` FR8).
+ * An unmount mid-motion leaves nothing moved.
  *
  * Under reduced motion nothing travels (`design:reduced-motion`): every part
  * takes the animator's own Reduced Motion handling, so the children fade in
  * where they land and fade out where they are, and the chevron cross-fades
  * into place.
  *
- * One touch model: an Android finger gets the same motion as an iOS one.
- * With a mouse (the theme's presentation) nothing moves: the children appear
- * and leave at once, as before. Leaving children are inert while they slide
+ * One touch model: every coarse primary pointer gets the same motion. With a
+ * mouse (the theme's presentation) nothing moves: the children appear and
+ * leave at once, as before. Leaving children are inert while they slide
  * away: focus, arrow keys and assistive technology skip them.
  *
  * SYNC: When modified, update:
@@ -61,6 +64,7 @@ import {list} from '../motion/uikit/list';
 import {
   animatorFor,
   motionNow,
+  motionOf,
   releaseMotion,
   springHome,
   springTo,
@@ -224,12 +228,39 @@ export function useTreeExpansionMotion(
     // their places at once with no empty band (`spec:AST-105` FR2). Under
     // reduced motion the block fades where it is, and the group leaves when
     // the fade ends.
+    const leaveWhenSettled = () => {
+      void Promise.all(block).then(results => {
+        if (generationRef.current !== mine || results.some(done => !done)) {
+          return;
+        }
+        // The children sit a group's height up, hidden by the clip, until
+        // the commit that removes them takes the group away with them:
+        // dropping the clip first would show them over the parent row for a
+        // frame.
+        setShown(false);
+      });
+    };
     const lead = children[0];
-    const clippedAt =
-      lead != null && animatorFor(lead).reducedMotion() === 'off'
-        ? clipTime(lead, -height, at)
-        : null;
-    if (clippedAt != null) {
+    const leadMotion = lead != null ? motionOf(lead) : undefined;
+    if (
+      lead == null ||
+      leadMotion == null ||
+      animatorFor(lead).reducedMotion() !== 'off'
+    ) {
+      leaveWhenSettled();
+      return;
+    }
+    // From rest the block starts when the browser commits it: its clip is
+    // timed from that start.
+    void leadMotion.started.then(start => {
+      if (generationRef.current !== mine) {
+        return;
+      }
+      const clippedAt = clipTime(lead, -height, start);
+      if (clippedAt == null) {
+        leaveWhenSettled();
+        return;
+      }
       leaveTimerRef.current = window.setTimeout(
         () => {
           leaveTimerRef.current = null;
@@ -239,16 +270,6 @@ export function useTreeExpansionMotion(
         },
         Math.max(0, clippedAt - motionNow()),
       );
-      return;
-    }
-    void Promise.all(block).then(results => {
-      if (generationRef.current !== mine || results.some(done => !done)) {
-        return;
-      }
-      // The children sit a group's height up, hidden by the clip, until the
-      // commit that removes them takes the group away with them: dropping
-      // the clip first would show them over the parent row for a frame.
-      setShown(false);
     });
   }, [isExpanded, shown, animates]);
 
