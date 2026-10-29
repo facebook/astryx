@@ -164,13 +164,10 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 
 /**
  * The release fade's clock on `element`, read once, at the release, from the
- * two properties its stylesheet reads, which every element under a theme
- * inherits: `--_astryx-motion-tempo`, which a theme or an adaptation rule
- * with a `tempo` writes (1 without one), and `--_astryx-reduced-motion`, 1
- * under a theme's `reducedMotion: 'always'` mark (`spec:AST-108` FR4, FR6;
- * `component:Button` FR15). Under Reduce Motion, the person's setting or the
- * mark, the tempo may shorten the fade but never lengthens it past the 200 ms
- * cap. The onset delay and the tap flash stay fixed.
+ * properties its stylesheet reads: the theme's `--_astryx-motion-tempo` and,
+ * under its `reducedMotion: 'always'` mark, `--_astryx-reduced-motion`
+ * (`spec:AST-108` FR4, FR6; `component:Button` FR15). Under Reduce Motion a
+ * tempo may shorten the fade, never lengthen it past 200 ms.
  */
 function fadeMs(element: Element): number {
   const style = getComputedStyle(element);

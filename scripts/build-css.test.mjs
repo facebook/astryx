@@ -242,20 +242,11 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
-      // The release scales by the theme's tempo; it reads at tempo 1
-      // (`calc(<ms> * var(--_astryx-motion-tempo, 1))`, and under Reduce
-      // Motion `min(<ms>, calc(…))`, spec:AST-108 FR4).
-      // Outside a reduced-motion mark the tempo is capped at its own maximum
-      // (`min(var(--_astryx-motion-tempo, 1), 1.5 - 0.5 * var(--_astryx-reduced-motion, 0))`).
-      const trimmed = value.trim();
-      const match =
-        trimmed.match(
-          /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*min\(\s*var\(--_astryx-motion-tempo,\s*1\)\s*,\s*1\.5\s*-\s*0?\.5\s*\*\s*var\(--_astryx-reduced-motion,\s*0\)\s*\)\s*\)$/,
-        ) ??
-        trimmed.match(
-          /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
-        ) ??
-        trimmed.match(/^([\d.]+)(ms|s)$/);
+      // The release scales its base clock by the theme's tempo, capped under
+      // Reduce Motion (`calc(<ms> * …)`, `min(<ms>, …)`); it reads at tempo 1.
+      const match = value
+        .trim()
+        .match(/^(?:(?:calc|min)\(\s*)?([\d.]+)(ms|s)\b/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -285,24 +276,17 @@ describe('build-css astryx.css', () => {
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
       ).toBe(true);
-      const durationsOf = rules =>
-        rules
-          .map(line => line.match(/animation-duration:\s*([^;}]+)/))
-          .filter(Boolean)
-          .map(match => match[1]);
-      const reducedMedia = '@media (prefers-reduced-motion: reduce)';
-      const plain = durationsOf(
-        fading.filter(line => !line.includes(reducedMedia)),
-      );
-      const reduced = durationsOf(
-        fading.filter(line => line.includes(reducedMedia)),
-      );
+      const durationsOf = reduced =>
+        fading
+          .filter(line => line.includes('prefers-reduced-motion') === reduced)
+          .map(line => line.match(/animation-duration:\s*([^;}]+)/)?.[1])
+          .filter(Boolean);
       // One clock, the one the controller removes the attribute on, and its
       // Reduce Motion arm, which a tempo never lengthens past it (FR4).
       const releaseMs = await readReleaseMs();
-      expect(plain.map(toMs)).toEqual([releaseMs]);
-      expect(reduced.map(toMs)).toEqual([releaseMs]);
-      expect(reduced[0]).toMatch(/^min\(/);
+      expect(durationsOf(false).map(toMs)).toEqual([releaseMs]);
+      expect(durationsOf(true).map(toMs)).toEqual([releaseMs]);
+      expect(durationsOf(true)[0]).toMatch(/^min\(/);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),

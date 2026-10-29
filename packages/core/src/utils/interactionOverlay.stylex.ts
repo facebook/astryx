@@ -117,21 +117,13 @@ export const pressConsts = stylex.defineConsts({
 });
 
 /**
- * The release's clock as CSS, scaled by the tempo of the theme the control
- * is in: `--_astryx-motion-tempo`, which a theme with a `tempo` writes beside
- * its duration tokens (`spec:AST-108` FR4, `component:Button` FR15). The
- * tempo may reach 1.5, its own maximum, except under a theme's
- * `reducedMotion: 'always'` mark, whose custom property
- * `--_astryx-reduced-motion` is 1 there: the tempo then stops at 1, so the
- * 200 ms Reduce Motion cap holds (FR4, FR6). The controller's timer reads
- * the same two properties (pressFeedback.ts).
+ * The release's clock as CSS, scaled by the theme's `--_astryx-motion-tempo`
+ * (`spec:AST-108` FR4, `component:Button` FR15) up to 1.5, its maximum, or
+ * to 1 under a theme's `reducedMotion: 'always'` mark (FR6), so the 200 ms
+ * Reduce Motion cap holds. The controller's timer reads the same properties.
  */
 const PRESS_RELEASE_DURATION = `calc(${pressConsts.releaseMs}ms * min(var(--_astryx-motion-tempo, 1), 1.5 - 0.5 * var(--_astryx-reduced-motion, 0)))`;
-/**
- * The same clock under Reduce Motion, where the tempo may shorten it but never
- * lengthens it past the 200 ms cap (`spec:AST-108` FR4). The controller's
- * timer caps the same way.
- */
+/** The same clock under Reduce Motion: a tempo may shorten it, never lengthen it. */
 const PRESS_RELEASE_DURATION_REDUCED = `min(${pressConsts.releaseMs}ms, calc(${pressConsts.releaseMs}ms * var(--_astryx-motion-tempo, 1)))`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';

@@ -19,6 +19,7 @@ applies_to:
     packages/core/src/theme/expandRadiusScale.ts,
     packages/core/src/theme/expandMotionScale.ts,
     packages/core/src/theme/themeMotion.ts,
+    packages/core/src/theme/motionKnobs.ts,
     packages/core/src/theme/mergeComponents.ts,
     packages/core/src/theme/onMediaTokens.ts,
     packages/core/src/theme/localTokens.ts,
@@ -277,9 +278,9 @@ public surface belongs to
   adopts their tokens.
 - `expandColorScale.ts`, `expandTypeScale.ts`, `expandRadiusScale.ts`, and
   `expandMotionScale.ts` own their derived token/component values.
-- `themeMotion.ts` owns the motion knobs, the tokens and pre-tempo durations
-  they generate, and `resolveThemeMotion`, the pure read the animator and server
-  code use.
+- `motionKnobs.ts` owns the motion knobs' types, defaults and clamping;
+  `themeMotion.ts` owns the tokens and pre-tempo durations they generate, and
+  `resolveThemeMotion`, the pure read the animator and server code use.
 - `mergeComponents.ts` owns the shared deep-merge rule.
 - `onMediaTokens.ts` owns normalization of inverted-surface overrides.
 - `localTokens.ts` owns opt-in enrollment, valid CSS custom-property names, exact
