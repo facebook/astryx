@@ -123,19 +123,22 @@ const KNOWN_SECTION_KEYS = new Set([
  * inlined whole too, two levels down (`blocks.open` and each section's
  * `blocks`), so an undeclared key there reds every build the same way:
  * `severity` (2026-09-27) and `fix` (2026-10-15) did. `issue` is required, and
- * a BLOCK recorded without one has no issue filed.
+ * a BLOCK recorded without one has no issue filed. A Map, so a wiki key named
+ * like a member of `Object.prototype` (`constructor`, `valueOf`, `__proto__`)
+ * is undeclared, as it is, rather than found on the prototype.
  */
 const isText = value => typeof value === 'string';
-const isOptionalText = value => value === undefined || typeof value === 'string';
-const BLOCK_KEY_SHAPES = {
-  id: isText,
-  summary: isText,
-  section: isOptionalText,
-  evidence: isOptionalText,
-  severity: isOptionalText,
-  fix: isOptionalText,
-  issue: value => value === null || Number.isInteger(value),
-};
+const isOptionalText = value =>
+  value === undefined || typeof value === 'string';
+const BLOCK_KEY_SHAPES = new Map([
+  ['id', isText],
+  ['summary', isText],
+  ['section', isOptionalText],
+  ['evidence', isOptionalText],
+  ['severity', isOptionalText],
+  ['fix', isOptionalText],
+  ['issue', value => value === null || Number.isInteger(value)],
+]);
 
 /** Drop keys `LedgerEntry` doesn't declare, or whose shape it rejects. */
 const droppedKeys = new Set();
@@ -153,7 +156,7 @@ function pruneBlock(block, where) {
   }
   const kept = {};
   for (const [k, v] of Object.entries(block)) {
-    const shape = BLOCK_KEY_SHAPES[k];
+    const shape = BLOCK_KEY_SHAPES.get(k);
     if (!shape) droppedKeys.add(`${where.replace(/\[\d+\]$/, '[]')}.${k}`);
     else if (!shape(v)) malformedKeys.add(`${where}.${k}`);
     else kept[k] = v;
