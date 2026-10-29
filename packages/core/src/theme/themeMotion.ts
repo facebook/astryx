@@ -186,9 +186,10 @@ export interface ThemeMotion {
 }
 
 /**
- * A theme's motion values, for the animator and for server code (FR6): the
- * knobs, and the duration and easing tokens they resolve to with the theme's
- * explicit tokens applied. Pure: it reads only `theme`.
+ * A theme's motion values, for server code (FR6): the knobs, and the duration
+ * and easing tokens they resolve to with the theme's explicit tokens applied.
+ * Pure: it reads only `theme`. The animator reads the knobs from the custom
+ * properties the theme writes instead (motion/themeKnobs.ts).
  */
 export function resolveThemeMotion(theme: {
   readonly motion?: ThemeMotionConfig;

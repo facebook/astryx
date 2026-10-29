@@ -273,8 +273,9 @@ export function Theme({
 
   useThemeStyleInjection(theme);
   // spec:AST-108 FR6: 'always' marks the theme's root. So far motion-keyed
-  // adaptation rules and the press release fade key reduced motion on the
-  // mark; components' other Reduce Motion styles don't yet (a known gap in
+  // adaptation rules, the press release fade, the animator, the layout glide
+  // and reducedMotionFade() key reduced motion on the mark; components' other
+  // Reduce Motion styles don't yet (a known gap in
   // `architecture:theme-authoring-contract`).
   const knobs = resolveMotionKnobs(theme.__axes?.motion);
   const reducesMotion = knobs.reducedMotion === 'always';

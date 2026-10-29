@@ -22,7 +22,7 @@
  * plain Node.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/motion/themeKnobs.test.ts
+ * - /packages/core/src/motion/themeKnobs.test.tsx
  * - /packages/core/src/motion/resolveMotion.ts
  * - /packages/core/src/theme/themeMotion.ts (writes the properties)
  */
