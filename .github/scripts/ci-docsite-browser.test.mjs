@@ -50,11 +50,38 @@ describe('docsite-test', () => {
       'pnpm test:docsite-browser',
     );
     // The result step reports whenever the data tests started, even after a
-    // browser-contract failure.
+    // browser-contract failure, and its failure fails the job.
+    expect(step('test-docsite (start the data tests)').id).toBe('data');
+    expect(
+      step('test-docsite (data test results)')['continue-on-error'],
+    ).toBeUndefined();
     expect(step('test-docsite (data test results)').if).toBe(
       "${{ !cancelled() && steps.data.outcome == 'success' }}",
     );
   });
+
+  it.each([0, 1])(
+    'the start step records exit %i from the data tests under bash -e',
+    async code => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docsite-data-'));
+      fs.writeFileSync(path.join(dir, 'pnpm'), `#!/bin/sh\nexit ${code}\n`, {
+        mode: 0o755,
+      });
+      const started = spawnSync(
+        'bash',
+        ['-e', '-c', step('test-docsite (start the data tests)').run],
+        {cwd: dir, env: {...process.env, PATH: `${dir}:${process.env.PATH}`}},
+      );
+      expect(started.status).toBe(0);
+      const exitFile = path.join(dir, 'docsite-data.exit');
+      for (let i = 0; i < 100 && !fs.existsSync(exitFile); i++) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      const recorded = fs.readFileSync(exitFile, 'utf8').trim();
+      fs.rmSync(dir, {recursive: true, force: true});
+      expect(recorded).toBe(String(code));
+    },
+  );
 
   it.each([
     [0, true],

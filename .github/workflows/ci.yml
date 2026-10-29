@@ -418,7 +418,9 @@ jobs:
       - name: test-docsite (start the data tests)
         id: data
         if: steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
-        run: (pnpm -F @astryxdesign/docsite test > docsite-data.log 2>&1; echo $? > docsite-data.exit) &
+        # errexit off inside: a failing test run must still record its exit
+        # code, written whole so the result step never reads half a file.
+        run: (set +e; pnpm -F @astryxdesign/docsite test > docsite-data.log 2>&1; echo $? > docsite-data.exit.tmp; mv docsite-data.exit.tmp docsite-data.exit) &
 
       - name: test-docsite-e2e (browser contracts)
         if: steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
