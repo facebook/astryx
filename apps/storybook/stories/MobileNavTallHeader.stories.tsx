@@ -25,6 +25,7 @@ type Story = StoryObj<typeof MobileNav>;
 export const Default: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [query, setQuery] = useState('');
     return (
       <>
         <Button
@@ -40,7 +41,12 @@ export const Default: Story = {
           header={
             <div data-testid="tall-header">
               <strong>Workspace</strong>
-              <TextInput label="Search" isLabelHidden />
+              <TextInput
+                label="Search"
+                isLabelHidden
+                value={query}
+                onChange={setQuery}
+              />
             </div>
           }>
           <SideNavSection title="Main">
