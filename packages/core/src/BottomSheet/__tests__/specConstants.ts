@@ -13,4 +13,4 @@
  */
 
 /** The keyframes hold the end state this long after a curve ends (motion/animator). */
-export const END_HOLD_MS = 5000;
+export const END_HOLD_MS = 60_000;
