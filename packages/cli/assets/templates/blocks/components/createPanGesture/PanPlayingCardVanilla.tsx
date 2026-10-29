@@ -20,6 +20,8 @@ const THROW = 'translate 250ms ease-in, opacity 250ms ease-in';
  */
 function mountDeck(table: HTMLElement, discardButton: HTMLButtonElement) {
   let top = 0;
+  /** A throw is in flight: the next card is dealt when it ends. */
+  let isThrowing = false;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const card = document.createElement('div');
   card.textContent = DECK[0];
@@ -56,9 +58,15 @@ function mountDeck(table: HTMLElement, discardButton: HTMLButtonElement) {
   }
 
   function discard(direction: number) {
+    // One throw at a time: a second Discard during it would deal twice.
+    if (isThrowing) {
+      return;
+    }
+    isThrowing = true;
     moveTo(direction * THROW_DISTANCE, 0, THROW);
     card.style.opacity = '0';
     const deal = () => {
+      isThrowing = false;
       status.textContent = `${DECK[top % DECK.length]} discarded`;
       top += 1;
       card.textContent = DECK[top % DECK.length];

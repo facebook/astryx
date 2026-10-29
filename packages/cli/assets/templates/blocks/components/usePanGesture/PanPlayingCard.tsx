@@ -17,6 +17,8 @@ export default function PanPlayingCard() {
   const card = useRef<HTMLDivElement>(null);
   const [top, setTop] = useState(0);
   const [announcement, setAnnouncement] = useState('');
+  /** A throw is in flight: the next card is dealt when it ends. */
+  const throwing = useRef(false);
 
   /** Move the card, with a transition unless the person reduces motion. */
   function moveTo(x: number, y: number, transition: string) {
@@ -33,12 +35,15 @@ export default function PanPlayingCard() {
 
   function discard(direction: number) {
     const element = card.current;
-    if (element == null) {
+    // One throw at a time: a second Discard during it would deal twice.
+    if (element == null || throwing.current) {
       return;
     }
+    throwing.current = true;
     moveTo(direction * THROW_DISTANCE, 0, THROW);
     element.style.opacity = '0';
     const deal = () => {
+      throwing.current = false;
       setAnnouncement(`${DECK[top % DECK.length]} discarded`);
       setTop(value => value + 1);
       moveTo(0, 0, 'none');
