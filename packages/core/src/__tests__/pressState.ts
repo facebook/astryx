@@ -180,11 +180,13 @@ export function declaresPressPaint(el: Element): boolean {
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
   // A clock scaled by the theme's tempo reads at tempo 1: the press release
-  // is `calc(<ms> * var(--_astryx-motion-tempo, 1))` (`spec:AST-108` FR4).
+  // is `calc(<ms> * var(--_astryx-motion-tempo, 1))`, and under Reduce Motion
+  // `min(<ms>, calc(<ms> * var(--_astryx-motion-tempo, 1)))` (`spec:AST-108`
+  // FR4).
   const scaled = value
     .trim()
     .match(
-      /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)$/,
+      /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
     );
   const match = scaled ?? value.trim().match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
@@ -210,10 +212,13 @@ export function hasReleaseFade(el: Element): boolean {
   const onArmAnimates = rulesWithSelector(el, '[data-astryx-press="on"]').some(
     rule => rule.includes('animation'),
   );
+  // One duration, and its Reduce Motion cap beside it: both the machine's
+  // clock at tempo 1.
   return (
     named &&
-    durations.length === 1 &&
-    durations[0] === PRESS_FADE_MS &&
+    durations.length >= 1 &&
+    durations.length <= 2 &&
+    durations.every(duration => duration === PRESS_FADE_MS) &&
     !onArmAnimates
   );
 }

@@ -10,11 +10,11 @@
  * @position Theme utility; consumed by resolveThemeValues.ts. Pure: no DOM,
  *   no import-time work, safe on the server.
  *
- * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
- * picks the entrance and move curves (and, in the animator, offsets a spring
- * role's bounce by its weight). `reducedMotion: 'always'` applies the Reduce
- * Motion policy for everyone; `'system'` follows each person's setting. With
- * the defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ * `tempo` scales every motion duration token, clamped to 0.75–1.5.
+ * `character` picks the entrance and move curves. `reducedMotion: 'always'`
+ * marks the theme's root, which motion-keyed adaptation rules read; `'system'`
+ * follows each person's setting. No spring reads the knobs yet. With the
+ * defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
  * win over `tempo` (FR5); explicit `tokens` win over both in

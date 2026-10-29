@@ -123,6 +123,12 @@ export const pressConsts = stylex.defineConsts({
  * controller's timer scales by the same tempo (pressFeedback.ts).
  */
 const PRESS_RELEASE_DURATION = `calc(${pressConsts.releaseMs}ms * var(--_astryx-motion-tempo, 1))`;
+/**
+ * The same clock under Reduce Motion, where the tempo may shorten it but never
+ * lengthens it past the 200 ms cap (`spec:AST-108` FR4). The controller's
+ * timer caps the same way.
+ */
+const PRESS_RELEASE_DURATION_REDUCED = `min(${pressConsts.releaseMs}ms, calc(${pressConsts.releaseMs}ms * var(--_astryx-motion-tempo, 1)))`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -210,7 +216,10 @@ const pressReleaseAnimation = {
   },
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (prefers-reduced-motion: reduce)': PRESS_RELEASE_DURATION_REDUCED,
+    },
   },
   animationTimingFunction: {
     default: null,

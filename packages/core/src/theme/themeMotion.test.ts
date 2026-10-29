@@ -388,6 +388,28 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
 });
 
 describe('an extending theme inherits motion field by field (spec:AST-108 FR5)', () => {
+  it('a child that sets no easing keeps its base\u2019s --ease-standard, an explicit one included', () => {
+    const base = defineTheme({
+      name: 'EasingBase',
+      motion: {fast: 150, medium: 300, ratio: 0.75, easing: 'ease-in'},
+      tokens: {'--ease-standard': 'linear'},
+    });
+    expect(base.tokens['--ease-standard']).toBe('linear');
+    const child = defineTheme({
+      name: 'EasingChild',
+      extends: base,
+      motion: {tempo: 1.2},
+    });
+    expect(child.tokens['--ease-standard']).toBe('linear');
+    // A child that sets its own easing generates it.
+    const own = defineTheme({
+      name: 'EasingOwn',
+      extends: base,
+      motion: {fast: 150, medium: 300, ratio: 0.75, easing: 'ease-out'},
+    });
+    expect(own.tokens['--ease-standard']).toBe('ease-out');
+  });
+
   it('a grandchild that adds only a knob keeps the slow band its parent inherited', () => {
     const base = defineTheme({
       name: 'SlowBase',
