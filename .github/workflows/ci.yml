@@ -435,6 +435,12 @@ jobs:
         if: steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
+      # A docsite-only change skips test-node, and the registry generator
+      # lives in the docsite.
+      - name: Verify the hidden production registry gate
+        if: steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
+        run: node internal/shadcn-registry/verify-production-gate.mjs
+
   # Docsite browser contracts. The playground preview runs user-authored code
   # in a sandboxed iframe whose only tie to the page is a nonce-attested
   # MessagePort handshake (apps/docsite/src/app/playground/previewChannel.ts).
@@ -789,8 +795,9 @@ jobs:
   # The full shadcn registry install, preview and hidden production legs
   # (spec:AST-026 FR10, draft): every item through the pinned client. It runs
   # for an explicit release check until the production registry launches; the
-  # network-free production gate and the generator test run with the unit
-  # tests on every pull request.
+  # network-free production gate runs on every pull request that can change
+  # the registry: with the Node unit tests, and in docsite-data for a
+  # docsite-only change.
   test-registry-e2e:
     name: test-registry-e2e (${{ matrix.leg }})
     if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'

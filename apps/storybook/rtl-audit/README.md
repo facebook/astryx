@@ -36,7 +36,7 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > is incomplete. Missing or malformed analysis/index/manifest input, a noncanonical owner, stale output, a missing or unexpected report, and
 > an all-skipped required matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
 > scope so package discovery and curated aliases cannot skip their own check. The
-> full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
+> full unfiltered sweep runs in the release-check on every push to main.
 > Omit `--filter` to run it locally. The blocking accessibility audit consumes the
 > same package-qualified owner-to-story routes and fails if any selected owner
 > resolves to zero stories.
@@ -263,7 +263,7 @@ without inventing a curated measurement.
 - **coverage gap**: every dimension returned N-A and no reason is recorded.
 
 Coverage gaps are findings. This rule applies to the existing full-library
-weekly sweep and to every new or changed component in PR CI. A component with no
+release-check sweep and to every new or changed component in PR CI. A component with no
 story is also a gap when it is named by `--filter`; it cannot disappear from the
 report merely because there was nothing to render.
 
