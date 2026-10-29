@@ -38,7 +38,7 @@ system_specs: [spec:AST-085, spec:AST-038]
 | Behavior                | A labelled `role="group"` of separate ToggleButtons. Valued members show the group's selection and ask the group to toggle; the group reports the next selection through `onChange`.       |
 | End-user impact         | People pick one or several options with plain toggle buttons. Each member is its own Tab stop. A disabled group's members leave the tab order.                                             |
 | Builder impact          | None.                                                                                                                                                                                      |
-| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. Disabled members use native `disabled` without a tooltip, against `spec:AST-085` FR1 and FR7; listed under Current-state impact. |
+| Compatibility/readiness | No API or default change; its DOM change is listed below. Disabled members use native `disabled` without a tooltip, against `spec:AST-085` FR1 and FR7; listed under Current-state impact. |
 | Review checks           | Reject a group without a name, a member whose pressed state disagrees with `value`, a member Action started by group activation, a wrapper shadow, or connected surfaces.                  |
 | Governing rules         | `family:buttons` FR8, FR11, FR12, AV5; `spec:AST-085` FR1, FR7.                                                                                                                            |
 
@@ -54,8 +54,9 @@ assigns. Consumer usage lives in `ToggleButtonGroup.doc.mjs`.
 
 - Released default preserved: `yes`; `type="single"`,
   `orientation="horizontal"`, `isDisabled={false}`
-- Compatibility class: records shipped behavior; no public prop, default,
-  export, or DOM change
+- Compatibility class: no public prop, default, or export change; the DOM
+  gains the action-group item marker on each tracked toggle and, under a
+  coarse primary pointer, the hit layer's inset properties on the group
 - Controlled/uncontrolled behavior: controlled only; the group holds no
   selection of its own
 - Migration decision: none
