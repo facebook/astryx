@@ -311,29 +311,30 @@ clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
 `resolveThemeMotion`'s role tables are accepted but unshipped (`spec:AST-108`
-FR6): no spring reads the motion knobs yet. Until they land, that part of FR6
-is current authority but not enforcement.
+FR6): the animator's springs follow the knobs through the attributes Theme
+writes on the theme's root (`motion/themeKnobs.ts`), but server code has no
+role values yet. Until they land, that part of FR6 is current authority but
+not enforcement.
 
 The reach of `reducedMotion: 'always'` is accepted but partly unshipped
-(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules and the press
-release fade key reduced motion on the mark; components' other Reduce Motion
-styles, the animator, and other script readers of `prefers-reduced-motion` do
-not yet. Until they do, that part of INV15 and FR6 is current authority but not
+(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules, the press release
+fade and the animator key reduced motion on the mark; components' other Reduce
+Motion styles and other script readers of `prefers-reduced-motion` do not yet. Until they do, that part of INV15 and FR6 is current authority but not
 enforcement.
 
 ## Verification
 
-| Invariant                | Evidence                                                                                                      | Failure signal                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                                | Runtime and build interpret one input differently, or generated values beat explicit tokens                                 |
-| INV3, INV4               | extension and invalid-base tests                                                                              | Child themes require a base stylesheet or silently accept a non-theme base                                                  |
-| INV6                     | component merge tests across base/generated/explicit rules                                                    | Restating one property drops inherited component styles                                                                     |
-| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                      | A child loses inherited surface customization or surface precedence changes                                                 |
-| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                           | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge   |
-| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                             | Width metadata, rule order, or child re-resolution diverges across source and built themes                                  |
-| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                                    | Validation-only data enters the normalized theme, or productive input loses construction validation                         |
-| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                             | A theme `define*` helper only checks input and returns that exact input unchanged                                           |
-| INV13, INV14             | `defineTheme.test.ts` type and normalization tests for function entries, slot functions, and the list         | A public read returns a function, a child merges variant lists, or an entry sees another theme's names                      |
-| INV15                    | `themeMotion.test.ts` over each tempo bound, each character, a duration scale, explicit tokens, and extension | A token off its knob, a knob that beats a scale or an explicit token, a lost inherited knob, or a loop that follows `tempo` |
-| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range       | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                    |
-| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                       | A supported authoring concept is missing or misstated in the template                                                       |
+| Invariant                | Evidence                                                                                                | Failure signal                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                          | Runtime and build interpret one input differently, or generated values beat explicit tokens                               |
+| INV3, INV4               | extension and invalid-base tests                                                                        | Child themes require a base stylesheet or silently accept a non-theme base                                                |
+| INV6                     | component merge tests across base/generated/explicit rules                                              | Restating one property drops inherited component styles                                                                   |
+| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                | A child loses inherited surface customization or surface precedence changes                                               |
+| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                     | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
+| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
+| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
+| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
+| INV13, INV14             | `defineTheme.test.ts` type and normalization tests for function entries, slot functions, and the list   | A public read returns a function, a child merges variant lists, or an entry sees another theme's names                    |
+| INV15                    | `themeMotion.test.ts` over tempo bounds, characters, a duration scale, explicit tokens, and extension   | A token off its knob, a knob beating a scale or explicit token, a lost inherited knob, or a loop following `tempo`        |
+| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
+| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                                                     |

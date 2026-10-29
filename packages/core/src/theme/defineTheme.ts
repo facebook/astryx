@@ -292,14 +292,15 @@ export interface DefineThemeInput<
   /**
    * Motion configuration: three knobs (spec:AST-108), a motion scale, or both.
    *
-   * - `tempo` (default 1, clamped to 0.75–1.5) scales every motion duration
-   *   token; touch motion's springs don't read it yet.
+   * - `tempo` (default 1, clamped to 0.75–1.5) scales every motion duration,
+   *   the theme's CSS durations and the springs of its touch motion alike.
    * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
-   *   entrance and move curves; exits and fades never overshoot.
+   *   entrance and move curves and how lively a spring is; exits and fades
+   *   never overshoot.
    * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
-   *   for everyone; so far the theme's motion-keyed adaptation rules and the
-   *   press release fade follow it, not yet components' other Reduce Motion
-   *   styles. Nothing loosens a person's own setting.
+   *   for everyone; so far the theme's motion-keyed adaptation rules, the
+   *   press release fade and the animator follow it, not yet components'
+   *   other Reduce Motion styles. Nothing loosens a person's own setting.
    *
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over

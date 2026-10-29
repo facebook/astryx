@@ -251,7 +251,9 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
     });
     for (const name of ['--duration-fast', '--duration-medium-max']) {
       expect(
-        theme.tokens[name.replace('--duration-', '--pre-tempo-duration-')],
+        theme.tokens[
+          name.replace('--duration-', '--_astryx-pre-tempo-duration-')
+        ],
       ).toBe(theme.tokens[name]);
     }
   });
@@ -261,7 +263,7 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
       name: 'ExplicitNested',
       tokens: {'--duration-slow': '800ms'},
     });
-    expect(theme.tokens['--pre-tempo-duration-slow']).toBe('800ms');
+    expect(theme.tokens['--_astryx-pre-tempo-duration-slow']).toBe('800ms');
   });
 
   it('an adaptation rule\u2019s own durations write their copies', () => {
@@ -278,7 +280,7 @@ describe('a layer\u2019s own durations reach the busy loops under an enclosing t
         },
       }),
     ).component;
-    expect(css).toContain('--pre-tempo-duration-medium: 300ms');
+    expect(css).toContain('--_astryx-pre-tempo-duration-medium: 300ms');
   });
 });
 
@@ -353,8 +355,8 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
     'at tempo %s the pre-tempo durations stay today\u2019s while the tokens scale',
     tempo => {
       const tokens = expandThemeMotion({tempo});
-      expect(tokens['--pre-tempo-duration-slow-min']).toBe('730ms');
-      expect(tokens['--pre-tempo-duration-medium-max']).toBe('550ms');
+      expect(tokens['--_astryx-pre-tempo-duration-slow-min']).toBe('730ms');
+      expect(tokens['--_astryx-pre-tempo-duration-medium-max']).toBe('550ms');
       expect(tokens['--duration-slow-min']).toBe(
         `${Math.round(730 * tempo)}ms`,
       );
@@ -364,7 +366,7 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
   it('a duration scale still times the loops, and an explicit token too', () => {
     const scale = {fast: 100, medium: 250, ratio: 0.75};
     const tokens = expandThemeMotion({...scale, tempo: 1.5});
-    expect(tokens['--pre-tempo-duration-medium-max']).toBe(
+    expect(tokens['--_astryx-pre-tempo-duration-medium-max']).toBe(
       expandMotionScale(scale)['--duration-medium-max'],
     );
     const theme = defineTheme({
@@ -372,17 +374,38 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
       motion: {tempo: 1.5},
       tokens: {'--duration-medium-max': '600ms'},
     });
-    expect(theme.tokens['--pre-tempo-duration-medium-max']).toBe('600ms');
+    expect(theme.tokens['--_astryx-pre-tempo-duration-medium-max']).toBe(
+      '600ms',
+    );
+  });
+
+  it('names every property it writes beside the core tokens privately, with --_astryx- (architecture:theme-tokens INV1)', () => {
+    const core = new Set([
+      ...Object.keys(durationDefaults),
+      ...Object.keys(easeDefaults),
+    ]);
+    const tokens = expandThemeMotion({
+      fast: 100,
+      medium: 250,
+      ratio: 0.75,
+      tempo: 1.2,
+      character: 'crisp',
+    });
+    const extra = Object.keys(tokens).filter(name => !core.has(name));
+    expect(extra.length).toBeGreaterThan(0);
+    for (const name of extra) {
+      expect(name).toMatch(/^--_astryx-/);
+    }
   });
 
   it('Spinner and Skeleton read the pre-tempo duration first', () => {
     const read = (file: string) =>
       fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     expect(read('Spinner/Spinner.tsx')).toContain(
-      "`var(--pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`",
+      "`var(--_astryx-pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`",
     );
     expect(read('Skeleton/Skeleton.tsx')).toContain(
-      "`var(--pre-tempo-duration-medium-max, ${durationVars['--duration-medium-max']})`",
+      "`var(--_astryx-pre-tempo-duration-medium-max, ${durationVars['--duration-medium-max']})`",
     );
   });
 });

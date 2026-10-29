@@ -181,15 +181,15 @@ export const myTheme = defineTheme({
   radius: {base: 4, multiplier: 1},
 
   /**
-   * Motion. Three knobs set how its CSS feels (touch springs don't read them
-   * yet):
+   * Motion. Three knobs set how it feels everywhere, CSS durations and touch
+   * springs alike:
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
-   *     curves. Exits and fades never overshoot.
+   *     curves and how lively a spring is. Exits and fades never overshoot.
    *   reducedMotion — 'always' reduces motion for everyone (so far the
-   *     theme's motion-keyed adaptation rules and the press release fade, not
-   *     yet components' other Reduce Motion styles); 'system' (the default)
-   *     follows each person's setting.
+   *     theme's motion-keyed adaptation rules, the press release fade and the
+   *     animator, not yet components' other Reduce Motion styles); 'system'
+   *     (the default) follows each person's setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
    * Finger tracking, momentum, the keyboard, hover, the press's onset delay
    * and tap flash, and busy loops never follow them; the press release fade

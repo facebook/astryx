@@ -287,10 +287,12 @@ export function Theme({
   registerTheme(theme);
 
   useThemeStyleInjection(theme);
-  // spec:AST-108 FR6: 'always' marks the theme's root; every component style
-  // keyed on prefers-reduced-motion also keys on the mark. FR3: the tempo and
-  // character a theme sets ride on the same elements, where the animator
-  // reads them without importing the theme.
+  // spec:AST-108 FR6: 'always' marks the theme's root. So far motion-keyed
+  // adaptation rules and the press release fade key reduced motion on the
+  // mark; components' other Reduce Motion styles don't yet (a known gap in
+  // `architecture:theme-authoring-contract`). FR3: the tempo and character a
+  // theme sets ride on the same elements, where the animator reads them
+  // without importing the theme.
   const knobs = resolveMotionKnobs(theme.__axes?.motion);
   const reducesMotion = knobs.reducedMotion === 'always';
   const motionTempo = knobs.tempoIsSet ? String(knobs.tempo) : undefined;

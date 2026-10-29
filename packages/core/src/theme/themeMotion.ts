@@ -10,12 +10,14 @@
  * @position Theme utility; consumed by resolveThemeValues.ts. Pure: no DOM,
  *   no import-time work, safe on the server.
  *
- * `tempo` scales every motion duration token, clamped to 0.75–1.5.
- * `character` picks the entrance and move curves. `reducedMotion: 'always'`
- * marks the theme's root; so far motion-keyed adaptation rules and the press
- * release fade read the mark, not yet components' other Reduce Motion styles.
- * `'system'` follows each person's setting. No spring reads the knobs yet. With the
- * defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ * `tempo` scales every motion duration, clamped to 0.75–1.5. `character`
+ * picks the entrance and move curves (and, in the animator, offsets a spring
+ * role's bounce by its weight; the animator reads both from the theme's root,
+ * motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
+ * far motion-keyed adaptation rules, the press release fade and the animator
+ * read the mark, not yet components' other Reduce Motion styles. `'system'`
+ * follows each person's setting. With the defaults (tempo 1, `'standard'`,
+ * `'system'`) every token is today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
  * win over `tempo` (FR5); explicit `tokens` win over both in
@@ -107,13 +109,15 @@ export function durationTokensAt(tempo: number): Record<string, string> {
 }
 
 /**
- * The custom property holding a duration token's value before `tempo`
- * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
- * (Spinner, Skeleton) read it, falling back to the token, so their timing
- * follows a duration scale or an explicit token but never `tempo` (FR4).
+ * The private custom property holding a duration token's value before
+ * `tempo` scaled it (`--duration-slow` → `--_astryx-pre-tempo-duration-slow`).
+ * Busy loops (Spinner, Skeleton) read it, falling back to the token, so their
+ * timing follows a duration scale or an explicit token but never `tempo`
+ * (FR4). Private, like every property the knobs add beside the core tokens
+ * (`architecture:theme-tokens` INV1).
  */
 export function preTempoName(token: string): string {
-  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+  return token.replace(/^--duration-/, '--_astryx-pre-tempo-duration-');
 }
 
 /**
