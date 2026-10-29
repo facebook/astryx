@@ -1322,13 +1322,7 @@ describe('ProgressBar indeterminate under a finger: Safari\u2019s <progress>', (
   };
   const keyframesText = () =>
     Array.from(document.styleSheets)
-      .flatMap(sheet => {
-        try {
-          return Array.from(sheet.cssRules).map(rule => rule.cssText);
-        } catch {
-          return [];
-        }
-      })
+      .flatMap(sheet => Array.from(sheet.cssRules).map(rule => rule.cssText))
       .filter(text => text.startsWith('@keyframes'));
 
   it('sweeps a quarter of the track end to end in the table\u2019s 1 s each way, linearly', () => {
