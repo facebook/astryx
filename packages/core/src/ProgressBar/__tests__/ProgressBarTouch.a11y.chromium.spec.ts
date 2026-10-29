@@ -942,14 +942,20 @@ test('indeterminate: the segment keeps moving while a script holds the main thre
   }
   const cdp = await page.context().newCDPSession(page);
   const raw: {t: number; data: string}[] = [];
+  const acks: Promise<unknown>[] = [];
+  const ackFailures: string[] = [];
   cdp.on('Page.screencastFrame', frame => {
     raw.push({
       t: (frame.metadata.timestamp ?? Date.now() / 1000) * 1000,
       data: frame.data,
     });
-    cdp
-      .send('Page.screencastFrameAck', {sessionId: frame.sessionId})
-      .catch(() => {});
+    acks.push(
+      cdp
+        .send('Page.screencastFrameAck', {sessionId: frame.sessionId})
+        .catch((error: unknown) => {
+          ackFailures.push(String(error));
+        }),
+    );
   });
   await cdp.send('Page.startScreencast', {
     format: 'png',
@@ -975,7 +981,10 @@ test('indeterminate: the segment keeps moving while a script holds the main thre
   );
   await page.waitForTimeout(200);
   await cdp.send('Page.stopScreencast');
-  await cdp.detach().catch(() => {});
+  await Promise.all(acks);
+  await cdp.detach();
+  // A lost acknowledgement stalls the screencast and thins the frames.
+  expect(ackFailures).toEqual([]);
   const inside = raw.filter(f => f.t >= busy.from + 20 && f.t <= busy.to - 20);
   // The segment's left edge per frame, along the track's middle row.
   const scratch = await page.context().newPage();
