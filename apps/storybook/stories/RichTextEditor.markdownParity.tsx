@@ -4,12 +4,13 @@
  * @file RichTextEditor.markdownParity.tsx
  * @input Core Markdown for the read surface; RichTextEditor with its toolbar and
  *   the Lexical plugins available today for the edit surface; the parity
- *   fixture; the Storybook demo Markdown plugins; a 16px wide-counter fixture.
+ *   fixture; the Storybook demo Markdown plugins; 16px wide-counter fixtures
+ *   with ordered and mixed unordered ancestry.
  * @output `MarkdownParitySandbox`: one Markdown document rendered by both
  *   surfaces side by side, swapped in place, or overlaid, with diagnostic
  *   per-block geometry and the scroll anchor across a mode switch.
- *   `WideNumberMarkerParity` compares short and arbitrarily wide outside
- *   counters on Markdown, RichTextView, and RichTextEditor.
+ *   `WideNumberMarkerParity` and `MixedNumberMarkerParity` compare short and
+ *   wide outside counters on Markdown, RichTextView, and RichTextEditor.
  * @position Storybook-only diagnostic for RichTextEditor.stories.tsx. It shows
  *   current behavior and fixes nothing: every difference it reports is a
  *   finding, and none of its numbers is a target.
@@ -882,20 +883,36 @@ const wideMarkerStyles = stylex.create({
   },
 });
 
+const MIXED_MARKER_SOURCE = [
+  'Reference paragraph.',
+  '',
+  '- Outer bullet',
+  '  - Inner bullet',
+  '',
+  '    388. Mixed roman counter',
+  '    389. Roman sibling',
+].join('\n');
+
+/** Reusable comparison for a numbered list below two unordered ancestors. */
+export function MixedNumberMarkerParity() {
+  return <NumberMarkerParity source={MIXED_MARKER_SOURCE} />;
+}
+
 /** Reusable short/wide-counter comparison in read and edit mode at 16px. */
 export function WideNumberMarkerParity() {
+  return <NumberMarkerParity source={WIDE_MARKER_SOURCE} />;
+}
+
+function NumberMarkerParity({source}: {source: string}) {
   const {mode} = useTheme();
-  const state = useMemo(
-    () => markdownToEditorStateJSON(WIDE_MARKER_SOURCE),
-    [],
-  );
+  const state = useMemo(() => markdownToEditorStateJSON(source), [source]);
   return (
     <Theme theme={wideMarkerTheme} mode={mode}>
       <div {...stylex.props(wideMarkerStyles.columns)}>
         <div
           data-wide-marker-surface="markdown"
           {...stylex.props(wideMarkerStyles.surface)}>
-          <Markdown>{WIDE_MARKER_SOURCE}</Markdown>
+          <Markdown>{source}</Markdown>
         </div>
         <div
           data-wide-marker-surface="view"

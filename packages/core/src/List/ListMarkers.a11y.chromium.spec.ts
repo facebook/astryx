@@ -580,3 +580,100 @@ for (const {width, mode} of [
     });
   }
 }
+
+// Static Markdown's outside-paint exception must not weaken general List or
+// the clip containing swipe-capable rows (component:List FR9).
+test('general and swipe-capable Lists retain their inline clip', async ({
+  page,
+}, testInfo) => {
+  const states = [];
+  for (const dir of ['ltr', 'rtl'] as const) {
+    for (const story of [
+      'core-list--long-number-markers',
+      'core-item--swipe-actions',
+    ]) {
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=${story}&viewMode=story&globals=direction:${dir};colorMode:light`,
+      );
+      await expect(
+        page.locator('#storybook-root .astryx-list').first(),
+      ).toBeVisible();
+      const lists = await page
+        .locator('#storybook-root .astryx-list')
+        .evaluateAll(elements =>
+          elements.map(element => ({
+            direction: getComputedStyle(element).direction,
+            overflowX: getComputedStyle(element).overflowX,
+          })),
+        );
+      expect(lists.length).toBeGreaterThan(0);
+      for (const list of lists) {
+        expect(list.direction).toBe(dir);
+        expect(list.overflowX).toBe('clip');
+      }
+      states.push({story, dir, lists});
+    }
+  }
+  await writeFile(
+    testInfo.outputPath('general-list-clipping.json'),
+    JSON.stringify(states, null, 2),
+  );
+});
+
+// A numbered list's outside counter must not be cut by an unordered ancestor.
+// Removing only OL clipping misses this mixed nesting path (AST-061 FR11).
+for (const dir of ['ltr', 'rtl'] as const) {
+  test(`mixed nested counter stays whole (${dir})`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({width: 1440, height: 900});
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-parity-mixed-number-markers&viewMode=story&globals=direction:${dir};colorMode:light`,
+    );
+    const root = '[data-wide-marker-surface="markdown"]';
+    await expect(page.locator(`${root} ol > li`)).toHaveCount(2);
+    await expect(
+      page.locator('[data-wide-marker-surface="view"]'),
+    ).toContainText('Mixed roman counter');
+    await page.evaluate(async () => document.fonts.ready);
+    const boxes = await markerBoxes(page, `${root} ol`);
+    await page.screenshot({
+      path: testInfo.outputPath('mixed-surfaces.png'),
+      fullPage: true,
+    });
+    await page.addStyleTag({
+      content: `#storybook-root, #storybook-root * {color: transparent !important;} #storybook-root ${root} ol > li > :first-child {color: rgb(255, 0, 0) !important;}`,
+    });
+    const resting = await page.screenshot({
+      path: testInfo.outputPath('mixed-resting-ink.png'),
+      fullPage: true,
+    });
+    // This diagnostic lifts ALL list ancestors, not just numbered lists.
+    await page.addStyleTag({
+      content:
+        '#storybook-root ul, #storybook-root ol {overflow: visible !important;}',
+    });
+    const whole = await page.screenshot({
+      path: testInfo.outputPath('mixed-whole-ink.png'),
+      fullPage: true,
+    });
+    const ink = await inkOf(page, resting, boxes[0], dir);
+    const unclipped = await inkOf(page, whole, boxes[0], dir);
+    await writeFile(
+      testInfo.outputPath('mixed-counter-receipt.json'),
+      JSON.stringify({dir, boxes, ink, unclipped}, null, 2),
+    );
+    for (const box of boxes[0]) {
+      expect(box.counterWidth).toBeGreaterThan(40);
+      expect(
+        dir === 'rtl' ? box.left : box.right - box.counterWidth,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        dir === 'rtl' ? box.left + box.counterWidth : box.right,
+      ).toBeLessThanOrEqual(1440);
+    }
+    expect(ink, 'unordered ancestors do not clip roman counters').toEqual(
+      unclipped,
+    );
+  });
+}

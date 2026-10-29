@@ -5,7 +5,8 @@
 /**
  * @file Markdown.tsx
  * @input Markdown string, canonical AST, optional plugins and custom renderers;
- *   numbered lists use outside counters matching RichText's native indentation
+ *   static document lists permit outside counter paint through ordered and
+ *   unordered ancestors, matching RichText's native indentation
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
@@ -588,8 +589,12 @@ const styles = stylex.create({
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
   },
+  // Static Markdown lists never host swipe actions. Let outside counter ink
+  // paint through both ordered and unordered ancestors; general List and
+  // swipe-capable rows retain their own inline clip (component:List FR9).
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    overflowInline: 'visible',
   },
   // Numbered document lists keep their ordinary text inset regardless of
   // counter width, matching RichText's native outside markers (AST-061 FR11).
@@ -598,7 +603,6 @@ const styles = stylex.create({
   markerGutter: {
     marginInlineStart: `calc(-1 * (${spacingVars['--spacing-2']} + ${spacingVars['--spacing-4']}))`,
     paddingInlineStart: spacingVars['--spacing-4'],
-    overflowInline: 'visible',
   },
   // HR
   hr: {
