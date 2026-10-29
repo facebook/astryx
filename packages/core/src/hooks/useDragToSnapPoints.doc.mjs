@@ -32,7 +32,7 @@ export const docs = {
       name: 'options.snapPoints',
       type: 'number[]',
       description:
-        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. New ones reach the running drag: the element keeps its place and any settle in flight, and moves only when the point it rests on or heads for is gone, onto the nearest new one.",
+        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. New ones create the drag again where the element is: a settle in flight carries on to its point, and a resting element whose point is gone moves to the nearest new one.",
       required: true,
     },
     {
@@ -91,7 +91,7 @@ export const docs = {
         category: 'Content',
         criterion: '2.3.3 Animation from Interactions',
         description:
-          'When the person asks for reduced motion, the settle after a touch drag becomes a short cross-fade into the snap point, and after a mouse or pen drag it lands at once. `settleTo` lands at once with a mouse and fades on a touch screen. While the finger is down, the element still follows it.',
+          'When the person asks for reduced motion, the settle after a touch drag becomes a short cross-fade into the snap point, as does any settle on a device whose primary pointer is coarse, such as a tablet; after a mouse or pen drag elsewhere it lands at once. `settleTo` fades on such a device and lands at once with a fine primary pointer. While the finger is down, the element still follows it.',
       },
     ],
   },
