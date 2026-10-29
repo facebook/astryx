@@ -881,7 +881,9 @@ describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
       expect(decide.env.SPECIALIZED, name).toContain(
         "steps.scope.outputs.spec_only == 'true'",
       );
-      expect(decide.run.indexOf('"$SPECIALIZED" = true'), name).toBeLessThan(
+      const shortCircuit = decide.run.indexOf('"$SPECIALIZED" = true');
+      expect(shortCircuit, name).toBeGreaterThanOrEqual(0);
+      expect(shortCircuit, name).toBeLessThan(
         decide.run.indexOf('!= pull_request'),
       );
     }
