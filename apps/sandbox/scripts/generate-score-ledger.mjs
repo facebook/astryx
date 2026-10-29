@@ -222,6 +222,83 @@ function pruneSections(sections, open, component) {
   return kept;
 }
 
+/**
+ * A plain object pruned to the keys `shapes` declares, each holding its shape:
+ * any other key, or a declared one of the wrong shape, is dropped and named in
+ * the build's warnings under `where`.
+ */
+function pruneToShapes(value, shapes, where) {
+  const kept = {};
+  for (const [k, v] of Object.entries(value)) {
+    const shape = shapes.get(k);
+    if (!shape) droppedKeys.add(`${where}.${k}`);
+    else if (!shape(v)) malformedKeys.add(`${where}.${k}`);
+    else kept[k] = v;
+  }
+  return kept;
+}
+const isPlainObject = value =>
+  value != null && typeof value === 'object' && !Array.isArray(value);
+const isNumberOrNull = value => value === null || typeof value === 'number';
+
+/**
+ * The top-level fields `Ledger` declares. Without the three it requires there
+ * is no snapshot, and the page relies on its runtime fetch, as it does when the
+ * wiki cannot be reached; any other field is pruned like an entry's.
+ */
+const LEDGER_KEY_SHAPES = new Map([
+  ['ledgerVersion', value => typeof value === 'number'],
+  ['rubricVersion', isText],
+  ['updated', isText],
+  ['about', isText],
+  ['caveats', value => Array.isArray(value) && value.every(isText)],
+]);
+function pruneLedger(parsed) {
+  const {components, ...fields} = parsed;
+  for (const k of ['ledgerVersion', 'rubricVersion', 'updated']) {
+    if (!LEDGER_KEY_SHAPES.get(k)(fields[k])) {
+      throw new Error(`its \`${k}\` is missing or malformed`);
+    }
+  }
+  return {
+    ...pruneToShapes(fields, LEDGER_KEY_SHAPES, 'ledger'),
+    components: components.map(pruneEntry),
+  };
+}
+
+/**
+ * `regression` as `LedgerEntry` declares it, and its `from`. It is optional,
+ * so one without its reason, its date, or the score and BLOCK count it fell
+ * from is dropped whole, named in the build's warnings.
+ */
+const REGRESSION_KEY_SHAPES = new Map([
+  ['reason', isText],
+  ['from', isPlainObject],
+  ['recordedAt', isText],
+]);
+const REGRESSION_FROM_KEY_SHAPES = new Map([
+  ['score', isNumberOrNull],
+  ['blocks', value => typeof value === 'number'],
+]);
+function pruneRegression(value, where) {
+  const kept = isPlainObject(value)
+    ? pruneToShapes(value, REGRESSION_KEY_SHAPES, where)
+    : {};
+  if (kept.from) {
+    kept.from = pruneToShapes(
+      kept.from,
+      REGRESSION_FROM_KEY_SHAPES,
+      `${where}.from`,
+    );
+  }
+  const complete =
+    ['reason', 'from', 'recordedAt'].every(k => Object.hasOwn(kept, k)) &&
+    ['score', 'blocks'].every(k => Object.hasOwn(kept.from, k));
+  if (complete) return kept;
+  malformedKeys.add(where);
+  return null;
+}
+
 function pruneEntry(entry) {
   const component = entry.component ?? '?';
   const kept = {};
@@ -239,9 +316,12 @@ function pruneEntry(entry) {
     kept[k] = v;
   }
   if (kept.blocks) {
+    // `count` and `open` only: any other key in the object is undeclared.
+    const {count, open, ...undeclared} = kept.blocks;
+    for (const k of Object.keys(undeclared)) droppedKeys.add(`blocks.${k}`);
     kept.blocks = {
-      ...kept.blocks,
-      open: kept.blocks.open
+      count,
+      open: open
         .map((block, i) => pruneBlock(block, `${component}.blocks.open[${i}]`))
         .filter(block => block != null),
     };
@@ -252,6 +332,14 @@ function pruneEntry(entry) {
       kept.blocks?.open ?? [],
       component,
     );
+  }
+  if (Object.hasOwn(kept, 'regression')) {
+    const regression = pruneRegression(
+      kept.regression,
+      `${component}.regression`,
+    );
+    if (regression) kept.regression = regression;
+    else delete kept.regression;
   }
   return kept;
 }
@@ -272,7 +360,7 @@ try {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const parsed = JSON.parse(await res.text());
   if (!Array.isArray(parsed.components)) throw new Error('missing a components array');
-  snapshot = {...parsed, components: parsed.components.map(pruneEntry)};
+  snapshot = pruneLedger(parsed);
   snapshotFetchedAt = new Date().toISOString();
   console.log(
     `componentScores: snapshot of ${parsed.components.length} audited component(s) from the wiki`,
