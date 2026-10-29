@@ -50,16 +50,19 @@ interface Layout {
   chevrons: string[];
 }
 
-/** Opens the story: under a finger in the phone profile, or with a mouse in a desktop context. */
 /**
  * A tap steps on the browser's click after its lift (`spec:AST-094` FR11).
- * Playwright's WebKit (Linux build) dispatched no click for an injected tap
- * on this story, so a proof that needs the click runs in Chromium and on the
- * iOS simulator.
+ * The steppers cancel a touch's pointerdown, since Chrome on Android focuses
+ * a held stepper at its long press otherwise (measured), and WebKit's Linux
+ * build then sends no click after a tap, unlike iOS Safari and Chrome
+ * (measured; it clicks a plain button). That engine is outside
+ * `spec:AST-013`'s support, so a proof that needs the click runs in Chromium
+ * and on the iOS simulator.
  */
 const WEBKIT_TAP_CLICK_SKIP =
-  "Playwright's WebKit dispatches no click after an injected tap on this story (measured), and a tap steps on its click (spec:AST-094 FR11); proven in Chromium and on the iOS simulator";
+  "The steppers cancel a touch's pointerdown (Chrome on Android focuses a held stepper otherwise), and WebKit's Linux build then sends no click after a tap, unlike iOS Safari and Chrome (measured); outside spec:AST-013's support, so the tap's click is proven in Chromium and on the iOS simulator";
 
+/** Opens the story: under a finger in the phone profile, or with a mouse in a desktop context. */
 async function open(
   page: Page,
   globals: Record<string, string> = {},

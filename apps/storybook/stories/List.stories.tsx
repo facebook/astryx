@@ -7,23 +7,18 @@
  * @position Storybook demonstrations for List consumers
  */
 
-import {useRef, useState, type MouseEvent} from 'react';
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
-import {Button} from '@astryxdesign/core/Button';
-// The selection hold is internal to core (no public API records it yet).
-import {
-  holdSelection,
-  type SelectionHold as RowSelectionHold,
-} from '../../../packages/core/src/List/selectionHold';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -263,6 +258,73 @@ export const Links: Story = {
   ),
 };
 
+function EndControlsDemo() {
+  const [isWifiOn, setIsWifiOn] = useState(true);
+  return (
+    // The button after the list sits 4 px below its last row.
+    <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+      <List
+        density="compact"
+        hasDividers
+        header={
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+            <Text type="label" size="lg">
+              Connections
+            </Text>
+            <Button label="Edit" variant="ghost" size="sm" />
+          </div>
+        }>
+        <ListItem
+          label="Network"
+          onClick={() => {}}
+          endContent={<Icon icon={ChevronRightIcon} />}
+          swipeActions={{trailing: [{label: 'Forget', onActivate: () => {}}]}}
+        />
+        <ListItem
+          label="Wi-Fi"
+          endContent={
+            <Switch
+              label="Wi-Fi"
+              isLabelHidden
+              value={isWifiOn}
+              onChange={checked => setIsWifiOn(checked)}
+            />
+          }
+        />
+        <ListItem
+          label="Bluetooth"
+          onClick={() => {}}
+          endContent={<Icon icon={ChevronRightIcon} />}
+        />
+      </List>
+      <Button label="Load more" variant="secondary" />
+    </div>
+  );
+}
+
+export const WithEndControls: Story = {
+  render: () => <EndControlsDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact row whose end content is its own control, a switch, ' +
+          'between two interactive rows (the first one swipeable), under a ' +
+          'header with its own button ' +
+          'and above a button 4 px after the list. Under a finger, the ' +
+          'interactive rows grow ' +
+          'their touch targets only where nothing is near, never into the ' +
+          "control's row, and a tap on the switch stays the switch's.",
+      },
+    },
+  },
+};
+
 export const OrderedList: Story = {
   render: args => (
     <List listStyle="decimal" {...args}>
@@ -410,121 +472,6 @@ export const HeaderInFlexParent: Story = {
         story:
           'Demonstrates the list with a header inside a flex parent. ' +
           'The header should appear above the list, not beside it.',
-      },
-    },
-  },
-};
-
-function SelectionHoldDemo() {
-  const hold = useRef<RowSelectionHold | null>(null);
-  const slider = useRef<HTMLInputElement | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const push = (label: string) => (event: MouseEvent) => {
-    // In the same task as the activation that pushes.
-    hold.current = holdSelection(event.target);
-    setProgress(0);
-    setOpen(label);
-  };
-  const settle = async (
-    to: 0 | 1,
-    timing?: Parameters<RowSelectionHold['animate']>[1],
-    {followSlider = false}: {followSlider?: boolean} = {},
-  ) => {
-    const current = hold.current;
-    // A slow pop shows where it is on the slider (written to the input, no
-    // render per frame), so a finger that takes the slider over mid-flight
-    // continues from the value on screen. (Off for the regular pop, whose
-    // proof counts every paint.)
-    const following = {frame: 0};
-    const follow = () => {
-      if (current != null && slider.current != null) {
-        slider.current.value = String(current.presentation());
-      }
-      following.frame = requestAnimationFrame(follow);
-    };
-    if (followSlider) {
-      following.frame = requestAnimationFrame(follow);
-    }
-    // No hold under a mouse: the screen just pops.
-    const arrived = current == null || (await current.animate(to, timing));
-    cancelAnimationFrame(following.frame);
-    if (!arrived) {
-      // Interrupted (a finger took the progress over mid-flight): the hold
-      // stays where the finger left it.
-      return;
-    }
-    if (to === 1) {
-      setOpen(null);
-      current?.end(true);
-      current?.focus({preventScroll: true});
-      hold.current = null;
-    } else {
-      current?.end(false);
-      setProgress(0);
-    }
-  };
-  return (
-    <VStack gap={4}>
-      <List hasDividers>
-        {['Inbox', 'Sent', 'Drafts'].map(label => (
-          <ListItem
-            key={label}
-            label={label}
-            onClick={push(label)}
-            endContent={<Icon icon={ChevronRightIcon} />}
-          />
-        ))}
-      </List>
-      {open != null && (
-        <VStack gap={2} data-testid="pushed-screen">
-          <Text type="label">{open} (pushed)</Text>
-          <Button label="Back" onClick={() => void settle(1)} />
-          <Button
-            label="Back, slowly"
-            onClick={() =>
-              void settle(
-                1,
-                {durationMs: 3000, curve: [0, 0, 1, 1]},
-                {followSlider: true},
-              )
-            }
-          />
-          <label>
-            Pop progress
-            <input
-              ref={slider}
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={progress}
-              onChange={event => {
-                const value = Number(event.target.value);
-                setProgress(value);
-                hold.current?.setProgress(value);
-              }}
-            />
-          </label>
-          <Button label="Finish pop" onClick={() => void settle(1)} />
-          <Button label="Cancel pop" onClick={() => void settle(0)} />
-        </VStack>
-      )}
-    </VStack>
-  );
-}
-
-export const SelectionHold: Story = {
-  render: () => <SelectionHoldDemo />,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'A row tapped to push stays selected while the pushed screen covers it ' +
-          'and deselects as the screen pops (UIKit’s push from a table row), ' +
-          'driven here by buttons standing in for a navigation stack: Back runs ' +
-          'the in-transition deselect, the slider scrubs it like an edge swipe, ' +
-          'and Cancel selects the row again.',
       },
     },
   },

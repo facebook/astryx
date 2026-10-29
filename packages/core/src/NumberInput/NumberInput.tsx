@@ -52,6 +52,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useStepperTouch} from './NumberInputTouch';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -822,6 +823,7 @@ export function NumberInput({
   ref,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: NumberInputProps) {
   const {rest, container, hasFieldBox} = useFieldInputStyling(
@@ -839,6 +841,7 @@ export function NumberInput({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -902,6 +905,12 @@ export function NumberInput({
     ],
     inputGroup,
   );
+  // A caller aria-labelledby names the input together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const inputLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+      : ariaLabelledBy;
 
   const parseInput = useCallback(
     (text: string) => parseNumberInput(text, {min, max, isIntegerOnly, locale}),
@@ -1183,7 +1192,13 @@ export function NumberInput({
   const stepperPointerTypeRef = useRef<string | null>(null);
 
   const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    // The steppers never take focus: an editing field stays focused.
+    // The steppers never take focus: an editing field stays focused. The
+    // pointerdown itself is canceled, not only the mousedown below: Chrome on
+    // Android focuses a held stepper at its long press unless the touch's
+    // pointerdown is canceled (measured), and that would blur an editing
+    // field. WebKit's Linux build then sends no click after a tap, unlike
+    // iOS Safari and Chrome (measured); it is outside `spec:AST-013`'s
+    // support.
     event.preventDefault();
     // Only a primary click presses a stepper: a right click, a pen's barrel
     // button and a macOS ctrl-click start no press (`spec:AST-094` FR43), so
@@ -1428,7 +1443,7 @@ export function NumberInput({
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={inputLabelledBy}
         {...stylex.props(
           styles.input,
           isDisabled && styles.inputDisabled,
@@ -1564,6 +1579,7 @@ export function NumberInput({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

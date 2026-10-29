@@ -7,7 +7,9 @@
  * Validates that astryx.css contains expected @media wrappers and
  * prefers-reduced-motion rules, and that the touch press's release ships as a
  * real fade: the press strength is a registered `<number>` the fading arm
- * animates on the machine's own clock (utils/interactionOverlay.stylex.ts).
+ * animates on the machine's own clock (utils/interactionOverlay.stylex.ts),
+ * and a list row's compositor press layer (utils/rowPressLayer.ts) releases
+ * its opacity on the cell clock and curve.
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -247,11 +249,7 @@ describe('build-css astryx.css', () => {
       if (capped != null) {
         return Math.min(toMs(capped[1]), toMs(capped[2]));
       }
-      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
-      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
-      const match = (role == null ? value : role[1])
-        .trim()
-        .match(/^([\d.]+)(ms|s)$/);
+      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -289,7 +287,8 @@ describe('build-css astryx.css', () => {
         .map(line => line.match(/animation-duration:\s*([^;}]+)/))
         .filter(Boolean)
         .map(match => toMs(match[1]));
-      // One clock, the one the controller removes the attribute on.
+      // One clock, the one the controller checks the release at, capped
+      // under reduced motion (DR2).
       expect([...new Set(durations)]).toEqual([await readReleaseMs()]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
@@ -304,12 +303,8 @@ describe('build-css astryx.css', () => {
       // press's strength, declared by the shared overlay styles on the element
       // the controller writes to. StyleX deduplicates the identical
       // declaration across the variants, so the shipped sheet carries it once.
-      // (The compositor press layer's rows turn this paint off with
-      // `--_press-paint: transparent`; that declaration is its own, below.)
-      const declarations = lines().filter(
-        line =>
-          /\{--_press-paint:/.test(line) &&
-          !/\{--_press-paint:transparent/.test(line),
+      const declarations = lines().filter(line =>
+        /\{--_press-paint:/.test(line),
       );
       expect(declarations).toHaveLength(1);
       expect(declarations[0]).toContain('var(--color-overlay-pressed)');
@@ -364,11 +359,7 @@ describe('build-css astryx.css', () => {
       if (capped != null) {
         return Math.min(toMs(capped[1]), toMs(capped[2]));
       }
-      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
-      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
-      const match = (role == null ? value : role[1])
-        .trim()
-        .match(/^([\d.]+)(ms|s)$/);
+      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -400,12 +391,6 @@ describe('build-css astryx.css', () => {
         .filter(Boolean)
         .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
       expect(curves).toEqual([points]);
-    });
-
-    it('lets the motion animator promote the layer it animates', () => {
-      expect(astryxCss).toMatch(
-        /::before\{[^}]*will-change:var\(--astryx-motion-will-change-before,\s*auto\)/,
-      );
     });
 
     it('shows the layer at once on the on arm, and rests it at 0 on the fading arm under its release', () => {
@@ -441,40 +426,38 @@ describe('build-css astryx.css', () => {
      */
     const TOUCH_GATED = /^@media \(pointer: coarse\)\{(?!@supports)/;
     const rules = () => astryxCss.split('\n').map(line => line.trim());
-    /** Rules that hide a divider or reach the press layer over one. */
-    const dividerArms = state =>
-      rules().filter(
-        rule =>
-          rule.includes(`[data-astryx-press="${state}"]`) &&
-          (rule.includes('{border-bottom-color:transparent}') ||
-            rule.includes('::before{bottom:')),
-      );
 
-    it('hides the dividers beside a pressed row, and reaches its layer over them, only under a finger', () => {
-      const arms = dividerArms('on');
-      // Its own divider, the one above, the layer's reach, the last row's.
-      expect(arms.length).toBeGreaterThanOrEqual(4);
-      for (const rule of arms) {
-        expect(rule).toMatch(TOUCH_GATED);
-      }
+    it('keeps the dividers drawn beside a pressed row', () => {
+      // No press state hides a divider or reaches the press layer over one.
+      expect(
+        rules().filter(
+          rule =>
+            rule.includes('[data-astryx-press=') &&
+            (rule.includes('{border-bottom-color:transparent}') ||
+              rule.includes('::before{bottom:')),
+        ),
+      ).toEqual([]);
     });
 
-    it('keeps them hidden around a row held through a navigation push the same way', () => {
-      const arms = dividerArms('held');
-      expect(arms.length).toBeGreaterThanOrEqual(4);
-      for (const rule of arms) {
-        expect(rule).toMatch(TOUCH_GATED);
-      }
-    });
-
-    it('raises the rows to the iOS table heights only under a finger', () => {
-      const heights = rules().filter(rule =>
-        /\{min-height:(52|62)px\}/.test(rule),
+    it('gives an interactive row its hit layer only under a finger, and no row a new height', () => {
+      // Its top and bottom edges, grown by the insets utils/hitArea.ts measures
+      // (utils/touchHitArea.stylex.ts, spec:AST-094 FR42).
+      const edges = rules().filter(rule =>
+        /::after\{(top|bottom):calc\(var\(--astryx-hit-inset-(top|bottom), ?0px\) ?\* ?-1\)\}/.test(
+          rule,
+        ),
       );
-      expect(heights).toHaveLength(2);
-      for (const rule of heights) {
+      const sides = new Set(
+        edges.map(rule => /::after\{(top|bottom):/.exec(rule)[1]),
+      );
+      expect([...sides].sort()).toEqual(['bottom', 'top']);
+      for (const rule of edges) {
         expect(rule).toMatch(TOUCH_GATED);
       }
+      // Row height and geometry stay as they are, under every pointer.
+      expect(
+        rules().filter(rule => /\{min-height:(52|62)px\}/.test(rule)),
+      ).toEqual([]);
     });
   });
 });
