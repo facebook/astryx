@@ -99,12 +99,13 @@ function labelsOf(job) {
           : [];
       labels.push(...(found.length > 0 ? found : [value]));
     } else if (value.includes('${{')) {
-      // The literals an && or || selects are the runners; comparison operands
-      // ('workflow_dispatch', 'release-check') are not.
-      const found = [...value.matchAll(/(?:&&|\|\|)\s*'([^']+)'/g)].map(
-        match => match[1],
-      );
-      labels.push(...(found.length > 0 ? found : [value]));
+      // The one expression shape the workflows use, `cond && 'a' || 'b'`,
+      // resolves to both labels; any other expression stays raw and fails.
+      const pair =
+        /^\$\{\{\s*([^|]+?)\s*&&\s*'([^']+)'\s*\|\|\s*'([^']+)'\s*\}\}$/.exec(
+          value,
+        );
+      labels.push(...(pair ? [pair[2], pair[3]] : [value]));
     } else {
       labels.push(value);
     }
@@ -130,6 +131,9 @@ describe('runner labels', () => {
           "${{ github.event_name == 'push' && 'linux-large' || 'ubuntu-latest' }}",
       }),
     ).toEqual(['linux-large', 'ubuntu-latest']);
+    expect(
+      labelsOf({'runs-on': "${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}"}),
+    ).toEqual(["${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}"]);
     expect(
       labelsOf({
         'runs-on': '${{ matrix.os }}',
