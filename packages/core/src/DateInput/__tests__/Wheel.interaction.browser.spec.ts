@@ -69,6 +69,8 @@ const MINUTES: WheelLayout = {rowHeight: ROW, rowCount: 60};
 const HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
 /** A flick up the minute wheel: the rows run on towards higher minutes. */
 const FLICK_VELOCITY = 900;
+/** The busy-main-thread proof's block: spec:AST-094 FR5's verification. */
+const BLOCK_MS = 1000;
 
 interface OpenWheel {
   driver: TouchDriver;
@@ -125,11 +127,12 @@ function flickUp(start: {x: number; y: number}) {
  * The busy-main-thread proof needs a coast as long as the script's release
  * makes it. Where the page sees real dispatch times (WebKit here), the release
  * velocity is the engine's own and can fall under the velocity floor, and the
- * screencast's cadence varies with load. The iOS simulator capture proves the
- * coast through a block in Mobile Safari.
+ * screencast's cadence varies with load. For Mobile Safari there is an iOS
+ * simulator capture of a coast through a 530 ms block; no real device, and
+ * no 1 s block there.
  */
 const SCRIPTED_RELEASE_SKIP =
-  'the coast needs the scripted release velocity, which only an engine replaying the script timestamps gives (README: engine limits); the iOS simulator capture proves it in Mobile Safari';
+  'the coast needs the scripted release velocity, which only an engine replaying the script timestamps gives (README: engine limits); Mobile Safari has an iOS simulator capture through a 530 ms block instead';
 
 /** The y of a `translateY(…px)` keyframe. */
 function translateYOf(transform: string): number {
@@ -333,16 +336,20 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   const when = (distance: number) =>
     points.find(point => rest - point.offset <= distance)?.t ??
     coast.durationMs;
-  // The row the coast ends on, below the band: block while it rises from four
-  // rows below the band to just over one, in sight and moving every frame the
-  // whole time.
-  const blockFrom = when(4 * ROW);
+  // A 1 s block, as spec:AST-094 FR5's proof names, ending while the coast is
+  // still over a row from rest, so every frame of it moves at least a pixel.
   const blockTo = when(1.25 * ROW);
-  expect(blockTo - blockFrom, 'the block covers the coast').toBeGreaterThan(
-    200,
+  const blockFrom = blockTo - BLOCK_MS;
+  expect(blockFrom, 'the coast runs the whole block').toBeGreaterThan(0);
+  // The row that crosses the band halfway through the block: in sight the
+  // whole time, from about four rows below the band to four above.
+  const offsetAt = (t: number) =>
+    points.find(point => point.t >= t)?.offset ?? rest;
+  const crossing = Math.round(
+    (offsetAt(blockFrom) + offsetAt(blockTo)) / 2 / ROW,
   );
   const marked = minutes.getByRole('option', {
-    name: String(Math.round(rest / ROW)).padStart(2, '0'),
+    name: String(crossing).padStart(2, '0'),
   });
   // Today's rows fade toward the edges, which washes out the marker chip's
   // colour; this one row is drawn opaque for the evidence (its coast keeps
