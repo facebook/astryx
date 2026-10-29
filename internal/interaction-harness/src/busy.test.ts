@@ -6,16 +6,14 @@
  * @output The busy-main-thread verdict's limits: dropped frames a loaded
  *   machine produces pass, a frozen animation fails every criterion, a window
  *   with nothing moving to judge fails, and out-of-order frames are judged in
- *   presentation order. Against a control, a component that moves on the
- *   control's frames passes through a stall the compositor itself makes, and a
- *   frozen one, or one the control outpaces, still fails.
+ *   presentation order.
  * @position Unit test of ./busy and ./frames' ordering; the browser proof
  *   with a real compositor animation and a rAF control is in
  *   harness.interaction.browser.spec.ts.
  */
 
 import {describe, expect, it} from 'vitest';
-import {busyWindowProof, pooledBusyProof} from './busy';
+import {busyWindowProof} from './busy';
 import * as skip from './busy.skip.fixture';
 import {inPresentationOrder, type TrackedFrame} from './frames';
 
@@ -534,173 +532,5 @@ describe('inPresentationOrder', () => {
     const proof = busyWindowProof(inPresentationOrder(shuffled), BLOCK);
     expect(proof.monotonic).toBe(true);
     expect(proof.verdict.failures).toEqual([]);
-  });
-});
-
-/** `frames` as the control's: the same frames and times, moving along x. */
-function asControl(frames: readonly TrackedFrame[]): TrackedFrame[] {
-  return frames.map(
-    f =>
-      ({
-        ...f,
-        box: f.box == null ? null : {x: f.box.y, y: 0, width: 12, height: 12},
-      }) as TrackedFrame,
-  );
-}
-
-describe('busyWindowProof against a control', () => {
-  it('passes a component that moves on every frame the control does, through a stall the compositor makes for both, which fails without the control', () => {
-    // Three frames in a row presented nothing, for the control too: the
-    // compositor shared the core the block spins on (a two-core runner).
-    const gap = [at(1300), at(1300) + 1, at(1300) + 2];
-    const component = moving(gap);
-    const control = asControl(moving(gap));
-    const alone = busyWindowProof(component, BLOCK);
-    expect(alone.verdict.failures.join('\n')).toMatch(/longest stall/);
-    const against = busyWindowProof(component, BLOCK, {control});
-    expect(against.verdict.failures, against.summary).toEqual([]);
-    expect(against.control).toMatchObject({moved: against.control?.movedWith});
-    expect(against.summary).toMatch(
-      /against the control: moved on \d+ of its \d+ frames/,
-    );
-  });
-
-  it('still fails a frozen component while the control moves', () => {
-    const frozen = moving().map(
-      f =>
-        ({
-          ...f,
-          box: {
-            ...f.box!,
-            y: f.t >= BLOCK.from ? 3 * at(BLOCK.from) : f.box!.y,
-          },
-        }) as TrackedFrame,
-    );
-    const proof = busyWindowProof(frozen, BLOCK, {
-      control: asControl(moving()),
-    });
-    expect(proof.verdict.pass).toBe(false);
-    expect(proof.verdict.failures.join('\n')).toMatch(
-      /moved on 0 of the \d+ frames the control moved/,
-    );
-    expect(proof.verdict.failures.join('\n')).toMatch(/past the control's/);
-  });
-
-  it('fails a component the control outpaces: it repeats positions on frames the control moves', () => {
-    const repeats = [0, 1, 2, 3].map(k => at(1100) + 6 * k);
-    const proof = busyWindowProof(repeating(repeats), BLOCK, {
-      control: asControl(moving()),
-    });
-    expect(proof.verdict.failures.join('\n')).toMatch(
-      /moved on \d+ of the \d+ frames the control moved/,
-    );
-  });
-
-  it('fails a window in which the control itself presented too little to judge', () => {
-    const still = asControl(
-      moving().map(f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame),
-    );
-    const proof = busyWindowProof(moving(), BLOCK, {control: still});
-    expect(proof.verdict.failures.join('\n')).toMatch(
-      /the control moved on 0 frames in the judged part/,
-    );
-  });
-});
-
-/** A 90 ms block from `from`: its judged part holds three 60 Hz frames. */
-const short = (from: number) => ({from, to: from + 90});
-
-describe('pooledBusyProof', () => {
-  it('judges a block too short for one run over pooled runs: one run cannot decide, three runs of a component that moves with the control pass', () => {
-    const control = asControl(moving());
-    const single = busyWindowProof(moving(), short(1000), {control});
-    expect(single.verdict.failures.join('\n')).toMatch(
-      /the control moved on 3 frames in the judged part, under 4/,
-    );
-    const runs = [1000, 1300, 1600].map(from => ({
-      tracked: moving(),
-      control,
-      window: short(from),
-    }));
-    const pooled = pooledBusyProof(runs);
-    expect(pooled.verdict.failures, pooled.summary).toEqual([]);
-    expect(pooled.control).toEqual({moved: 9, movedWith: 9});
-    expect(pooled.runs).toHaveLength(3);
-    expect(pooled.summary).toMatch(
-      /^3 runs pooled: moved on 9 of the control's 9 frames; run 1: /,
-    );
-  });
-
-  it('still fails a component that is frozen in every run while the control moves', () => {
-    const frozen = moving().map(
-      f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame,
-    );
-    const pooled = pooledBusyProof(
-      [1000, 1300, 1600].map(from => ({
-        tracked: frozen,
-        control: asControl(moving()),
-        window: short(from),
-      })),
-    );
-    expect(pooled.verdict.pass).toBe(false);
-    expect(pooled.verdict.failures.join('\n')).toMatch(
-      /moved on 0 of the 9 frames the control moved over 3 runs/,
-    );
-    expect(pooled.verdict.failures.join('\n')).toMatch(
-      /run 1: longest stall .* past the control's/,
-    );
-  });
-
-  it("judges each run's longest stall against that run's control, never pooled", () => {
-    // Two frames in a row present no new position, inside run 2 only.
-    const k = at(1320);
-    const stalled = moving().map((f, i) =>
-      i === k || i === k + 1
-        ? ({...f, box: {...f.box!, y: 3 * (k - 1)}} as TrackedFrame)
-        : f,
-    );
-    const pooled = pooledBusyProof(
-      [1000, 1300, 1600].map(from => ({
-        tracked: stalled,
-        control: asControl(moving()),
-        window: short(from),
-      })),
-    );
-    const failures = pooled.verdict.failures.join('\n');
-    expect(failures).toMatch(/run 2: longest stall .* past the control's/);
-    expect(failures).not.toMatch(/run [13]: longest stall/);
-  });
-
-  it('judges the control over the pool too: runs in which it presented too little fail', () => {
-    const still = asControl(
-      moving().map(f => ({...f, box: {...f.box!, y: 0}}) as TrackedFrame),
-    );
-    const pooled = pooledBusyProof(
-      [1000, 1300].map(from => ({
-        tracked: moving(),
-        control: still,
-        window: short(from),
-      })),
-    );
-    expect(pooled.verdict.failures.join('\n')).toMatch(
-      /the control moved on 0 frames over 2 runs, under 4/,
-    );
-  });
-
-  it('judges one long run as busyWindowProof judges it against the control', () => {
-    const control = asControl(moving());
-    const pooled = pooledBusyProof([
-      {tracked: moving(), control, window: BLOCK},
-    ]);
-    const single = busyWindowProof(moving(), BLOCK, {control});
-    expect(pooled.verdict).toEqual(single.verdict);
-    expect(pooled.control).toEqual({
-      moved: single.control?.moved,
-      movedWith: single.control?.movedWith,
-    });
-  });
-
-  it('throws on no runs', () => {
-    expect(() => pooledBusyProof([])).toThrow(/no runs/);
   });
 });
