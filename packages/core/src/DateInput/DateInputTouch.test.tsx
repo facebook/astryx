@@ -1933,6 +1933,27 @@ describe('DateInput — month/year wheels', () => {
     expect(onChange).toHaveBeenLastCalledWith('2026-01-10');
   });
 
+  it('under a finger: in a year the range cuts, the looping month wheel keeps to the nearest enabled month around the seam', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2026-01-25"
+        min="2025-11-01"
+        max="2026-02-28"
+        onChange={onChange}
+      />,
+    );
+    openWheels();
+    // One ArrowUp from January crosses the seam onto December 2026, past
+    // `max`. Around the loop the nearest enabled month is January itself
+    // (February is ten rows the other way), so nothing moves or commits.
+    fireEvent.keyDown(screen.getByRole('listbox', {name: 'Month'}), {
+      key: 'ArrowUp',
+    });
+    expect(title()).toHaveTextContent('January 2026');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('under a finger: takes a year change past the range on to its nearest reachable month, date and month wheel too', async () => {
     const onChange = vi.fn();
     renderAndOpen(
@@ -2185,6 +2206,54 @@ describe('DateInput — month/year wheels', () => {
     // fixed across the swap.
     expect(button('Save')).toBeInTheDocument();
     expect(button('Done')).toBeInTheDocument();
+  });
+
+  it('keeps the header actions and both footer actions out of reach while the toggle fades', async () => {
+    renderAndOpen();
+    // A running exit on both panels, so their own `inert` waits for the
+    // fade's end (useFadeInert).
+    for (const which of ['calendar', 'wheels'] as const) {
+      (panel(which) as HTMLElement).getAnimations = () =>
+        [
+          {transitionProperty: 'opacity', playState: 'running'},
+        ] as unknown as Animation[];
+    }
+    const button = (label: string) =>
+      [...document.querySelectorAll('dialog[open] button')].find(
+        el => el.textContent?.trim() === label,
+      );
+    const isBlocked = (element: Element | null | undefined) =>
+      element?.closest('[inert]') != null;
+    const actions = () =>
+      [
+        document.querySelector('[data-arrows="months"]'),
+        document.querySelector('[data-action="reset"]'),
+        button('Save'),
+        button('Done'),
+      ].map(isBlocked);
+    const fadeEnd = async (which: 'calendar' | 'wheels') => {
+      const event = new Event('transitionend', {bubbles: true});
+      Object.assign(event, {propertyName: 'opacity'});
+      act(() => {
+        panel(which).dispatchEvent(event);
+      });
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+    };
+
+    // Opening: the arrows, Reset and Save leave with the toggle, and Done
+    // waits for the fade, so a tap on Done cannot reach Save beneath it.
+    openWheels();
+    expect(actions()).toEqual([true, true, true, true]);
+    await fadeEnd('calendar');
+    expect(actions()).toEqual([true, true, true, false]);
+
+    // Closing: Done leaves with the toggle, and the calendar's actions wait.
+    fireEvent.click(title());
+    expect(actions()).toEqual([true, true, true, true]);
+    await fadeEnd('wheels');
+    expect(actions()).toEqual([false, false, false, true]);
   });
 
   it('the year wheel keeps the month', () => {
@@ -2744,6 +2813,55 @@ describe('DateInput — a mouse can drag a wheel', () => {
       el.dispatchEvent(new Event('scrollend'));
       expect(el.style.scrollSnapType).toBe('');
     });
+  });
+
+  /**
+   * Every `scrollTop` the drag assigns ends in its own `scrollend` in
+   * Chromium, and the hand can rest with the button still down. Neither is
+   * rest: the month the wheel lands on commits at the release, as it does
+   * when a finger lifts.
+   */
+  it('commits nothing while a mouse drag holds the wheel, and commits at the release', () => {
+    vi.useFakeTimers();
+    try {
+      // A year of months, so May is reachable (the default range ends in April).
+      renderAndOpen(
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
+      );
+      fireEvent.click(title());
+      withWheelLayout(() => {
+        const el = wheel();
+        trackable(el);
+        // March, the committed month, sits under the band.
+        el.scrollTop = 2 * 28;
+        const selected = () =>
+          el.querySelector('[aria-selected="true"]')?.textContent;
+        el.dispatchEvent(pointer('pointerdown', {y: 200}));
+        // Two rows on: May is under the band.
+        el.dispatchEvent(pointer('pointermove', {y: 144}));
+        fireEvent.scroll(el);
+        el.dispatchEvent(new Event('scrollend'));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('March');
+        expect(title()).toHaveTextContent('March 2026');
+
+        el.dispatchEvent(pointer('pointerup', {y: 144}));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('May');
+        expect(title()).toHaveTextContent('May 2026');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   /**

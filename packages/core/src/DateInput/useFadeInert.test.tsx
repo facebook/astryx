@@ -1,17 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {act, render} from '@testing-library/react';
-import {useRef} from 'react';
+import {useLayoutEffect, useRef} from 'react';
 import {describe, expect, it} from 'vitest';
 import {useFadeInert} from './useFadeInert';
 
 function Panels({
   isWheelOpen,
   isDeferred = true,
+  onCommit,
 }: {
   isWheelOpen: boolean;
   isDeferred?: boolean;
+  onCommit?: () => void;
 }) {
+  // Every commit, to count the renders a toggle costs.
+  useLayoutEffect(() => {
+    onCommit?.();
+  });
   const calendarRef = useRef<HTMLDivElement | null>(null);
   const wheelsRef = useRef<HTMLDivElement | null>(null);
   const {isCalendarInert, isWheelsInert} = useFadeInert(
@@ -140,6 +146,25 @@ describe('useFadeInert', () => {
     view.rerender(<Panels isWheelOpen isDeferred={false} />);
     expect(view.getByTestId('calendar').hasAttribute('inert')).toBe(true);
     expect(view.getByTestId('wheels').hasAttribute('inert')).toBe(false);
+  });
+
+  it('swaps with the toggle in one commit with a mouse', () => {
+    let commits = 0;
+    const onCommit = () => {
+      commits += 1;
+    };
+    const view = render(
+      <Panels isWheelOpen={false} isDeferred={false} onCommit={onCommit} />,
+    );
+    commits = 0;
+    view.rerender(
+      <Panels isWheelOpen isDeferred={false} onCommit={onCommit} />,
+    );
+    expect(commits).toBe(1);
+    view.rerender(
+      <Panels isWheelOpen={false} isDeferred={false} onCommit={onCommit} />,
+    );
+    expect(commits).toBe(2);
   });
 
   it('makes it inert with the toggle when no fade runs', () => {

@@ -3,7 +3,7 @@
 /**
  * @file wheelOptions.ts
  * @input Nothing; types and one pure function
- * @output WheelOption, WheelProps, WheelHandle, WheelSpinOptions and
+ * @output WheelOption, WheelProps, WheelHandle and
  *   nearestEnabledIndex: what both wheels share
  * @position Internal; read by Wheel.tsx (which re-exports all of it) and
  *   PickerWheel.tsx
@@ -14,7 +14,6 @@
  */
 
 import type {Ref} from 'react';
-import type {BezierPoints} from '../motion/bezier';
 
 export interface WheelOption {
   /** Stable numeric identity of the row (a month 1-12, or a year). */
@@ -29,25 +28,18 @@ export interface WheelOption {
 }
 
 /** Options for a programmatic turn. */
-export interface WheelSpinOptions {
-  /** Seconds. @default `picker.tapSpin.durationMs` (0.3 s, UIPickerView's) */
-  duration?: number;
-  /**
-   * Cubic-bézier control points.
-   * @default `timing.curves.move`
-   */
-  curve?: BezierPoints;
-}
-
 /** What a Wheel's `ref` exposes. */
 export interface WheelHandle {
   /**
-   * Turn the wheel onto `index` (an index into `options`), then commit it as
-   * a rest would. Resolves true on arrival, false if a finger or another
-   * turn interrupted it. Under a fine pointer the row commits at once and
-   * the column scrolls to it as it does for any new value.
+   * Turn the wheel onto `index` (an index into `options`) on the tap spin,
+   * then commit it as a rest would. Resolves true once that row is the
+   * committed one, false if a finger or another turn interrupted it or the
+   * wheel went away first. An index outside `options`, a disabled row, or a
+   * row `resolveRest` would move off resolves false at once and nothing
+   * turns. Under a fine pointer the row commits at once and the column
+   * scrolls to it as it does for any new value, on the same rule.
    */
-  spinTo(index: number, options?: WheelSpinOptions): Promise<boolean>;
+  spinTo(index: number): Promise<boolean>;
 }
 
 export interface WheelProps {
@@ -75,11 +67,85 @@ export interface WheelProps {
   /**
    * The row the wheel rests on after stopping on `index`. When it differs,
    * the wheel turns on to it and commits that one. Under a finger only.
-   * @default the nearest enabled row (`nearestEnabledIndex`)
+   * @default the nearest enabled row, around the seam on a loop (`restingStep`)
    */
   resolveRest?: (index: number) => number;
   /** Programmatic turns: `spinTo(index)`. */
   ref?: Ref<WheelHandle>;
+}
+
+/**
+ * Whether `spinTo(index)` may turn onto `index`: a row of `options`, enabled,
+ * and one `resolveRest` (when given) keeps. The touch wheel and the scrolling
+ * column answer a spin by the same rule.
+ */
+export function canSpinTo(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  resolveRest?: (index: number) => number,
+): boolean {
+  const option = options[index];
+  return (
+    option != null &&
+    !option.isDisabled &&
+    (resolveRest == null || resolveRest(index) === index)
+  );
+}
+
+/**
+ * The shorter signed number of rows from `from` to `to` around a loop of
+ * `count` rows; a tie (exactly half a turn) goes forward.
+ */
+export function loopStep(from: number, to: number, count: number): number {
+  const ahead = (((to - from) % count) + count) % count;
+  return ahead <= count / 2 ? ahead : ahead - count;
+}
+
+/**
+ * How many rows, signed, a wheel resting on row `index` travels to the
+ * nearest enabled row: 0 when `index` is enabled. A tie goes toward
+ * `towardIndex` (the committed row). On a looping wheel distance runs around
+ * the seam, so a rest beside it turns the shorter way round and never the
+ * long way across the list. A wheel with no enabled row travels to
+ * `towardIndex`.
+ *
+ * @example
+ * ```
+ * // Months, looping, with only January and February enabled: a rest on
+ * // December turns one row on to January, not ten back to February.
+ * restingStep(monthOptions, 11, 0, true); // 1
+ * ```
+ */
+export function restingStep(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  towardIndex: number,
+  isLooping: boolean = false,
+): number {
+  const count = options.length;
+  if (!isLooping || count === 0) {
+    return nearestEnabledIndex(options, index, towardIndex) - index;
+  }
+  const isEnabled = (i: number) =>
+    !options[((i % count) + count) % count].isDisabled;
+  if (isEnabled(index)) {
+    return 0;
+  }
+  const toward = loopStep(index, towardIndex, count);
+  for (let distance = 1; distance <= count / 2; distance++) {
+    const isBelowEnabled = isEnabled(index - distance);
+    const isAboveEnabled = isEnabled(index + distance);
+    if (isBelowEnabled && isAboveEnabled) {
+      return toward < 0 ? -distance : distance;
+    }
+    if (isBelowEnabled) {
+      return -distance;
+    }
+    if (isAboveEnabled) {
+      return distance;
+    }
+  }
+  return toward;
 }
 
 /**

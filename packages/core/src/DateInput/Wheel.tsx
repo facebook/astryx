@@ -23,7 +23,7 @@
  * rubber-banding, and the settle animation are the platform's; all this adds
  * is `scroll-snap-align: center` on each option, half a viewport of padding at
  * each end so the first and last option can reach the middle, and a commit
- * when the scrolling stops.
+ * when the scrolling stops and no finger or mouse drag still holds it.
  *
  * The falloff (rows fading and tipping away from the centre) is a CSS
  * scroll-driven animation on a `view()` timeline — the browser interpolates it
@@ -76,14 +76,13 @@ import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
 import {useWheelListbox} from './useWheelListbox';
-import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+import {canSpinTo, nearestEnabledIndex, type WheelProps} from './wheelOptions';
 
 export {
   nearestEnabledIndex,
   type WheelHandle,
   type WheelOption,
   type WheelProps,
-  type WheelSpinOptions,
 } from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
@@ -276,22 +275,23 @@ function TodayWheel({
   value,
   onChange,
   isActive,
+  resolveRest,
 }: WheelProps) {
   useImperativeHandle(
     ref,
     () => ({
       spinTo: async index => {
-        const option = options[index];
-        if (option == null || option.isDisabled) {
+        if (!canSpinTo(options, index, resolveRest)) {
           return false;
         }
+        const option = options[index];
         if (option.value !== value) {
           onChange(option.value);
         }
         return true;
       },
     }),
-    [options, value, onChange],
+    [options, value, onChange, resolveRest],
   );
   return (
     <ScrollWheel
@@ -332,6 +332,13 @@ export function ScrollWheel({
   // Which row is under the band right now. Tracks the finger during a scroll;
   // `selectedIndex` only catches up when the wheel settles.
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
+
+  // A mouse cannot drag a scroll container, so without this the wheel ignores
+  // the one gesture its shape invites. Touch is untouched — it pans natively,
+  // with momentum this could not match. See usePointerDragScroll. The drag it
+  // holds is not rest either: the settle below waits for its release, as it
+  // waits for a finger's (useScrollSettle).
+  const {isDraggingRef} = usePointerDragScroll(scrollerRef, isActive);
 
   // Row height in px, read from layout rather than assumed, so a theme that
   // retunes --date-input-touch-wheel-item-size still lands on the right row.
@@ -467,10 +474,14 @@ export function ScrollWheel({
       }
     },
     isActive,
+    isDraggingRef,
   );
 
-  // Park the committed row under the band whenever the wheel is shown, or the
-  // value is changed from outside (the calendar scrolled to another month).
+  // Park the committed row under the band whenever the wheel is shown, at
+  // once. A value changed from outside while it is shown (a bound clamping the
+  // time after another wheel turned, the calendar scrolled to another month)
+  // turns the wheel onto its row instead, as UIDatePicker turns onto its
+  // maximum (component:DateInput FR13): it never jumps there.
   //
   // NEVER while the wheel is still moving. A scroller that is mid-gesture or
   // still carrying momentum is the user's, and repositioning it does not stop
@@ -478,10 +489,15 @@ export function ScrollWheel({
   // as a new settle, commits the next row along, and parks again. See
   // useScrollSettle. The settle handler re-checks the position afterwards, so
   // a correction that is genuinely needed still happens, just at rest.
+  const parkedRef = useRef(false);
   useEffect(() => {
+    if (!isActive) {
+      parkedRef.current = false;
+      return;
+    }
     // Nor while a reduced-motion dip is still to land its rows: they land
     // under it, on this row.
-    if (!isActive || !isAtRestRef.current || pendingFadeRef.current != null) {
+    if (!isAtRestRef.current || pendingFadeRef.current != null) {
       return;
     }
     const size = itemBlockSize();
@@ -490,11 +506,16 @@ export function ScrollWheel({
       return;
     }
     if (Math.round(scroller.scrollTop / size) !== selectedIndex) {
-      scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      if (parkedRef.current) {
+        scrollToIndex(selectedIndex, 'smooth');
+      } else {
+        scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      }
     }
+    parkedRef.current = true;
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- the highlight follows a scroll position, which only exists after layout
     setActiveIndex(selectedIndex);
-  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef]);
+  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef, scrollToIndex]);
 
   // Highlight follows the finger. rAF-throttled: a scroll can fire far more
   // often than the display refreshes, and this only feeds a repaint.
@@ -537,11 +558,6 @@ export function ScrollWheel({
   // 'all': a wheel scrolls vertically, the same axis the sheet wants, so
   // there is no way to share — it takes every touch that lands on it.
   useOwnScrollGesture(scrollerRef, 'all', {isEnabled: isActive});
-
-  // A mouse cannot drag a scroll container, so without this the wheel ignores
-  // the one gesture its shape invites. Touch is untouched — it pans natively,
-  // with momentum this could not match. See usePointerDragScroll.
-  usePointerDragScroll(scrollerRef, isActive);
 
   const moveBy = useCallback(
     (delta: number) => {
@@ -602,7 +618,11 @@ export function ScrollWheel({
       <div
         ref={scrollerRef}
         {...listboxProps}
-        onPointerDown={event => {
+        // Read on the way down: usePointerDragScroll stops a primary mouse
+        // press from bubbling (it must not reach BottomSheet's drag), so a
+        // bubbling handler would never see a mouse and would keep the last
+        // touch.
+        onPointerDownCapture={event => {
           lastPointerRef.current = event.pointerType;
         }}
         onWheel={() => {

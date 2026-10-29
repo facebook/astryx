@@ -23,7 +23,7 @@
  *   `pnpm test:interaction`)
  */
 
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -316,6 +316,109 @@ test('a second tap mid-fade turns the fade around from where it is', async ({
     expect((last - opacity) / Math.max(1, time - lastTime)).toBeLessThan(0.004);
   }
   expect(fade.at(-1)?.[1]).toBe(0);
+});
+
+/** Resolves once `locator`'s element shows more than `opacity`, page-side. */
+async function waitForOpacityAbove(locator: Locator, opacity: number) {
+  await locator.evaluate(
+    async (element, above) =>
+      new Promise<void>(resolve => {
+        const check = () => {
+          if (Number(getComputedStyle(element).opacity) > above) {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        check();
+      }),
+    opacity,
+  );
+}
+
+/** Every transition in the open sheet, stretched so a tap lands mid-fade. */
+const STRETCH_SHEET_FADES =
+  'dialog[open] * { transition-duration: 2000ms !important; }';
+
+test('a tap on Done during the opening fade does not reach Save beneath it', async ({
+  page,
+}) => {
+  const {driver, wheels, titleAt} = await openCalendar(page);
+  const field = page.getByRole('combobox').first();
+  const value = await field.inputValue();
+  // Counts the clicks that reach Save, beneath Done in the footer.
+  await page
+    .locator('dialog[open] button', {hasText: /^Save$/})
+    .evaluate(button => {
+      const counter = window as unknown as {saveClicks: number};
+      counter.saveClicks = 0;
+      button.addEventListener('click', () => {
+        counter.saveClicks += 1;
+      });
+    });
+  await page.addStyleTag({content: STRETCH_SHEET_FADES});
+  await driver.tap(titleAt);
+  await waitForOpacityAbove(wheels, 0.3);
+  const done = await page
+    .locator('dialog[open] button', {hasText: /^Done$/})
+    .boundingBox();
+  if (done == null) {
+    throw new Error('no Done');
+  }
+  await driver.tap({x: done.x + done.width / 2, y: done.y + done.height / 2});
+  await waitForRest(wheels);
+  // Nothing reached Save: the sheet is still open, on the wheels, and
+  // nothing was saved.
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {saveClicks: number}).saveClicks,
+    ),
+  ).toBe(0);
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
+  expect(await wheels.evaluate(e => getComputedStyle(e).opacity)).toBe('1');
+  expect(await field.inputValue()).toBe(value);
+});
+
+test('DateTimeInput: a tap on the month arrows during the opening fade changes nothing', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), DTI_STORY);
+  const driver = await touchDriver(page);
+  const tapCenter = async (selector: string) => {
+    const box = await page.locator(selector).first().boundingBox();
+    if (box == null) {
+      throw new Error(`no ${selector}`);
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  };
+  await tapCenter('button[aria-label^="Open "]');
+  await waitForRest(
+    page.getByRole('dialog').locator('.astryx-bottom-sheet').first(),
+  );
+  // Counts the clicks that reach the next-month arrow.
+  await page
+    .locator('button[aria-label="Next month"]')
+    .first()
+    .evaluate(button => {
+      const counter = window as unknown as {arrowClicks: number};
+      counter.arrowClicks = 0;
+      button.addEventListener('click', () => {
+        counter.arrowClicks += 1;
+      });
+    });
+  await page.addStyleTag({content: STRETCH_SHEET_FADES});
+  await tapCenter('button[aria-label$="Choose month and year"]');
+  await waitForOpacityAbove(
+    page.locator('[data-date-surface="wheels"]').first(),
+    0.3,
+  );
+  await tapCenter('button[aria-label="Next month"]');
+  await waitForRest(page.locator('[data-date-surface="wheels"]').first());
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {arrowClicks: number}).arrowClicks,
+    ),
+  ).toBe(0);
 });
 
 /**

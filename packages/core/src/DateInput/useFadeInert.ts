@@ -69,6 +69,12 @@ export function useFadeInert(
     settled: boolean;
     focusedFor: boolean | null;
   }>({settled: isWheelOpen, focusedFor: null});
+  // With a mouse the panels swap `inert` with the toggle, so `settled`
+  // follows `isWheelOpen` during render (React's pattern for state that
+  // tracks a prop) rather than from an effect: the toggle costs one commit.
+  if (!isDeferred && settled !== isWheelOpen) {
+    setFade({settled: isWheelOpen, focusedFor: null});
+  }
   const isFading = settled !== isWheelOpen;
 
   // Synchronizes with the outgoing panel's exit: the swap of `inert` lands on
@@ -81,14 +87,9 @@ export function useFadeInert(
       return;
     }
     const outgoing = (isWheelOpen ? calendarRef : wheelsRef).current;
-    if (
-      !isDeferred ||
-      outgoing == null ||
-      typeof outgoing.getAnimations !== 'function'
-    ) {
-      // With a mouse the swap of `inert` follows the toggle, and with no Web
-      // Animations no exit can run.
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the swap is the toggle's own here, mirrored into this state
+    if (outgoing == null || typeof outgoing.getAnimations !== 'function') {
+      // With no outgoing panel, or no Web Animations, no exit can run.
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- whether an exit can run is known only from the committed panel (its Web Animations support), which render cannot read
       setFade({settled: isWheelOpen, focusedFor: null});
       return;
     }
@@ -135,7 +136,7 @@ export function useFadeInert(
         panel.removeEventListener('transitioncancel', onEnd);
       }
     };
-  }, [isFading, isWheelOpen, isDeferred, calendarRef, wheelsRef]);
+  }, [isFading, isWheelOpen, calendarRef, wheelsRef]);
 
   // Synchronizes with the document's focus: focus inside the outgoing panel
   // moves to the incoming one with the toggle, so it never sits in a panel
