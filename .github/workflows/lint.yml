@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
     branches: [main]
 
 permissions: {}
@@ -13,11 +14,14 @@ permissions: {}
 # A new push to a pull request cancels its superseded run; each push to main
 # keeps its own uncancelled group.
 concurrency:
-  group: 'lint-${{ github.event.pull_request.number || github.run_id }}'
+  # A label other than ci:run starts a run that skips every job; its own
+  # group keeps it from cancelling a real run (spec:AST-030 FR17).
+  group: 'lint-${{ github.event.pull_request.number || github.run_id }}${{ github.event.action == ''labeled'' && github.event.label.name != ''ci:run'' && ''-other-label'' || '''' }}'
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
+    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'ci:run') && (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) || contains(github.event.pull_request.labels.*.name, 'ci:run')))
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read

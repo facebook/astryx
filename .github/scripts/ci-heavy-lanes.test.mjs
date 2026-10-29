@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {ungated} from './ci-pr-gate.mjs';
 
 const read = name =>
   yaml.parse(
@@ -59,8 +60,8 @@ function needsOf(job) {
 /** Evaluates a job's `if:` the way Actions does, for one event. */
 function runs(job, {event, operation = '', labels = []}) {
   const needs = needsOf(job);
-  const expression = (job.if ?? 'true')
-    .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+  // The pull-request gate in front is ci-pr-gate.test.mjs's to prove.
+  const expression = ungated(job.if ?? 'true')
     .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
     .replace(
       /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
@@ -121,13 +122,9 @@ describe('visual, accessibility and RTL owners', () => {
     }
   });
 
-  it('adds no label trigger: a label takes effect on the next push or reopen', () => {
-    expect(ci.on.pull_request.types).toEqual([
-      'opened',
-      'synchronize',
-      'reopened',
-      'ready_for_review',
-    ]);
+  it('starts no run for its label: ci:heavy-lanes takes effect on the next push or reopen', () => {
+    // A `labeled` event runs CI only for ci:run (ci-pr-gate.test.mjs).
+    expect(ci.on.pull_request.types).toContain('labeled');
   });
 });
 

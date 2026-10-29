@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {ungated} from './ci-pr-gate.mjs';
 
 const ci = yaml.parse(
   fs.readFileSync(new URL('../workflows/ci.yml', import.meta.url), 'utf8'),
@@ -21,7 +22,8 @@ const ci = yaml.parse(
 const job = ci.jobs['release-merge-back'];
 
 function runs({event = 'pull_request', base = 'main', head}) {
-  const expression = job.if.replace(/^\$\{\{\s*|\s*\}\}$/g, '');
+  // The pull-request gate in front is ci-pr-gate.test.mjs's to prove.
+  const expression = ungated(job.if);
   return Function(
     'github',
     'startsWith',

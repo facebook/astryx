@@ -371,17 +371,6 @@ describe('per-job scope step', () => {
     const runsOn = (count, head_branch = 'fix/a', run = {}) =>
       Array.from({length: count}, () => ({id: nextRun++, head_branch, ...run}));
 
-    it('runs only the fast checks on a draft', async () => {
-      const context = pullRequestContext('main', {draft: true});
-      const fast = await decide({context, files});
-      expect(fast.outputs.applies).toBe('true');
-      const {outputs, messages} = await decide({context, files, inputs: heavy});
-      expect(outputs.applies).toBe('false');
-      expect(messages.notice).toEqual([
-        'Skipped: draft PR, heavy suites run when ready.',
-      ]);
-    });
-
     it("fails a heavy job behind the author's 3 oldest PRs", async () => {
       const open = [...pulls('a', 'b', 'c'), {number: 7, headRefName: 'fix/a'}];
       const {messages} = await decide({files, inputs: heavy, open});

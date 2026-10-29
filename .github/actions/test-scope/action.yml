@@ -241,16 +241,13 @@ runs:
               }
             }
           }
-          // Per-author caps on heavy suites (spec:AST-030 FR16). A draft runs
-          // only the fast checks. A queued or capped heavy job fails, so it
+          // Per-author caps on heavy suites (spec:AST-030 FR16); a draft runs
+          // no job at all (FR17). A queued or capped heavy job fails, so it
           // never passes the required join untested; a re-run (the pre-merge
           // restart) is exempt, and a failed lookup runs the suite.
           if (applies === 'true' && process.env.SCOPE_HEAVY === 'true') {
             const login = pr.user.login;
-            if (pr.draft) {
-              core.notice('Skipped: draft PR, heavy suites run when ready.');
-              applies = 'false';
-            } else if (Number(process.env.GITHUB_RUN_ATTEMPT ?? '1') === 1 && !login.endsWith('[bot]')) {
+            if (Number(process.env.GITHUB_RUN_ATTEMPT ?? '1') === 1 && !login.endsWith('[bot]')) {
               // Agent lanes share one login: each branch prefix counts as an author.
               const shared = ['cixzhang'].includes(login);
               const lane = ref => (shared ? ref.split('/')[0] : '');

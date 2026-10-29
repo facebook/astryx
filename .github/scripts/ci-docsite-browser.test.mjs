@@ -11,6 +11,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const {jobs} = yaml.parse(
@@ -32,12 +33,14 @@ describe('docsite browser required-check projection', () => {
   it('joins the existing required context and uses the same surface route', () => {
     expect(owner.needs).toEqual(['docsite-browser', 'docsite-data']);
     expect(owner.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+      gated(
+        "${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+      ),
     );
     // Each owner decides its own scope and gates every later step on it.
     for (const job of [browser, data]) {
       expect(job.needs).toBeUndefined();
-      expect(job.if).toBe("github.event_name != 'workflow_dispatch'");
+      expect(job.if).toBe(gated("github.event_name != 'workflow_dispatch'"));
       const scopeAt = job.steps.findIndex(step => step.id === 'scope');
       expect(scopeAt).toBe(1);
       for (const step of job.steps.slice(scopeAt + 1)) {

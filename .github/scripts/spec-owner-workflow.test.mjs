@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
+import {gated} from './ci-pr-gate.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -232,7 +233,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}")}`,
     );
     const action = read('.github/actions/test-scope/action.yml');
     expect(action).toContain(

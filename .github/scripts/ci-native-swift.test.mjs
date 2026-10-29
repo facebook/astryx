@@ -16,6 +16,7 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
@@ -48,7 +49,9 @@ describe('native Swift routing', () => {
       `\${{ ${applies} && 'macos-15' || 'ubuntu-slim' }}`,
     );
     expect(swift.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      gated(
+        "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      ),
     );
   });
 

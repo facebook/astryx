@@ -19,6 +19,7 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
@@ -42,7 +43,9 @@ describe('interaction proof routing', () => {
 
   it('always reports, so the join never reads a missing result', () => {
     expect(proofs.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      gated(
+        "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      ),
     );
     expect(proofs.needs).toEqual(['build-storybook']);
   });

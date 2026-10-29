@@ -909,6 +909,20 @@ Storybook story for anything you added or altered.
 > `.github/workflows/**` can't be pushed on your behalf — GitHub requires the
 > author to update those; we'll ping you if so.)
 
+### When CI runs on your pull request
+
+- **Drafts run no CI.** Marking the pull request ready for review starts a
+  full run.
+- **Pull requests from outside the organization run CI once a maintainer
+  labels them `ci:run`.** Only maintainers can apply labels, so you don't need
+  to ask: a maintainer adds it after a first look, and the label starts the
+  run. CI then runs on each push while the label stays; a maintainer removes it
+  to stop. Pull requests from members and collaborators run without it.
+- **Heavy browser suites are shared per author.** They run for an author's
+  three oldest open pull requests, up to twelve such runs a day. A pull request
+  past either limit shows a failing check that says why, and runs in full at
+  its pre-merge re-run.
+
 ## Code Style
 
 The design-system rules — StyleX usage, semantic tokens, theming, API

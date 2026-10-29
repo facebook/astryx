@@ -15,6 +15,7 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -102,7 +103,7 @@ describe('Node-tooling CI routing', () => {
     );
     expect(uiSuite.if).toContain(TOOLING_FALSE);
     expect(ci.jobs['test-build'].if).toBe(
-      "github.event_name != 'workflow_dispatch'",
+      gated("github.event_name != 'workflow_dispatch'"),
     );
     expect(
       step(ci.jobs['test-build'], 'Run Build package contracts'),

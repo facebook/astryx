@@ -13,6 +13,7 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {ungated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const workflow = yaml.parse(
@@ -34,7 +35,8 @@ function runs(
     labels = [],
   } = {},
 ) {
-  const expression = (job.if ?? 'true')
+  // The pull-request gate in front is ci-pr-gate.test.mjs's to prove.
+  const expression = ungated(job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
     .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
     // GitHub's object filter: `labels.*.name` lists the labels' names.
