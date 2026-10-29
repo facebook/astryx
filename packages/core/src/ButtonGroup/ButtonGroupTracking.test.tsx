@@ -119,10 +119,13 @@ function mount({
   isDisabled = false,
   isBDisabled = false,
   isCMenuTrigger = false,
+  cHasPopup,
 }: {
   isDisabled?: boolean;
   isBDisabled?: boolean;
   isCMenuTrigger?: boolean;
+  /** The third button's own `aria-haspopup` (a menu trigger sets 'menu'). */
+  cHasPopup?: 'true' | 'menu' | 'listbox' | 'dialog' | 'grid' | 'tree';
 } = {}) {
   const onA = vi.fn();
   const onB = vi.fn();
@@ -141,6 +144,7 @@ function mount({
         onClick={onC}
         data-testid="c"
         {...(isCMenuTrigger ? {'aria-haspopup': 'menu' as const} : {})}
+        {...(cHasPopup != null ? {'aria-haspopup': cHasPopup} : {})}
       />
     </ButtonGroup>,
   );
@@ -341,6 +345,33 @@ describe('ButtonGroup tracks a held pointer across its buttons (family:action-gr
     const {a, c} = mount({isCMenuTrigger: true});
     expect(a.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(true);
     expect(c.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(false);
+  });
+
+  it('tracks a member that opens a dialog: it carries the marker, and a slide lifted on it runs it (family:action-groups: only menus keep their own opening)', () => {
+    const {a, c, onA, onC} = mount({cHasPopup: 'dialog'});
+    expect(c.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(true);
+    const f = finger();
+    f.down(a, centerOf(A));
+    f.move(a, centerOf(C));
+    f.up(a, centerOf(C));
+    expect(onC).toHaveBeenCalledTimes(1);
+    expect(onA).not.toHaveBeenCalled();
+  });
+
+  it('tracks a member that opens a grid or a tree, as any button', () => {
+    for (const popup of ['grid', 'tree'] as const) {
+      const {c, unmount} = mount({cHasPopup: popup});
+      expect(c.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(true);
+      unmount();
+    }
+  });
+
+  it('leaves a menu-like trigger untracked: `aria-haspopup` of true or listbox, as menu', () => {
+    for (const popup of ['true', 'listbox'] as const) {
+      const {c, unmount} = mount({cHasPopup: popup});
+      expect(c.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(false);
+      unmount();
+    }
   });
 
   it('leaves a menu trigger its own click: the group does not take a press that lands on it (spec:AST-094 FR29)', () => {
