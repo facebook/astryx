@@ -37,6 +37,13 @@ inputs:
       default) or `skip`, for evidence that already ran on the pull request.
     required: false
     default: run
+  component-audit:
+    description: >-
+      `true` to also classify which component audits apply (the trusted
+      component-audit-scope.cjs from the base) and to list the changed files,
+      for the visual and RTL jobs.
+    required: false
+    default: 'false'
   requires-head-file:
     description: >-
       Optional path the work needs at the PR head. A head cut before that file
@@ -66,9 +73,30 @@ outputs:
   release_bump:
     description: The PR targets a release branch (the generated version bump).
     value: ${{ steps.scope.outputs.release_bump }}
+  decided:
+    description: >-
+      `false` when the step fell back to everything in scope because it could
+      not decide; a job that must do work on a lane it cannot recognize (spec
+      validation) reads this.
+    value: ${{ steps.scope.outputs.decided }}
   touches:
     description: A changed path matches `paths` (true when `paths` is empty or undecidable).
     value: ${{ steps.scope.outputs.touches }}
+  has_components:
+    description: A component audit applies (with `component-audit`).
+    value: ${{ steps.scope.outputs.has_components }}
+  has_rtl_components:
+    description: An RTL-audited component changed (with `component-audit`).
+    value: ${{ steps.scope.outputs.has_rtl_components }}
+  has_rtl_harness:
+    description: The RTL harness changed (with `component-audit`).
+    value: ${{ steps.scope.outputs.has_rtl_harness }}
+  force_full_component_audits:
+    description: Component audits must run in full (with `component-audit`).
+    value: ${{ steps.scope.outputs.force_full_component_audits }}
+  changed_files:
+    description: The PR's changed paths, one per line (with `component-audit`).
+    value: ${{ steps.scope.outputs.changed_files }}
   applies:
     description: >-
       The job's work applies: not a specialized lane (spec, docsite or tooling
@@ -85,6 +113,7 @@ runs:
         SCOPE_OUTSIDE_PR: ${{ inputs.outside-pull-request }}
         SCOPE_HEAD_FILE: ${{ inputs.requires-head-file }}
         SCOPE_HEAVY: ${{ inputs.heavy }}
+        SCOPE_COMPONENT_AUDIT: ${{ inputs.component-audit }}
       with:
         retries: 3
         script: |
@@ -101,7 +130,24 @@ runs:
             release_bump: 'false',
             touches: 'true',
             applies: 'true',
+            decided: 'true',
           };
+          // Outside a pull request, or when undecidable, every component audit
+          // applies in full; a specialized lane has none.
+          const auditAll = {
+            has_components: 'true',
+            has_rtl_components: 'true',
+            has_rtl_harness: 'true',
+            force_full_component_audits: 'true',
+          };
+          const auditNone = {
+            has_components: 'false',
+            has_rtl_components: 'false',
+            has_rtl_harness: 'false',
+            force_full_component_audits: 'false',
+          };
+          const audit = process.env.SCOPE_COMPONENT_AUDIT === 'true';
+          Object.assign(everything, audit ? auditAll : {});
           const report = values => {
             for (const [key, value] of Object.entries(values)) core.setOutput(key, value);
             core.info(Object.entries(values).map(([k, v]) => `${k}=${v}`).join(' '));
@@ -115,7 +161,15 @@ runs:
           const pr = context.payload.pull_request;
           if (pr.base.ref.startsWith('release/v')) {
             core.info('Release-branch pull request: the generated version bump.');
-            report({...everything, spec_only: 'true', tooling_only: 'true', release_bump: 'true', touches: 'false', applies: 'false'});
+            report({
+              ...everything,
+              ...(audit ? auditNone : {}),
+              spec_only: 'true',
+              tooling_only: 'true',
+              release_bump: 'true',
+              touches: 'false',
+              applies: 'false',
+            });
             return;
           }
 
@@ -135,6 +189,7 @@ runs:
               '.github/scripts/change-scope.cjs',
               '.github/scripts/knowledge-paths.cjs',
               'scripts/component-packages.cjs',
+              ...(audit ? ['.github/scripts/component-audit-scope.cjs'] : []),
             ]) {
               const {data} = await github.rest.repos.getContent({...context.repo, path: file, ref: pr.base.sha});
               fs.mkdirSync(path.join(root, path.dirname(file)), {recursive: true});
@@ -142,7 +197,7 @@ runs:
             }
           } catch (error) {
             core.warning(`Scope could not be decided (${error.message}); everything is in scope.`);
-            report(everything);
+            report({...everything, decided: 'false'});
             return;
           }
 
@@ -245,4 +300,28 @@ runs:
               }
             }
           }
-          report({...everything, ...classified, release_bump: 'false', touches, applies});
+          let componentScope = {};
+          if (audit) {
+            if (specialized) {
+              componentScope = auditNone;
+            } else {
+              const auditFile = path.join(root, 'component-audit');
+              fs.writeFileSync(auditFile, '');
+              try {
+                execFileSync('node', [
+                  path.join(root, '.github/scripts/component-audit-scope.cjs'),
+                  '--registry',
+                  path.join(root, 'scripts/component-packages.cjs'),
+                  '--github-output',
+                ], {input: `${nameStatus}\n`, env: {...process.env, GITHUB_OUTPUT: auditFile}, stdio: ['pipe', 'inherit', 'inherit']});
+                componentScope = Object.fromEntries(
+                  fs.readFileSync(auditFile, 'utf8').split('\n').filter(Boolean).map(line => line.split('=')),
+                );
+              } catch (error) {
+                core.warning(`Component audit scope could not be decided (${error.message}); every audit runs in full.`);
+                componentScope = auditAll;
+              }
+            }
+            componentScope.changed_files = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))].join('\n');
+          }
+          report({...everything, ...classified, ...componentScope, release_bump: 'false', touches, applies});

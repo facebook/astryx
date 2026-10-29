@@ -166,7 +166,10 @@ describe('canonical capture and checked-in baseline separation', () => {
     expect(capture.run).not.toMatch(
       /--(?:sample|only|components|themes|max-shots|tiers)\b/,
     );
-    expect(visual.permissions).toEqual({contents: 'read'});
+    expect(visual.permissions).toEqual({
+      contents: 'read',
+      'pull-requests': 'read',
+    });
   });
 
   it('keeps browser-refresh capture reachable, but only uploads validated full captures', () => {

@@ -33,12 +33,13 @@ const requireFromHere = createRequire(import.meta.url);
 const BASE_SHA = 'b'.repeat(40);
 const HEAD_SHA = 'h'.repeat(40);
 const INTERACTION_PATHS =
-  '^(internal/interaction-harness/|internal/a11y-spec/|playwright\\.interaction\\.config\\.ts$|packages/[^/]+/src/|packages/themes/[^/]+/src/|apps/storybook/|\\.github/workflows/ci\\.yml$|package\\.json$|pnpm-lock\\.yaml$)';
+  '^(internal/interaction-harness/|internal/a11y-spec/|playwright\\.interaction\\.config\\.ts$|packages/[^/]+/src/|packages/themes/[^/]+/src/|apps/storybook/|\\.github/workflows/ci\\.yml$|package\\.json$|pnpm-lock\\.yaml$|\\.github/actions/test-scope/)';
 const CLASSIFIER_FILES = new Set([
   '.github/scripts/change-scope.cjs',
   '.github/scripts/knowledge-paths.cjs',
   'scripts/component-packages.cjs',
 ]);
+const AUDIT_FILE = '.github/scripts/component-audit-scope.cjs';
 
 function pullRequestContext(baseRef = 'main', pr = {}) {
   return {
@@ -122,7 +123,10 @@ async function decide({
       repos: {
         getContent: async ({path: file, ref}) => {
           contentCalls.push({file, ref});
-          if (ref === BASE_SHA && CLASSIFIER_FILES.has(file)) {
+          if (
+            ref === BASE_SHA &&
+            (CLASSIFIER_FILES.has(file) || file === AUDIT_FILE)
+          ) {
             if (missingBase.includes(file)) throw notFound();
             return {
               data: {
@@ -146,6 +150,7 @@ async function decide({
     SCOPE_HEAD_FILE: inputs['requires-head-file'] ?? '',
     SCOPE_HEAVY: inputs.heavy ?? 'false',
     GITHUB_RUN_ATTEMPT: attempt,
+    SCOPE_COMPONENT_AUDIT: inputs['component-audit'] ?? 'false',
   };
   const saved = {...process.env};
   Object.assign(process.env, env);
@@ -176,8 +181,14 @@ describe('per-job scope step', () => {
     expect(Object.keys(action.outputs).sort()).toEqual(
       [
         'applies',
+        'changed_files',
+        'decided',
         'docsite_only',
+        'force_full_component_audits',
         'full_suite',
+        'has_components',
+        'has_rtl_components',
+        'has_rtl_harness',
         'release_bump',
         'spec_only',
         'tooling_only',
@@ -305,6 +316,14 @@ describe('per-job scope step', () => {
       applies: 'true',
     });
     expect(messages.warning).toHaveLength(1);
+    expect(outputs.decided).toBe('false');
+  });
+
+  it('reports a decided scope when the classifier ran', async () => {
+    const {outputs} = await decide({
+      files: changed('docs/specs/AST-030/spec.md'),
+    });
+    expect(outputs.decided).toBe('true');
   });
 
   describe('requires-head-file', () => {
@@ -518,5 +537,74 @@ describe('per-job scope step', () => {
         if: `steps.${job.steps[scope].id}.outputs.applies == 'true'`,
       });
     }
+  });
+  describe('component-audit', () => {
+    const inputs = {'component-audit': 'true'};
+
+    it('runs every audit in full outside a pull request', async () => {
+      const {outputs} = await decide({
+        context: {
+          eventName: 'workflow_dispatch',
+          repo: {owner: 'o', repo: 'r'},
+        },
+        inputs,
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'true',
+        has_rtl_components: 'true',
+        has_rtl_harness: 'true',
+        force_full_component_audits: 'true',
+      });
+    });
+
+    it('classifies a component change with the base classifier and lists its files', async () => {
+      const {outputs, contentCalls} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'true',
+        has_rtl_components: 'true',
+        force_full_component_audits: 'false',
+        changed_files: 'packages/core/src/Button/Button.tsx',
+      });
+      expect(contentCalls).toContainEqual({file: AUDIT_FILE, ref: BASE_SHA});
+    });
+
+    it('applies no audit to a release-branch pull request', async () => {
+      const {outputs} = await decide({
+        context: pullRequestContext('release/v1.2.3'),
+        inputs,
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'false',
+        has_rtl_components: 'false',
+        has_rtl_harness: 'false',
+        force_full_component_audits: 'false',
+      });
+    });
+
+    it('applies no audit on a specialized lane', async () => {
+      const {outputs} = await decide({
+        files: changed('docs/specs/AST-030/spec.md'),
+        inputs,
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'false',
+        has_rtl_components: 'false',
+        has_rtl_harness: 'false',
+        force_full_component_audits: 'false',
+      });
+    });
+
+    it('runs every audit in full when the base lacks the audit classifier', async () => {
+      const {outputs, messages} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+        missingBase: [AUDIT_FILE],
+      });
+      expect(outputs.force_full_component_audits).toBe('true');
+      expect(messages.warning).toHaveLength(1);
+    });
   });
 });

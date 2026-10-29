@@ -366,7 +366,9 @@ describe('ci.yml pr-a11y browser specs', () => {
   });
 
   it("runs the merge commit's runner against the PR head", () => {
-    expect(run.if).toBe('${{ !cancelled() }}');
+    expect(run.if).toBe(
+      "(!cancelled()) && steps.scope.outputs.has_components == 'true'",
+    );
     // The merge commit the steps come from, not the PR's recorded base, which
     // can lag main and predate the runner.
     expect(run.env.WORKFLOW_SHA).toBe('${{ github.sha }}');
@@ -382,7 +384,9 @@ describe('ci.yml pr-a11y browser specs', () => {
   });
 
   it('uploads every spec receipt in one head-bound artifact', () => {
-    expect(upload.if).toBe('${{ !cancelled() }}');
+    expect(upload.if).toBe(
+      "(!cancelled()) && steps.scope.outputs.has_components == 'true'",
+    );
     expect(upload.with.name).toBe(
       'pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}',
     );
@@ -403,12 +407,24 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
-  it('audits every component package in full, with no component classification job', () => {
+  it('decides component scope inside each audit job, with no classification job', () => {
     expect(workflow.jobs['check-components']).toBeUndefined();
     for (const job of Object.values(workflow.jobs)) {
       expect(JSON.stringify(job)).not.toContain('needs.check-components');
     }
-    expect(runLines(shard)).toContain('--force-full true');
+    for (const job of [shard, join, workflow.jobs['pr-rtl-merge']]) {
+      const scope = job.steps.find(step => step.id === 'scope');
+      expect(scope.with['component-audit']).toBe('true');
+    }
+    expect(runLines(shard)).toContain(
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
+    );
+    expect(runLines(shard)).toContain(
+      '--has-components "${{ steps.scope.outputs.has_rtl_components }}"',
+    );
+    expect(runLines(shard)).toContain(
+      '--has-harness "${{ steps.scope.outputs.has_rtl_harness }}"',
+    );
   });
 
   it('binds component evidence source, Storybook bytes, and RTL code to the PR head', () => {
@@ -500,7 +516,9 @@ describe('ci.yml RTL package sharding', () => {
     expect(scope.run).toContain('--manifest rtl-shard-scope.json');
     expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
     expect(audit['continue-on-error']).toBe(true);
-    expect(validation.if).toBe('always()');
+    expect(validation.if).toBe(
+      "always() && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(validation.run).toContain('steps.rtl-scope.outcome');
     expect(validation.run).toContain(
       'produced no explicit should_run decision',
@@ -521,7 +539,12 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('needs.pr-rtl-shard.result');
     expect(commands).toContain('.github/scripts/rtl-join.mjs');
     expect(commands).toContain('--reports-dir rtl-shard-reports');
-    expect(commands).toContain('--force-full true');
+    expect(commands).toContain(
+      '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
+    );
+    expect(commands).toContain(
+      '--check-components "${{ steps.scope.outcome }}"',
+    );
     const download = join.steps.find(
       step => step.name === 'Download applicable RTL shard reports',
     );
@@ -537,13 +560,17 @@ describe('ci.yml RTL package sharding', () => {
     const upload = shard.steps.find(
       step => step.name === 'Upload RTL shard evidence',
     );
-    expect(upload.if).toBe('always() && matrix.parts == 1');
+    expect(upload.if).toBe(
+      "(always() && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
     expect(upload.with.path).toContain('rtl-shard-scope.json');
     expect(upload.with.path).toContain('rtl-audit-report.json');
     expect(upload.with['if-no-files-found']).toBe('error');
     const part = shard.steps.find(step => step.name === 'Upload RTL part');
-    expect(part.if).toBe('always() && matrix.parts > 1');
+    expect(part.if).toBe(
+      "(always() && matrix.parts > 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(part.with.name).toBe(
       'rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}',
     );
@@ -804,8 +831,70 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
     );
   });
 
-  it('runs the broad stable visual plan whenever the gate runs', () => {
+  it("scopes the stable visual plan from the PR's own files", () => {
     const visual = stepNamed('Run the visual gate for the touched components');
-    expect(visual.env.BROAD_STABLE_VISUAL).toBe('true');
+    expect(visual.env.BROAD_STABLE_VISUAL).toBe(
+      '${{ steps.visual-scope.outputs.broad_stable_visual }}',
+    );
+    expect(visual.if).toContain(
+      "steps.visual-scope.outputs.has_stable_visual == 'true'",
+    );
+    const decide = stepNamed('Decide stable visual scope');
+    expect(decide.env.SCOPED).toBe(
+      "${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}",
+    );
+    expect(decide.run).toContain(
+      'if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi',
+    );
+    expect(decide.run).toContain(
+      'visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"',
+    );
+  });
+});
+
+describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
+  const workflow = load('ci.yml');
+  const RTL =
+    "(steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')";
+  const gates = {
+    'pr-a11y-guards': "steps.scope.outputs.has_components == 'true'",
+    'pr-a11y-specs': "steps.scope.outputs.has_components == 'true'",
+    'pr-rtl-shard': RTL,
+    'pr-visual': "steps.visual-scope.outputs.has_stable_visual == 'true'",
+  };
+
+  it.each(Object.entries(gates))(
+    '%s downloads the PR analysis only inside its component scope',
+    (name, gate) => {
+      const download = workflow.jobs[name].steps.find(
+        step => step.name === 'Download analysis artifact',
+      );
+      expect(download.if).toContain(gate);
+    },
+  );
+
+  it('reports no stable visual work on a specialized lane', () => {
+    for (const name of ['visual-scout', 'pr-visual']) {
+      const decide = workflow.jobs[name].steps.find(
+        step => step.name === 'Decide stable visual scope',
+      );
+      expect(decide.env.SPECIALIZED, name).toContain(
+        "steps.scope.outputs.spec_only == 'true'",
+      );
+      const shortCircuit = decide.run.indexOf('"$SPECIALIZED" = true');
+      expect(shortCircuit, name).toBeGreaterThanOrEqual(0);
+      expect(shortCircuit, name).toBeLessThan(
+        decide.run.indexOf('!= pull_request'),
+      );
+    }
+  });
+
+  it('validates spec records whenever docsite-test cannot decide its scope', () => {
+    const validate = workflow.jobs['docsite-test'].steps.find(
+      step => step.name === 'Validate spec records',
+    );
+    expect(validate.if).toBe(
+      "(steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
   });
 });

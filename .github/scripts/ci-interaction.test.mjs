@@ -96,6 +96,8 @@ describe('interaction proof routing', () => {
       '.github/workflows/ci.yml',
       'package.json',
       'pnpm-lock.yaml',
+      // The scope action decides whether the proofs run, so changing it runs them.
+      '.github/actions/test-scope/action.yml',
     ]) {
       expect(pattern.test(touched), touched).toBe(true);
     }
