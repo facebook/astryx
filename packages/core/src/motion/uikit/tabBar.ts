@@ -34,13 +34,13 @@
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  * Springs stay in UIKit's vocabulary (response in seconds, damping ratio).
  *
- * Each spring is a motion role a theme may retune (motion/roles.ts),
- * `tabBar.lensTravel` and so on, once `registerTabBarTable()` has run.
+ * spec:AST-094 FR4 names none of these values, so `registerTabBarTable()`
+ * lists no motion role and each plays as measured, as the scroll and
+ * navigation tables do.
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/TabBar/tabBarModel.ts
  * - /packages/core/src/motion/README.md (domain list)
- * - the motion roles table (pnpm generate:motion-roles)
  */
 
 import {registerMotionTable} from '../roles';
@@ -397,7 +397,9 @@ export const tabBar = {
 } as const;
 
 /**
- * Makes each spring above a motion role a theme may retune (motion/roles.ts).
+ * Registers this table with the motion registry (motion/roles.ts). It lists
+ * no role: spec:AST-094 FR4 names none of its values, so each plays as
+ * measured.
  * Nothing registers on import: TabBar's touch layer calls it once before its
  * first animation (registering again does nothing).
  */

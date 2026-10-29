@@ -371,6 +371,15 @@ export const SearchTabWaitsInline: Story = {
   render: () => <Bar hasSearch searchActivates={false} />,
 };
 
+/**
+ * The app has disabled the selected tab (Home) and search is chosen from it:
+ * leaving search returns to the enabled tab nearest it (Library), never to
+ * the disabled one.
+ */
+export const SearchFromDisabledTab: Story = {
+  render: () => <Bar hasSearch searchActivates={false} disabled={['home']} />,
+};
+
 /** Badges appear, change and disappear at once, as UIKit's do. */
 function BadgesDemo() {
   const [count, setCount] = useState(0);
@@ -456,6 +465,33 @@ function RemovedOnLiftDemo() {
 
 export const RemovedOnLift: Story = {
   render: () => <RemovedOnLiftDemo />,
+};
+
+/**
+ * The app drops its last tab on the window event `tabbar:drop-last`, sent
+ * while a finger holds the bar: the press ends without choosing a tab (each
+ * choice would be listed on `window.__tabBarChanges`).
+ */
+function DropsLastTabDemo() {
+  const [sections, setSections] = useState(SECTIONS);
+  useEffect(() => {
+    const drop = () => setSections(current => current.slice(0, -1));
+    window.addEventListener('tabbar:drop-last', drop);
+    return () => window.removeEventListener('tabbar:drop-last', drop);
+  }, []);
+  return (
+    <Bar
+      sections={sections}
+      onChange={value => {
+        const log = window as unknown as {__tabBarChanges?: string[]};
+        log.__tabBarChanges = [...(log.__tabBarChanges ?? []), value];
+      }}
+    />
+  );
+}
+
+export const DropsLastTab: Story = {
+  render: () => <DropsLastTabDemo />,
 };
 
 export const Badges: Story = {
