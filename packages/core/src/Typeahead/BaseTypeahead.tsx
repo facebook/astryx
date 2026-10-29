@@ -1254,7 +1254,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          {results.length === 0 && hasSearched ? (
+          {results.length === 0 && hasSearched && !isSearchPending ? (
             <div
               ref={emptyStateRef}
               role="option"
@@ -1263,9 +1263,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                 themeProps('typeahead-empty-state'),
                 stylex.props(styles.emptyState),
               )}>
-              {isSearchPending
-                ? t('@astryx.typeahead.loading')
-                : emptySearchText}
+              {emptySearchText}
             </div>
           ) : (
             (() => {

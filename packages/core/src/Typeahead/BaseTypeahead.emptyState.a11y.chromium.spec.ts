@@ -39,11 +39,22 @@ for (const label of [
       await input.waitFor();
       await page.clock.install();
       await page.clock.pauseAt(new Date());
-      await input.fill('zzz');
-      await page.clock.runFor(1150);
       const listbox = page.locator(
         `[id="${await input.getAttribute('aria-controls')}"]`,
       );
+      await input.fill('zzz');
+      await page.clock.runFor(150);
+      await expect(input).toHaveAttribute('aria-busy', 'true');
+      await expect(input).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.getByRole('img', {name: 'Loading'})).toBeVisible();
+      await expect(listbox).not.toBeVisible();
+      await testInfo.attach('first-pending', {
+        body: await page.screenshot({
+          path: testInfo.outputPath('first-pending.png'),
+        }),
+        contentType: 'image/png',
+      });
+      await page.clock.runFor(1000);
       await expect(listbox).toBeVisible();
       await expect(listbox.getByRole('option')).toHaveText('No results found');
       await page.clock.runFor(32);
@@ -62,22 +73,18 @@ for (const label of [
         contentType: 'image/png',
       });
       await expect(listbox).not.toContainText('No results found');
+      await expect(listbox.getByRole('option')).toHaveCount(0);
       await expect(input).not.toHaveAttribute('aria-busy');
       await expect(
         page.locator('[data-astryx-live-region="polite"]'),
       ).toBeEmpty();
       await page.clock.runFor(1);
       await expect(input).toHaveAttribute('aria-busy', 'true');
-      await expect(listbox.getByRole('option')).toHaveText('Loading');
-      await expect(listbox.getByRole('option')).toHaveAttribute(
-        'aria-disabled',
-        'true',
-      );
+      await expect(listbox.getByRole('option')).toHaveCount(0);
+      await expect(listbox).toBeEmpty();
       await expect(page.getByRole('img', {name: 'Loading'})).toBeVisible();
       await expect(input).not.toHaveAttribute('aria-activedescendant');
-      await expect(listbox).toMatchAriaSnapshot(
-        '- listbox "Search results":\n  - option "Loading" [disabled]',
-      );
+      await expect(listbox).toMatchAriaSnapshot('- listbox "Search results"');
       await testInfo.attach('pending', {
         body: await page.screenshot({path: testInfo.outputPath('pending.png')}),
         contentType: 'image/png',

@@ -391,6 +391,34 @@ describe('BaseTypeahead', () => {
       vi.useRealTimers();
     });
 
+    it('keeps an empty focus bootstrap quiet when an empty search is cleared', async () => {
+      render(
+        <BaseTypeahead
+          searchSource={emptySource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+          debounceMs={0}
+          aria-label="Framework"
+        />,
+      );
+      const input = screen.getByRole('combobox', {name: 'Framework'});
+      fireEvent.focus(input);
+      fireEvent.change(input, {target: {value: 'none'}});
+      await act(async () => vi.advanceTimersByTimeAsync(32));
+      const options = within(screen.getByRole('listbox', {hidden: true}));
+      expect(options.getByRole('option', {hidden: true})).toHaveTextContent(
+        'No results found',
+      );
+
+      fireEvent.change(input, {target: {value: ''}});
+      await act(async () => vi.advanceTimersByTimeAsync(32));
+      expect(input).toHaveValue('');
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(screen.queryByRole('img', {name: 'Loading'})).toBeNull();
+      expect(options.queryAllByRole('option', {hidden: true})).toHaveLength(0);
+    });
+
     // Bare and composed fields have different busy-indicator owners. Zero
     // debounce independently exercises the pending-request regression.
     describe.each([
@@ -462,6 +490,9 @@ describe('BaseTypeahead', () => {
             await act(async () => vi.advanceTimersByTimeAsync(debounceMs - 1));
             expect(search).toHaveBeenCalledTimes(1);
             expect(options.queryByText('No matching frameworks')).toBeNull();
+            expect(
+              options.queryAllByRole('option', {hidden: true}),
+            ).toHaveLength(0);
             expect(liveRegion()?.textContent).toBe('');
             // Keep the existing spinner's request-start timing.
             expect(input).not.toHaveAttribute('aria-busy');
@@ -470,8 +501,8 @@ describe('BaseTypeahead', () => {
           expect(search).toHaveBeenLastCalledWith('next');
           expect(input).toHaveAttribute('aria-busy', 'true');
           expect(options.queryByText('No matching frameworks')).toBeNull();
-          expect(options.getByRole('option', {hidden: true})).toHaveTextContent(
-            'Recherche en cours',
+          expect(options.queryAllByRole('option', {hidden: true})).toHaveLength(
+            0,
           );
           expect(
             screen.getByRole('img', {name: 'Recherche en cours'}),
