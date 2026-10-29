@@ -22,7 +22,10 @@ concurrency:
 
 jobs:
   release-check:
-    runs-on: ubuntu-slim
+    # Not ubuntu-slim: GitHub stops slim jobs at 15 minutes, and this job waits
+    # for the whole release-check; stopping early would also free the
+    # concurrency group and let a second check start.
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       actions: write
@@ -41,6 +44,10 @@ jobs:
               core.notice(`main moved past ${sha.slice(0, 7)}; the newer push's run checks it.`);
               return;
             }
+            // A merge landing between this tip check and the dispatch makes the
+            // dispatched run check out the newer commit, so its exact-head check
+            // fails on that commit; the newer push's own run then reports the
+            // newer commit, and this run ends as superseded below.
             const since = new Date(Date.now() - 60_000).toISOString();
             await github.rest.actions.createWorkflowDispatch({
               ...context.repo,

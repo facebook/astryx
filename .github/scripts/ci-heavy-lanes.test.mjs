@@ -141,6 +141,9 @@ describe('the release-check on every push to main', () => {
       group: '${{ github.workflow }}-${{ github.ref }}',
       'cancel-in-progress': false,
     });
+    // GitHub stops ubuntu-slim jobs at 15 minutes; the wait must outlast a
+    // release-check or the group frees early and a second check starts.
+    expect(heavy.jobs['release-check']['runs-on']).not.toBe('ubuntu-slim');
   });
 
   it("leaves Main's fast checks running for every push, outside that group", () => {

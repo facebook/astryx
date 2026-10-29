@@ -220,22 +220,23 @@ they are separately named.
   while preserving legitimate non-visual artifact use.
 - **FR13 — Broad CI on a pull request runs what the change reaches.** On a
   `pull_request` event whose trusted classification finds no shared
-  infrastructure, broad CI keeps every owner and required context and narrows
-  what those owners run. The Vitest test owner runs the tests whose module graph
+  infrastructure, broad CI keeps every required context and every owner FR12
+  routes to a pull request, and narrows what those owners run. The Vitest test owner runs the tests whose module graph
   reaches a changed file, against the merge commit's base parent, plus every test
   that reads repository sources through the file system, directly or through a
   module it imports; a computed `import()`, a child process, or a library that
   reads sources for it (the TypeScript compiler, a bundler) counts as reading
   sources; and every test that loads a changed workspace package from its build,
-  by the package's name or a path into its `dist/`. The visual and RTL
-  owners audit one affected set of component folders: the changed components
+  by the package's name or a path into its `dist/`. When a pull request runs
+  them (FR12: only with the `ci:heavy-lanes` label), the visual and RTL owners
+  audit one affected set of component folders: the changed components
   and their reverse dependents, the folders of the components, in any package,
   whose built bundle, `import()` targets included, reaches a changed module.
   Visual audits each dependent folder that has a stable story, and runs the
   whole plan when the dependents exceed its focused budget or none has one; RTL
   audits every component each of those folders implements. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
-  a readable build the audits run in full. PR accessibility stays scoped to
-  changed components (FR12). Shared infrastructure runs the full suite: root
+  a readable build the audits run in full. PR accessibility, when it runs, stays
+  scoped to changed components (FR12). Shared infrastructure runs the full suite: root
   dependency manifests and lockfile, root configuration, a package's manifest,
   build or test configuration and test setup, `internal/` (the test harness
   included), `theme-build` paths (tokens and themes), Storybook configuration,

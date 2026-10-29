@@ -48,8 +48,8 @@ permissions: {}
 #
 # Visual, accessibility and RTL owners (pr-a11y*, visual-scout, pr-visual,
 # pr-rtl*) do not run on pull request updates: they run for release-check,
-# which Main dispatches on every push to main and the release gate dispatches
-# before a cut, and on a pull request labelled `ci:heavy-lanes` (add the label,
+# which the Main heavy lanes workflow (main-heavy-lanes.yml) dispatches on every
+# push to main and the release gate dispatches before a cut, and on a pull request labelled `ci:heavy-lanes` (add the label,
 # then push or close and reopen). A main failure is fixed forward
 # (spec:AST-030 FR12, DEC-7).
 #
