@@ -623,7 +623,7 @@ jobs:
   #
   # `test` remains a job, so the required check of that name still exists and
   # still reports for every PR. This mirrors the `build` join over
-  # build-storybook + build-sandbox below.
+  # build-storybook + typecheck below.
   test-ui:
     name: test-ui (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [check-scope]
@@ -997,24 +997,28 @@ jobs:
           PR_INTERACTION_RESULT: ${{ needs.pr-interaction.result }}
         run: node .github/scripts/ci-test-join.mjs
 
-  # Build storybook + typecheck + analyze components (parallel with test and
-  # build-sandbox). Uploads the storybook preview and analysis artifacts for
-  # downstream jobs.
-  # The sandbox preview build lives in build-sandbox: it alone takes ~4min
-  # while everything here takes ~2min, so the two run in parallel and the
-  # `build` join below folds their results into the historical check name.
+  # Build the packages and Storybook, and analyze components (parallel with
+  # test). Uploads the storybook preview and analysis artifacts for downstream
+  # jobs. On a pull request, Vercel has already built Storybook for the same
+  # head, so this job takes that build (checked file by file against the
+  # deployment's manifest) and builds Storybook itself only when the preview
+  # is missing, failed, late, or does not match
+  # (lib/storybook-preview-dist.mjs).
   build-storybook:
     needs: [check-scope]
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     # Every browser lane waits for this job, and the package builds and the
-    # Storybook build run side by side (build-packages-and-storybook.mjs).
+    # Storybook build (or the preview lookup) run side by side
+    # (build-packages-and-storybook.mjs). A pull request may wait up to 15
+    # minutes for Vercel's build before building Storybook itself.
     runs-on: 4-core-ubuntu
-    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 35 }}
     permissions:
       contents: read
+      # The exact-head Vercel deployment and its status.
+      deployments: read
     outputs:
       short_hash: ${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
-      sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
       - name: Require successful scope classification
@@ -1059,6 +1063,11 @@ jobs:
       # the packages its story index records are built.
       - name: Build packages and Storybook
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        env:
+          # Only a pull request has an exact-head preview; a release check or
+          # any other event builds Storybook here.
+          STORYBOOK_PREVIEW_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: node .github/scripts/build-packages-and-storybook.mjs
 
       - name: Verify package exports
@@ -1076,12 +1085,9 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
           SHORT_HASH="${COMMIT_HASH:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          REPO_OWNER="${{ github.repository_owner }}"
 
           echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-          echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
       - name: Identify full release audit scope
         if: github.event_name == 'workflow_dispatch' && needs.check-scope.outputs.tooling_only != 'true'
@@ -1307,89 +1313,14 @@ jobs:
   # its own job so it overlaps build-storybook instead of serializing after it.
   # PR-only: merge_group runs never deploy previews, and docsite-only PRs skip
   # preview builds entirely.
-  build-sandbox:
-    needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    outputs:
-      short_hash: ${{ steps.urls.outputs.short_hash }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node and pnpm
-        uses: ./.github/actions/setup
-
-      - name: Build core package
-        run: pnpm build
-
-      - name: Compute sandbox preview paths
-        id: urls
-        run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
-          SHORT_HASH="${COMMIT_HASH:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-
-          {
-            echo "short_hash=${SHORT_HASH}"
-            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
-            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Cache Next.js build
-        uses: actions/cache@v6
-        with:
-          path: apps/sandbox/.next/cache
-          # No restore-keys fallback — see deploy.yml for the full rationale.
-          # The Next.js module cache bakes in @astryxdesign/core's resolved export graph,
-          # so a loose fallback can restore a cache built against a different
-          # export shape and silently produce wrong builds (broke #2941's
-          # post-merge deploy). A changed key yields a cold (safe) rebuild.
-          #
-          # Keyed by PR number so PRs never share a cache with main (deploy.yml)
-          # or with other PRs: each PR builds with its own basePath
-          # (SANDBOX_BASE_PATH=/<repo>/pr/<n>/sandbox vs /<repo>/sandbox on main),
-          # and Next.js invalidates the webpack cache whenever the resolved config
-          # changes — so a cache built under a different basePath always restores
-          # as dead weight (download cost, zero reuse) and, because the shared key
-          # "hit", the PR could never save a cache for its own basePath either.
-          # Re-pushes to the same PR keep the same key and get real warm builds.
-          # (This job only runs on pull_request events — see the job-level `if:`
-          # above — so github.event.pull_request.number is always set here.)
-          key: nextjs-sandbox-pr${{ github.event.pull_request.number }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
-
-      - name: Build Sandbox
-        run: pnpm -F @astryxdesign/sandbox build
-        env:
-          # Must match the deployed Pages path (<owner>.github.io/<repo>/pr/<n>/sandbox).
-          # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
-          # drop that segment and 404 — breaking all styles/JS on the preview.
-          SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
-          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
-          NODE_OPTIONS: '--max-old-space-size=8192'
-
-      - name: Remove shared assets from preview artifact
-        run: rm -rf apps/sandbox/out/template-assets
-
-      - name: Upload Sandbox artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: sandbox-${{ steps.urls.outputs.short_hash }}
-          path: apps/sandbox/out/
-          retention-days: 30
-
   # Join gate that keeps the historical `build` check name: anything keyed on
   # "build" being green (branch protection, tooling, habit) keeps working, and
-  # it fails when either parallel build fails. build-sandbox is legitimately
-  # skipped on docsite-only PRs; a skipped build-storybook (merge_group, or a
-  # failed check-scope) skips this gate too — both match the old single-job
-  # behavior.
+  # it fails when build-storybook (the package build, and Storybook from the
+  # preview or its own build) or typecheck fails. A skipped build-storybook
+  # (merge_group, or a failed check-scope) skips this gate too, as the old
+  # single-job build did.
   build:
-    needs: [build-storybook, build-sandbox, typecheck]
+    needs: [build-storybook, typecheck]
     if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
     runs-on: ubuntu-slim
     permissions: {}
@@ -1397,14 +1328,9 @@ jobs:
       - name: Assert parallel builds succeeded
         run: |
           echo "build-storybook: ${{ needs.build-storybook.result }}"
-          echo "build-sandbox:   ${{ needs.build-sandbox.result }}"
           echo "typecheck:       ${{ needs.typecheck.result }}"
           [ "${{ needs.build-storybook.result }}" = "success" ] || exit 1
           [ "${{ needs.typecheck.result }}" = "success" ] || exit 1
-          case "${{ needs.build-sandbox.result }}" in
-            success|skipped) ;;
-            *) exit 1 ;;
-          esac
 
   # CI keeps Storybook's static artifact for visual, accessibility, and RTL
   # checks. The exact-head Vercel deployment independently hosts both human

@@ -3,7 +3,8 @@
 /**
  * @file Build and stage Storybook and Vite Sandbox in the Vercel docsite.
  * @input VERCEL_ENV, VERCEL_GIT_COMMIT_SHA, Storybook static build, and Sandbox Vite static build.
- * @output apps/docsite/public/{storybook,sandbox} in preview and production deployments.
+ * @output apps/docsite/public/{storybook,sandbox} in preview and production deployments, with
+ *   Storybook's file manifest for CI (storybook-preview-dist.mjs).
  * @position Build-time staging before the docsite Next.js build; CI retains its own visual artifact.
  */
 
@@ -11,6 +12,11 @@ import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+import {
+  distManifest,
+  MANIFEST_FILE,
+} from '../../../.github/scripts/lib/storybook-preview-dist.mjs';
 
 const CANONICAL_ORIGIN = 'https://astryx.atmeta.com';
 const DEPLOYED_ENVIRONMENTS = new Set(['preview', 'production']);
@@ -47,7 +53,12 @@ function sandboxCanonicalPath(destination, file) {
   return `/sandbox/${relative}`;
 }
 
-export function stageStorybook(source, destination, deploymentEnv) {
+export function stageStorybook(
+  source,
+  destination,
+  deploymentEnv,
+  commitSha = null,
+) {
   const index = path.join(source, 'index.html');
   if (!fs.existsSync(index) || !fs.statSync(index).isFile()) {
     throw new Error(`Storybook build has no index.html: ${index}`);
@@ -62,6 +73,15 @@ export function stageStorybook(source, destination, deploymentEnv) {
   // production; previews and standalone frames stay out of search results.
   fs.rmSync(destination, {recursive: true, force: true});
   fs.cpSync(source, destination, {recursive: true});
+  if (commitSha) {
+    // CI's build-storybook takes this deployment's Storybook instead of
+    // building its own: the manifest lists the build's own bytes (before the
+    // tags below) and the commit, so CI can restore and verify every file.
+    fs.writeFileSync(
+      path.join(destination, MANIFEST_FILE),
+      `${JSON.stringify(distManifest(source, commitSha))}\n`,
+    );
+  }
   for (const file of htmlFiles(destination)) {
     const relative = path.relative(destination, file).split(path.sep).join('/');
     const metadata =
@@ -168,6 +188,7 @@ export function buildPreviews(
     path.join(root, 'apps/storybook/dist'),
     storybookDestination,
     deploymentEnv,
+    commitSha,
   );
   stageSandbox(
     path.join(root, 'apps/sandbox/out'),

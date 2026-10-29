@@ -18,6 +18,12 @@
  *   stories import their component by package name, that entry must exist
  *   first, so Storybook waits for those packages and the check after it fails
  *   if the index still names any package by bare specifier.
+ *
+ *   On a pull request (STORYBOOK_PREVIEW_HEAD_SHA set), Vercel has already
+ *   built Storybook for the same head: the Storybook step takes that build
+ *   (lib/storybook-preview-dist.mjs), looked up while the packages build, and
+ *   builds Storybook itself only when the preview is missing, failed, late,
+ *   or does not match.
  */
 
 import {spawn} from 'node:child_process';
@@ -25,6 +31,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+
+import {
+  githubApi,
+  storybookFromPreview,
+} from './lib/storybook-preview-dist.mjs';
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -105,6 +116,23 @@ export function bareComponentPaths(index) {
     .map(entry => `${entry.id}: ${entry.componentPath}`);
 }
 
+/**
+ * The Storybook step when a preview may stand in for the build: waits for the
+ * preview lookup, and builds only when it did not land the tree.
+ * @param {Promise<boolean>} preview
+ * @param {() => Promise<void>} build
+ */
+export function storybookStep(preview, build) {
+  return async () => {
+    if (await preview) {
+      console.log('[storybook] using the exact-head Vercel build');
+      return;
+    }
+    console.log('[storybook] no usable preview; building Storybook');
+    await build();
+  };
+}
+
 function run(command, label) {
   return new Promise((resolve, reject) => {
     const started = Date.now();
@@ -150,7 +178,7 @@ async function runPlan(steps, limit) {
         started.add(index);
         running.set(
           index,
-          run(step.command, step.label).then(
+          (step.task ? step.task() : run(step.command, step.label)).then(
             () => index,
             error => {
               failure ??= error;
@@ -189,6 +217,21 @@ if (
     fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'),
   );
   const steps = planBuild(scripts.build, dependenciesOf);
+  const headSha = process.env.STORYBOOK_PREVIEW_HEAD_SHA;
+  if (headSha) {
+    const preview = storybookFromPreview({
+      api: githubApi({
+        token: process.env.GITHUB_TOKEN,
+        repository: process.env.GITHUB_REPOSITORY,
+      }),
+      headSha,
+      outDir: path.join(ROOT, 'apps/storybook/dist'),
+      log: message => console.log(`[storybook] ${message}`),
+    });
+    steps.at(-1).task = storybookStep(preview, () =>
+      run(STORYBOOK, 'storybook'),
+    );
+  }
   try {
     await runPlan(steps, Math.max(2, os.availableParallelism()));
     const index = JSON.parse(
