@@ -73,12 +73,13 @@ components read through two shared primitives is a system fact.
 
 - Exits of touch presentations, which each component's record gives under
   `spec:AST-094` FR7 and FR8 (FR14). The exit tokens here do not reach touch
-  motion, whose roles stay internal (`spec:AST-094` FR4, DEC-11).
+  motion: its roles stay internal, and a theme reaches it only through
+  `spec:AST-108`'s knobs (`spec:AST-094` FR4, DEC-15).
 - Surfaces that already animate out (`Drawer`, `BottomSheet`, `MobileNav`,
   `Toast`, and the `TopNavMegaMenu` panel) keep their exits, durations, and
-  curves. `BottomSheet`'s CSS-timed close reads `--ease-exit` at the curve it
-  uses (FR12); moving the others onto the exit vocabulary is a visual change
-  for a separate decision.
+  curves. `BottomSheet`'s close in a pointer presentation reads `--ease-exit`
+  at the curve it uses (FR12); moving the others onto the exit vocabulary is a
+  visual change for a separate decision.
 - Layers with no entrance (`Typeahead` suggestions, `MultiSelector`,
   `Tokenizer`, the date and time pickers, the `TabList` overflow menu, the
   `TopNav` and `SideNav` menus, and Chat trigger menus) gain no exit here.
@@ -157,8 +158,8 @@ governs them in a touch presentation.
   until the surface is hidden.
 - **FR12 — The exit vocabulary.** `--ease-exit` defaults to
   `cubic-bezier(0.3, 0, 0.6, 0.6)`, a curve that moves off slowly and leaves
-  fast. Dialog and layer exits use it, and so does `BottomSheet`'s CSS-timed
-  close.
+  fast. Dialog and layer exits use it, and so does `BottomSheet`'s close in a
+  pointer presentation.
   `--duration-exit` defaults to `var(--duration-fast)` and is the standard
   dismissal duration. A theme turns a kind on by setting its exit duration to
   `var(--duration-exit)` or to any other duration.
@@ -211,7 +212,7 @@ governs them in a touch presentation.
   an owner (FR4, DEC-1). A leaving dialog is still the current native modal, so
   it keeps its outlet and toasts stay operable above it (FR16, FR18).
 - `spec:AST-094`: no claim changes. A touch presentation keeps the exit FR7 and
-  FR8 give it (FR14), and its motion roles stay internal (FR4, DEC-11). The exit
+  FR8 give it (FR14), and its motion roles stay internal (FR4, DEC-15). The exit
   tokens here time pointer presentations, which its non-goals leave to the
   theme's duration and easing tokens.
 - `spec:AST-108`: no claim changes. Its FR2 admits `--ease-exit` at the same
@@ -230,8 +231,9 @@ governs them in a touch presentation.
   states when the return happens.
 - `component:Popover`: AR4 keeps its focus-return claim; FR6 states when the
   return happens for a layer.
-- `component:BottomSheet`: its CSS-timed close reads `--ease-exit`; a
-  spring-driven close plays its own exit role (FR3).
+- `component:BottomSheet`: its close in a pointer presentation reads
+  `--ease-exit`. Its touch close keeps its own motion, which the exit tokens do
+  not reach (`spec:AST-094` FR7, DEC-15).
 - Consumer docs: `motion` describes both curves, that exits are off by default
   in a pointer presentation, how a theme turns each kind on, that touch
   presentations keep their native exits, and that callers keep content rendered
