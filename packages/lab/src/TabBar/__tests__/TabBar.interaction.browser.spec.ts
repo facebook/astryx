@@ -1427,6 +1427,47 @@ test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
       .toBeLessThan(0.5);
   });
 
+  test('a mouse press released off the bar chooses nothing, a tab or a reselect: slide-off cancels (spec:AST-020 FR9)', async ({
+    page,
+  }) => {
+    await openFine(page);
+    const slideOff = async (name: string) => {
+      const start = await itemCenter(page, name);
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      for (let step = 1; step <= 8; step++) {
+        await page.mouse.move(start.x, start.y - 15 * step);
+      }
+      await page.mouse.up();
+      await page.waitForTimeout(300);
+    };
+    await slideOff('Library');
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await slideOff('Home');
+    await expect(page.getByTestId('reselects')).toHaveText(
+      'Reselected 0 times',
+    );
+    // The lens is back on the selected tab.
+    const home = await itemCenter(page, 'Home');
+    await expect
+      .poll(async () => Math.abs((await lensCenterX(page)) - home.x))
+      .toBeLessThan(0.5);
+  });
+
+  test('under a fine primary pointer the capsule keeps its own touch-action, for a touchscreen laptop’s finger (spec:AST-094 FR18)', async ({
+    page,
+  }) => {
+    await openFine(page);
+    // TabBar's capsule style gives it a long press's touch-action
+    // (manipulation) whatever the primary pointer, so a finger's drag on a
+    // touchscreen laptop goes to the lens, not to the browser's panning.
+    expect(
+      await page
+        .getByRole('tablist', {name: 'Sections'})
+        .evaluate(element => getComputedStyle(element).touchAction),
+    ).toBe('manipulation');
+  });
+
   test('a pen drag chooses the tab under its release', async ({page}) => {
     await openFine(page);
     const input = await webInputDriver(page);
