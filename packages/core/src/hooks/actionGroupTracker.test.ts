@@ -237,6 +237,31 @@ describe('createActionGroupTracker', () => {
     expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
+  it('dispose finishes only its own running fade: a fade another painter starts after the tracker\u2019s ended stays', () => {
+    const group = tracker();
+    group.begin(100, 20);
+    group.end();
+    // The tracker's fade ends on the one writer's clock.
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    // Another painter fades the same action later.
+    paintPress(first.button, 'fading');
+    group.dispose();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+  });
+
+  it('dispose leaves a fade alone once another painter replaced the tracker\u2019s', () => {
+    const group = tracker();
+    group.begin(100, 20);
+    group.end();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // Another painter presses and releases the action while that fade runs.
+    paintPress(first.button, 'on');
+    paintPress(first.button, 'fading');
+    group.dispose();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+  });
+
   it('paints through the one press writer: a fade another painter left running never cuts the tracker\u2019s own fade short', () => {
     // The document's press controller faded this button a moment ago (its
     // fade's clock runs in the one writer).
