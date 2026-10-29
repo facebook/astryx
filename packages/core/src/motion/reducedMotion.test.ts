@@ -143,9 +143,24 @@ const PENDING_SETTING_READERS = new Set<string>([
   'MobileNav/MobileNav.tsx',
 ]);
 
-/** A script read of the setting, straight from the media query. */
+/** A read of the setting written out as the query. */
 const RAW_SETTING_READ =
   /(matchMedia|useMediaQuery)\(\s*'\(prefers-reduced-motion: reduce\)'/;
+
+/**
+ * A script read of the setting, straight from the media query: written out, or
+ * through a constant the file holds the query in.
+ */
+function readsSettingRaw(source: string): boolean {
+  if (RAW_SETTING_READ.test(source)) {
+    return true;
+  }
+  return [
+    ...source.matchAll(/const (\w+) =\s*'\(prefers-reduced-motion: reduce\)/g),
+  ].some(([, name]) =>
+    new RegExp(`(matchMedia|useMediaQuery)\\(\\s*${name}\\b`).test(source),
+  );
+}
 
 /** A read of a theme's mark, direct or through the shared readers. */
 const MARK_READ =
@@ -394,7 +409,7 @@ describe('the CSS side of the policy', () => {
     const offenders: string[] = [];
     const converted: string[] = [];
     for (const {file, source} of coreSources()) {
-      const readsSetting = RAW_SETTING_READ.test(source);
+      const readsSetting = readsSettingRaw(source);
       if (SETTING_READERS_WITH_MARK.has(file)) {
         if (!readsSetting || !MARK_READ.test(source)) {
           offenders.push(
