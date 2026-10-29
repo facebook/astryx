@@ -171,6 +171,19 @@ function themeTempo(element: Element): number {
   return Number.isFinite(tempo) && tempo > 0 ? tempo : 1;
 }
 
+/**
+ * The release fade's clock on `element`: the fade at its theme's tempo. Under
+ * Reduce Motion the tempo may shorten it but never lengthens it past the
+ * 200 ms cap (`spec:AST-108` FR4), as the stylesheet's release does.
+ */
+function fadeMs(element: Element): number {
+  const scaled = PRESS_FADE_MS * themeTempo(element);
+  const reduced =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return reduced ? Math.min(scaled, PRESS_FADE_MS) : scaled;
+}
+
 const TIMER_EVENT = {
   fade: 'fadeEnd',
   flash: 'flashEnd',
@@ -246,7 +259,7 @@ function apply(slot: Slot, step: PressStep): void {
       },
       // The release fade follows the theme's tempo (`spec:AST-108` FR4,
       // `component:Button` FR15); the onset delay and the tap flash do not.
-      TIMER_MS[kind] * (kind === 'fade' ? themeTempo(live.element) : 1),
+      kind === 'fade' ? fadeMs(live.element) : TIMER_MS[kind],
     );
   }
 }

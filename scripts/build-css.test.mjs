@@ -243,12 +243,13 @@ describe('build-css astryx.css', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
       // The release scales by the theme's tempo; it reads at tempo 1
-      // (`calc(<ms> * var(--_astryx-motion-tempo, 1))`, spec:AST-108 FR4).
+      // (`calc(<ms> * var(--_astryx-motion-tempo, 1))`, and under Reduce
+      // Motion `min(<ms>, calc(…))`, spec:AST-108 FR4).
       const match =
         value
           .trim()
           .match(
-            /^calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)$/,
+            /^(?:min\(\s*[\d.]+(?:ms|s)\s*,\s*)?calc\(\s*([\d.]+)(ms|s)\s*\*\s*var\(--_astryx-motion-tempo,\s*1\)\s*\)\s*\)?$/,
           ) ?? value.trim().match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
@@ -279,12 +280,24 @@ describe('build-css astryx.css', () => {
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
       ).toBe(true);
-      const durations = fading
-        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
-        .filter(Boolean)
-        .map(match => toMs(match[1]));
-      // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      const durationsOf = rules =>
+        rules
+          .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+          .filter(Boolean)
+          .map(match => match[1]);
+      const reducedMedia = '@media (prefers-reduced-motion: reduce)';
+      const plain = durationsOf(
+        fading.filter(line => !line.includes(reducedMedia)),
+      );
+      const reduced = durationsOf(
+        fading.filter(line => line.includes(reducedMedia)),
+      );
+      // One clock, the one the controller removes the attribute on, and its
+      // Reduce Motion arm, which a tempo never lengthens past it (FR4).
+      const releaseMs = await readReleaseMs();
+      expect(plain.map(toMs)).toEqual([releaseMs]);
+      expect(reduced.map(toMs)).toEqual([releaseMs]);
+      expect(reduced[0]).toMatch(/^min\(/);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
