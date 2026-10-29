@@ -243,6 +243,81 @@ test('under a finger, the row’s own content keeps its taps', async ({page}) =>
   expect(hits).toEqual([true, true, true]);
 });
 
+test('under a finger, a row’s end control keeps its taps, and the interactive rows beside it grow short of it', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-list--with-end-controls');
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  const rows = await measuredRowsOf(page);
+  // (The switch's own hidden label repeats the row's text.)
+  expect(rows.map(row => row.text.split(/\s+/)[0])).toEqual([
+    'Network',
+    'Wi-Fi',
+    'Bluetooth',
+  ]);
+  // The control's row is not interactive: it has no hit area of its own.
+  expect(rows[1].layer.content, JSON.stringify(rows)).toBe('none');
+  const toggle = page.getByRole('switch', {name: 'Wi-Fi'});
+  await expect(toggle).toBeChecked();
+  const control = await toggle.evaluate(input => {
+    const box = (input.parentElement ?? input).getBoundingClientRect();
+    const own = input.getBoundingClientRect();
+    return {
+      top: box.top,
+      bottom: box.bottom,
+      x: own.left + own.width / 2,
+      y: own.top + own.height / 2,
+    };
+  });
+  // The rows beside it grow toward the touch target only short of it: to
+  // half the gap to the control, the control's half being the control's.
+  const [above, , below] = rows;
+  expect(above.layer.bottom, JSON.stringify({rows, control})).toBeCloseTo(
+    (control.top - above.bottom) / 2,
+    1,
+  );
+  expect(below.layer.top, JSON.stringify({rows, control})).toBeCloseTo(
+    (below.top - control.bottom) / 2,
+    1,
+  );
+  expect(
+    above.bottom + above.layer.bottom,
+    JSON.stringify({rows, control}),
+  ).toBeLessThanOrEqual(control.top);
+  expect(
+    below.top - below.layer.top,
+    JSON.stringify({rows, control}),
+  ).toBeGreaterThanOrEqual(control.bottom);
+  // The browser hit-tests the control there, and a real tap toggles it,
+  // with no tap reaching the rows beside it.
+  expect(
+    await page.evaluate(
+      ({x, y}) =>
+        document.elementFromPoint(x, y)?.closest('[role="switch"]') != null,
+      control,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => {
+    const taps: string[] = [];
+    (window as unknown as {taps: string[]}).taps = taps;
+    for (const row of document.querySelectorAll('#storybook-root li')) {
+      row.addEventListener('click', event => {
+        if (
+          !(event.target instanceof Element) ||
+          event.target.closest('[role="switch"]') == null
+        ) {
+          taps.push(row.textContent?.trim() ?? '');
+        }
+      });
+    }
+  });
+  await page.touchscreen.tap(control.x, control.y);
+  await expect(toggle).not.toBeChecked();
+  expect(
+    await page.evaluate(() => (window as unknown as {taps: string[]}).taps),
+  ).toEqual([]);
+});
+
 test('under a finger, a row already as tall as the touch target gains nothing, rows that touch take nothing from each other, and a disabled row has no layer', async ({
   page,
 }) => {
