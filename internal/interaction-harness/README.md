@@ -210,3 +210,17 @@ simulator. Skip such a proof on the driver's flag, citing the reason:
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.
 Firefox has no touch input path and no project.
+
+WebKit's touches carry their real dispatch time, so a velocity reaches the
+page only as well as the dispatch keeps pace. `play` sends each event at its
+scripted time, and never sooner after the one before it than the script spaces
+them: a stall stretches one gap instead of sending the events behind it
+together. With `{checkPacing: true}`, `play` then reads the `timeStamp`s the
+page received and throws `TouchPacingError` when an event is missing or a gap
+is more than `TOUCH_PACING_TOLERANCE_MS` (4 ms) off the script. On one worker
+of a loaded machine, 440 gaps over 40 flicks moved at most 4 ms; under eight
+workers, 4% of flicks had a gap further off, up to 21 ms. Wrap a proof whose
+outcome follows a velocity in `retakeOnTouchPacing(testInfo, attempt)`:
+`attempt` builds the state, plays with `checkPacing` and asserts, and runs once
+more only on a `TouchPacingError`, listed as a `touch-retake` annotation; a
+second one fails the test with that cause.

@@ -67,6 +67,7 @@ import {
   watchAnimations,
   withFinger,
 } from './index';
+import {TOUCH_PACING_TOLERANCE_MS, TouchPacingError} from './touch';
 
 const FIXTURE = `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
 <style>
@@ -266,6 +267,43 @@ test.describe('touch input', () => {
         ...log.filter(r => r.type === 'touchmove').map(r => r.touches ?? 0),
       ),
     ).toBe(2);
+  });
+
+  test('a gesture the page receives off its pacing throws TouchPacingError where the page times touches by their arrival', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await touchDriver(page);
+    const script = flick(
+      {x: 160, y: 200},
+      {velocity: {x: 0, y: -1500}, durationMs: 96, hz: 120},
+    );
+    // The driver stalls 40 ms after the gesture's fourth event, as a dispatch
+    // does on a loaded runner.
+    const played = driver.play(script, {
+      checkPacing: true,
+      onEvent: async (_, index) => {
+        if (index === 3) {
+          await new Promise(r => setTimeout(r, 40));
+        }
+      },
+    });
+    if (driver.scriptedTimestamps) {
+      // Chromium: the page sees the script's stamps whatever the dispatch.
+      expect((await played).length).toBeGreaterThan(4);
+      return;
+    }
+    const error = await played.then(
+      () => null,
+      (thrown: unknown) => thrown,
+    );
+    expect(error).toBeInstanceOf(TouchPacingError);
+    const {scriptedGaps, receivedGaps} = error as TouchPacingError;
+    expect(receivedGaps).toHaveLength(scriptedGaps.length);
+    // The stall stretches the gap after the fourth event past the tolerance.
+    expect(receivedGaps[3] - scriptedGaps[3]).toBeGreaterThan(
+      TOUCH_PACING_TOLERANCE_MS,
+    );
   });
 });
 
