@@ -800,10 +800,9 @@ describe('DateRangeInput calendar while the popover is closed', () => {
 
     for (let i = 0; i < 2; i++) {
       fireEvent.click(toggle);
+      // The first calendar control takes focus, not the dialog surface.
       await waitFor(() => {
-        expect(
-          calendarGrid()?.parentElement?.closest('[role="dialog"]'),
-        ).toContainElement(document.activeElement as HTMLElement);
+        expect(getButton('Previous month')).toHaveFocus();
       });
       fireEvent.click(toggle);
       expect(calendarGrid()).toBeNull();
