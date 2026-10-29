@@ -8,11 +8,9 @@ name: Internal Registry
 # warns instead of blocking. The pull_request trigger is path-filtered
 # (spec:AST-030 FR14), so this check never starts on a pull request that
 # touches no dependency file: never make it a required status check as it
-# stands. Re-enabling gating means removing continue-on-error, removing the
-# path filter so the workflow reports on every pull request (registering it as
-# `change-scope` in .github/workflow-relevance.json, with the trusted
-# classifier skipping the work inside the job), and adding the context to that
-# file's requiredContexts.
+# stands. Re-enabling gating means removing continue-on-error and the path
+# filter, so the workflow reports on every pull request and skips its work
+# inside the job when no dependency changed.
 
 on:
   pull_request:
