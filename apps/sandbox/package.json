@@ -48,6 +48,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "commander": "^12.1.0",
+    "prettier": "catalog:",
     "typescript": "^6.0.3",
     "vite": "catalog:",
     "vitest": "^4.1.11"

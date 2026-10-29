@@ -43,7 +43,15 @@ for (const pkg of PACKAGES) {
 
 // --- collect ---------------------------------------------------------------
 
-const SKIP_DIRS = new Set(['__tests__', '__snapshots__', 'node_modules']);
+// `generated-locales` holds Core's locale modules, which `pnpm install` writes and
+// git ignores: counting them would make the audit depend on how the checkout
+// was installed.
+const SKIP_DIRS = new Set([
+  '__tests__',
+  '__snapshots__',
+  'node_modules',
+  'generated-locales',
+]);
 const isSource = f =>
   /\.(ts|tsx|css)$/.test(f) && !/\.(test|stories)\.tsx?$/.test(f);
 

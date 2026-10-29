@@ -34,7 +34,7 @@ export const AUDIT_COUNTS = {
   coreComponentDirs: 107,
   labComponentDirs: 22,
   hardcodedInLab: 10,
-  filesScanned: 941,
+  filesScanned: 910,
   animatingComponents: 59,
   staticComponents: 69,
   animatedFiles: 99,
