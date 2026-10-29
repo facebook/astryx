@@ -187,12 +187,15 @@ the hide to the guide, which starts it at the blur.
   cannot bring up keeps the browser's reveal. Every later reveal lands at
   once in the report's frame. A browser that never pans keeps the smooth
   reveal.
-- Chrome 124 on Android (Gboard) animates its own pan to the focused
-  composer about 150 ms after the report, by the keyboard's whole height,
-  while the composer is still riding up; left alone, the composer ends
-  mid-screen. ChatLayout puts the pan back on its first frame
-  (`watchRevealPan`), so the visual viewport stays where it was and the
-  composer rests on the keyboard. Chromium 158 does not pan.
+- Chrome 124 on Android (Gboard) animates its own pan to a focused field the
+  keyboard still covers, about 150 ms after the report, by the keyboard's
+  whole height; `watchRevealPan` puts such a pan back. A Tall BottomSheet
+  lands its field above the keyboard in the report's own event, so Chrome 124
+  never pans it. ChatLayout's composer is still riding up when the pan
+  starts, so ChatLayout puts the pan back on its first frame and the composer
+  rests on the keyboard. Chromium 158 pans the same way when the field stays
+  covered (by the keyboard's whole height, 312 px, with the sheet's reveal on
+  the next frame), and never needs to with the reveal in the report's event.
 
 ## What the page sees (Chromium 158 with Gboard, Android 15)
 
