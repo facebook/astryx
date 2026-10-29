@@ -102,18 +102,22 @@ async function decide({
         listWorkflowRuns: async ({branch}) => ({
           data: {workflow_runs: runs.filter(run => run.head_branch === branch)},
         }),
-        listJobsForWorkflowRun: async ({run_id}) => ({
-          data: {
-            jobs: [
-              {
-                steps:
-                  runs.find(run => run.id === run_id).heavy === false
-                    ? []
-                    : [{name: 'Heavy suite runs', conclusion: 'success'}],
-              },
-            ],
-          },
-        }),
+        // A CI run has more jobs than the API's default page of 30.
+        listJobsForWorkflowRun: async ({run_id, per_page = 30}) => {
+          if (per_page < 100) throw new Error('read one default page of jobs');
+          return {
+            data: {
+              jobs: [
+                {
+                  steps:
+                    runs.find(run => run.id === run_id).heavy === false
+                      ? []
+                      : [{name: 'Heavy suite runs', conclusion: 'success'}],
+                },
+              ],
+            },
+          };
+        },
       },
       repos: {
         getContent: async ({path: file, ref}) => {

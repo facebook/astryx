@@ -227,7 +227,7 @@ runs:
                   let loginHeavy = 0;
                   for (const run of runs) {
                     if (run.id === context.runId || run.conclusion === 'cancelled') continue;
-                    const {data: {jobs}} = await github.rest.actions.listJobsForWorkflowRun({...context.repo, run_id: run.id});
+                    const {data: {jobs}} = await github.rest.actions.listJobsForWorkflowRun({...context.repo, run_id: run.id, filter: 'latest', per_page: 100});
                     if (!jobs.some(job => job.steps?.some(step => step.name === 'Heavy suite runs' && step.conclusion === 'success'))) continue;
                     loginHeavy += 1;
                     if (lane(run.head_branch) === lane(pr.head.ref)) laneHeavy += 1;

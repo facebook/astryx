@@ -267,7 +267,8 @@ they are separately named.
   kind and reason, and a contract test holds every workflow to its entry.
 
 - **FR16 — One author's pull requests share the heavy suites.** On a
-  pull request, a heavy or end-to-end job runs its suite only when the pull
+  pull request, a heavy job (one whose scope step is marked `heavy`, as the
+  pull-request browser and end-to-end suites are) runs its suite only when the pull
   request is ready for review, is among its author's three oldest open
   non-draft pull requests, and its author has at most twelve heavy runs that
   UTC day. A heavy run is a CI run on one of the author's oldest open pull requests in which a heavy job ran its suite, which that job's "Heavy suite runs" step records; a cancelled run does not count, nor does a draft's or a queued pull request's run, since neither starts a heavy suite. Pull requests from the shared agent login count per branch
@@ -280,8 +281,9 @@ they are separately named.
   re-run." or "Daily heavy-run cap reached, runs tomorrow or at pre-merge.",
   so no pull request passes the required joins without its heavy suites. A
   re-run, which is the pre-merge restart, is exempt from both caps, and a
-  lookup that fails runs the suite. Merge-queue entries, `main` and release
-  checks are unaffected.
+  lookup that fails runs the suite. Merge-queue entries, `main`, release
+  checks and the visual, accessibility and RTL owners a maintainer opts a pull
+  request into with `ci:heavy-lanes` are unaffected.
 
 ### Platform support
 
