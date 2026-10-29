@@ -312,9 +312,9 @@ clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
 `resolveThemeMotion`'s role tables are accepted but unshipped (`spec:AST-108`
-FR6): the animator's springs follow the knobs through the attributes Theme
-writes on the theme's root (`motion/themeKnobs.ts`), but server code has no
-role values yet. Until they land, that part of FR6 is current authority but
+FR6): the animator's springs follow the knobs through the custom properties a
+theme or adaptation rule writes (`motion/themeKnobs.ts`), but server code has
+no role values yet. Until they land, that part of FR6 is current authority but
 not enforcement.
 
 The reach of `reducedMotion: 'always'` is accepted but partly unshipped
