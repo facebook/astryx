@@ -268,8 +268,9 @@ public surface belongs to
 ## Owning code
 
 - An internal, pure `resolveThemeMotion(theme)` returns a theme's motion
-  knobs, durations, and easings for the animator and for server code; it
-  touches no DOM and has no import-time side effects (`spec:AST-108` FR6).
+  knobs, durations, and easings for server code; it touches no DOM and has no
+  import-time side effects (`spec:AST-108` FR6). The animator reads the knobs
+  from the custom properties the theme writes (`motion/themeKnobs.ts`).
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
 - `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
@@ -279,8 +280,8 @@ public surface belongs to
 - `expandColorScale.ts`, `expandTypeScale.ts`, `expandRadiusScale.ts`, and
   `expandMotionScale.ts` own their derived token/component values.
 - `motionKnobs.ts` owns the motion knobs' types, defaults and clamping;
-  `themeMotion.ts` owns the tokens and pre-tempo durations they generate, and
-  `resolveThemeMotion`, the pure read the animator and server code use.
+  `themeMotion.ts` owns the tokens, pre-tempo durations and knob properties
+  they generate, and `resolveThemeMotion`, the pure read server code uses.
 - `mergeComponents.ts` owns the shared deep-merge rule.
 - `onMediaTokens.ts` owns normalization of inverted-surface overrides.
 - `localTokens.ts` owns opt-in enrollment, valid CSS custom-property names, exact

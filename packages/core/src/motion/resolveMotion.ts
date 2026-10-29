@@ -21,9 +21,9 @@
  * reaches CSS curves through its easing tokens. With Astryx's own knobs every
  * role plays exactly its table value. The per-role values stay internal
  * (`spec:AST-094` DEC-11, `spec:AST-108` DEC-1): no CSS variable retunes a
- * role. Nothing here reads style or layout (the theme is found by DOM
- * attribute), listens or observes, imports a table, or runs on import or on
- * the server.
+ * role. The knobs are the theme's custom properties, read in one style read
+ * that forces no layout (themeKnobs.ts); nothing here listens or observes,
+ * imports a table, or runs on import or on the server.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/resolveMotion.test.ts
