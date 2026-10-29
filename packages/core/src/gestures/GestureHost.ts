@@ -438,6 +438,8 @@ export class GestureHost {
    * iPad sends the pen's pointer events first (FR21, FR43).
    */
   private isPenLiftClaimed = false;
+  /** Where and when the last pen contact the host tracked ended. */
+  private lastPenLift: {target: unknown; time: number} | null = null;
   /** Fingers whose first uncancelable `touchmove` was already judged. */
   private readonly judgedUncancelable = new Set<number>();
   /**
@@ -873,6 +875,33 @@ export class GestureHost {
     return this.fingerTargets.some(target =>
       containsAlongFlatTree(node, target),
     );
+  }
+
+  /**
+   * @internal Whether a pen that went down inside `node` is down now,
+   * whichever participant keeps it (contextRequest.ts: its own menu event is
+   * that hold's, `spec:AST-094` FR43).
+   */
+  isPenDownIn(node: Node): boolean {
+    return this.arena.touches.some(
+      touch =>
+        touch.pointerType === 'pen' &&
+        touch.target instanceof Node &&
+        containsAlongFlatTree(node, touch.target),
+    );
+  }
+
+  /**
+   * @internal When a pen that went down inside `node` last lifted or was
+   * cancelled, on the host's clock; negative infinity when none did.
+   */
+  lastPenLiftIn(node: Node): number {
+    const lift = this.lastPenLift;
+    return lift != null &&
+      lift.target instanceof Node &&
+      containsAlongFlatTree(node, lift.target)
+      ? lift.time
+      : Number.NEGATIVE_INFINITY;
   }
 
   private registrationFor(element: Element): Registration {
@@ -1710,18 +1739,11 @@ export class GestureHost {
   }
 
   /**
-   * How many fingers are on the screen: the length of `touches` in the last
-   * touch event the host's listeners heard (`touchstart`, `touchmove`,
-   * `touchend`, `touchcancel`), whatever its target, so a finger on an
-   * element with no recognizer counts too. 0 before any, and while no
-   * listener is installed. A recognizer that must not begin under a second
-   * finger reads it in `shouldBegin`.
-   */
-  /**
    * @internal Whether a press consumer that keeps its press (a hold-repeat
    * control, `keepsTouch`) sits on the path from `target` up to `boundary`,
-   * both included: such a control keeps its long press, right click and
-   * Shift+F10 its own (contextRequest.ts, `spec:AST-094` FR43).
+   * both included: such a control keeps its long press its own, while its
+   * right click and Shift+F10 still reach a context request around it
+   * (contextRequest.ts, `spec:AST-094` FR43).
    */
   keepsPressBetween(target: unknown, boundary: Element): boolean {
     for (
@@ -1743,6 +1765,14 @@ export class GestureHost {
     return false;
   }
 
+  /**
+   * How many fingers are on the screen: the length of `touches` in the last
+   * touch event the host's listeners heard (`touchstart`, `touchmove`,
+   * `touchend`, `touchcancel`), whatever its target, so a finger on an
+   * element with no recognizer counts too. 0 before any, and while no
+   * listener is installed. A recognizer that must not begin under a second
+   * finger reads it in `shouldBegin`.
+   */
   fingersDown(): number {
     return this.fingerTargets.length;
   }
@@ -2521,9 +2551,13 @@ export class GestureHost {
     }
     this.pointerIds.delete(event.pointerId);
     this.unlockSelection(id);
+    const target = this.arena.getTouch(id)?.target;
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
+    if (event.pointerType === 'pen') {
+      this.lastPenLift = {target, time: this.arena.now()};
+    }
     // A retargeted tap's own click arms the click guard for the engine's.
     const landed = this.retargeted.get(id);
     this.retargeted.delete(id);
@@ -2562,7 +2596,11 @@ export class GestureHost {
       this.pointerIds.delete(event.pointerId);
       this.unlockSelection(id, true);
       this.retargeted.delete(id);
+      const target = this.arena.getTouch(id)?.target;
       this.arena.cancelled([id], eventTime(event));
+      if (event.pointerType === 'pen') {
+        this.lastPenLift = {target, time: this.arena.now()};
+      }
     }
   };
 

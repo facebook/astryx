@@ -15,7 +15,12 @@
  * that a held finger, a held pen or a key also fires is refused rather than
  * requested again. A control that keeps its press for a hold-repeat (a
  * stepper) owns only its hold: its right click and Shift+F10 still reach the
- * request. A mouse held still makes no request: it selects text and drags.
+ * request. Inside nested requests, a right click or a key reaches only the
+ * innermost, as a hold resolves to one arena winner. A pen's own menu event,
+ * during any hold of that pen inside the element (whoever keeps it) or right
+ * after its lift, is that hold's; a menu event is a finger's only while a
+ * finger is down inside the element. A mouse held still makes no request: it
+ * selects text and drags.
  */
 
 import {lockSelection} from '../utils/selectionLock';
@@ -53,10 +58,16 @@ export interface ContextRequestOptions {
 }
 
 /**
- * How long after a key's request, or a pen's hold, the browser's own context
+ * How long after a key's request, or a pen's lift, the browser's own context
  * menu event is that input's echo, ms.
  */
 const MENU_ECHO_MS = 500;
+
+/**
+ * Menu events and keys a request already answered: one inside nested
+ * requests reaches only the innermost, as a hold resolves to one winner.
+ */
+const answered = new WeakSet<Event>();
 
 const POINTER_KINDS: ReadonlySet<string> = new Set(['touch', 'mouse', 'pen']);
 
@@ -79,8 +90,6 @@ export function attachContextRequest(
     return () => {};
   }
   let lastKeyRequestAt = Number.NEGATIVE_INFINITY;
-  /** When a pen's hold last ended, for its menu event at the lift. */
-  let lastPenHoldAt = Number.NEGATIVE_INFINITY;
   let held: {touchId: number; pointerType: PointerKind} | null = null;
 
   // UIKit's long press, its duration and its tolerance as a distance: the
@@ -118,9 +127,6 @@ export function attachContextRequest(
       });
     } else if (state === 'ended' || state === 'cancelled') {
       options.onHold?.(state);
-      if (held?.pointerType === 'pen') {
-        lastPenHoldAt = host.arena.now();
-      }
       held = null;
     }
   });
@@ -128,25 +134,28 @@ export function attachContextRequest(
   const onContextMenu = (event: Event): void => {
     const menu = event as MouseEvent;
     // A hold-repeat control inside owns only its hold: its right click
-    // reaches this request.
-    if (!isEnabled()) {
+    // reaches this request. A request inside already answered this event.
+    if (!isEnabled() || answered.has(menu)) {
       return;
     }
+    answered.add(menu);
     // The browser's own menu stays off either way.
     menu.preventDefault();
     const time = host.arena.now();
     const pointerType = pointerKindOf(menu);
-    // A held finger's menu is the hold's to request, or a claim refused it;
-    // a key's menu event is that key's echo.
+    // A held finger's menu is the hold's to request, or a claim refused it:
+    // a finger down inside this element; a key's menu event is that key's
+    // echo.
     if (
       pointerType === 'touch' ||
-      host.fingersDown() > 0 ||
+      host.isFingerDownIn(element) ||
       time - lastKeyRequestAt < MENU_ECHO_MS ||
-      // A pen's own menu event, during its hold or at its lift, is the hold's.
+      // A pen's own menu event, during any hold of it inside this element
+      // (this request's, a stepper's, a handle's that claimed first) or
+      // right after its lift, is that hold's.
       (pointerType === 'pen' &&
-        ((held?.pointerType === 'pen' &&
-          (recognizer.state === 'began' || recognizer.state === 'changed')) ||
-          time - lastPenHoldAt < MENU_ECHO_MS))
+        (host.isPenDownIn(element) ||
+          time - host.lastPenLiftIn(element) < MENU_ECHO_MS))
     ) {
       return;
     }
@@ -165,9 +174,10 @@ export function attachContextRequest(
       (key.key === 'F10' && key.shiftKey) || key.key === 'ContextMenu';
     // A hold-repeat control inside owns only its hold: Shift+F10 on it
     // reaches this request.
-    if (!isRequestKey || !isEnabled()) {
+    if (!isRequestKey || !isEnabled() || answered.has(key)) {
       return;
     }
+    answered.add(key);
     key.preventDefault();
     lastKeyRequestAt = host.arena.now();
     options.onRequest({
