@@ -88,6 +88,10 @@ export function useTabBarLens({
   }
   const slideRef = useRef(0);
   const previousIndexRef = useRef(selectedIndex);
+  // Synchronizes the lens's compositor animations (the animator's Web
+  // Animations on its body and copy) with the selected tab.
+  // A new selection under a finger slides the body from where the lens was
+  // on screen to its new resting place.
   useLayoutEffect(() => {
     const from = previousIndexRef.current;
     previousIndexRef.current = selectedIndex;
