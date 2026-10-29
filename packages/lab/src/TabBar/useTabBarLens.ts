@@ -119,6 +119,8 @@ interface Press {
   isDragging: boolean;
   /** A tab was selected when the finger landed: the lens follows it. */
   hasLens: boolean;
+  /** The number of tabs the press measured. */
+  readonly count: number;
 }
 
 export interface UseTabBarLensOptions {
@@ -328,6 +330,7 @@ export function useTabBarLens({
       lastX: x,
       isDragging: false,
       hasLens: selected >= 0,
+      count,
     };
     // No tab selected: there is no lens to move; the lift chooses the tab
     // nearest the finger.
@@ -372,13 +375,17 @@ export function useTabBarLens({
     playCopy(at);
   };
 
-  const end = (isCancelled: boolean) => {
+  const end = (wasCancelled: boolean) => {
     const press = pressRef.current;
     pressRef.current = null;
     const selected = selectedRef.current;
     if (press == null) {
       return;
     }
+    // The tab list changed under the press: its centres name the old list,
+    // so it ends as a cancel and the lens settles to its resting place.
+    const isStale = press.count !== count;
+    const isCancelled = wasCancelled || isStale;
     // The app's answer to this lift, as rendered now: the tab the finger
     // chose is the one under it at the lift, whatever renders after.
     const deliver = onLiftRef.current;
@@ -395,7 +402,7 @@ export function useTabBarLens({
       : nearestIndex(press.lastX, press.centers);
     const at = performance.now();
     body.animator.animate(
-      {x: press.centers[chosen] - press.centers[selected]},
+      {x: isStale ? 0 : press.centers[chosen] - press.centers[selected]},
       {spring: tabBar.lensSettle},
       {at, touchRelease: true},
     );
@@ -478,6 +485,14 @@ export function useTabBarLens({
       endRef.current(true);
     }
   }, [isTouch]);
+
+  // The tab list changed under a held finger: the press ends here, as a
+  // cancel, rather than at the lift, so no move chases the old centres.
+  useLayoutEffect(() => {
+    if (pressRef.current != null && pressRef.current.count !== count) {
+      endRef.current(true);
+    }
+  }, [count]);
 
   // Synchronizes the lens's compositor animations (the animator's Web
   // Animations on its body and copy) with the selected tab.
