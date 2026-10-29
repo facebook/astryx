@@ -18,7 +18,6 @@ describe('spec-only workflow contract', () => {
       '.github/actions/test-scope/action.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -45,7 +44,6 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -140,10 +138,7 @@ describe('spec-only workflow contract', () => {
     expect(lint).toContain('.github/scripts/change-scope.cjs');
     expect(lint).not.toContain('node scripts/check-knowledge.mjs');
 
-    for (const workflow of [
-      '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
-    ]) {
+    for (const workflow of ['.github/workflows/cli-smoke-test.yml']) {
       const source = read(workflow);
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",

@@ -1,10 +1,6 @@
 {
   "$comment": "Why each workflow runs (spec:AST-030 FR14). Every workflow in .github/workflows has exactly one entry, and workflow-relevance.test.mjs holds each entry to its kind. Kinds: paths (every push and pull-request trigger lists the paths that make it relevant), change-scope (reports required contexts on every pull request; the trusted classifier picks the work inside them), landed-commit (push to main: every landed commit is relevant), review-event (review, comment, check and deployment events; a pull_request_target trigger also records in pullRequestUpdates why every pull-request update matters to review state), schedule (cron, plus manual dispatch), manual (manual dispatch only). No workflow uses paths-ignore.",
   "workflows": {
-    "a11y-weekly.yml": {
-      "kind": "schedule",
-      "reason": "Weekly full accessibility sweep of main."
-    },
     "ci.yml": {
       "kind": "change-scope",
       "reason": "Reports the required build, test and docsite-test contexts on every pull request; the trusted classifier's positive surfaces choose the work inside them (FR1-FR13)."
@@ -82,10 +78,6 @@
       "kind": "review-event",
       "reason": "Computes the required review-required status from pull-request and review events.",
       "pullRequestUpdates": "Recomputes the required review-required status for the new head."
-    },
-    "rtl-weekly.yml": {
-      "kind": "schedule",
-      "reason": "Weekly full RTL sweep of main."
     },
     "spec-owner-gate.yml": {
       "kind": "review-event",

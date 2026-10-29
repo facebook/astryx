@@ -42,9 +42,8 @@ permissions: {}
 
 # PR CI's budget is 15 minutes. Every job in this workflow that does work on a
 # pull request carries `timeout-minutes: 15` (release and maintenance
-# dispatches keep longer limits; macOS-only `test-native-swift` keeps 30), and
-# `ci-duration` reports each job's run time and the run's span. Split a job
-# that nears the limit (shard, scope, cache); do not raise it.
+# dispatches keep longer limits; macOS-only `test-native-swift` keeps 30). Split
+# a job that nears the limit (shard, scope, cache); do not raise it.
 #
 # There is no scope job. Each job that owns tests decides its own scope in its
 # first steps (.github/actions/test-scope: the PR's file list against the
@@ -787,12 +786,18 @@ jobs:
         if: needs.native-swift-runner.outputs.applies == 'true'
         run: bash .github/scripts/native-swift.sh
 
-  registry-contract:
-    name: registry-contract (${{ matrix.leg }})
-    if: ${{ github.event_name != 'workflow_dispatch' }}
+  # The full shadcn registry install, preview and hidden production legs
+  # (spec:AST-026 FR10, draft): every item through the pinned client. It runs
+  # for an explicit release check until the production registry launches; the
+  # network-free production gate and the generator test run with the unit
+  # tests on every pull request.
+  test-registry-e2e:
+    name: test-registry-e2e (${{ matrix.leg }})
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
     # The preview and hidden production registries are generated and verified
-    # independently, so each gets its own leg (~9 minutes in one job). `test`
-    # joins them: the job result is success only when both passed.
+    # independently, so each gets its own leg (~9 minutes in one job).
+    # release-check joins them: the job result is success only when both
+    # passed.
     strategy:
       fail-fast: false
       matrix:
@@ -801,65 +806,43 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      pull-requests: read
     steps:
-      # This job decides its own scope (no separate scope job): the step
-      # reads the PR's file list and the base's trusted classifier, and
-      # everything is in scope when it cannot decide.
-      - name: Check out the scope action
-        uses: actions/checkout@v7
-        with:
-          sparse-checkout: .github/actions/test-scope
-          path: .test-scope
-          persist-credentials: false
-
-      - name: Decide this job's scope
-        id: scope
-        uses: ./.test-scope/.github/actions/test-scope
-
-      - name: Skip registry work for spec-only changes
-        if: steps.scope.outputs.spec_only == 'true'
-        run: echo "Spec-only PR — public registry output cannot change"
-
       - uses: actions/checkout@v7
-        if: steps.scope.outputs.spec_only != 'true'
 
       - uses: ./.github/actions/setup
-        if: steps.scope.outputs.spec_only != 'true'
 
       - name: Build registry package exports
-        if: steps.scope.outputs.spec_only != 'true'
         run: pnpm build
 
       - name: Verify hidden production registry contract
-        if: matrix.leg == 'production' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production'
         run: node internal/shadcn-registry/verify-production-gate.mjs
 
       - name: Generate and validate the complete preview registry
-        if: matrix.leg == 'preview' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'preview'
         env:
           DOCSITE_TARGET: canary
         run: node apps/docsite/scripts/generate-data.mjs
 
       - name: Install and build every preview registry item
-        if: matrix.leg == 'preview' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'preview'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
 
       - name: Generate the hidden production registry
-        if: matrix.leg == 'production' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production'
         env:
           DOCSITE_TARGET: latest
         run: node apps/docsite/scripts/generate-data.mjs
 
       - name: Verify hidden production discovery surfaces
-        if: matrix.leg == 'production' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production'
         env:
           ASTRYX_VERIFY_HIDDEN_PRODUCTION: '1'
           NEXT_PUBLIC_DOCS_TARGET: latest
         run: pnpm -F @astryxdesign/docsite exec vitest run src/__tests__/hidden-shadcn-production.test.ts
 
       - name: Install and build every hidden production registry item
-        if: matrix.leg == 'production' && steps.scope.outputs.spec_only != 'true'
+        if: matrix.leg == 'production'
         env:
           ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES: '1'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
@@ -875,7 +858,6 @@ jobs:
         test-ui,
         test-node,
         test-build,
-        registry-contract,
         test-native-swift,
         pr-interaction,
       ]
@@ -915,7 +897,6 @@ jobs:
           TEST_UI_RESULT: ${{ needs.test-ui.result }}
           TEST_NODE_RESULT: ${{ needs.test-node.result }}
           TEST_BUILD_RESULT: ${{ needs.test-build.result }}
-          REGISTRY_CONTRACT_RESULT: ${{ needs.registry-contract.result }}
           TEST_NATIVE_SWIFT_RESULT: ${{ needs.test-native-swift.result }}
           PR_INTERACTION_RESULT: ${{ needs.pr-interaction.result }}
         run: node .github/scripts/ci-test-join.mjs
@@ -2366,7 +2347,7 @@ jobs:
   # eight browser pages on its four cores (the audit waits on page loads), and
   # the stable pr-rtl join requires all five scope manifests plus a report from
   # every applicable package.
-  # The scheduled full sweep also runs in rtl-weekly.yml.
+  # The full-roster sweep is the release-check run on every push to main.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4/D7/D8/D9 add
@@ -2729,77 +2710,13 @@ jobs:
             --force-full "${{ steps.scope.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
 
-  ci-duration:
-    needs:
-      [
-        release-bump,
-        release-merge-back,
-        docsite-data,
-        docsite-browser,
-        docsite-test,
-        test-ui,
-        test-node,
-        native-swift-runner,
-        test-native-swift,
-        registry-contract,
-        test,
-        build-storybook,
-        size-base,
-        typecheck,
-        build-sandbox,
-        build,
-        pr-a11y-guards,
-        pr-a11y-specs,
-        pr-a11y,
-        pr-interaction,
-        test-build,
-        visual-scout,
-        pr-visual,
-        pr-rtl-shard,
-        pr-rtl-merge,
-        pr-rtl,
-      ]
-    if: ${{ always() && github.event_name == 'pull_request' }}
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
-    continue-on-error: true
-    permissions:
-      actions: read
-    steps:
-      - name: Report job durations
-        uses: actions/github-script@v9
-        with:
-          # The listing is one request for every job of the run with its
-          # steps, and GitHub can answer it 502 at its gateway limit: retry a
-          # server error. The action's exempt client errors stay final.
-          retries: 3
-          script: |
-            const jobs = await github.paginate(
-              github.rest.actions.listJobsForWorkflowRunAttempt,
-              {...context.repo, run_id: context.runId, attempt_number: Number(process.env.GITHUB_RUN_ATTEMPT), per_page: 100},
-            );
-            const done = jobs.filter(job => job.started_at && job.completed_at && job.conclusion !== 'skipped' && job.name !== 'ci-duration');
-            const rows = done
-              .map(job => ({name: job.name, minutes: (Date.parse(job.completed_at) - Date.parse(job.started_at)) / 60000}))
-              .sort((a, b) => b.minutes - a.minutes);
-            for (const row of rows.filter(row => row.minutes > 12)) {
-              core.warning(`${row.name} ran ${row.minutes.toFixed(1)} min; PR jobs stop at 15. Split it (shard, scope, cache).`);
-            }
-            const span = done.length
-              ? (Math.max(...done.map(job => Date.parse(job.completed_at))) - Math.min(...done.map(job => Date.parse(job.started_at)))) / 60000
-              : 0;
-            await core.summary
-              .addHeading('Job durations (run time, no queue)', 3)
-              .addRaw(`Run span, first job start to last job end (includes waits between jobs): ${span.toFixed(1)} min\n\n`)
-              .addTable([[{data: 'Job', header: true}, {data: 'Minutes', header: true}], ...rows.map(row => [row.name, row.minutes.toFixed(1)])])
-              .write();
-
   # Release-time projection only: the existing owners above do all measurement.
   # A skipped owner or main drift must never look like passing release evidence.
   release-check:
     needs:
       [
         release-authority,
+        test-registry-e2e,
         build-storybook,
         typecheck,
         pr-visual,
@@ -2824,7 +2741,7 @@ jobs:
         with:
           script: |
             const needs = JSON.parse(process.env.RELEASE_NEEDS);
-            for (const name of ['release-authority', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
+            for (const name of ['release-authority', 'test-registry-e2e', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
               if (needs[name]?.result !== 'success') {
                 throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
               }
