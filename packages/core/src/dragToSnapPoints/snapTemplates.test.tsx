@@ -131,5 +131,24 @@ describe('the snap-point examples follow the reading direction (design:bidirecti
         unmount();
       }
     });
+
+    it(`${name}: without an internationalization provider, the places follow the direction the card renders in (architecture:internationalization INV11)`, async () => {
+      const {unmount} = render(
+        <div dir="rtl">
+          <Example />
+        </div>,
+      );
+      expect(await sendTo('Table', card)).toBe(-110);
+      unmount();
+    });
   }
+});
+
+describe('the plain-JavaScript example', () => {
+  it('colours its card from the theme\u2019s surface and text tokens, so it reads in a dark theme', () => {
+    render(<DragToSnapPointsCardVanilla />);
+    const {style} = screen.getByText('Q\u2665');
+    expect(style.backgroundColor).toBe('var(--color-background-surface)');
+    expect(style.color).toBe('var(--color-text-primary)');
+  });
 });
