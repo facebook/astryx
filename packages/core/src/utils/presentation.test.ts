@@ -10,8 +10,8 @@
  *   explicit `'popover'`; `'adaptive'` and `'bottom-sheet'` keep their sheet
  *   meaning with touch modes under a finger, the same on every touch device;
  *   the surface equals useAdaptivePresentation's for every
- *   value on every device; live pointer changes; the server default and
- *   hints; the one-moment read
+ *   value on every device; live pointer changes; the server and hydrating
+ *   render, which no hint can put into touch modes; the one-moment read
  * @position Unit tests of packages/core/src/utils/presentation.ts
  */
 
@@ -27,6 +27,7 @@ import {
   readPresentation,
   usePresentation,
   type PresentationDefault,
+  type UsePresentationOptions,
 } from './presentation';
 import {IOS_SUPPORTS_QUERY} from './touchPresentation';
 import {
@@ -97,6 +98,9 @@ const resolve = (
   whenOmitted?: PresentationDefault,
 ) =>
   renderHook(() => usePresentation(presentation, {whenOmitted})).result.current;
+
+/** A component whose omitted presentation is the touch default. */
+const TOUCH_WHEN_OMITTED: UsePresentationOptions = {whenOmitted: 'touch'};
 
 describe('presentation: a caller choice wins over touch defaults', () => {
   it('pins the fine surface and input modes with an explicit popover, even on an iPhone', () => {
@@ -183,32 +187,34 @@ describe('presentation: a caller choice wins over touch defaults', () => {
     expect(result.current).toMatchObject({touchModes: true});
   });
 
-  it('renders the server default until hydrated, and honours a server hint', () => {
+  it('renders no touch surface or input mode on the server or while hydrating, and takes no hint that would (spec:AST-094 FR13)', () => {
     function Probe({
       presentation,
-      hint,
+      options = TOUCH_WHEN_OMITTED,
     }: {
       presentation?: AdaptivePresentation;
-      hint?: boolean;
+      options?: UsePresentationOptions;
     }) {
-      const resolved = usePresentation(presentation, {
-        whenOmitted: 'touch',
-        serverDefault: hint === true ? {isTouch: true, isCompact: true} : {},
-      });
+      const resolved = usePresentation(presentation, options);
       return `${resolved.surface}/${String(resolved.touchModes)}`;
     }
     expect(renderToString(createElement(Probe))).toContain('popover/false');
-    expect(renderToString(createElement(Probe, {hint: true}))).toContain(
-      'popover/true',
-    );
+    expect(
+      renderToString(createElement(Probe, {presentation: 'adaptive'})),
+    ).toContain('popover/false');
+    expect(
+      renderToString(createElement(Probe, {presentation: 'bottom-sheet'})),
+    ).toContain('bottom-sheet/false');
+    // A server hint would put touch modes into the server render, which
+    // hydration then contradicts: usePresentation takes none.
+    const hinted = {
+      whenOmitted: 'touch',
+      // @ts-expect-error usePresentation takes no serverDefault.
+      serverDefault: {isTouch: true, isCompact: true},
+    } satisfies UsePresentationOptions;
     expect(
       renderToString(
-        createElement(Probe, {presentation: 'adaptive', hint: true}),
-      ),
-    ).toContain('bottom-sheet/true');
-    expect(
-      renderToString(
-        createElement(Probe, {presentation: 'popover', hint: true}),
+        createElement(Probe, {presentation: 'adaptive', options: hinted}),
       ),
     ).toContain('popover/false');
   });

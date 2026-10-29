@@ -92,6 +92,7 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
+import {menuTouchActionStyles} from './menuTouchAction.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {usePresentation} from '../utils/presentation';
@@ -308,18 +309,6 @@ const styles = stylex.create({
   region: {
     flexShrink: 0,
     padding: spacingVars['--spacing-1'],
-  },
-  // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
-  // every one-finger move: a slide over its rows stays a slide. One that
-  // scrolls lets the browser pan it vertically and cancel the press when it
-  // does. Both leave a two-finger pinch to the browser, so the page stays
-  // zoomable over an open menu; `pinch-zoom` admits no one-finger pan.
-  touchPinchZoom: {
-    touchAction: 'pinch-zoom',
-  },
-  touchPanYPinchZoom: {
-    touchAction: 'pan-y pinch-zoom',
-    overscrollBehavior: 'contain',
   },
   // The menu's lower block cap rides on the layer box too, so the layer's
   // flip decision sees the same height the menu paints.
@@ -583,8 +572,8 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * Omitted, the menu is the anchored popover with the touch modes under a
-   * finger: its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * Omitted, the menu is the anchored popover, and under a finger, on every
+   * device, its trigger opens as UIMenu's pull-down button does. `'popover'`
    * pins the anchored popover with the pointer behavior on every device (a
    * finger held for 500 ms opens it, as before).
    */
@@ -596,8 +585,8 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
   /**
    * `'popover'` pins the pointer behavior on every device (a finger held for
-   * 500 ms opens the menu, as before). Omitted, a finger gets the touch modes:
-   * the trigger opens as UIMenu's pull-down button does.
+   * 500 ms opens the menu, as before). Omitted, on every device, a finger's
+   * press opens the menu as UIMenu's pull-down button does.
    */
   presentation?: 'popover';
   items?: undefined;
@@ -1074,6 +1063,7 @@ function DropdownMenuPopover({
   alignment = 'start',
   presentation: _presentation,
   touchModes,
+  pressTouchModel = 'uikit',
   header,
   footer,
   className,
@@ -1082,8 +1072,16 @@ function DropdownMenuPopover({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps & {
-  /** Whether the touch input modes apply (the resolved presentation). */
+  /**
+   * Whether the touch modes apply (the resolved presentation): the grow and
+   * collapse are a finger's on a touch device (`spec:AST-094` FR31).
+   */
   touchModes?: boolean;
+  /**
+   * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
+   * UIMenu's, unless the caller pins `presentation="popover"`.
+   */
+  pressTouchModel?: 'pointer' | 'uikit';
 }) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
@@ -1718,9 +1716,10 @@ function DropdownMenuPopover({
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
-    // Under a finger the trigger is UIMenu's pull-down button (spec:AST-094);
-    // `presentation="popover"` pins the pointer model, today's included.
-    touchModel: touchModes ? 'uikit' : 'pointer',
+    // Under a finger, on every device, the trigger is UIMenu's pull-down
+    // button (spec:AST-094 FR29, FR43); `presentation="popover"` pins the
+    // pointer model, today's included.
+    touchModel: pressTouchModel,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -2074,7 +2073,9 @@ function DropdownMenuPopover({
                 styles.dropdown,
                 resolvedMaxHeight != null &&
                   dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-                hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
+                hasOverflow
+                  ? menuTouchActionStyles.scrolls
+                  : menuTouchActionStyles.fits,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
                 isCardShown && styles.cardStack,
@@ -2127,7 +2128,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  // The touch modes are the default under a finger (spec:AST-094);
+  // The touch modes are the default on a touch device (spec:AST-094);
   // `presentation="popover"` pins the fine-pointer surface and modes.
   const {surface: resolvedPresentation, touchModes} = usePresentation(
     props.presentation,
@@ -2169,6 +2170,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       {...sharedProps}
       presentation="popover"
       touchModes={touchModes}
+      pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
     />
   );
 }

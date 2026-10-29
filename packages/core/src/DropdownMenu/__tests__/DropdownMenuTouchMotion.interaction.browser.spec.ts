@@ -103,8 +103,23 @@ interface OpenStory {
   triggerBox: Box;
 }
 
-/** Page-side log of the gesture and the menu: performance.now() times. */
+/** The rows the story reports as picked, read from the page's console. */
+const pickLogs = new WeakMap<Page, string[]>();
+
+/**
+ * Page-side log of the gesture and the menu (performance.now() times), and
+ * the picks the story reports by logging "<label> clicked", which the test
+ * reads from the page's console.
+ */
 async function installMenuLog(page: Page) {
+  const picked: string[] = [];
+  pickLogs.set(page, picked);
+  page.on('console', message => {
+    const text = message.text();
+    if (text.endsWith(' clicked')) {
+      picked.push(text.slice(0, -' clicked'.length));
+    }
+  });
   await page.evaluate(() => {
     const log = {
       down: [] as number[],
@@ -112,7 +127,6 @@ async function installMenuLog(page: Page) {
       cancel: [] as number[],
       opened: [] as number[],
       closed: [] as number[],
-      picked: [] as string[],
     };
     (window as unknown as {__menuLog: typeof log}).__menuLog = log;
     document.addEventListener(
@@ -138,22 +152,11 @@ async function installMenuLog(page: Page) {
       },
       true,
     );
-    // The story reports a pick by logging "<label> clicked"; the spec
-    // reads those lines through this page-side capture.
-    // eslint-disable-next-line no-console -- see above
-    const original = console.log.bind(console);
-    // eslint-disable-next-line no-console -- see above
-    console.log = (...args: unknown[]) => {
-      if (typeof args[0] === 'string' && args[0].endsWith(' clicked')) {
-        log.picked.push(args[0].replace(' clicked', ''));
-      }
-      original(...args);
-    };
   });
 }
 
-const readMenuLog = async (page: Page) =>
-  page.evaluate(
+const readMenuLog = async (page: Page) => {
+  const log = await page.evaluate(
     () =>
       (
         window as unknown as {
@@ -163,11 +166,13 @@ const readMenuLog = async (page: Page) =>
             cancel: number[];
             opened: number[];
             closed: number[];
-            picked: string[];
           };
         }
       ).__menuLog,
   );
+  // The page's console messages logged before that read have arrived.
+  return {...log, picked: [...(pickLogs.get(page) ?? [])]};
+};
 
 /** The story under a finger (the harness's phone profile). */
 async function openDefault(page: Page): Promise<OpenStory> {
