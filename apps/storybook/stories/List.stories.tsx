@@ -284,6 +284,7 @@ function EndControlsDemo() {
           label="Network"
           onClick={() => {}}
           endContent={<Icon icon={ChevronRightIcon} />}
+          swipeActions={{trailing: [{label: 'Forget', onActivate: () => {}}]}}
         />
         <ListItem
           label="Wi-Fi"
@@ -314,7 +315,8 @@ export const WithEndControls: Story = {
       description: {
         story:
           'A compact row whose end content is its own control, a switch, ' +
-          'between two interactive rows, under a header with its own button ' +
+          'between two interactive rows (the first one swipeable), under a ' +
+          'header with its own button ' +
           'and above a button 4 px after the list. Under a finger, the ' +
           'interactive rows grow ' +
           'their touch targets only where nothing is near, never into the ' +

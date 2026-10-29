@@ -261,11 +261,12 @@ test('under a finger, a row’s end control keeps its taps, and the interactive 
   await openStory(page, storybook(), 'core-list--with-end-controls');
   test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
   const rows = await measuredRowsOf(page);
-  // (The switch's own hidden label repeats the row's text.)
-  expect(rows.map(row => row.text.split(/\s+/)[0])).toEqual([
-    'Network',
-    'Wi-Fi',
-    'Bluetooth',
+  // (The switch's own hidden label repeats the row's text, and Network's
+  // swipe action adds its own.)
+  expect(rows.map(row => row.text)).toEqual([
+    expect.stringMatching(/^Network/),
+    expect.stringMatching(/^Wi-Fi/),
+    expect.stringMatching(/^Bluetooth/),
   ]);
   // The control's row is not interactive: it has no hit area of its own.
   expect(rows[1].layer.content, JSON.stringify(rows)).toBe('none');
@@ -302,19 +303,33 @@ test('under a finger, a row’s end control keeps its taps, and the interactive 
   ).toBeGreaterThanOrEqual(control.bottom);
   // The browser sends a tap in Network's band to Network, over the static
   // row after it, up to the band's end; and one in Bluetooth's band to
-  // Bluetooth. (Hit tests, not taps: a touch engine's own touch adjustment
-  // may move a tap a few pixels onto a target.)
+  // Bluetooth. Network is swipeable, so it is a stacking context at rest,
+  // and its band still wins. (Hit tests, not taps: a touch engine's own
+  // touch adjustment may move a tap a few pixels onto a target.)
   const owner = async (y: number) =>
     page.evaluate(
-      ({x, y: at}) =>
-        (
-          document.elementFromPoint(x, at)?.closest('#storybook-root li')
-            ?.textContent ?? ''
-        )
-          .trim()
-          .split(/\s+/)[0] ?? null,
+      ({x, y: at}) => {
+        const row = document
+          .elementFromPoint(x, at)
+          ?.closest('#storybook-root li');
+        if (row == null) {
+          return null;
+        }
+        // The row's own text, without its swipe actions' labels.
+        const copy = row.cloneNode(true) as Element;
+        for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+          panel.remove();
+        }
+        return (copy.textContent ?? '').trim().split(/\s+/)[0] ?? null;
+      },
       {x: above.x, y},
     );
+  expect(
+    await page
+      .locator('#storybook-root li')
+      .first()
+      .evaluate(row => getComputedStyle(row).isolation),
+  ).toBe('isolate');
   expect(above.layer.bottom, JSON.stringify(rows)).toBeGreaterThan(1);
   expect(await owner(above.bottom + 0.5)).toBe('Network');
   expect(await owner(above.bottom + above.layer.bottom - 0.5)).toBe('Network');
