@@ -236,7 +236,9 @@ they are separately named.
   whole plan when the dependents exceed its focused budget or none has one; RTL
   audits every component each of those folders implements. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
   a readable build the audits run in full. PR accessibility, when it runs, stays
-  scoped to changed components (FR12). Shared infrastructure runs the full suite: root
+  scoped to changed components (FR12). Shared infrastructure runs the full suite of
+  the owners the pull request runs (visual, accessibility and RTL only with the
+  `ci:heavy-lanes` label, FR12): root
   dependency manifests and lockfile, root configuration, a package's manifest,
   build or test configuration and test setup, `internal/` (the test harness
   included), `theme-build` paths (tokens and themes), Storybook configuration,
@@ -383,7 +385,8 @@ accessibility roster and the whole-repository spec-test contracts and their
 evidence uploads run only on `release-check` in this workflow.
 The release path retains the complete suite and cannot substitute a scoped result.
 
-Rejected: a separate workflow, per-push full audits, and treating a maintenance
+Rejected: a separate workflow, per-push full audits (DEC-7 supersedes this for
+pushes to `main`), and treating a maintenance
 capture, skipped check, a checked SHA no longer in current `main` history, or
 retroactive status as release evidence.
 
@@ -419,7 +422,9 @@ A pull request's Vitest legs and browser audits follow what its change reaches:
 the module graph for tests and built-bundle reach for components. Tests that
 read sources through the file system run whole, because no import reaches what
 they read. Shared infrastructure, uncertainty, `main`, merge-group entries and
-release checks run everything, so no landing or release gate narrows.
+release checks run everything, so no landing or release gate narrows; a pull
+request runs the visual, accessibility and RTL owners only with the
+`ci:heavy-lanes` label (DEC-7).
 
 Rejected: a full run triggered by approval, a label or a draft-to-ready change,
 which tests the pull request's head rather than the merged result.
