@@ -3538,6 +3538,49 @@ test.describe('search tab, the cancel button', () => {
     await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('search ending while it is still pressed plays the circle back: it rests at its bar size (62 px), not pressed', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    const cancel = page.getByRole('button', {name: 'Cancel'});
+    await expect(cancel).toHaveAttribute('data-tab-bar-search-cancel', '');
+    const circleGlass = page.locator('[data-tab-bar-search] > span').first();
+    await waitForRest(page.locator('[data-tab-bar-search]'));
+    await waitForRest(circleGlass);
+    const box = await cancel.boundingBox();
+    if (box == null) {
+      throw new Error('no cancel button');
+    }
+    await driver.play(
+      tapScript(
+        {x: box.x + box.width / 2, y: box.y + box.height / 2},
+        {holdMs: 900},
+      ),
+      {
+        onEvent: async (_step, index) => {
+          if (index !== 0) {
+            return;
+          }
+          // Pressed, the circle grows; then Escape in the field ends search
+          // under the held finger.
+          await expect
+            .poll(async () => (await circleGlass.boundingBox())?.width ?? 0)
+            .toBeGreaterThan(55);
+          await page.getByRole('searchbox', {name: 'Search'}).press('Escape');
+          await expect(cancel).not.toHaveAttribute(
+            'data-tab-bar-search-cancel',
+            '',
+          );
+        },
+      },
+    );
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await waitForRest(page.locator('[data-tab-bar-search]'));
+    await waitForRest(circleGlass);
+    expect((await circleGlass.boundingBox())?.width ?? 0).toBeCloseTo(62, 0);
+  });
+
   test.describe('with Reduce Motion (design:reduced-motion)', () => {
     test('a press scales nothing', async ({page, browserName}) => {
       test.skip(
