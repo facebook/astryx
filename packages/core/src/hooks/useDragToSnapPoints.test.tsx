@@ -42,9 +42,7 @@ beforeEach(() => {
       playState: 'running',
       ready: new Promise(() => {}),
       finish() {},
-      cancel() {
-        cancels += 1;
-      },
+      cancel() {},
     };
     requestAnimationFrame(() => {
       start ??= performance.now();
@@ -62,8 +60,6 @@ const POINTS = [0, 240, 480];
 
 /** The keyframes of every animation the element played, in order. */
 const played: (Keyframe[] | PropertyIndexedKeyframes | null)[] = [];
-/** How many animations were cancelled. */
-let cancels = 0;
 
 function Drawer({
   onSettle,
@@ -197,7 +193,7 @@ describe('useDragToSnapPoints', () => {
     expect(onSettle).toHaveBeenLastCalledWith(2);
   });
 
-  it('an option changed during a settle leaves that settle running', async () => {
+  it('an option changed during a settle carries that settle on to its point, from where the element is', async () => {
     const settlers = new Set<(index: number) => void>();
     const onSettle = vi.fn();
     function Sheet({flickThreshold}: {flickThreshold: number}) {
@@ -218,11 +214,15 @@ describe('useDragToSnapPoints', () => {
       await vi.advanceTimersByTimeAsync(150);
     });
     played.length = 0;
-    cancels = 0;
     rerender(<Sheet flickThreshold={600} />);
-    // Nothing restarted or cut short.
-    expect(played).toHaveLength(0);
-    expect(cancels).toBe(0);
+    // The drag is created again with the new option, and the settle carries
+    // on to 480 from where the element was: never from 0, never a jump.
+    const frames = played[0] as Keyframe[];
+    const yOf = (frame: Keyframe | undefined) =>
+      Number.parseFloat(String(frame?.translate ?? '').split(' ')[1] ?? '');
+    expect(yOf(frames[0])).toBeGreaterThan(0);
+    expect(yOf(frames[0])).toBeLessThan(480);
+    expect(yOf(frames.at(-1))).toBeCloseTo(480, 0);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
