@@ -441,29 +441,35 @@ test('removing the last row: its exit never paints over the content after the li
   await expect(leaving(page)).toHaveCount(0, {timeout: 3000});
 });
 
-test('the glides do no Layout or Paint per frame', async ({
-  page,
-  browserName,
-}) => {
-  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
-  await open(page);
-  let window = {from: 0, to: 0};
-  const trace = await traceRendering(page, async () => {
-    await press(page, 'Insert a row second');
-    const starts = await startTimes(page);
-    const durations = await page.evaluate(() =>
-      document
-        .getAnimations()
-        .map(animation => Number(animation.effect?.getTiming().duration)),
-    );
-    const from = Math.min(...starts);
-    window = {from, to: from + Math.max(...durations)};
-    await page.waitForTimeout(Math.max(...durations) + 100);
+for (const [change, button] of [
+  ['an insert', 'Insert a row second'],
+  ['a removal', 'Remove the second row'],
+  ['a reorder', 'Move the last row first'],
+] as const) {
+  test(`${change}: the motion does no Layout or Paint per frame`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+    await open(page);
+    let window = {from: 0, to: 0};
+    const trace = await traceRendering(page, async () => {
+      await press(page, button);
+      const starts = await startTimes(page);
+      const durations = await page.evaluate(() =>
+        document
+          .getAnimations()
+          .map(animation => Number(animation.effect?.getTiming().duration)),
+      );
+      const from = Math.min(...starts);
+      window = {from, to: from + Math.max(...durations)};
+      await page.waitForTimeout(Math.max(...durations) + 100);
+    });
+    const during = countBetween(trace, window.from + 30, window.to - 30);
+    expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
+    expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
   });
-  const during = countBetween(trace, window.from + 30, window.to - 30);
-  expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
-  expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
-});
+}
 
 test('a row swiped away with a removal action exits in place as it was on screen, as itself with no element added, while the rows after it glide up', async ({
   page,
