@@ -1157,9 +1157,15 @@ jobs:
           echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
           echo "found=true" >> "$GITHUB_OUTPUT"
 
+      # The merge base's dependencies install either way: measuring bundles
+      # each base component with esbuild, which resolves its imports there.
+      - name: Install the merge base's dependencies
+        if: (steps.merge-base.outputs.found == 'true') && steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
+        working-directory: .size-base
+        run: pnpm install --frozen-lockfile
+
       # Main keeps each commit's package builds for 14 days. A merge base on
-      # main within that window is measured from them, with no install or
-      # build.
+      # main within that window is measured from them, with no build.
       - name: Find main's build of the merge base
         id: cached
         continue-on-error: true
@@ -1171,8 +1177,14 @@ jobs:
           retries: 3
           script: |
             const name = `dists-main-${process.env.BASE_SHA}`;
-            const {data} = await github.rest.actions.listArtifactsForRepo({...context.repo, name, per_page: 1});
-            const artifact = data.artifacts.find(candidate => !candidate.expired);
+            const {data} = await github.rest.actions.listArtifactsForRepo({...context.repo, name, per_page: 100});
+            // Only Main's own run on main for this exact commit: a pull
+            // request's run can upload an artifact under any name.
+            const artifact = data.artifacts.find(candidate =>
+              !candidate.expired &&
+              candidate.workflow_run?.head_branch === 'main' &&
+              candidate.workflow_run?.head_sha === process.env.BASE_SHA &&
+              candidate.workflow_run?.head_repository_id === candidate.workflow_run?.repository_id);
             core.setOutput('run_id', artifact ? String(artifact.workflow_run.id) : '');
             core.info(artifact ? `Using ${name} from run ${artifact.workflow_run.id}.` : `No ${name}; building the merge base.`);
 
@@ -1197,7 +1209,6 @@ jobs:
           BASE_SHA: ${{ steps.merge-base.outputs.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          pnpm install --frozen-lockfile
           pnpm -F @astryxdesign/build build
           pnpm -F @astryxdesign/core build
           for pkg in lab charts richtext vega; do

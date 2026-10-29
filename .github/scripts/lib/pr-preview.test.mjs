@@ -814,6 +814,12 @@ describe('PR comment preview reconciliation', () => {
     expect(result.body).not.toContain('facebook.github.io/astryx/pr/');
   });
 
+  it('says nothing about previews on a draft', async () => {
+    const {result} = await reconcile({value: identity({draft: true})});
+    expect(result.body).not.toContain('Preview availability');
+    expect(result.body).not.toContain('View Storybook for this PR');
+  });
+
   it('keeps current trustworthy analysis when source CI fails', async () => {
     const value = identity({sourceConclusion: 'failure'});
     const {result} = await reconcile({value});

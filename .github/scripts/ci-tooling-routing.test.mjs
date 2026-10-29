@@ -251,8 +251,21 @@ describe('Node-tooling CI routing', () => {
     expect(download.with.name).toBe(
       'dists-main-${{ steps.merge-base.outputs.sha }}',
     );
-    expect(step(job, "Build the merge base's component packages").if).toContain(
-      "steps.download.outcome != 'success'",
+    const build = step(job, "Build the merge base's component packages");
+    expect(build.if).toContain("steps.download.outcome != 'success'");
+    expect(build.run).not.toContain('pnpm install');
+    // Measuring needs the base's dependencies on both paths.
+    const install = step(job, "Install the merge base's dependencies");
+    expect(install.run).toBe('pnpm install --frozen-lockfile');
+    expect(install.if).not.toContain('steps.download');
+    // Only Main's own run on main for the merge-base commit counts.
+    const find = step(job, "Find main's build of the merge base").with.script;
+    expect(find).toContain("candidate.workflow_run?.head_branch === 'main'");
+    expect(find).toContain(
+      'candidate.workflow_run?.head_sha === process.env.BASE_SHA',
+    );
+    expect(find).toContain(
+      'candidate.workflow_run?.head_repository_id === candidate.workflow_run?.repository_id',
     );
   });
 
