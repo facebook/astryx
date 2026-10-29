@@ -407,8 +407,8 @@ failure on `main` is repaired forward with an atomic pull request, not reverted
 first. This supersedes DEC-5's choice to keep these checks off main pushes:
 running the browser suites on every update of every open pull request costs
 far more than running them once per merge burst on `main`. The label opts a
-pull request into the same head-scoped owners every pull request ran before; it
-adds no run of its own, and the merged result is checked on `main`, so it is not
+pull request into the head-scoped owners FR13 describes; it adds no run of its
+own, and the merged result is checked on `main`, so it is not
 the label-triggered full run DEC-6 rejects.
 
 Rejected: keeping the suites on every pull request update (spend); a separate
