@@ -219,6 +219,18 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('tracks a pen like a finger: a pen slid from Bold to Underline lights Underline and toggles it once (FR5)', () => {
+    const {a, c, onChange} = mount();
+    pointer('pen', 'pointerdown', a, centerOf(A));
+    expect(paintOf(a)).toBe('on');
+    pointer('pen', 'pointermove', a, centerOf(C));
+    expect(paintOf(c)).toBe('on');
+    expect(paintOf(a)).toBeNull();
+    pointer('pen', 'pointerup', c, centerOf(C));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(['underline']);
+  });
+
   it("a mouse under a fine pointer: a press slid from Bold to Underline toggles Underline once, and the browser's own click toggles nothing more (FR5)", () => {
     finePrimaryPointer();
     const {group, a, c, onChange} = mount();
