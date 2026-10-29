@@ -309,9 +309,8 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('designDecision.approved');
     expect(reconciler).toContain('themeDecision.approved');
     expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
-    expect(reconciler).toContain('expectedHeadOid: $oid');
-    expect(reconciler).toContain('mergeMethod: SQUASH');
-    expect(reconciler).toContain('disablePullRequestAutoMerge');
+    // The gate decides approval only; merging stays with the merge path.
+    expect(reconciler).not.toContain('enablePullRequestAutoMerge');
   });
 
   it('derives the comment trigger from the parser\u2019s own prefixes', () => {
@@ -332,25 +331,6 @@ describe('spec-only workflow contract', () => {
     for (const prefix of triggerPrefixes) {
       expect(prefix.trimEnd(), prefix).toBe(prefix);
     }
-  });
-
-  it('offers a backfill dispatch that publishes status without landing', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain('backfill:');
-    expect(workflow).toContain('type: boolean');
-    expect(reconciler).toContain("context.eventName === 'workflow_dispatch'");
-    expect(reconciler).toContain('backfillOnly');
-    // The guard must sit after the terminal status and before enablement.
-    const publish = reconciler.indexOf(
-      "setFinalStatus(initialHead, 'success', successDescription)",
-    );
-    const guard = reconciler.indexOf('if (backfillOnly) {');
-    const enable = reconciler.indexOf('enablePullRequestAutoMerge');
-    expect(publish).toBeGreaterThan(-1);
-    expect(guard).toBeGreaterThan(publish);
-    expect(enable).toBeGreaterThan(guard);
   });
 
   it('keeps the last read before a terminal write on the live pull request', () => {

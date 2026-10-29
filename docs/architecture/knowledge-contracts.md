@@ -717,7 +717,7 @@ this flow passes the historical review benchmark and is enforced on pull request
   current design and theme records, normative design assets, and DD-only current
   component/module changes additionally accept `.github/DESIGNOWNERS`. A mixed
   DD plus other component/module edit requires both groups. Record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  self-authorizes. The gate decides approval only; it never enables auto-merge.
 - `.github/workflows/review-signal.yml` lets a DESIGNOWNER author bypass the
   engineering gate only when trusted-base code verifies every changed Core line
   against the fetched base/head source bytes as a conservative declaration inside

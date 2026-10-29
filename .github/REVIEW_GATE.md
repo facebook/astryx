@@ -57,13 +57,9 @@ merge publishes nothing, and neither does a run yielding to a newer one.
 GitHub has no conditional status write, so the window between the last read and
 the write cannot be closed; the gate makes it one API call wide by reading the
 live pull request last, and if a status still lands on a head that settled
-during that window, the run logs the status as unverified and stops before
-auto-merge.
+during that window, the run logs the status as unverified.
 
-The gate may enable squash auto-merge only when every changed path is a recognized spec record,
-every required owner group has approved the exact head, and all branch checks
-pass. Normative assets and indexes are outside that scope; adding any code path
-also prevents the spec-only auto-merge path.
+The gate decides approval only; it never enables auto-merge.
 
 A PR changes only spec records when every changed path is one of:
 
@@ -80,9 +76,8 @@ Pure spec-record PRs do not add Changesets because they do not release packages;
 CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks
 both sides of a rename. Pure spec-record PRs run knowledge validation, skip
-runtime/build/visual work with successful required-status acknowledgements, and
-enable squash auto-merge after owner approval. Mixed code/spec changes keep full
-CI and never gain this auto-merge path.
+runtime/build/visual work with successful required-status acknowledgements.
+Mixed code/spec changes keep full CI.
 
 ## Sources of truth
 
@@ -188,8 +183,8 @@ An open PR whose head predates the gate has no `spec-owner-approval` status at
 all. Requiring the context first would block those heads on a status no event
 will produce, because the gate only runs on a new event. Backfill first.
 
-1. Land the gate changes, so the default branch has the `backfill` dispatch
-   input. `workflow_dispatch` always runs the default branch's copy.
+1. Land the gate changes. `workflow_dispatch` always runs the default branch's
+   copy.
 2. List the heads that would strand:
 
    ```sh
@@ -203,11 +198,10 @@ will produce, because the gate only runs on a new event. Backfill first.
      done
    ```
 
-3. Backfill each one. `backfill=true` publishes the status and returns before
-   auto-merge, so a reconcile cannot land a PR nobody asked to land:
+3. Backfill each one; a reconcile only publishes the status:
 
    ```sh
-   gh workflow run spec-owner-gate.yml -f pr=<number> -f backfill=true
+   gh workflow run spec-owner-gate.yml -f pr=<number>
    ```
 
 4. Re-run the step 2 query and confirm it prints nothing.
