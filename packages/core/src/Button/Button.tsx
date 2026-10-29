@@ -153,10 +153,13 @@ const styles = stylex.create({
       // A keyboard press is the button's own (the group tracks pointers
       // only): holding Space on the focused button scales it as on any
       // button, as the tracked overlay's `:active:focus-visible` arm paints.
-      ':active:focus-visible:where(:not(:disabled,[aria-disabled="true"]))': {
-        default: 'scale(0.98)',
-        '@media (pointer: coarse)': 'scale(1)',
-      },
+      // A pointer press that starts on the focused button marks it
+      // (`data-astryx-pointer-press`): the arm steps aside for it.
+      ':active:focus-visible:where(:not(:disabled,[aria-disabled="true"],[data-astryx-pointer-press]))':
+        {
+          default: 'scale(0.98)',
+          '@media (pointer: coarse)': 'scale(1)',
+        },
     },
   },
   inactive: {
