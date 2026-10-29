@@ -23,6 +23,7 @@ import {springs} from '../motion/uikit/springs';
 import {
   createDragToSnapPoints,
   DEFAULT_FLICK_THRESHOLD,
+  updateDragToSnapPoints,
 } from './createDragToSnapPoints';
 
 // Every animate call the factory's animator makes, as the factory made it.
@@ -353,6 +354,51 @@ describe('createDragToSnapPoints', () => {
     expect(warn).toHaveBeenCalledTimes(2);
     snap.destroy();
     warn.mockRestore();
+  });
+
+  it('a drag created again starts where its predecessor left the element (spec:AST-107 FR2)', async () => {
+    const element = sheet();
+    const first = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle: () => {},
+    });
+    first.settleTo(2);
+    await vi.advanceTimersByTimeAsync(3000);
+    first.destroy();
+    // Re-created with new snap points (the handle has no update): a slow
+    // 30 px drag moves on from 480, so it settles back on 480, not on 0.
+    const onSettle = vi.fn();
+    const again = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: [0, 240, 480, 720],
+      onSettle,
+    });
+    animates.length = 0;
+    dragY(element, 30, 10, 60);
+    expect(animates.at(-1)?.target).toEqual({y: 480});
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(onSettle).toHaveBeenCalledWith(2);
+    again.destroy();
+  });
+
+  it('onSettle names the snap point reached when new snap points renumber the settle in flight', async () => {
+    const element = sheet();
+    const onSettle = vi.fn();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle,
+    });
+    // Heading for 480, the third point, which becomes the fourth.
+    snap.settleTo(2);
+    expect(updateDragToSnapPoints(snap, {snapPoints: [0, 120, 240, 480]})).toBe(
+      true,
+    );
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(onSettle).toHaveBeenCalledTimes(1);
+    expect(onSettle).toHaveBeenCalledWith(3);
+    snap.destroy();
   });
 
   it('after destroy no drag moves the element and nothing reports', async () => {
