@@ -182,7 +182,7 @@ describe('touch presentation', () => {
     });
   });
 
-  it('exports the same keys core spells, for other packages', () => {
+  it('holds the same keys the resolver defines', () => {
     expect(touchKeys.touch).toBe(`@media ${TOUCH_QUERY}`);
     expect(touchKeys.compact).toBe(`@media ${COMPACT_QUERY}`);
     expect(touchKeys.compactTouch).toBe(`@media ${COMPACT_TOUCH_QUERY}`);
