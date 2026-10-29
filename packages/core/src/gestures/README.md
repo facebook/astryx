@@ -2,8 +2,10 @@
 
 A gesture recognizer system with UIKit's semantics, for the touch
 presentations of Astryx core components. Components import it from
-`../gestures`, and Lab through internal workspace imports; nothing here is
-exported from the package.
+`../gestures`. Lab reaches its primitives through
+`@astryxdesign/core/internal/touch`, an internal entry reserved for Astryx's
+own packages (`architecture:react-component-runtime` INV13); nothing here is
+part of the public API.
 
 UIKit is the reference throughout: the same recognizer states, the same
 conflict rules, the same thresholds (from `../motion/uikit/gestures.ts`, each
@@ -212,7 +214,9 @@ assistive-technology activation keep working.
   the release takes the list's deselect clock.
 
 `paintPress(element, 'on' | 'held' | 'fading' | 'none', {releaseMs})`, in
-`utils/pressFeedback.ts`, is the one writer of `data-astryx-press`. It owns the release timer and writes
+`utils/pressFeedback.ts`, writes `data-astryx-press` for every press it tracks;
+the action-group tracker (`hooks/actionGroupTracker.ts`) writes its groups'
+presses itself. `paintPress` owns the release timer and writes
 only over values the caller may replace (by default none, `on` and
 `fading`), so a `held` row survives presses until its owner releases it
 with `onlyFrom: ['held']`.
@@ -355,8 +359,10 @@ presses nothing.
   horizontal drag under `pan-y`; that is not a claim.) Possible recognizers that share it fail, active ones are
   cancelled, and the view's press is cancelled.
 - **Clicks.** When a touch's gesture cancelled the view's touches, its
-  `touchend` is cancelled (no click and no compatibility mouse events) and a
-  one-shot guard swallows the next trusted click. A click held back for a
+  `touchend` is cancelled (no click and no compatibility mouse events) and
+  the shared click guard (`utils/clickGuard.ts`, the menu press model's
+  too) swallows the browser's next click, until the next `pointerdown` or
+  400 ms. A click held back for a
   recognizer that may still recognize (a double tap between taps) is
   swallowed at once and replayed on the original target if the recognizer
   fails. Clicks with `detail === 0` (keyboard, assistive technology, code)
@@ -390,14 +396,23 @@ shadow-tree scroller scrolls with it, as the hit path does).
 
 The host listens through `utils/inputStream.ts`, which it shares with the
 press feedback controller: one native listener per event type, on the
-window's capture phase, fanned out to every subscriber in order. Window
-capture is the earliest point a page can intercept input, so an app's
-capture-phase `stopPropagation` at the document starves neither, as UIKit's
-recognizers see touches before views do. A type's listener is passive
-unless a subscriber cancels it: the host cancels `touchend`, `click` and
-`contextmenu` there, never a `touchstart` or a `touchmove` (a blocking
-`touchmove` sits on a claiming element, or on the window only while a page
-hold is held), so a page of pressables blocks no scroll.
+window's capture phase, fanned out to every subscriber in order. It runs
+ahead of any document listener, so an app's window-capture
+`stopPropagation`, or a document-capture `stopImmediatePropagation`
+registered before core, no longer hides a touch from either, as UIKit's
+recognizers see touches before views do. A recognizer that must claim
+mid-gesture still needs the touch to reach its element, where its blocking
+`touchmove` sits, below such a stop. The stream stays ahead of an app's own
+window-capture listener only until a type's listener is re-added (a
+passivity switch, or a subscription after its last subscriber left), which
+appends it after the app's. A type's listener is passive unless a
+subscriber cancels it: the host cancels `touchend`, `click` and
+`contextmenu` there while a claiming participant is attached, never a
+`touchstart` or a `touchmove`. A blocking `touchmove` sits on a claiming
+element and on a claimed touch's target, on the document while an element a
+claiming recognizer lives in is moving (Touches on moving elements), or on
+the window only while a page hold is held, so a page of pressables blocks
+no scroll.
 
 ### Holding the page still
 
@@ -579,8 +594,8 @@ iOS WebKit hit-tests an element that a compositor animation moves where
 the animation started: it keeps the transform it resolved when the
 animation went to the compositor, so event targets, `elementFromPoint` and
 `getBoundingClientRect` stay there for the whole curve, though the inline
-style holds the end and the computed style is live (iOS 26.2, measured;
-Chromium and Linux WebKit hit what is drawn). A finger on a settling sheet
+style holds the value the curve starts from and the computed style is live
+(iOS 26.2, measured; Chromium and Linux WebKit hit what is drawn). A finger on a settling sheet
 lands on whatever sat under the sheet's start (an upward release can hit
 the scrim and close the sheet). UIKit keeps an interruptible animation
 hit-testable where it is drawn (UIViewPropertyAnimator).
@@ -594,7 +609,7 @@ there, with z-order and `pointer-events` as the engine sees them. Press
 trackers take their bounds from `presentedRect`, the reported box moved by
 the motion since. A retargeted tap cancels the engine's click,
 which would hit the start position, and clicks what it touched; the
-swallower drops a late engine click, so the tap acts once. Safari honours a
+click guard drops a late engine click, so the tap acts once. Safari honours a
 blocking `touchmove` only where it was registered before the touch began,
 on the engine's own target, which for a moving element is whatever sits
 under its start: so while an element a claiming recognizer lives in is
@@ -602,6 +617,11 @@ moving, the document carries the blocking listener, and a scroll starting
 anywhere waits on the main thread only for that long. Not covered:
 scale and rotate (a zoom transition, a lifted preview is hit at its
 unscaled box) and CSS transitions or animations the animator did not start.
+
+This is an engine workaround (`spec:AST-013` FR6). Its review condition:
+re-measure on each iOS release, and remove the correction once iOS WebKit
+hit-tests a compositor-moved element where it is drawn. Its regression
+fixture is `__tests__/presentedHitTesting.test.ts`.
 
 ## Where the web differs from UIKit
 

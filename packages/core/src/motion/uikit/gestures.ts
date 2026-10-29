@@ -287,15 +287,19 @@ export const UIKIT_VELOCITY = {
   stillness: {value: 40, unit: 'ms'},
 } as const satisfies Record<string, GestureConstant>;
 
+/**
+ * The stray-click window, kept for importers written before the click guard
+ * owned it: `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts) bounds the stray
+ * click, and `UIKIT_GESTURES` leaves this out.
+ * @deprecated Read `CLICK_GUARD_WINDOW_MS`.
+ */
 export const UIKIT_CLICK = {
   /**
-   * Longest the system waits for the browser's click after a touch it
-   * swallows. iOS and Chromium deliver it right after `touchend`; this only
-   * bounds a click that never comes.
-   * @source GUESS — A safety bound, not a UIKit number.
+   * Longest a guard waits for the browser's click after a touch it swallowed.
+   * @source GUESS — A safety bound, not a UIKit number; the click guard's own.
    * @measure M-G17
    */
-  strayClickWindow: {value: 1000, unit: 'ms'},
+  strayClickWindow: {value: 400, unit: 'ms'},
 } as const satisfies Record<string, GestureConstant>;
 
 /**
@@ -315,7 +319,6 @@ export const UIKIT_GESTURES = {
   control: UIKIT_CONTROL,
   press: UIKIT_PRESS,
   velocity: UIKIT_VELOCITY,
-  click: UIKIT_CLICK,
 } as const;
 
 /**

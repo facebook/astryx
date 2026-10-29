@@ -107,8 +107,9 @@
  *   has travelled the slop; a scroll under a finger that has not moved is
  *   the page's own and leaves the touch alone.
  * - A lift whose click must not happen cancels its `touchend` (no click, no
- *   compatibility mouse events) and arms a one-shot swallower for the next
- *   trusted click; a click held for a recognizer that may still recognize is
+ *   compatibility mouse events) and arms the shared click guard
+ *   (utils/clickGuard.ts, the menu press model's too) for the browser's next
+ *   click; a click held for a recognizer that may still recognize is
  *   replayed if they all fail. Keyboard and assistive-technology clicks
  *   (`detail === 0`) always pass.
  * - A `contextmenu` while a recognizer owns a touch is cancelled, so a long
@@ -129,7 +130,7 @@ import {
   resolvePresented,
   watchPresentedElements,
 } from '../motion/presentation';
-import {UIKIT_CLICK, UIKIT_PRESS, UIKIT_TAP} from '../motion/uikit/gestures';
+import {UIKIT_PRESS, UIKIT_TAP} from '../motion/uikit/gestures';
 import {
   browserClock,
   GestureArena,
@@ -140,7 +141,6 @@ import {
 } from './GestureArena';
 import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
 import type {PressBounds} from './PressTracker';
-import {HAPTIC_SWITCH_ATTRIBUTE} from './hapticSwitch';
 import type {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import type {PanGestureRecognizer} from './PanGestureRecognizer';
 import {createNativeScrollProbe, parentAcrossShadow} from './nativeScroll';
@@ -159,6 +159,11 @@ import type {
   TouchSample,
 } from './types';
 import {internals} from './recognizerInternals';
+import {
+  armClickGuard,
+  disarmClickGuard,
+  withoutClickGuard,
+} from '../utils/clickGuard';
 import {subscribeInput} from '../utils/inputStream';
 import {locksSelectionFor} from '../utils/selectionLock';
 import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
@@ -187,6 +192,8 @@ interface Registration {
   manageStyle: boolean;
   /** An action group (`family:action-groups` FR5). */
   actionGroup: boolean;
+  /** The attachments that asked for the action group; it lasts while one does. */
+  actionGroupAsks: number;
   /** The group's passive `pointerdown` listener under a fine pointer. */
   groupDownListener: EventListener | null;
 }
@@ -510,7 +517,6 @@ export class GestureHost {
   private claimingUnsubscribers: (() => void)[] = [];
   private readonly inputMode: 'auto' | 'pointer-events';
   private usesTouchEvents = true;
-  private swallowDeadline = Number.NEGATIVE_INFINITY;
 
   constructor(doc: Document, options: GestureHostOptions = {}) {
     this.doc = doc;
@@ -558,7 +564,12 @@ export class GestureHost {
   ): () => void {
     const registration = this.registrationFor(element);
     registration.manageStyle = options.manageStyle ?? registration.manageStyle;
-    registration.actionGroup = options.actionGroup ?? registration.actionGroup;
+    // An action group while any attachment asks, whatever their order.
+    const asksForGroup = options.actionGroup === true;
+    if (asksForGroup) {
+      registration.actionGroupAsks += 1;
+      registration.actionGroup = true;
+    }
     recognizer.view = element;
     if (options.perEventPointer === true) {
       this.perEventRecognizers.add(recognizer);
@@ -579,6 +590,10 @@ export class GestureHost {
     return () => {
       recognizer.onEnabledChange = null;
       this.perEventRecognizers.delete(recognizer);
+      if (asksForGroup) {
+        registration.actionGroupAsks -= 1;
+        registration.actionGroup = registration.actionGroupAsks > 0;
+      }
       const index = registration.recognizers.indexOf(recognizer);
       if (index >= 0) {
         registration.recognizers.splice(index, 1);
@@ -709,15 +724,27 @@ export class GestureHost {
     // drawn now; the hit test below flushes them. The engine then gets
     // z-order, pointer-events and clipping right, which no box math would.
     resolvePresented(movers);
-    const hit = this.doc.elementFromPoint(x, y);
+    let hit = this.doc.elementFromPoint(x, y);
+    // The document answers a shadow host for anything inside its open root:
+    // descend to what is drawn there.
+    while (hit?.shadowRoot != null) {
+      const inner = hit.shadowRoot.elementFromPoint(x, y);
+      if (inner == null || inner === hit) {
+        break;
+      }
+      hit = inner;
+    }
     if (hit == null || hit === native) {
       return native;
     }
+    const found = hit;
     const node = native instanceof Node ? native : null;
     const isAboutMover = movers.some(
-      mover => mover.contains(hit) || (node != null && mover.contains(node)),
+      mover =>
+        containsAlongFlatTree(mover, found) ||
+        (node != null && containsAlongFlatTree(mover, node)),
     );
-    return isAboutMover ? hit : native;
+    return isAboutMover ? found : native;
   }
 
   /** The browser took these touches (a scroll): no click of ours for them. */
@@ -731,7 +758,7 @@ export class GestureHost {
   /**
    * The click a retargeted tap earned, on what was drawn under the finger.
    * The engine's own click would hit the start position, so the caller
-   * cancels it (or the swallower drops it, a late one included) and this one
+   * cancels it (or the click guard drops it, a late one included) and this one
    * is the tap's single activation.
    */
   private clickRetargeted(target: EventTarget, x: number, y: number): void {
@@ -739,22 +766,24 @@ export class GestureHost {
     if (!(target instanceof Element) || !target.isConnected || view == null) {
       return;
     }
-    this.armSwallower();
+    armClickGuard(this.doc);
     if (
       target instanceof view.HTMLElement &&
       target.matches('input, textarea, select, [contenteditable]')
     ) {
       target.focus();
     }
-    target.dispatchEvent(
-      new view.MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        detail: 1,
-        clientX: x,
-        clientY: y,
-      }),
+    withoutClickGuard(() =>
+      target.dispatchEvent(
+        new view.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          detail: 1,
+          clientX: x,
+          clientY: y,
+        }),
+      ),
     );
   }
 
@@ -847,7 +876,11 @@ export class GestureHost {
 
   /** @internal Whether a finger that landed inside `node` is down now. */
   isFingerDownIn(node: Node): boolean {
-    return this.fingerTargets.some(target => node.contains(target));
+    // Along the flat tree: a finger on content inside an open shadow root is
+    // in the scroller around that root.
+    return this.fingerTargets.some(target =>
+      containsAlongFlatTree(node, target),
+    );
   }
 
   private registrationFor(element: Element): Registration {
@@ -863,6 +896,7 @@ export class GestureHost {
         authorTouchAction: null,
         manageStyle: true,
         actionGroup: false,
+        actionGroupAsks: 0,
         groupDownListener: null,
       };
       this.registry.set(element, registration);
@@ -1356,11 +1390,11 @@ export class GestureHost {
   }
 
   /**
-   * Keeps the touchend cancelable, and the contextmenu and click
-   * subscriptions on, only while a claimer is attached; with only watchers
-   * the touchend is passive and the other two are off. The host's click
-   * subscription takes over from a group press's own, so a click is heard
-   * once.
+   * Keeps the touchend cancelable, and the contextmenu subscription on,
+   * only while a claimer is attached; with only watchers the touchend is
+   * passive and the contextmenu is off. Clicks are the click guard's
+   * (utils/clickGuard.ts), whose one listener a window gets only once a
+   * gesture first arms it.
    */
   private syncClaimingListeners(): void {
     if (!this.isInstalled) {
@@ -1383,13 +1417,10 @@ export class GestureHost {
         );
       }
       if (isClaiming) {
-        this.groupClickUnsubscribe?.();
-        this.groupClickUnsubscribe = null;
         this.claimingUnsubscribers.push(
           subscribeInput(view, 'contextmenu', this.onContextMenu, {
             cancels: true,
           }),
-          subscribeInput(view, 'click', this.onClick, {cancels: true}),
         );
       }
     }
@@ -1452,12 +1483,14 @@ export class GestureHost {
       return;
     }
     // The window's capture phase, through the shared input stream
-    // (utils/inputStream.ts): the earliest point a page can intercept input,
-    // so an app's capture-phase stopPropagation at the document starves no
-    // recognizer, as UIKit's recognizers see touches before views do. Only
-    // the listeners that cancel are non-passive, and only while a claimer is
-    // attached (syncClaimingListeners); none of them is a touchstart or
-    // touchmove, so none of them holds a scroll.
+    // (utils/inputStream.ts): ahead of any document listener, so an app's
+    // window-capture stopPropagation, or a document-capture
+    // stopImmediatePropagation registered first, no longer hides a touch
+    // from the recognizers. A recognizer that must claim mid-gesture still
+    // needs the touch to reach its element, where its blocking touchmove
+    // sits. Only the listeners that cancel are non-passive, and only while a
+    // claimer is attached (syncClaimingListeners); none of them is a
+    // touchstart or touchmove, so none of them holds a scroll.
     this.unsubscribers = [
       // Pointer Events only: a finger comes from its pointer events alone. A
       // browser that has Touch Events still sends them for the same finger,
@@ -1875,10 +1908,11 @@ export class GestureHost {
         finger.phase === 'cancelled' ||
         !(finger.target instanceof Node) ||
         !(touch.target instanceof Node) ||
+        // Along the flat tree, both ways: the finger's target can be inside
+        // an open shadow root while its touches reach the host retargeted.
         !(
-          finger.target === touch.target ||
-          finger.target.contains(touch.target) ||
-          touch.target.contains(finger.target)
+          containsAlongFlatTree(finger.target, touch.target) ||
+          containsAlongFlatTree(touch.target, finger.target)
         )
       ) {
         continue;
@@ -1991,7 +2025,7 @@ export class GestureHost {
       if (event.cancelable) {
         event.preventDefault();
       }
-      this.armSwallower();
+      armClickGuard(this.doc);
     }
   };
 
@@ -2320,7 +2354,7 @@ export class GestureHost {
 
   private readonly onPointerDown = (event: PointerEvent): void => {
     // A new press: whatever click is still owed to the last one is not this.
-    this.disarmSwallower();
+    disarmClickGuard(this.doc);
     if (!isPointerKind(event.pointerType)) {
       return;
     }
@@ -2381,8 +2415,6 @@ export class GestureHost {
   private groupPressPointer: number | null = null;
   /** The input stream subscriptions one group press holds until it lifts. */
   private groupPressUnsubscribers: (() => void)[] = [];
-  /** The group press's own click subscription, when the host has none. */
-  private groupClickUnsubscribe: (() => void) | null = null;
 
   /**
    * A press on an action group under a fine pointer (`family:action-groups`
@@ -2414,7 +2446,7 @@ export class GestureHost {
     if (recognizers.length === 0 && consumer == null) {
       return;
     }
-    this.disarmSwallower();
+    disarmClickGuard(this.doc);
     const id = this.nextId++;
     this.pointerIds.set(event.pointerId, id);
     this.groupPressPointer = event.pointerId;
@@ -2438,9 +2470,8 @@ export class GestureHost {
    * The input one group press needs while it is held, through the shared
    * input stream (utils/inputStream.ts) like every host listener: its
    * pointer's moves and lift, and the window's own blur. The click a lift
-   * owes is the press's too (claimed presses swallow it); a host with a
-   * claimer attached already hears it, so the press subscribes to it only
-   * when the host does not, and never twice.
+   * owes is the click guard's (utils/clickGuard.ts), which hears every click
+   * through its own one listener per window.
    */
   private listenForGroupPress(isListening: boolean): void {
     for (const unsubscribe of this.groupPressUnsubscribers.splice(0)) {
@@ -2462,14 +2493,6 @@ export class GestureHost {
         }
       }),
     );
-    if (
-      !(this.isInstalled && this.isClaimingInstalled) &&
-      this.groupClickUnsubscribe == null
-    ) {
-      this.groupClickUnsubscribe = subscribeInput(view, 'click', this.onClick, {
-        cancels: true,
-      });
-    }
   }
 
   /**
@@ -2503,7 +2526,7 @@ export class GestureHost {
           {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
         ]);
         if (needsSuppression(dispositions)) {
-          this.armSwallower();
+          armClickGuard(this.doc);
         }
       } else {
         this.arena.cancelled([id], eventTime(event));
@@ -2522,23 +2545,10 @@ export class GestureHost {
     this.endGroupPress();
   };
 
-  /**
-   * The press lifted: its subscriptions go now; its click subscription stays
-   * for the click the lift dispatches in the same task, then goes too.
-   */
+  /** The press lifted: its subscriptions go now. */
   private endGroupPress(): void {
     this.groupPressPointer = null;
     this.listenForGroupPress(false);
-    const view = this.doc.defaultView;
-    const removeClick = () => {
-      this.groupClickUnsubscribe?.();
-      this.groupClickUnsubscribe = null;
-    };
-    if (view != null && typeof view.setTimeout === 'function') {
-      view.setTimeout(removeClick, 0);
-    } else {
-      removeClick();
-    }
   }
 
   private readonly onPointerMove = (event: PointerEvent): void => {
@@ -2592,7 +2602,7 @@ export class GestureHost {
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
-    // A retargeted tap's own click arms the swallower for the engine's.
+    // A retargeted tap's own click arms the click guard for the engine's.
     const landed = this.retargeted.get(id);
     this.retargeted.delete(id);
     const clicked = this.clickRetargetedTap(
@@ -2601,7 +2611,7 @@ export class GestureHost {
       dispositions.get(id),
     );
     if (!clicked && needsSuppression(dispositions)) {
-      this.armSwallower();
+      armClickGuard(this.doc);
     }
   };
 
@@ -2712,54 +2722,29 @@ export class GestureHost {
 
   // --- Clicks, menus, scrolls, focus -----------------------------------------
 
-  private armSwallower(): void {
-    this.swallowDeadline =
-      browserClock.now() + UIKIT_CLICK.strayClickWindow.value;
-  }
-
-  private disarmSwallower(): void {
-    this.swallowDeadline = Number.NEGATIVE_INFINITY;
-  }
-
-  private readonly onClick = (event: MouseEvent): void => {
-    if (browserClock.now() > this.swallowDeadline) {
-      return;
-    }
-    if (!event.isTrusted || event.detail === 0) {
-      return;
-    }
-    if (
-      event.target instanceof Element &&
-      event.target.hasAttribute(HAPTIC_SWITCH_ATTRIBUTE)
-    ) {
-      return;
-    }
-    this.disarmSwallower();
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  };
-
   private replayClick(touch: GestureTouch, allowed: boolean): void {
     if (!allowed) {
       return;
     }
     // The browser's own click was swallowed while recognizers decided; they
     // all failed, so the click the touch earned is delivered now.
-    this.disarmSwallower();
+    disarmClickGuard(this.doc);
     const target = touch.target;
     const view = this.doc.defaultView;
     if (!(target instanceof Element) || !target.isConnected || view == null) {
       return;
     }
-    target.dispatchEvent(
-      new view.MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        detail: 1,
-        clientX: touch.x,
-        clientY: touch.y,
-      }),
+    withoutClickGuard(() =>
+      target.dispatchEvent(
+        new view.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          detail: 1,
+          clientX: touch.x,
+          clientY: touch.y,
+        }),
+      ),
     );
   }
 
@@ -2956,7 +2941,9 @@ function coalescedHistory(event: PointerEvent): TouchSample[] {
 /**
  * iOS WebKit, by the one property only it implements (the engine check of
  * utils/touchPresentation.ts, which this module cannot import: it brings
- * React).
+ * React). It gates one behaviour, presented hit testing, an engine
+ * workaround (`spec:AST-013` FR6) with its review condition and regression
+ * fixture in motion/presentation.ts.
  */
 function isIosWebKit(
   view: (Window & {CSS?: Partial<typeof CSS>}) | null,

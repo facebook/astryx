@@ -198,12 +198,9 @@ describe('a recognizer that never claims (a watcher)', () => {
       ),
     );
     // At this layer every host listener comes through the shared input
-    // stream (utils/inputStream.ts), on the window's capture phase.
-    expect(active().sort()).toEqual([
-      'window click',
-      'window contextmenu',
-      'window touchend',
-    ]);
+    // stream (utils/inputStream.ts), on the window's capture phase; clicks
+    // are the click guard's, whose listener comes only once a gesture acts.
+    expect(active().sort()).toEqual(['window contextmenu', 'window touchend']);
   });
 
   it('leaves the browser every touch behavior: its direction writes no touch-action', () => {
