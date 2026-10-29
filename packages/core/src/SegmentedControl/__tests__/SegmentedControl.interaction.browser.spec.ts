@@ -1652,36 +1652,58 @@ test('a drag that starts on another segment leaves the lens alone and commits wh
   expect((await selections()).map(change => change.value)).toEqual(['table']);
 });
 
+/** The pressed segment's paint, read where its press marker changes. */
+interface PressRecord {
+  readonly press: string | null;
+  readonly image: string;
+  readonly opacity: string;
+  readonly title: string;
+}
+
 test('a finger on an unselected segment shows the shared pressed overlay and dims nothing; the lift commits it', async ({
   page,
 }) => {
   const control = await openControl(page);
   const list = control.segment('list');
-  const shown = async () =>
-    list.evaluate(element => ({
-      press: element.getAttribute('data-astryx-press'),
-      image: getComputedStyle(element).backgroundImage,
-      opacity: getComputedStyle(element).opacity,
-      title: getComputedStyle(
-        element.querySelector('[data-segment-title]') as Element,
-      ).opacity,
-    }));
-  const playing = control.driver.play(
+  // The press paint lasts only while the finger is down, so the page records
+  // it as it changes: a poll from the test can miss that window (WebKit's
+  // input commands and the test's reads share one channel).
+  await list.evaluate(element => {
+    const records: PressRecord[] = [];
+    (window as unknown as {__pressRecords: PressRecord[]}).__pressRecords =
+      records;
+    new MutationObserver(() => {
+      records.push({
+        press: element.getAttribute('data-astryx-press'),
+        image: getComputedStyle(element).backgroundImage,
+        opacity: getComputedStyle(element).opacity,
+        title: getComputedStyle(
+          element.querySelector('[data-segment-title]') as Element,
+        ).opacity,
+      });
+    }).observe(element, {
+      attributes: true,
+      attributeFilter: ['data-astryx-press'],
+    });
+  });
+  await control.driver.play(
     touchTap(await clientCenter(control, 'list'), {holdMs: 400}),
+  );
+  const records = await page.evaluate(
+    () => (window as unknown as {__pressRecords: PressRecord[]}).__pressRecords,
   );
   // The system's press paint, as everywhere else under a finger: the press
   // controller marks the segment once it believes the press, and the shared
   // overlay paints it.
-  await expect.poll(async () => (await shown()).press).toBe('on');
-  const held = await shown();
+  const held = records.find(record => record.press === 'on');
+  expect(held, JSON.stringify(records)).toBeDefined();
   // While the controller paints, the overlay is its image layer.
-  expect(held.image).toContain('gradient');
+  expect(held?.image).toContain('gradient');
   // Nothing dims: not the segment, not its title.
-  expect({opacity: held.opacity, title: held.title}).toEqual({
+  expect({opacity: held?.opacity, title: held?.title}).toEqual({
     opacity: '1',
     title: '1',
   });
-  await playing;
   await expect(list).toHaveAttribute('aria-checked', 'true');
   await expect(list).toHaveCSS('opacity', '1');
   await expect(list).not.toHaveAttribute('data-pressed');
