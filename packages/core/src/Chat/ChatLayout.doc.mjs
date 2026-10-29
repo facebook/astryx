@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Layout',
   description:
-    'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. In Safari on iOS (in the browser and as a home-screen app), where the visual viewport shrinks for the software keyboard, the composer rides on top of the keyboard, in step with it, and a conversation at its newest message stays there; in Chrome on Android it rides Gboard\u2019s slides in step with them, and in Firefox for Android, where the visual viewport shrinks too, it moves above the keyboard once Firefox reports it. On a touch screen every way into the composer\u2019s text (a tap, the keyboard\u2019s previous and next buttons, Tab, the input\u2019s focus()) focuses it without scrolling the page; under a mouse the browser\u2019s own focus applies. Where your page sets interactive-widget=resizes-content, Chrome on Android shrinks the page for the keyboard itself and the composer stays above it without moving (see the browser-support guide).',
+    'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. In Safari on iOS (in the browser and as a home-screen app), where the visual viewport shrinks for the software keyboard, the composer rides on top of the keyboard, in step with it, and a conversation at its newest message stays there; in Chrome on Android it rides Gboard\u2019s slides in step with them, and in Firefox for Android, where the visual viewport shrinks too, it moves above the keyboard once Firefox reports it. On a touch screen, in a top-level page, every way into the composer\u2019s text (a tap, the keyboard\u2019s previous and next buttons, Tab, the input\u2019s focus()) focuses it without scrolling the page; under a mouse or inside an iframe the browser\u2019s own focus applies. Where your page sets interactive-widget=resizes-content, Chrome on Android shrinks the page for the keyboard itself and the composer stays above it without moving (see the browser-support guide).',
   props: [
     {
       name: 'children',
@@ -125,7 +125,7 @@ export const docs = {
         name: 'Composer',
         required: true,
         description:
-          'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer. On a touch screen its wrapper (without the scroll button) is a group named "Message composer", and under a mouse a plain container. When the keyboard\u2019s Done ends typing, focus rests on that group (it is no tab stop), so the next tap or Tab starts from the composer.',
+          'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer. On a touch screen its wrapper (without the scroll button) is a group named "Message composer", and under a mouse a plain container. In a top-level page, when the keyboard\u2019s Done ends typing, focus rests on that group (it is no tab stop), so the next tap or Tab starts from the composer.',
       },
       {
         name: 'Empty state',
@@ -141,7 +141,7 @@ export const docsZh = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
   description:
-    '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在 iOS 上的 Safari（浏览器中和添加到主屏幕的网页应用）中，可视视口会随软键盘缩小，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；在 Android 上的 Chrome 中，编写器随 Gboard 的滑动同步移动；在 Android 上的 Firefox 中，可视视口同样会缩小，编写器会在 Firefox 报告键盘后移到键盘上方。在触摸屏上，进入编写器文本的每种方式（轻点、键盘的上一项和下一项按钮、Tab、输入框的 focus()）都会聚焦它而不滚动页面；使用鼠标时沿用浏览器自身的聚焦行为。如果页面设置了 interactive-widget=resizes-content，Android 上的 Chrome 会自行为键盘缩小页面，编写器停在键盘上方而不移动（参见浏览器支持指南）。',
+    '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在 iOS 上的 Safari（浏览器中和添加到主屏幕的网页应用）中，可视视口会随软键盘缩小，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；在 Android 上的 Chrome 中，编写器随 Gboard 的滑动同步移动；在 Android 上的 Firefox 中，可视视口同样会缩小，编写器会在 Firefox 报告键盘后移到键盘上方。在触摸屏上的顶层页面中，进入编写器文本的每种方式（轻点、键盘的上一项和下一项按钮、Tab、输入框的 focus()）都会聚焦它而不滚动页面；使用鼠标或在 iframe 中时沿用浏览器自身的聚焦行为。如果页面设置了 interactive-widget=resizes-content，Android 上的 Chrome 会自行为键盘缩小页面，编写器停在键盘上方而不移动（参见浏览器支持指南）。',
   propDescriptions: {
     children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
     composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
@@ -158,7 +158,7 @@ export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
   description:
-    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; in Safari on iOS and Chrome on Android (Gboard) the composer rides the software keyboard in step; in Firefox for Android it moves above the keyboard once reported (Chrome with interactive-widget=resizes-content: the page resizes, no move); transcript stays at newest msg, on a touch screen every focus route (tap, prev/next, Tab, focus()) w/o page scroll and Done rests focus on the composer group named "Message composer" (no tab stop); under a mouse: browser focus, plain dock',
+    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; in Safari on iOS and Chrome on Android (Gboard) the composer rides the software keyboard in step; in Firefox for Android it moves above the keyboard once reported (Chrome with interactive-widget=resizes-content: the page resizes, no move); transcript stays at newest msg, on a touch screen in a top-level page every focus route (tap, prev/next, Tab, focus()) w/o page scroll and Done rests focus on the composer group named "Message composer" (no tab stop); under a mouse: plain wrapper, browser focus; in an iframe: browser focus',
   usage: {
     bestPractices: [
       {
