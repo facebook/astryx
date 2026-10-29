@@ -36,10 +36,13 @@
  *
  * CSS: a style that implements a touch surface or input mode is applied with
  * `touchModes` (`stylex.props(touchModes && styles.touchMode)`), never as a
- * bare media key on a base style, so a pinned `'popover'` keeps none of it;
- * touch-only rules inside it stay nested as IOS_TOUCH_STYLE_KEYS spell. On
- * the server `touchModes` is false and `'adaptive'` is the popover (the
- * surfaces open only after hydration), unless a server hint says otherwise.
+ * bare media key on a base style, so a pinned `'popover'` keeps none of it.
+ * A rule inside it that needs the touch query uses the touch presentation's
+ * touch key; the iOS `@supports` gate is only for the one style iOS WebKit
+ * itself requires (the 16px text-size floor), never for a touch mode. On the
+ * server and while hydrating, `touchModes` is false and `'adaptive'` is the
+ * popover: a touch surface or mode opens only after hydration
+ * (`spec:AST-094` FR13), and no hint changes that.
  *
  * SYNC: When modified, update presentation.test.ts.
  */
@@ -71,10 +74,11 @@ export interface PresentationOptions {
   readonly whenOmitted?: PresentationDefault;
 }
 
-export interface UsePresentationOptions extends PresentationOptions {
-  /** The touch presentation to assume before hydration (useTouchPresentation's hint). */
-  readonly serverDefault?: Partial<TouchPresentation>;
-}
+/**
+ * usePresentation's options. There is no server hint: the server and
+ * hydrating render never present touch modes (`spec:AST-094` FR13).
+ */
+export type UsePresentationOptions = PresentationOptions;
 
 export interface ReadPresentationOptions extends PresentationOptions {
   /** The window to read; the global one by default. */
@@ -106,13 +110,13 @@ export function resolvePresentation(
 /**
  * The presentation now, following the pointer and the size as they change
  * (a tablet docking a trackpad). SSR-safe: renders the server default (not
- * touch, not compact) until hydrated unless `serverDefault` says otherwise.
+ * touch, not compact) until hydrated (`spec:AST-094` FR13).
  */
 export function usePresentation(
   presentation: AdaptivePresentation | undefined,
-  {whenOmitted = 'popover', serverDefault}: UsePresentationOptions = {},
+  {whenOmitted = 'popover'}: UsePresentationOptions = {},
 ): ResolvedPresentation {
-  const touch = useTouchPresentation(serverDefault);
+  const touch = useTouchPresentation();
   return useMemo(
     () => resolvePresentation(presentation, touch, whenOmitted),
     [presentation, touch, whenOmitted],
