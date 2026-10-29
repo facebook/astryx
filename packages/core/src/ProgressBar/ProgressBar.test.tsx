@@ -1074,11 +1074,7 @@ function rulesOf(
     }
   };
   for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      visit(sheet.cssRules, []);
-    } catch {
-      // ignore cross-origin sheets
-    }
+    visit(sheet.cssRules, []);
   }
   return out;
 }
