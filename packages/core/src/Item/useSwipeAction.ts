@@ -477,8 +477,6 @@ interface Drag {
   confirmAt: number;
   /** The side's outermost entry can fire (not disabled). */
   canConfirm: boolean;
-  /** The state the row had when the touch was claimed, for a swipe that never began. */
-  previous: SwipeState;
   /** Past UIKit's threshold: the row follows the finger. */
   started: boolean;
   /** Which way the finger crossed the threshold: +1 toward the side, -1 away. */
@@ -1021,7 +1019,6 @@ export function useSwipeAction({
       confirmAt: confirmPoint(layout.openWidth, rowWidth),
       isArmed: false,
       layout,
-      previous: stateRef.current,
       raw: 0,
       rowWidth,
       started: false,
@@ -1095,19 +1092,15 @@ export function useSwipeAction({
     }
   };
 
-  /** A claimed touch that never became a swipe: the row carries on as it was. */
-  const abandon = (drag: Drag) => {
-    setSwipeState(drag.previous);
-  };
-
   const release = (pan: PanGestureRecognizer) => {
     const drag = dragRef.current;
     dragRef.current = null;
     if (drag == null) {
       return;
     }
+    // A claimed touch that never became a swipe changed nothing: the row
+    // carries on as it is, a settle under it landing as it would have.
     if (!drag.started) {
-      abandon(drag);
       return;
     }
     const {layout} = drag;
@@ -1137,7 +1130,6 @@ export function useSwipeAction({
       return;
     }
     if (!drag.started) {
-      abandon(drag);
       return;
     }
     settle(drag.layout, 0, 'idle', undefined, 'release');
