@@ -12,8 +12,9 @@
  * are UIDatePicker's inline calendar's (motion/uikit/datePicker.ts `calendar.monthYearWheels`):
  * the month wheel loops (December is followed by January, the year
  * unchanged), and a year that lacks the month shown in the range turns the
- * month wheel onto the nearest reachable month, on the picker's own column
- * turn (`datePicker.wheels.columnTurn`), instead of making it jump. With a mouse they are today's: a
+ * month wheel onto the nearest reachable month, on the wheel's own spin
+ * (`picker.tapSpin` on `timing.curves.move`, UIKit's animated
+ * `setContentOffset`), instead of making it jump. With a mouse they are today's: a
  * finite month list, and a year change clamps the month at once.
  *
  * It occupies exactly the same box as the month pager, so opening it never
@@ -36,15 +37,6 @@ import {dateInputTouchGeometry} from './tokens.stylex';
 import {datePicker} from '../motion/uikit/datePicker';
 import {Wheel, type WheelHandle, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
-
-/**
- * UIDatePicker's turn of a column it moves by itself
- * (`datePicker.wheels.columnTurn`).
- */
-const COLUMN_TURN = {
-  duration: datePicker.wheels.columnTurn.durationMs / 1000,
-  curve: datePicker.wheels.columnTurn.curve,
-};
 
 const styles = stylex.create({
   wheels: {
@@ -169,7 +161,6 @@ export function MonthYearWheels({
           if (isTouch && clamped !== candidate) {
             void monthWheelRef.current?.spinTo(
               fromMonthIndex(clamped).month - 1,
-              COLUMN_TURN,
             );
           }
           onChange(clamped);
