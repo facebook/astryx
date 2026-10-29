@@ -27,6 +27,7 @@
  *   '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': 'opacity',
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 'none',
  *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     default: null,
  *     '@media (pointer: coarse)': 'opacity',
  *     '@media (not (pointer: coarse))': 'none',
  *   },
@@ -37,8 +38,11 @@
  *     reducedMotionFadeConsts.duration,
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': '0s',
  *   // The twin on a theme's reducedMotion: 'always' mark (spec:AST-108 FR6),
- *   // at the same pointer split; a bare arm's twin nests '@media all'.
+ *   // at the same pointer split; a bare arm's twin nests '@media all'. Its
+ *   // `default: null` emits no rule, and lets StyleX's types read the twin's
+ *   // values as the property's, which a typed `xstyle` requires.
  *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     default: null,
  *     '@media (pointer: coarse)': reducedMotionFadeConsts.duration,
  *     '@media (not (pointer: coarse))': '0s',
  *   },
