@@ -2203,6 +2203,13 @@ test(
 /** uikit/tabBar.ts: the accessory's springs. */
 const ACCESSORY_COLLAPSE = {response: 0.405, dampingFraction: 0.745};
 const ACCESSORY_EXPAND = {response: 0.329, dampingFraction: 0.731};
+/** A spring step's rate of change at `t` ms, per second. */
+function stepRate(
+  spring: {response: number; dampingFraction: number},
+  t: number,
+): number {
+  return (springStep(spring, t + 0.5) - springStep(spring, t - 0.5)) * 1000;
+}
 
 const accessory = (page: Page) => page.locator('[data-tab-bar-accessory]');
 
@@ -2369,14 +2376,29 @@ test.describe('bottom accessory', () => {
     page,
   }) => {
     const {driver} = await openBar(page, 'bottom-accessory');
-    // Just past the trigger, the finger at rest before it lifts (so the page
-    // stops at the lift), and the circle tapped at once: the turn comes
-    // while the accessory moves fast.
-    await scrollByFinger(page, driver, 80, {settle: false, restMs: 40});
+    // The latest start among the accessory's running animations, on the
+    // document timeline: the animator sets each one.
+    const startOf = () =>
+      accessory(page).evaluate(element => {
+        const starts = element
+          .getAnimations()
+          .filter(
+            animation =>
+              animation.playState === 'running' && animation.startTime != null,
+          )
+          .map(animation => Number(animation.startTime));
+        return starts.length === 0 ? null : Math.max(...starts);
+      });
+    // Just past the trigger, the finger at rest long enough that the page
+    // doesn't fling (a tap on a flinging page only stops it), then the circle
+    // tapped at once: the turn comes while the accessory still moves.
+    await scrollByFinger(page, driver, 80, {settle: false, restMs: 100});
     await expect(accessory(page)).toHaveAttribute(
       'data-tab-bar-accessory',
       'inline',
     );
+    await expect.poll(startOf).not.toBeNull();
+    const collapseStart = Number(await startOf());
     const target = await circle(page).boundingBox();
     if (target == null) {
       throw new Error('no circle');
@@ -2389,18 +2411,28 @@ test.describe('bottom accessory', () => {
       'data-tab-bar-accessory',
       'expanded',
     );
+    await expect.poll(startOf).toBeGreaterThan(collapseStart);
+    const turnedAt = Number(await startOf()) - collapseStart;
     await holdAnimations(page, accessory(page));
     const [first, second] = await sampleCurve(accessory(page), [0, 16.667]);
     await releaseAnimations(page, {finish: true});
-    // It was moving down into its inline place: the turn keeps that speed,
-    // so its first frame back stays lower (further from its rest above) than
-    // the expand spring from rest would leave it.
-    const fromRest =
-      first.transform.translateY * (1 - springStep(ACCESSORY_EXPAND, 16.667));
+    // The collapse ran from rest: at the turn it had covered this share of
+    // its distance, so the offset it turns from gives the distance, and its
+    // rate there gives its speed.
+    const share = springStep(ACCESSORY_COLLAPSE, turnedAt);
+    const collapseSpeed =
+      (first.transform.translateY / share) *
+      stepRate(ACCESSORY_COLLAPSE, turnedAt);
+    // The expand spring from that offset with that speed (a spring's answer
+    // to a starting speed is its step's rate over its natural rate squared).
+    const naturalRate = (2 * Math.PI) / ACCESSORY_EXPAND.response;
+    const predicted =
+      first.transform.translateY * (1 - springStep(ACCESSORY_EXPAND, 16.667)) +
+      (collapseSpeed * stepRate(ACCESSORY_EXPAND, 16.667)) / naturalRate ** 2;
     expect(
-      second.transform.translateY - fromRest,
-      JSON.stringify({first, second, fromRest}),
-    ).toBeGreaterThan(0.5);
+      Math.abs(second.transform.translateY - predicted),
+      JSON.stringify({first, second, turnedAt, collapseSpeed, predicted}),
+    ).toBeLessThan(0.5);
   });
 
   test('its content takes taps above the bar and inline, never choosing a tab', async ({
