@@ -154,6 +154,22 @@ not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
 two steps per frame, which never fails it. Move a proof's element at least two
 steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
 
+On a two-core runner the software compositor and the screencast share the core
+the block spins on, so every compositor animation presents fewer frames there:
+Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
+7 of 10 runs while it moved on every frame the compositor presented. Judge such
+a proof against a control instead of a rate: `startBusyControl(page)` shows a
+small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
+dialog opened before it; `raise()` after one opened later) whose transform
+moves it along the top edge for as long as the page runs. Track it from the
+same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
+as `control`: the component passes when it moved on every frame the control
+moved and its longest stall is no longer than the control's. Both are read from
+the same screencast frames, so a compositor animation misses none. A window in
+which the control moved on fewer than four frames fails, since the machine
+presented too little to judge.
+A main-thread animation still fails: the control moves and it does not.
+
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. Pass when the compositor presented each frame (epoch ms on the
 page clock, from a trace of `Display::FrameDisplayed`) as `presented`. A gap between two moved
