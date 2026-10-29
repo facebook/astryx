@@ -544,22 +544,6 @@ const densityStyles = stylex.create({
 // =============================================================================
 
 /**
- * A universal item primitive that unifies the "start content + label +
- * description + end content" layout pattern. Use as a building block for list items,
- * menu items, contact rows, notification items, and more.
- *
- * @example
- * ```
- * <Item
- *   startContent={<Avatar src={user.avatar} size="sm" />}
- *   label={user.name}
- *   description={user.role}
- *   endContent={<Badge>Admin</Badge>}
- *   onClick={() => navigate(`/users/${user.id}`)}
- * />
- * ```
- */
-/**
  * Whether a click came from a finger: the click's own pointer type where the
  * engine reports one, else the primary pointer (TOUCH_QUERY, one touch
  * model).
@@ -576,6 +560,22 @@ function isTouchClick(event: MouseEvent): boolean {
   );
 }
 
+/**
+ * A universal item primitive that unifies the "start content + label +
+ * description + end content" layout pattern. Use as a building block for list items,
+ * menu items, contact rows, notification items, and more.
+ *
+ * @example
+ * ```
+ * <Item
+ *   startContent={<Avatar src={user.avatar} size="sm" />}
+ *   label={user.name}
+ *   description={user.role}
+ *   endContent={<Badge>Admin</Badge>}
+ *   onClick={() => navigate(`/users/${user.id}`)}
+ * />
+ * ```
+ */
 export function Item({
   as: Component = 'div',
   marker,
