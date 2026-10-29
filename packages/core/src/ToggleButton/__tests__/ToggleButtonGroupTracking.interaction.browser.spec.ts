@@ -38,6 +38,29 @@ const centerOf = async (locator: Locator): Promise<Point> => {
 const slide = (from: Point, to: Point) =>
   drag(from, to, {durationMs: 240, hz: 60, holdMs: 60, restMs: 120});
 
+/**
+ * A toggle's look once its transitions have run out. A toggle the press has
+ * just left is still easing back from the press scale; read part-way, it is
+ * neither pressed nor at rest, and how far it got depends on how fast the
+ * machine runs the page. Its settled look is the one the group decided.
+ */
+async function settledLook(toggle: Locator) {
+  await expect
+    .poll(async () =>
+      toggle.evaluate(
+        el =>
+          el
+            .getAnimations()
+            .filter(animation => animation.playState === 'running').length,
+      ),
+    )
+    .toBe(0);
+  return toggle.evaluate(el => {
+    const style = getComputedStyle(el);
+    return {image: style.backgroundImage, transform: style.transform};
+  });
+}
+
 async function open(page: Page) {
   await openStory(page, storybook(), STORY);
   const group = page.getByRole('group', {name: 'Text formatting'});
@@ -178,7 +201,9 @@ test.describe('with a mouse', () => {
     await expect
       .poll(async () => scaleOf(underline))
       .toBe('matrix(0.98, 0, 0, 0.98, 0, 0)');
-    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(await scaleOf(bold));
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(
+      (await settledLook(bold)).transform,
+    );
     await page.mouse.up();
     await expect.poll(async () => pressed(group)).toEqual([false, false, true]);
     // After the slide, focus does what a click on Underline does
@@ -209,10 +234,7 @@ test.describe('with a mouse', () => {
       .toBe('on');
     // Bold keeps its focus ring, but neither the press scale nor the
     // pressed overlay beside Underline's.
-    const look = await bold.evaluate(el => {
-      const style = getComputedStyle(el);
-      return {image: style.backgroundImage, transform: style.transform};
-    });
+    const look = await settledLook(bold);
     expect(look.image).toBe('none');
     expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(look.transform);
     await page.mouse.up();
