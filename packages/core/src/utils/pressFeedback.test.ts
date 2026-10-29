@@ -459,7 +459,7 @@ describe('the release', () => {
       'utf8',
     );
     expect(source).toMatch(
-      /calc\(\$\{pressConsts\.releaseMs\}ms \* var\(--_astryx-motion-tempo, 1\)\)/,
+      /calc\(\$\{pressConsts\.releaseMs\}ms \* min\(var\(--_astryx-motion-tempo, 1\),/,
     );
   });
 

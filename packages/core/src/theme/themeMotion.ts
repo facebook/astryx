@@ -86,6 +86,16 @@ function msOf(value: string): number {
  */
 export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
 
+/**
+ * The private custom property the reduced-motion mark carries: 1 on a Theme
+ * wrapper with `reducedMotion: 'always'` and, for the root theme, on
+ * `<html>`, so every element under the mark inherits it (`spec:AST-108` FR6).
+ * A style keys reduced motion on it where it cannot key a selector on the
+ * mark: the press release fade's clock is one constant every press style
+ * shares (`utils/interactionOverlay.stylex.ts`).
+ */
+export const REDUCED_MOTION_PROPERTY = '--_astryx-reduced-motion';
+
 /** The duration tokens at `tempo`: today's values times it, to the ms. */
 export function durationTokensAt(tempo: number): Record<string, string> {
   const tokens: Record<string, string> = {};
