@@ -170,6 +170,15 @@ which the control moved on fewer than four frames fails, since the machine
 presented too little to judge.
 A main-thread animation still fails: the control moves and it does not.
 
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on every one of them, and in each run
+its longest stall may be no longer than that run's control's, since a stall
+belongs to its run.
+
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. Pass when the compositor presented each frame (epoch ms on the
 page clock, from a trace of `Display::FrameDisplayed`) as `presented`. A gap between two moved
