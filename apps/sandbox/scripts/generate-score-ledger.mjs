@@ -195,6 +195,13 @@ function pruneSections(sections, open, component) {
   }
   const kept = {};
   for (const [id, section] of Object.entries(sections)) {
+    // A section id named like a member of Object.prototype cannot be written
+    // into the typed literal: `__proto__` would set its prototype, and any
+    // other such name takes the member's type instead of LedgerSection's.
+    if (id in Object.prototype) {
+      malformedKeys.add(`${component}.sections.${id}`);
+      continue;
+    }
     if (section == null || typeof section !== 'object' || Array.isArray(section)) {
       kept[id] = section;
       continue;
