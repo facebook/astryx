@@ -2,11 +2,10 @@
 
 'use client';
 
-import {useRef, useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {useDragToSnapPoints} from '@astryxdesign/core/hooks';
-import {useDirection} from '@astryxdesign/core/i18n';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
@@ -20,8 +19,14 @@ export default function DragToSnapPointsCard() {
   const [place, setPlace] = useState(0);
   // The places run in reading order: leftward in a right-to-left layout,
   // where the snap points are negative and so sort the other way round
-  // (design:bidirectionality DR13).
-  const isRtl = useDirection() === 'rtl';
+  // (design:bidirectionality DR13). The direction is the one the card
+  // renders in (architecture:internationalization INV11).
+  const [isRtl, setIsRtl] = useState(false);
+  useLayoutEffect(() => {
+    if (ref.current != null) {
+      setIsRtl(getComputedStyle(ref.current).direction === 'rtl');
+    }
+  }, []);
   const placeAt = (index: number) => (isRtl ? STEPS.length - 1 - index : index);
   const {settleTo} = useDragToSnapPoints(ref, {
     axis: 'x',
