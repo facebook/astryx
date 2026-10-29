@@ -1933,6 +1933,27 @@ describe('DateInput — month/year wheels', () => {
     expect(onChange).toHaveBeenLastCalledWith('2026-01-10');
   });
 
+  it('under a finger: in a year the range cuts, the looping month wheel keeps to the nearest enabled month around the seam', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2026-01-25"
+        min="2025-11-01"
+        max="2026-02-28"
+        onChange={onChange}
+      />,
+    );
+    openWheels();
+    // One ArrowUp from January crosses the seam onto December 2026, past
+    // `max`. Around the loop the nearest enabled month is January itself
+    // (February is ten rows the other way), so nothing moves or commits.
+    fireEvent.keyDown(screen.getByRole('listbox', {name: 'Month'}), {
+      key: 'ArrowUp',
+    });
+    expect(title()).toHaveTextContent('January 2026');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('under a finger: takes a year change past the range on to its nearest reachable month, date and month wheel too', async () => {
     const onChange = vi.fn();
     renderAndOpen(
