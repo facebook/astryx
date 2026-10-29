@@ -1713,13 +1713,15 @@ test.describe('minimize on scroll', () => {
     await page.addInitScript(() => {
       // A browser without scrollend: no handler property to detect, and
       // no event delivered.
-      for (const proto of [
+      // (On the global object the handler is an own property.)
+      for (const target of [
+        window,
         Window.prototype,
         Document.prototype,
         Element.prototype,
         HTMLElement.prototype,
       ]) {
-        delete (proto as unknown as {onscrollend?: unknown}).onscrollend;
+        delete (target as unknown as {onscrollend?: unknown}).onscrollend;
       }
       window.addEventListener(
         'scrollend',
