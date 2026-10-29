@@ -198,9 +198,8 @@ export function accessoryEnd(hasSearch: boolean): number {
 /**
  * The search field's box in a bar `width` px wide, from the bar's
  * inline-start edge: inline in the bar's row beside the leading circle, or
- * (active, above the keyboard) spanning the screen but for the cancel
- * button. `top` is the inline row; the active field's height above it is
- * the keyboard's (the field rides it).
+ * (active) spanning the screen but for the cancel button. `top` is the
+ * inline row, where the active field stays too.
  */
 export function searchFieldBox(width: number, isActive: boolean): AccessoryBox {
   const {barHeight, minimizedSize, searchFieldGap, barInset, searchActive} =

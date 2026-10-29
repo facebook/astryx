@@ -16,8 +16,7 @@ import {createContext, type RefObject} from 'react';
 
 /**
  * What a TabBar's search tab gives the field inside it: the element that
- * holds the field (the field moves it with the keyboard), where it is, and
- * whether it is active.
+ * holds the field, where it is, and whether it is active.
  */
 export interface TabBarSearchContextValue {
   readonly host: RefObject<HTMLElement | null>;
