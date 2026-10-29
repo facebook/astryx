@@ -176,11 +176,13 @@ function Controlled({
   onChange,
   onChangeEnd,
   orientation,
+  valueDisplay = 'none',
 }: {
   initial: number | [number, number];
   onChange?: (value: number | [number, number]) => void;
   onChangeEnd?: (value: number | [number, number]) => void;
   orientation?: 'horizontal' | 'vertical';
+  valueDisplay?: 'none' | 'tooltip' | 'text';
 }) {
   const [value, setValue] = useState<number | [number, number]>(initial);
   const report = (next: number | [number, number]) => {
@@ -190,7 +192,7 @@ function Controlled({
   return Array.isArray(value) ? (
     <Slider
       label="Level"
-      valueDisplay="none"
+      valueDisplay={valueDisplay}
       orientation={orientation}
       value={value}
       onChange={report}
@@ -199,7 +201,7 @@ function Controlled({
   ) : (
     <Slider
       label="Level"
-      valueDisplay="none"
+      valueDisplay={valueDisplay}
       orientation={orientation}
       value={value}
       onChange={report}
@@ -545,28 +547,85 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('takes a pen on a thumb as it takes a finger, and ignores a pen on the track', async () => {
+  it('takes a pen as it takes a finger: on a thumb the value follows its travel, and a tap on the track sets the value on its lift', async () => {
     stubMatchMedia(true);
     stubControlGeometry();
     const onChange = vi.fn();
     await renderTouch(<Controlled initial={50} onChange={onChange} />);
-    const control = document.querySelector(
-      '.astryx-slider-control',
-    ) as HTMLElement;
-    let t = nextStart();
-    pen('pointerdown', control, 280, 12, t);
-    pen('pointerup', control, 280, 12, t + 60);
-    expect(onChange).not.toHaveBeenCalled();
     // On the thumb the value follows the pen's travel past the threshold:
     // 50 + (60 - 10) / 300 × 100.
-    const hit = hitOf(screen.getByRole('slider'));
-    t = nextStart();
+    const thumb = screen.getByRole('slider');
+    const hit = hitOf(thumb);
+    let t = nextStart();
     pen('pointerdown', hit, 150, 12, t);
     for (let i = 1; i <= 10; i++) {
       pen('pointermove', hit, 150 + 6 * i, 12, t + 16 * i);
     }
     expect(onChange).toHaveBeenLastCalledWith(67);
-    pen('pointerup', hit, 210, 12, t + 200);
+    // A pen rests before it lifts, so nothing coasts.
+    pen('pointerup', hit, 210, 12, t + 400);
+    for (let frame = 0; frame < 100; frame++) {
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+    }
+    // A pen's tap on the track sets the value on its lift, frame by frame
+    // as a finger's does: (280 - 10) / (300 - 20) of the range.
+    const control = document.querySelector(
+      '.astryx-slider-control',
+    ) as HTMLElement;
+    t = nextStart();
+    pen('pointerdown', control, 280, 12, t);
+    pen('pointerup', control, 280, 12, t + 60);
+    for (let frame = 0; frame < 100; frame++) {
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+    }
+    expect(onChange).toHaveBeenLastCalledWith(96);
+    expect(thumb).toHaveAttribute('aria-valuenow', '96');
+  });
+
+  it('re-attaches the thumbs’ gestures when a valueDisplay change remounts them', async () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    const view = await renderTouch(
+      <Controlled initial={50} onChange={onChange} />,
+    );
+    // Wrapping each thumb in its value tooltip mounts new thumbs and new
+    // touch targets.
+    view.rerender(
+      <Controlled initial={50} onChange={onChange} valueDisplay="tooltip" />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const thumb = screen.getByRole('slider');
+    dragThumb(hitOf(thumb), {x: 150, y: 12}, {dx: 60, steps: 10, lift: false});
+    expect(onChange).toHaveBeenLastCalledWith(67);
+  });
+
+  it('moves the thumb under the finger off the render path: it follows even when the owner renders nothing (spec:AST-094 FR9)', async () => {
+    stubMatchMedia(true);
+    stubControlGeometry();
+    const onChange = vi.fn();
+    // The owner keeps its value: no render follows any move.
+    await renderTouch(
+      <Slider
+        label="Level"
+        valueDisplay="none"
+        value={50}
+        onChange={onChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    dragThumb(hitOf(thumb), {x: 150, y: 12}, {dx: 60, steps: 10, lift: false});
+    expect(onChange).toHaveBeenLastCalledWith(67);
+    expect(thumb).toHaveAttribute('aria-valuenow', '50');
+    // Yet the thumb stands at 67's place along the 280 px travel, written
+    // straight to its translate.
+    expect(parseFloat(thumb.style.translate)).toBeCloseTo(0.67 * 280, 1);
   });
 
   it('ends a touch silently when the slider unmounts or is disabled mid-drag', async () => {

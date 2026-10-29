@@ -617,7 +617,7 @@ test('a drag that rests 40 ms before the lift does not coast: the release filter
   expect(await value()).toBe(atLift);
 });
 
-test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb to its value within 200 ms (design:reduced-motion)', async ({
+test('Reduce Motion: no lift; a release keeps coasting and a track tap sets the value at once, with no cross-fade (design:reduced-motion DR2)', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
@@ -626,13 +626,14 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
     'core-slider--touch-tracking',
     {name: 'Brightness'},
   );
-  /** The thumb's opacity, scale and value each frame for `ms` from now. */
+  /** The thumb's opacity, scale, position and value each frame for `ms`. */
   const watch = async (ms: number) =>
     thumb.evaluate(async (element, duration) => {
       const samples: {
         t: number;
         opacity: number;
         scale: number;
+        x: number;
         value: number;
       }[] = [];
       const start = performance.now();
@@ -643,22 +644,15 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
           t: performance.now() - start,
           opacity: Number(style.opacity),
           scale: style.scale === 'none' ? 1 : Number(style.scale),
+          x: element.getBoundingClientRect().x,
           value: Number(element.getAttribute('aria-valuenow')),
         });
       }
       return samples;
     }, ms);
   type Sample = Awaited<ReturnType<typeof watch>>[number];
-  /** Opacity only, back to 1 within 200 ms of the change, nothing scaled. */
-  const expectCrossFade = (samples: ReadonlyArray<Sample>) => {
-    expect(Math.min(...samples.map(sample => sample.opacity))).toBeLessThan(
-      0.5,
-    );
-    expect(Math.max(...samples.map(sample => sample.scale))).toBe(1);
-    const after = samples.filter(sample => sample.t > 220);
-    expect(after.length).toBeGreaterThan(0);
-    expect(after.every(sample => sample.opacity === 1)).toBe(true);
-  };
+  const opacities = (samples: ReadonlyArray<Sample>) =>
+    samples.map(sample => sample.opacity);
   // A held thumb keeps its size: the press shows in its paint alone (DR1).
   const at = await center();
   const [held] = await playReading(
@@ -670,9 +664,9 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
   );
   expect(Math.max(...held.map(sample => sample.scale))).toBe(1);
   await frames(page, 6);
-  // A flick's release: the thumb fades out and back in where the coast
-  // would have taken it (the value moves on past the lift's), opacity only
-  // (DR2).
+  // A flick's release: the momentum that continues the throw is direct
+  // movement, so the thumb keeps travelling frame by frame past the lift's
+  // value, at full opacity (DR2).
   const from = await center();
   const script = flick(from, {velocity: {x: 400, y: 0}, durationMs: 100});
   const [release] = await playReading(
@@ -680,12 +674,16 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
     driver,
     script,
     [script.length - 1],
-    async () => watch(320),
+    async () => watch(500),
   );
-  expectCrossFade(release);
+  expect(Math.min(...opacities(release))).toBe(1);
+  expect(Math.max(...release.map(sample => sample.scale))).toBe(1);
+  const positions = new Set(release.map(sample => Math.round(sample.x * 4)));
+  expect(positions.size).toBeGreaterThan(4);
   expect(release[release.length - 1].value).toBeGreaterThan(release[0].value);
   await frames(page, 6);
-  // A tap on the track: the same cross-fade, to the tap's value.
+  // A tap on the track: an in-place value change, so the thumb lands on the
+  // tap's value at once, at full opacity, with no travel between (DR2).
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
@@ -697,6 +695,9 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
     x: box.x + box.width * 0.1,
     y: box.y + box.height / 2,
   });
+  const expected = Math.round(
+    ((target.x - box.x - THUMB / 2) / (box.width - THUMB)) * 100,
+  );
   const tapScript = tap(target);
   const [tapped] = await playReading(
     page,
@@ -705,10 +706,96 @@ test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb
     [tapScript.length - 1],
     async () => watch(320),
   );
-  expectCrossFade(tapped);
-  expect(tapped[tapped.length - 1].value).toBe(
-    Math.round(((target.x - box.x - THUMB / 2) / (box.width - THUMB)) * 100),
+  expect(Math.min(...opacities(tapped))).toBe(1);
+  // At once: within two frames of the lift the value is the tap's, and the
+  // thumb never stands anywhere between its old place and its new one.
+  expect(tapped[1].value).toBe(expected);
+  const landed = tapped[tapped.length - 1].x;
+  expect(
+    tapped.slice(1).every(sample => Math.abs(sample.x - landed) < 0.5),
+  ).toBe(true);
+});
+
+test('range thumbs closer than their touch targets split the gap: neither thumb’s hit area takes a touch on the other thumb (spec:AST-094 FR42)', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-slider--touch-tracking');
+  // The touch driver emulates a touch screen: the touch targets render under
+  // its coarse pointer.
+  await touchDriver(page);
+  const lower = page.getByRole('slider', {name: 'Minimum value'});
+  const upper = page.getByRole('slider', {name: 'Maximum value'});
+  await expect(lower.locator('[data-slider-hit]')).toHaveCount(1);
+  await expect(upper.locator('[data-slider-hit]')).toHaveCount(1);
+  const control = lower.locator(
+    'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
+  const length = await control.evaluate(element =>
+    parseFloat(getComputedStyle(element).width),
+  );
+  // One step of the 0–100 range, in px along the travel.
+  const pxPerStep = (length - THUMB) / 100;
+  /** Puts the upper thumb `steps` above the lower one, with the keyboard. */
+  const spread = async (steps: number) => {
+    await upper.focus();
+    await page.keyboard.press('Home');
+    for (let i = 0; i < steps; i++) {
+      await page.keyboard.press('ArrowRight');
+    }
+    await frames(page, 2);
+  };
+  const rectOf = async (locator: Locator) => {
+    const box = await locator.boundingBox();
+    if (box == null) {
+      throw new Error('no box');
+    }
+    return {
+      left: box.x,
+      right: box.x + box.width,
+      top: box.y,
+      bottom: box.y + box.height,
+    };
+  };
+  const boxes = async () => ({
+    lower: await rectOf(lower),
+    upper: await rectOf(upper),
+    lowerHit: await rectOf(lower.locator('[data-slider-hit]')),
+    upperHit: await rectOf(upper.locator('[data-slider-hit]')),
+  });
+  /** Which thumb a touch at (x, y) lands on. */
+  const thumbAt = async (x: number, y: number) =>
+    page.evaluate(
+      ([px, py]) => {
+        const hit = document.elementFromPoint(px, py);
+        const thumb = hit?.closest('[role="slider"]');
+        return thumb == null
+          ? null
+          : Array.from(document.querySelectorAll('[role="slider"]')).indexOf(
+              thumb,
+            );
+      },
+      [x, y] as const,
+    );
+  const indexOfLower = await lower.evaluate(element =>
+    Array.from(document.querySelectorAll('[role="slider"]')).indexOf(element),
+  );
+  // Overlapping thumbs (centers 14 px apart, under the 20 px thumb): a
+  // finger on the lower thumb's exposed side takes the lower thumb.
+  await spread(Math.max(1, Math.round(14 / pxPerStep)));
+  let b = await boxes();
+  const y = (b.lower.top + b.lower.bottom) / 2;
+  expect(await thumbAt(b.lower.left + 3, y)).toBe(indexOfLower);
+  // Thumbs 30 px apart (a 10 px gap, under the targets' 28 px of growth):
+  // each hit area stops at half the gap, so the two meet in the middle.
+  await spread(Math.max(1, Math.round(30 / pxPerStep)));
+  b = await boxes();
+  const middle = (b.lower.right + b.upper.left) / 2;
+  expect(b.lowerHit.right).toBeLessThanOrEqual(middle + 0.5);
+  expect(b.upperHit.left).toBeGreaterThanOrEqual(middle - 0.5);
+  expect(b.lowerHit.right).toBeLessThanOrEqual(b.upper.left + 0.5);
+  expect(b.upperHit.left).toBeGreaterThanOrEqual(b.lower.right - 0.5);
+  expect(await thumbAt(middle - 2, y)).toBe(indexOfLower);
+  expect(await thumbAt(middle + 2, y)).toBe(indexOfLower + 1);
 });
 
 test('a finger landing on a coasting thumb stops it where it is', async ({
