@@ -55,11 +55,9 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type RefObject,
 } from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
-import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
 import {
   IDLE_MENU_PRESS,
   menuPressStep,
@@ -68,7 +66,11 @@ import {
   type MenuPressGesture,
   type MenuPressPointerType,
 } from './menuPressGesture';
-import {useLongPress, type UseLongPressHandlers} from './useLongPress';
+import {
+  useLongPressDetector,
+  type LongPressDetectorHandlers,
+  type LongPressTolerance,
+} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -101,18 +103,16 @@ export const MENU_PRESS_STRAY_CLICK_MS = CLICK_GUARD_WINDOW_MS;
 export const MENU_PRESS_LONG_PRESS_MS = LONG_PRESS_DURATION_MS;
 /**
  * How far a finger held on a DropdownMenu trigger may move before the open,
- * in CSS px, where the primary pointer is coarse: `spec:AST-094` FR29's
- * drift allowance (FR2's table: unmeasured, a 12 pt move still opened).
- * Where it is fine, and on ContextMenu, the long press's own allowable
- * movement stays.
+ * in CSS px, under every primary pointer: `spec:AST-094` FR29's drift
+ * allowance (FR2's table: unmeasured, a 12 pt move still opened; useMenuPress
+ * FR9, FR43). ContextMenu keeps the long press's own allowable movement.
  */
 export const MENU_PRESS_TRIGGER_DRIFT_PX = 13;
 
-const viewOrNull = () => (typeof window === 'undefined' ? null : window);
-const subscribeCoarsePointer = (onChange: () => void) =>
-  watchCoarsePointer(viewOrNull(), onChange);
-const readCoarsePointer = () => isCoarsePointer(viewOrNull());
-const readServerCoarsePointer = () => false;
+/** A finger held on the trigger: FR29's drift allowance, the same under every primary pointer. */
+const TRIGGER_TOLERANCE: LongPressTolerance = {
+  moveCancelPx: MENU_PRESS_TRIGGER_DRIFT_PX,
+};
 /** Distance from a scrolling menu's edge within which a resting pointer scrolls. */
 export const MENU_PRESS_AUTOSCROLL_ZONE_PX = 24;
 const AUTOSCROLL_STEP_PX = 6;
@@ -319,7 +319,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // handle is held in a ref because the pointer handlers below are stable
   // callbacks and the hook is created further down, once `fireLongPress`
   // exists.
-  const longPressApiRef = useRef<UseLongPressHandlers | null>(null);
+  const longPressApiRef = useRef<LongPressDetectorHandlers | null>(null);
   const touchMovePreventerRef = useRef<(() => void) | null>(null);
   // The edge autoscroll running now: its scroller, its direction, and the
   // re-read of the row under the resting pointer after each step.
@@ -740,19 +740,12 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // onto its trigger, driven here from the pointer stream this model already
   // observes. Its touch handlers go unused; the hold duration, the movement
   // tolerance and the timer are what matter, and they now have one home.
-  // FR29's drift allowance is a finger's where the primary pointer is
-  // coarse; where it is fine, the shared tolerance stays (useMenuPress FR9).
-  const isPrimaryPointerCoarse = useSyncExternalStore(
-    subscribeCoarsePointer,
-    readCoarsePointer,
-    readServerCoarsePointer,
-  );
-  longPressApiRef.current = useLongPress({
+  // The trigger's press takes FR29's drift allowance under every primary
+  // pointer, so no menu, row or trigger reads the pointer query (spec:AST-094
+  // FR24, FR43).
+  longPressApiRef.current = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS,
-    moveCancelPx: isPrimaryPointerCoarse
-      ? MENU_PRESS_TRIGGER_DRIFT_PX
-      : undefined,
   });
 
   // --- Handlers ------------------------------------------------------------
@@ -833,7 +826,10 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       attach(native.pointerId);
       lastPointerEventRef.current = native;
       if (pointerType !== 'mouse') {
-        longPressApiRef.current?.start({x: native.clientX, y: native.clientY});
+        longPressApiRef.current?.start(
+          {x: native.clientX, y: native.clientY},
+          TRIGGER_TOLERANCE,
+        );
       }
       step(
         {
