@@ -21,6 +21,7 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
 import {generateAdaptationCSS} from './generateThemeRules';
 import {Theme} from './Theme';
+import {REDUCED_MOTION_PROPERTY} from './themeMotion';
 
 const MARK = 'data-astryx-reduced-motion';
 
@@ -47,6 +48,41 @@ describe('the reduced-motion mark (spec:AST-108 FR6)', () => {
     expect(document.documentElement.hasAttribute(MARK)).toBe(true);
     unmount();
     expect(document.documentElement.hasAttribute(MARK)).toBe(false);
+  });
+
+  it('the mark carries its custom property, on the wrapper and at the root on <html>, so styles that cannot key a selector on it read it (FR6)', () => {
+    const {container, unmount} = render(
+      <Theme theme={always}>
+        <p>content</p>
+      </Theme>,
+    );
+    const wrapper = container.querySelector('[data-astryx-theme]');
+    expect(wrapper).not.toBeNull();
+    expect(
+      getComputedStyle(wrapper as Element)
+        .getPropertyValue(REDUCED_MOTION_PROPERTY)
+        .trim(),
+    ).toBe('1');
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('1');
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('');
+    const {container: plain} = render(
+      <Theme theme={system}>
+        <p>content</p>
+      </Theme>,
+    );
+    expect(
+      getComputedStyle(plain.querySelector('[data-astryx-theme]') as Element)
+        .getPropertyValue(REDUCED_MOTION_PROPERTY)
+        .trim(),
+    ).toBe('');
+    expect(
+      document.documentElement.style.getPropertyValue(REDUCED_MOTION_PROPERTY),
+    ).toBe('');
   });
 
   it("'system' marks nothing", () => {

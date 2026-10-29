@@ -379,6 +379,51 @@ describe('the release', () => {
     }
   });
 
+  it('under a theme’s reducedMotion: "always" mark, with the setting off, the cap holds too (spec:AST-108 FR4, FR6)', () => {
+    // The mark's custom property, which a marked theme's wrapper and <html>
+    // carry and every element under them inherits; jsdom only reads it where
+    // it is declared.
+    const style = document.createElement('style');
+    style.textContent =
+      '.marked-slow { --_astryx-motion-tempo: 1.5; --_astryx-reduced-motion: 1; } .marked-quick { --_astryx-motion-tempo: 0.75; --_astryx-reduced-motion: 1; }';
+    document.head.appendChild(style);
+    expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(
+      false,
+    );
+    try {
+      rows[0].classList.add('marked-slow');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+      rows[0].classList.replace('marked-slow', 'marked-quick');
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS * 0.75);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      rows[0].classList.remove('marked-slow', 'marked-quick');
+      style.remove();
+    }
+  });
+
+  it('caps the stylesheet’s release fade under the mark’s custom property too', () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        'interactionOverlay.stylex.ts',
+      ),
+      'utf8',
+    );
+    // Outside Reduce Motion the tempo may reach 1.5, its own maximum; under
+    // the mark (--_astryx-reduced-motion: 1) it stops at 1.
+    expect(source).toMatch(
+      /calc\(\$\{pressConsts\.releaseMs\}ms \* min\(var\(--_astryx-motion-tempo, 1\), 1\.5 - 0\.5 \* var\(--_astryx-reduced-motion, 0\)\)\)/,
+    );
+  });
+
   it('caps the stylesheet’s release fade the same way under Reduce Motion', () => {
     const source = readFileSync(
       join(
