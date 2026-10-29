@@ -345,6 +345,28 @@ interface DragState {
 }
 
 /**
+ * A wheel stream that pauses this many of its own intervals has stopped:
+ * the wheel glides on from there rather than waiting out the host's end.
+ */
+const WHEEL_PAUSE_INTERVALS = 1.5;
+/** The pause that ends a wheel stream, ms: never shorter or longer. */
+const WHEEL_PAUSE_MIN_MS = 20;
+const WHEEL_PAUSE_MAX_MS = 50;
+
+/** A continuous wheel stream's state between its wheels. */
+interface WheelStream {
+  /** The pan's translation at the last wheel, px. */
+  translation: number;
+  /** When the last wheel arrived, ms (performance.now()). */
+  time: number;
+  /** The interval before it, ms. */
+  interval: number;
+  /** The pause timer, or the glide that followed it. */
+  timer: number | undefined;
+  isGliding: boolean;
+}
+
+/**
  * One UIPickerView column: the Wheel under a finger.
  *
  * @example
@@ -408,6 +430,7 @@ export function PickerWheel({
   // The mounted rows: kept and recycled imperatively, never React state.
   const rowsRef = useRef<WheelRows | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const streamRef = useRef<WheelStream | null>(null);
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
@@ -707,6 +730,56 @@ export function PickerWheel({
     [motion, onEnd, play],
   );
 
+  // A trackpad's scroll or a smooth mouse wheel with no momentum of its own
+  // stops sending wheel at its last step, and the host ends the pan only
+  // WHEEL_END_MS later (GestureHost.ts). The rows do not wait that out: once
+  // the stream pauses for half again its own interval, the wheel glides on
+  // from where it is with the stream's speed, as the release would, and a
+  // wheel that arrives during the glide takes the rows back.
+  const endWheelStream = useCallback((): WheelStream | null => {
+    const stream = streamRef.current;
+    streamRef.current = null;
+    if (stream != null && !stream.isGliding) {
+      window.clearTimeout(stream.timer);
+    }
+    return stream;
+  }, []);
+
+  const followWheelStream = useCallback(
+    (recognizer: PanGestureRecognizer, translation: number) => {
+      const now = performance.now();
+      const last = streamRef.current;
+      if (last != null && !last.isGliding) {
+        window.clearTimeout(last.timer);
+      }
+      const interval =
+        last == null ? WHEEL_PAUSE_MAX_MS : Math.max(0, now - last.time);
+      const stream: WheelStream = {
+        translation,
+        time: now,
+        interval,
+        timer: undefined,
+        isGliding: false,
+      };
+      streamRef.current = stream;
+      const pause = Math.min(
+        WHEEL_PAUSE_MAX_MS,
+        Math.max(WHEEL_PAUSE_MIN_MS, interval * WHEEL_PAUSE_INTERVALS),
+      );
+      stream.timer = window.setTimeout(() => {
+        if (streamRef.current !== stream || dragRef.current == null) {
+          return;
+        }
+        stream.isGliding = true;
+        release(-recognizer.scrollVelocity().y);
+      }, pause);
+    },
+    [release],
+  );
+
+  // A wheel that goes away leaves no pause timer behind.
+  useEffect(() => () => void endWheelStream(), [endWheelStream]);
+
   const pan = useGestureRecognizer(
     columnRef,
     () =>
@@ -742,21 +815,38 @@ export function PickerWheel({
           break;
         }
         case 'changed': {
-          const drag = dragRef.current;
+          let drag = dragRef.current;
           if (drag == null) {
             break;
           }
-          const offset = dragOffset(
-            drag.start - recognizer.translation().y,
-            currentLayout,
-          );
+          const translation = recognizer.translation().y;
+          const stream = streamRef.current;
+          if (stream?.isGliding === true) {
+            // More wheel after the stream paused: the scroll takes the rows
+            // back from the glide where they are, and moves them by this
+            // wheel's step.
+            const shown = motion.stop();
+            drag = {
+              start: fingerOffset(shown, currentLayout) + stream.translation,
+            };
+            dragRef.current = drag;
+          }
+          const offset = dragOffset(drag.start - translation, currentLayout);
           showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT);
           motion.setOffset(offset, {ticks: true});
+          if (recognizer.trackedTouches[0]?.scrollType === 'continuous') {
+            followWheelStream(recognizer, translation);
+          }
           break;
         }
         case 'ended': {
           const drag = dragRef.current;
           dragRef.current = null;
+          const stream = endWheelStream();
+          if (stream?.isGliding === true) {
+            // The glide that began when the stream paused is this release.
+            break;
+          }
           // A scroll view's release velocity (the pan's last two, blended as
           // UIPickerView's); the rows move against the finger.
           release(drag == null ? 0 : -recognizer.scrollVelocity().y);
@@ -764,6 +854,7 @@ export function PickerWheel({
         }
         case 'cancelled': {
           dragRef.current = null;
+          endWheelStream();
           release(0);
           break;
         }

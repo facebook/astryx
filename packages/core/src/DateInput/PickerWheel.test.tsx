@@ -737,6 +737,34 @@ describe('PickerWheel — a scroll wheel', () => {
     }
   }
 
+  it('glides on as soon as a quick scroll with no momentum stops, not when its pan ends (spec:AST-094 FR43)', () => {
+    // jsdom runs no Web Animations: record when the strip starts one.
+    const started: number[] = [];
+    Element.prototype.animate = vi.fn(function animate(this: Element) {
+      if (this.hasAttribute('data-wheel-strip')) {
+        started.push(performance.now());
+      }
+      return {cancel: () => {}} as unknown as Animation;
+    });
+    try {
+      const {column, onChange} = renderWheel({options: YEARS, value: 2000});
+      // 7.5 rows in 150 ms, then nothing: no momentum follows.
+      scroll(column, 10, 24, 16);
+      const last = performance.now();
+      // The host ends the pan 100 ms after the last wheel; the glide starts
+      // half again the stream's 16 ms interval after it.
+      advance(40);
+      expect(started).toHaveLength(1);
+      expect(started[0] - last).toBeLessThanOrEqual(1.5 * 16 + 1);
+      advance(4000);
+      // The glide is the release: it kept the scroll's speed.
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toBeGreaterThan(2012);
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'animate');
+    }
+  });
+
   it('turns with a slow scroll and rests on the nearest row', () => {
     const {column, onChange} = renderWheel();
     // Two rows down, slowly: no speed left at the release.

@@ -807,6 +807,80 @@ test('a trackpad scroll drives the wheel\u2019s pan: it keeps its speed at the r
   );
 });
 
+test('a quick scroll that stops glides on at once: the rows never wait for the pan to end (spec:AST-094 FR43)', async ({
+  page,
+}) => {
+  const {minutes, strip} = await openWheel(page);
+  const input = await webInputDriver(page);
+  test.skip(
+    !input.wheels,
+    'this engine\u2019s mobile emulation has no wheel input (README: engine limits)',
+  );
+  const column = await minutes.boundingBox();
+  if (column == null) {
+    throw new Error('no minute column');
+  }
+  const at = {
+    x: Math.round(column.x + column.width / 2),
+    y: Math.round(column.y + column.height / 2),
+  };
+  // The strip's y every frame, and when each wheel reached the column.
+  await strip.evaluate(element => {
+    const state = {frames: [] as [number, number][], wheels: [] as number[]};
+    (window as unknown as {glide: typeof state}).glide = state;
+    element
+      .closest('[data-wheel]')
+      ?.addEventListener('wheel', () => state.wheels.push(performance.now()), {
+        capture: true,
+        passive: true,
+      });
+    const sample = (time: number) => {
+      state.frames.push([
+        time,
+        new DOMMatrixReadOnly(getComputedStyle(element).transform).m42,
+      ]);
+      if (state.frames.length < 240) {
+        requestAnimationFrame(sample);
+      }
+    };
+    requestAnimationFrame(sample);
+  });
+  // A quick scroll with no momentum of its own: eight 24 px steps about
+  // 16 ms apart, then nothing.
+  for (let i = 0; i < 8; i++) {
+    await input.wheel({...at, dy: 24});
+    await page.waitForTimeout(16);
+  }
+  await page.waitForTimeout(600);
+  await waitForRest(strip);
+  const {frames, wheels} = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          glide: {frames: [number, number][]; wheels: number[]};
+        }
+      ).glide,
+  );
+  const last = wheels[wheels.length - 1];
+  expect(wheels.length).toBe(8);
+  // Where the last wheel left the strip, then the first frame that moved on.
+  const atLast = frames.filter(([time]) => time <= last).pop();
+  if (atLast == null) {
+    throw new Error('no frame before the last wheel');
+  }
+  const moved = frames.find(
+    ([time, y]) => time > last && Math.abs(y - atLast[1]) > 0.5,
+  );
+  if (moved == null) {
+    throw new Error('the rows never moved on after the last wheel');
+  }
+  // The host ends the pan 100 ms after the last wheel; the rows glide on
+  // within half again the stream's interval and a frame or two, long before.
+  expect(moved[0] - last, 'the rows held still after the scroll').toBeLessThan(
+    70,
+  );
+});
+
 test.describe('under a mouse', () => {
   // A desktop: today's column.
   test.use({hasTouch: false, isMobile: false});
