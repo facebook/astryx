@@ -296,7 +296,7 @@ export interface DefineThemeInput<
    *   the theme's CSS durations and the springs of its touch motion alike.
    * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
    *   entrance and move curves and how lively a spring is; exits and fades
-   *   never overshoot.
+   *   keep their measured bounce.
    * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
    *   for everyone; so far the theme's motion-keyed adaptation rules, the
    *   press release fade and the animator follow it, not yet components'

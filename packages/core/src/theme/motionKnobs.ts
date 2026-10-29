@@ -31,7 +31,7 @@ export interface ThemeMotionKnobs {
   /**
    * `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own,
    * `'expressive'` overshoots slightly on entrances and moves. Exits and
-   * fades never overshoot. Default `'standard'`.
+   * fades keep their measured bounce. Default `'standard'`.
    */
   character?: MotionCharacter;
   /**

@@ -185,7 +185,8 @@ export const myTheme = defineTheme({
    * springs alike:
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
-   *     curves and how lively a spring is. Exits and fades never overshoot.
+   *     curves and how lively a spring is. Exits and fades keep their
+   *     measured bounce.
    *   reducedMotion — 'always' reduces motion for everyone (so far the
    *     theme's motion-keyed adaptation rules, the press release fade and the
    *     animator, not yet components' other Reduce Motion styles); 'system'

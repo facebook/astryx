@@ -328,6 +328,29 @@ describe('an explicit --ease-standard (spec:AST-108 FR2)', () => {
       expect(theme.tokens['--ease-move'], JSON.stringify(motion)).toBe(curve);
       expect(resolveThemeMotion(theme).easings['--ease-entrance']).toBe(curve);
     }
+    // A child, and a rule, that set 'standard' match the --ease-standard
+    // beneath them: the base's, or the theme's.
+    const base = defineTheme({
+      name: 'EaseBase',
+      tokens: {'--ease-standard': curve},
+    });
+    const standard = {character: 'standard' as const};
+    const child = defineTheme({
+      name: 'EaseChild',
+      extends: base,
+      motion: standard,
+    });
+    const ruled = defineTheme({
+      name: 'EaseRule',
+      tokens: {'--ease-standard': curve},
+      adaptations: {
+        rules: [{when: {pointer: 'coarse'}, value: {motion: standard}}],
+      },
+    });
+    for (const tokens of [child.tokens, ruled.__adaptationRules?.[0]?.tokens]) {
+      expect(tokens?.['--ease-entrance']).toBe(curve);
+      expect(tokens?.['--ease-move']).toBe(curve);
+    }
   });
 });
 
@@ -551,5 +574,30 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       `${Math.round(175 * 0.8)}ms`,
     );
     expect(crisper.tokens['--ease-entrance']).toBe(CHARACTER_EASE.crisp);
+  });
+});
+
+describe('the knobs the springs read from CSS (spec:AST-108 FR3, FR5)', () => {
+  it('a theme or a rule that sets a character writes it beside the tempo', () => {
+    const character = '--_astryx-motion-character';
+    const tempo = '--_astryx-motion-tempo';
+    expect(expandThemeMotion({character: 'expressive'})[character]).toBe(
+      'expressive',
+    );
+    expect(expandThemeMotion({character: 'standard'})[character]).toBe(
+      'standard',
+    );
+    expect(expandThemeMotion({tempo: 1.2})[character]).toBeUndefined();
+    expect(expandThemeMotion({tempo: 1.2})[tempo]).toBe('1.2');
+    expect(expandThemeMotion({})[character]).toBeUndefined();
+    const ruled = defineTheme({
+      name: 'RuleKnobs',
+      adaptations: {
+        rules: [
+          {when: {pointer: 'coarse'}, value: {motion: {character: 'crisp'}}},
+        ],
+      },
+    });
+    expect(ruled.__adaptationRules?.[0]?.tokens?.[character]).toBe('crisp');
   });
 });

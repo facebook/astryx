@@ -157,7 +157,7 @@ const styles = stylex.create({
           style: 'unordered',
           items: [
             "`tempo` scales every motion duration: 1 is Astryx's own, 0.75 the quickest and 1.5 the slowest (values outside are clamped).",
-            "`character` sets how lively motion is: `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own, and `'expressive'` overshoots slightly on entrances and moves. Exits and fades never overshoot.",
+            "`character` sets how lively motion is: `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own, and `'expressive'` overshoots slightly on entrances and moves. Exits and fades keep their measured bounce at every character.",
             "`reducedMotion: 'always'` reduces motion for everyone, as if each person had turned on Reduce Motion. Not everything follows it yet: the theme's motion-keyed adaptation rules, the press release fade and the animator do, and components' other Reduce Motion styles don't yet. `'system'`, the default, follows each person's setting. No value loosens Reduce Motion.",
           ],
         },

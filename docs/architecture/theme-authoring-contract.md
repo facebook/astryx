@@ -19,6 +19,7 @@ applies_to:
     packages/core/src/theme/expandRadiusScale.ts,
     packages/core/src/theme/expandMotionScale.ts,
     packages/core/src/theme/themeMotion.ts,
+    packages/core/src/theme/motionKnobs.ts,
     packages/core/src/theme/mergeComponents.ts,
     packages/core/src/theme/onMediaTokens.ts,
     packages/core/src/theme/localTokens.ts,
@@ -277,9 +278,9 @@ public surface belongs to
   adopts their tokens.
 - `expandColorScale.ts`, `expandTypeScale.ts`, `expandRadiusScale.ts`, and
   `expandMotionScale.ts` own their derived token/component values.
-- `themeMotion.ts` owns the motion knobs, the tokens and pre-tempo durations
-  they generate, and `resolveThemeMotion`, the pure read the animator and server
-  code use.
+- `motionKnobs.ts` owns the motion knobs' types, defaults and clamping;
+  `themeMotion.ts` owns the tokens and pre-tempo durations they generate, and
+  `resolveThemeMotion`, the pure read the animator and server code use.
 - `mergeComponents.ts` owns the shared deep-merge rule.
 - `onMediaTokens.ts` owns normalization of inverted-surface overrides.
 - `localTokens.ts` owns opt-in enrollment, valid CSS custom-property names, exact
@@ -311,9 +312,9 @@ clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
 `resolveThemeMotion`'s role tables are accepted but unshipped (`spec:AST-108`
-FR6): the animator's springs follow the knobs through the attributes Theme
-writes on the theme's root (`motion/themeKnobs.ts`), but server code has no
-role values yet. Until they land, that part of FR6 is current authority but
+FR6): the animator's springs follow the knobs through the custom properties a
+theme or adaptation rule writes (`motion/themeKnobs.ts`), but server code has
+no role values yet. Until they land, that part of FR6 is current authority but
 not enforcement.
 
 The reach of `reducedMotion: 'always'` is accepted but partly unshipped

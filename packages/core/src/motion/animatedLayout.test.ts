@@ -363,10 +363,8 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     );
     played = [];
     document.body.innerHTML = '';
-    await changeOnce(
-      '',
-      'data-astryx-theme="slow" data-astryx-motion-tempo="1.5"',
-    );
+    // The tempo the theme writes, which the area inherits in a browser.
+    await changeOnce('--_astryx-motion-tempo: 1.5', 'data-astryx-theme="slow"');
     const follower = played.find(p => (p.element as HTMLElement).id === 'a');
     const own = played.find(p => (p.element as HTMLElement).id === 'changed');
     expect(own?.options.duration).toBe(follower?.options.duration);

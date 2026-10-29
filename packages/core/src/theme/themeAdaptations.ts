@@ -1035,8 +1035,13 @@ export function resolveThemeAdaptationRules(
       // than emitted. The root path stays lenient for compatibility.
       // SYNC: packages/core/src/theme/resolveThemeValues.ts (resolveTokenValue)
       // A rule without motion of its own keeps the theme's character, so its
-      // explicit --ease-standard leaves that character's curves alone.
-      {strictTokens: true, inheritedCharacter: axes.motion?.character},
+      // explicit --ease-standard leaves that character's curves alone; one
+      // at 'standard' matches the theme's --ease-standard.
+      {
+        strictTokens: true,
+        inheritedCharacter: axes.motion?.character,
+        standardBeneath: rootTokens['--ease-standard'],
+      },
     );
     for (const [name, value] of Object.entries(resolved.tokens)) {
       assertConcreteLeaf(

@@ -15,7 +15,7 @@
  * the element is in (`spec:AST-108` FR3): `tempo` scales a spring's duration
  * and a role's duration, and `character` moves a spring's bounce by its
  * role's weight (1 for entrances and presentations, 0.5 for state changes, 0
- * for exits, which never overshoot). The theme's `MotionScaleConfig` alone
+ * for exits, which keep their measured bounce). The theme's `MotionScaleConfig` alone
  * leaves the springs at tempo 1 (FR5). Finger-following motion never follows
  * the knobs (FR4), and a curve plays as measured: the theme's character
  * reaches CSS curves through its easing tokens. With Astryx's own knobs every

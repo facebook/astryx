@@ -5,7 +5,8 @@
  * @input resolveMotion.ts, the shared UIKit tables, a stubbed computed style
  * @output Proof that, while touch motion stays internal (spec:AST-094
  *   DEC-11), a role plays its table value whatever a scope's CSS variable
- *   says, reads no style, and leaves values that are not roles alone; and
+ *   says, reads no role's variable, only the theme's knobs, and leaves values
+ *   that are not roles alone; and
  *   that the animator plays the table's spring
  * @position Testing for /packages/core/src/motion/resolveMotion.ts (the
  *   browser proof: animator.interaction.browser.spec.ts)
@@ -28,15 +29,15 @@ import {
 registerSpringsTable();
 registerTimingTable();
 
-let reads: number;
+let reads: string[];
 
 beforeEach(() => {
-  reads = 0;
+  reads = [];
   vi.spyOn(window, 'getComputedStyle').mockImplementation(
     () =>
       ({
-        getPropertyValue: () => {
-          reads += 1;
+        getPropertyValue: (name: string) => {
+          reads.push(name);
           return '';
         },
       }) as unknown as CSSStyleDeclaration,
@@ -74,8 +75,10 @@ describe('resolveMotion while touch motion stays internal (DEC-11)', () => {
       timing.stateChangeMs,
     );
     expect(resolveMotion(null, springs.settle)).toBe(springs.settle);
-    // No style is read to resolve a role.
-    expect(reads).toBe(0);
+    // No role's own variable is read: only the theme's knobs (spec:AST-108 FR3).
+    expect(reads.filter(name => !name.startsWith('--_astryx-motion-'))).toEqual(
+      [],
+    );
   });
 
   it('leaves values that are not roles alone', () => {
