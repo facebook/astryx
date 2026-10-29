@@ -266,13 +266,14 @@ export interface DropdownMenuPressReturn extends UseMenuPressReturn {
    * a trigger this hook does not own) into the menu that just opened under
    * it. The pointer is tracked from here as the opening press
    * (`module:DropdownMenu/useMenuPress` FR11). With the `'uikit'` touch model
-   * (the primary pointer is coarse) a finger picks only after UIMenu's handoff
-   * distance from the first position the menu sees after it opened, as a
-   * trigger's opening finger does, and its lift before that acts on nothing and
-   * leaves the menu open; otherwise, and for a mouse, the opening press follows
-   * the settle rule. Ignored while another gesture is live or the hook is
-   * disabled. A menu with no trigger (a context menu) passes the touch model
-   * to `useMenuSurfacePress`, so the finger it hands over keeps the handoff.
+   * (a finger, on every device: `spec:AST-094` FR43) a finger picks only after
+   * UIMenu's handoff distance from the first position the menu sees after it
+   * opened, as a trigger's opening finger does, and its lift before that acts
+   * on nothing and leaves the menu open; otherwise, and for a mouse, the
+   * opening press follows the settle rule. Ignored while another gesture is
+   * live or the hook is disabled. A menu with no trigger (a context menu)
+   * passes the touch model to `useMenuSurfacePress`, so the finger it hands
+   * over keeps the handoff.
    */
   continueGesture: (pointer: MenuPressContinuation) => void;
 }
@@ -990,9 +991,10 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
       }
       attach(pointer.pointerId);
       // The menu opened under this pointer: the gesture is the opening press.
-      // Where the primary pointer is coarse a finger's handoff counts from the
-      // first position the menu sees after it opened, as the trigger's opening
-      // finger's does; elsewhere the settle rule decides its release.
+      // With the 'uikit' touch model a finger's handoff counts from the first
+      // position the menu sees after it opened, as the trigger's opening
+      // finger's does; with the 'pointer' model, and for a mouse, the settle
+      // rule decides its release.
       gestureRef.current = {
         phase: 'open',
         pointerType: pointer.pointerType,

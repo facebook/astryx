@@ -568,7 +568,7 @@ describe('useMenuPress — the trigger', () => {
     };
     const finger = {pointerType: 'touch', pointerId: 7};
 
-    it('where the primary pointer is coarse, a finger picks only after the handoff distance from the first position the menu sees', () => {
+    it("with the 'uikit' touch model (a finger, on every device: FR43), a finger picks only after the handoff distance from the first position the menu sees", () => {
       const onSelect = vi.fn();
       const press: {current: DropdownMenuPressReturn | null} = {current: null};
       render(
@@ -584,7 +584,7 @@ describe('useMenuPress — the trigger', () => {
       expect(onSelect).toHaveBeenCalledWith('B');
     });
 
-    it('where the primary pointer is fine, a handed-off finger is the opening press under the settle rule: no handoff distance', () => {
+    it('with the \'pointer\' touch model (presentation="popover"), a handed-off finger is the opening press under the settle rule: no handoff distance', () => {
       const onSelect = vi.fn();
       const press: {current: DropdownMenuPressReturn | null} = {current: null};
       render(<Harness onSelect={onSelect} pressRef={press} />);

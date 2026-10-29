@@ -4,8 +4,7 @@
 
 /**
  * @file menuPressContinuation.fixture.tsx
- * @input useMenuSurfacePress (its continueGesture), useMediaQuery and the
- *   coarse-pointer query
+ * @input useMenuSurfacePress (its continueGesture)
  * @output ContinuedPressFixture: a plain button whose finger long press opens
  *   a list menu under the held finger and hands that finger to the menu's
  *   press model (`module:DropdownMenu/useMenuPress` FR11), with each picked
@@ -21,8 +20,6 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {useMenuSurfacePress, type MenuPressContinuation} from '../useMenuPress';
-import {useMediaQuery} from '../useMediaQuery';
-import {TOUCH_QUERY} from '../../utils/touchPresentation';
 import {
   CONTINUED_PRESS_HOLD_MS,
   CONTINUED_PRESS_ROWS,
@@ -33,14 +30,14 @@ export function ContinuedPressFixture() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [picked, setPicked] = useState<ReadonlyArray<string>>([]);
-  // The touch model the press model needs for FR11's handoff: as
-  // DropdownMenu does, 'uikit' where the primary pointer is coarse.
-  const isCoarse = useMediaQuery(TOUCH_QUERY, false);
+  // The touch model the press model needs for FR11's handoff: 'uikit', as
+  // DropdownMenu's default presentation runs it for a finger on every device
+  // (`spec:AST-094` FR43).
   const press = useMenuSurfacePress({
     menuRef,
     itemSelector: '[role="menuitem"]',
     onDismiss: () => setIsOpen(false),
-    touchModel: isCoarse ? 'uikit' : 'pointer',
+    touchModel: 'uikit',
   });
   const holdTimerRef = useRef<number | null>(null);
   const handOffRef = useRef<MenuPressContinuation | null>(null);

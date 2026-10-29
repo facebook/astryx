@@ -6,9 +6,9 @@
  *   (Chromium CDP / WebKit's input command), the interaction harness, and the
  *   menu press's handoff distance from the UIKit constants table
  * @output Interaction proofs for a pointer handed to a menu as it opens
- *   (`module:DropdownMenu/useMenuPress` FR11), under a finger where the
- *   primary pointer is coarse: held on a button until the menu opens under
- *   it, the finger picks the row it lifts on only once it has travelled the
+ *   (`module:DropdownMenu/useMenuPress` FR11), under a finger (the same on
+ *   every device, `spec:AST-094` FR43): held on a button until the menu opens
+ *   under it, the finger picks the row it lifts on only once it has travelled the
  *   handoff distance from the first position the menu sees; a lift before
  *   that acts on nothing and leaves the menu open
  * @position The real-browser case FR11's verification names, beside the
