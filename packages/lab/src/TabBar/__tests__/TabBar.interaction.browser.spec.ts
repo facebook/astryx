@@ -3023,7 +3023,7 @@ test.describe('search tab', () => {
       );
       await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
       await page.getByRole('tab', {name: 'Search'}).click();
-      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+      await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(tab(page, 'Library')).toHaveAttribute(
         'aria-selected',
