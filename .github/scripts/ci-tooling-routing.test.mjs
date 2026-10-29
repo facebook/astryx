@@ -25,6 +25,7 @@ const prComment = load('.github/workflows/pr-comment.yml');
 const scopeAction = read('.github/actions/test-scope/action.yml');
 const TOOLING_FALSE = "steps.scope.outputs.tooling_only != 'true'";
 const TOOLING_TRUE = "steps.scope.outputs.tooling_only == 'true'";
+const HEAVY_APPLIES = "steps.scope.outputs.applies == 'true'";
 const BROAD_ONLY =
   "steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'";
 
@@ -106,7 +107,9 @@ describe('Node-tooling CI routing', () => {
     expect(
       step(ci.jobs['test-build'], 'Run Build package contracts'),
     ).toMatchObject({
-      if: BROAD_ONLY,
+      // The scope step's `applies` is this broad-only condition, and also
+      // false for a heavy job on a draft (spec:AST-030 FR16).
+      if: HEAVY_APPLIES,
       run: 'pnpm test:build',
     });
     // The Build package's owner keeps its contracts, in order: the plugin is
@@ -126,7 +129,7 @@ describe('Node-tooling CI routing', () => {
       'Verify canonical setup compositions',
       'Verify guest fixture contrast',
     ]) {
-      expect(step(ci.jobs['test-build'], name).if).toBe(BROAD_ONLY);
+      expect(step(ci.jobs['test-build'], name).if).toBe(HEAVY_APPLIES);
     }
     // The merge-base size build is heavy build work and stays off the
     // Node-tooling, docsite, and spec lanes.

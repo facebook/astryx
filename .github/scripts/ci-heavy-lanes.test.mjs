@@ -121,8 +121,13 @@ describe('visual, accessibility and RTL owners', () => {
     }
   });
 
-  it('adds no trigger: a label takes effect on the next push or reopen', () => {
-    expect(ci.on.pull_request.types).toBeUndefined();
+  it('adds no label trigger: a label takes effect on the next push or reopen', () => {
+    expect(ci.on.pull_request.types).toEqual([
+      'opened',
+      'synchronize',
+      'reopened',
+      'ready_for_review',
+    ]);
   });
 });
 

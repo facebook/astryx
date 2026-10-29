@@ -40,7 +40,7 @@ const CLASSIFIER_FILES = new Set([
   'scripts/component-packages.cjs',
 ]);
 
-function pullRequestContext(baseRef = 'main') {
+function pullRequestContext(baseRef = 'main', pr = {}) {
   return {
     eventName: 'pull_request',
     repo: {owner: 'o', repo: 'r'},
@@ -48,7 +48,10 @@ function pullRequestContext(baseRef = 'main') {
       pull_request: {
         number: 7,
         base: {ref: baseRef, sha: BASE_SHA},
-        head: {sha: HEAD_SHA},
+        head: {sha: HEAD_SHA, ref: 'fix/a'},
+        user: {login: 'author'},
+        draft: false,
+        ...pr,
       },
     },
   };
@@ -65,6 +68,9 @@ async function decide({
   inputs = {},
   headFiles = [],
   missingBase = [],
+  open = [],
+  runs = [],
+  attempt = '1',
 } = {}) {
   const outputs = {};
   const messages = {info: [], warning: [], notice: [], failed: []};
@@ -80,12 +86,22 @@ async function decide({
   };
   const notFound = () => Object.assign(new Error('Not Found'), {status: 404});
   const github = {
+    // The author's open non-draft PRs, oldest first, and today's ci.yml runs.
+    graphql: async () => {
+      if (open instanceof Error) throw open;
+      return {search: {nodes: open}};
+    },
     paginate: async () => {
       if (files instanceof Error) throw files;
       return files;
     },
     rest: {
       pulls: {listFiles: () => {}},
+      actions: {
+        listWorkflowRuns: async () => ({
+          data: {total_count: runs.length, workflow_runs: runs},
+        }),
+      },
       repos: {
         getContent: async ({path: file, ref}) => {
           contentCalls.push({file, ref});
@@ -111,6 +127,8 @@ async function decide({
     SCOPE_PATHS: inputs.paths ?? '',
     SCOPE_OUTSIDE_PR: inputs['outside-pull-request'] ?? 'run',
     SCOPE_HEAD_FILE: inputs['requires-head-file'] ?? '',
+    SCOPE_HEAVY: inputs.heavy ?? 'false',
+    GITHUB_RUN_ATTEMPT: attempt,
   };
   const saved = {...process.env};
   Object.assign(process.env, env);
@@ -304,6 +322,88 @@ describe('per-job scope step', () => {
         inputs,
       });
       expect(outputs.applies).toBe('true');
+    });
+  });
+
+  describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
+    const files = changed('packages/build/src/index.ts');
+    const heavy = {heavy: 'true'};
+    const pulls = (...refs) =>
+      refs.map((headRefName, i) => ({number: i + 1, headRefName}));
+    const runsOn = (count, head_branch = 'fix/a') =>
+      Array.from({length: count}, () => ({head_branch}));
+
+    it('runs only the fast checks on a draft', async () => {
+      const context = pullRequestContext('main', {draft: true});
+      const fast = await decide({context, files});
+      expect(fast.outputs.applies).toBe('true');
+      const {outputs, messages} = await decide({context, files, inputs: heavy});
+      expect(outputs.applies).toBe('false');
+      expect(messages.notice).toEqual([
+        'Skipped: draft PR, heavy suites run when ready.',
+      ]);
+    });
+
+    it("fails a heavy job behind the author's 3 oldest PRs", async () => {
+      const open = [...pulls('a', 'b', 'c'), {number: 7, headRefName: 'fix/a'}];
+      const {messages} = await decide({files, inputs: heavy, open});
+      expect(messages.failed).toEqual(['Queued behind your 3 oldest PRs.']);
+      const third = await decide({files, inputs: heavy, open: open.slice(1)});
+      expect(third.outputs.applies).toBe('true');
+    });
+
+    it("fails a heavy job past the author's 12 runs today", async () => {
+      const {messages} = await decide({files, inputs: heavy, runs: runsOn(13)});
+      expect(messages.failed).toEqual([
+        'Daily heavy-run cap reached, runs tomorrow or at pre-merge.',
+      ]);
+      const twelfth = await decide({files, inputs: heavy, runs: runsOn(12)});
+      expect(twelfth.outputs.applies).toBe('true');
+    });
+
+    it('counts each agent lane of the shared login as an author, with a backstop', async () => {
+      const context = pullRequestContext('main', {
+        user: {login: 'cixzhang'},
+        head: {sha: HEAD_SHA, ref: 'lane4/x'},
+      });
+      const me = {number: 7, headRefName: 'lane4/x'};
+      const others = await decide({
+        context,
+        files,
+        inputs: heavy,
+        open: [...pulls('lane1/a', 'lane2/b', 'lane3/c', 'lane0/d'), me],
+        runs: [...runsOn(30, 'lane1/a'), ...runsOn(2, 'lane4/x')],
+      });
+      expect(others.outputs.applies).toBe('true');
+      const backstop = await decide({
+        context,
+        files,
+        inputs: heavy,
+        open: [
+          ...pulls('lane1/a', 'lane2/b', 'lane3/c', 'lane0/d', 'ci/e'),
+          me,
+        ],
+      });
+      expect(backstop.messages.failed).toEqual([
+        'Queued behind your 3 oldest PRs.',
+      ]);
+    });
+
+    it('exempts the pre-merge re-run and runs the suite when the lookup fails', async () => {
+      const rerun = await decide({
+        files,
+        inputs: heavy,
+        runs: runsOn(20),
+        attempt: '2',
+      });
+      expect(rerun.outputs.applies).toBe('true');
+      const failed = await decide({
+        files,
+        inputs: heavy,
+        open: new Error('rate limited'),
+      });
+      expect(failed.outputs.applies).toBe('true');
+      expect(failed.messages.warning[0]).toContain('running the heavy suites');
     });
   });
 });

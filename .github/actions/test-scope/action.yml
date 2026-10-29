@@ -43,6 +43,12 @@ inputs:
       existed, whose diff does not touch it, does not apply (with a notice).
     required: false
     default: ''
+  heavy:
+    description: >-
+      `true` for a heavy or end-to-end job, which the per-author caps govern
+      (spec:AST-030 FR16).
+    required: false
+    default: 'false'
 
 outputs:
   spec_only:
@@ -78,6 +84,7 @@ runs:
         SCOPE_PATHS: ${{ inputs.paths }}
         SCOPE_OUTSIDE_PR: ${{ inputs.outside-pull-request }}
         SCOPE_HEAD_FILE: ${{ inputs.requires-head-file }}
+        SCOPE_HEAVY: ${{ inputs.heavy }}
       with:
         retries: 3
         script: |
@@ -176,6 +183,46 @@ runs:
               if (error.status === 404) {
                 core.notice(`This pull request's head has no ${headFile}; merge main to run this check.`);
                 applies = 'false';
+              }
+            }
+          }
+          // Per-author caps on heavy suites (spec:AST-030 FR16). A draft runs
+          // only the fast checks. A queued or capped heavy job fails, so it
+          // never passes the required join untested; a re-run (the pre-merge
+          // restart) is exempt, and a failed lookup runs the suite.
+          if (applies === 'true' && process.env.SCOPE_HEAVY === 'true') {
+            const login = pr.user.login;
+            if (pr.draft) {
+              core.notice('Skipped: draft PR, heavy suites run when ready.');
+              applies = 'false';
+            } else if (Number(process.env.GITHUB_RUN_ATTEMPT ?? '1') === 1 && !login.endsWith('[bot]')) {
+              // Agent lanes share one login: each branch prefix counts as an author.
+              const shared = ['cixzhang'].includes(login);
+              const lane = ref => (shared ? ref.split('/')[0] : '');
+              let held;
+              try {
+                const {search} = await github.graphql(
+                  'query($q: String!) { search(query: $q, type: ISSUE, first: 100) { nodes { ... on PullRequest { number headRefName } } } }',
+                  {q: `repo:${context.repo.owner}/${context.repo.repo} is:pr is:open draft:false author:${login} sort:created-asc`},
+                );
+                const position = list => list.findIndex(p => p.number === pr.number);
+                const laneOpen = search.nodes.filter(p => lane(p.headRefName) === lane(pr.head.ref));
+                const {data} = await github.rest.actions.listWorkflowRuns({
+                  ...context.repo, workflow_id: 'ci.yml', actor: login, event: 'pull_request',
+                  created: `>=${new Date().toISOString().slice(0, 10)}`, per_page: 100,
+                });
+                const laneRuns = data.workflow_runs.filter(r => lane(r.head_branch) === lane(pr.head.ref)).length;
+                if (position(laneOpen) >= 3 || (shared && position(search.nodes) >= 5)) {
+                  held = 'Queued behind your 3 oldest PRs.';
+                } else if (laneRuns > 12 || (shared && data.total_count > 40)) {
+                  held = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
+                }
+              } catch (error) {
+                core.warning(`Per-author caps could not be checked (${error.message}); running the heavy suites.`);
+              }
+              if (held) {
+                core.setFailed(held);
+                return;
               }
             }
           }

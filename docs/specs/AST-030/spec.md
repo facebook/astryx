@@ -266,6 +266,21 @@ they are separately named.
   thought to exclude. `.github/workflow-relevance.json` records each workflow's
   kind and reason, and a contract test holds every workflow to its entry.
 
+- **FR16 — One author's pull requests share the heavy suites.** On a
+  pull request, a heavy or end-to-end job runs its suite only when the pull
+  request is ready for review, is among its author's three oldest open
+  non-draft pull requests, and its author has started at most twelve CI runs
+  that UTC day. Pull requests from the shared agent login count per branch
+  prefix, with that login also held to its five oldest pull requests and forty
+  runs a day; bot accounts are exempt. A draft runs the fast `test-<scope>`
+  checks and reports the heavy job as skipped ("Skipped: draft PR, heavy
+  suites run when ready."); marking it ready runs them. A queued or capped
+  heavy job fails with "Queued behind your 3 oldest PRs." or "Daily heavy-run
+  cap reached, runs tomorrow or at pre-merge.", so no pull request passes the
+  required joins without its heavy suites. A re-run, which is the pre-merge
+  restart, is exempt from both caps, and a lookup that fails runs the suite.
+  Merge-queue entries, `main` and release checks are unaffected.
+
 ### Platform support
 
 - Supported feature/engine floor: GitHub pull-request and merge-group workflows
@@ -310,6 +325,7 @@ read change (FR14).
 | FR11     | surface owner, internal-job, and required-join contract tests                           | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
 | FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests             | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
 | FR13     | classifier, workflow contract, component-analysis and RTL-scope tests                   | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
+| FR16     | `test-scope-action.test.mjs` per-author cap cases                                       | draft; fourth-oldest PR; thirteenth run of the day; agent lane and its backstop; re-run; failed lookup   | a heavy suite that runs on a draft, ahead of the author's three oldest PRs, or past the daily cap, a capped job that passes, or a re-run that is held fails                        |
 | FR14     | `workflow-relevance.test.mjs` over every workflow and `.github/workflow-relevance.json` | path allowlist; required context; landed commit; review event; schedule; manual dispatch                 | an unregistered workflow, a `paths-ignore`, a match-all or exclusion glob, a code trigger without paths, or a path-filtered workflow that reports a required context fails         |
 
 ## Decision log
