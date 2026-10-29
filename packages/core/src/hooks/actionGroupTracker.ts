@@ -161,8 +161,9 @@ export interface ActionGroupTracker {
   /** Whether a press is being tracked (between begin and end or cancel). */
   readonly isTracking: boolean;
   /**
-   * Finish every pending release fade now (its paint comes off) and forget
-   * the press: for the owner's unmount.
+   * Finish the release fades it started that are still running (their paint
+   * comes off), leave any other painter's, and forget the press: for the
+   * owner's unmount.
    */
   dispose(): void;
 }
@@ -238,7 +239,9 @@ export function createActionGroupTracker(
   // The finger's last position: `remeasure` resolves it again.
   let lastX = 0;
   let lastY = 0;
-  // The actions this tracker left fading: `dispose` finishes those fades.
+  // The actions whose fade this tracker started while that fade is still
+  // their paint: `dispose` finishes those fades. The writer tells it when one
+  // ends on its clock or another paint replaces it (onFadeEnd).
   const fading = new Set<Element>();
 
   const paints = () => getOptions().paintsHighlight !== false;
@@ -262,7 +265,11 @@ export function createActionGroupTracker(
       return;
     }
     // The fade ends on the one writer's clock (the press fade).
-    if (paintPress(element, 'fading')) {
+    if (
+      paintPress(element, 'fading', {
+        onFadeEnd: () => fading.delete(element),
+      })
+    ) {
       fading.add(element);
     }
   };
@@ -429,7 +436,7 @@ export function createActionGroupTracker(
     },
     dispose() {
       for (const element of fading) {
-        // Only a fade still running: a later paint is its painter's.
+        // Each is the tracker's own fade, still running.
         paintPress(element, 'none', {onlyFrom: ['fading']});
       }
       fading.clear();
