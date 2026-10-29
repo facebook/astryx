@@ -27,8 +27,8 @@
  * Android) is measured the same way (FR6, DEC-4). It is 0 without a visual
  * viewport, and inside an iframe, whose visual viewport never shrinks for the
  * keyboard (FR7). One set of
- * listeners per window reads it (the visual viewport's resize and scroll, the
- * window's resize, and focus moves), however many components subscribe.
+ * listeners per window reads it (the visual viewport's resize and scroll, and
+ * the window's resize), however many components subscribe.
  *
  * Every route into a field has to reach it without the browser revealing it
  * (FR4). On iOS that reveal scrolls the DOCUMENT, and fixed content travels
@@ -114,23 +114,14 @@ export function measureKeyboardHeight(win: Window): number {
 }
 
 /** A report from the keyboard module, in the order the window raised them. */
-export type KeyboardHeightEvent =
-  | {
-      /** The visual viewport or the window changed size or position. */
-      type: 'viewport';
-      /** The keyboard height after this report. */
-      height: number;
-      /** The report's event time (the document timeline). */
-      timeStamp: number;
-    }
-  | {
-      /** Focus moved into (`focusin`) or out of (`focusout`) `target`. */
-      type: 'focusin' | 'focusout';
-      height: number;
-      timeStamp: number;
-      target: EventTarget | null;
-      relatedTarget: EventTarget | null;
-    };
+export interface KeyboardHeightEvent {
+  /** The visual viewport or the window changed size or position. */
+  type: 'viewport';
+  /** The keyboard height after this report. */
+  height: number;
+  /** The report's event time (the document timeline). */
+  timeStamp: number;
+}
 
 interface KeyboardStore {
   height: number;
@@ -151,7 +142,6 @@ function storeOf(win: Window): KeyboardStore {
 
 function attach(win: Window, store: KeyboardStore): () => void {
   const viewport = win.visualViewport;
-  const doc = win.document;
   store.height = measureKeyboardHeight(win);
   const emit = (event: KeyboardHeightEvent) => {
     for (const listener of [...store.listeners]) {
@@ -162,26 +152,13 @@ function attach(win: Window, store: KeyboardStore): () => void {
     store.height = measureKeyboardHeight(win);
     emit({type: 'viewport', height: store.height, timeStamp: event.timeStamp});
   };
-  const onFocus = (event: FocusEvent) => {
-    emit({
-      type: event.type === 'focusin' ? 'focusin' : 'focusout',
-      height: store.height,
-      timeStamp: event.timeStamp,
-      target: event.target,
-      relatedTarget: event.relatedTarget,
-    });
-  };
   viewport?.addEventListener('resize', onViewport);
   viewport?.addEventListener('scroll', onViewport);
   win.addEventListener('resize', onViewport);
-  doc.addEventListener('focusin', onFocus, true);
-  doc.addEventListener('focusout', onFocus, true);
   return () => {
     viewport?.removeEventListener('resize', onViewport);
     viewport?.removeEventListener('scroll', onViewport);
     win.removeEventListener('resize', onViewport);
-    doc.removeEventListener('focusin', onFocus, true);
-    doc.removeEventListener('focusout', onFocus, true);
   };
 }
 
@@ -301,6 +278,18 @@ export interface RefuseFocusRevealOptions {
  * });
  * ```
  */
+// One capture-phase `blur` listener per document, shared by every caller of
+// refuseFocusReveal in it (spec:AST-094 FR24: document listeners do not grow
+// with the number of instances), added with the first caller and removed
+// with the last.
+const focusTakeovers = new WeakMap<
+  Document,
+  {
+    listener: (event: FocusEvent) => void;
+    callers: Set<(event: FocusEvent) => void>;
+  }
+>();
+
 export function refuseFocusReveal(
   doc: Document,
   {isActive, claim, park}: RefuseFocusRevealOptions,
@@ -320,12 +309,45 @@ export function refuseFocusReveal(
       park?.(event.target);
     }
   };
-  // `blur` does not bubble: only the capture phase hears every one, and it
-  // runs before the browser's own focus step.
-  doc.addEventListener('blur', onBlur, true);
+  let shared = focusTakeovers.get(doc);
+  if (shared == null) {
+    const callers = new Set<(event: FocusEvent) => void>();
+    // Callers hear each blur in the order they came, as separate listeners
+    // would; one that stopped during this blur no longer hears it.
+    const listener = (event: FocusEvent) => {
+      for (const caller of [...callers]) {
+        if (callers.has(caller)) {
+          caller(event);
+        }
+      }
+    };
+    // `blur` does not bubble: only the capture phase hears every one, and it
+    // runs before the browser's own focus step.
+    doc.addEventListener('blur', listener, true);
+    shared = {listener, callers};
+    focusTakeovers.set(doc, shared);
+  }
+  shared.callers.add(onBlur);
   return () => {
-    doc.removeEventListener('blur', onBlur, true);
+    const current = focusTakeovers.get(doc);
+    if (current == null || !current.callers.delete(onBlur)) {
+      return;
+    }
+    if (current.callers.size === 0) {
+      doc.removeEventListener('blur', current.listener, true);
+      focusTakeovers.delete(doc);
+    }
   };
+}
+
+/**
+ * Test-only: how many callers refuse the focus reveal in `doc`, through its
+ * one shared listener. Not part of the runtime API.
+ *
+ * @internal
+ */
+export function __focusTakeoverCallersForTest(doc: Document): number {
+  return focusTakeovers.get(doc)?.callers.size ?? 0;
 }
 
 /** The caller's rules for watchRevealPan. */
@@ -656,8 +678,10 @@ export function useSheetKeyboard({
     // A hide the room is held through (see holdRoomThrough).
     let heldHide: {readonly release: () => void} | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
-    // FR6: where this window measures the keyboard, never by user agent.
-    const ownsFocusTransitions = isKeyboardMeasurable(window);
+    // FR6: where this window measures the keyboard, never by user agent, and
+    // only under a coarse primary pointer: under a fine one no touch-only
+    // listener is registered (architecture INV13, spec:AST-094 FR24).
+    const ownsFocusTransitions = isTouch && isKeyboardMeasurable(window);
     // Desktop Safari and Firefox measure too, but show no on-screen keyboard
     // and keep the browser's own focus (spec:AST-017 FR59, DEC-25): a window
     // switch must not park focus on the sheet. Read on every blur, so a
@@ -1091,9 +1115,6 @@ export function useSheetKeyboard({
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeKeyboardHeight(window, event => {
-      if (event.type !== 'viewport') {
-        return;
-      }
       if (event.height !== lastHeight) {
         lastHeight = event.height;
         revealPan?.report();

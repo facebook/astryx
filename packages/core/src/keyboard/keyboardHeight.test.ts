@@ -421,6 +421,19 @@ describe('one set of listeners per window (FR1, INV11)', () => {
       stopGuide();
     }
   });
+  it('listens to the visual viewport and the window only, with no document focus listener (spec:AST-094 FR24)', () => {
+    const documentAdd = vi.spyOn(document, 'addEventListener');
+    const stop = subscribeKeyboardHeight(window, () => {});
+    try {
+      expect(
+        documentAdd.mock.calls.filter(([type]) => type.startsWith('focus')),
+      ).toEqual([]);
+    } finally {
+      stop();
+      documentAdd.mockRestore();
+    }
+  });
+
   it('reads a keyboard that is already up when the first subscriber attaches', () => {
     // Nothing listens yet: the keyboard came up before any keyboard-aware
     // component mounted (a sheet opened from a focused field).
@@ -502,6 +515,39 @@ describe('the focus refusal (FR4)', () => {
     stop();
     first.remove();
     second.remove();
+  });
+
+  it('shares one document blur listener among its callers, each still hearing every blur (spec:AST-094 FR24)', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const field = document.createElement('input');
+    const other = document.createElement('input');
+    document.body.append(field, other);
+    const heard: string[] = [];
+    const stopFirst = refuseFocusReveal(document, {
+      claim: () => {
+        heard.push('first');
+        return null;
+      },
+    });
+    const stopSecond = refuseFocusReveal(document, {
+      claim: () => {
+        heard.push('second');
+        return null;
+      },
+    });
+    expect(add.mock.calls.filter(([type]) => type === 'blur')).toHaveLength(1);
+    field.focus();
+    other.focus();
+    expect(heard).toEqual(['first', 'second']);
+    stopFirst();
+    expect(remove).not.toHaveBeenCalled();
+    field.focus();
+    expect(heard).toEqual(['first', 'second', 'second']);
+    stopSecond();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(['blur']);
+    field.remove();
+    other.remove();
   });
 });
 
