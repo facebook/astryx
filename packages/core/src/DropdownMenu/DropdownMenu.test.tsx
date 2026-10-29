@@ -127,6 +127,47 @@ describe('DropdownMenu', () => {
     ).not.toBeInTheDocument();
   });
 
+  it("forwards the button's ref object to the popover trigger", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
+  it("forwards the button's ref object to the bottom-sheet trigger", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
+  it("forwards the button's callback ref to the bottom-sheet trigger", () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
   it('renders data-driven actions in a bottom sheet when requested', async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
