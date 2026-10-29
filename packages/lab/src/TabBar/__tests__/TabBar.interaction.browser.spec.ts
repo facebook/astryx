@@ -50,6 +50,7 @@ import {
   releaseAnimations,
   sampleCurve,
   sampleRects,
+  seekAnimations,
   springStep,
   startScreencast,
   tap as tapScript,
@@ -441,6 +442,43 @@ test('a bar removed as the finger lifts reports nothing after it is gone', async
   );
 });
 
+test('a press ends without a choice when the tab list changes under it', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const {driver, bar} = await openBar(page, 'drops-last-tab');
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  const profile = await itemCenter(page, 'Profile');
+  await driver.play(tapScript(profile, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts; the app then drops Profile,
+      // the tab under the finger.
+      await waitForAnimation(bar);
+      await page.evaluate(() =>
+        window.dispatchEvent(new Event('tabbar:drop-last')),
+      );
+      await expect(tab(page, 'Profile')).toHaveCount(0);
+    },
+  });
+  await page.waitForTimeout(400);
+  expect(errors).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    ),
+  ).toEqual([]);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  // The lens settled back onto Home, in the three-tab bar.
+  const home = await itemCenter(page, 'Home');
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(1);
+});
+
 test('the bar sets no page-level stacking rank: its layers order inside it', async ({
   page,
 }) => {
@@ -812,18 +850,22 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
   );
   const {driver} = await openBar(page);
   const body = lensBody(page);
-  const cast = await startScreencast(page);
-  await driver.tap(await itemCenter(page, 'Profile'));
+  const profile = await itemCenter(page, 'Profile');
   await markElement(body);
-  const [slide] = await waitForAnimation(body, {minProgressMs: 16});
-  // Blocked by the page itself in the frame that sees the slide running.
-  const block = await blockMainThread(page, 600, {during: body});
+  const cast = await startScreencast(page);
+  // Armed before the tap, the page blocks itself in the frame that sees the
+  // slide running: one evaluate sees it and blocks, so no runner latency
+  // between the two can eat the slide first. The judged part ends where the
+  // lens settles (settledWithin).
+  const blocking = blockMainThread(page, 600, {during: body});
+  await driver.tap(profile);
+  const block = await blocking;
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
-    {from: block.from, to: Math.min(block.to, slide.to)},
+    {from: block.from, to: block.to},
     {
       axis: 'x',
       settledWithin: 2,
@@ -835,7 +877,7 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     'busy-main-thread/tabbar-lens-travel',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, slide, proof},
+        {block, proof},
         null,
         1,
       ),
@@ -846,12 +888,12 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     name: 'tabbar-lens-travel-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, slide.to) + 40,
+    to: proof.judged.to + 40,
     columns: 8,
     cellScale: 0.35,
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
-  await film.write(testInfo, {block, slide});
+  await film.write(testInfo, {block});
   // The harness's verdict: no stall past two dropped screencast frames,
   // and the frames moving (a loaded machine drops a frame
   // or two; a frozen slide presents none).
@@ -1469,6 +1511,60 @@ test.describe('minimize on scroll', () => {
     await expect.poll(() => isMinimized(page)).toBe(false);
   });
 
+  test('expanded by a tap, the bar minimizes again only after another 66 px down', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    // Less than the distance down: still expanded.
+    const from = await pageScroll(page);
+    await scrollByFinger(page, driver, 40);
+    expect((await pageScroll(page)) - from).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    // The rest of the distance minimizes it again.
+    await scrollByFinger(page, driver, 60);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('where the browser sends no scrollend, the watch ends with the person’s scroll: a script’s scroll after it counts for nothing', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      // A browser without scrollend: no handler property to detect, and
+      // no event delivered.
+      for (const proto of [
+        Window.prototype,
+        Document.prototype,
+        Element.prototype,
+        HTMLElement.prototype,
+      ]) {
+        delete (proto as unknown as {onscrollend?: unknown}).onscrollend;
+      }
+      window.addEventListener(
+        'scrollend',
+        event => event.stopImmediatePropagation(),
+        {capture: true},
+      );
+    });
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    expect(await page.evaluate(() => 'onscrollend' in window)).toBe(false);
+    await scrollByFinger(page, driver, 40);
+    expect(await isMinimized(page)).toBe(false);
+    // Past the reader's fallback after the last scroll event.
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollBy(0, 120));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBeGreaterThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+  });
+
   test('a script scrolling the page to the top leaves it minimized', async ({
     page,
   }) => {
@@ -1826,19 +1922,22 @@ test.describe('minimize on scroll', () => {
     const end = page.locator('[data-tab-bar-platter-end]');
     await markElement(end);
     const cast = await startScreencast(page);
-    // Just past the trigger, then block as soon as the collapse is running.
+    // Armed before the drag, the page blocks itself in the frame that sees
+    // the collapse running: one evaluate sees it and blocks, so no runner
+    // latency between the two can eat the collapse first. The judged part
+    // ends where the platter settles (settledWithin).
+    const blocking = blockMainThread(page, 600, {during: end});
+    // Just past the trigger.
     await driver.play(
       drag({x: 200, y: 520}, {x: 200, y: 420}, {durationMs: 300, restMs: 150}),
     );
-    const [collapse] = await waitForAnimation(end, {minProgressMs: 16});
-    // Blocked by the page itself in the frame that sees the collapse running.
-    const block = await blockMainThread(page, 600, {during: end});
+    const block = await blocking;
     await page.waitForTimeout(150);
     const castFrames = await cast.stop();
     const tracked = await trackMarker(page, castFrames);
     const proof = busyWindowProof(
       tracked,
-      {from: block.from, to: Math.min(block.to, collapse.to)},
+      {from: block.from, to: block.to},
       {
         axis: 'x',
         settledWithin: 2,
@@ -2012,6 +2111,106 @@ test.describe('bottom accessory', () => {
     const back = await accessory(page).boundingBox();
     expect(back?.x ?? 0).toBeCloseTo(above.x, 0);
     expect(back?.y ?? 0).toBeCloseTo(above.y, 0);
+  });
+
+  test('expanding, its content stays inside its glass', async ({page}) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    await scrollByFinger(page, driver, 100);
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await page.waitForTimeout(1000);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await waitForAnimation(accessory(page));
+    await holdAnimations(page, accessory(page));
+    const overhangs: {t: number; overhang: number}[] = [];
+    for (const t of [0, 16.667, 50, 100, 140, 200, 300]) {
+      await seekAnimations(page, t);
+      const overhang = await accessory(page).evaluate(element => {
+        // The glass's trailing cap, and "Next" as it shows: its box cut by
+        // every clipping box between it and the accessory.
+        const glass = element.firstElementChild as HTMLElement;
+        const cap = (
+          glass.lastElementChild as HTMLElement
+        ).getBoundingClientRect();
+        const next = [...element.querySelectorAll('button')].find(
+          button =>
+            button.getAttribute('aria-label') === 'Next' ||
+            button.textContent === 'Next',
+        );
+        if (next == null) {
+          throw new Error('no Next');
+        }
+        let right = next.getBoundingClientRect().right;
+        for (
+          let node = next.parentElement;
+          node != null && node !== element.parentElement;
+          node = node.parentElement
+        ) {
+          if (getComputedStyle(node).overflow !== 'visible') {
+            right = Math.min(right, node.getBoundingClientRect().right);
+          }
+        }
+        return right - cap.right;
+      });
+      overhangs.push({t, overhang});
+    }
+    await releaseAnimations(page, {finish: true});
+    for (const {t, overhang} of overhangs) {
+      expect(overhang, JSON.stringify({t, overhangs})).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  test('turned around mid-move, it keeps its speed (spec:AST-094 FR6)', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    // Just past the trigger, so the page stops while it is still moving.
+    await scrollByFinger(page, driver, 80, {settle: false});
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await waitForScrollIdle(page);
+    expect(
+      await accessory(page).evaluate(element =>
+        element.getAnimations().some(a => a.playState === 'running'),
+      ),
+    ).toBe(true);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await holdAnimations(page, accessory(page));
+    const [first, second] = await sampleCurve(accessory(page), [0, 16.667]);
+    await releaseAnimations(page, {finish: true});
+    // It was moving down into its inline place: the turn keeps that speed,
+    // so its first frame back still carries it down (away from rest above),
+    // as a spring retargeted mid-flight does.
+    expect(
+      second.transform.translateY,
+      JSON.stringify({first, second}),
+    ).toBeGreaterThan(first.transform.translateY);
   });
 
   test('its content takes taps above the bar and inline, never choosing a tab', async ({

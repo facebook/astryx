@@ -46,7 +46,7 @@
  * across the items, and the lift chooses the item nearest the finger; a
  * selection made with the keys slides it on UIKit's spring
  * (`tabBar.lensTravel`). Everything runs on the compositor, keeps its speed
- * when retargeted, and plays each spring as the theme sets its motion role.
+ * when retargeted, and plays each spring as measured (uikit/tabBar.ts).
  * That motion is TabBar's touch layer (TabBarTouch.ts), its one import site.
  * Under a mouse (a fine pointer) the lens slides on the theme's duration and
  * easing (a CSS transition on `translate`, run by the compositor), the
@@ -85,7 +85,9 @@
  * ("Library, 3"; `badgeLabel`, or the badge itself). Collapsed, the bar is
  * one button for assistive technology, as on iOS: the circle, named after
  * the selected tab and collapsed (`aria-expanded`), the tabs inert until it
- * expands; activated from the keys, focus lands on the selected tab.
+ * expands; activated from the keys, focus lands on the selected tab. The
+ * circle and the glass's three pieces mount only when the bar can collapse
+ * under a finger (minimizing is on, or a search tab is there).
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
  * useTabBarLens.ts, useTabBarMinimize.ts, useTabBarSearch.ts,
@@ -172,8 +174,16 @@ export interface TabBarProps extends Omit<
    * navigation stack to the root, as iOS does.
    */
   onReselect?: (value: string) => void;
-  /** Names the tab bar for assistive technology. */
+  /**
+   * Names the tab bar for assistive technology. Without it, or `aria-label`
+   * or `aria-labelledby`, the tab list is named "Tabs" in the reader's
+   * language, as TabList's is.
+   */
   label?: string;
+  /** Names the tab list, as `label` does; it wins over `label`. */
+  'aria-label'?: string;
+  /** Names the tab list after another element; it wins over both. */
+  'aria-labelledby'?: string;
   /**
    * Whether scrolling the page down collapses the bar into a circle holding
    * the selected tab's icon (UIKit's `tabBarMinimizeBehavior`): reaching the
@@ -468,6 +478,11 @@ const styles = stylex.create({
     backdropFilter: 'blur(16px) saturate(180%)',
     boxShadow: shadowVars['--shadow-med'],
   },
+  // The bar never collapsing, the glass is one piece.
+  platterWhole: (half: string) => ({
+    insetInline: 0,
+    borderRadius: half,
+  }),
   // Each piece keeps its shadow off the pieces it meets.
   platterStart: (half: string) => ({
     insetInlineStart: 0,
@@ -519,6 +534,14 @@ const styles = stylex.create({
     position: 'absolute',
     inset: 0,
     pointerEvents: 'none',
+  },
+  // The content's window: moved with the glass's trailing cap while the
+  // glass grows (useTabBarMinimize.ts), so the content never shows past it.
+  accessoryClip: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+    borderRadius: radiusVars['--radius-full'],
   },
   accessoryContent: {
     position: 'absolute',
@@ -840,6 +863,8 @@ export function TabBar({
   onChange,
   onReselect,
   label,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   minimizeBehavior = 'never',
   bottomAccessory,
   children,
@@ -850,6 +875,12 @@ export function TabBar({
   ...props
 }: TabBarProps) {
   const t = useTranslator();
+  // The tab list always has a name, and the aria naming props reach it rather
+  // than the root, as TabList's do.
+  const tabListLabel =
+    ariaLabelledBy != null
+      ? undefined
+      : (ariaLabel ?? label ?? t('@astryx.tabList.label'));
   const items = readItems(children);
   const search = readSearch(children);
   const hasSearch = search != null;
@@ -920,6 +951,11 @@ export function TabBar({
       search.fieldRef?.current?.focus();
     }
   };
+  // The bar can collapse under a finger: minimizing is on, or a search tab
+  // is there (choosing it collapses the bar). Only then do the circle and the
+  // glass's three pieces mount.
+  const canCollapse =
+    isTouch && (minimizeBehavior === 'onScrollDown' || search != null);
   const minimize = useTabBarMinimize({
     capsuleRef,
     hasSearch,
@@ -1072,15 +1108,23 @@ export function TabBar({
                 )}
               />
             </div>
-            <div {...stylex.props(styles.accessoryContent)}>
-              {accessoryContent}
+            <div
+              ref={minimize.accessoryClip}
+              data-tab-bar-accessory-clip=""
+              {...stylex.props(styles.accessoryClip)}>
+              <div
+                ref={minimize.accessoryContent}
+                {...stylex.props(styles.accessoryContent)}>
+                {accessoryContent}
+              </div>
             </div>
           </div>
         ) : null}
         <div
           ref={mergedCapsuleRef}
           role="tablist"
-          aria-label={label}
+          aria-label={tabListLabel}
+          aria-labelledby={ariaLabelledBy}
           aria-orientation="horizontal"
           // Collapsed (minimized, or while searching), the circle stands for
           // the bar; with no tab left reachable the list goes inert too.
@@ -1103,18 +1147,29 @@ export function TabBar({
             aria-hidden
             data-tab-bar-platter=""
             {...stylex.props(styles.platter(HALF_BAR))}>
-            <div
-              {...stylex.props(styles.glass, styles.platterStart(HALF_BAR))}
-            />
-            <div
-              ref={minimize.platterMiddle}
-              {...stylex.props(styles.glass, styles.platterMiddle(HALF_BAR))}
-            />
-            <div
-              ref={minimize.platterEnd}
-              data-tab-bar-platter-end=""
-              {...stylex.props(styles.glass, styles.platterEnd(HALF_BAR))}
-            />
+            {canCollapse ? (
+              <>
+                <div
+                  {...stylex.props(styles.glass, styles.platterStart(HALF_BAR))}
+                />
+                <div
+                  ref={minimize.platterMiddle}
+                  {...stylex.props(
+                    styles.glass,
+                    styles.platterMiddle(HALF_BAR),
+                  )}
+                />
+                <div
+                  ref={minimize.platterEnd}
+                  data-tab-bar-platter-end=""
+                  {...stylex.props(styles.glass, styles.platterEnd(HALF_BAR))}
+                />
+              </>
+            ) : (
+              <div
+                {...stylex.props(styles.glass, styles.platterWhole(HALF_BAR))}
+              />
+            )}
           </div>
           <div
             ref={minimize.items}
@@ -1309,45 +1364,49 @@ export function TabBar({
             )}
           </div>
         </div>
-        <button
-          ref={mergedCircleRef}
-          type="button"
-          data-tab-bar-circle=""
-          // Collapsed, the circle is the bar's one element for assistive
-          // technology, as on iOS: the selected tab, collapsed (while
-          // searching, the tab it returns to). Expanded, it is hidden.
-          aria-label={
-            isMinimized
-              ? (selectedItem?.label ?? label ?? t('@astryx.tabList.label'))
-              : undefined
-          }
-          aria-expanded={isMinimized && !isSearchSelected ? false : undefined}
-          aria-hidden={isMinimized ? undefined : true}
-          tabIndex={isMinimized ? 0 : -1}
-          onClick={chooseCircle}
-          {...stylex.props(
-            styles.circle,
-            styles.circleButton,
-            styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
-            isMinimized && styles.circleActive,
-            isSearchSelected && styles.circlePlain,
-          )}>
-          {selectedItem != null ? (
-            <span
-              aria-hidden
-              {...stylex.props(
-                styles.icon,
-                styles.box(
-                  CIRCLE_ICON_INSET,
-                  CIRCLE_ICON_INSET,
-                  ICON_SIZE,
-                  ICON_SIZE,
-                ),
-              )}>
-              {selectedItem.selectedIcon ?? selectedItem.icon}
-            </span>
-          ) : null}
-        </button>
+        {canCollapse ? (
+          <button
+            ref={mergedCircleRef}
+            type="button"
+            data-tab-bar-circle=""
+            // Collapsed, the circle is the bar's one element for assistive
+            // technology, as on iOS: the selected tab, collapsed (while
+            // searching, the tab it returns to). Expanded, it is hidden.
+            aria-label={
+              isMinimized
+                ? (selectedItem?.label ??
+                  tabListLabel ??
+                  t('@astryx.tabList.label'))
+                : undefined
+            }
+            aria-expanded={isMinimized && !isSearchSelected ? false : undefined}
+            aria-hidden={isMinimized ? undefined : true}
+            tabIndex={isMinimized ? 0 : -1}
+            onClick={chooseCircle}
+            {...stylex.props(
+              styles.circle,
+              styles.circleButton,
+              styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
+              isMinimized && styles.circleActive,
+              isSearchSelected && styles.circlePlain,
+            )}>
+            {selectedItem != null ? (
+              <span
+                aria-hidden
+                {...stylex.props(
+                  styles.icon,
+                  styles.box(
+                    CIRCLE_ICON_INSET,
+                    CIRCLE_ICON_INSET,
+                    ICON_SIZE,
+                    ICON_SIZE,
+                  ),
+                )}>
+                {selectedItem.selectedIcon ?? selectedItem.icon}
+              </span>
+            ) : null}
+          </button>
+        ) : null}
         {search != null ? (
           <div
             ref={searchHostRef}
