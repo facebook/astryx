@@ -13,6 +13,9 @@ export const docs = {
       {className: 'astryx-list', visualProps: ['density', 'listStyle']},
       {className: 'astryx-list-item'},
     ],
+    vars: [
+      {name: '--_hit-border-bottom', description: "Width of the divider below a divided row (0 on the last row), which the row's touch hit layer adds to its offset so its band starts past the divider. Set by ListItem under hasDividers from --border-width; a theme changes the divider through that token.", default: '0px', private: true},
+    ],
   },
   description: 'List container with density, dividers, and header support.',
   props: [
@@ -32,13 +35,13 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items. Under a finger, rows are at least 52px tall, 62px with a description, as iOS table rows are; a compact list and a list with markers keep their rows.',
+      description: "Spacing density for items. Under a finger, an interactive row's hit target reaches 44px where its neighbors leave room, with no change to how rows look or lay out.",
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items. Under a finger, a touch press hides the dividers on either side of the pressed row until the finger lifts, as iOS lists do.',
+      description: 'Show dividers between items.',
       default: 'false',
     },
     {
