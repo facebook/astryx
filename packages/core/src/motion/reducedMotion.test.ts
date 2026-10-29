@@ -41,9 +41,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** A theme mark's twin key, spelled as a component writes it. */
+/**
+ * A theme mark's twin key, as a component writes it; Prettier may wrap a long
+ * one across lines.
+ */
 const TWIN =
-  "stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)";
+  /stylex\.when\.ancestor\(\s*'\[data-astryx-reduced-motion\]',\s*reducedMotionScope,?\s*\)/g;
 
 /**
  * The key nested in each kind of arm's twin. It keeps the arm's pointer split
@@ -263,12 +266,13 @@ function armsWithoutTwins(source: string): string[] {
       continue;
     }
     const [start, end] = enclosingObject(blanked, index);
-    const at = source.indexOf(TWIN, start);
-    if (at === -1 || at > end) {
+    TWIN.lastIndex = start;
+    const twinKey = TWIN.exec(source);
+    if (twinKey === null || twinKey.index > end) {
       missing.push(`line ${line}: no twin beside ${arm}`);
       continue;
     }
-    const open = blanked.indexOf('{', at + TWIN.length);
+    const open = blanked.indexOf('{', twinKey.index + twinKey[0].length);
     const twin = source.slice(open, closingBrace(blanked, open) + 1);
     if (open === -1 || open > end || !twin.includes(want)) {
       missing.push(`line ${line}: the twin beside ${arm} lacks ${want}`);
