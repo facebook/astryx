@@ -2901,6 +2901,25 @@ test.describe('search tab', () => {
     );
   });
 
+  test('searching from a disabled tab, the leading circle holds the enabled tab nearest it and returns there', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-from-disabled-tab');
+    await tapSearch(page, driver);
+    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    const held = page.locator('[data-tab-bar-circle]');
+    await expect(held).toHaveAccessibleName('Library');
+    await waitForRest(lensBody(page));
+    const box = await held.boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+  });
+
   test('right to left, the search circle sits at the left end and the field spans from the right', async ({
     page,
   }) => {
@@ -2971,6 +2990,26 @@ test.describe('search tab', () => {
       await tab(page, 'Search').focus();
       await page.keyboard.press('Enter');
       await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    });
+
+    test('searching from a disabled tab, Escape returns to the enabled tab nearest it, never the disabled one', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openStory(
+        page,
+        storybook(),
+        'lab-tabbar--search-from-disabled-tab',
+      );
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      await page.getByRole('tab', {name: 'Search'}).click();
+      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(tab(page, 'Library')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'false');
     });
   });
 

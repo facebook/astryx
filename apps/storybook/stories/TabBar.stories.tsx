@@ -366,6 +366,15 @@ export const SearchTabWaitsInline: Story = {
   render: () => <Bar hasSearch searchActivates={false} />,
 };
 
+/**
+ * The app has disabled the selected tab (Home) and search is chosen from it:
+ * leaving search returns to the enabled tab nearest it (Library), never to
+ * the disabled one.
+ */
+export const SearchFromDisabledTab: Story = {
+  render: () => <Bar hasSearch searchActivates={false} disabled={['home']} />,
+};
+
 /** Badges appear, change and disappear at once, as UIKit's do. */
 function BadgesDemo() {
   const [count, setCount] = useState(0);
