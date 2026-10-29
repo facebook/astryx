@@ -79,7 +79,7 @@ export const docs = {
       name: 'options.longPressDelayMs',
       type: 'number',
       description:
-        "How long a finger must rest on the trigger before the menu opens under it. Unset, a finger on every device opens the menu as it presses, or after 150 ms inside a scroll view, and a fine primary pointer waits 500 ms. Set, it is that wait everywhere. A tap released sooner opens the menu through the trigger's click.",
+        "How long a finger must rest on the trigger before the menu opens under it. Unset, a finger on every device opens the menu as it presses, or after 150 ms inside a scroll view. Set, it is that wait everywhere. A tap released sooner opens the menu through the trigger's click.",
     },
     {
       name: 'options.isEnabled',
