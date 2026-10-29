@@ -109,6 +109,29 @@ const app = <InternationalizationContext value={makeI18n()}><App /></Internation
     );
   });
 
+  it('leaves a literal with a getter or a method behind the TODO in a .js file, where the babel parser reads them as properties', () => {
+    // The runner parses .js, .jsx, .mjs and .cjs with babel, which reports an
+    // accessor or a method in an object literal as a Property (kind 'get',
+    // method: true). Mapping one would write a function-valued prop.
+    const jsParser = jscodeshift.withParser('babel');
+    const jsApi = {jscodeshift: jsParser, stats: () => {}, report: () => {}};
+    for (const literal of [
+      '{get locale() { return current; }, messages}',
+      "{locale() { return 'fr'; }, messages}",
+    ]) {
+      const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+const app = <InternationalizationContext value={${literal}}><App /></InternationalizationContext>;`;
+      const output =
+        transform({source: input, path: 'test.jsx'}, jsApi) ?? input;
+      expect(output).toContain(EXPRESSION_TODO);
+      expect(folded(output)).toContain(
+        `<InternationalizationContext value={${literal}}>`,
+      );
+      expect(output).not.toContain('<InternationalizationProvider');
+      expect(() => jsParser(output)).not.toThrow();
+    }
+  });
+
   it('reuses an aliased provider import and handles a namespace and an aliased context', () => {
     const input = `import * as i18n from '@astryxdesign/core/i18n';
 import {InternationalizationContext as Ctx, InternationalizationProvider as IP} from '@astryxdesign/core/i18n';

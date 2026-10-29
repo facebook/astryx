@@ -512,7 +512,11 @@ export default function migrateInternationalizationContext(file, api) {
       value.type === 'ObjectExpression' &&
       value.properties.every(
         (/** @type {any} */ p) =>
-          (p.type === 'Property' || p.type === 'ObjectProperty') &&
+          // Plain `key: value` entries only. The babel parser (.js files)
+          // reports an accessor or a method as a Property too, with kind
+          // 'get'/'set' or method: true; mapping one would pass a function.
+          (p.type === 'ObjectProperty' ||
+            (p.type === 'Property' && p.kind === 'init' && !p.method)) &&
           !p.computed &&
           (p.key.type === 'Identifier' ||
             p.key.type === 'StringLiteral' ||
