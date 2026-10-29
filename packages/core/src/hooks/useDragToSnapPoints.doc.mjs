@@ -24,14 +24,15 @@ export const docs = {
     {
       name: 'options.axis',
       type: "'x' | 'y'",
-      description: 'The axis the element moves along.',
+      description:
+        'The axis the element moves along. A new one creates the drag again, starting where the element is.',
       required: true,
     },
     {
       name: 'options.snapPoints',
       type: 'number[]',
       description:
-        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. Changing them restarts the drag with the element at rest.",
+        "Offsets in px along `axis` from the element's resting position, such as `[0, 240, 480]`, sorted before use (`onSettle` and `settleTo` count in that order); an empty list makes the drag do nothing. Unlike BottomSheet's `snapPoints`, they are not fractions of the viewport. New ones reach the running drag: the element keeps its place and any settle in flight, and moves only when the point it rests on or heads for is gone, onto the nearest new one.",
       required: true,
     },
     {
