@@ -47,7 +47,7 @@ function buildA11ySection(a11yReport, storiesAuditedByComponent) {
   // No report: the audit did not run (pull requests run it only with the
   // `ci:heavy-lanes` label, spec:AST-030 FR12). Never claim a clean result.
   if (!a11yReport) {
-    return a11ySection + '**Status:** The accessibility audit did not run on this pull request. It runs on every push to `main` and before each release; add the `ci:heavy-lanes` label to run it here.\n\n';
+    return a11ySection + '**Status:** The accessibility audit did not run on this pull request. It runs after merges to `main` and before each release; pull requests that touch components run it with the `ci:heavy-lanes` label.\n\n';
   }
   const totalViolations = Object.values(a11yReport.components || {})
     .reduce((sum, comp) => sum + (comp.violations?.length || 0), 0);

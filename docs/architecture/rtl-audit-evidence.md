@@ -151,7 +151,8 @@ Lint and rendered audit are complementary:
   selectors are used only for semantics generic discovery cannot infer, such as
   order, scroll direction, overlay side, or touch-target ownership.
 - **INV7 — CI scope and weekly scope answer different questions.** The RTL audit
-  runs on every push to `main` and before each release, at full scope; a pull
+  runs after merges to `main` (a burst of pushes is checked once, at its newest
+  commit) and before each release, at full scope; a pull
   request runs it only with the `ci:heavy-lanes` label (spec:AST-030 FR12, DEC-7).
   When a pull request runs it, it checks components affected by the change; it
   may run per package, but the PR result is the join of every package scope and

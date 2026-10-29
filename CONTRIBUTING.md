@@ -385,7 +385,7 @@ Two repo-side rules worth restating here:
   WAI-ARIA APG patterns and are tested once; a bespoke reimplementation of
   one is a review reject.
 - CI is the enforcement layer, not a replacement for the checklist: the
-  `pr-a11y` job in `ci.yml` runs an axe audit on every push to `main` and
+  `pr-a11y` job in `ci.yml` runs an axe audit after merges to `main` and
   before each release (and on a pull request labelled `ci:heavy-lanes`), a
   weekly workflow scans the full component surface, and the
   `useAnnounce` lint rule rejects hand-wired `aria-live` regions. axe only
@@ -547,7 +547,8 @@ component set, or has no audit spec has an entry in
 
 ### Accessibility audits
 
-Every push to `main`, every release check, and a PR labelled `ci:heavy-lanes`
+Merges to `main` (checked at the newest commit of a burst), every release
+check, and a PR labelled `ci:heavy-lanes`
 that touches components run an axe-core audit (the `pr-a11y` CI job); on a PR
 it covers the Storybook stories of the changed components. The job **fails** when it
 finds a violation that is not listed in the checked-in baseline,

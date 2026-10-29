@@ -364,16 +364,17 @@ surface” exception.
 
 Run release evidence against an exact commit in current `main` history, not only
 constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
-visual, accessibility, and RTL checks do not run on every main push. Reuse
-existing test/build owners, keep their finding policies, and fail closed on
-incomplete scope, missing work, or when the checked commit is no longer in
-current `main` history (DEC-7 now runs these checks on every main push).
+visual, accessibility, and RTL checks do not run on every main push (DEC-7
+supersedes this sentence: they run after merges to `main`). Reuse existing
+test/build owners, keep their finding policies, and fail closed on incomplete
+scope, missing work, or when the checked commit is no longer in current `main`
+history.
 Baseline capture and the reviewed pull request that
 versions an accepted candidate remain separate operations.
 
-PR accessibility remains a scoped, fast check: audit only explicitly resolved
-changed component owners and retain the fast modal-close, theme-var, and story-play
-browser guards. Never widen a PR to the exhaustive accessibility sweep because a
+PR accessibility, when a pull request runs it (DEC-7), is a scoped, fast check:
+audit only explicitly resolved changed component owners and retain the fast
+modal-close, theme-var, and story-play browser guards. Never widen a PR to the exhaustive accessibility sweep because a
 shared path changed or the component set is empty. Missing or approximate analysis
 fails the scoped check rather than silently claiming no work. Multi-component
 folders expand only to their own canonical component owners or existing umbrella
@@ -396,11 +397,13 @@ the same exact-commit `release-check` the release gate uses, and before a cut;
 a pull request runs them only when it opts in with the `ci:heavy-lanes` label. Main-push checks are throttled: one runs at a time, a
 burst of pushes collapses to its newest commit, and a running check is never
 cancelled, so every check that starts finishes.
-Pull request updates keep the fast checks and every required context. A
+Pull request updates keep the fast checks and every required context; the
+modal-close, theme-var and story-play guards are steps of the accessibility
+owner, so they run with it, after merge or on a labelled pull request. A
 failure on `main` is repaired forward with an atomic pull request, not reverted
-first. This supersedes DEC-5's choice to keep these checks off main pushes: the
-browser suites on larger runners were most of the repository's Actions spend,
-and they ran again on every update of every open pull request. An opted-in
+first. This supersedes DEC-5's choice to keep these checks off main pushes:
+running the browser suites on every update of every open pull request costs
+far more than running them once per merge burst on `main`. An opted-in
 pull request still runs on its merge commit, so DEC-6's concern about testing a
 head instead of the merged result does not apply.
 
