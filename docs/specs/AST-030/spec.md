@@ -252,8 +252,10 @@ they are separately named.
   on the repository's supported Node and runner versions.
 - Unsupported behavior: incomplete or unavailable classification receives no fast
   path and runs broad CI.
-- Browser evidence: routing itself has no visual claim; browser checks remain
-  mandatory whenever their owning surface is present or scope is uncertain.
+- Browser evidence: routing itself has no visual claim; the browser checks FR12
+  routes to a pull request remain mandatory whenever their owning surface is
+  present or scope is uncertain, and visual, accessibility and RTL run on `main`
+  and release checks (FR12).
 
 ## Current-state impact
 
