@@ -16,7 +16,7 @@
  *   thumbs' touch targets: one touch model on every touch device, FR13);
  *   elsewhere a mouse drag on a thumb pans it with no lift and no coast, and
  *   a mouse press on the track keeps Slider's own pointer handlers. A wheel
- *   or a trackpad's scroll stays the page's. Every spring is the UIKit
+ *   or a trackpad's scroll goes to the scroll under it. Every spring is the UIKit
  *   table's internal constant (touch motion has no theme surface).
  *
  * WHAT A FINGER DOES (UISlider, iOS 26.2; values and sources in
@@ -314,7 +314,7 @@ export class SliderTouchController {
         allowedPointerTypes: ['touch', 'pen'],
         // A control's thumb is no pan: it takes no wheel or trackpad scroll
         // in any direction, as a range input takes none (UISlider is a
-        // UIControl), so a scroll over the slider stays the page's.
+        // UIControl), so a scroll over the slider goes to the scroll under it.
         allowedScrollTypes: [],
         // A held thumb does something, so a held finger never starts a text
         // selection or the callout on it: the gesture host takes this lock
