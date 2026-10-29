@@ -299,8 +299,8 @@ export interface DefineThemeInput<
    *   keep their measured bounce.
    * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
    *   for everyone; so far the theme's motion-keyed adaptation rules, the
-   *   press release fade and the animator follow it, not yet components'
-   *   other Reduce Motion styles. Nothing loosens a person's own setting.
+   *   press release fade and the animator, with its layout glide and Reduce
+   *   Motion fade, follow it, not yet components' other Reduce Motion styles. Nothing loosens a person's own setting.
    *
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over

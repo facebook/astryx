@@ -189,8 +189,9 @@ export const myTheme = defineTheme({
    *     measured bounce.
    *   reducedMotion — 'always' reduces motion for everyone (so far the
    *     theme's motion-keyed adaptation rules, the press release fade and the
-   *     animator, not yet components' other Reduce Motion styles); 'system'
-   *     (the default) follows each person's setting.
+   *     animator, with its layout glide and Reduce Motion fade, not yet
+   *     components' other Reduce Motion styles); 'system' (the default)
+   *     follows each person's setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
    * Finger tracking, momentum, the keyboard, hover, the press's onset delay
    * and tap flash, and busy loops never follow them; the press release fade

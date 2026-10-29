@@ -320,7 +320,8 @@ not enforcement.
 
 The reach of `reducedMotion: 'always'` is accepted but partly unshipped
 (`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules, the press release
-fade and the animator key reduced motion on the mark; components' other Reduce
+fade, the animator, its layout glide (`motion/animatedLayout.ts`) and
+`reducedMotionFade()` key reduced motion on the mark; components' other Reduce
 Motion styles and other script readers of `prefers-reduced-motion` do not yet. Until they do, that part of INV15 and FR6 is current authority but not
 enforcement.
 

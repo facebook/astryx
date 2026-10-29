@@ -15,8 +15,9 @@
  * role's bounce by its weight). A theme or rule that sets them writes
  * `--_astryx-motion-tempo` and `--_astryx-motion-character`, which the
  * animator reads where an element inherits them (motion/themeKnobs.ts). `reducedMotion: 'always'` marks the theme's root; so
- * far motion-keyed adaptation rules, the press release fade and the animator
- * read the mark, not yet components' other Reduce Motion styles. `'system'`
+ * far motion-keyed adaptation rules, the press release fade, the animator, its
+ * layout glide and reducedMotionFade() read the mark, not yet components'
+ * other Reduce Motion styles. `'system'`
  * follows each person's setting. With the defaults (tempo 1, `'standard'`,
  * `'system'`) every token is today's.
  *
