@@ -375,6 +375,25 @@ describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
     expect(theme.tokens['--pre-tempo-duration-medium-max']).toBe('600ms');
   });
 
+  it('names every property it writes beside the core tokens privately, with --_astryx- (architecture:theme-tokens INV1)', () => {
+    const core = new Set([
+      ...Object.keys(durationDefaults),
+      ...Object.keys(easeDefaults),
+    ]);
+    const tokens = expandThemeMotion({
+      fast: 100,
+      medium: 250,
+      ratio: 0.75,
+      tempo: 1.2,
+      character: 'crisp',
+    });
+    const extra = Object.keys(tokens).filter(name => !core.has(name));
+    expect(extra.length).toBeGreaterThan(0);
+    for (const name of extra) {
+      expect(name).toMatch(/^--_astryx-/);
+    }
+  });
+
   it('Spinner and Skeleton read the pre-tempo duration first', () => {
     const read = (file: string) =>
       fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
