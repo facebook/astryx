@@ -27,8 +27,8 @@
  * Android) is measured the same way (FR6, DEC-4). It is 0 without a visual
  * viewport, and inside an iframe, whose visual viewport never shrinks for the
  * keyboard (FR7). One set of
- * listeners per window reads it (the visual viewport's resize and scroll, and
- * the window's resize), however many components subscribe.
+ * listeners per window reads it (the visual viewport's resize and scroll, the
+ * window's resize, and focus moves), however many components subscribe.
  *
  * Every route into a field has to reach it without the browser revealing it
  * (FR4). On iOS that reveal scrolls the DOCUMENT, and fixed content travels
@@ -114,14 +114,23 @@ export function measureKeyboardHeight(win: Window): number {
 }
 
 /** A report from the keyboard module, in the order the window raised them. */
-export interface KeyboardHeightEvent {
-  /** The visual viewport or the window changed size or position. */
-  type: 'viewport';
-  /** The keyboard height after this report. */
-  height: number;
-  /** The report's event time (the document timeline). */
-  timeStamp: number;
-}
+export type KeyboardHeightEvent =
+  | {
+      /** The visual viewport or the window changed size or position. */
+      type: 'viewport';
+      /** The keyboard height after this report. */
+      height: number;
+      /** The report's event time (the document timeline). */
+      timeStamp: number;
+    }
+  | {
+      /** Focus moved into (`focusin`) or out of (`focusout`) `target`. */
+      type: 'focusin' | 'focusout';
+      height: number;
+      timeStamp: number;
+      target: EventTarget | null;
+      relatedTarget: EventTarget | null;
+    };
 
 interface KeyboardStore {
   height: number;
@@ -142,6 +151,7 @@ function storeOf(win: Window): KeyboardStore {
 
 function attach(win: Window, store: KeyboardStore): () => void {
   const viewport = win.visualViewport;
+  const doc = win.document;
   store.height = measureKeyboardHeight(win);
   const emit = (event: KeyboardHeightEvent) => {
     for (const listener of [...store.listeners]) {
@@ -152,13 +162,26 @@ function attach(win: Window, store: KeyboardStore): () => void {
     store.height = measureKeyboardHeight(win);
     emit({type: 'viewport', height: store.height, timeStamp: event.timeStamp});
   };
+  const onFocus = (event: FocusEvent) => {
+    emit({
+      type: event.type === 'focusin' ? 'focusin' : 'focusout',
+      height: store.height,
+      timeStamp: event.timeStamp,
+      target: event.target,
+      relatedTarget: event.relatedTarget,
+    });
+  };
   viewport?.addEventListener('resize', onViewport);
   viewport?.addEventListener('scroll', onViewport);
   win.addEventListener('resize', onViewport);
+  doc.addEventListener('focusin', onFocus, true);
+  doc.addEventListener('focusout', onFocus, true);
   return () => {
     viewport?.removeEventListener('resize', onViewport);
     viewport?.removeEventListener('scroll', onViewport);
     win.removeEventListener('resize', onViewport);
+    doc.removeEventListener('focusin', onFocus, true);
+    doc.removeEventListener('focusout', onFocus, true);
   };
 }
 
@@ -1115,6 +1138,9 @@ export function useSheetKeyboard({
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeKeyboardHeight(window, event => {
+      if (event.type !== 'viewport') {
+        return;
+      }
       if (event.height !== lastHeight) {
         lastHeight = event.height;
         revealPan?.report();
