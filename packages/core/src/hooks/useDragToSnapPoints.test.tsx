@@ -212,7 +212,7 @@ describe('useDragToSnapPoints', () => {
     expect(onSettle).toHaveBeenLastCalledWith(2);
   });
 
-  it('an option changed during a settle carries that settle on to its point, from where the element is', async () => {
+  it('an option changed during a settle stops it where it is, and the next settle starts there', async () => {
     const settlers = new Set<(index: number) => void>();
     const onSettle = vi.fn();
     function Sheet({flickThreshold}: {flickThreshold: number}) {
@@ -234,8 +234,16 @@ describe('useDragToSnapPoints', () => {
     });
     played.length = 0;
     rerender(<Sheet flickThreshold={600} />);
-    // The drag is created again with the new option, and the settle carries
-    // on to 480 from where the element was: never from 0, never a jump.
+    // The drag is created again with the new option and nothing more: the
+    // settle stops where the element is, and nothing reports.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(played).toHaveLength(0);
+    expect(onSettle).not.toHaveBeenCalled();
+    // The next settle starts from there: never from 0, never a jump.
+    const [next] = [...settlers].slice(-1);
+    act(() => next(2));
     const frames = played[0] as Keyframe[];
     const yOf = (frame: Keyframe | undefined) =>
       Number.parseFloat(String(frame?.translate ?? '').split(' ')[1] ?? '');
@@ -248,7 +256,7 @@ describe('useDragToSnapPoints', () => {
     expect(onSettle).toHaveBeenLastCalledWith(2);
   });
 
-  it('new snap points move a resting element only when its own is gone, onto the nearest new one', async () => {
+  it('new snap points leave a resting element where it is, and the next settle starts there', async () => {
     const settlers = new Set<(index: number) => void>();
     const onSettle = vi.fn();
     function Sheet({snapPoints}: {snapPoints: number[]}) {
@@ -271,8 +279,16 @@ describe('useDragToSnapPoints', () => {
     played.length = 0;
     rerender(<Sheet snapPoints={[0, 120, 240, 480]} />);
     expect(played).toHaveLength(0);
-    // 240 is gone: on to the nearest new point, 300, from where it is.
+    // 240 is gone: still nothing moves, and nothing reports.
+    onSettle.mockClear();
     rerender(<Sheet snapPoints={[0, 300, 600]} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(played).toHaveLength(0);
+    expect(onSettle).not.toHaveBeenCalled();
+    // The next settle, to 300, starts from 240.
+    act(() => settleTo(1));
     expect(JSON.stringify(played[0])).toContain('240px');
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
