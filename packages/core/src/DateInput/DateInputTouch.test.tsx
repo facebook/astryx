@@ -2270,7 +2270,12 @@ describe('DateInput — a mouse can drag a wheel', () => {
     try {
       // A year of months, so May is reachable (the default range ends in April).
       renderAndOpen(
-        <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
       );
       fireEvent.click(title());
       withWheelLayout(() => {
