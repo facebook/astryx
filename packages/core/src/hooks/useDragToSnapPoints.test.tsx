@@ -15,6 +15,7 @@ import path from 'node:path';
 import {act, render} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
 import {useDragToSnapPoints} from './useDragToSnapPoints';
 
 beforeEach(() => {
@@ -57,6 +58,24 @@ afterEach(() => {
 });
 
 const POINTS = [0, 240, 480];
+
+function touch(
+  type: string,
+  target: EventTarget,
+  contact: {x: number; y: number},
+  time: number,
+  isLift = false,
+): void {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  const entry = {identifier: 1, clientX: contact.x, clientY: contact.y, target};
+  Object.defineProperty(event, 'changedTouches', {value: [entry]});
+  Object.defineProperty(event, 'touches', {value: isLift ? [] : [entry]});
+  Object.defineProperty(event, 'timeStamp', {value: time});
+  target.dispatchEvent(event);
+}
+
+// The document's host outlives a test, so event times only move forward.
+let clock = 2_000_000;
 
 /** The keyframes of every animation the element played, in order. */
 const played: (Keyframe[] | PropertyIndexedKeyframes | null)[] = [];
@@ -259,6 +278,60 @@ describe('useDragToSnapPoints', () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(onSettle).toHaveBeenLastCalledWith(1);
+  });
+
+  it('an option changed during a release\u2019s settle leaves it where it is: the hook only creates the drag again', async () => {
+    // A flick from 260 toward 480, stopped about 330 by a new option. Creating
+    // the drag again is all the hook does (spec:AST-107 FR6), so nothing aims
+    // it at 240 or reports a point it never reached.
+    const restore = coarsePrimaryPointer();
+    try {
+      const settlers = new Set<(index: number) => void>();
+      const onSettle = vi.fn();
+      function Sheet({flickThreshold}: {flickThreshold: number}) {
+        const ref = useRef<HTMLDivElement>(null);
+        const {settleTo} = useDragToSnapPoints(ref, {
+          axis: 'y',
+          snapPoints: POINTS,
+          flickThreshold,
+          onSettle,
+        });
+        settlers.add(settleTo);
+        return <div ref={ref} />;
+      }
+      const {rerender, container} = render(<Sheet flickThreshold={1008} />);
+      const element = container.firstElementChild as HTMLElement;
+      const [settleTo] = settlers;
+      act(() => settleTo(1));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      onSettle.mockClear();
+      // From 240: 20 px down slowly, to 260, then 30 px in 20 ms (1500 px/s),
+      // a flick toward 480.
+      clock += 10_000;
+      const start = clock;
+      act(() => {
+        touch('touchstart', element, {x: 10, y: 10}, start);
+        touch('touchmove', element, {x: 10, y: 20}, start + 200);
+        touch('touchmove', element, {x: 10, y: 30}, start + 400);
+        touch('touchmove', element, {x: 10, y: 45}, start + 410);
+        touch('touchmove', element, {x: 10, y: 60}, start + 420);
+        touch('touchend', element, {x: 10, y: 60}, start + 424, true);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(40);
+      });
+      played.length = 0;
+      rerender(<Sheet flickThreshold={600} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      expect(played).toHaveLength(0);
+      expect(onSettle).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
   });
 
   it('delegates entirely to the factory: the hook module holds no behavior of its own', () => {
