@@ -58,7 +58,7 @@ for (const width of [390, 1280]) {
         });
         for (const direction of ['ltr', 'rtl']) {
           await control.evaluate((element, dir) => {
-            element.dir = dir;
+            element.setAttribute('dir', dir);
           }, direction);
           await expect(control).toHaveCSS('direction', direction);
           await expect(control).toHaveCSS(
