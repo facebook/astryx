@@ -4,7 +4,7 @@
 
 /**
  * @file useStreamingText.ts
- * @input Uses React useState, useEffect, useRef, useMediaQuery, useTheme
+ * @input Uses React useState, useEffect, useRef, useReducesMotion, useTheme
  * @output Exports useStreamingText hook for smooth text streaming
  * @position Core hook; smooths bursty streamed text into steady character reveal
  *
@@ -26,7 +26,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {useMediaQuery} from './useMediaQuery';
+import {useReducesMotion} from './useReducesMotion';
 import {useTheme} from '../theme/useTheme';
 
 /**
@@ -188,17 +188,14 @@ export function useStreamingText(
     }
   }
 
-  // Respect the user's reduced-motion preference — skip the progressive
-  // reveal and snap straight to the full text. Uses the package's SSR-safe
-  // useMediaQuery (useMediaQuery.ts) so the read stays in sync if the
-  // preference changes mid-stream.
-  const prefersReducedMotion = useMediaQuery(
-    '(prefers-reduced-motion: reduce)',
-  );
+  // Under reduced motion, skip the progressive reveal and snap straight to
+  // the full text: the person's setting, followed live so a change mid-stream
+  // takes effect, or a theme's reducedMotion: 'always' (spec:AST-108 FR6).
+  const reducesMotion = useReducesMotion();
 
   // Animation loop
   useEffect(() => {
-    if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
+    if (!isStreaming || speed === 'instant' || reducesMotion) {
       return;
     }
 
@@ -227,9 +224,9 @@ export function useStreamingText(
         rafRef.current = null;
       }
     };
-  }, [isStreaming, charsPerTick, tickMs, speed, prefersReducedMotion]);
+  }, [isStreaming, charsPerTick, tickMs, speed, reducesMotion]);
 
-  if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
+  if (!isStreaming || speed === 'instant' || reducesMotion) {
     return targetText;
   }
 

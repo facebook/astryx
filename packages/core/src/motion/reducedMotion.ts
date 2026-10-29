@@ -26,17 +26,27 @@
  *   default: 'opacity, translate',
  *   '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': 'opacity',
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 'none',
+ *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     '@media (pointer: coarse)': 'opacity',
+ *     '@media (not (pointer: coarse))': 'none',
+ *   },
  * },
  * transitionDuration: {
  *   default: '300ms',
  *   '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
  *     reducedMotionFadeConsts.duration,
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': '0s',
+ *   // The twin on a theme's reducedMotion: 'always' mark (spec:AST-108 FR6),
+ *   // at the same pointer split; a bare arm's twin nests '@media all'.
+ *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     '@media (pointer: coarse)': reducedMotionFadeConsts.duration,
+ *     '@media (not (pointer: coarse))': '0s',
+ *   },
  * },
  * ```
  *
  * reducedMotion.test.ts requires every such key in core to equal one of
- * `reducedMotionKeys`, exactly.
+ * `reducedMotionKeys`, exactly, and every Reduce Motion arm to have its twin.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/reducedMotion.stylex.ts
@@ -70,6 +80,17 @@ export interface ReducedMotionFade {
 }
 
 /**
+ * Whether motion is reduced for `element`: the person's Reduce Motion setting,
+ * or a theme's `reducedMotion: 'always'` mark on the element or an ancestor,
+ * `<html>` included for the root theme (spec:AST-108 FR6). Code that holds an
+ * element reads it here, as the Reduce Motion styles' twins read the mark;
+ * a hook that holds none reads `useReducesMotion`.
+ */
+export function reducesMotion(element?: Element | null): boolean {
+  return defaultPrefersReducedMotion() || themeReducesMotion(element);
+}
+
+/**
  * The Reduced Motion fade for a change to `element` now, for motion the
  * animator does not drive (two titles cross-fading with Web Animations):
  * null when motion is not reduced (play the normal motion), else an
@@ -84,9 +105,7 @@ export function reducedMotionFade(
     touchRelease?: boolean;
   } = {},
 ): ReducedMotionFade | null {
-  // A theme that reduces motion for everyone counts as the setting
-  // (spec:AST-108 FR6).
-  if (!defaultPrefersReducedMotion() && !themeReducesMotion(element)) {
+  if (!reducesMotion(element)) {
     return null;
   }
   const fades = options.touchRelease === true || defaultIsCoarsePointer();

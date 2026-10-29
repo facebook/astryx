@@ -46,6 +46,19 @@ import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
 import {REDUCED_MOTION_PROPERTY, resolveMotionKnobs} from './themeMotion';
+import {reducedMotionScope} from './reducedMotion.markers.stylex';
+import {ThemeReducesMotionContext} from './reducedMotionContext';
+
+/**
+ * The reduced-motion marker's classes, which the root theme writes on `<html>`
+ * beside the mark, so Reduce Motion styles keyed on it reach portaled layers
+ * (spec:AST-108 FR6).
+ */
+const REDUCED_MOTION_SCOPE_CLASSES = (
+  stylex.props(reducedMotionScope).className ?? ''
+)
+  .split(' ')
+  .filter(Boolean);
 
 /**
  * Theme provider props
@@ -201,8 +214,9 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
  * - 'system' → removes data-theme (reset.css defaults to color-scheme: light dark)
  *
  * A theme with `reducedMotion: 'always'` also marks `<html>` with
- * `data-astryx-reduced-motion` and its custom property, so layers portaled
- * outside the wrapper reduce their motion too (spec:AST-108 FR6).
+ * `data-astryx-reduced-motion`, its custom property and the reducedMotionScope
+ * marker's class, so layers portaled outside the wrapper reduce their motion
+ * too (spec:AST-108 FR6).
  */
 function useRootThemeSync(
   isNested: boolean,
@@ -230,9 +244,13 @@ function useRootThemeSync(
     // The mark and its custom property, which portaled layers inherit.
     if (reducesMotion) {
       document.documentElement.setAttribute(dataAttr('reduced-motion'), '');
+      document.documentElement.classList.add(...REDUCED_MOTION_SCOPE_CLASSES);
       document.documentElement.style.setProperty(REDUCED_MOTION_PROPERTY, '1');
     } else {
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
+      document.documentElement.classList.remove(
+        ...REDUCED_MOTION_SCOPE_CLASSES,
+      );
       document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
     }
 
@@ -240,6 +258,9 @@ function useRootThemeSync(
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.removeAttribute(dataAttr('theme'));
       document.documentElement.removeAttribute(dataAttr('reduced-motion'));
+      document.documentElement.classList.remove(
+        ...REDUCED_MOTION_SCOPE_CLASSES,
+      );
       document.documentElement.style.removeProperty(REDUCED_MOTION_PROPERTY);
     };
   }, [isNested, mode, themeName, reducesMotion]);
@@ -272,12 +293,15 @@ export function Theme({
   registerTheme(theme);
 
   useThemeStyleInjection(theme);
-  // spec:AST-108 FR6: 'always' marks the theme's root. So far motion-keyed
-  // adaptation rules and the press release fade key reduced motion on the
-  // mark; components' other Reduce Motion styles don't yet (a known gap in
-  // `architecture:theme-authoring-contract`).
+  // spec:AST-108 FR6: 'always' marks the theme's root with the attribute, its
+  // custom property and the reducedMotionScope marker. Script readers see it
+  // (reducesMotion, useReducesMotion), and each component Reduce Motion style
+  // keys a twin on it; motion/reducedMotion.test.ts lists the styles that
+  // still lack theirs. The mark only adds: a nested theme keeps an
+  // ancestor's.
   const knobs = resolveMotionKnobs(theme.__axes?.motion);
   const reducesMotion = knobs.reducedMotion === 'always';
+  const inheritsReducedMotion = use(ThemeReducesMotionContext);
   useRootThemeSync(isNested, mode, theme.name, reducesMotion);
 
   // Get color-scheme style
@@ -299,11 +323,15 @@ export function Theme({
             wrapperStyles.base,
             colorSchemeStyle,
             reducesMotion && wrapperStyles.reducedMotion,
+            reducesMotion && reducedMotionScope,
           )}
           data-astryx-theme={theme.name}
           data-astryx-reduced-motion={reducesMotion ? '' : undefined}
           data-theme={mode === 'system' ? undefined : mode}>
-          {children}
+          <ThemeReducesMotionContext
+            value={reducesMotion || inheritsReducedMotion}>
+            {children}
+          </ThemeReducesMotionContext>
         </div>
       </ThemeNestingContext>
     </ThemeContext>

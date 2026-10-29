@@ -5,7 +5,7 @@
 /**
  * @file ItemSwipeLayer.tsx
  * @input The row root (by ref), the swipe entries per side, the behavior;
- *   useSwipeAction, theme tokens
+ *   useSwipeAction, useReducesMotion, theme tokens
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
  *   through which the root reaches the gesture's handlers
@@ -32,7 +32,7 @@ import {
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useReducesMotion} from '../hooks/useReducesMotion';
 import {
   useSwipeAction,
   type SwipeHandlers,
@@ -204,7 +204,8 @@ export default function ItemSwipeLayer({
 }: ItemSwipeLayerProps) {
   const leadingEntriesRef = useRef<HTMLDivElement | null>(null);
   const trailingEntriesRef = useRef<HTMLDivElement | null>(null);
-  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  // The setting, live, or a theme's reducedMotion: 'always' (spec:AST-108 FR6).
+  const isReducedMotion = useReducesMotion();
   const outermost = (side: SwipeSide): ItemSwipeAction | undefined => {
     const entries = side === 'leading' ? leading : trailing;
     return entries[entries.length - 1];
