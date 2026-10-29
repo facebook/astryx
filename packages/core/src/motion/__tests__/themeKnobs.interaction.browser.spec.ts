@@ -105,7 +105,7 @@ ${BODY}`;
   await page.goto('http://knobs.test/');
 }
 
-const knobsOf = (page: Page, id: string) =>
+const knobsOf = async (page: Page, id: string) =>
   page.evaluate(
     target =>
       window.ThemeKnobs.themeMotionKnobs(document.getElementById(target)),
@@ -143,7 +143,7 @@ test('a spring started in a nested theme plays at the enclosing theme\u2019s tem
 }) => {
   await open(page);
   const read = await page.evaluate(
-    () =>
+    async () =>
       new Promise<{nested: number; loose: number; started: boolean}>(
         resolve => {
           const {createAnimator, END_HOLD_MS, springs} = window.ThemeKnobs;
@@ -199,7 +199,7 @@ test('reading the knobs forces no layout, where reading a size does (Chromium\u2
   );
   await open(page);
   const forced = await page.evaluate(
-    () =>
+    async () =>
       new Promise<{knobs: number; size: number}>(resolve => {
         const filler = document.createElement('div');
         for (let index = 0; index < 12000; index += 1) {
@@ -254,9 +254,10 @@ test('reading the knobs forces no layout, where reading a size does (Chromium\u2
         }, 900);
       }),
   );
-  console.log(
-    `forced style and layout: knobs ${forced.knobs} ms, size ${forced.size} ms`,
-  );
+  test.info().annotations.push({
+    type: 'forced style and layout (ms)',
+    description: `knobs ${forced.knobs}, size ${forced.size}`,
+  });
   // Reading a size lays the whole tree out; reading the knobs lays out none.
   expect(forced.size).toBeGreaterThan(1);
   expect(forced.knobs).toBeLessThan(forced.size / 4);
