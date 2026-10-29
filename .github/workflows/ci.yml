@@ -1824,6 +1824,11 @@ jobs:
           outside-pull-request: skip
           requires-head-file: playwright.interaction.config.ts
 
+      # The daily heavy-run cap counts this step (spec:AST-030 FR16).
+      - name: Heavy suite runs
+        if: steps.scope.outputs.applies == 'true'
+        run: 'true'
+
       - name: Require this pull request's Storybook build
         if: steps.scope.outputs.applies == 'true' && needs.build-storybook.result != 'success'
         run: |
@@ -1909,6 +1914,11 @@ jobs:
         uses: ./.test-scope/.github/actions/test-scope
         with:
           heavy: 'true'
+
+      # The daily heavy-run cap counts this step (spec:AST-030 FR16).
+      - name: Heavy suite runs
+        if: steps.scope.outputs.applies == 'true'
+        run: 'true'
 
       - uses: actions/checkout@v7
         if: steps.scope.outputs.applies == 'true'

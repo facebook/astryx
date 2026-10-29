@@ -207,18 +207,28 @@ runs:
                 );
                 const position = list => list.findIndex(p => p.number === pr.number);
                 const laneOpen = search.nodes.filter(p => lane(p.headRefName) === lane(pr.head.ref));
-                const {data} = await github.rest.actions.listWorkflowRuns({
-                  ...context.repo, workflow_id: 'ci.yml', actor: login, event: 'pull_request',
-                  created: `>=${new Date().toISOString().slice(0, 10)}`, per_page: 100,
-                });
-                // A CI run is what starts the heavy suites; a run a newer push
-                // cancelled seldom reached them, so it does not count.
-                const heavyRuns = data.workflow_runs.filter(r => r.conclusion !== 'cancelled');
-                const laneRuns = heavyRuns.filter(r => lane(r.head_branch) === lane(pr.head.ref)).length;
                 if (position(laneOpen) >= 3 || (shared && position(search.nodes) >= 5)) {
                   held = 'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.';
-                } else if (laneRuns > 12 || (shared && heavyRuns.length > 40)) {
-                  held = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
+                } else {
+                  // Heavy suites run only on the oldest pull requests, so a heavy
+                  // run today is one of theirs whose "Heavy suite runs" step ran.
+                  const oldest = new Set([...laneOpen.slice(0, 3), ...(shared ? search.nodes.slice(0, 5) : [])].map(p => p.headRefName));
+                  const {data} = await github.rest.actions.listWorkflowRuns({
+                    ...context.repo, workflow_id: 'ci.yml', actor: login, event: 'pull_request',
+                    created: `>=${new Date().toISOString().slice(0, 10)}`, per_page: 100,
+                  });
+                  let laneHeavy = 0;
+                  let loginHeavy = 0;
+                  for (const run of data.workflow_runs) {
+                    if (run.id === context.runId || run.conclusion === 'cancelled' || !oldest.has(run.head_branch)) continue;
+                    const {data: {jobs}} = await github.rest.actions.listJobsForWorkflowRun({...context.repo, run_id: run.id});
+                    if (!jobs.some(job => job.steps?.some(step => step.name === 'Heavy suite runs' && step.conclusion === 'success'))) continue;
+                    loginHeavy += 1;
+                    if (lane(run.head_branch) === lane(pr.head.ref)) laneHeavy += 1;
+                  }
+                  if (laneHeavy >= 12 || (shared && loginHeavy >= 40)) {
+                    held = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
+                  }
                 }
               } catch (error) {
                 core.warning(`Per-author caps could not be checked (${error.message}); running the heavy suites.`);

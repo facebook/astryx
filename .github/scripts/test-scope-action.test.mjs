@@ -97,9 +97,20 @@ async function decide({
     },
     rest: {
       pulls: {listFiles: () => {}},
+      // A run whose heavy job ran its suite has a successful marker step.
       actions: {
-        listWorkflowRuns: async () => ({
-          data: {total_count: runs.length, workflow_runs: runs},
+        listWorkflowRuns: async () => ({data: {workflow_runs: runs}}),
+        listJobsForWorkflowRun: async ({run_id}) => ({
+          data: {
+            jobs: [
+              {
+                steps:
+                  runs.find(run => run.id === run_id).heavy === false
+                    ? []
+                    : [{name: 'Heavy suite runs', conclusion: 'success'}],
+              },
+            ],
+          },
         }),
       },
       repos: {
@@ -330,8 +341,10 @@ describe('per-job scope step', () => {
     const heavy = {heavy: 'true'};
     const pulls = (...refs) =>
       refs.map((headRefName, i) => ({number: i + 1, headRefName}));
-    const runsOn = (count, head_branch = 'fix/a') =>
-      Array.from({length: count}, () => ({head_branch}));
+    const me = {number: 7, headRefName: 'fix/a'};
+    let nextRun = 100;
+    const runsOn = (count, head_branch = 'fix/a', run = {}) =>
+      Array.from({length: count}, () => ({id: nextRun++, head_branch, ...run}));
 
     it('runs only the fast checks on a draft', async () => {
       const context = pullRequestContext('main', {draft: true});
@@ -354,23 +367,30 @@ describe('per-job scope step', () => {
       expect(third.outputs.applies).toBe('true');
     });
 
-    it("fails a heavy job past the author's 12 uncancelled runs today", async () => {
-      const {messages} = await decide({files, inputs: heavy, runs: runsOn(13)});
-      expect(messages.failed).toEqual([
-        'Daily heavy-run cap reached, runs tomorrow or at pre-merge.',
-      ]);
-      const twelfth = await decide({files, inputs: heavy, runs: runsOn(12)});
-      expect(twelfth.outputs.applies).toBe('true');
-      const superseded = runsOn(5).map(run => ({
-        ...run,
-        conclusion: 'cancelled',
-      }));
-      const withCancelled = await decide({
+    it("fails a heavy job past the author's 12 heavy runs today", async () => {
+      const capped = await decide({
         files,
         inputs: heavy,
-        runs: [...runsOn(12), ...superseded],
+        open: [me],
+        runs: runsOn(12),
       });
-      expect(withCancelled.outputs.applies).toBe('true');
+      expect(capped.messages.failed).toEqual([
+        'Daily heavy-run cap reached, runs tomorrow or at pre-merge.',
+      ]);
+      // Cancelled runs, runs whose heavy suites never ran (a draft, a queued
+      // PR) and runs on other branches are not heavy runs.
+      const light = await decide({
+        files,
+        inputs: heavy,
+        open: [me],
+        runs: [
+          ...runsOn(11),
+          ...runsOn(5, 'fix/a', {conclusion: 'cancelled'}),
+          ...runsOn(5, 'fix/a', {heavy: false}),
+          ...runsOn(5, 'fix/old-merged'),
+        ],
+      });
+      expect(light.outputs.applies).toBe('true');
     });
 
     it('counts each agent lane of the shared login as an author, with a backstop', async () => {
@@ -378,12 +398,12 @@ describe('per-job scope step', () => {
         user: {login: 'cixzhang'},
         head: {sha: HEAD_SHA, ref: 'lane4/x'},
       });
-      const me = {number: 7, headRefName: 'lane4/x'};
+      const mine = {number: 7, headRefName: 'lane4/x'};
       const others = await decide({
         context,
         files,
         inputs: heavy,
-        open: [...pulls('lane1/a', 'lane2/b', 'lane3/c', 'lane0/d'), me],
+        open: [...pulls('lane1/a', 'lane2/b', 'lane3/c', 'lane0/d'), mine],
         runs: [...runsOn(30, 'lane1/a'), ...runsOn(2, 'lane4/x')],
       });
       expect(others.outputs.applies).toBe('true');
@@ -393,7 +413,7 @@ describe('per-job scope step', () => {
         inputs: heavy,
         open: [
           ...pulls('lane1/a', 'lane2/b', 'lane3/c', 'lane0/d', 'ci/e'),
-          me,
+          mine,
         ],
       });
       expect(backstop.messages.failed).toEqual([
@@ -405,6 +425,7 @@ describe('per-job scope step', () => {
       const rerun = await decide({
         files,
         inputs: heavy,
+        open: [me],
         runs: runsOn(20),
         attempt: '2',
       });
