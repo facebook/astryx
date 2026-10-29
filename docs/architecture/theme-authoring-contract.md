@@ -311,14 +311,15 @@ clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
 `resolveThemeMotion`'s role tables are accepted but unshipped (`spec:AST-108`
-FR6): no spring reads the motion knobs yet. Until they land, that part of FR6
-is current authority but not enforcement.
+FR6): the animator's springs follow the knobs through the attributes Theme
+writes on the theme's root (`motion/themeKnobs.ts`), but server code has no
+role values yet. Until they land, that part of FR6 is current authority but
+not enforcement.
 
 The reach of `reducedMotion: 'always'` is accepted but partly unshipped
-(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules and the press
-release fade key reduced motion on the mark; components' other Reduce Motion
-styles, the animator, and other script readers of `prefers-reduced-motion` do
-not yet. Until they do, that part of INV15 and FR6 is current authority but not
+(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules, the press release
+fade and the animator key reduced motion on the mark; components' other Reduce
+Motion styles and other script readers of `prefers-reduced-motion` do not yet. Until they do, that part of INV15 and FR6 is current authority but not
 enforcement.
 
 ## Verification
