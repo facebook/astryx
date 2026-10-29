@@ -12,8 +12,9 @@
  *
  * `tempo` scales every motion duration token, clamped to 0.75–1.5.
  * `character` picks the entrance and move curves. `reducedMotion: 'always'`
- * marks the theme's root, which motion-keyed adaptation rules read; `'system'`
- * follows each person's setting. No spring reads the knobs yet. With the
+ * marks the theme's root; so far motion-keyed adaptation rules and the press
+ * release fade read the mark, not yet components' other Reduce Motion styles.
+ * `'system'` follows each person's setting. No spring reads the knobs yet. With the
  * defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
