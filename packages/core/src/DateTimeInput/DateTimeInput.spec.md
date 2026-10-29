@@ -142,6 +142,13 @@ intentional decision.
 
 - **PR1 — Preset options.** The time listbox mounts option nodes only while open;
   omitted preset cadence leaves no listbox nodes or combobox semantics.
+- **PR2 — The touch wheels draw each label three times.** Under a finger, the
+  sheet's date and time wheels draw each shown row's label in its option, on the
+  drum, and in the band's copy, as UIPickerView's two tables do, so a row crossing
+  the band's edge shows magnified and plain at once. This is an owner exception to
+  `architecture:component-style-authoring` INV7 (content renders once): the open
+  sheet has 377 elements under a finger against 470 under a mouse, so
+  `spec:AST-017` FR60's open-layer allowance holds.
 
 Current measurements belong in the audit record; this subsection owns only
 durable constraints and their verification target.
@@ -174,6 +181,14 @@ durable constraints and their verification target.
 The component implements design requirements without copying their rationale.
 An unsettled representation remains a human decision; principles do not let an
 agent invent the answer.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision                                                                                                                                                                                                                                                                                                                                                                             | Intent or reason                                                                                                                            | Applies to                                                                                                           | Allowed variation                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DD1 | Under a finger, the sheet's date and time wheels look like UIPickerView: the rows sit on a cylinder seen in perspective and dim away from one capsule band, the band's row is drawn magnified, and the sheet's columns read as one picker, one band across every column, each column placed where UIDatePicker places its own and its band labels magnified about their own centres. | A touch date-time sheet looks like the platform picker whose motion it follows (`spec:AST-094`), so a phone user meets a control they know. | The date and time wheels of DateTimeInput's bottom sheet under a finger (the shared `PickerWheel` and `WheelGroup`). | The rows and the band keep the default look's row height (`spec:AST-094` FR42); the rows off the band take the theme's secondary text colour and the band's fill its `--color-neutral`; the cylinder, perspective, magnification and column places are tuned in `picker.ts`, `wheelGeometry.stylex.ts` and `wheelColumns.ts` against the platform; right-to-left mirrors the columns; a fine pointer keeps the scrolling column. |
 
 ### Theming anatomy
 

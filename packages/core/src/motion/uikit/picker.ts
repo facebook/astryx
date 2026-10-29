@@ -80,13 +80,13 @@ export const picker = {
      */
     bandInset: 9,
     /**
-     * The band's copy of the rows is magnified about the picker's centre:
-     * its labels are 23.5 pt against 21 pt in the dimmed copies, and its
-     * columns sit that much further from the centre (band digits ≈ 11 pt
-     * outward of the rows above and below, on screen).
+     * The band's copy of the rows draws its labels at 23.5 pt against 21 pt in
+     * the dimmed copies, each label magnified about its own centre, so a
+     * column's band row stays in line with the rows above and below it
+     * (wheelColumns.ts records each label's box at the band).
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-     *   iPhone 17 Pro, label fonts of the three table copies and the
-     *   rendered digits' extents in a screenshot, Oct 23 2026
+     *   iPhone 17 Pro, label fonts of the three table copies, Oct 23 2026, and
+     *   UIDatePicker's label boxes at the band, Oct 26 2026 (wheelColumns.ts)
      */
     bandMagnification: 23.5 / 21,
     /**
