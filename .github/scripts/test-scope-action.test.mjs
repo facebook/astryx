@@ -455,4 +455,29 @@ describe('per-job scope step', () => {
       expect(failed.messages.warning[0]).toContain('running the heavy suites');
     });
   });
+
+  it('marks the heavy jobs, each with the step the daily cap counts', () => {
+    const ci = yaml.parse(
+      fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
+    );
+    const heavyJobs = Object.entries(ci.jobs).filter(([, job]) =>
+      job.steps?.some(
+        step =>
+          step.uses?.includes('test-scope') && step.with?.heavy === 'true',
+      ),
+    );
+    expect(heavyJobs.map(([id]) => id).sort()).toEqual([
+      'pr-interaction',
+      'test-build',
+    ]);
+    for (const [id, job] of heavyJobs) {
+      const scope = job.steps.findIndex(step =>
+        step.uses?.includes('test-scope'),
+      );
+      expect(job.steps[scope + 1], id).toMatchObject({
+        name: 'Heavy suite runs',
+        if: `steps.${job.steps[scope].id}.outputs.applies == 'true'`,
+      });
+    }
+  });
 });

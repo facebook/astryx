@@ -267,8 +267,7 @@ they are separately named.
   kind and reason, and a contract test holds every workflow to its entry.
 
 - **FR16 — One author's pull requests share the heavy suites.** On a
-  pull request, a heavy job (one whose scope step is marked `heavy`, as the
-  pull-request browser and end-to-end suites are) runs its suite only when the pull
+  pull request, a heavy job (one whose scope step is marked `heavy`) runs its suite only when the pull
   request is ready for review, is among its author's three oldest open
   non-draft pull requests, and its author has at most twelve heavy runs that
   UTC day. A heavy run is a CI run on one of the author's oldest open pull requests in which a heavy job ran its suite, which that job's "Heavy suite runs" step records; a cancelled run does not count, nor does a draft's or a queued pull request's run, since neither starts a heavy suite. Pull requests from the shared agent login count per branch
