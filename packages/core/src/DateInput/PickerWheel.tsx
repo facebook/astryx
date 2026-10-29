@@ -34,8 +34,9 @@
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
  * - A scroll wheel turns the rows by its delta and snaps onto the nearest
- *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is left to
- *   the page's zoom (`spec:AST-094` FR43).
+ *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is a pinch
+ *   (`spec:AST-094` FR43), and with no pinch of its own the wheel leaves it
+ *   to the page's zoom (FR10).
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A rest on a disabled row (outside the bounds) is
  *   followed by a turn onto the nearest enabled row, which then commits; a
@@ -319,6 +320,8 @@ export function PickerWheel({
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
+  // The latest props, for the motion's and the gesture listeners' callbacks,
+  // which are attached once and outlive a render.
   const latestRef = useRef({options, value, onChange, layout});
   useIsomorphicLayoutEffect(() => {
     latestRef.current = {options, value, onChange, layout};
@@ -384,6 +387,9 @@ export function PickerWheel({
       {touchRelease = false, momentum = false, ...options}: MoveOptions = {},
     ) => {
       paintRow(null);
+      // The mark comes back from the row the motion reports nearest when it
+      // ends, even the row it began on.
+      motion.forgetNearest();
       const fadeTiming = momentum
         ? null
         : reducedMotionFade(columnRef.current, {touchRelease});
@@ -478,6 +484,7 @@ export function PickerWheel({
     });
   }, [motion, reducedMotion]);
 
+  // The band's mark follows the row the motion reports nearest the band.
   useIsomorphicLayoutEffect(() => {
     motion.onNearestChange(paintRow);
     return () => motion.onNearestChange(null);
@@ -502,13 +509,22 @@ export function PickerWheel({
     paintedRef.current.clear();
   });
 
+  // The motion's animations and timers end with the wheel.
   useEffect(() => () => motion.dispose(), [motion]);
 
-  // Park the committed row under the band when the wheel is shown or the
-  // value changes from outside (the calendar moved to another month). Never
-  // while a finger or a motion owns the wheel.
+  // Park the committed row under the band when the wheel is shown, at once. A
+  // value changed from outside while it is shown (a bound clamping the time
+  // after another wheel turned, the calendar moved to another month) turns
+  // the wheel onto its row instead, as UIDatePicker turns onto its maximum
+  // (component:DateInput FR13): it never jumps there. Never while a finger or
+  // a motion owns the wheel.
+  const parkedRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
-    if (!isActive || dragRef.current != null || motion.isMoving()) {
+    if (!isActive) {
+      parkedRef.current = false;
+      return;
+    }
+    if (dragRef.current != null || motion.isMoving()) {
       return;
     }
     const position = nearestPosition(
@@ -517,16 +533,33 @@ export function PickerWheel({
       layout,
       rowCount,
     );
-    if (Math.abs(motion.offset() - position * ROW_HEIGHT) > 0.01) {
-      motion.setOffset(position * ROW_HEIGHT);
+    const target = position * ROW_HEIGHT;
+    const isAway = Math.abs(motion.offset() - target) > 0.01;
+    if (isAway && parkedRef.current) {
+      // The turn's own end paints the band's row.
+      move(turnCurve(columnRef.current, motion.offset(), target));
+      return;
     }
+    if (isAway) {
+      motion.setOffset(target);
+    }
+    parkedRef.current = true;
     if (copies > 1) {
       // A short loop's mark is painted, never rendered: a wheel parked where
       // it already was (its first row, at offset 0) reports no new row, so
       // the band's row is painted here.
       paintRow(nearestIndex(motion.offset(), layout));
     }
-  }, [isActive, selectedIndex, layout, motion, rowCount, copies, paintRow]);
+  }, [
+    isActive,
+    selectedIndex,
+    layout,
+    motion,
+    rowCount,
+    copies,
+    paintRow,
+    move,
+  ]);
 
   // A hidden wheel keeps no motion running and holds no drag. Hiding it
   // mid-drag ends the pan without calling its listener (the toggle's owner
@@ -550,6 +583,7 @@ export function PickerWheel({
     [motion],
   );
 
+  // The latest touch-down handler, for the gesture listener attached once.
   const onTouchDownRef = useRef(onTouchDown);
   useIsomorphicLayoutEffect(() => {
     onTouchDownRef.current = onTouchDown;
@@ -712,8 +746,9 @@ export function PickerWheel({
     }
     let idle: number | undefined;
     const onWheel = (event: WheelEvent) => {
-      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one): it zooms
-      // the page and never turns the wheel (`spec:AST-094` FR43).
+      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one,
+      // `spec:AST-094` FR43). The wheel has no pinch, so it stays the page's
+      // zoom (FR10) and never turns the wheel.
       if (event.ctrlKey) {
         return;
       }

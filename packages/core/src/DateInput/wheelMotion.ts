@@ -639,6 +639,15 @@ export class WheelMotion {
     playHaptic('selection');
   }
 
+  /**
+   * Forget the row last reported nearest the band, so the next report names
+   * it again even unchanged: a caller that clears its paint as a motion starts
+   * gets it back when the motion ends on the row it began on.
+   */
+  forgetNearest(): void {
+    this.lastNearest = null;
+  }
+
   /** Tell the listener the row nearest the band, if it changed. */
   private reportNearest(position: number): void {
     if (position === this.lastNearest) {

@@ -259,18 +259,65 @@ describe('PickerWheel — at rest', () => {
     advance(2000);
     expect(onChange).not.toHaveBeenCalled();
     expect(option('08').style.transform).toBe(AT_BAND);
+    // Back on the row it left, the band's mark is back on it too.
+    expect(isMarked(option('08'))).toBe(true);
   });
 
-  it('shows a value set from outside without motion', () => {
+  it('turns onto a value set from outside while it is shown, as a bound clamping the time (component:DateInput FR13)', () => {
+    // jsdom runs no Web Animations: record what the wheel asks of its strip.
+    const strips: Keyframe[][] = [];
+    Element.prototype.animate = vi.fn(function animate(
+      this: Element,
+      keyframes: Keyframe[],
+    ) {
+      if (this.hasAttribute('data-wheel-strip')) {
+        strips.push(keyframes);
+      }
+      return {cancel: () => {}} as unknown as Animation;
+    });
+    try {
+      const {rerender, option, onChange} = renderWheel();
+      rerender(
+        <PickerWheel
+          label="Hour"
+          options={HOURS}
+          value={14}
+          onChange={onChange}
+        />,
+      );
+      // From 10 onto 14 through the rows between: a turn, never a jump.
+      expect(strips).toHaveLength(1);
+      const ys = strips[0].map(frame =>
+        Number(/translateY\((-?[\d.]+)px\)/.exec(String(frame.transform))?.[1]),
+      );
+      expect(ys[0]).toBeCloseTo(-10 * ROW, 1);
+      expect(ys[ys.length - 1]).toBeCloseTo(-14 * ROW, 1);
+      expect(
+        ys.filter(y => y < -10 * ROW - 1 && y > -14 * ROW + 1).length,
+      ).toBeGreaterThanOrEqual(4);
+      advance(2000);
+      expect(option('14').style.transform).toBe(AT_BAND);
+      expect(isMarked(option('14'))).toBe(true);
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'animate');
+    }
+  });
+
+  it('parks a value set while it is hidden at once when it is shown again', () => {
     const {rerender, option, onChange} = renderWheel();
-    rerender(
+    const wheel = (value: number, isActive: boolean) => (
       <PickerWheel
         label="Hour"
         options={HOURS}
-        value={14}
+        value={value}
         onChange={onChange}
-      />,
+        isActive={isActive}
+      />
     );
+    rerender(wheel(10, false));
+    rerender(wheel(14, false));
+    rerender(wheel(14, true));
     expect(option('14').style.transform).toBe(AT_BAND);
   });
 });
@@ -346,6 +393,21 @@ describe('PickerWheel — a finger', () => {
     expect(onChange).not.toHaveBeenCalled();
     advance(1000);
     expect(onChange).toHaveBeenCalledWith(11);
+  });
+
+  it('keeps the band’s mark on the committed row after a nudge that eases back onto it', () => {
+    const {column, option, onChange} = renderWheel();
+    expect(isMarked(option('10'))).toBe(true);
+    // 10 px of hysteresis + a third of a row, held still, lifted.
+    drag(column, 150, 150 - (10 + ROW / 3), {
+      steps: 10,
+      interval: 40,
+      hold: 300,
+    });
+    advance(2000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(option('10').style.transform).toBe(AT_BAND);
+    expect(isMarked(option('10'))).toBe(true);
   });
 
   it('turns on to the minimum after resting below it, and commits that', () => {
@@ -623,7 +685,7 @@ describe('PickerWheel — a scroll wheel', () => {
     expect(onChange).toHaveBeenCalledWith(12);
   });
 
-  it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR43)', () => {
+  it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR10, FR43)', () => {
     const {column, onChange} = renderWheel();
     expect(wheel(column, 64, true)).toBe(false);
     advance(1000);
