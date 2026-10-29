@@ -42,11 +42,15 @@ exported from the package entry.
   capture-phase `blur` before the browser's own focus step, so the browser
   never reveals a field by scrolling the document. Focus that leaves for
   nothing (the keyboard's Done) can be parked so the next tap is a transition
-  again. A tap on a field when nothing has focus raises no blur:
+  again. Every caller in a document shares one listener, which lives only
+  while a caller does; BottomSheet's hook and ChatLayout install it only
+  under a coarse primary pointer.
+  A tap on a field when nothing has focus raises no blur:
   `claimTapFocus(region, {claim, deliver})` is that route. It follows one
   finger with listeners on the region, only while the touch is down, and on a
   tap (within 10 px) prevents the touch's default and delivers the focus
-  itself (ChatLayout puts the caret where the finger lifted). Safari still
+  itself (ChatLayout, under a coarse primary pointer only, puts the caret
+  where the finger lifted). Safari still
   sends a held tap's mousedown and click, aimed at whatever is under the
   finger by then, so the route swallows them on the document until the tap's
   click or the next touch, pointer press or key.
@@ -64,7 +68,7 @@ exported from the package entry.
   a surface watches. ChatLayout watches under a finger; BottomSheet's hook
   watches while its sheet is presented under a coarse primary pointer. Under
   a fine one neither registers a touch listener.
-- **BottomSheet's hook (FR4, FR5):** `useSheetKeyboard(options)` gives a
+- **BottomSheet's hook (FR4, FR5; `sheetKeyboard.ts`):** `useSheetKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
   keyboard when the sheet starts to move. It returns the room the keyboard
@@ -76,8 +80,10 @@ exported from the package entry.
   scrolls the body at once and the content box rides up from where it was on
   the show's curve; through the hide the room stays and the content box
   rides down by the scroll the room's drop takes back, and at rest the room
-  drops and the translate clears in one commit. Under a fine pointer nothing
-  of the ride attaches (no guide subscription), and the room follows the
+  drops and the translate clears in one commit. Under a fine pointer, and
+  where the keyboard moves on Safari's schedule (iOS Safari, Firefox for
+  Android, which have no VirtualKeyboard API), nothing of the ride attaches:
+  no guide subscription and no frame watch, and the room follows the
   reports. Safari's and Firefox's reveals are unchanged.
 
 ## Laying out from the height, riding on top
@@ -147,12 +153,15 @@ at any time, for something that appears while the keyboard moves.
   cannot bring up keeps the browser's reveal. Every later reveal lands at
   once in the report's frame. A browser that never pans keeps the smooth
   reveal.
-- Chrome 124 on Android (Gboard) animates its own pan to the focused
-  composer about 150 ms after the report, by the keyboard's whole height,
-  while the composer is still riding up; left alone, the composer ends
-  mid-screen. ChatLayout puts the pan back on its first frame
-  (`watchRevealPan`), so the visual viewport stays where it was and the
-  composer rests on the keyboard. Chromium 158 does not pan.
+- Chrome 124 on Android (Gboard) animates its own pan to a focused field the
+  keyboard still covers, about 150 ms after the report, by the keyboard's
+  whole height; `watchRevealPan` puts such a pan back. A Tall BottomSheet
+  lands its field above the keyboard in the report's own event, so Chrome 124
+  never pans it. ChatLayout's composer is still riding up when the pan
+  starts, so ChatLayout puts the pan back on its first frame and the composer
+  rests on the keyboard. Chromium 158 pans the same way when the field stays
+  covered (by the keyboard's whole height, 312 px, with the sheet's reveal on
+  the next frame), and never needs to with the reveal in the report's event.
 
 ## What the page sees (Chromium 158 with Gboard, Android 15)
 
@@ -208,7 +217,8 @@ keyboard module measures them from the visual viewport, as in every browser
 
 | File                     | What it holds                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `keyboardHeight.ts`      | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardHeight.ts`      | The keyboard module: the height, its listeners, the focus routes.                                                     |
+| `sheetKeyboard.ts`       | BottomSheet's hook and its ride, apart so code that only reads the height never loads the animator.                   |
 | `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
 | `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
 | `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |
