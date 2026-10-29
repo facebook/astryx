@@ -992,9 +992,9 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      // Only a primary click presses: a right click, a pen's barrel button
-      // and a macOS ctrl-click are the platform's context request
-      // (spec:AST-094 FR43), as the gesture host reads them.
+      // Only a primary button presses: a right click or a macOS ctrl-click
+      // is the platform's context request (spec:AST-094 FR43), and a pen's
+      // barrel button presses nothing either.
       if (!isPrimaryClick(e)) {
         return;
       }
