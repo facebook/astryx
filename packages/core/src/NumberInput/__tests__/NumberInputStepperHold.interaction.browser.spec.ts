@@ -236,13 +236,14 @@ const hold = (at: Point, ms: number): TouchScript => [
 
 /**
  * A tap steps on the browser's click after its lift (`spec:AST-094` FR11).
- * Playwright's WebKit (Linux build) dispatched pointer and touch events and
- * no click for an injected tap on this story, scripted or through its own
- * tap path, so a proof that needs the click runs in Chromium and on the iOS
- * simulator.
+ * These proofs script the touch (its hold, its tremble), and Playwright's
+ * WebKit (Linux build) synthesizes no click after a scripted touch on any
+ * element, a plain button included (measured against one); its own tap path
+ * does. So a scripted proof that needs the click runs in Chromium and on the
+ * iOS simulator.
  */
 const WEBKIT_TAP_CLICK_SKIP =
-  "Playwright's WebKit dispatches no click after an injected tap on this story (measured), and a tap steps on its click (spec:AST-094 FR11); proven in Chromium and on the iOS simulator";
+  "Playwright's WebKit synthesizes no click after a scripted touch on any element, a plain button included (measured), and a tap steps on its click (spec:AST-094 FR11); proven in Chromium and on the iOS simulator";
 
 /** Moves from `from` to `to` between `t0` and `t1` at 60 Hz. */
 function moves(from: Point, to: Point, t0: number, t1: number): TouchFrame[] {

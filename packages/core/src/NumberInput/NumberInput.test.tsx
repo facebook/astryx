@@ -2512,7 +2512,10 @@ describe('NumberInput stepping', () => {
       });
       fireEvent.click(increment, {detail: 1});
 
-      // The press is default-prevented, so focus never leaves the field.
+      // The press is default-prevented, so focus never leaves the field:
+      // canceling the mousedown alone would not do, since Chrome on Android
+      // focuses a held stepper at its long press unless the touch's
+      // pointerdown is canceled (measured).
       expect(pointerDown).toBe(false);
       expect(onChange).toHaveBeenLastCalledWith(8);
       expect(input).toHaveFocus();
