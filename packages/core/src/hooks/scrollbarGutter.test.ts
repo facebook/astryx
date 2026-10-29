@@ -67,8 +67,7 @@ describe('holdScrollbarGutter', () => {
     if (originalCss) {
       Object.defineProperty(window, 'CSS', originalCss);
     } else {
-      // @ts-expect-error -- jsdom has no CSS object of its own
-      delete window.CSS;
+      Reflect.deleteProperty(window, 'CSS');
     }
     vi.restoreAllMocks();
   });

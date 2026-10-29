@@ -91,13 +91,19 @@ function takesPan(
   return behavior === 'contain' || behavior === 'none';
 }
 
-function matchesSelector(element: Element, selector: string): boolean {
-  try {
-    return element.matches(selector);
-  } catch {
-    // An engine without the pseudo-class: the position check still applies.
-    return false;
-  }
+/**
+ * Whether `element` is in the state a pseudo-class names (`:modal`,
+ * `:popover-open`). An engine that does not know the pseudo-class has no
+ * element in that state, and `matches` would throw on the selector, so it is
+ * not asked; any other error surfaces.
+ */
+function isInState(element: Element, pseudoClass: string): boolean {
+  const css = element.ownerDocument.defaultView?.CSS;
+  return (
+    typeof css?.supports === 'function' &&
+    css.supports(`selector(${pseudoClass})`) &&
+    element.matches(pseudoClass)
+  );
 }
 
 /**
@@ -114,8 +120,8 @@ function chainsToViewport(
 ): boolean {
   return (
     style.position === 'fixed' ||
-    matchesSelector(element, ':modal') ||
-    matchesSelector(element, ':popover-open')
+    isInState(element, ':modal') ||
+    isInState(element, ':popover-open')
   );
 }
 

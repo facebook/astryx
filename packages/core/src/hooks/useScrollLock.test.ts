@@ -15,6 +15,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, renderHook} from '@testing-library/react';
 import {useScrollLock} from './useScrollLock';
 import {isScrollLockActive, subscribeScrollLock} from './rootScrollStyles';
+import {isPanAbsorbedBeforePage} from './scrollLockTouchGuard';
 import {
   coarsePrimaryPointer,
   pointerQuery,
@@ -115,6 +116,24 @@ function classicScrollbar(clientWidth = 1009): void {
   });
 }
 
+/**
+ * An engine whose `CSS.supports('selector(…)')` knows these selectors, on
+ * top of whatever `CSS.supports` already answered.
+ */
+function supportSelectors(selectors: ReadonlyArray<string>): void {
+  const previous = window.CSS;
+  Object.defineProperty(window, 'CSS', {
+    value: {
+      supports: (...args: [string] | [string, string]) =>
+        args.length === 1
+          ? selectors.some(selector => args[0] === `selector(${selector})`)
+          : (previous?.supports(args[0], args[1]) ?? false),
+    },
+    configurable: true,
+    writable: true,
+  });
+}
+
 describe('useScrollLock', () => {
   afterEach(() => {
     cleanup();
@@ -126,8 +145,7 @@ describe('useScrollLock', () => {
     if (originalCss) {
       Object.defineProperty(window, 'CSS', originalCss);
     } else {
-      // @ts-expect-error -- jsdom has no CSS object of its own
-      delete window.CSS;
+      Reflect.deleteProperty(window, 'CSS');
     }
     vi.restoreAllMocks();
   });
@@ -255,8 +273,7 @@ describe('useScrollLock', () => {
         zoom.scale = 1;
         expect(pan(scrim, 300, 200)).toBe(true);
       } finally {
-        // @ts-expect-error -- jsdom has no visualViewport of its own
-        delete window.visualViewport;
+        Reflect.deleteProperty(window, 'visualViewport');
       }
     });
 
@@ -313,8 +330,12 @@ describe('useScrollLock', () => {
     });
 
     describe('an overlay rendered inside a scrolling container', () => {
-      /** An open modal dialog: jsdom has no top layer, so `:modal` is stubbed. */
+      /**
+       * An open modal dialog: jsdom has no top layer, so `:modal` is stubbed,
+       * on an engine that knows it.
+       */
       function modalDialog(parent: HTMLElement): HTMLDialogElement {
+        supportSelectors([':modal', ':popover-open']);
         const dialog = document.createElement('dialog');
         dialog.setAttribute('open', '');
         const matches = Element.prototype.matches;
@@ -332,6 +353,38 @@ describe('useScrollLock', () => {
 
         expect(pan(dialog, 300, 200)).toBe(true);
         expect(pan(dialog, 200, 300)).toBe(true);
+      });
+
+      it('never asks an engine without `:modal` or `:popover-open` to match them: it has no element in either state', () => {
+        supportSelectors([]);
+        const container = scroller(400, 100);
+        const dialog = document.createElement('dialog');
+        dialog.setAttribute('open', '');
+        container.append(dialog);
+        const matches = vi.spyOn(dialog, 'matches');
+        renderHook(() => useScrollLock(true));
+
+        pan(dialog, 300, 200);
+        const asked = matches.mock.calls.map(call => call[0]);
+        expect(asked).not.toContain(':modal');
+        expect(asked).not.toContain(':popover-open');
+      });
+
+      it('lets an error from a state the engine reports knowing surface: nothing is caught and defaulted', () => {
+        supportSelectors([':modal', ':popover-open']);
+        const dialog = document.createElement('dialog');
+        document.body.append(dialog);
+        const matches = Element.prototype.matches;
+        vi.spyOn(dialog, 'matches').mockImplementation(selector => {
+          if (selector === ':modal') {
+            throw new DOMException('the engine failed', 'SyntaxError');
+          }
+          return matches.call(dialog, selector);
+        });
+
+        expect(() => isPanAbsorbedBeforePage(dialog, 0, 50)).toThrow(
+          'the engine failed',
+        );
       });
 
       it('cancels a drag on a fixed-position overlay inside the container', () => {
