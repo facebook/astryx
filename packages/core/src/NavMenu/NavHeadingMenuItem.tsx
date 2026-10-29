@@ -32,6 +32,9 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   root: {
     boxSizing: 'border-box',
+    // A held pointer slides across the items; it selects no item text.
+    // Caller content beside the items stays selectable.
+    userSelect: 'none',
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],

@@ -113,6 +113,8 @@ const styles = stylex.create({
     transform: 'rotate(180deg)',
   },
   menuContainer: {
+    // A held pointer slides across the items; it selects no text.
+    userSelect: 'none',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
