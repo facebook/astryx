@@ -305,6 +305,84 @@ describe('attachContextRequest (spec:AST-094 FR43)', () => {
     expect(seen.map(request => request.kind)).toEqual(['pointer', 'keyboard']);
   });
 
+  it("refuses a pen's own menu during and right after a hold another participant keeps: a pen held on a stepper, or on a handle whose own hold claims first", () => {
+    const {row, stepper, handle} = mount(
+      '<div id="row">Row <button id="stepper">+</button><span id="handle">≡</span></div>',
+    );
+    const seen = requests(row);
+    detachers.push(
+      host.attachConsumer(
+        stepper,
+        new PressTracker({getBounds: () => null, keepsTouch: true}),
+      ),
+    );
+    // A reorder handle's own hold claims the pen first.
+    const reorder = new LongPressGestureRecognizer({
+      name: 'reorder',
+      minimumPressDuration: 150,
+    });
+    detachers.push(host.attach(handle, reorder));
+    let time = 0;
+    for (const target of [stepper, handle]) {
+      pointer('pointerdown', target, {
+        pointerType: 'pen',
+        x: 5,
+        y: 5,
+        buttons: 1,
+        time,
+      });
+      host.arena.advanceTime(700);
+      time += 700;
+      const during = contextmenu(target, {x: 5, y: 5, pointerType: 'pen'});
+      pointer('pointerup', target, {pointerType: 'pen', x: 5, y: 5, time});
+      // Windows fires a pen's press-and-hold menu at the lift.
+      const atLift = contextmenu(target, {x: 5, y: 5, pointerType: 'pen'});
+      expect(during.defaultPrevented).toBe(true);
+      expect(atLift.defaultPrevented).toBe(true);
+      host.arena.advanceTime(2000);
+      time += 2000;
+    }
+    expect(seen.map(request => [request.kind, request.pointerType])).toEqual(
+      [],
+    );
+  });
+
+  it('answers a right click or Shift+F10 inside nested requests once, at the innermost, as a hold resolves to one', () => {
+    const {card, row} = mount(
+      '<div id="card">Card <div id="row" tabindex="0">Row</div></div>',
+    );
+    const outer = requests(card);
+    const inner = requests(row);
+    contextmenu(row, {x: 5, y: 5, pointerType: 'mouse'});
+    host.arena.advanceTime(1000);
+    row.focus();
+    key(row, {key: 'F10', shiftKey: true});
+    expect(inner.map(request => request.kind)).toEqual(['pointer', 'keyboard']);
+    expect(outer).toEqual([]);
+    // On the card itself, the card answers.
+    host.arena.advanceTime(1000);
+    contextmenu(card, {x: 1, y: 1, pointerType: 'mouse'});
+    expect(outer.map(request => request.kind)).toEqual(['pointer']);
+  });
+
+  it("refuses a menu event as a finger's only for a finger down inside its element: a right click while a finger rests on another gesture still requests", () => {
+    const {row, other} = mount(
+      '<div id="row">Row</div><div id="other">Other</div>',
+    );
+    const seen = requests(row);
+    detachers.push(
+      host.attach(other, new LongPressGestureRecognizer({name: 'elsewhere'})),
+    );
+    touch('touchstart', other, {id: 1, x: 5, y: 40}, 0);
+    host.arena.advanceTime(100);
+    const right = contextmenu(row, {x: 5, y: 5, pointerType: 'mouse'});
+    expect(right.defaultPrevented).toBe(true);
+    expect(seen.map(request => [request.kind, request.pointerType])).toEqual([
+      ['pointer', 'mouse'],
+    ]);
+    touch('touchend', other, {id: 1, x: 5, y: 40}, 200, true);
+  });
+
   it('starts no press for a right click or a ctrl-click on macOS', () => {
     coarse = false;
     vi.spyOn(navigator, 'platform', 'get').mockReturnValue('MacIntel');
