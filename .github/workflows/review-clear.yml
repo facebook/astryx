@@ -240,14 +240,34 @@ jobs:
             }
             const labels = current.labels.map((l) => l.name);
 
+            // One review gate (architecture:knowledge-contracts DEC-14):
+            // compose the code review with the spec decision mirrored in
+            // spec-owner-approval. Code review leads; success needs both.
+            async function publishReviewGate(codeGated, codeDescription) {
+              let statuses = [];
+              try {
+                statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
+                  owner, repo, ref: headSha, per_page: 100,
+                });
+              } catch (e) {
+                core.warning(`Could not read the spec decision: ${e.message}`);
+              }
+              const gate = decision.composeReviewGate({
+                codeGated,
+                codeDescription,
+                spec: decision.readSpecGate(statuses),
+              });
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: headSha, context: 'review-required',
+                state: gate.state,
+                description: gate.description,
+              });
+            }
+
             if (codeWithdrawn) {
               // The commit status is the hard gate; publish it before the advisory
               // label. If this POST fails, throw without any label-only mutation.
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: headSha, context: 'review-required',
-                state: 'pending',
-                description: 'Waiting on code review after approval withdrawal.',
-              });
+              await publishReviewGate(true, 'Waiting on code review after approval withdrawal.');
               core.info(`review-required status → pending on #${prNumber}.`);
               if (!labels.includes(CODE)) {
                 await github.rest.issues.addLabels({
@@ -268,11 +288,7 @@ jobs:
                 core.warning(`Could not remove ${CODE} (may already be gone): ${e.message}`);
               }
             }
-            await github.rest.repos.createCommitStatus({
-              owner, repo, sha: headSha, context: 'review-required',
-              state: 'success',
-              description: codeApprovedBy === 'review-app' ? APP_CLEARED : OWNER_CLEARED,
-            });
+            await publishReviewGate(false, codeApprovedBy === 'review-app' ? APP_CLEARED : OWNER_CLEARED);
             core.info(`review-required status → success on #${prNumber}.`);
             // Neutralize stale check-run(s) of the same name so the rollup isn't
             // dragged to failure by a pre-status action_required leftover.

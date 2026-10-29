@@ -700,25 +700,24 @@ describe('spec owner decision', () => {
       }
     });
 
-    it('explains only a command that names no single commit', () => {
+    it('explains each way a recognized command decides nothing', () => {
       const stale = '1111111111111111111111111111111111111111';
-      // A bare command approves the current spec content; a well-formed SHA
-      // is decided by comparing that commit's spec content (DEC-14).
-      for (const body of [
-        '/approve-spec',
-        '/spec ok',
-        `/approve-spec ${stale}`,
-      ]) {
-        expect(
-          describeOwnerCommandProblem(parseOwnerCommandIntent(body)),
-          body,
-        ).toBe(null);
-      }
+      expect(
+        describeOwnerCommandProblem(parseOwnerCommandIntent('/approve-spec')),
+      ).toContain('did not name a commit');
       expect(
         describeOwnerCommandProblem(
           parseOwnerCommandIntent('/approve-spec abc1234'),
         ),
       ).toContain('full 40-character commit SHA');
+      // A well-formed SHA is decided by comparing its spec content (DEC-14),
+      // and a bare /revoke-spec withdraws.
+      for (const body of [`/approve-spec ${stale}`, '/revoke-spec']) {
+        expect(
+          describeOwnerCommandProblem(parseOwnerCommandIntent(body)),
+          body,
+        ).toBe(null);
+      }
     });
 
     it('accepts a commit SHA in either casing', () => {
@@ -746,11 +745,9 @@ describe('spec owner decision', () => {
         `/revoke-spec ${head}`,
         '/approve-spec',
         '/revoke-spec',
-        '/spec ok',
         '/approve-spec abc1234',
         `/approve-spec ${stale}`,
         `/approve-spec ${head} please`,
-        '/spec ok please',
       ]) {
         const parsed = parseOwnerCommandTarget(body) !== null;
         const problem = describeOwnerCommandProblem(
@@ -784,20 +781,27 @@ describe('spec owner decision', () => {
       expect(decide(sha => sha === head || sha === earlier)).toBe(true);
     });
 
-    it('counts a bare command posted after the current content appeared', () => {
-      const decide = (body, postedAfterContent) =>
+    it('withdraws with a bare /revoke-spec and approves again after it', () => {
+      const decide = bodies =>
         resolveOwnerDecision({
           reviews: [],
-          comments: [{user: owner, body, created_at: '2026-08-30T10:00:00Z'}],
+          comments: bodies.map((body, index) => ({
+            user: owner,
+            body,
+            created_at: `2026-08-30T10:0${index}:00Z`,
+          })),
           owners: ['cixzhang'],
           headSha: head,
-          postedAfterContent,
         }).approved;
 
-      expect(decide('/spec ok', () => true)).toBe(true);
-      expect(decide('/approve-spec', () => true)).toBe(true);
-      expect(decide('/spec ok', () => false)).toBe(false);
-      expect(decide('/spec ok')).toBe(false);
+      expect(decide([`/approve-spec ${head}`, '/revoke-spec'])).toBe(false);
+      expect(
+        decide([
+          `/approve-spec ${head}`,
+          '/revoke-spec',
+          `/approve-spec ${head}`,
+        ]),
+      ).toBe(true);
     });
 
     it('reports no problem for the exact form the gate accepts', () => {

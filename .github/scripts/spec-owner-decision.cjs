@@ -25,7 +25,7 @@ const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 // raw body, which neither trims nor lowercases. Every parser below applies the
 // same precondition, so a comment the trigger drops can never be read as a
 // decision by a run started for some other event.
-const OWNER_COMMAND_PREFIXES = ['/spec ok', '/approve-spec', '/revoke-spec'];
+const OWNER_COMMAND_PREFIXES = ['/approve-spec', '/revoke-spec'];
 
 function isDispatchableOwnerCommand(body) {
   return (
@@ -45,17 +45,11 @@ function parseOwnerCommand(body, headSha) {
 
 /**
  * Recognize that a comment was meant as an owner command, whatever it names.
- * Only the exact-head form in `parseOwnerCommand` decides the gate; this looser
- * shape exists so a near-miss command is answered instead of ignored.
+ * Only a well-formed command decides the gate; this looser shape exists so a
+ * near-miss command is explained in the gate's details instead of ignored.
  */
 function parseOwnerCommandIntent(body) {
   if (!isDispatchableOwnerCommand(body)) return null;
-  if (/^\/spec ok\b/i.test(body.trim())) {
-    return {
-      verb: 'approve',
-      argument: body.trim().slice('/spec ok'.length).trim(),
-    };
-  }
   const match = body
     .trimEnd()
     .match(/^\/(approve|revoke)-spec(?![-\w])([\s\S]*)$/);
@@ -69,9 +63,14 @@ function parseOwnerCommandIntent(body) {
  * command that names no full head SHA, and one that names a superseded commit.
  */
 function describeOwnerCommandProblem(intent) {
-  if (!intent || !intent.argument) return null;
+  if (!intent) return null;
+  if (!intent.argument) {
+    return intent.verb === 'approve'
+      ? 'it did not name a commit; post /approve-spec with the full head SHA'
+      : null;
+  }
   if (!/^[0-9a-f]{40}$/i.test(intent.argument)) {
-    return 'it named something other than one full 40-character commit SHA';
+    return 'it did not name exactly one full 40-character commit SHA';
   }
   return null;
 }
@@ -206,11 +205,10 @@ function resolveOwnerDecision({
   dismissalEvents = [],
   owners,
   headSha,
-  // Spec approvals bind content (DEC-14): a review or a SHA command counts
-  // when its commit carries the current spec content, and a command without a
-  // SHA counts when it was posted after that content appeared.
+  // Spec approvals bind content (DEC-14): a review or a command counts when
+  // the commit it names carries the current spec content. A `/revoke-spec`
+  // without a commit withdraws whatever that owner approved.
   approvesCurrentContent = sha => sha === headSha,
-  postedAfterContent = () => false,
 }) {
   const allowed = new Set(owners.map(owner => owner.toLowerCase()));
   const latestByOwner = new Map();
@@ -283,13 +281,7 @@ function resolveOwnerDecision({
     if (!isDispatchableOwnerCommand(comment.body)) continue;
     const target = parseOwnerCommandTarget(comment.body);
     if (target == null) continue;
-    if (
-      target.sha
-        ? !approvesCurrentContent(target.sha)
-        : !postedAfterContent(comment)
-    ) {
-      continue;
-    }
+    if (target.sha && !approvesCurrentContent(target.sha)) continue;
     consider(login, {
       approved: target.approved,
       at: comment.created_at,

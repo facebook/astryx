@@ -5,19 +5,20 @@
 
 /**
  * @input Changed knowledge-record and design-asset contents read from a pull
- *   request, owner command comments, and the gate's own commit statuses
- * @output The spec-content fingerprint an owner approval binds, the content
- *   clock that dates it, owner-command parsing, and the gate's status text
+ *   request, and owner command comments
+ * @output The spec-content fingerprint an owner approval binds, owner-command
+ *   parsing, and the gate's status text
  * @position Pure helpers for `architecture:knowledge-contracts` DEC-14; the
  *   reconciler owns every GitHub read and write
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const crypto = require('node:crypto');
+const {
+  SPEC_MIRROR_PREFIX,
+  SPEC_WAITING_TEXT,
+} = require('./review-signal-decision.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-const CONTENT_STATUS_CONTEXT = 'spec-owner-content';
-const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 
 // Recording an approval writes these values, so they never take part in the
 // content an approval binds (DEC-14).
@@ -70,74 +71,31 @@ function fingerprintSpecContent(entries) {
 }
 
 /**
- * Read an owner command. `/spec ok` and a bare `/approve-spec` approve the
- * spec content current when the comment was posted (`sha: null`);
- * `/approve-spec <sha>` approves that commit's spec content. `/revoke-spec`
- * withdraws, with or without a commit.
+ * Read an owner command. `/approve-spec <sha>` approves the spec content at
+ * that commit; the SHA says which content the owner reviewed. `/revoke-spec`
+ * withdraws the owner's approval, with or without a commit.
  */
 function parseOwnerCommandTarget(body) {
   if (typeof body !== 'string') return null;
-  const text = body.trim();
-  if (/^\/spec ok$/i.test(text)) return {approved: true, sha: null};
-  const match = text.match(
-    /^\/(approve|revoke)-spec(?:\s+([0-9a-fA-F]{40}))?$/,
-  );
+  const match = body
+    .trim()
+    .match(/^\/(approve|revoke)-spec(?:\s+([0-9a-fA-F]{40}))?$/);
   if (!match) return null;
+  if (match[1] === 'approve' && !match[2]) return null;
   return {
     approved: match[1] === 'approve',
     sha: match[2] ? match[2].toLowerCase() : null,
   };
 }
 
-function contentStatusDescription(fingerprint, since) {
-  return `Spec content ${fingerprint.slice(0, 12)} since ${since}`;
-}
+const MIRROR_PREFIX = SPEC_MIRROR_PREFIX;
 
 /**
- * The content clock a trusted gate status recorded for `fingerprint`, or null.
- * Only the workflow's own statuses count; a person cannot set the clock.
- */
-function readContentClock(statuses, fingerprint) {
-  const prefix = `Spec content ${fingerprint.slice(0, 12)} since `;
-  for (const status of statuses) {
-    if (
-      status.context !== CONTENT_STATUS_CONTEXT ||
-      status.creator?.login !== TRUSTED_STATUS_CREATOR ||
-      typeof status.description !== 'string'
-    ) {
-      continue;
-    }
-    if (!status.description.startsWith(prefix)) return null;
-    const since = status.description.slice(prefix.length);
-    return Number.isNaN(Date.parse(since)) ? null : since;
-  }
-  return null;
-}
-
-/** The fingerprint prefix the newest trusted content status names, or null. */
-function readContentFingerprintPrefix(statuses) {
-  for (const status of statuses) {
-    if (
-      status.context === CONTENT_STATUS_CONTEXT &&
-      status.creator?.login === TRUSTED_STATUS_CREATOR
-    ) {
-      return (
-        status.description?.match(/^Spec content ([0-9a-f]{12}) /)?.[1] ?? null
-      );
-    }
-  }
-  return null;
-}
-
-const WAITING_PREFIX = '⏳ Waiting for human spec approval: ';
-
-/**
- * Pending status text naming who can still approve. An engineering owner
- * satisfies every group, so a missing engineering group is named alone.
+ * Status text naming who can still approve. An engineering owner satisfies
+ * every group, so a missing engineering group is named alone.
  */
 function waitingDescription(missing) {
-  if (missing.spec) return `${WAITING_PREFIX}an eng owner can reply /spec ok`;
-  return `${WAITING_PREFIX}a design or eng owner can reply /spec ok`;
+  return missing.spec ? SPEC_WAITING_TEXT.eng : SPEC_WAITING_TEXT.design;
 }
 
 function approvedDescription(owners) {
@@ -149,15 +107,26 @@ function approvedDescription(owners) {
   return `✅ Spec approved by ${list}`;
 }
 
+/**
+ * The `spec-owner-approval` description. That context only mirrors the spec
+ * half of `review-required` until branch protection stops requiring it; the
+ * review gate reads the state from this text.
+ */
+function mirrorDescription({state, missing, approvers = []}) {
+  if (state === 'success') {
+    return approvers.length
+      ? `${MIRROR_PREFIX}ok (${approvers.map(name => `@${name}`).join(', ')})`
+      : `${MIRROR_PREFIX}ok`;
+  }
+  return `${MIRROR_PREFIX}waiting (${missing?.spec ? 'eng' : 'design'})`;
+}
+
 module.exports = {
-  CONTENT_STATUS_CONTEXT,
-  WAITING_PREFIX,
+  MIRROR_PREFIX,
   approvedDescription,
-  contentStatusDescription,
   fingerprintSpecContent,
+  mirrorDescription,
   normalizeRecordText,
   parseOwnerCommandTarget,
-  readContentClock,
-  readContentFingerprintPrefix,
   waitingDescription,
 };

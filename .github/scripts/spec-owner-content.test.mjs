@@ -6,13 +6,17 @@ import {describe, expect, it} from 'vitest';
 const require = createRequire(import.meta.url);
 const {
   approvedDescription,
-  contentStatusDescription,
   fingerprintSpecContent,
+  mirrorDescription,
   normalizeRecordText,
   parseOwnerCommandTarget,
-  readContentClock,
   waitingDescription,
 } = require('./spec-owner-content.cjs');
+const {
+  composeReviewGate,
+  readCodeGate,
+  readSpecGate,
+} = require('./review-signal-decision.cjs');
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const record = [
@@ -94,9 +98,6 @@ describe('spec content fingerprint', () => {
 
 describe('owner commands', () => {
   it.each([
-    ['/spec ok', {approved: true, sha: null}],
-    ['/spec OK', {approved: true, sha: null}],
-    ['/approve-spec', {approved: true, sha: null}],
     [`/approve-spec ${head}`, {approved: true, sha: head}],
     [`/approve-spec ${head.toUpperCase()}`, {approved: true, sha: head}],
     ['/revoke-spec', {approved: false, sha: null}],
@@ -108,62 +109,147 @@ describe('owner commands', () => {
   it.each([
     undefined,
     'LGTM',
-    '/spec okay',
-    '/spec ok please',
+    '/approve-spec',
+    '/spec ok',
     '/approve-spec abc1234',
+    `/approve-spec ${head} please`,
     '/approve-specs',
-  ])('does not read %s as a command', body => {
+  ])('does not read %s as a decision', body => {
     expect(parseOwnerCommandTarget(body)).toBe(null);
   });
 });
 
-describe('content clock', () => {
-  const {fingerprint} = fingerprintSpecContent([
-    {path: 'docs/a.md', content: record},
-  ]);
-  const since = '2026-10-28T23:00:00.000Z';
-
-  it('reads the time the workflow recorded for this content', () => {
-    expect(
-      readContentClock(
-        [trusted(contentStatusDescription(fingerprint, since))],
-        fingerprint,
-      ),
-    ).toBe(since);
+describe('one review gate', () => {
+  const trusted = (context, state, description) => ({
+    context,
+    state,
+    description,
+    creator: {login: 'github-actions[bot]'},
   });
 
-  it('ignores a clock for other content or from another author', () => {
-    const other = '0'.repeat(64);
-    expect(
-      readContentClock(
-        [trusted(contentStatusDescription(other, since))],
-        fingerprint,
+  it('shows the spec wait when code review is satisfied', () => {
+    const spec = readSpecGate([
+      trusted(
+        'spec-owner-approval',
+        'pending',
+        mirrorDescription({state: 'pending', missing: {spec: true}}),
       ),
-    ).toBe(null);
+    ]);
     expect(
-      readContentClock(
-        [
-          {
-            ...trusted(contentStatusDescription(fingerprint, since)),
-            creator: {login: 'someone'},
-          },
-        ],
-        fingerprint,
+      composeReviewGate({
+        codeGated: false,
+        codeDescription: 'No code review required.',
+        spec,
+      }),
+    ).toEqual({
+      state: 'pending',
+      description:
+        '⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>',
+    });
+  });
+
+  it('leads with code review when both are missing', () => {
+    const spec = readSpecGate([
+      trusted(
+        'spec-owner-approval',
+        'pending',
+        mirrorDescription({state: 'pending', missing: {spec: false}}),
       ),
-    ).toBe(null);
+    ]);
+    expect(
+      composeReviewGate({
+        codeGated: true,
+        codeDescription: 'Waiting on code review: core change',
+        spec,
+      }),
+    ).toEqual({
+      state: 'pending',
+      description: 'Waiting on code review: core change (+ spec approval)',
+    });
+  });
+
+  it('succeeds only when both are satisfied, naming the spec approver', () => {
+    const spec = readSpecGate([
+      trusted(
+        'spec-owner-approval',
+        'success',
+        mirrorDescription({state: 'success', approvers: ['cixzhang']}),
+      ),
+    ]);
+    expect(
+      composeReviewGate({
+        codeGated: false,
+        codeDescription: 'No code review required.',
+        spec,
+      }),
+    ).toEqual({
+      state: 'success',
+      description: '✅ Spec approved by @cixzhang · No code review required.',
+    });
+  });
+
+  it('keeps the code half when no spec decision is published yet', () => {
+    expect(
+      composeReviewGate({
+        codeGated: false,
+        codeDescription: 'No code review required.',
+        spec: readSpecGate([]),
+      }),
+    ).toEqual({state: 'success', description: 'No code review required.'});
+  });
+
+  it('reads the code half back out of a composed gate', () => {
+    expect(
+      readCodeGate([
+        trusted(
+          'review-required',
+          'pending',
+          'Waiting on code review: core change (+ spec approval)',
+        ),
+      ]),
+    ).toEqual({
+      gated: true,
+      description: 'Waiting on code review: core change',
+    });
+    expect(
+      readCodeGate([
+        trusted(
+          'review-required',
+          'success',
+          '✅ Spec approved by @cixzhang · Cleared by code-owner approval.',
+        ),
+      ]),
+    ).toEqual({gated: false, description: 'Cleared by code-owner approval.'});
+  });
+
+  it('never reports a missing approval as a failure', () => {
+    for (const missing of [{spec: true}, {spec: false, design: true}]) {
+      const gate = composeReviewGate({
+        codeGated: false,
+        codeDescription: 'No code review required.',
+        spec: readSpecGate([
+          trusted(
+            'spec-owner-approval',
+            'pending',
+            mirrorDescription({state: 'pending', missing}),
+          ),
+        ]),
+      });
+      expect(gate.state).toBe('pending');
+    }
   });
 });
 
 describe('status text', () => {
   it('names an eng owner whenever engineering approval is missing', () => {
     expect(waitingDescription({spec: true, design: true, theme: false})).toBe(
-      '⏳ Waiting for human spec approval: an eng owner can reply /spec ok',
+      '⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>',
     );
   });
 
   it('names a design or eng owner when only design approval is missing', () => {
     expect(waitingDescription({spec: false, design: true, theme: false})).toBe(
-      '⏳ Waiting for human spec approval: a design or eng owner can reply /spec ok',
+      '⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>',
     );
   });
 

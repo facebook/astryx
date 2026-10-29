@@ -230,31 +230,6 @@ jobs:
             const authorIsEng = engOwners.includes(author);
             const authorIsDesign = designOwners.includes(author);
 
-            // Bot PRs: no gate, no community label. Set the check to success so
-            // a required "review-required" doesn't block them, drop any stray
-            // gate/community labels, and stop.
-            if (authorIsBot) {
-              core.info(`@${author} is a bot — exempt from review gates.`);
-              const current = pr.labels.map((l) => l.name);
-              for (const name of [CODE, DESIGN, COMMUNITY]) {
-                if (current.includes(name)) {
-                  try {
-                    await github.rest.issues.removeLabel({
-                      owner, repo, issue_number: pr.number, name,
-                    });
-                  } catch (e) {
-                    core.warning(`Could not remove ${name}: ${e.message}`);
-                  }
-                }
-              }
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'review-required', state: 'success',
-                description: 'Automated (bot) PR — exempt from review gates.',
-              });
-              return;
-            }
-
             // Match the trusted workflow version: an older PR base can predate
             // this helper even though the running workflow requires it.
             const { data: reviewDecisionFile } = await github.rest.repos.getContent({
@@ -272,6 +247,55 @@ jobs:
               () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
             );
             const reviewDecision = reviewDecisionModule.exports;
+
+            // One review gate (architecture:knowledge-contracts DEC-14):
+            // compose the code review with the spec decision the spec-owner
+            // job mirrors in spec-owner-approval. Code review leads; success
+            // needs both. A missing approval is pending, never a failure.
+            async function publishReviewGate(codeGated, codeDescription) {
+              let statuses = [];
+              try {
+                statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
+                  owner, repo, ref: pr.head.sha, per_page: 100,
+                });
+              } catch (e) {
+                core.warning(`Could not read the spec decision: ${e.message}`);
+              }
+              const gate = reviewDecision.composeReviewGate({
+                codeGated,
+                codeDescription,
+                spec: reviewDecision.readSpecGate(statuses),
+              });
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: pr.head.sha,
+                context: 'review-required',
+                state: gate.state,
+                description: gate.description,
+              });
+              return gate;
+            }
+
+            // Bot PRs: no gate, no community label. Set the check to success so
+            // a required "review-required" doesn't block them, drop any stray
+            // gate/community labels, and stop.
+            if (authorIsBot) {
+              core.info(`@${author} is a bot — exempt from review gates.`);
+              const current = pr.labels.map((l) => l.name);
+              for (const name of [CODE, DESIGN, COMMUNITY]) {
+                if (current.includes(name)) {
+                  try {
+                    await github.rest.issues.removeLabel({
+                      owner, repo, issue_number: pr.number, name,
+                    });
+                  } catch (e) {
+                    core.warning(`Could not remove ${name}: ${e.message}`);
+                  }
+                }
+              }
+              await publishReviewGate(false, 'Automated (bot) PR — exempt from code review.');
+              return;
+            }
+
 
             // --- Changed files. ---
             const allFiles = await github.paginate(github.rest.pulls.listFiles, {
@@ -645,15 +669,8 @@ jobs:
                 : codeHighRisk && codeApproved
                   ? 'Cleared by code-owner approval.'
                   : 'No code review required.';
-            await github.rest.repos.createCommitStatus({
-              owner,
-              repo,
-              sha: pr.head.sha,
-              context: 'review-required',
-              state: codeGated ? 'pending' : 'success',
-              description: gateDescription,
-            });
-            core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
+            const gate = await publishReviewGate(codeGated, gateDescription);
+            core.info(`review-required status: ${gate.state}`);
             // Neutralize any stale "review-required" CHECK RUN left over from the
             // pre-status gate. Such a leftover (conclusion action_required) drags
             // the status rollup to FAILURE even though we now gate via a commit
@@ -704,8 +721,7 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository) &&
       (github.event_name != 'issue_comment' ||
        (github.event.issue.pull_request != null &&
-        (startsWith(github.event.comment.body, '/spec ok') ||
-         startsWith(github.event.comment.body, '/approve-spec') ||
+        (startsWith(github.event.comment.body, '/approve-spec') ||
          startsWith(github.event.comment.body, '/revoke-spec')))) &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.pr != '')
     name: Spec owner gate

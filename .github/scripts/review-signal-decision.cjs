@@ -121,8 +121,136 @@ function resolveReviewApprovals({
   };
 }
 
+// ---------------------------------------------------------------------------
+// One review gate (architecture:knowledge-contracts DEC-14, spec:AST-030 FR14).
+// `review-required` carries both the code review and the spec approval. The
+// spec-owner job keeps `spec-owner-approval` as a mirror whose description
+// names the spec state; every writer of `review-required` composes the two.
+// ---------------------------------------------------------------------------
+
+const REVIEW_GATE_CONTEXT = 'review-required';
+const SPEC_GATE_CONTEXT = 'spec-owner-approval';
+const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
+const SPEC_WAITING_PREFIX = '⏳ Waiting for human spec approval: ';
+const SPEC_WAITING_TEXT = {
+  eng: `${SPEC_WAITING_PREFIX}an eng owner can reply /approve-spec <sha>`,
+  design: `${SPEC_WAITING_PREFIX}a design or eng owner can reply /approve-spec <sha>`,
+};
+const SPEC_MIRROR_PREFIX = 'Mirrors review-required · spec ';
+const SPEC_CHECKING_TEXT = '⏳ Checking for spec changes…';
+const CODE_WAITING_PREFIX = 'Waiting on code review';
+const REVIEW_COMPLETE = 'Review complete.';
+
+function newestTrusted(statuses, contextName) {
+  // GitHub lists a ref's statuses newest first.
+  return (
+    (statuses ?? []).find(
+      status =>
+        status.context === contextName &&
+        status.creator?.login === TRUSTED_STATUS_CREATOR,
+    ) ?? null
+  );
+}
+
+/**
+ * The spec half of the review gate, from the newest trusted
+ * `spec-owner-approval` status. `known: false` means the spec-owner job has
+ * not published for this head yet; it composes the gate when it does.
+ */
+function readSpecGate(statuses) {
+  const status = newestTrusted(statuses, SPEC_GATE_CONTEXT);
+  if (!status) return {known: false, satisfied: true, text: null};
+  const description = status.description ?? '';
+  if (description.startsWith(SPEC_MIRROR_PREFIX)) {
+    const rest = description.slice(SPEC_MIRROR_PREFIX.length);
+    if (rest.startsWith('waiting (design)')) {
+      return {known: true, satisfied: false, text: SPEC_WAITING_TEXT.design};
+    }
+    if (rest.startsWith('waiting')) {
+      return {known: true, satisfied: false, text: SPEC_WAITING_TEXT.eng};
+    }
+    const approvers = rest.match(/^ok \((.+)\)$/)?.[1];
+    if (approvers && status.state === 'success') {
+      return {
+        known: true,
+        satisfied: true,
+        text: `✅ Spec approved by ${approvers}`,
+      };
+    }
+  }
+  if (status.state === 'success') {
+    return {known: true, satisfied: true, text: null};
+  }
+  if (description.startsWith('Reconciling')) {
+    return {known: true, satisfied: false, text: SPEC_CHECKING_TEXT};
+  }
+  // An earlier gate's pending status.
+  return {known: true, satisfied: false, text: SPEC_WAITING_TEXT.eng};
+}
+
+/** The code half of the review gate, from the newest `review-required`. */
+function readCodeGate(statuses) {
+  const status = newestTrusted(statuses, REVIEW_GATE_CONTEXT);
+  if (!status) return null;
+  const description = status.description ?? '';
+  if (
+    status.state !== 'success' &&
+    description.startsWith(CODE_WAITING_PREFIX)
+  ) {
+    return {
+      gated: true,
+      description: description.replace(/ \(\+ spec approval\)$/, ''),
+    };
+  }
+  if (status.state === 'success') {
+    // Drop a spec approval this gate already carries.
+    return {
+      gated: false,
+      description: description.replace(/^✅ Spec approved by [^·]+ · /, ''),
+    };
+  }
+  return {gated: false, description: REVIEW_COMPLETE};
+}
+
+/**
+ * The one review gate a contributor sees. Code review leads; the spec
+ * approval shows once code review is satisfied; success needs both. A
+ * missing approval is `pending`, never a failure.
+ */
+function composeReviewGate({codeGated, codeDescription, spec}) {
+  if (codeGated) {
+    const withSpec =
+      spec && !spec.satisfied
+        ? `${codeDescription} (+ spec approval)`
+        : codeDescription;
+    return {
+      state: 'pending',
+      description: (withSpec.length <= 140 ? withSpec : codeDescription).slice(
+        0,
+        140,
+      ),
+    };
+  }
+  if (spec && !spec.satisfied) {
+    return {state: 'pending', description: spec.text};
+  }
+  const done = codeDescription || REVIEW_COMPLETE;
+  const withSpec = spec?.text ? `${spec.text} · ${done}` : done;
+  return {
+    state: 'success',
+    description: withSpec.length <= 140 ? withSpec : (spec?.text ?? done),
+  };
+}
+
 module.exports = {
+  REVIEW_GATE_CONTEXT,
+  SPEC_GATE_CONTEXT,
+  SPEC_MIRROR_PREFIX,
+  SPEC_WAITING_TEXT,
   classifyReviewSignalPaths,
+  composeReviewGate,
+  readCodeGate,
+  readSpecGate,
   hasWritePermission,
   isSafeSpace,
   normalizeReviewApp,
