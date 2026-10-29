@@ -1611,6 +1611,9 @@ export function TabBar({
             aria-expanded={isMinimized && !isSearchSelected ? false : undefined}
             aria-hidden={isMinimized ? undefined : true}
             tabIndex={isMinimized ? 0 : -1}
+            // While the active field covers it (under a finger), the circle
+            // is neither a tab stop nor a named control.
+            inert={isTouch && isSearchActive}
             onClick={chooseCircle}
             {...stylex.props(
               styles.circle,
