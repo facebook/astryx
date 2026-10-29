@@ -265,6 +265,9 @@ export function createDragToSnapPoints(
         capture: true,
       });
       pan.destroy();
+      // Held where it is: disposing cancels a running settle, which would
+      // otherwise leave the element where that settle began.
+      animator.stop();
       animator.dispose();
     },
   };
