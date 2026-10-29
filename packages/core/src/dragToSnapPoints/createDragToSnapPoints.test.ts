@@ -401,6 +401,95 @@ describe('createDragToSnapPoints', () => {
     snap.destroy();
   });
 
+  it('destroyed during a settle, the element stays where it was, not where the settle began (spec:AST-107 FR6)', async () => {
+    const element = sheet();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle: () => {},
+    });
+    snap.settleTo(2);
+    await vi.advanceTimersByTimeAsync(150);
+    snap.destroy();
+    const [, y = '0'] = element.style.translate.split(' ');
+    const at = Number.parseFloat(y);
+    // Partway to 480, held there: neither back at 0 nor jumped to 480.
+    expect(at).toBeGreaterThan(0);
+    expect(at).toBeLessThan(480);
+  });
+
+  it('destroyed mid-drag, the finger moves nothing and nothing reports (spec:AST-107 FR6)', async () => {
+    const element = sheet();
+    const onSettle = vi.fn();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle,
+    });
+    clock += 10_000;
+    const start = clock;
+    touch('touchstart', element, {x: 10, y: 10}, start);
+    for (let step = 1; step <= 4; step++) {
+      touch(
+        'touchmove',
+        element,
+        {x: 10, y: 10 + step * 20},
+        start + step * 16,
+      );
+    }
+    const during = element.style.translate;
+    snap.destroy();
+    for (let step = 5; step <= 8; step++) {
+      touch(
+        'touchmove',
+        element,
+        {x: 10, y: 10 + step * 20},
+        start + step * 16,
+      );
+    }
+    touch('touchend', element, {x: 10, y: 170}, start + 8 * 16 + 4, true);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(element.style.translate).toBe(during);
+    expect(onSettle).not.toHaveBeenCalled();
+  });
+
+  it('destroy removes every listener it added (spec:AST-107 FR6)', () => {
+    const added = new Map<string, number>();
+    const key = (target: EventTarget, type: string, capture: boolean) =>
+      `${target === document ? 'document' : target === window ? 'window' : 'element'}:${type}:${capture}`;
+    const captureOf = (options?: boolean | AddEventListenerOptions) =>
+      typeof options === 'boolean' ? options : (options?.capture ?? false);
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const remove = vi.spyOn(EventTarget.prototype, 'removeEventListener');
+    const element = sheet();
+    const snap = createDragToSnapPoints(element, {
+      axis: 'y',
+      snapPoints: POINTS,
+      onSettle: () => {},
+    });
+    for (const call of add.mock.calls) {
+      const k = key(
+        add.mock.contexts.at(add.mock.calls.indexOf(call)) as EventTarget,
+        call[0],
+        captureOf(call[2]),
+      );
+      added.set(k, (added.get(k) ?? 0) + 1);
+    }
+    expect(added.size).toBeGreaterThan(0);
+    snap.destroy();
+    for (const [index, call] of remove.mock.calls.entries()) {
+      const k = key(
+        remove.mock.contexts[index] as EventTarget,
+        call[0],
+        captureOf(call[2]),
+      );
+      added.set(k, (added.get(k) ?? 0) - 1);
+    }
+    expect([...added].filter(([, count]) => count !== 0)).toEqual([]);
+    add.mockRestore();
+    remove.mockRestore();
+  });
+
   it('after destroy no drag moves the element and nothing reports', async () => {
     const element = sheet();
     const onSettle = vi.fn();
