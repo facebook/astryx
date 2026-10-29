@@ -99,7 +99,9 @@ async function decide({
       pulls: {listFiles: () => {}},
       // A run whose heavy job ran its suite has a successful marker step.
       actions: {
-        listWorkflowRuns: async () => ({data: {workflow_runs: runs}}),
+        listWorkflowRuns: async ({branch}) => ({
+          data: {workflow_runs: runs.filter(run => run.head_branch === branch)},
+        }),
         listJobsForWorkflowRun: async ({run_id}) => ({
           data: {
             jobs: [
@@ -365,6 +367,16 @@ describe('per-job scope step', () => {
       ]);
       const third = await decide({files, inputs: heavy, open: open.slice(1)});
       expect(third.outputs.applies).toBe('true');
+      // The search holds at most the author's 100 oldest; a newer pull
+      // request missing from it is still behind them.
+      const many = pulls(...Array.from({length: 100}, (_, i) => `fix/${i}`));
+      const late = await decide({
+        context: pullRequestContext('main', {number: 300}),
+        files,
+        inputs: heavy,
+        open: many,
+      });
+      expect(late.messages.failed).toHaveLength(1);
     });
 
     it("fails a heavy job past the author's 12 heavy runs today", async () => {
