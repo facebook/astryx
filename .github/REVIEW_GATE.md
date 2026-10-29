@@ -33,12 +33,17 @@ neutral yellow "waiting" signal, not a red failure).
 ## Spec records
 
 Any PR that creates, changes, or archives a `current` architecture, component,
-family, design, or system spec waits on `spec-owner-approval`, which the Review
-signal workflow publishes. While approval is missing the status is `pending`,
-never a failure, and names who can give it:
+family, design, or system spec needs a spec owner's approval, which the one
+review gate, `review-required`, carries alongside code review. Code review leads
+while it is missing; once it is satisfied, a missing spec approval shows on the
+same status, `pending` and never a failure:
 
-- `⏳ Waiting for human spec approval: an eng owner can reply /spec ok`
-- `⏳ Waiting for human spec approval: a design or eng owner can reply /spec ok`
+- `⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>`
+- `⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>`
+
+`spec-owner-approval` is still published, as a mirror of the spec half with a
+minimal description, while branch protection requires it; it can be dropped
+from the required checks.
 
 Any handle in `.github/ENGOWNERS` can approve every record kind. Current design
 and theme records and normative design assets may also be approved by any handle
@@ -48,18 +53,17 @@ current records.
 One approval covers all of a PR's spec changes and binds their **content**, not a
 commit (`architecture:knowledge-contracts` DEC-14). The workflow fingerprints every
 changed spec path's text, leaving out the front-matter `authority`,
-`approved_by`, and `approved_at` values. Commits that leave that text unchanged —
-other paths, merges from `main`, rebases, the `draft` → `current` flip — keep the
-approval. Changing any approved spec text resets it, and the status details say
-when the approval was given.
-
-An owner approves by commenting `/spec ok` on the PR (the author may, if they are
-an ENGOWNER), or with a GitHub approving review if they are not the author. The
-older forms still work: a bare `/approve-spec` counts like `/spec ok`, and
-`/approve-spec <full-sha>` approves that commit's spec content. `/revoke-spec`
-and a request for changes withdraw an approval. Reactions do not approve. The
-status details, at the run the status links to, list each changed record and
-the owner group it needs.
+`approved_by`, and `approved_at` values. An owner approves by commenting
+`/approve-spec <full-sha>`: the SHA names the spec content they reviewed, and the
+approval counts while the current head's fingerprint matches that commit's.
+Commits that leave the spec text unchanged — other paths, merges from `main`,
+rebases, the `draft` → `current` flip — keep it; changing approved spec text
+resets it. The author may approve this way if they are an ENGOWNER; another owner
+may also use a GitHub approving review. `/revoke-spec` and a request for changes
+withdraw an approval. Reactions do not approve. The gate's details, at the run
+the status links to, give the current head's command to copy, list each changed
+record and the owner group it needs, and say why an earlier approval stopped
+counting.
 
 A review app may also relay an owner's decision, for owners who decide from
 the app's own pull request view. It sends a `spec-owner-decision` repository

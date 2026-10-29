@@ -233,14 +233,18 @@ they are separately named.
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.
 
-- **FR14 — Review signals and spec-owner approval share one workflow.** The
-  review workflow (`review-signal.yml`) publishes both `review-required` and
-  `spec-owner-approval`; no separate workflow publishes either context. Its
-  spec-owner job evaluates pull-request, review, and owner-command comment
-  events, runs without cancel-in-progress, and publishes a terminal state for
-  the head it read, fork reviews included. Only the review-signal job keeps a
-  per-pull-request cancel group. Comments that are not owner commands start no
-  runner, and no scheduled job reads approvals.
+- **FR14 — One review gate carries code review and spec approval.** The
+  review workflow (`review-signal.yml`) publishes `review-required`, which
+  carries both the code review and spec-owner approval
+  (`architecture:knowledge-contracts` DEC-14); no separate workflow publishes a
+  review or spec context. `spec-owner-approval` is published only as a mirror of
+  the spec half while branch protection still requires it. The spec-owner job
+  evaluates pull-request, review, and owner-command comment events, runs
+  without cancel-in-progress, and publishes a terminal state for the head it
+  read, fork reviews included. Only the review-signal job keeps a
+  per-pull-request cancel group. Each job that writes `review-required` composes
+  both halves. Comments that are not owner commands start no runner, and no
+  scheduled job reads approvals.
 
 ### Platform support
 
@@ -271,18 +275,18 @@ the shared Storybook PR owner.
 
 ## Verification
 
-| Contract | Verification                                                                | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | classifier unit tests expose the surface set                                | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
-| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier         | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
-| FR5      | mixed-surface and incomplete-owner routing tests                            | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
-| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests    | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
-| FR9      | mutation-sensitive classifier and workflow fixtures                         | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | surface-admission and routing contract tests                                | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
-| FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
-| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
-| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
-| FR14     | workflow contract and reconciler tests                                      | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                 | a second workflow publishes a context, a fork review leaves a head pending, or a non-command comment starts a runner                                                               |
+| Contract | Verification                                                                | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                        |
+| -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | classifier unit tests expose the surface set                                | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                      |
+| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier         | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                                 |
+| FR5      | mixed-surface and incomplete-owner routing tests                            | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                       |
+| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests    | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears     |
+| FR9      | mutation-sensitive classifier and workflow fixtures                         | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                    |
+| FR10     | surface-admission and routing contract tests                                | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                               |
+| FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                          |
+| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                            |
+| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed             |
+| FR14     | workflow contract and reconciler tests                                      | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                 | `review-required` succeeds while spec approval is missing, a second workflow publishes a review context, a fork review leaves a head pending, or a non-command comment starts a runner |
 
 ## Decision log
 
@@ -400,12 +404,14 @@ which tests the pull request's head rather than the merged result.
 **Decider:** `cixzhang`, `2026-10-28`
 
 The spec-owner gate and the review gate read the same pull-request events, so
-they run in one workflow and publish their two required contexts from it. The
-context names stay, so branch protection does not change.
+they run in one workflow, and a contributor reads one review gate:
+`review-required` names whichever review is still missing, code first.
+`spec-owner-approval` remains a mirror until branch protection stops requiring
+it, so the merge rules change only when an administrator removes it.
 
 Rejected: keeping a separate spec-owner workflow, which started a second runner
-for every pull-request event; reporting the spec rule through `review-required`,
-which would hide which owner a pull request is waiting for.
+for every pull-request event; two visible gates, which split one review state
+across two messages.
 
 ## Open questions
 

@@ -477,7 +477,8 @@ async function reconcileSpecOwnerGate({
       const change = before === after ? after : `${before} → ${after}`;
       return `| \`${id}\` | ${title} | ${change} | ${groupFor(record)} |`;
     });
-    const lines = [`### ${statusText}`, ''];
+    // `<sha>` in the status text is literal, not markup.
+    const lines = [`### ${statusText.replace(/</g, '&lt;')}`, ''];
     if (!isApproved && notes.revokedBy) {
       lines.push(
         `Approval revoked by @${notes.revokedBy.owner} at ${formatTime(notes.revokedBy.at)}.`,
