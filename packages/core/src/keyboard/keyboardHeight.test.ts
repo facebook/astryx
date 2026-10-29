@@ -492,6 +492,32 @@ describe('one set of listeners per window (FR1, INV11)', () => {
       stopGuide();
     }
   });
+  it('reports focus moves through one pair of document focus listeners, however many subscribe (the keyboard layout guide reads them)', () => {
+    const documentAdd = vi.spyOn(document, 'addEventListener');
+    const types: string[] = [];
+    const stopA = subscribeKeyboardHeight(window, event => {
+      types.push(event.type);
+    });
+    const stopB = subscribeKeyboardHeight(window, () => {});
+    const input = document.createElement('input');
+    document.body.append(input);
+    try {
+      expect(
+        documentAdd.mock.calls
+          .filter(([type]) => type.startsWith('focus'))
+          .map(([type]) => type),
+      ).toEqual(['focusin', 'focusout']);
+      input.focus();
+      input.blur();
+      expect(types).toEqual(['focusin', 'focusout']);
+    } finally {
+      input.remove();
+      stopA();
+      stopB();
+      documentAdd.mockRestore();
+    }
+  });
+
   it('reads a keyboard that is already up when the first subscriber attaches', () => {
     // Nothing listens yet: the keyboard came up before any keyboard-aware
     // component mounted (a sheet opened from a focused field).
