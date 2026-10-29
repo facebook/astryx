@@ -1423,6 +1423,33 @@ describe('review fixes', () => {
     expect(f.track.style.getPropertyValue('user-select')).toBe('');
   });
 
+  // spec:AST-017 FR59: a mouse keeps its released behavior. Its press stops a
+  // settle as a finger's does (spec:AST-094 FR43) and locks no selection.
+  it('a mouse that catches a settle stops it and leaves the text selectable', async () => {
+    const f = setup({defaultIndex: 0});
+    stubMedia(false, false);
+    const refuses = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      f.page.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    f.pager.goTo(3);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    expect(f.pager.isSettling).toBe(true);
+    mouse('pointerdown', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    expect(refuses()).toBe(false);
+    // The catch stops the settle after UIKit's catch delay, as a finger's.
+    await advance(120, f.clock);
+    expect(f.pager.isSettling).toBe(false);
+    expect(refuses()).toBe(false);
+    mouse('pointerup', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    expect(refuses()).toBe(false);
+    expect(f.track.style.getPropertyValue('user-select')).toBe('');
+  });
+
   // spec:AST-094 FR6.
   it('a goTo that retargets a running move keeps its velocity, read from the curve', async () => {
     const f = setup({defaultIndex: 0});
