@@ -196,7 +196,8 @@ keyboard module measures them from the visual viewport, as in every browser
 
 ## Consumers
 
-- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useSheetKeyboard`, whose
+- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useSheetKeyboard`
+  (`sheetKeyboard.ts`), whose
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
   Firefox too, which keeps the content box at the body's height); it reveals the
