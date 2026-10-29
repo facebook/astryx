@@ -347,18 +347,30 @@ describe('per-job scope step', () => {
     it("fails a heavy job behind the author's 3 oldest PRs", async () => {
       const open = [...pulls('a', 'b', 'c'), {number: 7, headRefName: 'fix/a'}];
       const {messages} = await decide({files, inputs: heavy, open});
-      expect(messages.failed).toEqual(['Queued behind your 3 oldest PRs.']);
+      expect(messages.failed).toEqual([
+        'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.',
+      ]);
       const third = await decide({files, inputs: heavy, open: open.slice(1)});
       expect(third.outputs.applies).toBe('true');
     });
 
-    it("fails a heavy job past the author's 12 runs today", async () => {
+    it("fails a heavy job past the author's 12 uncancelled runs today", async () => {
       const {messages} = await decide({files, inputs: heavy, runs: runsOn(13)});
       expect(messages.failed).toEqual([
         'Daily heavy-run cap reached, runs tomorrow or at pre-merge.',
       ]);
       const twelfth = await decide({files, inputs: heavy, runs: runsOn(12)});
       expect(twelfth.outputs.applies).toBe('true');
+      const superseded = runsOn(5).map(run => ({
+        ...run,
+        conclusion: 'cancelled',
+      }));
+      const withCancelled = await decide({
+        files,
+        inputs: heavy,
+        runs: [...runsOn(12), ...superseded],
+      });
+      expect(withCancelled.outputs.applies).toBe('true');
     });
 
     it('counts each agent lane of the shared login as an author, with a backstop', async () => {
@@ -385,7 +397,7 @@ describe('per-job scope step', () => {
         ],
       });
       expect(backstop.messages.failed).toEqual([
-        'Queued behind your 3 oldest PRs.',
+        'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.',
       ]);
     });
 

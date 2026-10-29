@@ -211,10 +211,13 @@ runs:
                   ...context.repo, workflow_id: 'ci.yml', actor: login, event: 'pull_request',
                   created: `>=${new Date().toISOString().slice(0, 10)}`, per_page: 100,
                 });
-                const laneRuns = data.workflow_runs.filter(r => lane(r.head_branch) === lane(pr.head.ref)).length;
+                // A CI run is what starts the heavy suites; a run a newer push
+                // cancelled seldom reached them, so it does not count.
+                const heavyRuns = data.workflow_runs.filter(r => r.conclusion !== 'cancelled');
+                const laneRuns = heavyRuns.filter(r => lane(r.head_branch) === lane(pr.head.ref)).length;
                 if (position(laneOpen) >= 3 || (shared && position(search.nodes) >= 5)) {
-                  held = 'Queued behind your 3 oldest PRs.';
-                } else if (laneRuns > 12 || (shared && data.total_count > 40)) {
+                  held = 'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.';
+                } else if (laneRuns > 12 || (shared && heavyRuns.length > 40)) {
                   held = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
                 }
               } catch (error) {
