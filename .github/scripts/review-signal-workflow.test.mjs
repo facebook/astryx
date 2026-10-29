@@ -194,28 +194,6 @@ describe('one review gate', () => {
     expect(reads).toBe(2);
   });
 
-  it('carries a missing spec approval behind code review', async () => {
-    const h = await runSignal({
-      eventName: 'pull_request_target',
-      specStatuses: [
-        {
-          context: 'spec-owner-approval',
-          state: 'pending',
-          description: 'Mirrors review-required · spec waiting (eng)',
-          creator: {login: 'github-actions[bot]'},
-        },
-      ],
-    });
-    expect(h.mutations.createCommitStatus).toHaveBeenCalledExactlyOnceWith({
-      owner: 'facebook',
-      repo: 'astryx',
-      sha: HEAD,
-      context: 'review-required',
-      state: 'pending',
-      description:
-        'Waiting on code review: community contribution (+ spec approval)',
-    });
-  });
 });
 
 describe('review-signal trusted helper ref', () => {

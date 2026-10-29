@@ -34,43 +34,22 @@ neutral yellow "waiting" signal, not a red failure).
 
 Any PR that creates, changes, or archives a `current` architecture, component,
 family, design, or system spec needs a spec owner's approval, which the one
-review gate, `review-required`, carries alongside code review. Code review leads
-while it is missing; once it is satisfied, a missing spec approval shows on the
-same status, `pending` and never a failure:
+review gate, `review-required`, carries after code review: `pending` (never a
+failure) with `⏳ Waiting for human spec approval: an eng owner can reply
+/approve-spec <sha>` (or `a design or eng owner` for design-owned records).
+`spec-owner-approval` mirrors the spec half while branch protection requires it.
 
-- `⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>`
-- `⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>`
-
-`spec-owner-approval` is still published, as a mirror of the spec half with a
-minimal description, while branch protection requires it; it can be dropped
-from the required checks.
-
-Any handle in `.github/ENGOWNERS` can approve every record kind. Current design
-and theme records and normative design assets may also be approved by any handle
-in `.github/DESIGNOWNERS`. Mixed PRs still require an ENGOWNER for non-design
-current records.
-
-One approval covers all of a PR's spec changes and binds their **content**, not a
-commit (`architecture:knowledge-contracts` DEC-14). The workflow fingerprints every
-changed spec path's text, leaving out the front-matter `authority`,
-`approved_by`, and `approved_at` values. An owner approves by commenting
-`/approve-spec <full-sha>`: the SHA names the spec content they reviewed, and the
-approval counts while the current head's fingerprint matches that commit's.
-Commits that leave the spec text unchanged — other paths, merges from `main`,
-rebases, the `draft` → `current` flip — keep it; changing approved spec text
-resets it. The author may approve this way if they are an ENGOWNER; another owner
-may also use a GitHub approving review. `/revoke-spec` and a request for changes
-withdraw an approval. Reactions do not approve. The gate's details, at the run
-the status links to, give the current head's command to copy, list each changed
-record and the owner group it needs, and say why an earlier approval stopped
-counting.
-
-The command must start the comment, unindented, because the workflow trigger
-matches the raw comment body — an indented command never starts the workflow, so
-the parser refuses it too rather than counting a comment nobody's run ever saw.
-A SHA may be either casing. A command that names something other than one full
-40-character SHA decides nothing, and the gate's details say so; the gate posts
-no reply comments.
+Any handle in `.github/ENGOWNERS` can approve every record kind; design and
+theme records and normative design assets also accept `.github/DESIGNOWNERS`.
+One approval covers all of a PR's spec changes and binds their content
+(`architecture:knowledge-contracts` DEC-14): `/approve-spec <full-sha>`, or a
+non-author owner's approving review, counts while the head's spec text equals
+that commit's, ignoring `authority`, `approved_by`, and `approved_at`. Merges
+from `main`, rebases, non-spec commits and the `draft` → `current` flip keep it.
+`/revoke-spec` and a request for changes withdraw it. The command must start the
+comment, as the workflow trigger matches the raw body. The gate's details give
+the head's command to copy, the records and the group each needs, and why an
+earlier approval no longer counts; the gate posts no comments.
 
 The gate never re-decides a merged or closed head. A run that starts after the
 merge publishes nothing, and neither does a run yielding to a newer one.

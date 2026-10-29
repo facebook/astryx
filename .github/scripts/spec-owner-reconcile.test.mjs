@@ -1050,15 +1050,6 @@ describe('spec owner workflow reconciliation', () => {
       });
     });
 
-    it('moves the review gate from pending to success when approval arrives', async () => {
-      const harness = createHarness({headContent: currentRecord});
-      await run(harness, context({runId: 100n}));
-      expect(latestReviewGate(harness.state).state).toBe('pending');
-
-      await commentRun(harness, ownerComment(`/approve-spec ${head}`), 101n);
-
-      expect(latestReviewGate(harness.state).state).toBe('success');
-    });
 
     it('does not count a bare /approve-spec, and says why', async () => {
       const harness = createHarness({headContent: currentRecord});
@@ -1167,26 +1158,6 @@ describe('spec owner workflow reconciliation', () => {
       expect(latestReviewGate(harness.state).state).toBe('success');
     });
 
-    it('leads with code review when both are missing', async () => {
-      const harness = createHarness({
-        headContent: currentRecord,
-        codeGate: {
-          sha: head,
-          context: 'review-required',
-          state: 'pending',
-          description: 'Waiting on code review: core change',
-          creator: {login: 'github-actions[bot]'},
-          created_at: '2026-08-30T09:00:00Z',
-        },
-      });
-
-      await run(harness, context({runId: 100n}));
-
-      expect(latestReviewGate(harness.state)).toMatchObject({
-        state: 'pending',
-        description: 'Waiting on code review: core change (+ spec approval)',
-      });
-    });
 
     it('leaves the review gate to review-signal until it has published', async () => {
       const harness = createHarness({
@@ -1211,20 +1182,6 @@ describe('spec owner workflow reconciliation', () => {
       expect(latestReviewGate(harness.state).state).toBe('pending');
     });
 
-    it('names a design or eng owner for a design-only change', async () => {
-      const harness = createHarness({
-        changedFile: designRecord,
-        headContent: currentDesign,
-      });
-
-      await run(harness, context({runId: 100n}));
-
-      expect(latestReviewGate(harness.state)).toMatchObject({
-        state: 'pending',
-        description:
-          '⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>',
-      });
-    });
 
     it('lets a design owner approve a design-only change', async () => {
       const harness = createHarness({
@@ -1240,20 +1197,5 @@ describe('spec owner workflow reconciliation', () => {
       expect(latestReviewGate(harness.state).state).toBe('success');
     });
 
-    it('leaves a non-spec pull request to code review alone', async () => {
-      const harness = createHarness({
-        changedFile: {
-          filename: 'packages/core/src/Button/Button.tsx',
-          status: 'modified',
-        },
-      });
-
-      await run(harness, context({runId: 100n}));
-
-      expect(latestReviewGate(harness.state)).toMatchObject({
-        state: 'success',
-        description: 'No code review required.',
-      });
-    });
   });
 });

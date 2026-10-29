@@ -121,12 +121,9 @@ function resolveReviewApprovals({
   };
 }
 
-// ---------------------------------------------------------------------------
-// One review gate (architecture:knowledge-contracts DEC-14, spec:AST-030 FR14).
-// `review-required` carries both the code review and the spec approval. The
-// spec-owner job keeps `spec-owner-approval` as a mirror whose description
-// names the spec state; every writer of `review-required` composes the two.
-// ---------------------------------------------------------------------------
+// One review gate (architecture:knowledge-contracts DEC-14, spec:AST-030
+// FR14): every writer of `review-required` composes code review and the spec
+// half that `spec-owner-approval` mirrors.
 
 const REVIEW_GATE_CONTEXT = 'review-required';
 const SPEC_GATE_CONTEXT = 'spec-owner-approval';
@@ -141,8 +138,8 @@ const SPEC_CHECKING_TEXT = '⏳ Checking for spec changes…';
 const CODE_WAITING_PREFIX = 'Waiting on code review';
 const REVIEW_COMPLETE = 'Review complete.';
 
+// GitHub lists a ref's statuses newest first.
 function newestTrusted(statuses, contextName) {
-  // GitHub lists a ref's statuses newest first.
   return (
     (statuses ?? []).find(
       status =>

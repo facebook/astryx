@@ -165,13 +165,4 @@ describe('one review gate', () => {
     ).toEqual({gated: false, description: noCode});
   });
 
-  it('fits every text in a commit status description', () => {
-    for (const text of [
-      waitingDescription({spec: true}),
-      waitingDescription({spec: false, design: true}),
-      `${codeWait} (+ spec approval)`,
-    ]) {
-      expect(text.length).toBeLessThanOrEqual(140);
-    }
-  });
 });

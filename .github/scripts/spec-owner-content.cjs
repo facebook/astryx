@@ -88,8 +88,6 @@ function parseOwnerCommandTarget(body) {
   };
 }
 
-const MIRROR_PREFIX = SPEC_MIRROR_PREFIX;
-
 /**
  * Status text naming who can still approve. An engineering owner satisfies
  * every group, so a missing engineering group is named alone.
@@ -115,14 +113,13 @@ function approvedDescription(owners) {
 function mirrorDescription({state, missing, approvers = []}) {
   if (state === 'success') {
     return approvers.length
-      ? `${MIRROR_PREFIX}ok (${approvers.map(name => `@${name}`).join(', ')})`
-      : `${MIRROR_PREFIX}ok`;
+      ? `${SPEC_MIRROR_PREFIX}ok (${approvers.map(name => `@${name}`).join(', ')})`
+      : `${SPEC_MIRROR_PREFIX}ok`;
   }
-  return `${MIRROR_PREFIX}waiting (${missing?.spec ? 'eng' : 'design'})`;
+  return `${SPEC_MIRROR_PREFIX}waiting (${missing?.spec ? 'eng' : 'design'})`;
 }
 
 module.exports = {
-  MIRROR_PREFIX,
   approvedDescription,
   fingerprintSpecContent,
   mirrorDescription,
