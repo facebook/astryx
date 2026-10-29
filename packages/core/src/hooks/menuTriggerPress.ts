@@ -6,6 +6,7 @@
  * @file menuTriggerPress.ts
  * @input The menu press model's shared state (useMenuPress.ts), useLongPress,
  *   the native scroll probe and the menu press values
+ *   (the long press's duration comes from motion/uikit/longPress.ts)
  * @output Exports `useMenuTriggerPress`: the trigger half of the menu press
  *   model (a mouse press-down open, a held or pressed finger open, the
  *   scroll-view wait)
@@ -30,14 +31,33 @@ import {
   DELAYS_CONTENT_TOUCHES_MS,
   MENU_PRESS_HOLD_OPEN_SLOP_PX,
 } from './menuPressValues';
-import {useLongPress, type UseLongPressHandlers} from './useLongPress';
+import {
+  useLongPressDetector,
+  type LongPressDetectorHandlers,
+  type LongPressTolerance,
+} from './useLongPress';
+import {LONG_PRESS_DURATION_MS} from '../motion/uikit/longPress';
 
 /**
  * How long a finger rests on the trigger before the menu opens under it,
  * with the 'pointer' touch model and no `longPressDelayMs`. A tap released
  * sooner opens the menu through the trigger's click.
  */
-export const MENU_PRESS_LONG_PRESS_MS = 500;
+export const MENU_PRESS_LONG_PRESS_MS = LONG_PRESS_DURATION_MS;
+
+/**
+ * How far a finger held on a DropdownMenu trigger may move before the open,
+ * in CSS px, under every primary pointer: `spec:AST-094` FR29's drift
+ * allowance (FR2's table: unmeasured, a 12 pt move still opened; useMenuPress
+ * FR9, FR43), the same 13 pt a trigger in a scroll view allows. ContextMenu
+ * keeps the long press's own allowable movement.
+ */
+export const MENU_PRESS_TRIGGER_DRIFT_PX = MENU_PRESS_HOLD_OPEN_SLOP_PX;
+
+/** A finger held on the trigger: FR29's drift allowance, the same under every primary pointer. */
+const TRIGGER_TOLERANCE: LongPressTolerance = {
+  moveCancelPx: MENU_PRESS_TRIGGER_DRIFT_PX,
+};
 
 /** What the trigger half reads and drives of the model. @internal */
 export interface MenuTriggerContext {
@@ -57,13 +77,17 @@ export interface MenuTriggerContext {
    * keeps the one the live press uses.
    */
   readonly setHoldDetectors: (detectors: {
-    plain: UseLongPressHandlers;
-    scroller: UseLongPressHandlers;
+    plain: LongPressDetectorHandlers;
+    scroller: LongPressDetectorHandlers;
   }) => void;
-  /** Starts the live press's hold, in a scroll view or not, at a point. */
+  /**
+   * Starts the live press's hold, in a scroll view or not, at a point, with
+   * the press's own tolerance when it has one.
+   */
   readonly startHold: (
     kind: 'plain' | 'scroller',
     at: {x: number; y: number},
+    tolerance?: LongPressTolerance,
   ) => void;
   readonly setLastPointerEvent: (event: PointerEvent) => void;
   /** Whether the model ignores this pointer; a match is cleared. */
@@ -159,11 +183,14 @@ export function useMenuTriggerPress(
   // opens as the finger presses, so its detector never runs.
   const isUikit = options.touchModel === 'uikit';
   const pointerHoldMs = options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS;
-  const plainHold = useLongPress({
+  // Every held press takes FR29's drift allowance as it starts
+  // (TRIGGER_TOLERANCE), under every primary pointer, so no trigger reads the
+  // pointer query (spec:AST-094 FR24, FR43).
+  const plainHold = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: pointerHoldMs,
   });
-  const scrollerHold = useLongPress({
+  const scrollerHold = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
     ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
@@ -216,10 +243,11 @@ export function useMenuTriggerPress(
       ctx.attach(native.pointerId);
       ctx.setLastPointerEvent(native);
       if (pointerType !== 'mouse') {
-        ctx.startHold(inScrollView ? 'scroller' : 'plain', {
-          x: native.clientX,
-          y: native.clientY,
-        });
+        ctx.startHold(
+          inScrollView ? 'scroller' : 'plain',
+          {x: native.clientX, y: native.clientY},
+          TRIGGER_TOLERANCE,
+        );
       }
       ctx.step(down, native);
     },
