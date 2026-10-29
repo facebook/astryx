@@ -1182,7 +1182,13 @@ export function NumberInput({
   const stepperPointerTypeRef = useRef<string | null>(null);
 
   const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    // The steppers never take focus: an editing field stays focused.
+    // The steppers never take focus: an editing field stays focused. The
+    // pointerdown itself is canceled, not only the mousedown below: Chrome on
+    // Android focuses a held stepper at its long press unless the touch's
+    // pointerdown is canceled (measured), and that would blur an editing
+    // field. WebKit's Linux build then sends no click after a tap, unlike
+    // iOS Safari and Chrome (measured); it is outside `spec:AST-013`'s
+    // support.
     event.preventDefault();
     stepperPointerTypeRef.current = event.pointerType;
     stepperTouch.pointer.onPointerDown(event);
