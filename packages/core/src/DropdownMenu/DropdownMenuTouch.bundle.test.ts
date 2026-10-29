@@ -3,8 +3,9 @@
 /**
  * @file DropdownMenuTouch.bundle.test.ts
  * @input DropdownMenuTouch.ts, bundled with esbuild in a child process
- * @output Fails when DropdownMenu's touch layer carries a spring row it does
- *   not play (`architecture:component-style-authoring` INV6)
+ * @output Fails when DropdownMenu's touch layer, its grow or its in-place
+ *   sub-menu, carries a spring row it does not play
+ *   (`architecture:component-style-authoring` INV6)
  */
 
 import {execFileSync} from 'node:child_process';
@@ -52,6 +53,18 @@ describe('DropdownMenu touch layer', () => {
     expect(touch).toContain('menuClose');
     for (const [row, value] of Object.entries(OTHER_ROWS)) {
       expect(touch, row).not.toContain(value);
+    }
+  });
+
+  it('the in-place sub-menu carries UIKit\u2019s two sub-menu springs and no other spring row', () => {
+    const drillIn = bundle(
+      "import {createMenuDrillInMotion} from './DropdownMenuTouch'; export const create = createMenuDrillInMotion;",
+    );
+    // The two roles it registers and plays (spec:AST-094 FR4).
+    expect(drillIn).toContain('subMenuOpen');
+    expect(drillIn).toContain('subMenuBack');
+    for (const [row, value] of Object.entries(OTHER_ROWS)) {
+      expect(drillIn, row).not.toContain(value);
     }
   });
 });
