@@ -2,8 +2,10 @@
 
 A gesture recognizer system with UIKit's semantics, for the touch
 presentations of Astryx core components. Components import it from
-`../gestures`, and Lab through internal workspace imports; nothing here is
-exported from the package.
+`../gestures`. Lab reaches its primitives through
+`@astryxdesign/core/internal/touch`, an internal entry reserved for Astryx's
+own packages (`architecture:react-component-runtime` INV13); nothing here is
+part of the public API.
 
 UIKit is the reference throughout: the same recognizer states, the same
 conflict rules, the same thresholds (from `../motion/uikit/gestures.ts`, each
@@ -212,7 +214,9 @@ assistive-technology activation keep working.
   the release takes the list's deselect clock.
 
 `paintPress(element, 'on' | 'held' | 'fading' | 'none', {releaseMs})`, in
-`utils/pressFeedback.ts`, is the one writer of `data-astryx-press`. It owns the release timer and writes
+`utils/pressFeedback.ts`, writes `data-astryx-press` for every press it tracks;
+the action-group tracker (`hooks/actionGroupTracker.ts`) writes its groups'
+presses itself. `paintPress` owns the release timer and writes
 only over values the caller may replace (by default none, `on` and
 `fading`), so a `held` row survives presses until its owner releases it
 with `onlyFrom: ['held']`.
@@ -227,6 +231,12 @@ presses nothing.
 
 ## What the browser is told
 
+- **Pens.** A pen drives every recognizer and press tracker as a finger
+  does: it pans, taps and long-presses; its hold, where the hold does
+  something, keeps text unselected as a finger's does (FR41); a hovering
+  pen reaches a hover recognizer as a mouse does; its barrel button is a
+  context click and starts no press; a pinch never mixes a pen with a
+  finger; and the screen-edge pan, a finger's only, ignores it (FR43).
 - **For every pointer.** Recognizers and press trackers attach for a mouse,
   a pen and a finger alike (`spec:AST-094` FR43, FR19). Where the primary
   pointer is coarse (`TOUCH_QUERY`, `../utils/coarsePointer.ts`), the host
@@ -236,11 +246,17 @@ presses nothing.
   FR24 counts outside that budget, FR19) and the page has none: a press on the element (a mouse's primary button, a
   pen, or a finger, whose `pointerdown` comes before its `touchstart`)
   adds the host's document and window listeners, and they go once that
-  press's contacts end (FR24). A component that uses no gesture, and a
+  press's contacts end, or when the window blurs during it (FR24). A press
+  tracker created with `keepsTouch` gets its blocking `touchmove` only
+  during such a press; where the pointer is coarse it keeps it, since
+  Safari honours a blocking listener only when it was registered before
+  the touch. An element with a hover recognizer listens for a hovering
+  mouse or pen with two passive listeners of its own, `pointermove` and
+  `pointerout`. A component that uses no gesture, and a
   disabled recognizer or consumer, registers nothing; after a consumer's
   `isEnabled()` changes, `host.update(element)` re-syncs. The screen-edge
   pan stays off under a mouse, a trackpad and a pen (its recognizer allows
-  touches only, unless the caller allows another pointer), and a pinch
+  touches only; it takes no `allowedPointerTypes`), and a pinch
   never mixes a pen with a finger (a recognizer takes one kind of pointer
   at a time) (FR43). A press tracker takes a mouse press as a press, with
   the fine-pointer profile: it paints at once, inside a scroller too, and
@@ -391,14 +407,23 @@ shadow-tree scroller scrolls with it, as the hit path does).
 
 The host listens through `utils/inputStream.ts`, which it shares with the
 press feedback controller: one native listener per event type, on the
-window's capture phase, fanned out to every subscriber in order. Window
-capture is the earliest point a page can intercept input, so an app's
-capture-phase `stopPropagation` at the document starves neither, as UIKit's
-recognizers see touches before views do. A type's listener is passive
-unless a subscriber cancels it: the host cancels `touchend`, `click` and
-`contextmenu` there, never a `touchstart` or a `touchmove` (a blocking
-`touchmove` sits on a claiming element, or on the window only while a page
-hold is held), so a page of pressables blocks no scroll.
+window's capture phase, fanned out to every subscriber in order. It runs
+ahead of any document listener, so an app's window-capture
+`stopPropagation`, or a document-capture `stopImmediatePropagation`
+registered before core, no longer hides a touch from either, as UIKit's
+recognizers see touches before views do. A recognizer that must claim
+mid-gesture still needs the touch to reach its element, where its blocking
+`touchmove` sits, below such a stop. The stream stays ahead of an app's own
+window-capture listener only until a type's listener is re-added (a
+passivity switch, or a subscription after its last subscriber left), which
+appends it after the app's. A type's listener is passive unless a
+subscriber cancels it: the host cancels `touchend`, `click` and
+`contextmenu` there while a claiming participant is attached, never a
+`touchstart` or a `touchmove`. A blocking `touchmove` sits on a claiming
+element and on a claimed touch's target, on the document while an element a
+claiming recognizer lives in is moving (Touches on moving elements), or on
+the window only while a page hold is held, so a page of pressables blocks
+no scroll.
 
 ### Holding the page still
 
@@ -436,22 +461,35 @@ claiming them midway.
 A recognizer takes scroll input only where it allows that scroll type
 (`allowedScrollTypes`, UIKit's `allowedScrollTypesMask`): `continuous`
 for a trackpad's two-finger scroll, `discrete` for a mouse wheel's notches
-(`spec:AST-094` FR43). A pan allows none by default, as in UIKit, so its
-element gets no wheel listener and the page scrolls over it; a component that
-wants a trackpad's scroll opts in. The web reports no wheel phases or device:
+(`spec:AST-094` FR43). On the web a pan also takes wheel and trackpad
+scrolling (FR43), so a pan and a pinch allow both by default and their
+element gets the one wheel listener; a pan whose caller passes
+`allowedScrollTypes: []` opts out, and the screen-edge pan takes none, as
+it takes no mouse, trackpad or pen (FR43). A control's thumb, a slider's or
+a switch's, tracks as a control, not a pan, and takes no wheel, so a page
+scroll over it never changes its value. The web reports no wheel phases or
+device:
 a line- or page-mode delta, or a whole 100 or 120 px notch on one axis, reads
 as a mouse wheel, anything else as a trackpad.
 
 A wheel gesture drives a pan as a contact moving with the content, along the
 pan's own axis, and only once every scroller between the pointer and the
 pan's element is at its edge that way, decided at the gesture's first wheel:
-a wheel the pan does not take is never prevented. A ctrl-wheel (a trackpad
+a wheel the pan does not take is never prevented. A watcher
+(`claimsTouches: false`) never takes one, and a gesture whose first wheel
+another handler already prevented, or that cannot be cancelled, stays the
+page's. A scroll-edge pan (a pull to
+refresh) takes one only if no scroller under the pointer could scroll for it,
+its own scroll owner and the page included, as its finger's rule reads them
+(`spec:AST-094` FR19); `touch-action` narrows only a finger's pan, so a wheel
+reads every scroller past it. A ctrl-wheel (a trackpad
 pinch, or Control and a mouse wheel) drives a pinch, whose scale follows
 `exp(-deltaY / 100)`; a pinch takes it by default. A wheel gesture ends
 100 ms after its last wheel (provisional, an owner question), at that wheel's
 time, so its release keeps its velocity; macOS's momentum wheels arrive as
-more wheel, and the gesture follows them. A finger, mouse or pen that comes
-down ends it, and a wheel claim keeps the page's text selection. A gesture a
+more wheel, and the gesture follows them. A mouse wheel's notches release
+still, at that time or at the input that ends the gesture sooner, never
+later (FR16). A finger, mouse or pen that comes down ends it, and a wheel claim keeps the page's text selection. A gesture a
 recognizer took is latched to it, as a browser latches a scroller: while it
 lasts, a document `wheel` listener routes every step to it wherever it lands,
 so a pan whose element moves from under a still pointer keeps the gesture.
@@ -605,8 +643,8 @@ iOS WebKit hit-tests an element that a compositor animation moves where
 the animation started: it keeps the transform it resolved when the
 animation went to the compositor, so event targets, `elementFromPoint` and
 `getBoundingClientRect` stay there for the whole curve, though the inline
-style holds the end and the computed style is live (iOS 26.2, measured;
-Chromium and Linux WebKit hit what is drawn). A finger on a settling sheet
+style holds the value the curve starts from and the computed style is live
+(iOS 26.2, measured; Chromium and Linux WebKit hit what is drawn). A finger on a settling sheet
 lands on whatever sat under the sheet's start (an upward release can hit
 the scrim and close the sheet). UIKit keeps an interruptible animation
 hit-testable where it is drawn (UIViewPropertyAnimator).
@@ -628,6 +666,11 @@ moving, the document carries the blocking listener, and a scroll starting
 anywhere waits on the main thread only for that long. Not covered:
 scale and rotate (a zoom transition, a lifted preview is hit at its
 unscaled box) and CSS transitions or animations the animator did not start.
+
+This is an engine workaround (`spec:AST-013` FR6). Its review condition:
+re-measure on each iOS release, and remove the correction once iOS WebKit
+hit-tests a compositor-moved element where it is drawn. Its regression
+fixture is `__tests__/presentedHitTesting.test.ts`.
 
 ## Where the web differs from UIKit
 
