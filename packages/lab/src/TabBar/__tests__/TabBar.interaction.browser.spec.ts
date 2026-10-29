@@ -3008,6 +3008,45 @@ test.describe('search tab', () => {
       .toBe(true);
   });
 
+  test('while the field is active under a finger, the leading circle it covers takes no focus and leaves the accessibility tree', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    await waitForRest(searchHost(page));
+    // The field covers the circle: a tap at its centre lands in the field.
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    expect(
+      await page.evaluate(
+        ([x, y]) =>
+          document
+            .elementFromPoint(x, y)
+            ?.closest('[data-tab-bar-search-field]') != null,
+        [box.x + box.width / 2, box.y + box.height / 2],
+      ),
+    ).toBe(true);
+    // So the circle takes no focus, and it sits in an inert subtree, which
+    // browsers leave out of the accessibility tree.
+    expect(
+      await circle(page).evaluate(element => {
+        (element as HTMLElement).focus();
+        return document.activeElement === element;
+      }),
+    ).toBe(false);
+    expect(
+      await circle(page).evaluate(
+        element => element.closest('[inert]') != null,
+      ),
+    ).toBe(true);
+  });
+
   test('the field moves and widens on UIKit’s spring, squashing as it starts', async ({
     page,
   }, testInfo) => {
