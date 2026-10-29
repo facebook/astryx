@@ -238,6 +238,15 @@ function createGuide(win: Window): KeyboardLayoutGuide {
   const attach = () => {
     profile = keyboardProfileOf(win);
     model = createKeyboardModel(getKeyboardHeight(win), {profile});
+    // Whether focusing `target` keeps an input view where the keyboard is: a
+    // select's picker takes the keyboard's place on iOS, but Chrome on
+    // Android opens its list over the page and the keyboard goes away.
+    const keepsInputView = (target: EventTarget | null): boolean =>
+      bringsUpKeyboard(target) &&
+      !(
+        profile === 'chromium' &&
+        (target as Element | null)?.tagName === 'SELECT'
+      );
     // When a field that brings up a keyboard last gained focus.
     let keyboardFocusAt = -Infinity;
     let handoffTimer: ReturnType<typeof setTimeout> | null = null;
@@ -256,7 +265,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
         height < 0.5 &&
         model.inset >= 0.5 &&
         time < settled &&
-        bringsUpKeyboard(win.document.activeElement)
+        keepsInputView(win.document.activeElement)
       ) {
         // Focus just moved to another field: Chrome reports the keyboard
         // gone before it reports it back. Hold the hide until the move
@@ -277,7 +286,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
         }
         publish(transition);
       } else if (event.type === 'focusin') {
-        if (bringsUpKeyboard(event.target)) {
+        if (keepsInputView(event.target)) {
           keyboardFocusAt = event.timeStamp;
           // Safari holds a show's report back behind a busy main thread;
           // Chrome's arrives as the slide starts.
@@ -287,8 +296,8 @@ function createGuide(win: Window): KeyboardLayoutGuide {
           publish(model.focused(event.timeStamp));
         }
       } else if (
-        bringsUpKeyboard(event.target) &&
-        !bringsUpKeyboard(event.relatedTarget)
+        keepsInputView(event.target) &&
+        !keepsInputView(event.relatedTarget)
       ) {
         publish(model.blurred(event.timeStamp));
       }
