@@ -67,7 +67,11 @@ import {
   watchAnimations,
   withFinger,
 } from './index';
-import {TOUCH_PACING_TOLERANCE_MS, TouchPacingError} from './touch';
+import {
+  SCRIPTED_CLICK_SKIP,
+  TOUCH_PACING_TOLERANCE_MS,
+  TouchPacingError,
+} from './touch';
 
 const FIXTURE = `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
 <style>
@@ -267,6 +271,43 @@ test.describe('touch input', () => {
         ...log.filter(r => r.type === 'touchmove').map(r => r.touches ?? 0),
       ),
     ).toBe(2);
+  });
+
+  test('a scripted tap clicks where the driver says it does, and driver.tap clicks in both engines', async ({
+    page,
+  }) => {
+    await page.route('http://tap.test/', route =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0"><button id=b style="position:absolute;left:40px;top:40px;width:200px;height:80px">tap</button><script>window.__order=[];for(const type of ['touchstart','touchend','click'])b.addEventListener(type,()=>window.__order.push(type));</script>`,
+      }),
+    );
+    await page.goto('http://tap.test/');
+    const order = () =>
+      page.evaluate(() =>
+        (window as unknown as {__order: string[]}).__order.slice(),
+      );
+    const driver = await touchDriver(page);
+
+    await driver.play(tap({x: 140, y: 80}));
+    await driver.tap({x: 140, y: 80});
+    // driver.tap's click comes last, and a click of the scripted tap, if it
+    // gets one, before driver.tap's touchstart: no wait on the clock.
+    await expect
+      .poll(async () => {
+        const events = await order();
+        return events.lastIndexOf('click') > events.lastIndexOf('touchstart');
+      })
+      .toBe(true);
+    const events = await order();
+    const second = events.indexOf('touchstart', 1);
+    expect(events.slice(0, second)).toEqual(
+      driver.synthesizesClicks
+        ? ['touchstart', 'touchend', 'click']
+        : ['touchstart', 'touchend'],
+    );
+    expect(events.slice(second)).toEqual(['touchstart', 'touchend', 'click']);
+    expect(SCRIPTED_CLICK_SKIP).toContain('driver.tap');
   });
 
   test('a gesture the page receives off its pacing throws TouchPacingError where the page times touches by their arrival', async ({

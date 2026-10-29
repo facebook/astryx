@@ -90,6 +90,13 @@ export interface TouchDriver {
    * Skip such proofs with `PARTIAL_LIFT_SKIP` where it is false.
    */
   readonly partialLifts: boolean;
+  /**
+   * Whether a scripted press and lift in place (`play(tap(at))`) gets the
+   * click a finger's tap gets. Playwright's WebKit synthesises that click only
+   * from `tap` (its tap gesture), never from a scripted touch sequence. Use
+   * `tap` for a tap that must click, or skip with `SCRIPTED_CLICK_SKIP`.
+   */
+  readonly synthesizesClicks: boolean;
   /** Plays a script; resolves when its last event has been dispatched. */
   play(script: TouchScript, options?: PlayOptions): Promise<PlayedEvent[]>;
   /** A tap through the engine's tap path (WebKit synthesises click only from this). */
@@ -104,6 +111,15 @@ export interface TouchDriver {
  */
 export const PARTIAL_LIFT_SKIP =
   'injected WebKit touches report no remaining touches when one finger of several lifts (README: engine limits); capture it on the iOS simulator';
+
+/**
+ * The skip reason for a proof that needs the click a scripted tap gets, on a
+ * driver whose `synthesizesClicks` is false: Playwright's WebKit synthesises
+ * the click only from its tap gesture (`driver.tap`), never from touches it
+ * is sent one by one.
+ */
+export const SCRIPTED_CLICK_SKIP =
+  'injected WebKit touches synthesise no click, only driver.tap does (README: engine limits); tap with driver.tap, or capture it on the iOS simulator';
 
 /**
  * The most a gap between two of a gesture's touch events may move from the
@@ -271,6 +287,7 @@ async function chromiumDriver(page: Page): Promise<TouchDriver> {
     scriptedTimestamps: true,
     drivesNativeGestures: true,
     partialLifts: true,
+    synthesizesClicks: true,
     async play(script, options = {}) {
       // Stamps follow the wall clock the page's own clock is on: with real-time
       // pacing an event's stamp and its dispatch agree to ~0.1 ms.
@@ -344,6 +361,7 @@ async function webkitDriver(page: Page): Promise<TouchDriver> {
     scriptedTimestamps: false,
     drivesNativeGestures: false,
     partialLifts: false,
+    synthesizesClicks: false,
     async play(script, options = {}) {
       const check =
         (options.checkPacing ?? false) && (options.realtime ?? true);

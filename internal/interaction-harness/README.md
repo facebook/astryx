@@ -224,3 +224,7 @@ outcome follows a velocity in `retakeOnTouchPacing(testInfo, attempt)`:
 `attempt` builds the state, plays with `checkPacing` and asserts, and runs once
 more only on a `TouchPacingError`, listed as a `touch-retake` annotation; a
 second one fails the test with that cause.
+
+A tap that must click uses `driver.tap` in both engines. WebKit synthesises no
+click from a scripted touch sequence, so a proof that needs that click skips
+with `test.skip(!driver.synthesizesClicks, SCRIPTED_CLICK_SKIP)`.
