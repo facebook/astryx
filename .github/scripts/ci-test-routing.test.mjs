@@ -366,7 +366,9 @@ describe('ci.yml pr-a11y browser specs', () => {
   });
 
   it("runs the merge commit's runner against the PR head", () => {
-    expect(run.if).toBe('${{ !cancelled() }}');
+    expect(run.if).toBe(
+      "(!cancelled()) && steps.scope.outputs.has_components == 'true'",
+    );
     // The merge commit the steps come from, not the PR's recorded base, which
     // can lag main and predate the runner.
     expect(run.env.WORKFLOW_SHA).toBe('${{ github.sha }}');
@@ -382,7 +384,9 @@ describe('ci.yml pr-a11y browser specs', () => {
   });
 
   it('uploads every spec receipt in one head-bound artifact', () => {
-    expect(upload.if).toBe('${{ !cancelled() }}');
+    expect(upload.if).toBe(
+      "(!cancelled()) && steps.scope.outputs.has_components == 'true'",
+    );
     expect(upload.with.name).toBe(
       'pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}',
     );
@@ -512,7 +516,9 @@ describe('ci.yml RTL package sharding', () => {
     expect(scope.run).toContain('--manifest rtl-shard-scope.json');
     expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
     expect(audit['continue-on-error']).toBe(true);
-    expect(validation.if).toBe('always()');
+    expect(validation.if).toBe(
+      "always() && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(validation.run).toContain('steps.rtl-scope.outcome');
     expect(validation.run).toContain(
       'produced no explicit should_run decision',
@@ -554,13 +560,17 @@ describe('ci.yml RTL package sharding', () => {
     const upload = shard.steps.find(
       step => step.name === 'Upload RTL shard evidence',
     );
-    expect(upload.if).toBe('always() && matrix.parts == 1');
+    expect(upload.if).toBe(
+      "(always() && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
     expect(upload.with.path).toContain('rtl-shard-scope.json');
     expect(upload.with.path).toContain('rtl-audit-report.json');
     expect(upload.with['if-no-files-found']).toBe('error');
     const part = shard.steps.find(step => step.name === 'Upload RTL part');
-    expect(part.if).toBe('always() && matrix.parts > 1');
+    expect(part.if).toBe(
+      "(always() && matrix.parts > 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')",
+    );
     expect(part.with.name).toBe(
       'rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}',
     );

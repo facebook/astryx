@@ -147,6 +147,7 @@ describe('per-job scope step', () => {
       [
         'applies',
         'changed_files',
+        'decided',
         'docsite_only',
         'force_full_component_audits',
         'full_suite',
@@ -280,6 +281,14 @@ describe('per-job scope step', () => {
       applies: 'true',
     });
     expect(messages.warning).toHaveLength(1);
+    expect(outputs.decided).toBe('false');
+  });
+
+  it('reports a decided scope when the classifier ran', async () => {
+    const {outputs} = await decide({
+      files: changed('docs/specs/AST-030/spec.md'),
+    });
+    expect(outputs.decided).toBe('true');
   });
 
   describe('requires-head-file', () => {
