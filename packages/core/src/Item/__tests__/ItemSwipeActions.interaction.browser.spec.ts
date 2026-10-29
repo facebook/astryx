@@ -776,27 +776,33 @@ async function blockAfterLift(page: Page, ms: number) {
       });
     };
     // The release's own animations: the ones that did not exist at the lift.
-    addEventListener(
-      'touchend',
-      () => {
-        const before = new Set(document.getAnimations());
-        const watch = () => {
-          const fresh = document
-            .getAnimations()
-            .filter(animation => !before.has(animation));
-          if (fresh.length === 0) {
-            requestAnimationFrame(watch);
-            return;
-          }
-          void Promise.all(fresh.map(async animation => animation.ready)).then(
-            block,
-            block,
-          );
-        };
-        setTimeout(watch, 0);
-      },
-      {once: true, capture: true},
-    );
+    // The lift is the finger's first lift event: its pointerup comes before
+    // its touchend, and the gesture host releases on whichever it reads
+    // first (`spec:AST-094` FR43).
+    let lifted = false;
+    const onLift = () => {
+      if (lifted) {
+        return;
+      }
+      lifted = true;
+      const before = new Set(document.getAnimations());
+      const watch = () => {
+        const fresh = document
+          .getAnimations()
+          .filter(animation => !before.has(animation));
+        if (fresh.length === 0) {
+          requestAnimationFrame(watch);
+          return;
+        }
+        void Promise.all(fresh.map(async animation => animation.ready)).then(
+          block,
+          block,
+        );
+      };
+      setTimeout(watch, 0);
+    };
+    addEventListener('pointerup', onLift, {capture: true});
+    addEventListener('touchend', onLift, {capture: true});
   }, ms);
 }
 
