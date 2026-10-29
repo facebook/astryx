@@ -276,6 +276,52 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('leaves a toggle without a value standalone (AV1): no group marker, and a press that starts on it and slides onto Bold toggles nothing', () => {
+    const onChange = vi.fn();
+    const onPressedChange = vi.fn();
+    const view = render(
+      <ToggleButtonGroup
+        type="multiple"
+        label="Formatting"
+        value={[]}
+        onChange={onChange}
+        data-testid="group">
+        <ToggleButton label="Bold" value="bold" data-testid="a" />
+        <ToggleButton
+          label="Wrap"
+          isPressed={false}
+          onPressedChange={onPressedChange}
+          data-testid="wrap"
+        />
+      </ToggleButtonGroup>,
+    );
+    const group = view.getByTestId('group');
+    const bold = view.getByTestId('a');
+    const wrap = view.getByTestId('wrap');
+    place(group, {left: 0, top: 100, width: 160, height: 32});
+    place(bold, A);
+    place(wrap, B);
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    expect(bold.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(true);
+    expect(wrap.hasAttribute(PRESS_GROUP_ITEM_ATTRIBUTE)).toBe(false);
+    const f = finger();
+    f.down(wrap, centerOf(B));
+    f.move(wrap, centerOf(A));
+    f.up(wrap, centerOf(A));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(paintOf(bold)).toBeNull();
+    // Its own tap is its own, as it would be outside the group.
+    f.down(wrap, centerOf(B));
+    f.up(wrap, centerOf(B));
+    wrap.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+    );
+    expect(onPressedChange).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('touching toggles take no area from each other: 28 px toggles at x = 0, 80 and 160, a finger at x = 82 toggles only the middle one, and 8 px below a toggle still counts for it', () => {
     const {group, a, b, c, onChange} = mount();
     place(group, {left: 0, top: 100, width: 240, height: 28});
