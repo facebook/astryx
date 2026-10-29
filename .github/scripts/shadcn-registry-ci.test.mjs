@@ -2,10 +2,7 @@
 
 /**
  * @file shadcn-registry-ci.test.mjs
- * @description Pins the full-catalog ShadCN compatibility check
- *   (test-registry-e2e), which runs for release-check until the production
- *   registry launches; its network-free production gate runs with the unit
- *   tests (verify-production-gate.test.mjs).
+ * @description Pins the required full-catalog ShadCN compatibility gate.
  * @input The PR CI workflow, docsite manifest, and catalog verifier source.
  * @output Mutation-sensitive assertions for generation, release gating, stock
  *   client installation, compilation, and the historical required join.
@@ -21,7 +18,8 @@ import yaml from 'yaml';
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const ci = yaml.parse(read('.github/workflows/ci.yml'));
-const job = ci.jobs['test-registry-e2e'];
+const job = ci.jobs['registry-contract'];
+const SPEC_FALSE = "steps.scope.outputs.spec_only != 'true'";
 
 function step(name) {
   return job.steps.find(candidate => candidate.name === name);
@@ -35,33 +33,40 @@ function runLines() {
 }
 
 describe('ShadCN registry CI contract', () => {
-  it('runs for release-check and gates it, not every pull request', () => {
+  it('runs as a bounded fail-closed gate and feeds the required test context', () => {
+    // It decides its own scope; there is no scope job to wait on.
     expect(job.needs).toBeUndefined();
-    expect(job.if).toBe(
-      "github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'",
+    expect(job.steps.find(candidate => candidate.id === 'scope').uses).toBe(
+      './.test-scope/.github/actions/test-scope',
     );
     expect(job['runs-on']).toBe('4-core-ubuntu');
     expect(job['timeout-minutes']).toBe(15);
-    for (const candidate of job.steps) {
-      expect(
-        candidate.if ?? '',
-        candidate.name ?? candidate.uses,
-      ).not.toContain('spec_only');
-    }
 
-    expect(ci.jobs.test.needs).not.toContain('test-registry-e2e');
-    expect(ci.jobs['release-check'].needs).toContain('test-registry-e2e');
-    expect(ci.jobs['release-check'].steps[0].with.script).toContain(
-      "'test-registry-e2e'",
+    expect(ci.jobs.test.needs).toContain('registry-contract');
+    const join = ci.jobs.test.steps.find(candidate =>
+      candidate.run?.includes('.github/scripts/ci-test-join.mjs'),
     );
-    expect(
-      fs.existsSync(
-        path.join(
-          root,
-          'internal/shadcn-registry/verify-production-gate.test.mjs',
-        ),
-      ),
-    ).toBe(true);
+    expect(join).toBeDefined();
+    expect(join.env.REGISTRY_CONTRACT_RESULT).toBe(
+      '${{ needs.registry-contract.result }}',
+    );
+  });
+
+  it('runs every material step except on the trusted spec-only lane', () => {
+    for (const candidate of job.steps) {
+      if (
+        candidate.id === 'scope' ||
+        candidate.with?.path === '.test-scope' ||
+        candidate.name === 'Skip registry work for spec-only changes'
+      ) {
+        continue;
+      }
+      if (candidate.run || candidate.uses) {
+        expect(candidate.if, candidate.name ?? candidate.uses).toContain(
+          SPEC_FALSE,
+        );
+      }
+    }
   });
 
   it('proves hidden production output without enabling public discovery', () => {
@@ -128,10 +133,12 @@ describe('ShadCN registry CI contract', () => {
       'Install and build every hidden production registry item': 'production',
     };
     for (const [name, leg] of Object.entries(legOf)) {
-      expect(step(name).if, name).toBe(`matrix.leg == '${leg}'`);
+      expect(step(name).if, name).toBe(
+        `matrix.leg == '${leg}' && ${SPEC_FALSE}`,
+      );
     }
     // Every leg builds the packages it exercises.
-    expect(step('Build registry package exports').if).toBeUndefined();
+    expect(step('Build registry package exports').if).toBe(SPEC_FALSE);
   });
 
   it('builds every workspace package before exercising local package exports', () => {
