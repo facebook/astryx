@@ -1124,6 +1124,56 @@ describe('List and swipe actions', () => {
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
   });
 
+  it('isolates its rows, so what rises inside the list (a row’s touch band, a swipeable row) stays below a sticky header', () => {
+    render(
+      <List>
+        <ListItem label="A" onClick={() => {}} />
+      </List>,
+    );
+    // The list is the isolation boundary for its rows' z-index
+    // (`spec:AST-027` DEC-1, DEC-2): a page-level sticky header at z-index 1
+    // stays above every part of the list.
+    expect(getComputedStyle(screen.getByRole('list')).isolation).toBe(
+      'isolate',
+    );
+  });
+
+  it('under a finger, raises a swipeable interactive row above the rows after it: it is a stacking context, so its touch band’s own z-index orders only inside it', () => {
+    render(
+      <List>
+        <ListItem
+          label="Swipeable"
+          onClick={() => {}}
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+        <ListItem label="Pressable" onClick={() => {}} />
+        <ListItem
+          label="Static"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+      </List>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('li')!;
+    const rowZ = (el: Element) => {
+      const {touch, other} = touchGatedRules(el);
+      const own = (rules: string[]) =>
+        rules.filter(
+          rule =>
+            !rule.slice(0, rule.indexOf('{')).includes('::') &&
+            rule.includes('z-index:'),
+        );
+      return {touch: own(touch), other: own(other)};
+    };
+    const swipeable = rowZ(row('Swipeable'));
+    expect(swipeable.touch.join('\n')).toMatch(/z-index: 1/);
+    // With a mouse there is no band, and nothing changes.
+    expect(swipeable.other).toEqual([]);
+    // A row that is no stacking context needs no raise (its band's own
+    // z-index orders it), and a swipeable row with no band gets none.
+    expect(rowZ(row('Pressable')).touch).toEqual([]);
+    expect(rowZ(row('Static')).touch).toEqual([]);
+  });
+
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
     render(
       <List>

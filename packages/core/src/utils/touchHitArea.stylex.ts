@@ -35,7 +35,11 @@
  * paint and hit-test over the band. The host stays as it was, with no
  * isolation and no z-index of its own: a list row's press layer
  * (utils/rowPressLayer.ts) relies on a row at rest being no stacking context.
- * The layer paints nothing. With a mouse none of it applies.
+ * A host that is a stacking context anyway (a swipeable list row) orders the
+ * layer only inside itself, so it raises itself instead (ListItem). The
+ * host's container bounds what rises: a List isolates its rows, so they stay
+ * below a page-level sticky header. The layer paints nothing. With a mouse
+ * none of it applies.
  *
  * Under a finger the host's `::after` is this layer, so decorate the host
  * with a child instead. The insets are measured in the viewport, so the
