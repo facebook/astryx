@@ -472,6 +472,26 @@ test('under a finger, a sticky header above the list keeps its taps over the fir
   expect(result.unisolated, JSON.stringify(result)).toBe('row');
 });
 
+test('under a finger, an interactive spacious list: its one-line rows, 48px tall, are already past the touch target, so they gain nothing and overlap nothing (component:List FR10, every density)', async ({
+  page,
+}) => {
+  // The Interactive story at `density="spacious"`, the density of the
+  // bottom-sheet menu rows.
+  await openStory(page, storybook(), 'core-list--interactive', {
+    args: 'density:spacious',
+  });
+  test.skip(!(await isTouch(page)), 'the hit area applies under a finger only');
+  const rows = await measuredRowsOf(page);
+  const summary = JSON.stringify(rows);
+  expect(rows.length, summary).toBeGreaterThan(1);
+  for (const row of rows) {
+    // Spacious, not the balanced 40px.
+    expect(row.height, summary).toBeGreaterThanOrEqual(47.5);
+    expect([row.layer.top, row.layer.bottom], summary).toEqual([0, 0]);
+  }
+  expectNoOverlap(rows);
+});
+
 test('under a finger, a row already as tall as the touch target gains nothing, rows that touch take nothing from each other, and a disabled row has no layer', async ({
   page,
 }) => {
