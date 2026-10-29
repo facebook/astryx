@@ -441,9 +441,12 @@ describe('build-css astryx.css', () => {
 
     it('gives an interactive row its hit layer only under a finger, and no row a new height', () => {
       // Its top and bottom edges, grown by the insets utils/hitArea.ts measures
+      // plus the border the row declares on that side (a divided row's
+      // divider), since the layer is offset from the row's padding box while
+      // the insets are measured from its border box
       // (utils/touchHitArea.stylex.ts, spec:AST-094 FR42).
       const edges = rules().filter(rule =>
-        /::after\{(top|bottom):calc\(var\(--astryx-hit-inset-(top|bottom), ?0px\) ?\* ?-1\)\}/.test(
+        /::after\{(top|bottom):calc\(\(var\(--astryx-hit-inset-\1, ?0px\) ?\+ ?var\(--_hit-border-\1, ?0px\)\) ?\* ?-1\)\}/.test(
           rule,
         ),
       );
