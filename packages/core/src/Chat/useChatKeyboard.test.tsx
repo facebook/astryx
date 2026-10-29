@@ -398,11 +398,52 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     ).toHaveLength(2);
   });
 
-  it('adds no tab stop for the composer region', () => {
+  it('adds no tab stop for the composer region: it takes focus only for Done\u2019s park, and gives the focus stop up as focus leaves (spec:AST-017 FR59)', () => {
     primaryPointer('coarse');
-    renderWithSearch('textarea');
+    const {message} = renderWithSearch('textarea');
     const region = screen.getByRole('group', {name: 'Message composer'});
+    // No focus target until Done parks focus there, so a tap or a click
+    // beside the composer never focuses the region.
+    expect(region.hasAttribute('tabindex')).toBe(false);
+    act(() => message.focus());
+    act(() => message.blur());
+    expect(document.activeElement).toBe(region);
     expect(region.tabIndex).toBe(-1);
+    act(() => message.focus());
+    expect(document.activeElement).toBe(message);
+    expect(region.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('leaves the composer region a plain container under a mouse: no group, no name and no focus target (spec:AST-017 FR59)', () => {
+    primaryPointer('fine');
+    const {message} = renderWithSearch('textarea');
+    expect(screen.queryByRole('group', {name: 'Message composer'})).toBeNull();
+    const layout = screen.getByTestId('layout');
+    // The composer's containers inside the layout, the region among them.
+    const containers = () => {
+      const list: Element[] = [];
+      for (
+        let element = message.parentElement;
+        element != null && element !== layout;
+        element = element.parentElement
+      ) {
+        list.push(element);
+      }
+      return list;
+    };
+    expect(
+      containers().filter(
+        element =>
+          element.hasAttribute('role') ||
+          element.hasAttribute('aria-label') ||
+          element.hasAttribute('tabindex'),
+      ),
+    ).toEqual([]);
+    act(() => message.focus());
+    act(() => message.blur());
+    expect(
+      containers().filter(element => element.hasAttribute('tabindex')),
+    ).toEqual([]);
   });
 
   it('leaves focus where the browser puts it when it moves on to another field', () => {
