@@ -185,8 +185,13 @@ they are separately named.
   its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
   regression**), `pr-a11y`, and `pr-rtl` owners with full scope: the closed stable
   visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
-  focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
-  remain scoped to changed components plus fast interaction guards; full a11y
+  focused, smoke, and no-op paths MUST NOT narrow release checks. On a pull
+  request, the visual (`visual-scout`, `pr-visual`), accessibility (`pr-a11y`
+  with its guards and specs) and RTL (`pr-rtl` with its legs) owners MUST run
+  only when the pull request carries the `ci:heavy-lanes` label at the event; a
+  pull request update without it runs none of them, and no required context
+  depends on them. An opted-in PR's a11y MUST remain scoped to changed components
+  plus fast interaction guards; full a11y
   sweeps, whole-repository spec-test contracts, and their evidence uploads MUST
   run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
@@ -198,7 +203,14 @@ they are separately named.
   later commits remain next-release input. A rewrite or divergence that removes
   the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
-  existing finding policies. Release checks MUST NOT run on every push, capture
+  existing finding policies. A main-push workflow MUST dispatch that
+  release-check for every push to `main`, bound to the pushed commit; the
+  dispatched checks share one concurrency group that never cancels a running
+  check: at most one runs and one waits, and a burst of pushes is checked once,
+  at its newest commit. A commit `main` has already moved past leaves its check
+  to the newer push. That release-check run is main's result, and a failure is
+  fixed forward by an atomic pull request. Main's own fast
+  checks still run for every push. Release checks MUST NOT capture
   baseline candidates, publish baselines, or use a separate daily workflow or
   retroactive acceptance status.
   Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
@@ -208,22 +220,25 @@ they are separately named.
   while preserving legitimate non-visual artifact use.
 - **FR13 — Broad CI on a pull request runs what the change reaches.** On a
   `pull_request` event whose trusted classification finds no shared
-  infrastructure, broad CI keeps every owner and required context and narrows
-  what those owners run. The Vitest test owner runs the tests whose module graph
+  infrastructure, broad CI keeps every required context and every owner FR12
+  routes to a pull request, and narrows what those owners run. The Vitest test owner runs the tests whose module graph
   reaches a changed file, against the merge commit's base parent, plus every test
   that reads repository sources through the file system, directly or through a
   module it imports; a computed `import()`, a child process, or a library that
   reads sources for it (the TypeScript compiler, a bundler) counts as reading
   sources; and every test that loads a changed workspace package from its build,
-  by the package's name or a path into its `dist/`. The visual and RTL
-  owners audit one affected set of component folders: the changed components
+  by the package's name or a path into its `dist/`. When a pull request runs
+  them (FR12: only with the `ci:heavy-lanes` label), the visual and RTL owners
+  audit one affected set of component folders: the changed components
   and their reverse dependents, the folders of the components, in any package,
   whose built bundle, `import()` targets included, reaches a changed module.
   Visual audits each dependent folder that has a stable story, and runs the
   whole plan when the dependents exceed its focused budget or none has one; RTL
   audits every component each of those folders implements. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
-  a readable build the audits run in full. PR accessibility stays scoped to
-  changed components (FR12). Shared infrastructure runs the full suite: root
+  a readable build the audits run in full. PR accessibility, when it runs, stays
+  scoped to changed components (FR12). Shared infrastructure runs the full suite of
+  the owners the pull request runs (visual, accessibility and RTL only with the
+  `ci:heavy-lanes` label, FR12): root
   dependency manifests and lockfile, root configuration, a package's manifest,
   build or test configuration and test setup, `internal/` (the test harness
   included), `theme-build` paths (tokens and themes), Storybook configuration,
@@ -239,8 +254,10 @@ they are separately named.
   on the repository's supported Node and runner versions.
 - Unsupported behavior: incomplete or unavailable classification receives no fast
   path and runs broad CI.
-- Browser evidence: routing itself has no visual claim; browser checks remain
-  mandatory whenever their owning surface is present or scope is uncertain.
+- Browser evidence: routing itself has no visual claim; the browser checks FR12
+  routes to a pull request remain mandatory whenever their owning surface is
+  present or scope is uncertain, and visual, accessibility and RTL run on `main`
+  and release checks (FR12).
 
 ## Current-state impact
 
@@ -349,15 +366,17 @@ surface” exception.
 
 Run release evidence against an exact commit in current `main` history, not only
 constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
-visual, accessibility, and RTL checks do not run on every main push. Reuse
-existing test/build owners, keep their finding policies, and fail closed on
-incomplete scope, missing work, or when the checked commit is no longer in
-current `main` history. Baseline capture and the reviewed pull request that
+visual, accessibility, and RTL checks do not run on every main push (DEC-7
+supersedes this sentence: they run after merges to `main`). Reuse existing
+test/build owners, keep their finding policies, and fail closed on incomplete
+scope, missing work, or when the checked commit is no longer in current `main`
+history.
+Baseline capture and the reviewed pull request that
 versions an accepted candidate remain separate operations.
 
-PR accessibility remains a scoped, fast check: audit only explicitly resolved
-changed component owners and retain the fast modal-close, theme-var, and story-play
-browser guards. Never widen a PR to the exhaustive accessibility sweep because a
+PR accessibility, when a pull request runs it (DEC-7), is a scoped, fast check:
+audit only explicitly resolved changed component owners and retain the fast
+modal-close, theme-var, and story-play browser guards. Never widen a PR to the exhaustive accessibility sweep because a
 shared path changed or the component set is empty. Missing or approximate analysis
 fails the scoped check rather than silently claiming no work. Multi-component
 folders expand only to their own canonical component owners or existing umbrella
@@ -366,9 +385,34 @@ accessibility roster and the whole-repository spec-test contracts and their
 evidence uploads run only on `release-check` in this workflow.
 The release path retains the complete suite and cannot substitute a scoped result.
 
-Rejected: a separate workflow, per-push full audits, and treating a maintenance
+Rejected: a separate workflow, per-push full audits (DEC-7 supersedes this for
+pushes to `main`), and treating a maintenance
 capture, skipped check, a checked SHA no longer in current `main` history, or
 retroactive status as release evidence.
+
+### DEC-7 — Visual, accessibility and RTL run on main, not on pull request updates
+
+**Reference:** `spec:AST-030/DEC-7`
+**Decider:** `cixzhang`, `2026-10-28`
+
+Run the visual, accessibility and RTL owners on every push to `main`, through
+the same exact-commit `release-check` the release gate uses, and before a cut;
+a pull request runs them only when it opts in with the `ci:heavy-lanes` label. Main-push checks are throttled: one runs at a time, a
+burst of pushes collapses to its newest commit, and a running check is never
+cancelled, so every check that starts finishes.
+Pull request updates keep the fast checks and every required context; the
+modal-close, theme-var and story-play guards are steps of the accessibility
+owner, so they run with it, after merge or on a labelled pull request. A
+failure on `main` is repaired forward with an atomic pull request, not reverted
+first. This supersedes DEC-5's choice to keep these checks off main pushes:
+running the browser suites on every update of every open pull request costs
+far more than running them once per merge burst on `main`. The label opts a
+pull request into the head-scoped owners FR13 describes; it adds no run of its
+own, and the merged result is checked on `main`, so it is not
+the label-triggered full run DEC-6 rejects.
+
+Rejected: keeping the suites on every pull request update (spend); a separate
+scheduled or daily owner (FR12 keeps one canonical workflow).
 
 ### DEC-6 — Pull requests run what the change reaches; full runs stay where landing is decided
 
@@ -379,7 +423,9 @@ A pull request's Vitest legs and browser audits follow what its change reaches:
 the module graph for tests and built-bundle reach for components. Tests that
 read sources through the file system run whole, because no import reaches what
 they read. Shared infrastructure, uncertainty, `main`, merge-group entries and
-release checks run everything, so no landing or release gate narrows.
+release checks run everything, so no landing or release gate narrows; a pull
+request runs the visual, accessibility and RTL owners only with the
+`ci:heavy-lanes` label (DEC-7).
 
 Rejected: a full run triggered by approval, a label or a draft-to-ready change,
 which tests the pull request's head rather than the merged result.
