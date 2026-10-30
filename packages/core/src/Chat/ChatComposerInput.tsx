@@ -28,6 +28,7 @@
  */
 
 import {
+  use,
   useRef,
   useState,
   useCallback,
@@ -67,6 +68,10 @@ import {
 } from './useChatPasteAsToken';
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
+import {
+  KeyboardSurfaceContext,
+  focusInKeyboardSurface,
+} from './keyboardSurface';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -442,6 +447,11 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
    * would arm the next ArrowUp to replace it. Landing after the text is
    * also what a click on the composer's trailing space means.
    */
+  // Inside ChatLayout's keyboard-aware region, under a finger, every route
+  // into the text refuses the browser's reveal (spec:AST-099 FR4); under a
+  // mouse the browser's own focus applies (spec:AST-017 FR59).
+  const isKeyboardSurface = use(KeyboardSurfaceContext);
+
   /**
    * Focus the editable, keeping a caret or selection the user already has
    * inside it.
@@ -463,13 +473,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     // Read before focusing: `focus()` itself creates the offset-0 caret, so
     // asking afterwards cannot tell the user's own caret from the engine's.
     const existing = getSelectionRangeInside(editable);
-    editable.focus();
+    focusInKeyboardSurface(editable, isKeyboardSurface);
     if (existing) {
       restoreSelectionRange(existing);
       return;
     }
     placeCaretAtEnd(editable);
-  }, []);
+  }, [isKeyboardSurface]);
 
   /**
    * Focus the editable and put the caret after the draft, whatever the
@@ -484,9 +494,9 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     if (!editable) {
       return;
     }
-    editable.focus();
+    focusInKeyboardSurface(editable, isKeyboardSurface);
     placeCaretAtEnd(editable);
-  }, []);
+  }, [isKeyboardSurface]);
 
   const handle: ChatComposerInputHandle = {
     insertToken: (token: ChatComposerToken) => insertTokenRef.current(token),

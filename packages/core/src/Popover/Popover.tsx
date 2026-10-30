@@ -4,9 +4,17 @@
 
 /**
  * @file Popover.tsx
- * @input Uses React layout measurement and the usePopover hook
+ * @input Uses React layout measurement, the usePopover hook and the touch
+ *   presentation's surface motion
  * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
  * @position Layer component; declarative wrapper around usePopover hook
+ *
+ * Under a finger (the shared touch resolver's coarse primary pointer, one
+ * touch model on every touch device) the popover is presented and dismissed
+ * the way a UIKit popover is: it grows out of its anchor on UIKit's present
+ * spring and shrinks back into it on the dismiss spring
+ * (popoverSurfaceMotion.ts). A fine primary pointer keeps the layer's own
+ * entrance and the theme's motion tokens (spec:AST-094 FR31).
  *
  * For hover-triggered overlays, use HoverCard instead.
  *
@@ -20,6 +28,8 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Popover/Popover.test.tsx
+ * - /packages/core/src/Popover/PopoverTouch.ts (its touch layer)
+ * - /packages/core/src/Popover/usePopoverSurfaceMotion.ts
  * - /packages/core/src/Popover/index.ts
  * - /packages/core/src/Popover/PopoverPresentation.test.tsx
  * - /apps/storybook/stories/Popover.stories.tsx
@@ -50,6 +60,8 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
+import {usePresentationHold} from '../Layer/presentationHold';
+import {usePopoverSurfaceMotion} from './PopoverTouch';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -515,12 +527,20 @@ export function Popover({
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const isControlled = isOpen !== undefined;
+  // The element the popover is anchored to, whichever way it was attached:
+  // the touch presentation grows the popover out of it.
+  const anchorElementRef = useRef<HTMLElement | null>(null);
+  const presentSurface = usePopoverSurfaceMotion();
+  // Runs as the popover opens, before it paints; set once `usePopover` has
+  // returned the surface it presents.
+  const presentSurfaceRef = useRef<() => void>(() => {});
   // The bottom-sheet presentation: the surface it resolves to now, and
   // whether the sheet is the surface that is open.
   const resolvedPresentation = usePresentationSurface(presentation);
   const [isSheetOpenState, setIsSheetOpenState] = useState(false);
 
   const handlePopoverShow = useCallback(() => {
+    presentSurfaceRef.current();
     onOpenChange?.(true);
   }, [onOpenChange]);
 
@@ -555,21 +575,33 @@ export function Popover({
     onHide: handlePopoverHide,
   });
 
+  // Syncs the layer's show handler, an event callback outside React, with
+  // the latest presentation call and the anchor element it reads: under a
+  // finger the popover grows out of its anchor and shrinks back into it, as a
+  // UIKit popover (usePopoverSurfaceMotion.ts). Nothing to clean up.
+  const {contentRef: surfaceRef} = popover;
+  useIsomorphicLayoutEffect(() => {
+    presentSurfaceRef.current = () => {
+      presentSurface(
+        surfaceRef.current?.closest<HTMLElement>('[popover]') ?? null,
+        anchorElementRef.current,
+      );
+    };
+  }, [presentSurface, surfaceRef]);
   // A controlled popover opens on the surface its presentation resolves to
   // as it opens, and keeps that surface until it closes: a phone rotated past
   // the compact width while the sheet is open keeps its sheet.
-  const [controlledSurface, setControlledSurface] = useState<
-    'popover' | 'bottom-sheet' | null
-  >(null);
-  // The latch is set during render, as the controlled `isOpen` turns on or
-  // off, so the open surface is known in the same render that opens it.
-  if (isControlled) {
-    if (isOpen !== true && controlledSurface != null) {
-      setControlledSurface(null);
-    } else if (isOpen === true && controlledSurface == null) {
-      setControlledSurface(popover.isOpen ? 'popover' : resolvedPresentation);
-    }
+  // The layer runtime's presentation hold (Layer/presentationHold), taken
+  // during render as the controlled `isOpen` turns on, so the open surface is
+  // known in the same render that opens it, and let go as it turns off.
+  const surfaceHold = usePresentationHold<'popover' | 'bottom-sheet'>({
+    isOpen: isControlled && isOpen === true,
+    presentation: popover.isOpen ? 'popover' : resolvedPresentation,
+  });
+  if (isControlled && isOpen !== true && surfaceHold.isHeld) {
+    surfaceHold.release();
   }
+  const controlledSurface = surfaceHold.presentation;
   const isSheetOpen = isControlled
     ? isOpen === true && controlledSurface === 'bottom-sheet'
     : isSheetOpenState;
@@ -583,12 +615,16 @@ export function Popover({
   // stopped being compact, it stays through its exit, so the exit plays out
   // and its dialog hands focus back to the trigger (component:Popover AR4),
   // and gives way to the anchored layer once its dialog has closed.
-  const [hasSheetBeenOpen, setHasSheetBeenOpen] = useState(false);
+  // The sheet's presentation hold: from the render that opens it until its
+  // dialog has closed.
+  const sheetHold = usePresentationHold({
+    isOpen: isSheetOpen,
+    presentation: true,
+  });
+  const hasSheetBeenOpen = sheetHold.isHeld;
+  const releaseSheet = sheetHold.release;
   // The trigger's text, which names a sheet that has no `label` (DEC-8).
   const [triggerText, setTriggerText] = useState('');
-  if (isSheetOpen && !hasSheetBeenOpen) {
-    setHasSheetBeenOpen(true);
-  }
   const isSheetMounted =
     isSheetOpen ||
     hasSheetBeenOpen ||
@@ -665,14 +701,14 @@ export function Popover({
     }
     const dialog = sheetPanelRef.current?.closest('dialog');
     if (dialog == null || !dialog.open) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- syncs with the sheet's <dialog>: it is already closed, so its close event has fired and its exit is over; unmount it
-      setHasSheetBeenOpen(false);
+      // The sheet's <dialog> is already closed, so its close event has fired
+      // and its exit is over: unmount it.
+      releaseSheet();
       return;
     }
-    const handleClose = () => setHasSheetBeenOpen(false);
-    dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
-  }, [hasSheetBeenOpen, isSheetOpen]);
+    dialog.addEventListener('close', releaseSheet);
+    return () => dialog.removeEventListener('close', releaseSheet);
+  }, [hasSheetBeenOpen, isSheetOpen, releaseSheet]);
   // An open on a compact touch screen shows the sheet at once: its module
   // loads as soon as the sheet can be the surface, with nothing rendered.
   useEffect(() => {
@@ -776,6 +812,7 @@ export function Popover({
   const setRenderTrigger = useCallback(
     (element: HTMLElement | null) => {
       renderTriggerRef.current = element;
+      anchorElementRef.current = element;
       popover.triggerRef(element);
     },
     [popover],
@@ -899,12 +936,14 @@ export function Popover({
     }
 
     // Set up anchor positioning on the anchorRef element itself
+    anchorElementRef.current = el;
     popover.triggerRef(el);
 
     // Attach handlers + ARIA to the button
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
@@ -927,6 +966,7 @@ export function Popover({
 
     // Use the wrapper as the CSS anchor — it doesn't receive pressed-state
     // transforms, so the anchor position stays stable.
+    anchorElementRef.current = wrapper;
     popover.triggerRef(wrapper);
 
     // Find the button inside the wrapper
@@ -945,6 +985,7 @@ export function Popover({
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
