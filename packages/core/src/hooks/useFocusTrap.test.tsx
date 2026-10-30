@@ -319,6 +319,38 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     expect(screen.getByTestId('first')).toHaveFocus();
   });
 
+  it('keeps controls inside a popover-open dialog in the Tab cycle', () => {
+    // A Popover opened inside a non-modal sheet: the sheet's <dialog> is shown
+    // with showPopover(), which never sets `open`.
+    render(
+      <dialog data-testid="sheet">
+        <Trap>
+          <button type="button" data-testid="first">
+            First
+          </button>
+          <button type="button" data-testid="second">
+            Second
+          </button>
+        </Trap>
+      </dialog>,
+    );
+    const sheet = screen.getByTestId('sheet');
+    const matches = vi
+      .spyOn(sheet, 'matches')
+      .mockImplementation((selector: string) => selector === ':popover-open');
+    const first = screen.getByTestId('first');
+    first.focus();
+
+    // First is not the last Tab stop, so the trap leaves the press to the
+    // browser instead of cancelling it for want of tabbable controls.
+    expect(fireEvent.keyDown(first, {key: 'Tab'})).toBe(true);
+    const second = screen.getByTestId('second');
+    second.focus();
+    expect(fireEvent.keyDown(second, {key: 'Tab'})).toBe(false);
+    expect(first).toHaveFocus();
+    matches.mockRestore();
+  });
+
   it('leaves Tab to an open dialog nested inside the trap', () => {
     render(
       <Trap>

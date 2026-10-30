@@ -62,6 +62,19 @@ export function useFocusTrapEscapeCompatibilitySignal(isActive: boolean): void {
 }
 
 /**
+ * Whether an element is shown as a popover. jsdom and browsers without the
+ * Popover API do not recognize `:popover-open`, and nothing is popover-open
+ * there.
+ */
+function isPopoverOpen(el: Element): boolean {
+  try {
+    return el.matches(':popover-open');
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
  * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
  * which the browser skips for Tab, and ones inside an `aria-hidden="true"`
@@ -76,8 +89,16 @@ function isVisiblyFocusable(el: HTMLElement): boolean {
     return false;
   }
   // A closed <dialog> renders nothing, so nothing inside it can take focus.
-  if (el.closest('dialog:not([open])')) {
-    return false;
+  // A dialog shown with showPopover() (a non-modal sheet or drawer) never
+  // sets `open`, so it counts as shown while it is popover-open.
+  for (
+    let dialog = el.closest('dialog');
+    dialog != null;
+    dialog = dialog.parentElement?.closest('dialog') ?? null
+  ) {
+    if (!dialog.open && !isPopoverOpen(dialog)) {
+      return false;
+    }
   }
   // closest() matches the element itself as well as any ancestor.
   if (el.closest('[aria-hidden="true"]')) {
