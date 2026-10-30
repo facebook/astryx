@@ -30,14 +30,16 @@ system_specs: []
 OverflowList renders a selected subset of caller-supplied items in a visible
 horizontal list and may render a caller-supplied indicator for collapsed items.
 Items may collapse because they exceed the measured space or a configured count
-limit. This draft records the current consumer anatomy and theming ownership
-without changing measurement, collapse behavior, targets, or public API.
+limit. This draft records the current consumer anatomy and theming ownership,
+and when lists measure (FR4), without changing collapse behavior, targets, or
+public API.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: timing only. The collapse and `onOverflowChange` land
+  one microtask after the commit (FR4), before the frame paints; DOM, styling,
+  targets, and public API are unchanged
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -65,11 +67,12 @@ in `OverflowList.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                               | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The visible list container carries the `overflow-list` target and renders the caller-supplied items selected by current width and count limits.   | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | When the current overflow calculation collapses items and a renderer is supplied, its returned indicator appears at the configured collapse edge. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR3 | The hidden inert measurement copy carries no public theming target and is not consumer-facing anatomy.                                            | Current source and tests        | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                   | Basis                           | Draft review state                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| FR1 | The visible list container carries the `overflow-list` target and renders the caller-supplied items selected by current width and count limits.                                                                                                                                                                       | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR2 | When the current overflow calculation collapses items and a renderer is supplied, its returned indicator appears at the configured collapse edge.                                                                                                                                                                     | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR3 | The hidden inert measurement copy carries no public theming target and is not consumer-facing anatomy.                                                                                                                                                                                                                | Current source and tests        | Verified current behavior; no target change        |
+| FR4 | Lists that mount or change in one React commit measure after that commit and before its frame paints: every list reads its sizes, then one render applies every result, so the first painted frame shows the measured subset. The collapse and `onOverflowChange` land one microtask after the commit, not inside it. | DEC-1                           | Decided; not yet implemented                       |
 
 ### Allowed variation
 
@@ -85,12 +88,17 @@ in `OverflowList.doc.mjs`.
 
 ### Transformation and precedence order
 
-- No new measurement, collapse, or rendering order is introduced.
+- Measurement runs after the commit that mounts or changes a list and before
+  that frame paints (FR4); collapse order and rendering order are unchanged.
+- A caller that renders synchronously and reads the visible items or the
+  collapsed set in the same task waits for the microtask that applies them.
 
 ### Performance and resources
 
-- This draft records the existing hidden measurement structure but introduces no
-  new measurement or observer requirement.
+- A measurement inside the commit follows other components' DOM writes and
+  forces a style and layout pass per list. FR4 reads every list in one pass
+  after the commit: one layout for the whole commit.
+- This draft adds no observer requirement.
 
 ## Accessibility contract
 
@@ -143,8 +151,11 @@ consumer-facing anatomy.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design
-or API decision.
+- **DEC-1 — Lists measure together after the commit.** Every list mounted or
+  changed in one commit measures after that commit and before the frame paints,
+  so a page that mounts many lists pays for one layout instead of one per list,
+  and the first painted frame is the same. The collapse and `onOverflowChange`
+  land one microtask after the commit, not inside it.
 
 ## Open questions
 
