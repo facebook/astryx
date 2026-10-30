@@ -76,9 +76,14 @@
  * animation (two animations on one property leave the compositor in both
  * engines), so the retarget keeps the velocity on screen.
  *
- * WebKit starts an animation created just before a block at its last frame
- * time before the block, so there the motion still skips into its curve;
- * Chromium starts it after the block.
+ * WebKit dates an animation created just before a block at its last frame
+ * time before the block, where the first frame after it would show the
+ * motion skipped into its curve; when the call's own task ran on more than
+ * two frames, the call's first read of that start moves it to that read, so
+ * WebKit delays the motion as Chromium's commit does (startAfterBlock). Every
+ * call of that task moves together, and a shorter task or a read that other
+ * tasks delay keeps the browser's start, so a sequence chained on a call's
+ * end (a Reduce Motion cross-fade's second half) keeps its clock.
  *
  * Promotion: Mobile Safari runs an animation whose start time is set from
  * script on its compositor at its first commit only if the element (or the
@@ -495,6 +500,13 @@ interface StartGroup {
   readonly animations: Animation[];
   readonly channels: Set<Channel>;
   resolved: boolean;
+  /**
+   * The first frame after the call has run: a start read later is the
+   * browser's, whatever it says (startAfterBlock).
+   */
+  framed?: boolean;
+  /** The task it was made in, with every call made in that task. */
+  task?: TaskMark;
   /** A later call in the same task that took over its curves. */
   adoptedBy?: StartGroup;
   readonly resolve: (start: number) => void;
@@ -624,6 +636,44 @@ const SAMPLE_GRID_MS = 1000 / 30;
 
 /** A curve that has not settled by then (an undamped spring) snaps. */
 const MAX_DURATION_MS = 30_000;
+
+/**
+ * How long a task must run on past its first call from rest before that
+ * counts as a block (WebKit; startAfterBlock): two frames at 60 Hz.
+ */
+// Browser start times are frame times and a task's end a live clock, so only a block longer than a frame plus the task's own length can be told apart from that quantization.
+const LATE_START_MS = 34;
+
+/**
+ * The task calls from rest are made in, shared by every call made in it
+ * (every animator's), so one motion's parts that are separate calls start
+ * together (startAfterBlock).
+ */
+interface TaskMark {
+  /** The task's first call. */
+  readonly first: number;
+  /** When the task ended, at its first microtask. */
+  ended?: number;
+  /** The start every call of a blocked task moves to, set by its first read. */
+  at?: number;
+}
+
+/** The task the current calls from rest are made in, until it ends. */
+let openTask: TaskMark | null = null;
+
+/** The mark of the running task, opened by its first call from rest. */
+function markTask(time: number, clock: () => number): TaskMark {
+  if (openTask == null) {
+    const task: TaskMark = {first: time};
+    openTask = task;
+    queueMicrotask(() => {
+      task.ended = clock();
+      openTask = null;
+    });
+  }
+  return openTask;
+}
+
 /** Above this many keyframes the tolerance is relaxed. */
 const MAX_KEYFRAMES = 1200;
 /**
@@ -1846,17 +1896,41 @@ export function createAnimator(
       // with its own two frames. Every other property starts here, whatever
       // its segment's group: a value Reduce Motion writes at once, or lands
       // under a dip, has no curve of this call's.
-      const own = changed.filter(
-        property =>
-          !CHANNELS[CHANNEL_OF[property]].some(other => {
-            const waiting = segments.get(other)?.group;
-            return (
+      const own: MotionProperty[] = [];
+      let handedTo: StartGroup | null = null;
+      for (const property of changed) {
+        const holder = CHANNELS[CHANNEL_OF[property]]
+          .map(other => segments.get(other)?.group)
+          .find(
+            waiting =>
               waiting != null &&
               waiting !== group &&
-              deferredCalls.some(call => call.group === waiting)
-            );
-          }),
-      );
+              deferredCalls.some(call => call.group === waiting),
+          );
+        if (holder == null) {
+          own.push(property);
+          continue;
+        }
+        // A curve of this call's in that channel never ran: the element held
+        // it at its start. It starts with the later call, which creates the
+        // channel, dated from that call's start, so the model reads what the
+        // screen shows.
+        const segment = segments.get(property);
+        if (segment != null && segment.group === group) {
+          segment.start += holder.provisional - group.provisional;
+          segment.group = holder;
+          holder.segments.push(segment);
+          group.segments.splice(group.segments.indexOf(segment), 1);
+          handedTo = holder;
+        }
+      }
+      if (own.length === 0 && handedTo != null) {
+        // Everything this call still plays starts with the later call.
+        const adopter = handedTo;
+        group.adoptedBy = adopter;
+        void adopter.started.then(start => resolveGroup(group, start));
+        continue;
+      }
       // From the call's own time: the curve starts at the browser's commit.
       startCall(group, own, group.provisional);
     }
@@ -1901,6 +1975,7 @@ export function createAnimator(
     }
     pendingGroups.add(group);
     group.fresh = true;
+    group.task = markTask(group.provisional, now);
     queueMicrotask(() => {
       group.fresh = false;
     });
@@ -1917,7 +1992,10 @@ export function createAnimator(
     // or when its compositor starts them (Chromium). Read it in that first
     // frame, ahead of anything that might pause or seek the animations, and
     // when `ready` settles.
-    requestFrame?.(() => syncGroup(group));
+    requestFrame?.(() => {
+      syncGroup(group);
+      group.framed = true;
+    });
     ready.then(
       () => syncGroup(group),
       () => settleCancelled(group),
@@ -1974,7 +2052,10 @@ export function createAnimator(
     }
     for (const animation of group.animations) {
       if (animation.startTime != null) {
-        resolveGroup(group, Number(animation.startTime));
+        resolveGroup(
+          group,
+          startAfterBlock(group, Number(animation.startTime)),
+        );
         return;
       }
     }
@@ -2044,6 +2125,53 @@ export function createAnimator(
     }
   };
 
+  /**
+   * The start of a call from rest, on the frame that commits it. Chromium,
+   * like Core Animation, starts a pending animation when it commits it, so a
+   * main-thread block later in the call's task delays the motion; WebKit
+   * dates it at its last frame time before that task, so the first frame
+   * after the block would show it skipped into its curve. When the task ran
+   * on more than LATE_START_MS past its first call, a start the browser put
+   * by the call and more than LATE_START_MS before the call's first read (its
+   * `ready`, once the task has ended, or the first frame after it) moves to
+   * that read, with every animation of the call, and every call of the task
+   * moves to the same read. A shorter task, or a read other tasks delay,
+   * keeps the browser's start.
+   */
+  const startAfterBlock = (group: StartGroup, start: number): number => {
+    const timeline =
+      typeof document === 'undefined'
+        ? null
+        : (document.timeline?.currentTime as number | null | undefined);
+    // A start well after the call is the browser's commit of it.
+    if (
+      timeline == null ||
+      group.framed === true ||
+      start > group.provisional + LATE_START_MS
+    ) {
+      return start;
+    }
+    const {task} = group;
+    // A read in the task's first microtasks comes after its end too.
+    const ended = task?.ended ?? now();
+    if (task == null || ended - task.first <= LATE_START_MS) {
+      return start;
+    }
+    // Read once the task has ended (its `ready`) or in the first frame after
+    // it, both after the block; the task's other calls take the same read.
+    const at = task.at ?? Math.max(now(), timeline);
+    if (at - start <= LATE_START_MS) {
+      return start;
+    }
+    task.at = at;
+    for (const animation of group.animations) {
+      if (animation.playState !== 'idle') {
+        animation.startTime = at;
+      }
+    }
+    return at;
+  };
+
   /** Moves a call from rest onto the time the browser started it. */
   const resolveGroup = (group: StartGroup, start: number) => {
     if (group.resolved) {
@@ -2085,10 +2213,7 @@ export function createAnimator(
           .filter(segment => segment.owner === owner)
           .map(segment => segment.start + segment.duration);
         owner.timer = setTimeout(
-          () => {
-            owner.timer = null;
-            settle(owner, true);
-          },
+          () => settleAtEnd(owner),
           Math.max(0, Math.max(start, ...ends) - now()),
         );
       }
@@ -2126,6 +2251,39 @@ export function createAnimator(
     owner.resolve(finished);
   };
 
+  /**
+   * A handle whose curves have reached their end on the wall clock finishes,
+   * unless a sampler holds one of its animations (paused, or sought back):
+   * then it waits on that animation's own time, as retiring does
+   * (scheduleRetire), so `finished` never resolves under motion still on
+   * screen.
+   */
+  const settleAtEnd = (owner: HandleState) => {
+    owner.timer = null;
+    let wait = 0;
+    for (const [channel, animation] of running) {
+      if (
+        !CHANNELS[channel].some(
+          property => segments.get(property)?.owner === owner,
+        )
+      ) {
+        continue;
+      }
+      const remaining = remainingCurve(animation);
+      if (remaining != null && remaining > 0) {
+        wait = Math.max(
+          wait,
+          animation.playState === 'paused' ? RETIRE_RECHECK_MS : remaining,
+        );
+      }
+    }
+    if (wait > 0) {
+      owner.timer = setTimeout(() => settleAtEnd(owner), wait);
+      return;
+    }
+    settle(owner, true);
+  };
+
   const makeHandle = (
     owner: HandleState,
     properties: MotionProperty[],
@@ -2149,10 +2307,7 @@ export function createAnimator(
       // Interruptions settle false as they happen (interrupt); reaching the
       // end untouched is completion.
       owner.timer = setTimeout(
-        () => {
-          owner.timer = null;
-          settle(owner, true);
-        },
+        () => settleAtEnd(owner),
         Math.max(0, end - now()),
       );
     }
@@ -2610,10 +2765,7 @@ export function createAnimator(
       settle(owner, true);
     } else {
       owner.timer = setTimeout(
-        () => {
-          owner.timer = null;
-          settle(owner, true);
-        },
+        () => settleAtEnd(owner),
         Math.max(0, end - now()),
       );
     }
@@ -3384,10 +3536,7 @@ export function createAnimator(
           }
         }
         owner.timer = setTimeout(
-          () => {
-            owner.timer = null;
-            settle(owner, true);
-          },
+          () => settleAtEnd(owner),
           Math.max(0, end - now()),
         );
       }
