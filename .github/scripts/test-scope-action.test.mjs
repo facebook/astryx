@@ -65,6 +65,7 @@ async function decide({
   files = [],
   inputs = {},
   headFiles = [],
+  headError,
   missingBase = [],
 } = {}) {
   const outputs = {};
@@ -102,6 +103,9 @@ async function decide({
                   .toString('base64'),
               },
             };
+          }
+          if (ref === HEAD_SHA && headError) {
+            throw Object.assign(new Error('Server Error'), {status: headError});
           }
           if (ref === HEAD_SHA && headFiles.includes(file)) {
             return {data: {content: ''}};
@@ -304,6 +308,16 @@ describe('per-job scope step', () => {
       });
       expect(outputs.applies).toBe('false');
       expect(messages.notice).toHaveLength(1);
+    });
+
+    it('still applies when the head lookup fails for another reason', async () => {
+      const {outputs, messages} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+        headError: 500,
+      });
+      expect(outputs.applies).toBe('true');
+      expect(messages.notice).toHaveLength(0);
     });
 
     it('applies when the head has the file', async () => {

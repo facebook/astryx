@@ -191,6 +191,7 @@ describe('Node-tooling CI routing', () => {
 
   it('preserves the historical joins and fails them on owned-lane failure', () => {
     expect(ci.jobs.test.needs).toEqual([
+      'check-scope',
       'release-bump',
       'test-ui',
       'test-node',
@@ -210,7 +211,15 @@ describe('Node-tooling CI routing', () => {
       contents: 'read',
       'pull-requests': 'read',
     });
+    // A release-branch pull request is spec-only, but its join still runs to
+    // require the release bump's own validation.
+    expect(testJoin.if).toBe(
+      "steps.scope.outputs.spec_only != 'true' || steps.scope.outputs.release_bump == 'true'",
+    );
     expect(testJoin.env).toMatchObject({
+      CHECK_SCOPE_RESULT: '${{ needs.check-scope.result }}',
+      RELEASE_BUMP: '${{ steps.scope.outputs.release_bump }}',
+      RELEASE_BUMP_RESULT: '${{ needs.release-bump.result }}',
       DOCSITE_ONLY: '${{ steps.scope.outputs.docsite_only }}',
       SPEC_ONLY: '${{ steps.scope.outputs.spec_only }}',
       TOOLING_ONLY: '${{ steps.scope.outputs.tooling_only }}',
