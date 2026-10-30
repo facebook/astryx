@@ -89,10 +89,7 @@ import {
 import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
 import {subscribeInput} from './inputStream';
 import {resolveMotion} from '../motion/resolveMotion';
-import {
-  press as pressTiming,
-  reducedMotionCrossFade,
-} from '../motion/uikit/timing';
+import {reducedMotionCrossFade} from '../motion/uikit/timing';
 import {parentAcrossShadow} from './flatTree';
 import {isPrimaryClick} from './primaryClick';
 import {TOUCH_QUERY} from './touchPresentation';
@@ -304,6 +301,14 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
+ * The press roles the controller times, under their `timing.press` keys and
+ * with the values that table holds (PRESS_FLASH_MS, PRESS_FADE_MS): each is
+ * resolved through resolveMotion as a role, while only these two values ship,
+ * not the table (`architecture:component-style-authoring` INV6).
+ */
+const PRESS_ROLES = {flashMs: PRESS_FLASH_MS, highlightOutMs: PRESS_FADE_MS};
+
+/**
  * How long a timer runs on `element`. A quick tap's flash and the release's
  * clock read their motion roles under the element (`timing.press.flashMs`,
  * and the deselect's `timing.press.highlightOutMs`: PRESS_FADE_MS, the value
@@ -322,12 +327,12 @@ function timerMs(
 ): number {
   if (kind === 'flash') {
     // The quick tap's flash, on its motion role under the pressed element.
-    return resolveMotion(element, pressTiming, 'flashMs');
+    return resolveMotion(element, PRESS_ROLES, 'flashMs');
   }
   if (kind !== 'fade') {
     return TIMER_MS[kind];
   }
-  const releaseMs = resolveMotion(element, pressTiming, 'highlightOutMs');
+  const releaseMs = resolveMotion(element, PRESS_ROLES, 'highlightOutMs');
   const reduced =
     element.ownerDocument.defaultView?.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
