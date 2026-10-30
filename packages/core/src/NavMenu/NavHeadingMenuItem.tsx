@@ -32,6 +32,9 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   root: {
     boxSizing: 'border-box',
+    // A held pointer slides across the items; it selects no item text.
+    // Caller content beside the items stays selectable.
+    userSelect: 'none',
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -202,6 +205,9 @@ export function NavHeadingMenuItem({
       tabIndex={isDisabled && !href ? undefined : -1}
       aria-disabled={isDisabled || undefined}
       href={isDisabled ? undefined : href}
+      // A menu row is never a draggable link: a mouse press that slides to
+      // another row would start a drag and cancel the press.
+      draggable={href != null ? false : undefined}
       onClick={handleClick}
       data-testid={testId}
       {...mergeProps(

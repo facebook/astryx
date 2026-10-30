@@ -3,24 +3,28 @@
 /**
  * @file harness.interaction.browser.spec.ts
  * @input Fixture pages written inline (no Storybook), real Chromium/WebKit
- * @output Proof that each harness instrument measures what it claims:
- *   scripted timestamps reach the page; a flick flings natively (Chromium);
- *   a second finger and a pinch arrive as distinct pointers; sampled curves
- *   match the oracles; the animation-state waits report a running transition
- *   and its end, and judge rest by presented values even while an animation
- *   holds its end, and a watch taken on first contact ignores an animation
- *   already running and keeps the start of one the page cancels when it ends; individual transform properties are sampled; a sample at
+ * @output Proof that each harness instrument measures what it claims (the
+ *   busy-main-thread proof with a negative control beside its positive
+ *   check): scripted timestamps reach the
+ *   page; a flick flings natively (Chromium); a second finger and a pinch
+ *   arrive as distinct pointers; the screencast shows a compositor animation
+ *   advancing through a blocked main thread while a rAF animation freezes;
+ *   sampled curves
+ *   match the oracles, individual transform properties included; a sample at
  *   an end reports the time it was read at; holding takes only running
  *   document-timeline animations, each at its own offset, holds each where it
  *   was read, adds a second hold to the held set without moving the first
- *   hold's times, drops one the page cancels, and releases only them;
- *   storyboards write a sheet and a trace that follows the curve, an endless
- *   animation does not set their length, and a photograph Chromium returns
- *   empty is taken again two frames later; a touch filmstrip keeps scripted
- *   event times while a handler clock sees its pacing; the timer gate holds a
- *   component timer until the filmstrip is done, drops callbacks the page
- *   cancels, stamps held frames with the time they run, and leaves the
- *   harness its own frames.
+ *   hold's times, drops one the page cancels, and releases only them; the
+ *   animation-state waits report a running transition and its end, and judge
+ *   rest by presented values even while an animation holds its end, and a
+ *   watch taken on first contact ignores an animation already running and
+ *   keeps the start of one the page cancels when it ends; storyboards write a
+ *   sheet and a trace that follows the curve, an endless animation does not
+ *   set their length, and a photograph Chromium returns empty is taken again
+ *   two frames later; a touch filmstrip keeps scripted event times while a
+ *   handler clock sees its pacing; the timer gate holds a component timer
+ *   until the filmstrip is done, drops callbacks the page cancels, stamps held
+ *   frames with the time they run, and leaves the harness its own frames.
  * @position The harness's own test. A component spec trusts these
  *   instruments; this file is why it may.
  */
@@ -28,6 +32,8 @@
 import {expect, test, type Page} from '@playwright/test';
 import {
   animationStoryboard,
+  blockMainThread,
+  busyWindowProof,
   compareCurve,
   cubicBezier,
   curveOf,
@@ -38,6 +44,7 @@ import {
   holdAnimations,
   installInputLog,
   installTimerGate,
+  markElement,
   merge,
   parseTransform,
   PARTIAL_LIFT_SKIP,
@@ -47,12 +54,14 @@ import {
   sampleCurve,
   seekAnimations,
   springStep,
+  startScreencast,
   Storyboard,
   tap,
   thawTimers,
   timeline,
   touchDriver,
   touchStoryboard,
+  trackMarker,
   waitForAnimation,
   waitForRest,
   watchAnimations,
@@ -70,6 +79,24 @@ const FIXTURE = `<!doctype html><meta name=viewport content="width=device-width,
 <div id=pad aria-label="pad"></div>
 <div id=box></div>
 <div id=scroller>${Array.from({length: 200}, (_, i) => `<div class=row>row ${i}</div>`).join('')}</div>`;
+
+// The busy-main-thread proofs' page: one box with room to move 560 px down,
+// nothing over it. 560 px in 1,600 ms is about 4.8 px a frame, more than two
+// of WebKit's 2 px position steps (README: frame evidence), so every frame's
+// motion is resolvable.
+const BUSY_FIXTURE = `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
+<style>
+  body { margin: 0; background: #fff; }
+  #box { position: absolute; left: 20px; top: 40px; width: 80px; height: 80px; background: #36c; }
+</style>
+<div id=box></div>`;
+
+async function busyFixture(page: Page) {
+  await page.route('http://busy.test/', route =>
+    route.fulfill({contentType: 'text/html', body: BUSY_FIXTURE}),
+  );
+  await page.goto('http://busy.test/');
+}
 
 // A real navigation (not setContent, whose document.open() erases the window
 // listeners the input log installs).
@@ -239,6 +266,161 @@ test.describe('touch input', () => {
         ...log.filter(r => r.type === 'touchmove').map(r => r.touches ?? 0),
       ),
     ).toBe(2);
+  });
+});
+
+test.describe('frame evidence', () => {
+  test('a compositor animation advances every frame through a blocked main thread; a rAF one freezes, whatever the screencast rate', async ({
+    page,
+  }, testInfo) => {
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+
+    const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {duration: 1600, easing: 'linear'},
+          );
+        } else {
+          const start = performance.now();
+          const step = (now: number) => {
+            const p = Math.min(1, (now - start) / 1600);
+            el.style.transform = `translateY(${560 * p}px)`;
+            if (p < 1) {
+              requestAnimationFrame(step);
+            }
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page, {everyNthFrame});
+      await page.waitForTimeout(200);
+      const window = await blockMainThread(page, 700);
+      await page.waitForTimeout(200);
+      const tracked = await trackMarker(page, await cast.stop());
+      return busyWindowProof(tracked, window, {axis: 'y'});
+    };
+
+    const compositor = await run('compositor');
+    testInfo.annotations.push({
+      type: 'busy-main-thread compositor',
+      description: compositor.summary,
+    });
+    expect(compositor.verdict.failures, compositor.summary).toEqual([]);
+    expect(compositor.monotonic).toBe(true);
+    // Resolvable on the cast's grid: two position steps or more per frame.
+    expect(compositor.notes, compositor.summary).toEqual([]);
+    expect(compositor.pxPerFrame).toBeGreaterThanOrEqual(2 * compositor.stepPx);
+
+    const raf = await run('raf');
+    testInfo.annotations.push({
+      type: 'busy-main-thread rAF control',
+      description: raf.summary,
+    });
+    // Frozen for the whole block: no presented frame moved (the compositor
+    // sends none at all when nothing on screen changes), and the verdict that
+    // passes the compositor animation fails it on every criterion.
+    expect(raf.changed).toBe(0);
+    expect(raf.longestStallMs).toBeGreaterThan(600);
+    expect(raf.verdict.pass).toBe(false);
+    expect(raf.verdict.failures.join('\n')).toMatch(/longest stall/);
+    expect(raf.verdict.failures.join('\n')).toMatch(/expected frames moved/);
+
+    // The verdict judges the frames the screencast delivered, not its rate:
+    // at one frame in six (a loaded machine's ~100 ms), the compositor
+    // animation still passes and the rAF one still fails.
+    const slow = await run('compositor', 6);
+    expect(slow.cadenceMs, slow.summary).toBeGreaterThan(60);
+    expect(slow.verdict.failures, slow.summary).toEqual([]);
+    const slowRaf = await run('raf', 6);
+    expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
+    expect(slowRaf.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  test('a block that starts during a just-started transition still lets the compositor advance it', async ({
+    page,
+  }, testInfo) => {
+    // `during` blocks in the frame the transition has run 16 ms. In WebKit
+    // the transition reaches the compositor in that frame's rendering update,
+    // so a loop inside the rAF callback froze it (2 of 29 frames moved).
+    // Linear and longer than the block, so every frame of the block moves two
+    // position steps or more and the transition is still running when it
+    // ends. The cast shows the box at rest first, so a transition that reaches
+    // the screen after the block began is judged from there (onScreenFromMs).
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const cast = await startScreencast(page);
+    await expect.poll(() => cast.frameCount()).toBeGreaterThan(0);
+    await box.evaluate(el => {
+      el.style.transition = 'transform 1600ms linear';
+      el.getBoundingClientRect();
+      el.style.transform = 'translateY(560px)';
+    });
+    const window = await blockMainThread(page, 700, {
+      during: box,
+      minProgressMs: 16,
+    });
+    await waitForRest(box);
+    const tracked = await trackMarker(page, await cast.stop());
+    const proof = busyWindowProof(tracked, window, {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-main-thread transition',
+      description: proof.summary,
+    });
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.monotonic).toBe(true);
+  });
+
+  test('a block never starts on an animation that is not on the compositor yet', async ({
+    page,
+  }, testInfo) => {
+    // An animation created in the frame the helper looks is still pending (not
+    // committed to the compositor). A block that started on it then froze it
+    // in Chromium: no presented frame moved.
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    await box.evaluate(el => {
+      el.style.willChange = 'transform';
+    });
+    const cast = await startScreencast(page);
+    // A rAF loop registered before the helper's tick runs ahead of it in every
+    // frame; on its 12th frame it creates the animation, and the helper's tick
+    // looks in that same frame.
+    await box.evaluate(el => {
+      let n = 0;
+      const loop = () => {
+        n += 1;
+        if (n === 12) {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {duration: 1600, easing: 'linear'},
+          );
+          return;
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    });
+    const window = await blockMainThread(page, 700, {
+      during: box,
+      minProgressMs: 0,
+    });
+    await waitForRest(box);
+    const tracked = await trackMarker(page, await cast.stop());
+    const proof = busyWindowProof(tracked, window, {axis: 'y'});
+    testInfo.annotations.push({
+      type: 'busy-main-thread pending animation',
+      description: proof.summary,
+    });
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.monotonic).toBe(true);
   });
 });
 
@@ -1427,6 +1609,33 @@ test.describe('storyboards', {tag: '@storyboard'}, () => {
     for (const gap of gaps(1)) {
       expect(gap).toBeGreaterThan(2 * (1000 / 60));
     }
+  });
+
+  test("the harness's own waits run on the real timers: a frozen timer gate does not hold blockMainThread's block", async ({
+    page,
+  }) => {
+    await fixture(page);
+    await installTimerGate(page);
+    const box = page.locator('#box');
+    await box.evaluate(el => {
+      el.animate(
+        [{transform: 'translateX(0px)'}, {transform: 'translateX(200px)'}],
+        {duration: 1_500, easing: 'linear'},
+      );
+    });
+    await freezeTimers(page);
+    // Settled, or still held after 5 s.
+    const within = (work: Promise<unknown>) =>
+      Promise.race([
+        work.then(() => 'settled'),
+        new Promise<string>(resolve =>
+          setTimeout(() => resolve('held'), 5_000),
+        ),
+      ]);
+    expect(
+      await within(blockMainThread(page, 100, {during: box, timeout: 2_000})),
+    ).toBe('settled');
+    await thawTimers(page);
   });
 
   test('the timer gate holds a component timer until the filmstrip is done', async ({
