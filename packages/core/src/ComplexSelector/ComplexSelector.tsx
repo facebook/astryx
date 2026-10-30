@@ -57,9 +57,9 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {isRenderable, mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
-import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {SizeValue} from '../utils/types';
@@ -837,8 +837,10 @@ export function ComplexSelector<Value>({
             // The ring belongs to the wrapper (the focusable `<button>` sits
             // inside it), but it must still be a KEYBOARD ring: `:focus-within`
             // matched a mouse click on the trigger and drew the outline for
-            // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
-            focusOutlineStyles.focusWithin,
+            // pointer users too. It keys off the trigger alone, so the status
+            // info-tip beside it rings itself and the box does not ring too
+            // (architecture:interaction-modality INV3).
+            focusOutlineStyles.focusWithinCombobox,
             variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
             variant !== 'input' && interactionOverlayStyles.backgroundImage,

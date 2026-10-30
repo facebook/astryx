@@ -14,6 +14,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from '../Button/Button';
+import * as stylex from '@stylexjs/stylex';
+import {focusVars} from '../theme/tokens.stylex';
 import {ComplexSelector, type ComplexSelectorHandle} from './ComplexSelector';
 
 const originalMatches = HTMLElement.prototype.matches;
@@ -1050,6 +1052,47 @@ describe('ComplexSelector onOpenChange', () => {
       expect(tip).toHaveAccessibleDescription('Required');
       await user.click(tip);
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // architecture:interaction-modality INV3: the info-tip rings itself, so
+    // the control box rings only for the trigger, not for any focused child.
+    it('rings the control box for the trigger only, not for the info-tip', () => {
+      render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="tooltip">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      const box = screen.getByRole('combobox', {name: 'Filter'}).parentElement!;
+      // The same declarations as the shared any-descendant ring, with null
+      // defaults so only its `:has(:focus-visible)` atoms are compared (the
+      // default atoms are shared with the combobox-only ring).
+      /* eslint-disable @astryx/focus-outline-shared -- a test oracle that
+         mirrors the shared ring's conditional atoms; it paints nothing. */
+      const anyDescendantRing = stylex.create({
+        ring: {
+          outlineWidth: {
+            default: null,
+            ':has(:focus-visible)': focusVars['--focus-outline-width'],
+          },
+          outlineStyle: {
+            default: null,
+            ':has(:focus-visible)': focusVars['--focus-outline-style'],
+          },
+        },
+      });
+      /* eslint-enable @astryx/focus-outline-shared */
+      const anyFocusAtoms = stylex
+        .props(anyDescendantRing.ring)
+        .className!.split(' ')
+        .filter(name => name.includes('x') && !name.includes('__'));
+      expect(anyFocusAtoms.length).toBeGreaterThan(0);
+      for (const name of anyFocusAtoms) {
+        expect(box).not.toHaveClass(name);
+      }
     });
 
     it('keeps the attached message box and adds no info-tip', () => {
