@@ -74,13 +74,13 @@ placement and file-drop targets require separate design specifications.
 
 ## State representation
 
-| State              | Required representation                                                     | Allowed variation                                                |
-| ------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| rest               | The handle is discoverable without overpowering item content                | Handle placement may follow the collection family                |
-| dragging           | Source and moving preview use the same temporary reduced-emphasis treatment | Pointer preview may move freely on both axes                     |
-| candidate position | A clear accent insertion line marks where the item will land                | Line length and inset may follow row geometry                    |
-| dropped            | Items settle into the committed order and temporary drag treatment clears   | Settling motion may use the system's fast movement language      |
-| cancelled          | Original order and normal contrast return immediately                       | Cancellation may be immediate even when normal motion is enabled |
+| State              | Required representation                                                                                                                                                                                              | Allowed variation                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| rest               | The handle is discoverable without overpowering item content                                                                                                                                                         | Handle placement may follow the collection family                |
+| dragging           | Under insertion-line feedback, source and moving preview use the same temporary reduced-emphasis treatment; under shift feedback, the dragged item follows the pointer and the surrounding items slide aside (DEC-2) | Pointer preview may move freely on both axes                     |
+| candidate position | Under insertion-line feedback, a clear accent insertion line marks where the item will land; under shift feedback, the opened gap marks it (DEC-2)                                                                   | Line length and inset may follow row geometry                    |
+| dropped            | Items settle into the committed order and temporary drag treatment clears                                                                                                                                            | Settling motion may use the system's fast movement language      |
+| cancelled          | Original order and normal contrast return immediately                                                                                                                                                                | Cancellation may be immediate even when normal motion is enabled |
 
 ## Responsive and input behavior
 
@@ -93,9 +93,9 @@ placement and file-drop targets require separate design specifications.
   feedback.
 - **DR8 — Reduced motion updates directly.** When motion is reduced, the final
   order MUST update without animated travel, and under shift feedback the
-  neighbours do not travel during the drag: the insertion cue or an in-place
-  cross-fade marks the candidate position instead (`design:reduced-motion`
-  DR1).
+  neighbours do not travel during the drag: an in-place cross-fade marks the
+  candidate position under a coarse primary pointer, and the insertion cue
+  otherwise (`design:reduced-motion` DR1–DR3).
 
 ## Accessibility intent
 
