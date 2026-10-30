@@ -6,7 +6,8 @@
  * @output Tests which option a searchable Selector or MultiSelector highlights
  *   as the query changes: the first enabled match of the new list, so
  *   `aria-activedescendant` always names a rendered option and Enter picks
- *   the option the user sees highlighted (component:Selector FR9)
+ *   the option the user sees highlighted (component:Selector FR9); a
+ *   MultiSelector clears it (component:MultiSelector FR11)
  * @position Colocated behavior test for search in Selector and MultiSelector
  */
 
@@ -54,6 +55,52 @@ describe('Selector: the highlight follows the query (component:Selector FR9)', (
     expect(active?.textContent).toContain('Banana');
     await user.keyboard('{Enter}');
     expect(onChange).toHaveBeenCalledWith('Banana');
+  });
+
+  it('does not keep an index past the new list (ArrowDown to Cherry, then ap)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={onChange}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    await user.keyboard(
+      '{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}',
+    );
+    expect(activeOption(search)?.textContent).toContain('Cherry');
+    await user.type(search, 'ap');
+    expect(activeOption(search)?.textContent).toContain('Apple');
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith('Apple');
+  });
+
+  it('highlights nothing when the list reopens after a search (FR8)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Cherry"
+        onChange={onChange}
+        hasSearch
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Fruit/});
+    await user.click(trigger);
+    await user.type(screen.getByRole('combobox', h), 'b');
+    await user.keyboard('{Escape}');
+    await user.click(trigger);
+    // Closing reset the query; that reset is not a new list to highlight.
+    expect(activeOption(screen.getByRole('combobox', h))).toBeNull();
+    await user.keyboard('{Enter}');
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('highlights the first match when typing with nothing highlighted', async () => {
@@ -112,7 +159,7 @@ describe('Selector: the highlight follows the query (component:Selector FR9)', (
   });
 });
 
-describe('MultiSelector: a query change clears the highlight (component:Selector FR9)', () => {
+describe('MultiSelector: a query change clears the highlight (component:MultiSelector FR11)', () => {
   it('clears a highlight left from before the query, so Enter picks nothing unseen', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

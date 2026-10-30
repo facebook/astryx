@@ -1826,7 +1826,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   });
 
   // A new query is a new list: the old highlight's index would name another
-  // row, or one past the end, so it is cleared (`component:Selector` FR9).
+  // row, or one past the end, so it is cleared (`component:MultiSelector` FR11).
   // Unlike Selector it does not move to the first match: with no row
   // highlighted, Left and Right stay the search field's caret keys rather
   // than moving into a row's action cell. Adjusted during render, as the

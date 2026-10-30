@@ -1360,11 +1360,15 @@ export function Selector<T extends SelectorOptionType>(
   // A new query is a new list: the highlight moves to its first enabled
   // match, so aria-activedescendant always names a rendered option and Enter
   // picks the one the user sees (`component:Selector` FR9). Adjusted during
-  // render, as the query changes, rather than in an effect.
+  // render, as the query changes, rather than in an effect. Closing resets
+  // the query too; that reset is no new list, and a search list reopens with
+  // nothing highlighted (FR8).
   const [highlightedQuery, setHighlightedQuery] = useState(searchQuery);
   if (highlightedQuery !== searchQuery) {
     setHighlightedQuery(searchQuery);
-    setHighlightedIndex(filteredItems.findIndex(item => !item.disabled));
+    setHighlightedIndex(
+      surface.isOpen ? filteredItems.findIndex(item => !item.disabled) : -1,
+    );
   }
 
   // Type-to-select, shared with the other collections (menus, listboxes).
