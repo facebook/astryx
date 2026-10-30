@@ -929,6 +929,9 @@ function TimeField({
 
 TimeField.displayName = 'TimeField';
 
+/** The time the focused-empty format hint shows (2:30 PM, or 14:30). */
+const FORMAT_HINT_SAMPLE_TIME = '14:30' as ISOTimeString;
+
 /**
  * A time input whose `presentation` prop chooses the selection surface
  * (`spec:AST-043`); the deprecated `nativePicker` maps to the same surfaces
@@ -939,9 +942,6 @@ TimeField.displayName = 'TimeField';
  * and still receives events the component handled, even ones it called
  * `preventDefault` on, so it cannot cancel built-in behavior.
  */
-/** The time the focused-empty format hint shows (2:30 PM, or 14:30). */
-const FORMAT_HINT_SAMPLE_TIME = '14:30' as ISOTimeString;
-
 export function TimeInput(props: TimeInputProps) {
   const inputGroupState = use(InputGroupInternalContext);
   const isDisabled = props.isDisabled || inputGroupState.isDisabled;
