@@ -374,6 +374,44 @@ describe('ButtonGroup tracks a held pointer across its buttons (family:action-gr
     }
   });
 
+  it("a finger slid from Cut that lifts just inside a menu trigger runs nothing: Cut's target does not reach into the trigger's own (spec:AST-094 FR42)", () => {
+    const onCut = vi.fn();
+    const onMore = vi.fn();
+    const view = render(
+      <ButtonGroup label="Edit" data-testid="group">
+        <Button label="Cut" onClick={onCut} data-testid="a" />
+        <Button
+          label="More"
+          aria-haspopup="menu"
+          onClick={onMore}
+          data-testid="more"
+        />
+      </ButtonGroup>,
+    );
+    const cut = view.getByTestId('a');
+    const more = view.getByTestId('more');
+    // Two 32 px buttons 4 px apart: grown toward 44 px, Cut's target would
+    // reach 2 px into More, which the group does not track.
+    place(view.getByTestId('group'), {
+      left: 0,
+      top: 100,
+      width: 68,
+      height: 32,
+    });
+    place(cut, {left: 0, top: 100, width: 32, height: 32});
+    place(more, {left: 36, top: 100, width: 32, height: 32});
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const f = finger();
+    f.down(cut, {x: 16, y: 116});
+    expect(paintOf(cut)).toBe('on');
+    f.move(cut, {x: 37, y: 116});
+    expect(paintOf(cut)).not.toBe('on');
+    f.up(cut, {x: 37, y: 116});
+    expect(onCut).not.toHaveBeenCalled();
+  });
+
   it('leaves a menu trigger its own click: the group does not take a press that lands on it (spec:AST-094 FR29)', () => {
     const {c, onC} = mount({isCMenuTrigger: true});
     const f = finger();
