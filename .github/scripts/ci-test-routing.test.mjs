@@ -745,7 +745,7 @@ describe('ci.yml interaction proofs', () => {
     const checkout = job.steps.find(
       candidate =>
         candidate.uses?.startsWith('actions/checkout@') &&
-        candidate.with?.path !== '.test-scope',
+        candidate.with?.path === undefined,
     );
     expect(checkout?.with?.ref).toBe(
       '${{ github.event.pull_request.head.sha }}',
