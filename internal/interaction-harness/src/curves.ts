@@ -112,17 +112,22 @@ function animationRecorder(): void {
           .endTime ?? 0,
       );
       const speed = Math.abs(animation.playbackRate || 1);
-      // The run as the engine has it at its finish. This listener, added as
+      // The run as the engine has it at its finish: this listener, added as
       // the animation was made, runs before the page's own, so its start time
-      // is still set, and the run ended where that start puts its end,
-      // through the rate. A run that ends as it starts (one reversed from
-      // rest) can finish before its start time resolves: it then began where
-      // the event's timeline time puts its start. Read later, the start time
-      // can say otherwise (WebKit resolves or moves it a frame later), and the
-      // event itself arrives late (a frame or more after a finish() call).
+      // is usually still set, and the run ended where that start puts its
+      // end, through the rate. Without one, the start the recorder already
+      // holds stands in: in Chromium a CSS animation or transition whose
+      // element the page removes on its end event is cancelled before this
+      // runs. A run that ends as it starts (one reversed from rest) can finish
+      // before any start resolves: it then began where the event's timeline
+      // time puts its start. Read later, the start time can say otherwise
+      // (WebKit resolves or moves it a frame later), and the event itself
+      // arrives late (a frame or more after a finish() call).
       const at = (event as AnimationPlaybackEvent).timelineTime;
       entry.finishStart =
-        playStart(animation) ?? (at == null ? null : Number(at) - end / speed);
+        playStart(animation) ??
+        entry.startedAt ??
+        (at == null ? null : Number(at) - end / speed);
       entry.finishedAt =
         entry.finishStart == null
           ? performance.now()
