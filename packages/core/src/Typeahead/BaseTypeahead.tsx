@@ -911,6 +911,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
+      // A disabled field changes nothing, also from a list that was open
+      // before it became disabled (spec:AST-085 FR2).
+      if (isDisabled) {
+        return;
+      }
       // Bump generation to invalidate any in-flight async searches
       searchGenRef.current++;
       if (searchTimeoutRef.current) {
@@ -929,7 +934,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource, setLoading],
+    [isDisabled, onChange, popover, searchSource, setLoading],
   );
 
   // Shared by handleFocus and handleClick: bootstrap entries if none are
@@ -980,7 +985,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // dropdown never reopens until the user clicks away and back (#6845). See
   // wasAlreadyFocusedRef above for how the two cases are told apart.
   const handleClick = useCallback(() => {
-    if (!wasAlreadyFocusedRef.current || popover.isOpen) {
+    if (isDisabled || !wasAlreadyFocusedRef.current || popover.isOpen) {
       return;
     }
     if (
@@ -993,6 +998,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     }
     openIfEligible();
   }, [
+    isDisabled,
     popover.isOpen,
     hasEntriesOnFocus,
     query.length,
@@ -1043,6 +1049,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // into the freshly-cleared field -- producing a second, spurious
       // selection on the next real Enter.
       if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+
+      // A focusable-disabled field opens no list and picks nothing; it only
+      // lets a list that was open before it became disabled close
+      // (spec:AST-085 FR2).
+      if (isDisabled) {
+        if (popover.isOpen && (e.key === 'Escape' || e.key === 'Tab')) {
+          if (e.key === 'Escape') {e.preventDefault();}
+          popover.hide();
+        }
         return;
       }
 
@@ -1119,6 +1136,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      isDisabled,
       popover,
       results,
       highlightedIndex,

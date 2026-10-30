@@ -2228,6 +2228,58 @@ describe('Typeahead disabledMessage', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('opens no list and picks nothing while focusable-disabled (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Assignee"
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        hasEntriesOnFocus
+        isDisabled
+        disabledMessage="You need the Editor role"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.click(input);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('option')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('picks nothing from a list opened before the field became disabled, and lets it close', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const field = (isDisabled: boolean) => (
+      <Typeahead
+        label="Assignee"
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        hasEntriesOnFocus
+        isDisabled={isDisabled}
+        disabledMessage="You need the Editor role"
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    await user.keyboard('{ArrowDown}');
+
+    rerender(field(true));
+    // The open list stays in the DOM (hidden from the accessibility tree).
+    await user.keyboard('{Enter}');
+    fireEvent.click(screen.getAllByRole('option', {hidden: true})[0]);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.keyboard('{Escape}');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('remains natively disabled when disabled without a reason', () => {
     render(
       <Typeahead
