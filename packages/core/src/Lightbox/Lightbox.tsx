@@ -417,10 +417,12 @@ export function Lightbox({
     );
   }, [index, isOpen, announce, mediaArray, t]);
 
-  // Open/close dialog
+  // Open/close dialog. The dialog renders only with an item, so a viewer
+  // opened before its first item arrives opens when that item does.
+  const hasItem = currentItem != null;
   useIsomorphicLayoutEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) {
+    if (!dialog || !hasItem) {
       return;
     }
 
@@ -433,7 +435,7 @@ export function Lightbox({
         triggerElementRef.current.focus();
       }
     }
-  }, [isOpen]);
+  }, [isOpen, hasItem]);
 
   const handleClose = useCallback(() => {
     onOpenChange(false);
