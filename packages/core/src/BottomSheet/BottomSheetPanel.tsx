@@ -18,7 +18,7 @@
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
  * - /packages/core/src/BottomSheet/snapOffsets.ts
- * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
+ * - /packages/core/src/keyboard/keyboardHeight.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  * - /packages/core/src/Layout/container.stylex.ts (bottom-sheet padding chain)
  */
@@ -69,7 +69,7 @@ import {
   resolveSnapPoints,
   type BottomSheetSnapPoint,
 } from './snapOffsets';
-import {useMobileKeyboard} from './useMobileKeyboard';
+import {useSheetKeyboard} from '../keyboard/keyboardHeight';
 import {useSheetGestures} from './useSheetGestures';
 
 const HEIGHT_BUDGETS = {
@@ -95,7 +95,7 @@ const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
 // `dvh`, which the virtual keyboard does not shrink, so reading
 // `visualViewport` here would make the two disagree by exactly the keyboard's
 // height: every detent would move while the sheet it measures did not. A
-// keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
+// keyboard is `useSheetKeyboard`'s business — it holds the sheet still and
 // scrolls the body — and it does not redefine the sheet's detents.
 function layoutViewportHeight(): number {
   return typeof window === 'undefined' ? 0 : window.innerHeight;
@@ -314,13 +314,29 @@ const styles = stylex.create({
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
+  },
+  // The room the keyboard takes at the end of a Tall sheet's content
+  // (useSheetKeyboard), so its last control can scroll above the keyboard.
+  // It is the content box's last in-flow box, after the content's own
+  // children, not a box after the content: Firefox resolves the content's
+  // `min-height: min-content` as `auto` in the block axis, so the content box
+  // keeps the body's height while its children overflow it, and a room after
+  // that box sat inside the overflow and added no scroll range (measured in
+  // Firefox for Android: the body's scrollHeight 1491 with and without a 357
+  // px room).
+  tallKeyboardContent: {
     '::after': {
       content: '""',
       display: 'block',
-      blockSize: 'var(--_sheet-keyboard-inset, 0px)',
+      blockSize: 0,
       pointerEvents: 'none',
     },
   },
+  keyboardInset: (inset: number) => ({
+    '::after': {
+      blockSize: inset,
+    },
+  }),
   budget: {
     height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
   },
@@ -640,7 +656,7 @@ export function BottomSheetPanel({
     isPresentedRef.current = isPresented;
     sheetRef(isPresented ? elementRef.current : null);
   }, [isPresented, sheetRef]);
-  useMobileKeyboard({
+  const keyboardInset = useSheetKeyboard({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',
@@ -865,6 +881,10 @@ export function BottomSheetPanel({
             getContentProps<HTMLDivElement>(
               stylex.props(
                 styles.content,
+                height === 'tall' && styles.tallKeyboardContent,
+                height === 'tall' &&
+                  keyboardInset > 0 &&
+                  styles.keyboardInset(keyboardInset),
                 ...container(
                   usesThemePadding
                     ? {useThemeDefault: 'bottom-sheet'}
