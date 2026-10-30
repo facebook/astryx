@@ -6,9 +6,13 @@
  * @file SegmentedControlItem.tsx
  * @input Uses React, StyleX, SegmentedControlContext
  * @output Exports SegmentedControlItem component and SegmentedControlItemProps type
- * @position Child item; renders as a radio button within the segmented control
+ * @position Child item; renders as a radio button within the segmented control.
+ *   In the touch presentation the segment drops its CSS transitions: the
+ *   selection motion (useSegmentedSelectionMotion.ts) animates the change
+ *   instead.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
@@ -144,6 +148,12 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     minWidth: 0,
   },
+  // Under a finger the selection change is animated in script (the surface
+  // slides); a CSS transition would run a second, main-thread version of the
+  // same change.
+  touchPresentation: {
+    transitionProperty: 'none',
+  },
 });
 
 const CONCENTRIC_RADIUS =
@@ -258,6 +268,7 @@ export function SegmentedControlItem({
             !isItemDisabled &&
             interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
+          ctx.isTouchPresentation === true && styles.touchPresentation,
           xstyle,
         ),
       )}>
