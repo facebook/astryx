@@ -452,3 +452,14 @@ describe('test-deps scope (Internal Registry)', () => {
     expect(source).toContain("if: steps.scope.outputs.touches == 'true'");
   });
 });
+
+describe('docsite-test spec validation', () => {
+  it('validates spec records whenever its own scope is spec-only or undecided', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const job = ci.slice(ci.indexOf('\n  docsite-test:\n'));
+    const validate = job.slice(job.indexOf('- name: Validate spec records'));
+    expect(validate.split('\n')[1].trim()).toBe(
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
+  });
+});
