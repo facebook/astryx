@@ -812,6 +812,14 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/core build
 
+      # The Build package's Next.js suite checks a theme override in whichever leg
+      # --shard gives it; this variable makes it fail, not skip, without Chromium.
+      - name: Install Playwright for the Node suite's browser checks
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: |
+          npx playwright install chromium
+          echo ASTRYX_REQUIRE_CHROMIUM=1 >> "$GITHUB_ENV"
+
       # Scoped like test-ui's run.
       - name: Run this shard of the Node tests
         env:
