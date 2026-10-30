@@ -588,19 +588,59 @@ test('the settle does no Layout or Paint per frame', async ({
     refreshMs: '6000',
   });
   let settle = {from: 0, to: 0};
+  let steadyFrom = 0;
   const trace = await traceRendering(page, async () => {
     await driver.play(slowPull(start, 300, 200));
     settle = await waitForSettle(content);
+    // The release commits over the settle's first frames. The steady part
+    // starts once the page has rendered three more frames, counted in frames
+    // rather than ms, so a loaded machine that draws them late is judged the
+    // same.
+    steadyFrom = await page.evaluate(
+      () =>
+        new Promise<number>(resolve => {
+          let left = 3;
+          const tick = () => {
+            left -= 1;
+            if (left > 0) {
+              requestAnimationFrame(tick);
+              return;
+            }
+            // A task after this frame has rendered.
+            setTimeout(() =>
+              resolve(performance.timeOrigin + performance.now()),
+            );
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
     // A fixed wait: polling the content's style every frame would itself
     // recalculate style.
     await page.waitForTimeout(900);
   });
-  // The steady part of the settle, until it is within a pixel of rest (its
-  // first frame may commit).
-  const during = countBetween(trace, settle.from + 50, settle.from + 600);
-  expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
-  expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
-  expect(trace.longTasks).toEqual([]);
+  // The steady part of the settle, until it is within a pixel of rest.
+  const from = Math.max(settle.from + 50, steadyFrom);
+  const to = settle.from + 600;
+  const judged = `judged ${(from - settle.from).toFixed(0)}–600 ms into the settle`;
+  // Too little left to judge fails rather than passes.
+  expect(to - from, judged).toBeGreaterThan(200);
+  const during = countBetween(trace, from, to);
+  expect(during.Layout ?? 0, `${judged}: ${JSON.stringify(during)}`).toBe(0);
+  expect(during.Paint ?? 0, `${judged}: ${JSON.stringify(during)}`).toBe(0);
+  // Main-thread work during that part; the pull's trigger and the release's
+  // render are not the settle's.
+  const blocking = trace.longTasks.filter(
+    task => task.start < to && task.start + task.durationMs > from,
+  );
+  expect(
+    blocking,
+    `${judged}; long tasks, ms into the settle: ${JSON.stringify(
+      trace.longTasks.map(task => [
+        +(task.start - settle.from).toFixed(1),
+        +task.durationMs.toFixed(1),
+      ]),
+    )}`,
+  ).toEqual([]);
 });
 
 /**
