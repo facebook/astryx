@@ -1158,6 +1158,75 @@ describe('start: when a call\u2019s animations start', () => {
     );
   });
 
+  it('presented: a start WebKit dates at the frame that creates the animations keeps it, wherever in its frame the call was made', async () => {
+    // A presented call's animations are created in its second frame's
+    // callback, so its task is that callback's, not the call's: measured
+    // from the call, a call made early in its frame looked like a block
+    // longer than two frames, and a late first read moved the start.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate(
+        {x: 100},
+        {spring: springs.settle},
+        {start: 'presented'},
+      );
+      clock = 1016;
+      await commitFrame(1016);
+      // The frame that creates the animations; the callback's task runs on
+      // 3 ms.
+      requestFrame(() => {
+        clock = 1036;
+      });
+      clock = 1033;
+      await commitFrame(1033);
+      expect(live('translate')).toHaveLength(1);
+      // Other tasks hold the main thread until the next frame, where WebKit's
+      // start for them, that frame's time, is first read.
+      clock = 1090;
+      live('translate')[0].startTime = 1033;
+      await commitFrame(1090);
+      await expect(handle.started).resolves.toBe(1033);
+      expect(live('translate')[0].startTime).toBe(1033);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('presented: a block in the frame that creates the animations moves their start past it', async () => {
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate(
+        {x: 100},
+        {spring: springs.settle},
+        {start: 'presented'},
+      );
+      clock = 1016;
+      await commitFrame(1016);
+      // The frame that creates the animations blocks for 300 ms; WebKit's
+      // start for them, that frame's time, is read at the next frame.
+      requestFrame(() => {
+        clock = 1333;
+      });
+      clock = 1033;
+      await commitFrame(1033);
+      clock = 1340;
+      live('translate')[0].startTime = 1033;
+      await commitFrame(1340);
+      await expect(handle.started).resolves.toBe(1340);
+      expect(live('translate')[0].startTime).toBe(1340);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
   it('presented: a call queued after another change flushed the queue still waits its own two frames', async () => {
     const {animator} = setup();
     animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
