@@ -81,10 +81,6 @@ Consumer migration instructions belong in consumer docs and release notes.
   `role="menu"` sits directly inside the heading's own `role="menu"` wrapper.
   WAI-ARIA 1.2 allows a `menu` to own only `menuitem`-family items and groups,
   so assistive technology meets a menu nested in a menu.
-- **Inside a heading, arrow keys move twice.** Inside SideNavHeading or
-  TopNavHeading, the heading's own list handler also moves focus over every
-  `menuitem`, so one ArrowDown moves two items, and in a two-item menu ArrowDown
-  never moves focus. The APG menu pattern moves focus one item per arrow press.
 - **The menu has no name of its own.** NavHeadingMenu's `menu` carries no
   accessible name unless the caller passes `aria-label`; inside a heading only
   the heading's wrapper `menu` is named. The APG menu pattern, which
