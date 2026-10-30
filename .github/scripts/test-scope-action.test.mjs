@@ -303,6 +303,20 @@ describe('per-job scope step', () => {
     expect(outputs.decided).toBe('true');
   });
 
+  it('classifies a rename by both names, so a rename into specs is not spec-only', async () => {
+    const {outputs} = await decide({
+      files: [
+        {
+          filename: 'docs/specs/AST-030/Button.md',
+          previous_filename: 'packages/core/src/Button/Button.tsx',
+          status: 'renamed',
+        },
+      ],
+    });
+    expect(outputs.spec_only).toBe('false');
+    expect(outputs.applies).toBe('true');
+  });
+
   describe('requires-head-file', () => {
     const inputs = {
       paths: INTERACTION_PATHS,
@@ -316,6 +330,21 @@ describe('per-job scope step', () => {
       });
       expect(outputs.applies).toBe('false');
       expect(messages.notice).toHaveLength(1);
+    });
+
+    it('still applies to a pull request that renames the file away, with no notice', async () => {
+      const {outputs, messages} = await decide({
+        files: [
+          {
+            filename: 'playwright.old-interaction.config.ts',
+            previous_filename: 'playwright.interaction.config.ts',
+            status: 'renamed',
+          },
+        ],
+        inputs,
+      });
+      expect(outputs.applies).toBe('true');
+      expect(messages.notice).toHaveLength(0);
     });
 
     it('still applies when the head lookup fails for another reason', async () => {
