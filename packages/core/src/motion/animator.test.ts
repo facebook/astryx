@@ -2242,6 +2242,42 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     }
   });
 
+  it('a move held before its first frame and finished from outside still lands when its retire runs before the next frame', async () => {
+    // A sampler pauses the call's animations in its own task and finishes
+    // them later. A loaded page can run the retire timer, which cancels the
+    // finished fade, before the frame that would read the call's start: the
+    // call must not be left waiting for a start that no animation can give.
+    const {animator} = reduced();
+    const handle = animator.animate({x: 100}, {spring: springs.navigationPush});
+    for (const animation of recorded) {
+      animation.paused = true;
+    }
+    await commitFrame(clock);
+    clock += 30;
+    await commitFrame(clock);
+    for (const animation of recorded) {
+      animation.finish();
+    }
+    let settled: boolean | undefined;
+    void handle.finished.then(value => {
+      settled = value;
+    });
+    // The retire timer first, with no frame in between: it cancels the
+    // finished fade out.
+    clock += fade * 2;
+    await vi.advanceTimersByTimeAsync(fade * 2);
+    expect(
+      recorded.filter(animation => animation.finished && !animation.cancelled),
+    ).toEqual([]);
+    // Frames keep coming: step the clock through the landing.
+    for (let step = 0; step < 16; step++) {
+      await advance(fade / 4);
+    }
+    expect(animator.get('x')).toBe(100);
+    expect(animator.get('opacity')).toBe(1);
+    expect(settled).toBe(true);
+  });
+
   it('a waiting call whose own opacity a later call retargets settles interrupted', async () => {
     const {animator} = reduced();
     const dismiss = animator.animate(
