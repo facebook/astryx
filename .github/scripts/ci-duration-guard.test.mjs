@@ -16,6 +16,7 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
@@ -82,7 +83,7 @@ describe('PR CI duration budget', () => {
   it('reports every pull-request job after it finishes, without gating', () => {
     const report = ci.jobs['ci-duration'];
     expect(report.if).toBe(
-      "${{ always() && github.event_name == 'pull_request' }}",
+      gated("${{ always() && github.event_name == 'pull_request' }}"),
     );
     expect(report['continue-on-error']).toBe(true);
     expect(report.permissions).toEqual({actions: 'read'});

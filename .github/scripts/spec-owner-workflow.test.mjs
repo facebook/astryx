@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -149,7 +150,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>
@@ -208,7 +212,9 @@ describe('spec-only workflow contract', () => {
   it('skips every Storybook build command for spec-only changes', () => {
     const ci = read('.github/workflows/ci.yml');
     const jobStart = ci.indexOf('  build-storybook:');
-    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    // The job ends where the next top-level job begins.
+    const jobEnd =
+      jobStart + 1 + ci.slice(jobStart + 1).search(/\n {2}[a-z0-9-]+:\n/);
     const buildJob = ci.slice(jobStart, jobEnd);
     const steps = buildJob.split(/\n      - name: /).slice(1);
     const commandSteps = steps.filter(step =>
@@ -224,7 +230,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}", PR_REPORT_GATE)}`,
     );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
@@ -301,22 +307,16 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).not.toContain(
       '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
     );
-    // Only a DESIGNOWNER author self-attests, and only the design group
-    // reads that attestation.
-    expect(reconciler).toContain('designOwners.includes(actor)');
-    expect(reconciler).not.toContain('allOwners.has(actor)');
-    expect(reconciler).toContain(
-      'readyAttestations,\n        owners: designApprovers',
-    );
+    // Every group approves through commands and reviews; no self-attestation.
+    expect(reconciler).not.toContain('spec-owner-ready');
     expect(reconciler).toContain('isSettled(initialPr)');
     expect(reconciler).toContain('isPublishable(headSha)');
     expect(reconciler).toContain('specDecision.approved');
     expect(reconciler).toContain('designDecision.approved');
     expect(reconciler).toContain('themeDecision.approved');
     expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
-    expect(reconciler).toContain('expectedHeadOid: $oid');
-    expect(reconciler).toContain('mergeMethod: SQUASH');
-    expect(reconciler).toContain('disablePullRequestAutoMerge');
+    // The gate decides approval only; merging stays with the merge path.
+    expect(reconciler).not.toContain('enablePullRequestAutoMerge');
   });
 
   it('derives the comment trigger from the parser\u2019s own prefixes', () => {
@@ -337,38 +337,6 @@ describe('spec-only workflow contract', () => {
     for (const prefix of triggerPrefixes) {
       expect(prefix.trimEnd(), prefix).toBe(prefix);
     }
-  });
-
-  it('accepts relayed owner decisions only from the configured review app', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain(
-      'repository_dispatch:\n    types: [spec-owner-decision]',
-    );
-    expect(workflow).toContain(
-      'SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}',
-    );
-    expect(reconciler).toContain('appLogin: env.SPEC_DECISION_APP');
-  });
-
-  it('offers a backfill dispatch that publishes status without landing', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain('backfill:');
-    expect(workflow).toContain('type: boolean');
-    expect(reconciler).toContain("context.eventName === 'workflow_dispatch'");
-    expect(reconciler).toContain('backfillOnly');
-    // The guard must sit after the terminal status and before enablement.
-    const publish = reconciler.indexOf(
-      "setFinalStatus(initialHead, 'success', successDescription)",
-    );
-    const guard = reconciler.indexOf('if (backfillOnly) {');
-    const enable = reconciler.indexOf('enablePullRequestAutoMerge');
-    expect(publish).toBeGreaterThan(-1);
-    expect(guard).toBeGreaterThan(publish);
-    expect(enable).toBeGreaterThan(guard);
   });
 
   it('keeps the last read before a terminal write on the live pull request', () => {
@@ -400,14 +368,6 @@ describe('spec-only workflow contract', () => {
     expect(restore.indexOf('await isLiveHeadWritable(headSha)')).toBeLessThan(
       restore.indexOf('createStatus('),
     );
-  });
-
-  it('reads a ready attestation back only for a current design owner', () => {
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-    const decision = read('.github/scripts/spec-owner-decision.cjs');
-
-    expect(reconciler).toContain('owners: designOwners');
-    expect(decision).toContain('!allowed.has(owner)');
   });
 
   it('does not run the privileged visual-report path for spec-only PRs', () => {
