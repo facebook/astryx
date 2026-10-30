@@ -37,9 +37,7 @@ affects_consumer_docs: []
     ".github/workflows/**",
     ".github/scripts/change-scope.*",
     ".github/scripts/*routing*.test.mjs",
-    ".github/actions/test-scope/**",
-    ".github/workflow-relevance.json",
-    ".github/scripts/workflow-relevance.test.mjs"
+    ".github/actions/test-scope/**"
   ]
 }
 ```
@@ -187,13 +185,8 @@ they are separately named.
   its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
   regression**), `pr-a11y`, and `pr-rtl` owners with full scope: the closed stable
   visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
-  focused, smoke, and no-op paths MUST NOT narrow release checks. On a pull
-  request, the visual (`visual-scout`, `pr-visual`), accessibility (`pr-a11y`
-  with its guards and specs) and RTL (`pr-rtl` with its legs) owners MUST run
-  only when the pull request carries the `ci:heavy-lanes` label at the event; a
-  pull request update without it runs none of them, and no required context
-  depends on them. An opted-in PR's a11y MUST remain scoped to changed components
-  plus fast interaction guards; full a11y
+  focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
+  remain scoped to changed components plus fast interaction guards; full a11y
   sweeps, whole-repository spec-test contracts, and their evidence uploads MUST
   run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
@@ -205,14 +198,7 @@ they are separately named.
   later commits remain next-release input. A rewrite or divergence that removes
   the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
-  existing finding policies. A main-push workflow MUST dispatch that
-  release-check for every push to `main`, bound to the pushed commit, in one
-  concurrency group per workflow and ref that never cancels a running check: at
-  most one runs and one waits, and a burst of pushes is checked once, at its
-  newest commit. A commit `main` has already moved past leaves its check to the
-  newer push's run. That run MUST fail when the release-check does not succeed,
-  and a failure is fixed forward by an atomic pull request. Main's own fast
-  checks still run for every push. Release checks MUST NOT capture
+  existing finding policies. Release checks MUST NOT run on every push, capture
   baseline candidates, publish baselines, or use a separate daily workflow or
   retroactive acceptance status.
   Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
@@ -246,25 +232,6 @@ they are separately named.
   condition of FR3–FR4 also runs the full suite. `main`, release branches,
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.
-- **FR14 — Every workflow declares when it runs, as an allowlist.** Each
-  workflow in `.github/workflows` states the positive condition that makes it
-  relevant, and runs only when that condition holds. A workflow whose push or
-  pull-request trigger serves no required context lists the paths that make it
-  relevant on that trigger (`paths:`), and those paths name what the workflow
-  reads or runs, never everything; a merge-group entry, which cannot filter by
-  path, keeps running. A workflow that reports a required context (`build`,
-  `test`, `docsite-test`, `lint`, `spec-owner-approval`, `review-required`)
-  starts on every pull request and is never path-filtered: the trusted
-  classifier's positive surfaces (FR1–FR5) choose the work inside it, and a job
-  whose suite does not apply reports success without running it (FR7). A push
-  to `main`, a schedule, a manual dispatch, and review, comment, check and
-  deployment events are relevance conditions of their own. A
-  `pull_request_target` trigger answers every pull-request update, so it is
-  relevant only for review state (reporting a review status, re-requesting
-  review) and records why. No workflow uses
-  `paths-ignore` or another exclusion list, which would run on any path no one
-  thought to exclude. `.github/workflow-relevance.json` records each workflow's
-  kind and reason, and a contract test holds every workflow to its entry.
 
 ### Platform support
 
@@ -293,24 +260,19 @@ classifier and join contract are complete. New surfaces may add lanes only throu
 FR10. New coverage joins its current surface owner; visual regression remains in
 the shared Storybook PR owner.
 
-Outside the classifier-routed workflows, the Internal Registry dependency check,
-the CLI smoke test and the hardening-issue opener run only when the paths they
-read change (FR14).
-
 ## Verification
 
-| Contract | Verification                                                                            | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | classifier unit tests expose the surface set                                            | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
-| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier                     | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
-| FR5      | mixed-surface and incomplete-owner routing tests                                        | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
-| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests                | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
-| FR9      | mutation-sensitive classifier and workflow fixtures                                     | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | surface-admission and routing contract tests                                            | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
-| FR11     | surface owner, internal-job, and required-join contract tests                           | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
-| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests             | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
-| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests                   | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
-| FR14     | `workflow-relevance.test.mjs` over every workflow and `.github/workflow-relevance.json` | path allowlist; required context; landed commit; review event; schedule; manual dispatch                 | an unregistered workflow, a `paths-ignore`, a match-all or exclusion glob, a code trigger without paths, or a path-filtered workflow that reports a required context fails         |
+| Contract | Verification                                                                | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
+| -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | classifier unit tests expose the surface set                                | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
+| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier         | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
+| FR5      | mixed-surface and incomplete-owner routing tests                            | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
+| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests    | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
+| FR9      | mutation-sensitive classifier and workflow fixtures                         | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
+| FR10     | surface-admission and routing contract tests                                | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
+| FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
+| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
+| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
 
 ## Decision log
 
@@ -390,8 +352,7 @@ constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
 visual, accessibility, and RTL checks do not run on every main push. Reuse
 existing test/build owners, keep their finding policies, and fail closed on
 incomplete scope, missing work, or when the checked commit is no longer in
-current `main` history (DEC-7 now runs these checks on every main push).
-Baseline capture and the reviewed pull request that
+current `main` history. Baseline capture and the reviewed pull request that
 versions an accepted candidate remain separate operations.
 
 PR accessibility remains a scoped, fast check: audit only explicitly resolved
@@ -409,27 +370,6 @@ Rejected: a separate workflow, per-push full audits, and treating a maintenance
 capture, skipped check, a checked SHA no longer in current `main` history, or
 retroactive status as release evidence.
 
-### DEC-7 — Visual, accessibility and RTL run on main, not on pull request updates
-
-**Reference:** `spec:AST-030/DEC-7`
-**Decider:** `cixzhang`, `2026-10-28`
-
-Run the visual, accessibility and RTL owners on every push to `main`, through
-the same exact-commit `release-check` the release gate uses, and before a cut;
-a pull request runs them only when it opts in with the `ci:heavy-lanes` label. Main-push checks are throttled: one runs at a time, a
-burst of pushes collapses to its newest commit, and a running check is never
-cancelled, so every check that starts finishes.
-Pull request updates keep the fast checks and every required context. A
-failure on `main` is repaired forward with an atomic pull request, not reverted
-first. This supersedes DEC-5's choice to keep these checks off main pushes: the
-browser suites on larger runners were most of the repository's Actions spend,
-and they ran again on every update of every open pull request. An opted-in
-pull request still runs on its merge commit, so DEC-6's concern about testing a
-head instead of the merged result does not apply.
-
-Rejected: keeping the suites on every pull request update (spend); a separate
-scheduled or daily owner (FR12 keeps one canonical workflow).
-
 ### DEC-6 — Pull requests run what the change reaches; full runs stay where landing is decided
 
 **Reference:** `spec:AST-030/DEC-6`
@@ -443,22 +383,6 @@ release checks run everything, so no landing or release gate narrows.
 
 Rejected: a full run triggered by approval, a label or a draft-to-ready change,
 which tests the pull request's head rather than the merged result.
-
-### DEC-8 — A workflow states what makes it run, never what does not
-
-**Reference:** `spec:AST-030/DEC-8`
-**Decider:** `cixzhang`, `2026-10-28`
-
-Every workflow names the positive condition that makes it relevant: the paths it
-reads or runs, the classifier surfaces inside a required context, or the event
-it answers. An exclusion list (`paths-ignore`) runs on every new directory,
-package or root file no one remembered to exclude, so unrelated changes keep
-paying for it; an allowlist misses only what its owner did not name, and a
-contract test keeps every workflow declared. Required contexts stay unfiltered
-so a pull request never waits on a check that never starts.
-
-Rejected: `paths-ignore` lists (they run on whatever is new); path-filtering a
-required context (its check would never report).
 
 ## Open questions
 

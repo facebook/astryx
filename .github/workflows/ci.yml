@@ -51,13 +51,6 @@ permissions: {}
 # base's trusted classifier) and skips its work, reporting success, when
 # nothing in its scope changed; anything undecidable runs everything.
 #
-# Visual, accessibility and RTL owners (pr-a11y*, visual-scout, pr-visual,
-# pr-rtl*) do not run on pull request updates: they run for release-check,
-# which Main dispatches on every push to main and the release gate dispatches
-# before a cut, and on a pull request labelled `ci:heavy-lanes` (add the label,
-# then push or close and reopen). A main failure is fixed forward
-# (spec:AST-030 FR12, DEC-7).
-#
 # One group per pull request (a fork's branch name can repeat across forks),
 # so a new push cancels the superseded run. Merge-queue entries and dispatches
 # get their own groups and are never cancelled by a pull request.
@@ -245,12 +238,7 @@ jobs:
 
   release-merge-back:
     name: release-merge-back
-    # Only a release merge-back branch has anything for this job to validate,
-    # so every other pull request skips it before the full-history checkout
-    # below (minutes on a larger runner). The step after the checkout still
-    # checks the exact branch contract, and required lint validates merge-back
-    # branches with the same trusted policy.
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' && startsWith(github.head_ref, 'chore/merge-v') && endsWith(github.head_ref, '-to-main') }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: 4-core-ubuntu
     timeout-minutes: 15
@@ -1546,7 +1534,7 @@ jobs:
   pr-a11y-guards:
     name: pr-a11y (audit and guards)
     needs: [build-storybook]
-    if: ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
@@ -1677,7 +1665,7 @@ jobs:
   pr-a11y-specs:
     name: pr-a11y (browser specs)
     needs: [build-storybook]
-    if: ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
@@ -1767,7 +1755,7 @@ jobs:
   # Stable required context joining the scoped audit/guards and browser specs.
   pr-a11y:
     needs: [pr-a11y-guards, pr-a11y-specs]
-    if: ${{ always() && ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
+    if: ${{ always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -2048,7 +2036,7 @@ jobs:
     if: >-
       !cancelled() &&
       needs.build-storybook.result == 'success' &&
-      ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) ||
+      (github.event_name == 'pull_request' ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     # Five legs: at three, each leg's scout took ~4.5 minutes and the visual
     # regression waited for the slowest one.
@@ -2162,7 +2150,7 @@ jobs:
     needs: [build-storybook, maintenance-request, visual-scout]
     if: >-
       !cancelled() &&
-      (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) &&
+      ((github.event_name == 'pull_request' &&
         needs.build-storybook.result == 'success') ||
        (github.event_name == 'workflow_dispatch' &&
         ((inputs.operation == 'release-check' &&
@@ -2478,7 +2466,7 @@ jobs:
     name: pr-rtl (${{ matrix.package }}${{ matrix.parts > 1 && format(' {0}/{1}', matrix.part, matrix.parts) || '' }})
     needs: [build-storybook]
     if: >-
-      ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) ||
+      (github.event_name == 'pull_request' ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     # Core is the largest package, so its audit is split three ways
     # (`--shard`) and joined by pr-rtl-merge; every other package runs whole.
@@ -2681,7 +2669,7 @@ jobs:
     needs: [build-storybook, pr-rtl-shard]
     if: >-
       always() && !cancelled() &&
-      ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) ||
+      (github.event_name == 'pull_request' ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 15
@@ -2787,7 +2775,7 @@ jobs:
   # Stable required context joining the five package shards above.
   pr-rtl:
     needs: [pr-rtl-shard, pr-rtl-merge]
-    if: ${{ always() && !cancelled() && (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes'))) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
+    if: ${{ always() && !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -2830,6 +2818,10 @@ jobs:
             --force-full "${{ steps.scope.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
 
+  # Report-only: after every pull-request job finishes, each job's run time
+  # (start to finish, no queue) and the run's span go to the job summary, with
+  # a warning for any job past 12 minutes, so a lane growing toward its
+  # 15-minute limit shows before it fails. It never fails and is not required.
   ci-duration:
     needs:
       [
