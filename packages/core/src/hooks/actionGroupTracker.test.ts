@@ -18,7 +18,7 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
+import {PRESSED_ATTRIBUTE, paintPress} from '../utils/pressFeedback';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
 import {
   createActionGroupTracker,
@@ -235,6 +235,59 @@ describe('createActionGroupTracker', () => {
     expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
     vi.advanceTimersByTime(PRESS_FADE_MS);
     expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('dispose finishes only its own running fade: a fade another painter starts after the tracker\u2019s ended stays', () => {
+    const group = tracker();
+    group.begin(100, 20);
+    group.end();
+    // The tracker's fade ends on the one writer's clock.
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    // Another painter fades the same action later.
+    paintPress(first.button, 'fading');
+    group.dispose();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+  });
+
+  it('dispose leaves a fade alone once another painter replaced the tracker\u2019s', () => {
+    const group = tracker();
+    group.begin(100, 20);
+    group.end();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // Another painter presses and releases the action while that fade runs.
+    paintPress(first.button, 'on');
+    paintPress(first.button, 'fading');
+    group.dispose();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+  });
+
+  it('paints through the one press writer: a fade another painter left running never cuts the tracker\u2019s own fade short', () => {
+    // The document's press controller faded this button a moment ago (its
+    // fade's clock runs in the one writer).
+    paintPress(first.button, 'fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS / 2);
+    // A finger then presses it in the group and lifts: the tracker's own
+    // fade starts now and runs its full length.
+    const group = tracker();
+    group.begin(100, 20);
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    group.end();
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The controller's old fade would have ended here.
+    vi.advanceTimersByTime(PRESS_FADE_MS / 2 + 1);
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS / 2);
+    expect(first.button.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves a paint it did not write alone: a held row stays held through a press', () => {
+    paintPress(first.button, 'held');
+    const group = tracker();
+    group.begin(100, 20);
+    group.end();
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(first.button.getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
   });
 
   it('reads no idiom: an Android finger (no -webkit-touch-callout) tracks, fades and runs the same way', () => {
