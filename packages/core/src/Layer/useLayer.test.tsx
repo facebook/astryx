@@ -18,7 +18,9 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useEffect} from 'react';
+import {Profiler, useEffect} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import * as stylex from '@stylexjs/stylex';
 import {
   useKeepLayerOpenProps,
@@ -110,6 +112,24 @@ function ContextHostingHarness({
   return (
     <div data-testid="host" style={hostStyle}>
       {unsafe ? <p>{contents}</p> : contents}
+    </div>
+  );
+}
+
+function EagerContextHostingHarness({
+  layerStyle,
+}: {
+  layerStyle?: React.CSSProperties;
+}) {
+  const layer = useLayer({mode: 'context'});
+  return (
+    <div data-testid="host">
+      <p>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          Trigger
+        </button>
+        {layer.render(<span>Layer content</span>, {style: layerStyle})}
+      </p>
     </div>
   );
 }
@@ -490,12 +510,118 @@ describe('useLayer', () => {
   });
 
   describe('context hosting', () => {
+    it('installs the slide rules for a render call that mounts after its host', () => {
+      document.getElementById('astryx-layer-slide-rules')?.remove();
+      function LateRenderHarness({showLayer}: {readonly showLayer: boolean}) {
+        const layer = useLayer({mode: 'context'});
+        return (
+          <div>
+            <button type="button" ref={layer.ref} onClick={layer.show}>
+              Trigger
+            </button>
+            {showLayer ? layer.render(<span>Layer content</span>) : null}
+          </div>
+        );
+      }
+      const {rerender} = render(<LateRenderHarness showLayer={false} />);
+      expect(document.getElementById('astryx-layer-slide-rules')).toBeNull();
+
+      rerender(<LateRenderHarness showLayer />);
+      // The marker's arrival resolves the mount and installs the sheet, so a
+      // layer that joins its host later still slides (FR4) instead of
+      // covering its own trigger on a narrow viewport.
+      expect(
+        document.getElementById('astryx-layer-slide-rules'),
+      ).not.toBeNull();
+    });
+
     it('keeps closed content mounted by default for existing consumers', () => {
       const {container} = render(<ContextLayerHarness />);
 
       expect(container.querySelector('template')).not.toBeNull();
       expect(container.querySelector('[popover]')).not.toBeNull();
       expect(container).toHaveTextContent('Layer content');
+    });
+
+    it('renders the host once on a closed mount; the second commit is the slot placing the layer', () => {
+      const renders = {host: 0, commits: 0};
+      function CountingHarness() {
+        renders.host += 1;
+        const layer = useLayer({mode: 'context'});
+        return (
+          <div data-testid="host">
+            <button type="button" ref={layer.ref} onClick={layer.show}>
+              Trigger
+            </button>
+            {layer.render(<span>Layer content</span>)}
+          </div>
+        );
+      }
+      const {container, getByTestId} = render(
+        <Profiler
+          id="layer"
+          onRender={() => {
+            renders.commits += 1;
+          }}>
+          <CountingHarness />
+        </Profiler>,
+      );
+
+      expect(renders.host).toBe(1);
+      expect(renders.commits).toBe(2);
+      const layer = container.querySelector('[popover]');
+      expect(layer).not.toBeNull();
+      expect(layer?.parentElement).toBe(getByTestId('host'));
+      expect(layer?.previousElementSibling?.tagName).toBe('TEMPLATE');
+    });
+
+    it('renders the host once when the marker sits in an unsafe parent; the slot portals the layer out', () => {
+      const renders = {host: 0};
+      function CountingUnsafeHarness() {
+        renders.host += 1;
+        const layer = useLayer({mode: 'context'});
+        return (
+          <div data-testid="host">
+            <p data-testid="paragraph">
+              <button type="button" ref={layer.ref} onClick={layer.show}>
+                Trigger
+              </button>
+              {layer.render(<span>Layer content</span>)}
+            </p>
+          </div>
+        );
+      }
+      const {container, getByTestId} = render(<CountingUnsafeHarness />);
+
+      expect(renders.host).toBe(1);
+      const layer = container.querySelector('[popover]');
+      expect(layer?.parentElement).toBe(getByTestId('host'));
+      expect(getByTestId('paragraph').querySelector('[popover]')).toBeNull();
+      expect(getByTestId('paragraph').querySelector('template')).not.toBeNull();
+    });
+
+    it('hydrates server markup that carries the marker alone, then mounts the layer', () => {
+      const markup = renderToString(<ContextLayerHarness />);
+      expect(markup).toContain('<template');
+      expect(markup).not.toContain('popover=');
+
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const container = document.createElement('div');
+      container.innerHTML = markup;
+      document.body.appendChild(container);
+      try {
+        act(() => {
+          hydrateRoot(container, <ContextLayerHarness />);
+        });
+        expect(errors).not.toHaveBeenCalled();
+        const layer = container.querySelector('[popover]');
+        expect(layer).not.toBeNull();
+        expect(layer?.previousElementSibling?.tagName).toBe('TEMPLATE');
+        expect(container).toHaveTextContent('Layer content');
+      } finally {
+        errors.mockRestore();
+        container.remove();
+      }
     });
 
     it('renders only an inert marker until show is requested', () => {
@@ -552,6 +678,95 @@ describe('useLayer', () => {
           writingMode: 'vertical-rl',
         });
         expect(showSpy).toHaveBeenCalledWith({source: trigger});
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it('reads no computed style for a closed layer mounted ahead of its first show', () => {
+      const getComputedStyleSpy = vi.spyOn(window, 'getComputedStyle');
+      try {
+        const {container} = render(<EagerContextHostingHarness />);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        // Mounted closed, outside the unsafe paragraph, with no style read.
+        expect(layer.parentElement).toBe(
+          container.querySelector('[data-testid="host"]'),
+        );
+        expect(getComputedStyleSpy).not.toHaveBeenCalled();
+        expect(layer.style.direction).toBe('');
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it("applies a closed layer's deferred writing context before it opens", async () => {
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element =>
+          mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            // The marker sits in a right-to-left, vertical paragraph; the
+            // corrective host does not.
+            direction:
+              element.tagName.toLowerCase() === 'template' ? 'rtl' : 'ltr',
+            writingMode:
+              element.tagName.toLowerCase() === 'template'
+                ? 'vertical-rl'
+                : 'horizontal-tb',
+          }),
+        );
+      const atShow: {direction: string; writingMode: string}[] = [];
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        atShow.push({
+          direction: this.style.direction,
+          writingMode: this.style.writingMode,
+        });
+      });
+      const user = userEvent.setup();
+      try {
+        const {container, getByRole} = render(<EagerContextHostingHarness />);
+        expect(getComputedStyleSpy).not.toHaveBeenCalled();
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        // Present when the popover opened, and kept by the render after it.
+        expect(atShow).toEqual([
+          {direction: 'rtl', writingMode: 'vertical-rl'},
+        ]);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('rtl');
+        expect(layer.style.writingMode).toBe('vertical-rl');
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it("keeps the caller's own direction over a deferred writing context", async () => {
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element =>
+          mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            direction:
+              element.tagName.toLowerCase() === 'template' ? 'rtl' : 'ltr',
+            writingMode: 'horizontal-tb',
+          }),
+        );
+      const atShow: string[] = [];
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        atShow.push(this.style.direction);
+      });
+      const user = userEvent.setup();
+      try {
+        const {container, getByRole} = render(
+          <EagerContextHostingHarness layerStyle={{direction: 'ltr'}} />,
+        );
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        expect(atShow).toEqual(['ltr']);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('ltr');
       } finally {
         getComputedStyleSpy.mockRestore();
       }
