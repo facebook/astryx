@@ -345,35 +345,30 @@ export function MonthScroller({
    * measured) was enough to set the calendar paging on by itself, a month
    * every few frames. With snapping off across the commit nothing re-snaps,
    * and switching it back on a frame later snaps to the pane in place.
+   *
+   * Each pause counts itself, so a batch of re-centers that ends on the
+   * center it began from, which commits no new center, still restores
+   * snapping.
    */
-  const snapRestoreFrameRef = useRef<number | null>(null);
+  const [snapPauses, setSnapPauses] = useState(0);
   const recenter = useCallback((scroller: HTMLElement, row: number) => {
     scroller.style.scrollSnapType = 'none';
+    setSnapPauses(count => count + 1);
     setCenterRow(row);
   }, []);
+  // Synchronizes the scroller's snapping with the browser's frame loop: it
+  // comes back on in the frame after the pause's commit, and a restore still
+  // pending at the next pause or at unmount is dropped.
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
-    if (scroller == null || scroller.style.scrollSnapType !== 'none') {
-      return;
+    if (snapPauses === 0 || scroller == null) {
+      return undefined;
     }
-    if (snapRestoreFrameRef.current != null) {
-      cancelAnimationFrame(snapRestoreFrameRef.current);
-    }
-    snapRestoreFrameRef.current = requestAnimationFrame(() => {
-      snapRestoreFrameRef.current = null;
+    const frame = requestAnimationFrame(() => {
       scroller.style.scrollSnapType = '';
     });
-  }, [centerRow]);
-  // Synchronizes with the browser's frame loop: a restore still pending when
-  // the scroller unmounts is dropped.
-  useEffect(
-    () => () => {
-      if (snapRestoreFrameRef.current != null) {
-        cancelAnimationFrame(snapRestoreFrameRef.current);
-      }
-    },
-    [],
-  );
+    return () => cancelAnimationFrame(frame);
+  }, [snapPauses]);
   // A row to scroll to once its pane is mounted; see scrollToMonth.
   const pendingScrollRef = useRef<number | null>(null);
 

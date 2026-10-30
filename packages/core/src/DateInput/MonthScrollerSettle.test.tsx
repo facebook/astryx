@@ -80,6 +80,21 @@ describe('MonthScroller settle', () => {
     scroller.dispatchEvent(new Event('scroll'));
   }
 
+  it('turns scroll snapping back on after re-centers that end on the month they began on', () => {
+    const {handleRef, scroller} = renderScroller();
+    // Two far jumps in one batch, out and back: each re-centers the mounted
+    // months, pausing scroll snapping, and the second puts the center back
+    // where it was, so the render that follows changes no center.
+    act(() => {
+      handleRef.current?.scrollToMonth(20);
+      handleRef.current?.scrollToMonth(9);
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(scroller.style.scrollSnapType).toBe('');
+  });
+
   it('finishes a steer the browser cut short instead of rounding it back', () => {
     const {handleRef, scroller} = renderScroller();
     // An arrow toward month 10, its scroll 95 % of the way there.
