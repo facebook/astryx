@@ -7,7 +7,9 @@
  *   interaction harness
  * @output Interaction proofs for the month scroller's steps: after the month
  *   and year wheels close, a trackpad scroll still pages to the next month and
- *   Reset from four months on still rests on today's month.
+ *   Reset from four months on still rests on today's month; an arrow step
+ *   through a stalled frame moves exactly one month; under a finger, a swipe
+ *   that crosses the middle of a month as it lifts still rests on a month.
  *   (A second arrow step late in the first one's scroll, which WebKit cuts
  *   short, is proven in MonthScrollerSettle.test.tsx: a loaded page's frames
  *   are too far apart to aim a click at a share of a 300 ms scroll.)
@@ -16,7 +18,13 @@
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
-import {openStory, withStorybook} from '@astryxdesign/interaction-harness';
+import {
+  blockMainThread,
+  drag,
+  openStory,
+  touchDriver,
+  withStorybook,
+} from '@astryxdesign/interaction-harness';
 
 const storybook = withStorybook(test);
 const STORY = 'core-dateinput--default';
@@ -109,6 +117,69 @@ async function openCalendar(page: Page) {
 test.use({hasTouch: false, isMobile: false});
 
 /**
+ * Waits until the scroller comes to rest, or until it has gone more than
+ * `limit` past `from`: a scroller that runs on by itself never rests, and
+ * the proof should fail where it ran, not at the test's timeout.
+ */
+async function waitForRestOrRun(
+  viewport: Locator,
+  from: number,
+  limit: number,
+): Promise<number> {
+  return viewport.evaluate(
+    async (element, {from, limit}) =>
+      new Promise<number>(resolve => {
+        let last = element.scrollLeft;
+        let still = 0;
+        const check = () => {
+          const now = element.scrollLeft;
+          still = now === last ? still + 1 : 0;
+          last = now;
+          if (still >= 10 || Math.abs(now - from) > limit) {
+            resolve(now);
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      }),
+    {from, limit},
+  );
+}
+
+/**
+ * A stalled frame right after an arrow (a 300 ms block of the main thread)
+ * let the re-center that follows the step land after the scroll had ended,
+ * and WebKit's re-snap after it then paged on by itself, a month every few
+ * frames. The step moves exactly one month.
+ */
+test('an arrow step through a stalled frame moves exactly one month', async ({
+  page,
+}) => {
+  const viewport = await openCalendar(page);
+  const title = page.getByRole('button', {name: /Choose month and year/});
+  const from = await viewport.evaluate(element => element.scrollLeft);
+  const width = await viewport.evaluate(element => element.clientWidth);
+  const box = await page
+    .getByRole('button', {name: 'Next month'})
+    .boundingBox();
+  if (box == null) {
+    throw new Error('no Next month button');
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await blockMainThread(page, 300);
+  const at = await waitForRestOrRun(viewport, from, 2 * width);
+  expect(Math.round((at - from) / width)).toBe(1);
+  await waitForRestOnMonth(viewport);
+  expect(
+    Math.round(((await viewport.evaluate(e => e.scrollLeft)) - from) / width),
+  ).toBe(1);
+  await expect(title).toHaveAccessibleName(
+    new RegExp(await monthAtRest(viewport)),
+  );
+});
+
+/**
  * Closing the month and year wheels re-asserts the month shown, a steer that
  * moves nothing. A trackpad scroll after it is the user's: it pages to the
  * next month and stays there, the title following.
@@ -189,4 +260,40 @@ test('after the month and year wheels close, Reset from four months on rests on 
   await waitForRestOnMonth(viewport);
   expect(await monthAtRest(viewport)).toBe(today);
   await expect(toggle).toHaveAccessibleName(new RegExp(today));
+});
+
+test.describe('under a finger', () => {
+  test.use({hasTouch: true, isMobile: true});
+
+  /**
+   * A swipe whose last move crosses the middle of the month makes the
+   * scroller re-center as the finger lifts, inside the frame its scroll
+   * snapping is off for. The swipe still comes to rest on a month.
+   */
+  test('a swipe that crosses the middle of a month as it lifts still rests on a month', async ({
+    page,
+  }) => {
+    const viewport = await openCalendar(page);
+    const start = await monthAtRest(viewport);
+    const box = await viewport.boundingBox();
+    if (box == null) {
+      throw new Error('no month scroller');
+    }
+    const driver = await touchDriver(page);
+    const y = box.y + box.height / 2;
+    const from = {x: box.x + box.width * 0.8, y};
+    // 55 % of a month toward the next one, the middle crossed by the last
+    // move, lifting a quarter frame after it.
+    await driver.play(
+      drag(from, {x: from.x - box.width * 0.55, y}, {durationMs: 300}),
+    );
+    await waitForRestOnMonth(viewport);
+    const rest = await monthAtRest(viewport);
+    expect(rest).not.toBe('');
+    expect(rest).not.toBe(start);
+    // Snapping is back on: the re-center's pause has ended.
+    expect(
+      await viewport.evaluate(element => element.style.scrollSnapType),
+    ).toBe('');
+  });
 });

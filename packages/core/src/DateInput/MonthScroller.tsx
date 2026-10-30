@@ -334,6 +334,46 @@ export function MonthScroller({
   // updater — React runs updaters during render, where another component's
   // setState is illegal.
   const centerRowRef = useRef(centerRow);
+
+  /**
+   * Scroll snapping is off from a re-center until the frame after its
+   * commit. WebKit keeps the position it snapped to as an index into the
+   * container's snap offsets, and re-snaps to that index after a layout: a
+   * re-center that unmounts panes before the snapped one shifts the index,
+   * so the re-snap lands a month further on, and the scroll that makes
+   * re-centers again. One stalled frame right after an arrow (300 ms,
+   * measured) was enough to set the calendar paging on by itself, a month
+   * every few frames. With snapping off across the commit nothing re-snaps,
+   * and switching it back on a frame later snaps to the pane in place.
+   */
+  const snapRestoreFrameRef = useRef<number | null>(null);
+  const recenter = useCallback((scroller: HTMLElement, row: number) => {
+    scroller.style.scrollSnapType = 'none';
+    setCenterRow(row);
+  }, []);
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    if (scroller == null || scroller.style.scrollSnapType !== 'none') {
+      return;
+    }
+    if (snapRestoreFrameRef.current != null) {
+      cancelAnimationFrame(snapRestoreFrameRef.current);
+    }
+    snapRestoreFrameRef.current = requestAnimationFrame(() => {
+      snapRestoreFrameRef.current = null;
+      scroller.style.scrollSnapType = '';
+    });
+  }, [centerRow]);
+  // Synchronizes with the browser's frame loop: a restore still pending when
+  // the scroller unmounts is dropped.
+  useEffect(
+    () => () => {
+      if (snapRestoreFrameRef.current != null) {
+        cancelAnimationFrame(snapRestoreFrameRef.current);
+      }
+    },
+    [],
+  );
   // A row to scroll to once its pane is mounted; see scrollToMonth.
   const pendingScrollRef = useRef<number | null>(null);
 
@@ -416,7 +456,7 @@ export function MonthScroller({
         // year wheels close), which the settle would otherwise finish,
         // pulling the scroller back off the jump's month.
         steeredRowRef.current = row;
-        setCenterRow(row);
+        recenter(scroller, row);
         return;
       }
       steeredRowRef.current = row;
@@ -425,7 +465,7 @@ export function MonthScroller({
         behavior,
       });
     },
-    [paneSize, minMonthIndex, rowCount, isRTL],
+    [paneSize, minMonthIndex, rowCount, isRTL, recenter],
   );
 
   // Deliberately un-keyed: it runs after every render, costs a null check, and
@@ -605,7 +645,7 @@ export function MonthScroller({
           return;
         }
         centerRowRef.current = row;
-        setCenterRow(row);
+        recenter(scroller, row);
         // Report nothing while a steer is in flight. `scrollToMonth` is only
         // ever called by something that already knows the month — a wheel
         // commit, a header arrow, the re-assert when the wheels close — so
@@ -645,7 +685,7 @@ export function MonthScroller({
         frameRef.current = undefined;
       }
     };
-  }, [paneSize, rowCount, minMonthIndex, isRTL]);
+  }, [paneSize, rowCount, minMonthIndex, isRTL, recenter]);
 
   // Move the keyboard focus by whole days and let the scroller follow. Paging
   // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
