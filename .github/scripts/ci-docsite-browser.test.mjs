@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
@@ -98,6 +98,30 @@ describe('docsite-test', () => {
     fs.rmSync(dir, {recursive: true, force: true});
     expect(result.status === 0).toBe(passes);
   });
+
+  it('the data-test result step waits for the data tests to finish', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'docsite-data-'));
+    fs.writeFileSync(path.join(dir, 'docsite-data.log'), 'log\n');
+    const child = spawn(
+      'bash',
+      ['-e', '-c', step('test-docsite (data test results)').run],
+      {cwd: dir},
+    );
+    let code = null;
+    const exited = new Promise(resolve =>
+      child.on('exit', status => {
+        code = status;
+        resolve();
+      }),
+    );
+    // Still waiting while the data tests have not recorded an exit code.
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    expect(code).toBeNull();
+    fs.writeFileSync(path.join(dir, 'docsite-data.exit'), '1\n');
+    await exited;
+    fs.rmSync(dir, {recursive: true, force: true});
+    expect(code).toBe(1);
+  }, 15_000);
 
   it('uploads the explicit browser output directory and fails if evidence is missing', () => {
     const configPath = path.join(root, 'apps/docsite/playwright.config.ts');
