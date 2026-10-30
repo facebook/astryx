@@ -49,7 +49,7 @@ function pullRequestContext(baseRef = 'main', pr = {}) {
       pull_request: {
         number: 7,
         base: {ref: baseRef, sha: BASE_SHA},
-        head: {sha: HEAD_SHA, ref: 'fix/a'},
+        head: {sha: HEAD_SHA, ref: 'fix/a', repo: {full_name: 'author/r'}},
         user: {login: 'author'},
         draft: false,
         ...pr,
@@ -364,12 +364,27 @@ describe('per-job scope step', () => {
   describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     const files = changed('packages/build/src/index.ts');
     const heavy = {heavy: 'true'};
+    const fork = {nameWithOwner: 'author/r'};
     const pulls = (...refs) =>
-      refs.map((headRefName, i) => ({number: i + 1, headRefName}));
-    const me = {number: 7, headRefName: 'fix/a'};
+      refs.map((headRefName, i) => ({
+        number: i + 1,
+        headRefName,
+        headRepository:
+          headRefName.includes('/') && !headRefName.startsWith('fix/')
+            ? {nameWithOwner: 'o/r'}
+            : fork,
+      }));
+    const me = {number: 7, headRefName: 'fix/a', headRepository: fork};
     let nextRun = 100;
     const runsOn = (count, head_branch = 'fix/a', run = {}) =>
-      Array.from({length: count}, () => ({id: nextRun++, head_branch, ...run}));
+      Array.from({length: count}, () => ({
+        id: nextRun++,
+        head_branch,
+        head_repository: {
+          full_name: head_branch.startsWith('fix/') ? 'author/r' : 'o/r',
+        },
+        ...run,
+      }));
 
     it("fails a heavy job behind the author's 3 oldest PRs", async () => {
       const open = [...pulls('a', 'b', 'c'), {number: 7, headRefName: 'fix/a'}];
@@ -415,14 +430,30 @@ describe('per-job scope step', () => {
         ],
       });
       expect(light.outputs.applies).toBe('true');
+      // A run is the pull request's by its branch and that branch's
+      // repository: another fork's same-named branch is not, whoever pushed.
+      const elsewhere = await decide({
+        files,
+        inputs: heavy,
+        open: [me],
+        runs: [
+          ...runsOn(11),
+          ...runsOn(5, 'fix/a', {head_repository: {full_name: 'other/r'}}),
+        ],
+      });
+      expect(elsewhere.outputs.applies).toBe('true');
     });
 
     it('counts each agent lane of the shared login as an author, with a backstop', async () => {
       const context = pullRequestContext('main', {
         user: {login: 'cixzhang'},
-        head: {sha: HEAD_SHA, ref: 'lane4/x'},
+        head: {sha: HEAD_SHA, ref: 'lane4/x', repo: {full_name: 'o/r'}},
       });
-      const mine = {number: 7, headRefName: 'lane4/x'};
+      const mine = {
+        number: 7,
+        headRefName: 'lane4/x',
+        headRepository: {nameWithOwner: 'o/r'},
+      };
       const others = await decide({
         context,
         files,

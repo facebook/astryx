@@ -254,7 +254,7 @@ runs:
               let held;
               try {
                 const {search} = await github.graphql(
-                  'query($q: String!) { search(query: $q, type: ISSUE, first: 100) { nodes { ... on PullRequest { number headRefName } } } }',
+                  'query($q: String!) { search(query: $q, type: ISSUE, first: 100) { nodes { ... on PullRequest { number headRefName headRepository { nameWithOwner } } } } }',
                   {q: `repo:${context.repo.owner}/${context.repo.repo} is:pr is:open draft:false author:${login} sort:created-asc`},
                 );
                 // Pull request numbers rise with creation, and the search returns
@@ -266,14 +266,22 @@ runs:
                 } else {
                   // Heavy suites run only on the oldest pull requests, so a heavy
                   // run today is one of theirs whose "Heavy suite runs" step ran.
-                  const oldest = new Set([pr.head.ref, ...[...laneOpen.slice(0, 3), ...(shared ? search.nodes.slice(0, 5) : [])].map(p => p.headRefName)]);
+                  // A run belongs to a pull request by its head branch and the
+                  // repository that branch lives in, whoever pushed or re-ran it.
+                  const key = (repo, branch) => `${repo}:${branch}`;
+                  const oldest = new Map([
+                    [key(pr.head.repo.full_name, pr.head.ref), pr.head.ref],
+                    ...[...laneOpen.slice(0, 3), ...(shared ? search.nodes.slice(0, 5) : [])].map(p => [
+                      key(p.headRepository?.nameWithOwner, p.headRefName), p.headRefName,
+                    ]),
+                  ]);
                   const runs = [];
-                  for (const branch of oldest) {
+                  for (const [owner, branch] of oldest) {
                     const {data} = await github.rest.actions.listWorkflowRuns({
-                      ...context.repo, workflow_id: 'ci.yml', actor: login, event: 'pull_request', branch,
+                      ...context.repo, workflow_id: 'ci.yml', event: 'pull_request', branch,
                       created: `>=${new Date().toISOString().slice(0, 10)}`, per_page: 100,
                     });
-                    runs.push(...data.workflow_runs);
+                    runs.push(...data.workflow_runs.filter(run => key(run.head_repository?.full_name, run.head_branch) === owner));
                   }
                   let laneHeavy = 0;
                   let loginHeavy = 0;

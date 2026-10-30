@@ -249,9 +249,7 @@ they are separately named.
   heavy-run cap reached, runs tomorrow or at pre-merge.", so no pull request
   passes the required joins without its heavy suites. A re-run, which is the
   pre-merge restart, is exempt from both caps, and a lookup that fails runs the
-  suite. Merge-queue entries, `main`, release checks and the visual,
-  accessibility and RTL owners a maintainer opts a pull request into with
-  `ci:heavy-lanes` are unaffected.
+  suite. Merge-queue entries, `main`, release checks and the visual, accessibility and RTL owners are unaffected.
 - **FR17 — A pull request runs CI when it is ready and a maintainer can vouch
   for it.** A `pull_request` workflow starts on `opened`, `synchronize`,
   `reopened` and `ready_for_review`, never on a label. A draft runs no job, and
