@@ -15,8 +15,8 @@
  * that will confirm or replace them (MEASUREMENTS.md lists them all).
  * uikit.test.ts enforces both.
  *
- * Most springs are measured on iOS 26.2 or documented by Apple; two are still
- * GUESSES (`segmentedThumb`, `banner`) and two come from WebKit
+ * Most springs are measured on iOS 26.2 or documented by Apple; one is still
+ * a GUESS (`banner`) and two come from WebKit
  * (`switchThumbMove`, `switchThumbStretch`). A guess starts from the
  * nearest sourced spring and names it, so a component built on the table
  * gets the right value the moment its measurement lands, without changing.
@@ -401,18 +401,6 @@ export const SWITCH_THUMB_STRETCH_SPRING = {
   dampingRatio: 0.87,
 } as const;
 
-/**
- * UISegmentedControl selection thumb sliding to a new segment.
- * @source GUESS — WebKit's UIKit-matched switch thumb spring, the nearest
- *   sourced control thumb
- * @measure M-SG02
- * @measure M-SG03
- */
-export const SEGMENTED_THUMB_SPRING = {
-  response: 0.3,
-  dampingRatio: 0.75,
-} as const;
-
 // ---------------------------------------------------------------------
 // System
 // ---------------------------------------------------------------------
@@ -475,7 +463,6 @@ export const springs = {
   menuReducedMotion: MENU_REDUCED_MOTION_SPRING,
   switchThumbMove: SWITCH_THUMB_MOVE_SPRING,
   switchThumbStretch: SWITCH_THUMB_STRETCH_SPRING,
-  segmentedThumb: SEGMENTED_THUMB_SPRING,
   keyboard: KEYBOARD_SPRING,
   banner: BANNER_SPRING,
 } as const;

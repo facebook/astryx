@@ -30,6 +30,12 @@ export interface SegmentedControlContextValue {
    * tooltip is keyboard-discoverable; selection is still blocked.
    */
   hasDisabledMessage?: boolean;
+  /**
+   * True in the touch presentation (under a finger, `useTouchPresentation`):
+   * the control animates selection changes itself (the surface slides), so
+   * segments drop their CSS transitions.
+   */
+  isTouchPresentation?: boolean;
 }
 
 export const SegmentedControlContext =
