@@ -85,6 +85,14 @@ const DAY_SIZE = dateInputTouchSizes.daySize;
  */
 const OVERSCAN = 3;
 
+/** Input on the scroller that ends a steer: the user's from here. */
+const USER_INPUT_EVENTS = [
+  'touchstart',
+  'wheel',
+  'pointerdown',
+  'keydown',
+] as const;
+
 const styles = stylex.create({
   scroller: {
     position: 'relative',
@@ -331,8 +339,10 @@ export function MonthScroller({
 
   /**
    * The row a programmatic scroll is heading for, so its own scroll events
-   * are not reported back as if the user had gone there. Null once a finger
-   * touches the scroller, or once the steered scroll has arrived.
+   * are not reported back as if the user had gone there, and so the settle
+   * correction finishes the steer instead of rounding it back. Null once the
+   * user's own input reaches the scroller (a finger, a wheel or trackpad, a
+   * press, a key), or once the steered scroll has arrived.
    */
   const steeredRowRef = useRef<number | null>(null);
 
@@ -476,8 +486,11 @@ export function MonthScroller({
    * A tail crawling slower than half a pixel a frame has effectively arrived,
    * so treating it as arrived is right anyway.
    *
-   * The correction is at most half a pane by construction, and its own scroll
-   * settles onto the boundary it just aimed at, so it cannot oscillate.
+   * After the user's own scroll the correction goes to the nearest boundary,
+   * at most half a pane away. After a steer it goes on to the steered month,
+   * however early the browser cut the steer short. Either way its own scroll
+   * settles onto the boundary it aimed at, where a steer counts as arrived, so
+   * it cannot oscillate.
    */
   const settleFrameRef = useRef<number | undefined>(undefined);
   useEffect(
@@ -505,15 +518,22 @@ export function MonthScroller({
       if (Math.abs(scroller.scrollLeft - offsetBefore) >= 0.5) {
         return;
       }
-      const row = rowAtScrollOffset(
-        scroller.scrollLeft,
-        paneSize,
-        rowCount,
-        isRTL,
-      );
+      // A steer the browser cut short is finished, not rounded back. WebKit
+      // ends a smooth scroll that a second one retargeted once the first
+      // one's time is up, firing `scrollend` part-way: an arrow tapped late
+      // in the previous arrow's scroll stopped near that month, and rounding
+      // to the nearest pane put the scroller back on it while the title named
+      // the new one.
+      const steered = steeredRowRef.current;
+      const row =
+        steered ??
+        rowAtScrollOffset(scroller.scrollLeft, paneSize, rowCount, isRTL);
       const target = scrollOffsetForRow(row, paneSize, isRTL);
       // Sub-pixel drift is the browser's own rounding, not a failed snap.
       if (Math.abs(scroller.scrollLeft - target) < 1) {
+        // At rest on its target, a steer has arrived even if no scroll
+        // crossed into its month.
+        steeredRowRef.current = null;
         return;
       }
       scroller.scrollTo({left: target, behavior: 'smooth'});
@@ -554,9 +574,13 @@ export function MonthScroller({
     if (scroller == null || paneSize === 0) {
       return;
     }
-    // A finger on the scroller ends any steering: from here the months it
-    // passes are the user's doing and every one of them is worth reporting.
-    const onTouchStart = () => {
+    // A finger, a wheel or trackpad, a press or a key on the scroller ends any
+    // steering: from here the months it passes are the user's doing, every
+    // one of them is worth reporting, and the settle rounds to the nearest
+    // month instead of finishing a steer. A steer that moved nothing (the
+    // re-assert when the month and year wheels close on the month shown)
+    // would otherwise pull the user's next scroll back to its month.
+    const endSteer = () => {
       steeredRowRef.current = null;
     };
 
@@ -590,9 +614,9 @@ export function MonthScroller({
         // the exact moment reports start being trusted again. The month drifted
         // on the way back to the calendar.
         //
-        // Cleared on arrival, or by a touch below — once a finger is on the
-        // scroller the user owns it, and every month it passes is worth
-        // reporting.
+        // Cleared on arrival, or by the user's input below (a finger, a wheel
+        // or trackpad, a press, a key) — from then the user owns the scroller,
+        // and every month it passes is worth reporting.
         if (steeredRowRef.current != null) {
           if (steeredRowRef.current === row) {
             steeredRowRef.current = null;
@@ -603,10 +627,14 @@ export function MonthScroller({
       });
     };
     scroller.addEventListener('scroll', onScroll, {passive: true});
-    scroller.addEventListener('touchstart', onTouchStart, {passive: true});
+    for (const type of USER_INPUT_EVENTS) {
+      scroller.addEventListener(type, endSteer, {passive: true});
+    }
     return () => {
       scroller.removeEventListener('scroll', onScroll);
-      scroller.removeEventListener('touchstart', onTouchStart);
+      for (const type of USER_INPUT_EVENTS) {
+        scroller.removeEventListener(type, endSteer);
+      }
       if (frameRef.current != null) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = undefined;
