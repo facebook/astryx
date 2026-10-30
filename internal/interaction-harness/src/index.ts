@@ -17,6 +17,7 @@ export * from './curves';
 export * from './frames';
 export * from './math';
 export * from './output';
+export * from './pointer';
 export * from './scripts';
 export * from './story';
 export * from './storyboard';
