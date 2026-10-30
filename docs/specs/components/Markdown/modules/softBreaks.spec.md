@@ -32,7 +32,7 @@ references: [spec:AST-036/DEC-1, spec:AST-036/DEC-11]
 | Builder impact  | Builders opt in by adding one value to `plugins`; there are no settings or renderer slots.                                                                                                                                         |
 | Compatibility   | Additive and opt-in; omitted and empty plugin lists preserve the released parser, DOM, accessibility, and streaming behavior.                                                                                                      |
 | Review checks   | Reject missing link-label parity with `remark-breaks`, matching inside code, images, citations, math, or extension nodes; source preprocessing; a custom renderer; or behavior that diverges between complete and streaming input. |
-| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR24, FR36, FR38, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown` FR12–FR16, FR21](../Markdown.spec.md).                                                                    |
+| Governing rules | [`spec:AST-036` FR1–FR17, FR21–FR24, FR36, FR38, FR40](../../../AST-036/spec.md); [`component:Markdown` FR12–FR16, FR21](../Markdown.spec.md).                                                                                     |
 
 This table is a review projection; the body below is authoritative.
 
