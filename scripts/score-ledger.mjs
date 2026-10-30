@@ -1238,8 +1238,8 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
   // naturally takes if you think of blocks as a list) reads as zero open
   // BLOCKs to `openBlockCount`. Left unchecked it does three things at once:
   // the open-BLOCK grade cap never applies, the ratchet sees no BLOCKs to
-  // compare, and the sandbox inlines a literal tsc rejects, which reds
-  // `build-sandbox` on every open pull request (#5033).
+  // compare, and the sandbox inlines a literal tsc rejects, which breaks
+  // every Sandbox build, each pull request's preview included (#5033).
   if (!isBlocksShape(next.blocks)) {
     throw new Error(
       `${component}: blocks must be {count, open: [...]} — a bare array reads as ` +
@@ -1313,8 +1313,8 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     );
   }
   // The sandbox inlines this row into a typed literal at build time, so a bad
-  // shape here is not one broken row: it reds `build-sandbox` on every open PR
-  // at once, with no commit responsible (#4924).
+  // shape here is not one broken row: it breaks the Sandbox build for every
+  // open PR at once, with no commit responsible (#4924).
   if (!Array.isArray(next.evidence) || !next.evidence.every(isEvidenceItem)) {
     throw new Error(
       `${component}: evidence must be an array of {label, path?, note?} objects — ` +
