@@ -4,7 +4,7 @@
 
 #### Documentation
 
-- Point package metadata and project links at the `meta/astryx` repository.
+- Package links now point to the project's GitHub home, `meta/astryx`.
 
 #### Contributors
 
