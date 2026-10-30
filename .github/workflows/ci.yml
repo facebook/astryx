@@ -1922,20 +1922,31 @@ jobs:
         if: needs.interaction-scope.outputs.applies != 'true'
         run: echo "No interaction proofs for this change."
 
-      - name: Checkout
+      # The caps step comes from the merge commit, not the pull request's
+      # head: a head that predates the step does not have it. The head
+      # checkout below replaces this directory.
+      - name: Check out the heavy-suite caps
         if: needs.interaction-scope.outputs.applies == 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          path: .heavy-caps
+          sparse-checkout: .github/actions/heavy-caps
+          persist-credentials: false
 
       - name: Per-author heavy-suite caps
         if: needs.interaction-scope.outputs.applies == 'true'
-        uses: ./.github/actions/heavy-caps
+        uses: ./.heavy-caps/.github/actions/heavy-caps
 
       # The daily heavy-run cap counts this step (spec:AST-030 FR16).
       - name: Heavy suite runs
         if: needs.interaction-scope.outputs.applies == 'true'
         run: 'true'
+
+      - name: Checkout
+        if: needs.interaction-scope.outputs.applies == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Verify evidence checkout
         if: needs.interaction-scope.outputs.applies == 'true'

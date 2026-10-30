@@ -24,6 +24,9 @@ const script = action.runs.steps.find(step =>
 ).with.script;
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
+const isCaps = step =>
+  step.uses?.startsWith('./') &&
+  step.uses.endsWith('/.github/actions/heavy-caps');
 const QUEUED =
   'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.';
 const CAPPED = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
@@ -280,12 +283,54 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     expect(failed.warning[0]).toContain('running the heavy suite');
   });
 
+  it('loads every local action from the merge commit, never from a checkout of the pull request head', () => {
+    // A head that predates a local action does not have it. Only the setup
+    // action, the pull request's own toolchain, may come from its head.
+    const dir = path.join(root, '.github/workflows');
+    for (const name of fs
+      .readdirSync(dir)
+      .filter(file => file.endsWith('.yml'))) {
+      const workflow = yaml.parse(
+        fs.readFileSync(path.join(dir, name), 'utf8'),
+      );
+      for (const [id, job] of Object.entries(workflow.jobs ?? {})) {
+        const checkouts = new Map();
+        for (const step of job.steps ?? []) {
+          if (step.uses?.startsWith('actions/checkout@')) {
+            checkouts.set(
+              path.normalize(step.with?.path ?? '.'),
+              String(step.with?.ref ?? ''),
+            );
+            continue;
+          }
+          if (
+            !step.uses?.startsWith('./') ||
+            step.uses === './.github/actions/setup'
+          )
+            continue;
+          const action = path.normalize(step.uses);
+          const owner = [...checkouts.keys()]
+            .filter(
+              dir =>
+                dir === '.' || action === dir || action.startsWith(`${dir}/`),
+            )
+            .sort((a, b) => b.length - a.length)[0];
+          expect(owner, `${name}/${id} ${step.uses}`).toBeDefined();
+          expect(
+            checkouts.get(owner),
+            `${name}/${id} ${step.uses}`,
+          ).not.toContain('pull_request.head');
+        }
+      }
+    }
+  });
+
   it('runs in each heavy job right after its checkout, followed by the step the daily cap counts', () => {
     const ci = yaml.parse(
       fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
     );
     const heavyJobs = Object.entries(ci.jobs).filter(([, job]) =>
-      job.steps?.some(step => step.uses === './.github/actions/heavy-caps'),
+      job.steps?.some(isCaps),
     );
     expect(heavyJobs.map(([id]) => id).sort()).toEqual([
       'fixture-contrast',
@@ -293,9 +338,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
       'test-build',
     ]);
     for (const [id, job] of heavyJobs) {
-      const caps = job.steps.findIndex(
-        step => step.uses === './.github/actions/heavy-caps',
-      );
+      const caps = job.steps.findIndex(isCaps);
       expect(job.steps[caps - 1].uses, id).toMatch(/^actions\/checkout@/);
       expect(job.permissions, id).toMatchObject({
         actions: 'read',
