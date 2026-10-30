@@ -22,7 +22,7 @@ export const docs = {
     {
       name: 'ButtonGroup',
       displayName: 'Button Group',
-      description: 'Groups multiple buttons together with connected styling: shared borders, proper border-radius handling (only on outer edges), and horizontal or vertical orientation.',
+      description: 'Groups multiple buttons together with connected styling: shared borders, proper border-radius handling (only on outer edges), and horizontal or vertical orientation. Under a press the group behaves like a menu: press a button, slide across the others while the highlight follows, and the one you lift on runs; lifting outside the group runs nothing. With a finger, each button\'s target reaches 44 px without the buttons growing. A menu trigger in the group keeps its own opening.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Button or IconButton children.', required: true, slotElements: [{__element: 'Button', props: {label: 'Action'}}]},
         {name: 'label', type: 'string', description: 'Accessible label for the group (aria-label).', required: true},

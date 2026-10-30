@@ -50,7 +50,10 @@ import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
-import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
+import {
+  useButtonGroup,
+  useButtonGroupTracksPress,
+} from '../ButtonGroup/ButtonGroupContext';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {
@@ -65,6 +68,10 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {
+  PRESS_GROUP_ITEM_ATTRIBUTE,
+  pressGroupItemProps,
+} from '../utils/pressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -224,6 +231,48 @@ const elevationStyles = stylex.create({
  * Overlay is stacked on top of base color using multiple linear-gradients
  * Focus outline is shared across variants for consistent keyboard affordance.
  */
+/**
+ * A button a group tracks (`family:action-groups`): the group's tracker
+ * paints the press on the button under the pointer for every pointer,
+ * through `data-astryx-press`. A mouse's bare `:active` would stay on the
+ * button it went down on while the tracker lights another, so on a tracked
+ * button only a keyboard press keeps `:active` (`:focus-visible`), and the
+ * tracker's paint is the pointer's. A pointer press that starts on a
+ * keyboard-focused button marks it (`data-astryx-pointer-press`,
+ * hooks/useActionGroupTracking.ts) for the press, so the keyboard arm
+ * steps aside there too. The other arms are the overlay's own
+ * (utils/interactionOverlay.stylex.ts `backgroundImage`), whose press
+ * strength and paint variables this keeps reading.
+ */
+/** `aria-haspopup` values of a trigger that keeps its own opening. */
+const MENU_POPUPS: ReadonlySet<string> = new Set(['true', 'menu', 'listbox']);
+
+const TRACKED_PRESSED_IMAGE = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+const TRACKED_HOVER_IMAGE = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
+const trackedStyles = stylex.create({
+  overlay: {
+    backgroundImage: {
+      default: null,
+      ':where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        ':active:focus-visible:where(:not([data-astryx-pointer-press]))': {
+          default: TRACKED_PRESSED_IMAGE,
+          '@media (pointer: coarse)': 'none',
+        },
+        '@media (hover: hover)': {
+          default: null,
+          ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+            TRACKED_HOVER_IMAGE,
+          ':active:focus-visible:where(:not([data-astryx-pointer-press]))':
+            TRACKED_PRESSED_IMAGE,
+        },
+        '[data-astryx-press="on"]': 'var(--_press-paint-image)',
+        '[data-astryx-press="fading"]': 'var(--_press-paint-image)',
+      },
+    },
+  },
+});
+
 const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
@@ -601,6 +650,18 @@ export function Button({
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
+  const groupTracksPress = useButtonGroupTracksPress();
+  // A group that tracks a held pointer across its buttons
+  // (`family:action-groups`) tracks this one, unless it opens a menu (or a
+  // listbox, as a select-style trigger does): a menu keeps its own opening
+  // (`spec:AST-094` FR29) and the controller's press. A button that opens a
+  // dialog, a grid or a tree is an action like any other. A tracked button carries the group item marker, from its first
+  // render, so the document press controller leaves its press to the group.
+  const opensMenu = MENU_POPUPS.has(String(props['aria-haspopup']));
+  // A caller that tracks its own group (an alert's actions, a toggle group's
+  // buttons) spreads the marker on the button itself.
+  const isGroupTracked =
+    (groupTracksPress && !opensMenu) || PRESS_GROUP_ITEM_ATTRIBUTE in props;
   const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
@@ -729,6 +790,7 @@ export function Button({
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
+    isGroupTracked && trackedStyles.overlay,
     buttonDisabled && styles.inactive,
     isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
@@ -856,6 +918,7 @@ export function Button({
           : undefined)}
         {...sharedMergedProps}
         {...pressFeedback}
+        {...(isGroupTracked ? pressGroupItemProps : undefined)}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
@@ -880,6 +943,7 @@ export function Button({
           : undefined)}
         {...sharedMergedProps}
         {...pressFeedback}
+        {...(isGroupTracked ? pressGroupItemProps : undefined)}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}

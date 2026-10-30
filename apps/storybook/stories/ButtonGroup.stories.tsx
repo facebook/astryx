@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
 import {Button} from '@astryxdesign/core/Button';
@@ -46,6 +47,32 @@ export const Horizontal: Story = {
       <Button label="Paste" icon={<ClipboardIcon style={iconSize} />} />
     </ButtonGroup>
   ),
+};
+
+/**
+ * Under a press the group behaves like a menu: press a button, slide across
+ * the others while the highlight follows, and the one you lift on runs; a
+ * lift outside the group runs nothing. With a finger, each small button's
+ * target reaches 44 px without the buttons growing.
+ */
+export const SlideAcross: Story = {
+  render: function SlideAcrossStory() {
+    const [log, setLog] = useState<ReadonlyArray<string>>([]);
+    const press = (label: string) => () =>
+      setLog(previous => [...previous, label]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <ButtonGroup label="Edit actions" size="sm">
+          <Button label="Cut" onClick={press('Cut')} />
+          <Button label="Copy" onClick={press('Copy')} />
+          <Button label="Paste" onClick={press('Paste')} />
+        </ButtonGroup>
+        <output data-testid="slide-log">
+          {log.length === 0 ? 'Nothing pressed' : `Pressed: ${log.join(', ')}`}
+        </output>
+      </div>
+    );
+  },
 };
 
 /** Vertical button group. */
