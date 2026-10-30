@@ -5,7 +5,7 @@
  * Tests for Text component
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
@@ -329,6 +329,61 @@ describe('truncated text shows one tooltip, not two', () => {
       }
     };
   }
+
+  it('is a tab stop while truncated, so its tooltip opens from the keyboard (FR4)', async () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <Text type="body" maxLines={1}>
+          A label far wider than the space it has been given
+        </Text>,
+      );
+      const text = screen.getByText(
+        'A label far wider than the space it has been given',
+      );
+      await waitFor(() => expect(text).toHaveAttribute('tabindex', '0'));
+    } finally {
+      restore();
+    }
+  });
+
+  it('leaves focus to the control it sits in (a link, a menu item)', async () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <>
+          <a href="/docs">
+            <Text type="body" maxLines={1}>
+              Inside a link, wider than the space it has
+            </Text>
+          </a>
+          <div role="menuitem" tabIndex={-1}>
+            <Text type="body" maxLines={1}>
+              Inside a menu item, wider than the space it has
+            </Text>
+          </div>
+          <Text type="body" maxLines={1}>
+            Standalone, wider than the space it has
+          </Text>
+        </>,
+      );
+      // A standalone sibling measured in the same pass becomes a tab stop, so
+      // the nested ones have been measured as truncated too.
+      await waitFor(() =>
+        expect(
+          screen.getByText('Standalone, wider than the space it has'),
+        ).toHaveAttribute('tabindex', '0'),
+      );
+      expect(
+        screen.getByText('Inside a link, wider than the space it has'),
+      ).not.toHaveAttribute('tabindex');
+      expect(
+        screen.getByText('Inside a menu item, wider than the space it has'),
+      ).not.toHaveAttribute('tabindex');
+    } finally {
+      restore();
+    }
+  });
 
   it('leaves the native title to the tooltip it already renders', () => {
     const restore = withOverflow();
