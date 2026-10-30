@@ -158,6 +158,10 @@
         },
         {
           "kind": "component",
+          "name": "RefreshControl"
+        },
+        {
+          "kind": "component",
           "name": "SankeyChart"
         },
         {
