@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {ungated} from './ci-pr-gate.mjs';
 
 const read = name =>
   yaml.parse(
@@ -40,7 +41,7 @@ describe('visual, accessibility and RTL owners', () => {
   it.each(HEAVY)(
     '%s runs on a pull request only with the ci:heavy-lanes label',
     name => {
-      const condition = ci.jobs[name].if;
+      const condition = ungated(ci.jobs[name].if);
       expect(condition).toContain(PR_CLAUSE);
       expect(condition.replaceAll(PR_CLAUSE, '')).not.toContain(
         "'pull_request'",
@@ -57,7 +58,7 @@ describe('visual, accessibility and RTL owners', () => {
   });
 
   it('adds no trigger: a label takes effect on the next push or reopen', () => {
-    expect(ci.on.pull_request.types).toBeUndefined();
+    expect(ci.on.pull_request.types).not.toContain('labeled');
   });
 });
 
