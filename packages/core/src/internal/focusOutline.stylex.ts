@@ -1,17 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file focusOwner.ts
+ * @file internal/focusOutline.stylex.ts
  * @input focus ring tokens
  * @output FOCUS_OWNER_ATTRIBUTE and focusOwnerProps, the ring a wrapper paints
  *   only for its marked primary control
- * @position Internal to Core: not part of any published entry point, so the
- *   owner marker and its ring stay a component-local detail of Item and Token
+ * @position The internal half of the focus outline utility: same tokens as
+ *   utils/focusOutline.stylex, but no published entry point exports it, so the
+ *   owner marker and its ring stay a detail of Item and Token
  *   (`architecture:public-component-api` INV12)
  */
 
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXPropsArg} from '@stylexjs/stylex';
 import {focusVars} from '../theme/tokens.stylex';
 
 /** Marks the direct child a focus-owner wrapper rings for. */
@@ -48,6 +48,6 @@ const styles = stylex.create({
 });
 
 /** The owner ring, with caller styles last (as focusOutlineProps does). */
-export function focusWithinOwnerProps(...extra: StyleXPropsArg[]) {
+export function focusWithinOwnerProps(...extra: unknown[]) {
   return stylex.props(styles.focusWithinOwner as never, ...(extra as never[]));
 }

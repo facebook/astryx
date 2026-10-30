@@ -40,7 +40,7 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   FOCUS_OWNER_ATTRIBUTE,
   focusWithinOwnerProps,
-} from '../internal/focusOwner';
+} from '../internal/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
