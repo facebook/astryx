@@ -119,6 +119,8 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {code: '<span>{`${a} – ${b}`}</span>'},
     {code: '<span>&times;</span>'},
     {code: '<span> · </span>'},
+    // Line-break whitespace is not rendered, so this is one identifier-shaped word
+    {code: '<span>\n  ok\n</span>'},
     // Attribute expression containers are not children
     {code: "<X data-state={open ? 'Open now' : 'Closed'} />"},
     // --- Object fields: punctuation-only template chunks ---
@@ -311,6 +313,35 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
       code: "<span>{count === 1 ? '1 filter' : `${count} filters`}</span>",
       errors: [{messageId: 'hardcodedString'}, {messageId: 'hardcodedString'}],
     },
+    // JSX text is judged as rendered: the space next to an expression child
+    // is output, so a one-word count suffix reads like a template chunk.
+    {
+      code: '<span>{count} items</span>',
+      errors: [
+        {
+          messageId: 'hardcodedString',
+          data: {value: '" items"', name: 'children'},
+        },
+      ],
+    },
+    {
+      code: '<span>+{n} more</span>',
+      errors: [
+        {
+          messageId: 'hardcodedString',
+          data: {value: '" more"', name: 'children'},
+        },
+      ],
+    },
+    {
+      code: '<span>\n  {count} items\n</span>',
+      errors: [
+        {
+          messageId: 'hardcodedString',
+          data: {value: '" items"', name: 'children'},
+        },
+      ],
+    },
     {
       code: '<VisuallyHidden>Required</VisuallyHidden>',
       errors: [
@@ -403,6 +434,37 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
         {
           messageId: 'hardcodedString',
           data: {value: '"No results"', name: 'emptyText'},
+        },
+      ],
+    },
+    // An exempted chunk does not exempt the rest of its template.
+    {
+      code: 'const ariaLabel = `Resize column ${h} of ${total} total`;',
+      filename: '/repo/Table/useTableColumnResize.tsx',
+      options: [
+        {
+          allowedStringsByFile: {
+            'Table/useTableColumnResize.tsx': ['Resize column '],
+          },
+        },
+      ],
+      errors: [
+        {
+          messageId: 'hardcodedString',
+          data: {value: '" of "', name: 'ariaLabel'},
+        },
+      ],
+    },
+    {
+      code: 'const x = <span>{count} items</span>;',
+      filename: '/repo/PowerSearch/PowerSearch.tsx',
+      options: [
+        {allowedStringsByFile: {'PowerSearch/PowerSearch.tsx': ['items']}},
+      ],
+      errors: [
+        {
+          messageId: 'hardcodedString',
+          data: {value: '" items"', name: 'children'},
         },
       ],
     },

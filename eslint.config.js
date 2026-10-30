@@ -349,7 +349,11 @@ export default defineConfig(
           allowedStringsByFile: {
             // Developer diagnostics, not interface copy.
             'BottomSheet/BottomSheetPanel.tsx': ['snapPoints ignored '],
-            'Markdown/plugins/protocol.ts': ['plugin "'],
+            'Markdown/plugins/protocol.ts': [
+              'plugin "',
+              '" failed in ',
+              '; rendered readable fallback.',
+            ],
             // Pre-existing hardcoded text awaiting catalog keys.
             'Chat/useChatPasteAsToken.ts': [' lines, ', ' chars'],
             'Chat/useTriggerMenu.tsx': ['No results'],
@@ -359,6 +363,7 @@ export default defineConfig(
               'date range',
               '1 filter',
               ' filters',
+              ' items',
             ],
             'PowerSearch/PowerSearchValueEditor.tsx': [' ago', ' from now'],
             'Slider/Slider.tsx': ['Minimum value', 'Maximum value', 'Required'],
@@ -367,7 +372,7 @@ export default defineConfig(
             ],
             'TimeInput/TimeInput.tsx': ['e.g., 2:30 PM', 'e.g., 14:30'],
             'Timer/Timer.tsx': ['m ', 'h '],
-            'Tokenizer/Tokenizer.tsx': ['Create "'],
+            'Tokenizer/Tokenizer.tsx': ['Create "', ' more'],
           },
         },
       ],

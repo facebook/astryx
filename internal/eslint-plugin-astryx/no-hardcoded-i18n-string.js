@@ -30,6 +30,8 @@
  *      heuristic; values are not traced from other names into a sink.
  *   2c. JSX children: rendered text (`<span>No results</span>`) and
  *      expression children (`{formatValue?.(x) ?? `${n} selected`}`).
+ *      JSX text is judged as it renders, so ` items` in `{count} items` is
+ *      prose, like the same chunk of a template.
  *      Punctuation and number layout (`{used}/{max}`) are not English and are
  *      not flagged; that ordering is a manual review concern.
  *   3. Destructure defaults (`function Foo({label = 'X'})`) of the same names.
@@ -230,12 +232,14 @@ function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
   const report = (node, value) => {
     if (opts.requireEnglish && !/[A-Za-z]/.test(value)) return false;
     if (allowed?.has(value)) return false;
-    context.report({
+    // The per-file allowlist wrapper returns false when it suppresses, so an
+    // exempted chunk does not end the scan of the rest of its template.
+    const emitted = context.report({
       node,
       messageId,
       data: {value: JSON.stringify(value), name},
     });
-    return true;
+    return emitted !== false;
   };
   switch (expr.type) {
     case 'Literal':
@@ -351,6 +355,23 @@ function allowedStringsForFile(filename, byFile) {
   return allowed;
 }
 
+/**
+ * JSX text as it renders: whitespace that touches a line break is dropped,
+ * whitespace inside a line (including next to an expression child) is kept and
+ * collapsed to one space.
+ */
+function renderedJSXText(raw) {
+  const lines = raw.split(/\r\n|\n|\r/);
+  const kept = [];
+  for (const [index, line] of lines.entries()) {
+    let text = line.replace(/[\t ]+/g, ' ');
+    if (index > 0) text = text.replace(/^ /, '');
+    if (index < lines.length - 1) text = text.replace(/ $/, '');
+    if (text !== '') kept.push(text);
+  }
+  return kept.join(' ');
+}
+
 function isJSXChild(node) {
   const parent = node.parent;
   return parent?.type === 'JSXElement' || parent?.type === 'JSXFragment';
@@ -440,9 +461,10 @@ const rule = {
               value(descriptor) {
                 const value = descriptor.data?.value;
                 if (value != null && allowedInFile.has(JSON.parse(value))) {
-                  return;
+                  return false;
                 }
                 ruleContext.report(descriptor);
+                return true;
               },
             },
           });
@@ -560,7 +582,10 @@ const rule = {
 
       JSXText(node) {
         if (!isJSXChild(node)) return;
-        const val = node.value.replace(/\s+/g, ' ').trim();
+        // Judge the text as React renders it, like a template chunk: the
+        // space in `{count} items` is part of the output, so ` items` reads
+        // as prose rather than as an identifier-shaped word.
+        const val = renderedJSXText(node.value);
         if (!/[A-Za-z]/.test(val) || !looksUserFacing(val)) return;
         context.report({
           node,
