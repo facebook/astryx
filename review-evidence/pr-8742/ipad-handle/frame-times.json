@@ -1,0 +1,22 @@
+{
+  "source": "ipad-handle-native-original.mov",
+  "native_frame_pts_seconds": [
+    {
+      "file": "02-native-keyboard-hiding.png",
+      "pts": 12.566667
+    },
+    {
+      "file": "03-native-accessory-only-transient.png",
+      "pts": 12.68
+    },
+    {
+      "file": "04-native-accessory-only-transient.png",
+      "pts": 12.71
+    },
+    {
+      "file": "05-native-full-recovery.png",
+      "pts": 12.9
+    }
+  ],
+  "method": "decoded original frames without frame interpolation; no image crop, annotation or compositing"
+}

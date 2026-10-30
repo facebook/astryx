@@ -2,6 +2,13 @@
 
 **Keyboard show, typing, and Done/full recovery are captured. Interactive dismissal leaving only the accessory bar is not verified, so the requested evidence gate remains open.**
 
+## Follow-up on the current head
+
+[Native iPad sheet-handle recovery](ipad-handle/README.md) captures visible QWERTY,
+a genuine handle drag, a transient accessory-only band, and full recovery on
+`b6ef992e156c5552a9a42ff59d84990bc5339c50`. It supplements this iPhone capture; it
+does not establish a stable accessory-only state with a field still focused.
+
 ## Build and environment
 
 - PR: https://github.com/meta/astryx/pull/8742

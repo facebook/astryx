@@ -1,0 +1,6 @@
+{
+  "streams": [{"codec_name": "vp9", "width": 1488, "height": 2266, "pix_fmt": "yuv420p", "color_range": "tv", "r_frame_rate": "60/1", "avg_frame_rate": "60/1"}],
+  "format": {"duration": "9.000000", "size": "1028586"},
+  "full_decode": {"exit_code": 0, "errors": 0},
+  "note": "60 fps is the browser-copy sampling rate, not a claim about the native variable-frame-rate capture."
+}
