@@ -4271,6 +4271,71 @@ describe('Selector popup theme target', () => {
   });
 });
 
+describe('Selector light dismiss focus (spec:Popover AR4)', () => {
+  function closeByLightDismiss() {
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+  }
+
+  it('leaves focus on the field a press moved it to', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="below"
+        />
+        <input aria-label="Notes" />
+      </>,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The press on another field focuses it before the browser's light
+    // dismiss closes the list.
+    const notes = screen.getByRole('textbox', {name: 'Notes'});
+    act(() => {
+      notes.focus();
+    });
+    closeByLightDismiss();
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(notes).toHaveFocus();
+  });
+
+  it('returns focus to the trigger when the press lands on nothing focusable', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="below"
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    act(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    closeByLightDismiss();
+
+    expect(trigger).toHaveFocus();
+  });
+});
+
 describe('Selector option-row theme target', () => {
   const ROW_OPTIONS = ['Apple', 'Banana', 'Orange'];
 
