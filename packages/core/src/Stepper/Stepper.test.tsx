@@ -205,6 +205,27 @@ describe('Stepper', () => {
     expect(handleClick).not.toHaveBeenCalled();
   });
 
+  it("describes a disabled step with its reason, the step's description (spec:AST-085 FR5)", () => {
+    render(
+      <Stepper activeStep={1} onStepClick={() => {}}>
+        <Step step={0} label="Setup" />
+        <Step
+          step={1}
+          label="Permissions"
+          description="Requires admin role"
+          isDisabled
+        />
+      </Stepper>,
+    );
+    const step = screen.getByRole('button', {
+      name: /Go to step 2: Permissions/,
+    });
+    expect(step).toHaveAccessibleDescription('Requires admin role');
+    expect(
+      screen.getByRole('button', {name: /Go to step 1: Setup/}),
+    ).not.toHaveAttribute('aria-describedby');
+  });
+
   it('keeps focus on a step that becomes disabled while focused (spec:AST-085 FR4)', () => {
     const {rerender} = render(
       <Stepper activeStep={2} onStepClick={() => {}}>

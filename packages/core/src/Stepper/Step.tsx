@@ -38,7 +38,7 @@
  * - /packages/cli/assets/templates/blocks/components/Step/ (showcase blocks)
  */
 
-import {useLayoutEffect, type ReactNode} from 'react';
+import {useId, useLayoutEffect, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 
@@ -1354,8 +1354,13 @@ export function Step({
     </div>
   );
 
+  // A clickable step's name is its number, label and status word; the
+  // description describes it, so a disabled step's reason reaches assistive
+  // technology too (spec:AST-085 FR5).
+  const descriptionID = useId();
   const descriptionNode = isRenderable(description) ? (
     <div
+      id={descriptionID}
       {...stylex.props(
         hasIndicator
           ? styles.descriptionRowWithIndicator
@@ -1620,6 +1625,7 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              aria-describedby={descriptionNode ? descriptionID : undefined}
               aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
@@ -1713,6 +1719,7 @@ export function Step({
             type="button"
             onClick={handleClick}
             aria-label={stepAriaLabel}
+            aria-describedby={descriptionNode ? descriptionID : undefined}
             aria-disabled={isDisabled || undefined}
             {...pressable}
             {...stylex.props(
@@ -1774,6 +1781,7 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
+              aria-describedby={descriptionNode ? descriptionID : undefined}
               aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
@@ -1843,6 +1851,7 @@ export function Step({
           type="button"
           onClick={handleClick}
           aria-label={stepAriaLabel}
+          aria-describedby={descriptionNode ? descriptionID : undefined}
           aria-disabled={isDisabled || undefined}
           {...stylex.props(
             styles.buttonReset,
