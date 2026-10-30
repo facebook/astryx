@@ -7,7 +7,9 @@
  *   presentations use (`SHEET_PRESENT_SPRING`, `SETTLE_SPRING`, …), each in
  *   the vocabulary of its source (SpringDescription: duration/bounce,
  *   response/dampingRatio or mass/stiffness/damping; a reader normalizes them
- *   to one form), and `springs`, the table of all of them by row name
+ *   to one form), `springs`, the table of all of them by row name, and the
+ *   role registrations: registerSpringsTable (every spring `spec:AST-094`
+ *   FR4 names) and registerAlertSprings (the alert's two alone)
  * @position The springs domain of the UIKit constants table (motion/uikit)
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
@@ -497,7 +499,45 @@ const SPRING_ROLES = {
   menuClose: MENU_CLOSE_SPRING,
   subMenuOpen: SUB_MENU_OPEN_SPRING,
   subMenuBack: SUB_MENU_BACK_SPRING,
+  alertPresent: ALERT_PRESENT_SPRING,
+  alertDismiss: ALERT_DISMISS_SPRING,
 };
+
+// UIKit's menu springs under their table paths, for registerMenuSprings.
+const menuSpringRoles = {
+  menuOpen: MENU_OPEN_SPRING,
+  menuClose: MENU_CLOSE_SPRING,
+};
+
+/**
+ * Registers only UIKit's menu springs as their roles, `springs.menuOpen`
+ * and `springs.menuClose` (spec:AST-094 FR4, FR31), for DropdownMenu's grow
+ * and collapse, which plays them without the rest of the table: its bundle
+ * carries these two springs and no other.
+ */
+export function registerMenuSprings(): void {
+  registerMotionTable('springs', menuSpringRoles, {
+    roles: Object.keys(menuSpringRoles),
+  });
+}
+
+// UIKit's sub-menu springs under their table paths, for registerSubMenuSprings.
+const subMenuSpringRoles = {
+  subMenuOpen: SUB_MENU_OPEN_SPRING,
+  subMenuBack: SUB_MENU_BACK_SPRING,
+};
+
+/**
+ * Registers only UIKit's sub-menu springs as their roles, `springs.subMenuOpen`
+ * and `springs.subMenuBack` (spec:AST-094 FR4), for DropdownMenu's in-place
+ * sub-menu, which plays them without the rest of the table: its bundle
+ * carries these two springs and no other.
+ */
+export function registerSubMenuSprings(): void {
+  registerMotionTable('springs', subMenuSpringRoles, {
+    roles: Object.keys(subMenuSpringRoles),
+  });
+}
 
 /**
  * Registers the springs spec:AST-094 FR4 names as internal motion roles
@@ -510,5 +550,23 @@ const SPRING_ROLES = {
 export function registerSpringsTable(): void {
   registerMotionTable('springs', SPRING_ROLES, {
     roles: Object.keys(SPRING_ROLES),
+  });
+}
+
+// The alert's two rows under their table paths, for registerAlertSprings.
+const alertSpringRoles = {
+  alertPresent: ALERT_PRESENT_SPRING,
+  alertDismiss: ALERT_DISMISS_SPRING,
+};
+
+/**
+ * Registers only the alert's springs as their roles, `springs.alertPresent`
+ * and `springs.alertDismiss` (`component:AlertDialog` FR6), for AlertDialog,
+ * which plays them without the rest of the table: its bundle carries these
+ * two springs and no other.
+ */
+export function registerAlertSprings(): void {
+  registerMotionTable('springs', alertSpringRoles, {
+    roles: Object.keys(alertSpringRoles),
   });
 }

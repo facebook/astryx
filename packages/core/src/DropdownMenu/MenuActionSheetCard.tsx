@@ -65,7 +65,6 @@ import type {
   DropdownMenuOption,
   DropdownMenuSection,
 } from './DropdownMenu';
-import {opensSubMenu} from './opensSubMenu';
 import {useIsScrollable} from '../hooks/useIsScrollable';
 
 /** Marks the actions the touch tracking hit-tests. */
@@ -110,9 +109,8 @@ function isPlainAction(item: DropdownMenuItemData): boolean {
   return (
     typeof item.label === 'string' &&
     item.href == null &&
-    !opensSubMenu(item, {showsRegions: true}) &&
-    item.header == null &&
-    item.footer == null &&
+    // A row with nested items opens a level.
+    (item.items == null || item.items.length === 0) &&
     // The card's buttons show a label and an icon; a row that shows more,
     // or stays open when chosen, keeps the sheet.
     item.description == null &&

@@ -61,7 +61,10 @@ import {
 } from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
 import {menu} from '../motion/uikit/menu';
-import {springs} from '../motion/uikit/springs';
+import {
+  SUB_MENU_BACK_SPRING,
+  SUB_MENU_OPEN_SPRING,
+} from '../motion/uikit/springs';
 import {isRtlElement} from '../hooks/isRtlElement';
 
 /**
@@ -464,7 +467,7 @@ export function createMenuDrillInMotion(
       // The level that just showed, and its own header.
       const view = card == null ? null : shownViewOf(card);
       const header = view?.querySelector<HTMLElement>(HEADER_SELECTOR) ?? null;
-      const spring = springs.subMenuOpen;
+      const spring = SUB_MENU_OPEN_SPRING;
       playBox(paint, from.box, boxOf(paint), spring, at);
       if (from.atRoot) {
         playParent(parent, true, spring, at);
@@ -501,7 +504,7 @@ export function createMenuDrillInMotion(
         at,
       );
     } else {
-      const spring = springs.subMenuBack;
+      const spring = SUB_MENU_BACK_SPRING;
       playBox(paint, from.box, boxOf(paint), spring, at);
       if (from.atRoot) {
         playParent(parent, false, spring, at);
