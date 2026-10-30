@@ -911,8 +911,8 @@ Storybook story for anything you added or altered.
 
 ### When CI runs on your pull request
 
-- **Drafts run no CI.** Marking the pull request ready for review starts a
-  full run.
+- **Drafts run no CI.** Marking the pull request ready for review starts
+  CI, which runs the checks your change reaches.
 - **A pull request from a fork runs CI once a maintainer labels it
   `ci:run`.** Only maintainers can apply labels, so you don't need to ask: a
   maintainer adds it after a first look. The label takes effect on your next

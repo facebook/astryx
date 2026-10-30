@@ -288,7 +288,7 @@ they are separately named.
 - **FR17 — A pull request runs CI when it is ready and a maintainer can vouch
   for it.** A `pull_request` workflow starts on `opened`, `synchronize`,
   `reopened` and `ready_for_review`, never on a label. A draft runs no job, and
-  marking it ready for review starts a full run. A pull request runs CI when
+  marking it ready for review starts its pull-request run, which runs what the change reaches (FR13, DEC-6). A pull request runs CI when
   its head branch lives in this repository, which pushing needs write access
   for, or when it carries the maintainer-applied `ci:run` label; the label
   takes effect on the next push or a close and reopen. Every job that can start
