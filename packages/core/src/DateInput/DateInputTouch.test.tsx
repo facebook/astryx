@@ -29,6 +29,7 @@ import {
   afterEach,
 } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -54,6 +55,7 @@ import {
   rowsIn,
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
@@ -2117,6 +2119,19 @@ describe('DateInput — a mouse can drag a wheel', () => {
   const title = () =>
     document.querySelector<HTMLElement>('[data-title="month-year"]')!;
 
+  // Today's column is the fine pointer's (a finger gets the touch column):
+  // a desktop whose field asks for the sheet.
+  beforeEach(() => {
+    setViewport('desktop');
+  });
+
+  function openWheels() {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
+    fireEvent.click(title());
+  }
+
   /** jsdom has no layout: give the rows a height and the wheel a scrollTop. */
   function withWheelLayout<T>(fn: () => T): T {
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
@@ -2173,8 +2188,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   }
 
   it('scrolls the wheel when a mouse drags it', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2189,8 +2203,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('ignores movement too small to be a drag, so a click is still a click', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2201,8 +2214,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('leaves touch and pen alone — they pan natively, and better', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       for (const pointerType of ['touch', 'pen']) {
         const el = wheel();
@@ -2216,8 +2228,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('ignores a secondary button, which belongs to the context menu', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2234,8 +2245,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
    * jumped a whole one.
    */
   it('suspends snapping for the drag, and restores it after', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       trackable(el);
@@ -2250,14 +2260,62 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   /**
+   * Every `scrollTop` the drag assigns ends in its own `scrollend` in
+   * Chromium, and the hand can rest with the button still down. Neither is
+   * rest: the month the wheel lands on commits at the release, as it does
+   * when a finger lifts.
+   */
+  it('commits nothing while a mouse drag holds the wheel, and commits at the release', () => {
+    vi.useFakeTimers();
+    try {
+      // A year of months, so May is reachable (the default range ends in April).
+      renderAndOpen(
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
+      );
+      fireEvent.click(title());
+      withWheelLayout(() => {
+        const el = wheel();
+        trackable(el);
+        // March, the committed month, sits under the band.
+        el.scrollTop = 2 * 28;
+        const selected = () =>
+          el.querySelector('[aria-selected="true"]')?.textContent;
+        el.dispatchEvent(pointer('pointerdown', {y: 200}));
+        // Two rows on: May is under the band.
+        el.dispatchEvent(pointer('pointermove', {y: 144}));
+        fireEvent.scroll(el);
+        el.dispatchEvent(new Event('scrollend'));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('March');
+        expect(title()).toHaveTextContent('March 2026');
+
+        el.dispatchEvent(pointer('pointerup', {y: 144}));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('May');
+        expect(title()).toHaveTextContent('May 2026');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /**
    * BottomSheet starts its own drag-to-dismiss from a `pointerdown` on its
    * body and CAPTURES the pointer for it, which retargets every later pointer
    * event — including the click. Measured before this: a click on a wheel row
    * that wobbled more than a pixel selected nothing at all.
    */
   it('keeps the press away from the sheet, which would capture the pointer', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       trackable(el);
@@ -2570,6 +2628,30 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     );
     expect(item).not.toContain('animationTimeline');
     expect(item).not.toContain("overflow: 'hidden'");
+  });
+
+  it('keeps the published tokens module to its released names', async () => {
+    // @astryxdesign/core/DateInput/tokens.stylex is a public subpath: the touch
+    // wheel's geometry lives in an unexported module beside it.
+    const tokens = await import('./tokens.stylex');
+    expect(Object.keys(tokens).sort()).toEqual([
+      'WEEKS_PER_PANE',
+      'dateInputTouchGeometry',
+      'dateInputTouchSizes',
+    ]);
+  });
+
+  it('sizes the touch wheels as today’s column, with the large text of the theme', () => {
+    // The player's row pitch and column height are today's tokens, in
+    // numbers: a row is `wheelItemSize`, the column six day rows.
+    const tokens = read('tokens.stylex.ts');
+    expect(tokens).toContain(`wheelItemSize: '${WHEEL_ROW_PITCH}px'`);
+    expect(tokens).toContain("daySize: '44px'");
+    expect(tokens).toContain('export const WEEKS_PER_PANE = 6;');
+    const source = read('PickerWheel.tsx');
+    expect(source).toContain('const COLUMN_HEIGHT = 6 * 44;');
+    expect(source).toContain('blockSize: dateInputTouchGeometry.paneBlockSize');
+    expect(source).toContain("fontSize: typeScaleVars['--text-large-size']");
   });
 
   it('insets the sheet content equally on every edge', () => {
