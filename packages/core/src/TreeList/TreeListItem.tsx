@@ -4,7 +4,8 @@
 
 /**
  * @file TreeListItem.tsx
- * @input Uses React, StyleX, theme tokens, TreeListBranches
+ * @input Uses React, StyleX, theme tokens, TreeListBranches, the shared press
+ *   overlays and the compositor press layer
  * @output Exports TreeListItem component (internal, not publicly exported)
  * @position Internal implementation; consumed by TreeList.tsx
  *
@@ -26,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   hasInteractiveAncestor,
@@ -686,6 +688,10 @@ export function TreeListItem({
                   densityStyles[density],
                   styles.interactive,
                   interactionOverlayStyles.backgroundImage,
+                  // The touch press on a compositor layer (after the
+                  // overlay, whose own touch paint it turns off).
+                  rowPressLayerStyles.cell,
+                  rowPressLayerStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,
