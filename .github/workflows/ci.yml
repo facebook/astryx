@@ -341,17 +341,17 @@ jobs:
   # spec-only lane validates spec records here, where it always has.
   docsite-test:
     needs: [docsite-browser, docsite-data]
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled()) }}
+    if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
     steps:
-      - name: Require a branch in this repository or the ci:run label
-        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+      - name: Require a ready pull request from this repository or labelled ci:run
+        if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.draft || !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) }}
         run: |
-          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          echo "::error::CI has not run: a draft runs CI once marked ready for review, and a pull request from a fork once a maintainer labels it ci:run (spec:AST-030 FR17)."
           exit 1
       # This job decides its own scope (no separate scope job): the step
       # reads the PR's file list and the base's trusted classifier, and
@@ -888,16 +888,16 @@ jobs:
         test-native-swift,
         pr-interaction,
       ]
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && always() && !cancelled()) }}
+    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
       pull-requests: read
     steps:
-      - name: Require a branch in this repository or the ci:run label
-        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+      - name: Require a ready pull request from this repository or labelled ci:run
+        if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.draft || !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) }}
         run: |
-          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          echo "::error::CI has not run: a draft runs CI once marked ready for review, and a pull request from a fork once a maintainer labels it ci:run (spec:AST-030 FR17)."
           exit 1
       # This job decides its own scope (no separate scope job): the step
       # reads the PR's file list and the base's trusted classifier, and
@@ -1382,14 +1382,14 @@ jobs:
   # skips this gate too — both match the old single-job behavior.
   build:
     needs: [build-storybook, build-sandbox, typecheck]
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && !cancelled() && (needs.build-storybook.result != 'skipped' || github.event_name == 'pull_request')) }}
+    if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && (needs.build-storybook.result != 'skipped' || github.event_name == 'pull_request') }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
-      - name: Require a branch in this repository or the ci:run label
-        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+      - name: Require a ready pull request from this repository or labelled ci:run
+        if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.draft || !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) }}
         run: |
-          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          echo "::error::CI has not run: a draft runs CI once marked ready for review, and a pull request from a fork once a maintainer labels it ci:run (spec:AST-030 FR17)."
           exit 1
       - name: Assert parallel builds succeeded
         run: |

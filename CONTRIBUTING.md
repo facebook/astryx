@@ -911,14 +911,14 @@ Storybook story for anything you added or altered.
 
 ### When CI runs on your pull request
 
-- **Drafts run no CI.** Marking the pull request ready for review starts a
-  full run.
+- **Drafts run no CI.** Their required checks fail at once with the reason,
+  and marking the pull request ready for review starts a full run.
 - **A pull request from a fork runs CI once a maintainer labels it
   `ci:run`.** Only maintainers can apply labels, so you don't need to ask: a
   maintainer adds it after a first look. The label takes effect on your next
   push, or when the maintainer closes and reopens the pull request; CI then
   runs on each push while the label stays. Until then the required checks fail
-  with "Waiting for a maintainer's ci:run label".
+  with the reason.
 - **`ci:heavy-lanes` opts a pull request into the visual, accessibility and
   RTL suites**, which otherwise run on `main` after it merges. A maintainer
   applies it when a change needs that evidence before merging; like `ci:run`,
