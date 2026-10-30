@@ -273,8 +273,8 @@ button), so no anatomy part can own the `toast` target.
 Read from source, with no focused test yet:
 
 - FR1: the `toast` target and its `type` state.
-- FR2: pausing while the pointer is over the card, focus is inside it, or a
-  touch gesture is active, and the 1 s minimum on resume.
+- FR2: pausing while a touch gesture is active, and the 1 s minimum on
+  resume.
 - FR4: a mouse drag dismissing, and a release moving back cancelling; the
   gesture tests assert today's touch-and-pen-only, net-travel rule.
 - FR5: a swipe's settle starting at the release velocity, and the
