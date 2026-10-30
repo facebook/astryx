@@ -145,6 +145,7 @@ export function registerSearch(program) {
             'title',
             'displayName',
             'kind',
+            'deprecated',
             'score',
             'reason',
             'import',
@@ -160,6 +161,7 @@ export function registerSearch(program) {
             'title',
             'displayName',
             'kind',
+            'deprecated',
             'import',
             'description',
             'command',
@@ -177,7 +179,13 @@ export function registerSearch(program) {
         ),
         records(results, {
           fields,
-          format: {command: formatCliCommand, parent: formatCliCommand},
+          format: {
+            command: formatCliCommand,
+            parent: formatCliCommand,
+            // A deprecated component names what to use instead.
+            deprecated: deprecation =>
+              `use ${deprecation.replacement}: ${deprecation.description}`,
+          },
         }),
         ...note,
         ...discoverHint(run, q, options.type),

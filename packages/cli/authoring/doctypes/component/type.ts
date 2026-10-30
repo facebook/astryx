@@ -21,6 +21,15 @@ import type {
   UsageDoc,
 } from '../base/type.js';
 
+/** What replaces a deprecated component (`ComponentBaseDoc.deprecated`). */
+export interface ComponentDeprecation {
+  /** `name` of the documented component to use instead, e.g. `'BottomSheet'`. */
+  replacement: string;
+  /** The modernization route in a sentence or two: what to write instead,
+   *  and where the migration is described. */
+  description: string;
+}
+
 /**
  * Shared fields between single-component and multi-component docs.
  * Do not use this interface directly — use `ComponentDoc` (the union type).
@@ -63,6 +72,12 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
    *  range, and on older CLIs that do not read `replaces`, the component keeps
    *  its own name. */
   replaces?: string;
+  /** Marks a deprecated component (spec:AST-017 FR26, FR29b): it keeps
+   *  working and stays documented, labeled with its replacement. The docsite
+   *  shows the label by the component's title, in its index, sidebar, and
+   *  search, and `astryx search` results carry it. Omit for a component that
+   *  is not deprecated. */
+  deprecated?: ComponentDeprecation;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, and others).

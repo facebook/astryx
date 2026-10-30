@@ -12,6 +12,8 @@ import type {
 export interface ComponentSidebarEntry extends GroupedEntry {
   packageName: string;
   isReady: boolean;
+  /** Whether the component's doc marks it deprecated. */
+  isDeprecated: boolean;
 }
 
 export interface ComponentSidebarGroup extends Omit<GroupedGroup, 'entries'> {
@@ -42,6 +44,14 @@ const componentReadiness = new Map(
   ),
 );
 
+const deprecatedComponents = new Set(
+  Object.entries(components).flatMap(([packageName, entries]) =>
+    entries
+      .filter(entry => entry.deprecated != null)
+      .map(entry => `${packageName}:${entry.name}`),
+  ),
+);
+
 const packageDisplayNames = new Map(
   packages.map(pkg => [pkg.name, pkg.displayName]),
 );
@@ -54,6 +64,7 @@ function enrichEntry(
     ...entry,
     packageName,
     isReady: componentReadiness.get(`${packageName}:${entry.name}`) ?? true,
+    isDeprecated: deprecatedComponents.has(`${packageName}:${entry.name}`),
   };
 }
 

@@ -13,7 +13,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Suspense} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import {Heading, Text} from '@astryxdesign/core/Text';
-import {VStack} from '@astryxdesign/core/Layout';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Card} from '@astryxdesign/core/Card';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
@@ -31,6 +31,7 @@ import {Accessibility} from './Accessibility';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
 import {MarkdownText} from '../MarkdownText';
+import {DeprecatedBadge, DeprecationNotice} from '../Deprecation';
 import {
   InteractivePreviewStage,
   useInteractiveState,
@@ -401,7 +402,10 @@ export function ComponentDetailClient({
         {/* This heading is independent of the URL and belongs in the static
             shell. Only the tab row and panel below need request state. */}
         <VStack gap={2}>
-          <Text type="display-1">{comp.displayName}</Text>
+          <HStack gap={3} vAlign="center" wrap="wrap">
+            <Text type="display-1">{comp.displayName}</Text>
+            {comp.deprecated && <DeprecatedBadge />}
+          </HStack>
           <Text type="supporting" color="secondary">
             {!comp.isReady ? 'Canary · ' : ''}
             {pkg}
@@ -409,6 +413,8 @@ export function ComponentDetailClient({
             {!comp.isReady && pkg ? ` · npm install ${pkg}@canary` : ''}
           </Text>
         </VStack>
+
+        {comp.deprecated && <DeprecationNotice deprecation={comp.deprecated} />}
 
         {hasTabs ? (
           <Suspense
