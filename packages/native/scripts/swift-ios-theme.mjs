@@ -9,7 +9,7 @@
  *   surface) and one <SwiftName>Theme.swift per theme declaring
  *   Theme.<swiftName>
  * @position Implements the Swift theme generator spec
- *   (specs/swift/library/theme-generator.md). Run by `generate:swift-ios`; the
+ *   (specs/swift/theme-generator.spec.md). Run by `generate:swift-ios`; the
  *   Swift output is committed and a test fails when any file drifts.
  *
  * SYNC: When modified, update this header and the theme generator spec.
