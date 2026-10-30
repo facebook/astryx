@@ -116,7 +116,16 @@ describe('Node-tooling CI routing', () => {
       'node .github/scripts/theme-layer-cascade.js',
       'ASTRYX_STYLEX_BROWSER=1 vitest run scripts/stylex-module-resolution.browser.test.mjs --project node --maxWorkers=1',
     ]);
-    expect(ci.jobs['fixture-contrast'].if).toContain(TOOLING_FALSE);
+    // The vibe-tests fixtures share test-build's Playwright runner, and its
+    // Node-tooling skip.
+    expect(ci.jobs['fixture-contrast']).toBeUndefined();
+    for (const name of [
+      'Verify canonical setup compositions',
+      'Verify guest fixture contrast',
+    ]) {
+      expect(step(ci.jobs['test-build'], name)).toBeDefined();
+    }
+    expect(ci.jobs['test-build'].if).toContain(TOOLING_FALSE);
     // The merge-base size build is heavy build work and stays off the
     // Node-tooling, docsite, and spec lanes.
     expect(ci.jobs['size-base'].if).toContain(BROAD_ONLY);
