@@ -222,7 +222,6 @@ export class GestureArena {
           target: input.target,
           scroll: input.scroll ?? null,
           takenByBrowser: false,
-          ...(input.isFeedbackOnly === true ? {isFeedbackOnly: true} : {}),
         };
         const participants: GestureRecognizer[] = [];
         for (const [depth, recognizer] of input.recognizers.entries()) {
@@ -659,9 +658,9 @@ export class GestureArena {
    * waiting recognition that fails, a gesture a second finger or the app
    * cancels) gives them back to the browser unless another recognition owns
    * them, so a finger still resting there can pinch-zoom the page. A gesture
-   * that cancels itself on a finger's move (a long press past its tolerance)
-   * keeps that finger until it lifts: the drag goes on, and the page never
-   * takes it over midway (`spec:AST-094` FR14), as UIKit's scroll view never
+   * cancelled while one of its fingers is moving (in that move's dispatch)
+   * keeps that moving finger until it lifts: the drag goes on, and the page
+   * never takes it over midway (`spec:AST-094` FR14), as UIKit's scroll view never
    * takes a touch another recognizer had.
    */
   private releaseClaim(
