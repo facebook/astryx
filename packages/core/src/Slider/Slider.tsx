@@ -58,6 +58,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 // =============================================================================
 // Types
 // =============================================================================
@@ -591,7 +592,9 @@ export function Slider({ref, ...props}: SliderProps) {
   // role="slider" in WAI-ARIA 1.2, so the thumb instead points its
   // aria-describedby at a visually hidden "Required" span — mirroring the
   // Field label's visible indicator (where isOptional takes precedence).
-  const conveysRequired = isRequired && !isOptional;
+  // A surrounding FormLayout's defaultOptionality="required" makes an unmarked
+  // field required too (FormLayout FR5).
+  const conveysRequired = useResolvedRequired({isRequired, isOptional});
 
   // Build aria-describedby
   const describedByParts: string[] = [];

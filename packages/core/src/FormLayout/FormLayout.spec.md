@@ -63,12 +63,11 @@ This table is a review projection; the body below is authoritative.
 
 ## Current-state impact
 
-- **Required state lost for four controls (FR5, AR2).** Under
+- **Required state lost for two controls (FR5, AR2).** Under
   `defaultOptionality="required"` the visible "Required" marker is hidden,
-  but Typeahead and Tokenizer set no `aria-required`, and FileInput and
-  Slider build their required description from `isRequired` alone. Screen
-  reader users hear those fields as not required, while sighted users see
-  the form-wide convention.
+  but Typeahead and Tokenizer set no `aria-required`. Screen reader users
+  hear those fields as not required, while sighted users see the form-wide
+  convention.
 
 ## Ownership boundary
 
@@ -101,7 +100,7 @@ This table is a review projection; the body below is authoritative.
 | FR2 | `horizontal` places every direct child in one `1fr` grid column in the document's logical inline order, with a `--spacing-4` gap and no component-owned wrap rule.                                                                                                                                                                                                                                                                                                                                                                                          | Released source, tests, and stories                             |
 | FR3 | `horizontal-labels` is a two-column grid (`auto 1fr`) with a `--spacing-3` row gap and `--spacing-4` column gap, items aligned to the start, so Field labels sit on the inline-start side of their controls; at a viewport width of 480px or below it becomes one flex column with a `--spacing-4` gap. OQ1 holds whether the collapsed label and control need a tighter pair gap.                                                                                                                                                                          | Released source, Field composition, and tests                   |
 | FR4 | FormLayout provides its direction and `defaultOptionality` to descendants in the same layer; a nested FormLayout replaces both for its own descendants, and content in a layer opened inside a FormLayout starts without them (`spec:AST-038` FR7, FR8).                                                                                                                                                                                                                                                                                                    | Context source and tests                                        |
-| FR5 | `defaultOptionality` suppresses only the visible marker that restates the form default; descendant controls still expose the resolved `aria-required`, while native `required` stays tied to an explicit field `isRequired`. Unset keeps each field's own indicators. Implementation gap: under `defaultOptionality="required"`, Typeahead and Tokenizer set no `aria-required`, and FileInput and Slider describe required state from `isRequired` alone, so those fields are announced as not required while the marker is hidden (Current-state impact). | Tests; `family:input-fields` ownership                          |
+| FR5 | `defaultOptionality` suppresses only the visible marker that restates the form default; descendant controls still expose the resolved `aria-required`, while native `required` stays tied to an explicit field `isRequired`. Unset keeps each field's own indicators. Implementation gap: under `defaultOptionality="required"`, Typeahead and Tokenizer set no `aria-required`, so those fields are announced as not required while the marker is hidden (Current-state impact). | Tests; `family:input-fields` ownership                          |
 | FR6 | The root is a `div`. `ref`, DOM, data, ARIA, and event props, `xstyle`, class name, and inline style reach or compose on the root without replacing `data-direction` or the `form-layout` target.                                                                                                                                                                                                                                                                                                                                                           | `architecture:public-component-api/INV5–INV8`; source and tests |
 
 ### Allowed variation
@@ -135,7 +134,7 @@ This table is a review projection; the body below is authoritative.
 ## Accessibility contract
 
 - **AR1 — Layout remains nonsemantic.** FormLayout renders a `<div>` and does not imply `<form>`, group, label, or submission semantics; callers provide those when their composition needs them.
-- **AR2 — Required state remains perceivable.** A form-wide optionality convention may remove redundant visible markers, but descendant controls preserve the resolved required state for assistive technology. Implementation gap: Typeahead, Tokenizer, FileInput, and Slider do not (FR5).
+- **AR2 — Required state remains perceivable.** A form-wide optionality convention may remove redundant visible markers, but descendant controls preserve the resolved required state for assistive technology. Implementation gap: Typeahead and Tokenizer do not (FR5).
 - **AR3 — Logical order is preserved.** Every direction retains DOM order and logical inline flow; FormLayout does not create a separate keyboard order.
 
 ## Design relationships
