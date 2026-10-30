@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -228,7 +229,9 @@ describe('spec-only workflow contract', () => {
   it('skips every Storybook build command for spec-only changes', () => {
     const ci = read('.github/workflows/ci.yml');
     const jobStart = ci.indexOf('  build-storybook:');
-    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    // The job ends where the next top-level job begins.
+    const jobEnd =
+      jobStart + 1 + ci.slice(jobStart + 1).search(/\n {2}[a-z0-9-]+:\n/);
     const buildJob = ci.slice(jobStart, jobEnd);
     const steps = buildJob.split(/\n      - name: /).slice(1);
     const commandSteps = steps.filter(step =>
@@ -244,7 +247,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}", PR_REPORT_GATE)}`,
     );
     const action = read('.github/actions/test-scope/action.yml');
     expect(action).toContain(

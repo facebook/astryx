@@ -6,7 +6,9 @@
  * @input The `Core/MultiSelector` CreateFromQuery story in a built Storybook.
  * @output Real-engine proof of the create row's appear/disappear cycle: what
  *   the live region says as the row comes and goes, and where the highlight
- *   lands when the row vanishes mid-type.
+ *   lands when the row vanishes mid-type. The region clears itself after each
+ *   announcement, so the spec reads a record of what it exposed rather than
+ *   its live text.
  * @position Run with `pnpm test:a11y-contract`; a DOM emulator cannot show
  *   the live region and the active descendant as a screen reader sees them
  *   across a sequence of keystrokes.
@@ -31,12 +33,47 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-async function polite(page: Page): Promise<string> {
+/**
+ * Records every message the polite region exposes, in order. The region
+ * clears itself 2 s after its last announcement, so a read of its live text
+ * that a slow runner makes late finds it empty; the record keeps what was
+ * said.
+ */
+async function recordPolite(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const exposed: string[] = [];
+    (window as unknown as {__polite: string[]}).__polite = exposed;
+    new MutationObserver(() => {
+      const text =
+        document
+          .querySelector('[data-astryx-live-region="polite"]')
+          ?.textContent?.trim() ?? '';
+      if (text !== '' && text !== exposed.at(-1)) {
+        exposed.push(text);
+      }
+    }).observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+  });
+}
+
+/** How many messages the polite region has exposed so far. */
+async function politeCount(page: Page): Promise<number> {
   return page.evaluate(
-    () =>
-      document
-        .querySelector('[data-astryx-live-region="polite"]')
-        ?.textContent?.trim() ?? '',
+    () => (window as unknown as {__polite: string[]}).__polite.length,
+  );
+}
+
+/** The latest message the polite region exposed after the first `since`. */
+async function politeSince(page: Page, since: number): Promise<string> {
+  return page.evaluate(
+    start =>
+      (window as unknown as {__polite: string[]}).__polite
+        .slice(start)
+        .at(-1) ?? '',
+    since,
   );
 }
 
@@ -66,12 +103,13 @@ test('the create row is announced as it appears and the highlight survives it va
   );
   const search = page.getByRole('combobox');
   await expect(search).toBeFocused();
+  await recordPolite(page);
 
   // "Bu": a partial match plus the create row above it.
   await search.pressSequentially('Bu');
   await expect(page.getByRole('option')).toHaveText(['Create "Bu"', 'Bug']);
   await expect
-    .poll(async () => polite(page))
+    .poll(async () => politeSince(page, 0))
     .toMatch(newestMessage('1 result'));
 
   // Highlight the create row, then type the letter that makes it vanish: the
@@ -88,18 +126,20 @@ test('the create row is announced as it appears and the highlight survives it va
 
   // A query that matches nothing: the row is the whole result and the region
   // says so rather than "No results found".
+  const beforeUrgent = await politeCount(page);
   await search.fill('');
   await search.pressSequentially('Urgent');
   await expect(page.getByRole('option')).toHaveText(['Create "Urgent"']);
   await expect
-    .poll(async () => polite(page))
+    .poll(async () => politeSince(page, beforeUrgent))
     .toMatch(newestMessage('Create "Urgent"'));
 
   // Enter commits: the caller adds the option, the search clears, and the new
   // label is a real row.
+  const beforeEnter = await politeCount(page);
   await search.press('Enter');
   await expect
-    .poll(async () => polite(page))
+    .poll(async () => politeSince(page, beforeEnter))
     .toMatch(newestMessage('Urgent created'));
   await expect(search).toHaveValue('');
   await expect(page.getByRole('option', {name: 'Urgent'})).toHaveAttribute(
