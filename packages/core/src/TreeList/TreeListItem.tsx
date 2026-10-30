@@ -227,8 +227,6 @@ const styles = stylex.create({
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
     display: 'flex',
@@ -243,8 +241,6 @@ const styles = stylex.create({
     },
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronSvg: {
     display: 'flex',
