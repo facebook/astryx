@@ -33,7 +33,6 @@ import {
   ALERT_PRESENT_SPRING,
 } from '../motion/uikit/springs';
 import type * as SpringsModule from '../motion/uikit/springs';
-import type * as AlertModule from '../motion/uikit/alert';
 import {isInHeldLayer} from '../Layer/inputHold';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
@@ -86,23 +85,6 @@ vi.mock('../motion/uikit/springs', async importOriginal => {
       },
     },
   );
-});
-
-// The roles the hook plays: the alert table's own springs, unless a test
-// changes one.
-vi.mock('../motion/uikit/alert', async importOriginal => {
-  const actual = await importOriginal<typeof AlertModule>();
-  return {
-    ...actual,
-    alertMotion: {
-      get present() {
-        return alertSprings.present ?? actual.alertMotion.present;
-      },
-      get dismiss() {
-        return alertSprings.dismiss ?? actual.alertMotion.dismiss;
-      },
-    },
-  };
 });
 
 vi.mock('../motion/animator', () => ({
@@ -364,18 +346,18 @@ describe('useAlertMotion', () => {
     expect(backdrop.calls.at(-1)).toEqual({kind: 'attach', target: null});
   });
 
-  it('plays its springs through the internal motion roles alert.present and alert.dismiss (AST-094 FR4)', () => {
+  it('plays its springs through the internal motion roles springs.alertPresent and springs.alertDismiss (AlertDialog FR6, AST-094 FR4)', () => {
     const view = render(<Alert isOpen isEnabled />);
     const {panel} = animators();
     const shown = moves(panel).at(-1);
     expect(shown?.kind === 'animate' && motionRoleOf(shown.spring)?.id).toBe(
-      'alert.present',
+      'springs.alertPresent',
     );
     now = 2000;
     view.rerender(<Alert isOpen={false} isEnabled />);
     const left = moves(panel).at(-1);
     expect(left?.kind === 'animate' && motionRoleOf(left.spring)?.id).toBe(
-      'alert.dismiss',
+      'springs.alertDismiss',
     );
   });
 

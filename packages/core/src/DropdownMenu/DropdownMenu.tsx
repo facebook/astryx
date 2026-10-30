@@ -84,14 +84,10 @@ import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
 import {moveRegionsTab} from './menuRegionStops';
-import {
-  openSheetLevel,
-  resolveSheetLevel,
-  type SheetPathEntry,
-} from './menuSheetPath';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
+import {menuTouchActionStyles} from './menuTouchAction.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {usePresentation} from '../utils/presentation';
@@ -309,18 +305,6 @@ const styles = stylex.create({
     flexShrink: 0,
     padding: spacingVars['--spacing-1'],
   },
-  // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
-  // every one-finger move: a slide over its rows stays a slide. One that
-  // scrolls lets the browser pan it vertically and cancel the press when it
-  // does. Both leave a two-finger pinch to the browser, so the page stays
-  // zoomable over an open menu; `pinch-zoom` admits no one-finger pan.
-  touchPinchZoom: {
-    touchAction: 'pinch-zoom',
-  },
-  touchPanYPinchZoom: {
-    touchAction: 'pan-y pinch-zoom',
-    overscrollBehavior: 'contain',
-  },
   // The menu's lower block cap rides on the layer box too, so the layer's
   // flip decision sees the same height the menu paints.
   popoverViewport: {
@@ -415,9 +399,7 @@ export interface DropdownMenuItemData extends Pick<
    * `TreeListItemData`). Omit it and the row is keyed by position, which is
    * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
    * so a row keeps its DOM node — and therefore keyboard focus — as the array
-   * changes around it. The bottom sheet also needs it on a row with nested
-   * `items` whose label another row at its level shares or changes while its
-   * level shows, to find that row's level again.
+   * changes around it.
    */
   id?: string;
   /** Primary label content. */
@@ -426,31 +408,8 @@ export interface DropdownMenuItemData extends Pick<
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item
    * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
-   * The bottom sheet reads an opened level from the current `items` while it
-   * shows, so rows added, removed or relabelled there show at once.
    */
   items?: DropdownMenuOption[];
-  /**
-   * With `items`: content above the sub-menu's rows, as `header` on
-   * `DropdownMenuSubMenu` (a filter field, say). With it or `footer` the row
-   * stays a sub-menu while `items` is empty, so a filter that matches nothing
-   * keeps its field. The bottom sheet shows it above that level's actions; a
-   * level with a `header` or `footer` of its own shows neither of the menu's.
-   * The sheet reads the level from the current `items` while it shows, by
-   * `id`, by a label it has to itself, or, while its level keeps its row
-   * count, by position; give the row an `id` when
-   * another row at its level has the same label, when its label changes while
-   * it shows, or when the rows can reorder or grow. Ignored on a row without
-   * `items`.
-   */
-  header?: ReactNode;
-  /**
-   * With `items`: content below the sub-menu's rows, as `footer` on
-   * `DropdownMenuSubMenu`. The bottom sheet shows it below that level's
-   * actions, and the level then shows neither of the menu's regions, the
-   * menu's `header` included. Ignored on a row without `items`.
-   */
-  footer?: ReactNode;
 }
 
 /**
@@ -583,8 +542,8 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * Omitted, the menu is the anchored popover with the touch modes under a
-   * finger: its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * Omitted, the menu is the anchored popover, and under a finger, on every
+   * device, its trigger opens as UIMenu's pull-down button does. `'popover'`
    * pins the anchored popover with the pointer behavior on every device (a
    * finger held for 500 ms opens it, as before).
    */
@@ -596,8 +555,8 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
   /**
    * `'popover'` pins the pointer behavior on every device (a finger held for
-   * 500 ms opens the menu, as before). Omitted, a finger gets the touch modes:
-   * the trigger opens as UIMenu's pull-down button does.
+   * 500 ms opens the menu, as before). Omitted, on every device, a finger's
+   * press opens the menu as UIMenu's pull-down button does.
    */
   presentation?: 'popover';
   items?: undefined;
@@ -773,7 +732,7 @@ function DropdownMenuBottomSheet({
   const viewHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousSubmenuDepthRef = useRef(0);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [submenuPath, setSubmenuPath] = useState<SheetPathEntry[]>([]);
+  const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
   const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
@@ -788,23 +747,8 @@ function DropdownMenuBottomSheet({
   useEffect(() => {
     preloadMenuBottomSheetActionList();
   }, []);
-  // The opened level as the caller renders it now: its rows, header and
-  // footer stay live while it shows.
-  const currentSubmenu = resolveSheetLevel(items, submenuPath);
+  const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
-  // A level whose row has a header or footer of its own shows its regions and
-  // neither of the menu's (the menu's header filters rows this level does not
-  // show); every other level shows the menu's.
-  const levelHasRegions =
-    currentSubmenu != null &&
-    (isRenderable(currentSubmenu.header) ||
-      isRenderable(currentSubmenu.footer));
-  const levelHeader = levelHasRegions ? currentSubmenu.header : header;
-  const levelFooter = levelHasRegions ? currentSubmenu.footer : footer;
-  // Each set of regions mounts on its own: the menu's stay mounted across the
-  // levels that show them, and a level's own are new to that level, so what
-  // was typed into one field never shows up in another.
-  const regionsKey = levelHasRegions ? `level-${submenuPath.length}` : 'menu';
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
@@ -880,10 +824,7 @@ function DropdownMenuBottomSheet({
       cancelAnimationFrame(frame);
       observer?.disconnect();
     };
-    // On the open and on each level change only: a level read from inline
-    // `items` is a new array on every caller render, and focusing the first
-    // action then would pull focus out of a field being typed into.
-  }, [isOpen, submenuPath]);
+  }, [currentItems, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1030,30 +971,16 @@ function DropdownMenuBottomSheet({
           ) : (
             viewHeading
           )}
-          {isRenderable(levelHeader) && (
-            <div
-              key={`header-${regionsKey}`}
-              {...stylex.props(bottomSheetStyles.region)}>
-              {levelHeader}
-            </div>
+          {isRenderable(header) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
           )}
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
-            showsLevelRegions
-            onOpenSubmenu={item =>
-              setSubmenuPath(path => [
-                ...path,
-                openSheetLevel(currentItems, item),
-              ])
-            }
+            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
           />
-          {isRenderable(levelFooter) && (
-            <div
-              key={`footer-${regionsKey}`}
-              {...stylex.props(bottomSheetStyles.region)}>
-              {levelFooter}
-            </div>
+          {isRenderable(footer) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
           )}
         </div>
       </MenuBottomSheet>
@@ -1074,6 +1001,7 @@ function DropdownMenuPopover({
   alignment = 'start',
   presentation: _presentation,
   touchModes,
+  pressTouchModel = 'uikit',
   header,
   footer,
   className,
@@ -1082,8 +1010,16 @@ function DropdownMenuPopover({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps & {
-  /** Whether the touch input modes apply (the resolved presentation). */
+  /**
+   * Whether the touch modes apply (the resolved presentation): the grow and
+   * collapse are a finger's on a touch device (`spec:AST-094` FR31).
+   */
   touchModes?: boolean;
+  /**
+   * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
+   * UIMenu's, unless the caller pins `presentation="popover"`.
+   */
+  pressTouchModel?: 'pointer' | 'uikit';
 }) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
@@ -1718,9 +1654,10 @@ function DropdownMenuPopover({
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
-    // Under a finger the trigger is UIMenu's pull-down button (spec:AST-094);
-    // `presentation="popover"` pins the pointer model, today's included.
-    touchModel: touchModes ? 'uikit' : 'pointer',
+    // Under a finger, on every device, the trigger is UIMenu's pull-down
+    // button (spec:AST-094 FR29, FR43); `presentation="popover"` pins the
+    // pointer model, today's included.
+    touchModel: pressTouchModel,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -1902,9 +1839,7 @@ function DropdownMenuPopover({
 
   // Resolve menu content: data-driven items become components
   const menuContent = wrapContent(
-    props.items !== undefined
-      ? renderDropdownItems(items, {showsRegions: true})
-      : children,
+    props.items !== undefined ? renderDropdownItems(items) : children,
   );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
@@ -2074,7 +2009,9 @@ function DropdownMenuPopover({
                 styles.dropdown,
                 resolvedMaxHeight != null &&
                   dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-                hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
+                hasOverflow
+                  ? menuTouchActionStyles.scrolls
+                  : menuTouchActionStyles.fits,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
                 isCardShown && styles.cardStack,
@@ -2127,7 +2064,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  // The touch modes are the default under a finger (spec:AST-094);
+  // The touch modes are the default on a touch device (spec:AST-094);
   // `presentation="popover"` pins the fine-pointer surface and modes.
   const {surface: resolvedPresentation, touchModes} = usePresentation(
     props.presentation,
@@ -2169,6 +2106,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       {...sharedProps}
       presentation="popover"
       touchModes={touchModes}
+      pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
     />
   );
 }

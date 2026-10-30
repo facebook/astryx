@@ -4,11 +4,9 @@
 
 /**
  * @file menuTriggerPress.ts
- * @input The menu press model's shared state (useMenuPress.ts), the
- *   long-press detector (useLongPress.ts), the native scroll probe, the menu
- *   press values, the system's long-press duration and tolerance
- *   (motion/uikit/longPress.ts) and the coarse-pointer read, taken when a
- *   press starts
+ * @input The menu press model's shared state (useMenuPress.ts), useLongPress,
+ *   the native scroll probe and the menu press values
+ *   (the long press's duration comes from motion/uikit/longPress.ts)
  * @output Exports `useMenuTriggerPress`: the trigger half of the menu press
  *   model (a mouse press-down open, a held or pressed finger open, the
  *   scroll-view wait)
@@ -38,11 +36,7 @@ import {
   type LongPressDetectorHandlers,
   type LongPressTolerance,
 } from './useLongPress';
-import {
-  LONG_PRESS_ALLOWABLE_MOVEMENT_PX,
-  LONG_PRESS_DURATION_MS,
-} from '../motion/uikit/longPress';
-import {isCoarsePointer} from '../utils/coarsePointer';
+import {LONG_PRESS_DURATION_MS} from '../motion/uikit/longPress';
 
 /**
  * How long a finger rests on the trigger before the menu opens under it,
@@ -53,24 +47,17 @@ export const MENU_PRESS_LONG_PRESS_MS = LONG_PRESS_DURATION_MS;
 
 /**
  * How far a finger held on a DropdownMenu trigger may move before the open,
- * in CSS px, where the primary pointer is coarse: `spec:AST-094` FR29's
- * drift allowance (FR2's table: unmeasured, a 12 pt move still opened), the
- * same 13 pt a trigger in a scroll view allows. Where it is fine, and on
- * ContextMenu, the long press's own allowable movement stays.
+ * in CSS px, under every primary pointer: `spec:AST-094` FR29's drift
+ * allowance (FR2's table: unmeasured, a 12 pt move still opened; useMenuPress
+ * FR9, FR43), the same 13 pt a trigger in a scroll view allows. ContextMenu
+ * keeps the long press's own allowable movement.
  */
 export const MENU_PRESS_TRIGGER_DRIFT_PX = MENU_PRESS_HOLD_OPEN_SLOP_PX;
 
-/**
- * A finger held on the trigger: FR29's drift allowance where the primary
- * pointer is coarse; where it is fine, the released behavior's tolerance
- * (useMenuPress FR9), the long press's own. Read when the press starts, so
- * no menu observes the pointer query (`spec:AST-094` FR24).
- */
-function triggerTolerance(): LongPressTolerance {
-  return isCoarsePointer(typeof window === 'undefined' ? null : window)
-    ? {moveCancelPx: MENU_PRESS_TRIGGER_DRIFT_PX}
-    : {moveCancelPx: LONG_PRESS_ALLOWABLE_MOVEMENT_PX};
-}
+/** A finger held on the trigger: FR29's drift allowance, the same under every primary pointer. */
+const TRIGGER_TOLERANCE: LongPressTolerance = {
+  moveCancelPx: MENU_PRESS_TRIGGER_DRIFT_PX,
+};
 
 /** What the trigger half reads and drives of the model. @internal */
 export interface MenuTriggerContext {
@@ -193,11 +180,12 @@ export function useMenuTriggerPress(
   // lands.
   // With `touchModel: 'uikit'` only a trigger inside a scroll view waits
   // (the content-touch delay, within the drift allowance); one in a fixed bar
-  // opens as the finger presses, so its detector never runs. Any other held
-  // finger takes the trigger's tolerance as its press starts
-  // (triggerTolerance).
+  // opens as the finger presses, so its detector never runs.
   const isUikit = options.touchModel === 'uikit';
   const pointerHoldMs = options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS;
+  // Every held press takes FR29's drift allowance as it starts
+  // (TRIGGER_TOLERANCE), under every primary pointer, so no trigger reads the
+  // pointer query (spec:AST-094 FR24, FR43).
   const plainHold = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: pointerHoldMs,
@@ -255,13 +243,10 @@ export function useMenuTriggerPress(
       ctx.attach(native.pointerId);
       ctx.setLastPointerEvent(native);
       if (pointerType !== 'mouse') {
-        // A uikit finger in a scroll view keeps the scroll view's drift
-        // allowance (its detector's own); any other finger takes the
-        // trigger's tolerance, read now.
         ctx.startHold(
           inScrollView ? 'scroller' : 'plain',
           {x: native.clientX, y: native.clientY},
-          isUikitFinger && inScrollView ? undefined : triggerTolerance(),
+          TRIGGER_TOLERANCE,
         );
       }
       ctx.step(down, native);
