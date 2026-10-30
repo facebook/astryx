@@ -5,13 +5,16 @@
  *   request's own diff.
  *
  * Both jobs run `.github/scripts/pr-scope-touches.sh`, which diffs HEAD
- * against its merge base with the PR's base. Checked out at the PR merge
- * commit, HEAD would carry main's own changes since that (often old) base, so
- * a CLI-only pull request cut before the interaction proofs existed read as
- * changing their config and ran proofs its head cannot run. Both jobs check out
- * the PR head instead. These cases run the real step script and helper with
- * real git, against a local origin, checked out the way the workflow checks
- * out; anything undecided still runs the proofs.
+ * against its merge base with a base commit. From the PR's recorded (often
+ * old) base, the merge commit carries main's own changes since then, so a
+ * CLI-only pull request cut before the interaction proofs existed read as
+ * changing their config. From the PR head, the helper deepens history back to
+ * an old fork point, which can outlast the job's timeout. Both jobs check out
+ * the merge commit with its parents and diff it against its first parent: the
+ * PR's own change against the base it merged into, with no deepening. These
+ * cases run the real step script and helper with real git, against a local
+ * origin, checked out the way the workflow checks out; anything undecided
+ * still runs the proofs.
  */
 
 import {execFileSync, spawnSync} from 'node:child_process';
@@ -38,6 +41,7 @@ const decideStep = () =>
     step => step.name === 'Decide whether the interaction proofs apply',
   );
 
+const REAL_GIT = execFileSync('which', ['git'], {encoding: 'utf8'}).trim();
 const scratch = [];
 afterAll(() => {
   for (const dir of scratch) {
@@ -46,7 +50,7 @@ afterAll(() => {
 });
 
 function git(cwd, ...args) {
-  return execFileSync('git', args, {
+  return execFileSync(REAL_GIT, args, {
     cwd,
     encoding: 'utf8',
     env: {
@@ -70,7 +74,13 @@ function write(dir, file, text) {
  * own `prFiles` (a null value deletes the file). Returns the origin URL and
  * the base, head and merge-commit SHAs.
  */
-function scenario({baseFiles, mainFiles, prFiles}) {
+function scenario({
+  baseFiles,
+  mainFiles,
+  prFiles,
+  mainCommits = 1,
+  prMergesMain = 0,
+}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-scope-'));
   scratch.push(dir);
   const work = path.join(dir, 'work');
@@ -89,6 +99,11 @@ function scenario({baseFiles, mainFiles, prFiles}) {
   }
   git(work, 'add', '-A');
   git(work, 'commit', '-q', '-m', 'main moves on');
+  for (let i = 1; i < mainCommits; i++) {
+    write(work, 'docs/history.md', `${i}\n`);
+    git(work, 'add', '-A');
+    git(work, 'commit', '-q', '-m', `main commit ${i}`);
+  }
 
   git(work, 'checkout', '-q', '-b', 'pr', base);
   for (const [file, text] of Object.entries(prFiles)) {
@@ -100,6 +115,18 @@ function scenario({baseFiles, mainFiles, prFiles}) {
   }
   git(work, 'add', '-A');
   git(work, 'commit', '-q', '-m', 'the pull request');
+  // A long-lived branch that merges main now and then, which buries the PR's
+  // recorded base deep in its history.
+  for (let round = 0; round < prMergesMain; round++) {
+    git(work, 'checkout', '-q', 'main');
+    for (let i = 0; i < 3; i++) {
+      write(work, 'docs/history.md', `${round}.${i}\n`);
+      git(work, 'add', '-A');
+      git(work, 'commit', '-q', '-m', `main ${round}.${i}`);
+    }
+    git(work, 'checkout', '-q', 'pr');
+    git(work, 'merge', '-q', '--no-ff', '--no-edit', 'main');
+  }
   const head = git(work, 'rev-parse', 'HEAD');
 
   git(work, 'checkout', '-q', 'main');
@@ -113,19 +140,28 @@ function scenario({baseFiles, mainFiles, prFiles}) {
 
 /**
  * Runs the decide step as Actions does, in a checkout made the way the
- * interaction-scope job checks out: the PR head when its checkout names
- * `pull_request.head.sha`, else the merge commit. Returns the outputs.
+ * interaction-scope job checks out (its `ref`, else the merge commit, at its
+ * `fetch-depth`). Every git call is logged. Returns the outputs and the log.
  */
-function decide(repo, {headSha = repo.head} = {}) {
-  const ref = checkoutOf('interaction-scope').with?.ref ?? '';
+function decide(repo, {headSha = repo.head, env = {}} = {}) {
+  const {ref = '', 'fetch-depth': depth = 1} =
+    checkoutOf('interaction-scope').with ?? {};
   const checkedOut = ref.includes('pull_request.head.sha')
     ? repo.head
     : repo.merge;
   const workspace = fs.mkdtempSync(path.join(repo.dir, 'ws-'));
   git(workspace, 'init', '-q');
   git(workspace, 'remote', 'add', 'origin', repo.url);
-  git(workspace, 'fetch', '-q', '--depth=1', 'origin', checkedOut);
+  git(workspace, 'fetch', '-q', `--depth=${depth}`, 'origin', checkedOut);
   git(workspace, 'checkout', '-q', '--detach', checkedOut);
+  const bin = fs.mkdtempSync(path.join(repo.dir, 'bin-'));
+  const log = path.join(bin, 'git.log');
+  fs.writeFileSync(
+    path.join(bin, 'git'),
+    `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >> ${JSON.stringify(log)}\nexec ${JSON.stringify(REAL_GIT)} "$@"\n`,
+    {mode: 0o755},
+  );
+  fs.writeFileSync(log, '');
   const output = path.join(workspace, '.output');
   fs.writeFileSync(output, '');
   const result = spawnSync(
@@ -136,6 +172,8 @@ function decide(repo, {headSha = repo.head} = {}) {
       encoding: 'utf8',
       env: {
         ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        ...env,
         GITHUB_OUTPUT: output,
         EVENT_NAME: 'pull_request',
         DOCSITE_ONLY: 'false',
@@ -149,19 +187,35 @@ function decide(repo, {headSha = repo.head} = {}) {
     status: result.status,
     stdout: result.stdout,
     applies: /applies=(\w+)/.exec(fs.readFileSync(output, 'utf8'))?.[1],
+    gitCalls: fs.readFileSync(log, 'utf8'),
   };
 }
 
 const CONFIG = 'playwright.interaction.config.ts';
 
 describe('scope jobs measure the pull request’s own diff', () => {
-  it('check out the PR head, not the merge commit', () => {
-    expect(checkoutOf('interaction-scope').with).toEqual({
-      ref: '${{ github.event.pull_request.head.sha }}',
+  it('check out the merge commit with its parents', () => {
+    expect(checkoutOf('interaction-scope').with).toEqual({'fetch-depth': 2});
+    expect(checkoutOf('native-swift-scope').with).toEqual({'fetch-depth': 2});
+    const swift = ci.jobs['native-swift-scope'].steps.find(
+      step => step.name === 'Decide whether native Swift changed',
+    );
+    expect(swift.env.BASE_SHA).toContain('merge_group.base_sha');
+    expect(swift.run).toContain('[ "$EVENT_NAME" = pull_request ]');
+    expect(swift.run).toContain('BASE_SHA="$(git rev-parse HEAD^1)"');
+  });
+
+  it('decides without deepening history, however far main moved on', () => {
+    const repo = scenario({
+      baseFiles: {'packages/cli/scripts/a.mjs': 'a\n'},
+      mainFiles: {[CONFIG]: 'config\n'},
+      prFiles: {'packages/cli/scripts/a.mjs': 'a2\n'},
+      mainCommits: 6,
+      prMergesMain: 4,
     });
-    expect(checkoutOf('native-swift-scope').with).toEqual({
-      ref: '${{ github.event.pull_request.head.sha || github.sha }}',
-    });
+    const result = decide(repo, {env: {PR_SCOPE_FETCH_DEPTH: '2'}});
+    expect(result).toMatchObject({status: 0, applies: 'false'});
+    expect(result.gitCalls).not.toContain('--deepen');
   });
 
   it('a CLI-only pull request on a base older than the proofs does not run them', () => {

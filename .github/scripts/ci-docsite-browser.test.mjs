@@ -11,6 +11,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const {jobs} = yaml.parse(
@@ -36,7 +37,10 @@ describe('docsite browser required-check projection', () => {
       'docsite-data',
     ]);
     expect(owner.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
+      gated(
+        "${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
+        PR_REPORT_GATE,
+      ),
     );
     expect(browser.needs).toEqual(['check-scope']);
     expect(browser.if).toBe(

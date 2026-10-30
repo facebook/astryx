@@ -5,7 +5,11 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps type; publishes the shared inline inset
+ * @output Exports Item component, ItemProps type; publishes the shared inline inset.
+ *   Only numbered composing rows keep their start/label/end slots in one flex
+ *   group, through Item's private exact-marker scope; other marked rows keep
+ *   their flat children. This lets List share a counter track without changing
+ *   those slots' own layout.
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
@@ -28,6 +32,7 @@
 import {
   lazy,
   Suspense,
+  use,
   useCallback,
   useId,
   useRef,
@@ -45,6 +50,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {ItemMarkerColumnsContext} from './ItemMarkerColumnsContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -352,6 +358,22 @@ const styles = stylex.create({
     textAlign: 'start',
     borderRadius: radiusVars['--radius-element'],
   },
+  // One content cell beside the marker. Its slots retain the row's flex
+  // alignment and gap, including first-line alignment and tall start content.
+  // A numbered List can then subgrid the row into marker/content columns.
+  markerContent: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'inherit',
+    alignSelf: 'stretch',
+    gap: 'inherit',
+  },
+  markerContentFirstLine: {
+    // A tall start/end slot moves the first text baseline down. The marker
+    // must follow that baseline, not the stretched group's top edge.
+    alignSelf: 'baseline',
+  },
   alignStart: {
     alignItems: 'flex-start',
   },
@@ -586,6 +608,7 @@ export function Item({
   ...restProps
 }: ItemProps) {
   const pressable = usePressFeedback();
+  const columnMarker = use(ItemMarkerColumnsContext);
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -738,9 +761,8 @@ export function Item({
     onClick?.(e);
   };
 
-  const innerContent = (
+  const content = (
     <>
-      {marker}
       {startContent != null && (
         <span
           {...stylex.props(
@@ -900,7 +922,18 @@ export function Item({
       onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        {isRenderable(marker) && marker}
+        {isRenderable(marker) && columnMarker === marker ? (
+          <span
+            {...stylex.props(
+              styles.markerContent,
+              align === 'first-line' && styles.markerContentFirstLine,
+            )}>
+            {content}
+          </span>
+        ) : (
+          content
+        )}
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
