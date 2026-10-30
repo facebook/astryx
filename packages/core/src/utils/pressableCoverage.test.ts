@@ -15,7 +15,10 @@
  * holds it equal to the marked set:
  *
  *  - A file paints a press when its StyleX carries an `':active` key, a
- *    `[data-astryx-press` arm, or composes `interactionOverlayStyles`.
+ *    `[data-astryx-press` arm, or composes `interactionOverlayStyles`, or
+ *    when its script follows the pressed state the controller writes
+ *    (`getAttribute(PRESSED_ATTRIBUTE)`: a compositor animation driven by
+ *    the press, as ContextMenu's growth).
  *  - A file is marked when it calls `usePressFeedback(`.
  *  - A file whose press arms are read off an ancestor scope marker
  *    (`stylex.when.ancestor(':active', someScope)`, the way an indicator
@@ -32,8 +35,14 @@ import {describe, expect, it} from 'vitest';
 
 const SRC = path.resolve(__dirname, '..');
 
-/** The utility and the controller define the model; they are not surfaces. */
+/**
+ * The utility, the controller and the action-group tracker define the model;
+ * they are not surfaces. The tracker writes the press attribute on a group's
+ * rows itself (the second writer beside the controller), and reads it back
+ * only to finish its own fade, so no surface of its own paints from it.
+ */
 const MODEL_FILES = new Set([
+  'hooks/actionGroupTracker.ts',
   'utils/interactionOverlay.stylex.ts',
   'utils/pressFeedback.ts',
   'utils/pressGesture.ts',
@@ -63,7 +72,8 @@ const source = new Map(
   files.map(file => [path.relative(SRC, file), fs.readFileSync(file, 'utf8')]),
 );
 
-const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
+const PRESS_ARM =
+  /':active|'\[data-astryx-press=|interactionOverlayStyles\.|getAttribute\(PRESSED_ATTRIBUTE\)/;
 const ANCESTOR_ARM =
   /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
 
