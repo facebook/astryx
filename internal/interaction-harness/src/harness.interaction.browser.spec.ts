@@ -548,6 +548,9 @@ test.describe('frame evidence', () => {
     await busyFixture(page);
     const box = page.locator('#box');
     await markElement(box, {mode: 'outline'});
+    // Judged against what the compositor presented in the same window: a
+    // loaded runner's compositor skips frames a display-rate bound counts.
+    const control = await startBusyControl(page);
     const cast = await startScreencast(page);
     await expect.poll(() => cast.frameCount()).toBeGreaterThan(0);
     await box.evaluate(el => {
@@ -560,8 +563,13 @@ test.describe('frame evidence', () => {
       minProgressMs: 16,
     });
     await waitForRest(box);
-    const tracked = await trackMarker(page, await cast.stop());
-    const proof = busyWindowProof(tracked, window, {axis: 'y'});
+    const frames = await cast.stop();
+    await control.remove();
+    const tracked = await trackMarker(page, frames);
+    const proof = busyWindowProof(tracked, window, {
+      axis: 'y',
+      control: await trackMarker(page, frames, {rgb: CONTROL_RGB}),
+    });
     testInfo.annotations.push({
       type: 'busy-main-thread transition',
       description: proof.summary,
@@ -892,6 +900,9 @@ test.describe('frame evidence', () => {
     await box.evaluate(el => {
       el.style.willChange = 'transform';
     });
+    // Judged against what the compositor presented in the same window: a
+    // loaded runner's compositor skips frames a display-rate bound counts.
+    const control = await startBusyControl(page);
     const cast = await startScreencast(page);
     // A rAF loop registered before the helper's tick runs ahead of it in every
     // frame; on its 12th frame it creates the animation, and the helper's tick
@@ -916,8 +927,13 @@ test.describe('frame evidence', () => {
       minProgressMs: 0,
     });
     await waitForRest(box);
-    const tracked = await trackMarker(page, await cast.stop());
-    const proof = busyWindowProof(tracked, window, {axis: 'y'});
+    const frames = await cast.stop();
+    await control.remove();
+    const tracked = await trackMarker(page, frames);
+    const proof = busyWindowProof(tracked, window, {
+      axis: 'y',
+      control: await trackMarker(page, frames, {rgb: CONTROL_RGB}),
+    });
     testInfo.annotations.push({
       type: 'busy-main-thread pending animation',
       description: proof.summary,
