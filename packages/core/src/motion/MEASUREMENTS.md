@@ -94,7 +94,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -120,12 +121,13 @@ Subject "switch S": the first switch in Settings ▸ Accessibility ▸ Display &
 Text Size (Bold Text row); a minimal host app holds a UISwitch on a plain view
 where a switch outside any scroll view is needed.
 
-Captured (iOS 26.2 simulator, Oct 23 2026), with their values landing in the
-switch's own table: M-SW02, M-SW03, M-SW04, M-SW05, M-SW06, M-SW09 (UISwitch
-makes no haptic call), M-SW11 (Reduce Motion: the lift stays, the stretch
-goes), M-SW16 (iOS 26.2). Until that table lands they stay open here, and
-`springs.switchThumbMove` and `switchThumbStretch` keep WebKit's values.
-Partly: M-SW07 (a single tap only). Still open: M-SW17, and M-SW11's On/Off
+Captured (iOS 26.2 simulator, Oct 23 2026), with their values in the
+switch's own table (`uikit/switch.ts`): M-SW02, M-SW03, M-SW04, M-SW05,
+M-SW06, M-SW09 (UISwitch makes no haptic call), M-SW11 (Reduce Motion: the
+lift stays, the stretch goes), M-SW16 (iOS 26.2). `springs.switchThumbMove`
+holds the measured travel the switch's table reads; WebKit's
+`switchThumbStretch` is retired for the table's `lift`. Partly: M-SW07 (a single
+tap only). Still open: M-SW17, and M-SW11's On/Off
 labels, Reduce Transparency and Bold Text.
 
 | ID     | Scene                                                                                                                                              | Gesture                                                                                                                                                                                           | Extract                                                                                                                                    | Method  |
@@ -269,3 +271,13 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Lists (UITableView, UICollectionView lists)
+
+Subject "list L": an inset-grouped `UITableView`, a plain `UITableView` and a
+`UICollectionView` list (`UICollectionViewListCell`, default background
+configuration) in a UIKit host app; Settings for the built-in check.
+
+| ID     | Scene                | Gesture                                                                                                           | Extract                                                                                                                                                                                                      | Method |
+| ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| M-LI01 | † list L (all three) | touch a cell, hold 1 s, lift; programmatic `deselectRow(at:animated: true)` and `deselectItem(at:animated: true)` | every `CAAnimation` added in the cell's subtree at highlight, unhighlight and deselect (key path, from / to, duration, timing function, fill); selected-background alpha per frame for 600 ms after the lift | A, C   |

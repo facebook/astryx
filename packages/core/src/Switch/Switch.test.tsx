@@ -33,11 +33,15 @@ import {
 } from '../__tests__/forcedColors';
 import {
   hasPressedArm,
-  hasReleaseFade,
   readsPressStrength,
+  releasesOnLayer,
+  rulesDeclaredFor,
+  rulesWithSelector,
 } from '../__tests__/pressState';
+import {button as uikitButton} from '../motion/uikit/button';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
+import {docs as switchDocs} from './Switch.doc.mjs';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -312,6 +316,27 @@ describe('Switch', () => {
     expect(children.length).toBe(2);
   });
 
+  it('keeps its input when labelPosition changes, so what is attached to it stays attached', () => {
+    const view = render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="start"
+      />,
+    );
+    const input = screen.getByRole('switch');
+    view.rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="end"
+      />,
+    );
+    expect(screen.getByRole('switch')).toBe(input);
+  });
+
   // Retained on purpose: the shared switch contract encodes no busy expectation
   // — no current record adopts one — so this is the only thing gating it.
   it('sets aria-busy on input when loading', () => {
@@ -429,7 +454,9 @@ describe('Switch', () => {
           continue;
         }
         for (const node of record.addedNodes) {
-          if (node.textContent) {written.push(node.textContent);}
+          if (node.textContent) {
+            written.push(node.textContent);
+          }
         }
       }
     });
@@ -976,7 +1003,7 @@ describe('Switch', () => {
       expect(hasPressedArm(thumb)).toBe(true);
     });
 
-    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
+    it("paints the touch press on the track's ::before and releases it on the compositor", () => {
       const {container} = render(
         <Switch label="Notifications" value={false} onChange={() => {}} />,
       );
@@ -986,14 +1013,133 @@ describe('Switch', () => {
       if (track == null || thumb == null || row == null) {
         throw new Error('the switch has no pressable row, track or thumb');
       }
-      // The controller writes the row; the row owns the strength and its
-      // release, and the two parts paint the pressed token at that strength
-      // on both touch arms, so they fade together.
-      expect(hasReleaseFade(row)).toBe(true);
+      const coarse = {
+        insideMedia: /\(pointer: coarse\)/,
+        outsideMedia: /prefers-reduced-motion/,
+      };
+      const selector = (rule: string) => rule.slice(0, rule.indexOf('{'));
+      const body = (rule: string) => rule.slice(rule.indexOf('{'));
+      // The controller writes the row. Under a finger the press is a layer
+      // on the track, under the thumb: it exists only while the row is
+      // pressed or releasing (no element and no box at rest), paints the
+      // pressed token, shows at once, and releases on a control's clock on
+      // the compositor.
+      // Track and thumb both paint it (design:user-states DR1).
       for (const part of [track, thumb]) {
-        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
-        expect(readsPressStrength(part)).toBe(true);
+        const layer = rulesDeclaredFor(part).filter(rule =>
+          selector(rule).includes('::before'),
+        );
+        const creates = layer.filter(rule =>
+          /(^|[{;\s])content:/.test(body(rule)),
+        );
+        expect(creates.length).toBeGreaterThan(0);
+        for (const rule of creates) {
+          expect(selector(rule)).toMatch(/data-astryx-press="(on|fading)"/);
+        }
+        expect(
+          layer.some(rule =>
+            /background-color:[^;}]*--color-overlay-pressed/.test(rule),
+          ),
+        ).toBe(true);
       }
+      const on = rulesWithSelector(track, '[data-astryx-press="on"]', coarse);
+      expect(on.some(rule => /opacity:\s*1\b/.test(rule))).toBe(true);
+      expect(on.some(rule => /animation-name:\s*(?!none)/.test(rule))).toBe(
+        false,
+      );
+      for (const part of [track, thumb]) {
+        expect(
+          releasesOnLayer(part, '::before', uikitButton.highlight.releaseMs),
+        ).toBe(true);
+      }
+      // Nothing reads the strength under a finger, so its main-thread
+      // release stops there; any other pointer keeps it (the desktop rule).
+      expect(
+        rulesWithSelector(row, '[data-astryx-press="fading"]', coarse).some(
+          rule => /animation-name:\s*none/.test(rule),
+        ),
+      ).toBe(true);
+      const fine = {outsideMedia: /prefers-reduced-motion|\(pointer: coarse\)/};
+      expect(
+        rulesWithSelector(row, '[data-astryx-press="fading"]', fine).some(
+          rule => /animation-name:\s*(?!none)/.test(rule),
+        ),
+      ).toBe(true);
+      for (const part of [track, thumb]) {
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(
+          false,
+        );
+        expect(readsPressStrength(part)).toBe(false);
+      }
+    });
+  });
+
+  describe('mouse look', () => {
+    // jsdom applies no `@media (pointer: coarse)` rule, so these are the
+    // styles a mouse gets: the touch presentation must override none of
+    // them (a later style that names a property replaces all of it).
+    const look = (container: HTMLElement) => {
+      const track = container.querySelector<HTMLElement>('.astryx-switch');
+      const thumb = container.querySelector<HTMLElement>(
+        '.astryx-switch-thumb',
+      );
+      if (track == null || thumb == null) {
+        throw new Error('the switch has no track or thumb');
+      }
+      const t = getComputedStyle(track);
+      const h = getComputedStyle(thumb);
+      return {
+        fill: t.backgroundColor,
+        padding: t.paddingTop,
+        fade: [t.transitionProperty, t.transitionDuration],
+        size: [h.width, h.height],
+        slide: [h.transitionProperty.replace(/\s/g, ''), h.transitionDuration],
+        travel: h.transform,
+      };
+    };
+
+    it('keeps the track fill, padding and colour fade, and the thumb size and slide', () => {
+      // A fine pointer: the desktop switch.
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {container, rerender} = render(
+        <Switch label="Wi-Fi" value={false} onChange={() => {}} />,
+      );
+      const off = look(container);
+      expect(off.fill).toContain('--color-background-gray');
+      expect(off.padding).toBe('4px');
+      expect(off.fade[0]).toBe('background-color');
+      expect(off.fade[1]).not.toMatch(/^(0s)?$/);
+      expect(off.size).toEqual(['16px', '16px']);
+      expect(off.slide[0]).toBe('transform,width,height');
+      expect(off.slide[1]).not.toMatch(/^(0s)?$/);
+
+      rerender(<Switch label="Wi-Fi" value onChange={() => {}} />);
+      const on = look(container);
+      expect(on.fill).toContain('--color-accent');
+      expect(on.size).toEqual(['20px', '20px']);
+      expect(on.travel).toBe('translateX(14px)');
+    });
+
+    it('adds no element: the thumb is the track’s only child, under a finger too', () => {
+      const {container} = render(
+        <Switch label="Wi-Fi" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      // architecture:component-style-authoring INV7: the touch presentation
+      // styles the existing thumb (the fade layer is the track's ::before).
+      expect(track?.children.length).toBe(1);
+      expect(thumb?.parentElement).toBe(track);
+    });
+
+    it('keeps the small size’s padding and thumb', () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {container} = render(
+        <Switch label="Wi-Fi" size="sm" value={false} onChange={() => {}} />,
+      );
+      const off = look(container);
+      expect(off.padding).toBe('2px');
+      expect(off.size).toEqual(['14px', '14px']);
     });
   });
 
@@ -1030,6 +1176,209 @@ describe('Switch', () => {
 // jsdom cannot emulate forced-colors rendering, so these assert that the
 // compiled output includes the forced-colors rules; visual behavior needs
 // manual verification under Windows High Contrast.
+describe('touch listeners (spec:AST-094 FR24)', () => {
+  const coarseMedia = (query: string) =>
+    ({
+      matches:
+        query.includes('pointer: coarse') ||
+        query.includes('any-pointer: coarse'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+
+  // React's root delegates touch events too: count against a plain element.
+  const touchListenersWhileRendering = (
+    isDisabled: boolean | 'none' | 'busy',
+  ): number => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(coarseMedia);
+    const types: string[] = [];
+    const record = function (this: unknown, type: string) {
+      types.push(type);
+    };
+    const onDocument = vi
+      .spyOn(document, 'addEventListener')
+      .mockImplementation(record);
+    const onElements = vi
+      .spyOn(HTMLElement.prototype, 'addEventListener')
+      .mockImplementation(record);
+    const {unmount} = render(
+      isDisabled === 'none' ? (
+        <div />
+      ) : (
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled={isDisabled === true}
+          isLoading={isDisabled === 'busy'}
+        />
+      ),
+    );
+    onDocument.mockRestore();
+    onElements.mockRestore();
+    unmount();
+    vi.restoreAllMocks();
+    return types.filter(type => type.startsWith('touch')).length;
+  };
+
+  it('a disabled switch under a coarse pointer attaches no touch listener', () => {
+    const baseline = touchListenersWhileRendering('none');
+    expect(touchListenersWhileRendering(false)).toBeGreaterThan(baseline);
+    expect(touchListenersWhileRendering(true)).toBe(baseline);
+    // Busy stays attached, so the change that made it busy keeps its motion.
+    expect(touchListenersWhileRendering('busy')).toBeGreaterThan(baseline);
+  });
+
+  it('runs no hit-area observer or window listener under a fine pointer, or while disabled under a coarse one', () => {
+    const observersWhileRendering = (
+      isCoarse: boolean,
+      isDisabled: boolean,
+    ): {observers: number; resize: number} => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        query =>
+          ({
+            ...coarseMedia(query),
+            matches: isCoarse && query.includes('pointer: coarse'),
+          }),
+      );
+      let observers = 0;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor() {
+            observers += 1;
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      const onWindow = vi.spyOn(window, 'addEventListener');
+      const {unmount} = render(
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled={isDisabled}
+        />,
+      );
+      const resize = onWindow.mock.calls.filter(
+        ([type]) => type === 'resize',
+      ).length;
+      unmount();
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      return {observers, resize};
+    };
+    expect(observersWhileRendering(false, false)).toEqual({
+      observers: 0,
+      resize: 0,
+    });
+    expect(observersWhileRendering(true, true)).toEqual({
+      observers: 0,
+      resize: 0,
+    });
+    // Enabled under a coarse pointer it measures.
+    expect(observersWhileRendering(true, false).observers).toBe(1);
+  });
+});
+
+describe('hit area under a coarse pointer (Switch FR10)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('grows toward 44 × 44 px and stops halfway to a link beside it, so a tap nearer the link is the link’s', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    let reveal: ((entries: IntersectionObserverEntry[]) => void) | null = null;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: (entries: IntersectionObserverEntry[]) => void) {
+          reveal = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const frames: (() => void)[] = [];
+    vi.stubGlobal('requestAnimationFrame', (run: () => void) =>
+      frames.push(run),
+    );
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    const {container} = render(
+      <div>
+        <Switch
+          label="Wi-Fi"
+          isLabelHidden
+          size="sm"
+          value={false}
+          onChange={() => {}}
+        />
+        <a href="#details">Details</a>
+      </div>,
+    );
+    const input = screen.getByRole('switch');
+    const surface = input.parentElement as HTMLElement;
+    const link = container.querySelector('a') as HTMLElement;
+    const box = (left: number, top: number, width: number, height: number) =>
+      ({
+        left,
+        top,
+        right: left + width,
+        bottom: top + height,
+        width,
+        height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    // A 32 × 20 (small) switch with the link 8 px to its right.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === surface) {
+          return box(100, 100, 32, 20);
+        }
+        if (this === link) {
+          return box(140, 100, 60, 20);
+        }
+        return box(0, 0, 0, 0);
+      },
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-right')).toBe('');
+    reveal!([
+      {
+        target: surface,
+        isIntersecting: true,
+      } as unknown as IntersectionObserverEntry,
+    ]);
+    frames.splice(0).forEach(run => run());
+    // Up and down 12 px (20 → 44); left 6 px (32 → 44); right stops at
+    // 4 px, half the 8 px gap.
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-top')).toBe(
+      '12px',
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-left')).toBe(
+      '6px',
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-right')).toBe(
+      '4px',
+    );
+  });
+});
+
 describe('forced colors (WCAG 1.4.11)', () => {
   it('compiles forced-colors overrides so on/off state survives Windows High Contrast', () => {
     render(<Switch label="Notifications" value={true} onChange={() => {}} />);
