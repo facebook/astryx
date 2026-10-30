@@ -1398,7 +1398,20 @@ export function createAnimator(
         // style would hide a stylesheet value (an opacity 0) under it.
         writeInline(channel, finalValue, false);
       }
+      // A call from rest the browser never started (finished from outside
+      // before its first frame, a sampler's finish()): read its start from the
+      // animation before the cancel takes it, and with nothing left to wait
+      // on the call keeps its own clock, so its landing is still armed.
+      const waiting = [...pendingGroups].filter(group =>
+        group.animations.includes(animation),
+      );
+      for (const group of waiting) {
+        syncGroup(group);
+      }
       animation.cancel();
+      for (const group of waiting) {
+        resolveGroup(group, group.provisional);
+      }
       releaseIdentity(channel);
       flushReleases();
     };
