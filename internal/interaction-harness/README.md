@@ -173,6 +173,44 @@ not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
 two steps per frame, which never fails it. Move a proof's element at least two
 steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
 
+On a two-core runner the software compositor and the screencast share the core
+the block spins on, so every compositor animation presents fewer frames there:
+Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
+7 of 10 runs while it moved on every frame the compositor presented. Judge such
+a proof against a control instead of a rate: `startBusyControl(page)` shows a
+small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
+dialog opened before it; `raise()` after one opened later) whose transform
+moves it along the top edge for as long as the page runs. In WebKit a popover
+above an open modal dialog takes the dialog's `::backdrop` animation off the
+compositor, so a proof of a backdrop mounts the control inside the dialog with
+`startBusyControl(page, {within: dialog})`, a plain fixed box with no top-layer
+entry. Track it from the
+same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
+as `control`: the component passes when it moved on every frame the control
+moved and its longest stall is no longer than the control's. Both are read from
+the same screencast frames, so a compositor animation misses none. A window in
+which the control moved on fewer than four frames fails, since the machine
+presented too little to judge. A run of frames with no new position counts as
+moved when the change that ends it is a single cast step: the component moves
+under one step a frame there, as on an easing tail, which the cast cannot show
+on every frame. The run must also read as a slowing curve, at most one frame
+longer than the component's run before it. A freeze ends in a catch-up of more
+than one step, a stall in a frame-counted animation is longer than its runs
+before it, and a run that no change ends stays a miss. The component still has
+to show a new position on at least four of the control's frames. The cast step (`stepPx`)
+is read from the value's changes in the judged part, so a position the page
+commits off the grid once the block ends does not shrink it.
+A main-thread animation still fails: the control moves and it does not.
+
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on every one of them, and in each run
+its longest stall may be no longer than that run's control's, since a stall
+belongs to its run.
+
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. `startCompositorTrace(page)`, started with the screencast and
 stopped after the block, records when the compositor presented each frame
@@ -267,3 +305,26 @@ simulator. Skip such a proof on the driver's flag, citing the reason:
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.
 Firefox has no touch input path and no project.
+
+WebKit's touches carry their real dispatch time, so a velocity reaches the
+page only as well as the dispatch keeps pace. `play` sends each event at its
+scripted time, and never sooner after the one before it than the script spaces
+them: a stall stretches one gap instead of sending the events behind it
+together. With `{checkPacing: true}`, `play` then reads the `timeStamp`s the
+page received and throws `TouchPacingError` where they decide a release: an
+event missing, either of the last two move intervals (what a release velocity
+reads) more than `TOUCH_PACING_TOLERANCE_MS` (4 ms) off the script, or the
+lift `TOUCH_LIFT_STILLNESS_MS` (40 ms) or more after the last move. A
+gesture's first moves and its lift reach the page with its own handling time
+(a burst after `touchstart`, a lift a frame late), and no release reads them.
+On one worker of a loaded machine, 440 gaps over 40 flicks moved at most 4 ms;
+under eight workers, 4% of flicks had a gap further off, up to 21 ms. Wrap a
+proof whose outcome follows a velocity in
+`retakeOnTouchPacing(testInfo, attempt)`:
+`attempt` builds the state, plays with `checkPacing` and asserts, and runs once
+more only on a `TouchPacingError`, listed as a `touch-retake` annotation; a
+second one fails the test with that cause.
+
+A tap that must click uses `driver.tap` in both engines. WebKit synthesises no
+click from a scripted touch sequence, so a proof that needs that click skips
+with `test.skip(!driver.synthesizesClicks, SCRIPTED_CLICK_SKIP)`.
