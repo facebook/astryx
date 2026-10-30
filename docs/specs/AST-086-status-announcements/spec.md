@@ -94,18 +94,20 @@ announcement channel.
   stale text does not linger. Messages written to a region before the previous
   one is exposed are joined in order into one announcement; none is dropped,
   except a current-state message its owner replaces. A current-state message
-  states its owner's current state and is superseded by the owner's next one,
-  such as a search's result count or create row; FR8 governs busy starts. It
-  is replaced by its owner's next current-state message, not joined: when the
-  owner writes one before its previous one is exposed, the previous one is
-  withdrawn, so only the owner's current state is spoken, and one already
-  exposed has been heard and stays as it is. The owner is the announcing
-  component instance (FR1), so two pickers on one page each keep their own,
-  and messages from different owners still join. Messages sent with the
-  public `useAnnounce` keep joining: the channel cannot tell which of an
-  app's messages state a current state. An identical message repeated within
-  the same frame is one message (FR6). An empty message clears the region,
-  including messages joined but not yet exposed.
+  states one current state of its owner, the component instance that sends it
+  (FR1), such as a search's result count or create row, and the owner marks it
+  with that state; FR8 governs busy starts. It is replaced by its owner's next
+  message about the same state, not joined: when the owner writes one before its
+  previous one is exposed, the previous one is withdrawn, so only the current
+  state is spoken, and one already exposed has been heard and stays as it is.
+  Two pickers on one page, or one picker's selection and result counts, do not
+  replace each other, and every other message still joins. `useAnnounce` offers
+  the mark to every caller, Astryx's components and apps alike (`spec:AST-075`
+  DEC-2), as one optional field, `currentState`, in an options argument after
+  the urgency: `announce(message, 'polite', {currentState: 'resultCount'})`. A
+  message without it keeps joining. An identical message repeated within the
+  same frame is one message (FR6). An empty message clears the region, including
+  messages joined but not yet exposed.
   `useAnnounce` is the public way to reach it. When an open native modal encloses the
   caller, it follows FR14 instead.
 - **FR10 — Modal-hosted owners keep their own channel.** While the shared
@@ -187,11 +189,12 @@ announcement channel.
   containers. FR14's containers are direct children of the modal's dialog
   element, created empty on first use (FR3), carry `status` and `alert`
   respectively (FR5), and clear shortly after each announcement; messages
-  written to one before the previous is exposed are joined in order, except
-  that an owner's current-state message replaces its own previous one not yet
-  exposed, an identical message repeated within the same frame is one
-  message, and an empty message clears it, including messages joined but not
-  yet exposed, as FR9 says of the shared channel. FR6 applies to each owner's messages. A busy owner's FR8 region inside a modal is
+  written to one before the previous is exposed are joined in order, except that
+  an owner's current-state message replaces its previous message about the same
+  state not yet exposed, an identical message repeated within the same frame is
+  one message, and an empty message clears it, including messages joined but not
+  yet exposed, as FR9 says of the shared channel. FR6 applies to each owner's
+  messages. A busy owner's FR8 region inside a modal is
   FR14's polite container. When a later modal opens above the owner's modal
   (`spec:AST-003` FR17), the owner's containers are inert with its modal, and
   a message it announces while covered is not heard — the container clears it
@@ -304,8 +307,8 @@ announcement channel.
   from its transition handler, because only the caller knows whether a Banner
   is a new outcome or persistent content. FR11 and FR12 cover components that
   announce their own content.
-- `useAnnounce`: messages written in the same frame are joined instead of the
-  last one replacing the others (FR9).
+- `useAnnounce`: unmarked messages written in the same frame are joined instead
+  of the last one replacing the others (FR9).
 - `useAnnounce` collapses an identical message repeated in the same frame into
   one (FR9), and busy owners drop a pending busy announcement once the same
   operation's outcome has announced (FR8).
@@ -315,9 +318,11 @@ announcement channel.
   Written within one frame, as a barcode scanner, dictation, or automation
   types, one owner's superseded counts are joined
   (`1 result Create "Urg" Create "Urge" …`), and a count followed by the empty
-  panel's message says both. Under FR9, FR13, and FR14 only the owner's
-  current-state message is spoken, a change in each owner beside the channel.
-  Messages sent with `useAnnounce` keep joining.
+  panel's message says both. Under FR9, FR13, and FR14 each owner marks its
+  count with `currentState`, and only the current one is spoken. `useAnnounce`
+  gains that optional field; Astryx's own result counts use it, including the
+  comboboxes `spec:AST-075` DEC-2 composes (its FR7) and Tokenizer's sheet.
+  Messages without it keep joining.
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
 - Consumer tests that query these elements by `status` or `alert` role change.
   Release notes name each affected component.
@@ -332,7 +337,7 @@ announcement channel.
 | FR6           | StrictMode and rerender tests on the channel spy                          | Busy start, repeated rerender, same-value update, new occasion                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Two announcements for one occasion, or none for a new one, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | FR7           | Accessibility-tree check of the visible message                           | FieldStatus attached/detached, toast card                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Hiding the visible text or a word mismatch fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | FR8           | Shared test: no live role inside a busy owner; channel spy on the owner   | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog), operation that settles before its busy announcement is exposed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails, or a busy start announced after its outcome, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| FR9           | `useAnnounce` tests                                                       | First use, many components, region removed, server render, two messages in one frame, clear after a joined message, the same message twice in one frame, one owner's current-state messages written in one frame, two pickers' result counts in one frame, a result count followed by its picker's empty-panel message and the reverse, a current-state message already exposed when the next is written, `useAnnounce` messages in one frame                                                                                                                                                                                                                                                                                                                                                         | A second document-level region pair, stale text after the clear delay, a dropped same-frame message from another owner or sent with `useAnnounce`, a superseded current-state message spoken with its owner's next one, an exposed current-state message taken back, or a joined message surviving a clear fails, or an identical same-frame repeat announced twice, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| FR9           | `useAnnounce` tests                                                       | First use, many components, region removed, server render, two messages in one frame, clear after a joined message, the same message twice in one frame, one owner's current-state messages written in one frame, two pickers' result counts in one frame, a result count followed by its picker's empty-panel message and the reverse, a current-state message already exposed when the next is written, unmarked `useAnnounce` messages in one frame, one picker's marked selection and result counts in one frame                                                                                                                                                                                                                                                                                  | A second document-level region pair, stale text after the clear delay, a dropped same-frame message from another owner, about another state, or unmarked, a superseded current-state message spoken with its owner's next one, an exposed current-state message taken back, or a joined message surviving a clear fails, or an identical same-frame repeat announced twice, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | FR10          | Accessibility-tree check with a Dialog open                               | Info and error toast shown over an open Dialog                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | A toast that reaches only the body-level channel, or no exposed live container, fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | FR14          | Hook tests and an accessibility-tree check with an Astryx modal open      | Owner outside any modal, inside an open non-modal dialog, inside an open modal (polite and assertive, repeat of the same words, empty message), busy start inside a modal, busy start inside a native modal an app renders without Astryx, alone and opened inside an Astryx Dialog; a modal sheet's row toggle in a real engine, app code calling `useAnnounce` inside a Dialog, CommandPalette result count and Lightbox position message while each is open, a message followed by closing its Dialog before it is exposed (inside another open modal and on the page), a message pending when a CommandPalette opened over a Dialog closes, app code calling `useAnnounce` outside the Dialog it renders (body-level channel); a search's result counts written in one frame inside a modal sheet | A channel message from inside an open modal that reaches only the body-level channel, an FR14 container mounted holding its text, a second FR14 container of one urgency in one dialog, an FR14 container the engine's accessibility tree omits, a dropped message of two from different owners written before the first is exposed, a superseded current-state message spoken from an FR14 container, an empty message that leaves text in the modal's FR14 container, an app `useAnnounce` message from inside an Astryx modal that reaches only the body-level channel, a CommandPalette or Lightbox message about its open modal that reaches only the body-level channel, a message lost when its modal closes before it is exposed, or a pending message handed to a channel still inert after the close, a busy start inside an app-rendered native modal that reaches only the body-level channel, or one inside an app-rendered native modal nested in an Astryx Dialog that is delivered to the Dialog's FR14 container fails |
 | FR11, FR12    | Helper and component tests                                                | EmptyState present at page load, server-rendered, inserted later, text changed, hidden and shown again, brought in by a client-rendered route change, inside a chat log, empty Selector panel open at page load, server-rendered message inserted by client navigation, message inserted after first render but before the document finishes loading (silent)                                                                                                                                                                                                                                                                                                                                                                                                                                         | Announcing at page load or during a server render (other than an announcement-only message), missing a later insertion or a server-rendered message inserted by client navigation, a client-rendered route change, or an empty Selector panel at page load, repeating one occasion, or also using the channel inside a live container fails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -398,11 +403,7 @@ competing regions and two-owner duplicates inside one dialog.
 ### DEC-4 — A current-state message replaces its owner's previous one
 
 **Reference:** `spec:AST-086/DEC-4`
-**Decider:** vjeux (recorder), 2026-10-30
-
-Decided by current authority: `architecture:interaction-modality` INV8
-(superseded work must not change the current status or announcement) and
-`spec:AST-086` FR8; recorded as a consistency edit.
+**Decider:** pending (the approving engineering owner)
 
 FR9 joins messages written before the previous one is exposed, so two
 components speaking in the same frame are both heard. One owner's
@@ -410,9 +411,10 @@ current-state messages differ: each supersedes the one before, so joining
 them speaks states that no longer apply, and a search typed into faster than
 a frame says every count in between. Replacing an owner's own pending
 current-state message keeps every owner heard and speaks only what is true
-now, in the shared channel and in FR14's containers alike. App messages sent
-with `useAnnounce` keep joining, because the channel cannot tell which of
-them state a current state.
+now, in the shared channel and in FR14's containers alike. The reasons are those of `architecture:interaction-modality` INV8, under which superseded work does not change the current status or announcement, and of FR8, which drops a busy start its outcome overtakes. The `currentState` mark is how the channel knows a current
+state and which one; `useAnnounce` offers it to every caller, because Astryx's
+comboboxes compose the same hook products do (`spec:AST-075` DEC-2), and a
+message without it keeps joining.
 
 Rejected: each owner debouncing its own messages — every announcement waits,
 and every owner repeats the rule.
