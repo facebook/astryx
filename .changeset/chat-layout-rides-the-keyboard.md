@@ -1,0 +1,8 @@
+---
+'@astryxdesign/core': patch
+'@astryxdesign/cli': patch
+---
+
+[feat] ChatLayout keeps its composer on top of the software keyboard where the visual viewport shrinks for it, instead of leaving it underneath until the browser scrolls the whole page: in Safari on iOS (in the browser and as a home-screen app) and in Chrome on Android (on Gboard's measured slides) the dock rises and falls with the keyboard, in step with it, and in Firefox for Android it moves above the keyboard once Firefox reports it. Where a page sets `interactive-widget=resizes-content`, Chrome shrinks the page for the keyboard itself and the composer stays above it without moving. A conversation at its newest message stays there, and the rest of the transcript can still be scrolled above the composer. On a touch screen, in a top-level page, every way into the composer's text (a tap, the keyboard's previous and next buttons, Tab, the input's `focus()`) reaches it without the page scrolling; under a mouse or inside an iframe the browser's own focus applies. On a touch screen the composer's wrapper (without the scroll-to-bottom button) is a group named "Message composer"; in a top-level page, when the keyboard's Done ends typing, focus rests there (it is no tab stop), so the next tap or Tab starts from the composer. Under a mouse the wrapper is a plain container. Under Reduce Motion the composer never travels: it cross-fades to its place above the keyboard on a touch screen. Nothing changes where no software keyboard appears. The browser-support guide's section on the on-screen keyboard covers ChatLayout's composer.
+
+@vjeux
