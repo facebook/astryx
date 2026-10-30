@@ -1095,6 +1095,27 @@ describe('ComplexSelector onOpenChange', () => {
       }
     });
 
+    it('opens no popup when the info-tip message bubble is pressed', async () => {
+      const user = userEvent.setup();
+      render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="tooltip">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Filter'});
+      const tip = screen.getByRole('button', {name: 'Error details'});
+      act(() => {
+        tip.focus();
+      });
+      const bubble = await screen.findByRole('tooltip', {hidden: true});
+      await user.click(bubble);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
     it('keeps the attached message box and adds no info-tip', () => {
       render(
         <ComplexSelector

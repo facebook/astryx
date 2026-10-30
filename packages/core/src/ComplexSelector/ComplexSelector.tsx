@@ -493,6 +493,10 @@ export interface ComplexSelectorProps<Value> extends Omit<
  * </ComplexSelector>
  * ```
  */
+function stopPropagation(event: React.MouseEvent) {
+  event.stopPropagation();
+}
+
 export function ComplexSelector<Value>({
   label,
   value,
@@ -575,7 +579,6 @@ export function ComplexSelector<Value>({
       statusVariant: effectiveStatusVariant,
       size: 'sm',
     });
-  const statusTipRef = useRef<HTMLSpanElement>(null);
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
@@ -677,12 +680,7 @@ export function ComplexSelector<Value>({
         event.stopPropagation();
         return;
       }
-      if (
-        triggerRef.current?.contains(event.target as Node) ||
-        // The status info-tip is its own control; a press on it shows the
-        // message without opening the popup.
-        statusTipRef.current?.contains(event.target as Node)
-      ) {
+      if (triggerRef.current?.contains(event.target as Node)) {
         return;
       }
       // Route the press through the trigger so it behaves exactly like a
@@ -890,7 +888,10 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isRenderable(statusTip) && (
-          <span ref={statusTipRef} {...stylex.props(styles.statusTip)}>
+          // The info-tip is its own control: a press on it, or on its message
+          // bubble (portaled, so outside this span in the DOM but inside it in
+          // React), shows the message without opening the popup.
+          <span onClick={stopPropagation} {...stylex.props(styles.statusTip)}>
             {statusTip}
           </span>
         )}
