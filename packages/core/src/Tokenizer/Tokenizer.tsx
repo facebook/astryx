@@ -1111,12 +1111,14 @@ export function Tokenizer<T extends SearchableItem>({
       return [
         {
           id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-          label: `Create "${trimmed}"`,
+          // The same translated message as the sheet's create row
+          // (internationalization INV1a).
+          label: t('@astryx.tokenizer.create', {value: trimmed}),
           auxiliaryData: {__createdValue: trimmed},
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds, selectedLabels],
+    [hasCreate, selectedIds, selectedLabels, t],
   );
 
   const emptySource: SearchSource<T> = useMemo(

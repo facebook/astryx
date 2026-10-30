@@ -762,6 +762,33 @@ describe('Tokenizer', () => {
       );
     });
 
+    it('labels the inline create row with the translated message (internationalization INV1a)', async () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.tokenizer.create': 'Créer « {value} »'}}}>
+          <Tokenizer
+            label="Étiquettes"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
+      );
+      await act(async () => {
+        fireEvent.change(screen.getByRole('combobox'), {
+          target: {value: 'Kiwi'},
+        });
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      expect(screen.getByText('Créer « Kiwi »')).toBeInTheDocument();
+      expect(screen.queryByText('Create "Kiwi"')).toBeNull();
+    });
+
     it('offers no menu below the threshold without hasCreate', async () => {
       // The negative control for the case above: with nothing to derive from
       // the text, a below-threshold query still opens nothing, and never
