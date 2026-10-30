@@ -426,7 +426,7 @@ function previewState(storybook, sandbox) {
 // serves the branch's latest deployment, which can trail a new push. A draft
 // or an update-only reconcile (no alias attempted) says nothing about previews.
 const PREVIEW_NOTE =
-  "> **Preview:** the links below open this branch's latest Vercel deployment, which can trail a new push by a minute or two.";
+  "> **Preview:** the links below open this branch's latest Vercel deployment, which can trail a new push until that push's deployment is ready.";
 const PREVIEW_POINTER =
   "> **Preview availability:** this branch's preview address cannot be known in advance; open the preview from Vercel's comment on this pull request.";
 

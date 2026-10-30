@@ -322,8 +322,8 @@ if (sandboxUrl) {
 }
 
 // Both previews come from the branch's Vercel alias, which serves the
-// branch's latest deployment; a minute after a push it can still show the
-// previous head. Vercel shortens a long alias with a hash, and then there are
+// branch's latest deployment; until a push's deployment is ready it still
+// shows the previous head. Vercel shortens a long alias with a hash, and then there are
 // no links.
 let previewAvailabilitySection = '';
 if (previewState) {
@@ -331,7 +331,7 @@ if (previewState) {
     previewAvailabilitySection = `> **Preview availability:** this branch's preview address cannot be known in advance; open the preview from Vercel's comment on this pull request.${sourceConclusion && sourceConclusion !== 'success' ? ` CI concluded ${sourceConclusion}.` : ''}\n\n`;
   else
     previewAvailabilitySection =
-      "> **Preview:** the links below open this branch's latest Vercel deployment, which can trail a new push by a minute or two.\n\n";
+      "> **Preview:** the links below open this branch's latest Vercel deployment, which can trail a new push until that push's deployment is ready.\n\n";
 }
 
 // Build footer with links
