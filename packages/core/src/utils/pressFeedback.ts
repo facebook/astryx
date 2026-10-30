@@ -228,8 +228,8 @@ const fadeTimers = new WeakMap<Element, () => void>();
  * The release animations running for `element`'s press: CSS animations on it
  * (or its `::before` or `::after`), or on a descendant whose nearest press
  * owner it is, finite, and not yet finished. A component may draw its release
- * inside the surface (a checkbox's box wrapper), keyed on this press as the
- * layers are: each reads its nearest owner, so a press owner nested inside
+ * on a part inside the surface, keyed on this press as the layers are: each
+ * reads its nearest owner, so a press owner nested inside
  * plays its own press's release and never extends this one. Nothing at the
  * write reads the document timeline: WebKit starts an animation created after
  * such a read at the time read, so a busy first frame would skip into the

@@ -544,7 +544,7 @@ describe('the release ends with its animation, not its clock', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('waits for a release a component draws inside the surface, on a descendant whose nearest press owner is the surface (a checkbox’s box)', async () => {
+  it('waits for a release a component draws inside the surface, on a descendant whose nearest press owner is the surface', async () => {
     liftHeldPress();
     // The box wrapper's `::after` plays the release for the row's press,
     // 50 ms longer than the row's clock.
