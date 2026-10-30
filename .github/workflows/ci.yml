@@ -9,6 +9,10 @@ name: CI
 
 on:
   pull_request:
+    # A draft runs nothing until it is ready; an outside contributor's pull
+    # request runs once a maintainer labels it ci:run and pushes or reopens
+    # (spec:AST-030 FR17).
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['main', 'release/**']
   merge_group:
   # Explicit release checks and baseline capture share the canonical owners.
@@ -87,7 +91,7 @@ jobs:
 
   # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
-    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check'
+    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check')
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -314,7 +318,7 @@ jobs:
     # below (minutes on a larger runner). The step after the checkout still
     # checks the exact branch contract, and required lint validates merge-back
     # branches with the same trusted policy.
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' && startsWith(github.head_ref, 'chore/merge-v') && endsWith(github.head_ref, '-to-main') }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name == 'pull_request' && github.base_ref == 'main' && startsWith(github.head_ref, 'chore/merge-v') && endsWith(github.head_ref, '-to-main')) }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: ${{ startsWith(github.head_ref, 'chore/merge-v') && '4-core-ubuntu' || 'ubuntu-latest' }}
     timeout-minutes: 15
@@ -401,12 +405,17 @@ jobs:
   # spec-only lane validates spec records here, where it always has.
   docsite-test:
     needs: [check-scope, docsite-browser, docsite-data]
-    if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled()) }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
+      - name: Require a branch in this repository or the ci:run label
+        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+        run: |
+          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          exit 1
       - name: Require successful scope classification
         if: needs.check-scope.result != 'success'
         run: |
@@ -651,7 +660,7 @@ jobs:
   test-ui:
     name: test-ui (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     # One runner ran the whole UI project in ~16 minutes and set the PR's wall
     # time. Vitest's --shard gives each leg an equal share of the files; the
     # two slowest files (~3.5 minutes each) bound a leg, so more legs stop
@@ -757,7 +766,7 @@ jobs:
   test-node:
     name: test-node (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     # One runner ran the Node project in ~12 minutes. Vitest's --shard splits
     # the files across the legs; `test` joins them.
     strategy:
@@ -845,7 +854,7 @@ jobs:
   # without work.
   native-swift-scope:
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -902,7 +911,7 @@ jobs:
 
   test-native-swift:
     needs: [check-scope, native-swift-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     runs-on: ${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}
     timeout-minutes: 30
     permissions:
@@ -933,7 +942,7 @@ jobs:
   registry-contract:
     name: registry-contract (${{ matrix.leg }})
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     # The preview and hidden production registries are generated and verified
     # independently, so each gets its own leg (~9 minutes in one job). `test`
     # joins them: the job result is success only when both passed.
@@ -1014,11 +1023,16 @@ jobs:
         test-native-swift,
         pr-interaction,
       ]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     runs-on: ubuntu-slim
     permissions:
       contents: read
     steps:
+      - name: Require a branch in this repository or the ci:run label
+        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+        run: |
+          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          exit 1
       - uses: actions/checkout@v7
 
       - name: Require expected test-owner outcomes
@@ -1041,7 +1055,7 @@ jobs:
   # builds no Sandbox of its own.
   build-storybook:
     needs: [check-scope]
-    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && ((github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     # Every browser lane waits for this job, and the package builds and the
     # Storybook build run side by side (build-packages-and-storybook.mjs).
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && github.triggering_actor != 'github-actions[bot]') && '4-core-ubuntu' || 'ubuntu-latest' }}
@@ -1283,7 +1297,7 @@ jobs:
   # so a type error still fails both.
   typecheck:
     needs: [check-scope]
-    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && ((github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && github.triggering_actor != 'github-actions[bot]') && '2-core-ubuntu-arm' || 'ubuntu-24.04-arm' }}
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
@@ -1341,10 +1355,15 @@ jobs:
   # gate too.
   build:
     needs: [build-storybook, typecheck]
-    if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && !cancelled() && (needs.build-storybook.result != 'skipped' || github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')))) }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
+      - name: Require a branch in this repository or the ci:run label
+        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
+        run: |
+          echo "::error::Waiting for a maintainer's ci:run label: an outside contributor's pull request runs CI once a maintainer adds it (spec:AST-030 FR17)."
+          exit 1
       - name: Assert parallel builds succeeded
         run: |
           echo "build-storybook: ${{ needs.build-storybook.result }}"
@@ -1648,7 +1667,7 @@ jobs:
   # Stable required context joining the scoped audit/guards and browser specs.
   pr-a11y:
     needs: [check-components, pr-a11y-guards, pr-a11y-specs]
-    if: ${{ always() && ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (always() && ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true') }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -1796,7 +1815,7 @@ jobs:
   # passes without them.
   interaction-scope:
     needs: [check-scope]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -1877,12 +1896,15 @@ jobs:
 
   pr-interaction:
     needs: [check-scope, interaction-scope, build-storybook]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true') }}
     # Frame evidence measures timing: four cores, one Playwright worker.
     runs-on: ${{ needs.interaction-scope.outputs.applies == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 15
     permissions:
+      # The heavy-suite caps read the author's pull requests and runs.
+      actions: read
       contents: read
+      pull-requests: read
     steps:
       - name: Require a decided interaction scope
         if: needs.interaction-scope.result != 'success'
@@ -1905,6 +1927,15 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Per-author heavy-suite caps
+        if: needs.interaction-scope.outputs.applies == 'true'
+        uses: ./.github/actions/heavy-caps
+
+      # The daily heavy-run cap counts this step (spec:AST-030 FR16).
+      - name: Heavy suite runs
+        if: needs.interaction-scope.outputs.applies == 'true'
+        run: 'true'
 
       - name: Verify evidence checkout
         if: needs.interaction-scope.outputs.applies == 'true'
@@ -1958,9 +1989,19 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
+      # The heavy-suite caps read the author's pull requests and runs.
+      actions: read
       contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
+
+      - name: Per-author heavy-suite caps
+        uses: ./.github/actions/heavy-caps
+
+      # The daily heavy-run cap counts this step (spec:AST-030 FR16).
+      - name: Heavy suite runs
+        run: 'true'
 
       - uses: ./.github/actions/setup
 
@@ -1982,9 +2023,19 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     permissions:
+      # The heavy-suite caps read the author's pull requests and runs.
+      actions: read
       contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
+
+      - name: Per-author heavy-suite caps
+        uses: ./.github/actions/heavy-caps
+
+      # The daily heavy-run cap counts this step (spec:AST-030 FR16).
+      - name: Heavy suite runs
+        run: 'true'
 
       - uses: ./.github/actions/setup
 
@@ -2007,13 +2058,13 @@ jobs:
     name: Stable visual scout (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: [build-storybook, check-components]
     if: >-
-      !cancelled() &&
+      (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (!cancelled() &&
       needs.build-storybook.result == 'success' &&
       needs.check-components.result == 'success' &&
       (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) &&
         needs.check-components.outputs.has_stable_visual == 'true' &&
         needs.check-components.outputs.broad_stable_visual == 'true') ||
-       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')))
     # Five legs: at three, each leg's scout took ~4.5 minutes and the visual
     # regression waited for the slowest one.
     strategy:
@@ -2080,7 +2131,7 @@ jobs:
     needs:
       [build-storybook, check-components, maintenance-request, visual-scout]
     if: >-
-      !cancelled() &&
+      (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (!cancelled() &&
       (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) &&
         needs.build-storybook.result == 'success' &&
         needs.check-components.result == 'success' &&
@@ -2089,7 +2140,7 @@ jobs:
         ((inputs.operation == 'release-check' &&
           needs.build-storybook.result == 'success' &&
           needs.check-components.result == 'success') ||
-         (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
+         (needs.maintenance-request.result == 'success' && inputs.operation == 'capture')))))
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && github.triggering_actor != 'github-actions[bot]') && '2-core-ubuntu-arm' || 'ubuntu-24.04-arm' }}
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
@@ -2542,12 +2593,12 @@ jobs:
     name: pr-rtl (core)
     needs: [build-storybook, check-components, pr-rtl-shard]
     if: >-
-      always() && !cancelled() &&
+      (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (always() && !cancelled() &&
       ((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) &&
       (needs.check-components.outputs.has_rtl_components == 'true' ||
        needs.check-components.outputs.has_rtl_harness == 'true' ||
-       needs.check-components.outputs.force_full_component_audits == 'true')
+       needs.check-components.outputs.force_full_component_audits == 'true'))
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && github.triggering_actor != 'github-actions[bot]') && '2-core-ubuntu-arm' || 'ubuntu-24.04-arm' }}
     timeout-minutes: 15
     permissions:
@@ -2631,7 +2682,7 @@ jobs:
   # Stable required context joining the five package shards above.
   pr-rtl:
     needs: [check-scope, check-components, pr-rtl-shard, pr-rtl-merge]
-    if: ${{ always() && !cancelled() && (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (always() && !cancelled() && (((github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:heavy-lanes')) && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -2692,7 +2743,7 @@ jobs:
         pr-rtl-merge,
         pr-rtl,
       ]
-    if: ${{ always() && github.event_name == 'pull_request' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (always() && github.event_name == 'pull_request') }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     continue-on-error: true
