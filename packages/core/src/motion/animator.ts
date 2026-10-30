@@ -78,10 +78,12 @@
  *
  * WebKit dates an animation created just before a block at its last frame
  * time before the block, where the first frame after it would show the
- * motion skipped into its curve; the call's first read of that start (its
- * `ready`, once the task has ended, or the first frame after it) moves the
- * start to that read, so WebKit delays the motion as Chromium's commit does
- * (startAfterBlock).
+ * motion skipped into its curve; when the call's own task ran on more than
+ * two frames, the call's first read of that start moves it to that read, so
+ * WebKit delays the motion as Chromium's commit does (startAfterBlock). Every
+ * call of that task moves together, and a shorter task or a read that other
+ * tasks delay keeps the browser's start, so a sequence chained on a call's
+ * end (a Reduce Motion cross-fade's second half) keeps its clock.
  *
  * Promotion: Mobile Safari runs an animation whose start time is set from
  * script on its compositor at its first commit only if the element (or the
@@ -503,6 +505,8 @@ interface StartGroup {
    * browser's, whatever it says (startAfterBlock).
    */
   framed?: boolean;
+  /** The task it was made in, with every call made in that task. */
+  task?: TaskMark;
   /** A later call in the same task that took over its curves. */
   adoptedBy?: StartGroup;
   readonly resolve: (start: number) => void;
@@ -634,12 +638,42 @@ const SAMPLE_GRID_MS = 1000 / 30;
 const MAX_DURATION_MS = 30_000;
 
 /**
- * How far before the call's first read a browser's start for a call from
- * rest can lie and still be that read's own frame: two frames at 60 Hz. A
- * start dated by the call and further back came from a frame before a
- * main-thread block in the call's task (WebKit; startAfterBlock).
+ * How long a task must run on past its first call from rest before that
+ * counts as a block (WebKit; startAfterBlock): two frames at 60 Hz.
  */
+// Browser start times are frame times and a task's end a live clock, so only a block longer than a frame plus the task's own length can be told apart from that quantization.
 const LATE_START_MS = 34;
+
+/**
+ * The task calls from rest are made in, shared by every call made in it
+ * (every animator's), so one motion's parts that are separate calls start
+ * together (startAfterBlock).
+ */
+interface TaskMark {
+  /** The task's first call. */
+  readonly first: number;
+  /** When the task ended, at its first microtask. */
+  ended?: number;
+  /** The start every call of a blocked task moves to, set by its first read. */
+  at?: number;
+}
+
+/** The task the current calls from rest are made in, until it ends. */
+let openTask: TaskMark | null = null;
+
+/** The mark of the running task, opened by its first call from rest. */
+function markTask(time: number, clock: () => number): TaskMark {
+  if (openTask == null) {
+    const task: TaskMark = {first: time};
+    openTask = task;
+    queueMicrotask(() => {
+      task.ended = clock();
+      openTask = null;
+    });
+  }
+  return openTask;
+}
+
 /** Above this many keyframes the tolerance is relaxed. */
 const MAX_KEYFRAMES = 1200;
 /**
@@ -1941,6 +1975,7 @@ export function createAnimator(
     }
     pendingGroups.add(group);
     group.fresh = true;
+    group.task = markTask(group.provisional, now);
     queueMicrotask(() => {
       group.fresh = false;
     });
@@ -2095,10 +2130,13 @@ export function createAnimator(
    * like Core Animation, starts a pending animation when it commits it, so a
    * main-thread block later in the call's task delays the motion; WebKit
    * dates it at its last frame time before that task, so the first frame
-   * after the block would show it skipped into its curve. A start the browser
-   * put by the call and more than LATE_START_MS before the call's first read
-   * (its `ready`, once the task has ended, or the first frame after it) moves
-   * to that read, with every animation of the call.
+   * after the block would show it skipped into its curve. When the task ran
+   * on more than LATE_START_MS past its first call, a start the browser put
+   * by the call and more than LATE_START_MS before the call's first read (its
+   * `ready`, once the task has ended, or the first frame after it) moves to
+   * that read, with every animation of the call, and every call of the task
+   * moves to the same read. A shorter task, or a read other tasks delay,
+   * keeps the browser's start.
    */
   const startAfterBlock = (group: StartGroup, start: number): number => {
     const timeline =
@@ -2113,12 +2151,19 @@ export function createAnimator(
     ) {
       return start;
     }
-    // Read once the call's task has ended (its `ready`) or in the first
-    // frame after it, both after any block in that task.
-    const at = Math.max(now(), timeline);
+    const {task} = group;
+    // A read in the task's first microtasks comes after its end too.
+    const ended = task?.ended ?? now();
+    if (task == null || ended - task.first <= LATE_START_MS) {
+      return start;
+    }
+    // Read once the task has ended (its `ready`) or in the first frame after
+    // it, both after the block; the task's other calls take the same read.
+    const at = task.at ?? Math.max(now(), timeline);
     if (at - start <= LATE_START_MS) {
       return start;
     }
+    task.at = at;
     for (const animation of group.animations) {
       if (animation.playState !== 'idle') {
         animation.startTime = at;
@@ -2659,8 +2704,9 @@ export function createAnimator(
    * never an animation (DR2: opacity only), so it is never shown in the wrong
    * place. In a dip the fade back in starts from here and takes what is left
    * of the cross-fade, so the dip ends when it was due even when a busy main
-   * thread runs this timer late; past the whole fade back in (over 100 ms
-   * late) the element appears at once where it landed.
+   * thread runs this timer late; past the whole fade back in (100 ms late or
+   * more) the element appears at once where it landed, with no animation,
+   * and the call settles then.
    */
   const land = (landing: Landing) => {
     landings.delete(landing);
@@ -2673,13 +2719,16 @@ export function createAnimator(
       changed.push(property);
     }
     let end = time;
-    if (landing.fadeIn != null) {
-      // The fade back in takes what is left of the cross-fade: a timer that
-      // a busy main thread runs late shortens it, so the dip still ends
-      // when it was due (design:reduced-motion DR2, 200 ms or less), and the
-      // element is never shown before it lands.
-      const late = landing.due == null ? 0 : Math.max(0, time - landing.due);
-      const ms = Math.max(1, landing.fadeIn.ms - late);
+    // The fade back in takes what is left of the cross-fade: a timer that a
+    // busy main thread runs late shortens it, so the dip still ends when it
+    // was due (design:reduced-motion DR2, 200 ms or less), and the element is
+    // never shown before it lands. Past the whole fade back in nothing is
+    // left: the element appears at once, a plain write with no fade for the
+    // browser to start a frame later, so the call settles showing it.
+    const late = landing.due == null ? 0 : Math.max(0, time - landing.due);
+    const appears = landing.fadeIn != null && late >= landing.fadeIn.ms;
+    if (landing.fadeIn != null && !appears) {
+      const ms = landing.fadeIn.ms - late;
       segments.set(
         'opacity',
         fadeSegment(landing.owner, time, [
@@ -2689,6 +2738,13 @@ export function createAnimator(
       );
       changed.push('opacity');
       end = time + ms;
+    } else if (landing.fadeIn != null) {
+      segments.delete('opacity');
+      resting.opacity =
+        landing.fadeIn.isBorrowed === true
+          ? IDENTITY.opacity
+          : landing.fadeIn.to;
+      changed.push('opacity');
     } else if (landing.restore != null) {
       segments.delete('opacity');
       resting.opacity =
@@ -2696,11 +2752,13 @@ export function createAnimator(
       changed.push('opacity');
     }
     commit(changed, time);
-    if (landing.restoreIsBorrowed === true) {
+    if (
+      landing.restoreIsBorrowed === true ||
+      (appears && landing.fadeIn?.isBorrowed === true)
+    ) {
       // The stylesheet owns its opacity again.
       releaseOwnOpacity();
-    }
-    if (landing.fadeIn?.isBorrowed === true) {
+    } else if (landing.fadeIn?.isBorrowed === true) {
       // The fade back in returns to the stylesheet's opacity: it owns it
       // again once the fade ends (releaseIdentity).
       borrowedOpacity = landing.fadeIn.to;

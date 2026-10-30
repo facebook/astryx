@@ -52,6 +52,7 @@ import {
   readLongTasks,
   releaseAnimations,
   releaseVelocity,
+  retakeOnTouchPacing,
   seekAnimations,
   springStep,
   startCompositorTrace,
@@ -130,6 +131,20 @@ async function openSheet(
     halfTop: viewport.height * 0.5,
     handle: {x: rect.x + rect.width / 2, y: rect.y + 12},
   };
+}
+
+/**
+ * The page a velocity proof's attempt runs on. A re-take (retakeOnTouchPacing,
+ * once, only when WebKit received the gesture off its scripted pacing) starts
+ * over on a fresh page, since the first gesture already moved the sheet.
+ */
+async function pageForAttempt(page: Page, attempt: 1 | 2): Promise<Page> {
+  if (attempt === 1) {
+    return page;
+  }
+  const fresh = await page.context().newPage();
+  await page.close();
+  return fresh;
 }
 
 // A plain evaluate, not boundingBox(): it must also work while the page's timers are frozen.
@@ -739,30 +754,37 @@ test('on Android the dim follows the sheet too, pinned (one touch model)', async
 });
 
 test('a downward flick lands on the next detent, and from there dismisses', async ({
-  page,
-}) => {
-  const {driver, sheet, halfTop, handle} = await openSheet(page);
-  // 2000 px/s for 80 ms from the tall detent: a flick, so at least to the
-  // next detent down, the half one, which its projection (160 + 2000 × 0.1
-  // = 360 px) is nearest too (UIKit sends a medium/large sheet flicked this
-  // way from large to medium).
-  const fromTall = flick(handle, {
-    velocity: {x: 0, y: 2000},
-    durationMs: 80,
-    hz: 120,
+  page: firstPage,
+}, testInfo) => {
+  // Its outcome follows the flick's speed, so WebKit's pacing is checked.
+  await retakeOnTouchPacing(testInfo, async attempt => {
+    const page = await pageForAttempt(firstPage, attempt);
+    const {driver, sheet, halfTop, handle} = await openSheet(page);
+    // 2000 px/s for 80 ms from the tall detent: a flick, so at least to the
+    // next detent down, the half one, which its projection (160 + 2000 × 0.1
+    // = 360 px) is nearest too (UIKit sends a medium/large sheet flicked this
+    // way from large to medium).
+    const fromTall = flick(handle, {
+      velocity: {x: 0, y: 2000},
+      durationMs: 80,
+      hz: 120,
+    });
+    expect(releaseVelocity(fromTall).y).toBeCloseTo(2000, -1);
+    await driver.play(fromTall, {checkPacing: true});
+    await waitForRest(sheet);
+    expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
+    // The same flick from the half detent goes on to the next position: gone.
+    await driver.play(
+      flick(
+        {x: handle.x, y: halfTop + 12},
+        {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120},
+      ),
+      {checkPacing: true},
+    );
+    await expect(
+      page.getByRole('dialog', {name: 'Nearby places'}),
+    ).toBeHidden();
   });
-  expect(releaseVelocity(fromTall).y).toBeCloseTo(2000, -1);
-  await driver.play(fromTall);
-  await waitForRest(sheet);
-  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
-  // The same flick from the half detent goes on to the next position: gone.
-  await driver.play(
-    flick(
-      {x: handle.x, y: halfTop + 12},
-      {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120},
-    ),
-  );
-  await expect(page.getByRole('dialog', {name: 'Nearby places'})).toBeHidden();
 });
 
 test('the settle is the UIKit release spring, sampled frame by frame', async ({
@@ -812,62 +834,66 @@ for (const {name, speed, travel} of [
   {name: 'a fast throw', speed: 1500, travel: 0.25},
 ]) {
   test(`${name} hands its velocity to the release spring`, async ({
-    page,
+    page: firstPage,
   }, testInfo) => {
-    const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
-    // A pull toward the half detent, then a constant-speed throw at `speed`
-    // for the last 100 ms: it projects past halfway, so it lands there.
-    const pull = Math.round((halfTop - tallTop) * travel);
-    const throwDistance = (speed * 100) / 1000;
-    const start = {x: handle.x, y: handle.y};
-    const script = drag(
-      start,
-      {x: start.x, y: start.y + pull + throwDistance},
-      {
-        durationMs: 100 + (pull / throwDistance) * 100,
-        hz: 120,
-      },
-    );
-    expect(releaseVelocity(script).y).toBeCloseTo(speed, -1);
-    await readInputLog(page, {clear: true});
-    const played = await driver.play(script);
-    // What the page measured: the script in Chromium, to within its clock's
-    // clamp (expectSamplesOnScript). WebKit's input carries real dispatch
-    // times in whole milliseconds and whole pixels: at 120 Hz one
-    // millisecond is 12 % of an interval, and UIKit's two-sample filter
-    // reads 1333–1625 px/s of a steady 1500 from that rounding alone, more
-    // when a dispatch runs late. The curve and the hand-off below are
-    // checked against what the page measured, in both engines.
-    const records = await readInputLog(page);
-    const velocity = uikitReleaseVelocity(records);
-    if (driver.scriptedTimestamps) {
-      expectSamplesOnScript(records, played);
-    }
-    const {result, samples, from, to} = await compareRelease(
-      page,
-      sheet,
-      velocity,
-    );
-    await writeEvidence(
-      `curves/bottomsheet-release-${speed}`,
-      {
-        [`${testInfo.project.name}.json`]: JSON.stringify(
-          {speed, velocity, from, to, samples, comparison: result},
-          null,
-          2,
-        ),
-      },
-      testInfo,
-    );
-    expect(to).toBeCloseTo(halfTop - tallTop, 0);
-    expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
-      0.5,
-    );
-    // The hand-off is what the curve shows: a spring started at rest would
-    // trail it by several px within the first 16 ms.
-    const atRest = uikitRelease(from, to, 0);
-    const at16 = samples.find(s => s.t >= 16) ?? samples[1];
-    expect(Math.abs(at16.value - atRest(at16.t))).toBeGreaterThan(3);
+    // Its outcome follows the throw's speed, so WebKit's pacing is checked.
+    await retakeOnTouchPacing(testInfo, async attempt => {
+      const page = await pageForAttempt(firstPage, attempt);
+      const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
+      // A pull toward the half detent, then a constant-speed throw at `speed`
+      // for the last 100 ms: it projects past halfway, so it lands there.
+      const pull = Math.round((halfTop - tallTop) * travel);
+      const throwDistance = (speed * 100) / 1000;
+      const start = {x: handle.x, y: handle.y};
+      const script = drag(
+        start,
+        {x: start.x, y: start.y + pull + throwDistance},
+        {
+          durationMs: 100 + (pull / throwDistance) * 100,
+          hz: 120,
+        },
+      );
+      expect(releaseVelocity(script).y).toBeCloseTo(speed, -1);
+      await readInputLog(page, {clear: true});
+      const played = await driver.play(script, {checkPacing: true});
+      // What the page measured: the script in Chromium, to within its clock's
+      // clamp (expectSamplesOnScript). WebKit's input carries real dispatch
+      // times in whole milliseconds and whole pixels: at 120 Hz one
+      // millisecond is 12 % of an interval, and UIKit's two-sample filter
+      // reads 1333–1625 px/s of a steady 1500 from that rounding alone, more
+      // when a dispatch runs late. The curve and the hand-off below are
+      // checked against what the page measured, in both engines.
+      const records = await readInputLog(page);
+      const velocity = uikitReleaseVelocity(records);
+      if (driver.scriptedTimestamps) {
+        expectSamplesOnScript(records, played);
+      }
+      const {result, samples, from, to} = await compareRelease(
+        page,
+        sheet,
+        velocity,
+      );
+      await writeEvidence(
+        `curves/bottomsheet-release-${speed}`,
+        {
+          [`${testInfo.project.name}.json`]: JSON.stringify(
+            {speed, velocity, from, to, samples, comparison: result},
+            null,
+            2,
+          ),
+        },
+        testInfo,
+      );
+      expect(to).toBeCloseTo(halfTop - tallTop, 0);
+      expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+        0.5,
+      );
+      // The hand-off is what the curve shows: a spring started at rest would
+      // trail it by several px within the first 16 ms.
+      const atRest = uikitRelease(from, to, 0);
+      const at16 = samples.find(s => s.t >= 16) ?? samples[1];
+      expect(Math.abs(at16.value - atRest(at16.t))).toBeGreaterThan(3);
+    });
   });
 }
 
@@ -1374,18 +1400,23 @@ test("a finger on Android takes UIKit's release too, not the theme's timing (one
 });
 
 test('a flick from tall lands on half on Android too (one touch model)', async ({
-  page,
-}) => {
-  const {driver, sheet, halfTop, handle} = await openSheet(page, {
-    idiom: 'android',
+  page: firstPage,
+}, testInfo) => {
+  // Its outcome follows the flick's speed, so WebKit's pacing is checked.
+  await retakeOnTouchPacing(testInfo, async attempt => {
+    const page = await pageForAttempt(firstPage, attempt);
+    const {driver, sheet, halfTop, handle} = await openSheet(page, {
+      idiom: 'android',
+    });
+    // 2000 px/s for 80 ms from tall: a flick, at least to the next detent
+    // down, which its projection (160 + 200 px) is nearest too.
+    await driver.play(
+      flick(handle, {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120}),
+      {checkPacing: true},
+    );
+    await waitForRest(sheet);
+    expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
   });
-  // 2000 px/s for 80 ms from tall: a flick, at least to the next detent
-  // down, which its projection (160 + 200 px) is nearest too.
-  await driver.play(
-    flick(handle, {velocity: {x: 0, y: 2000}, durationMs: 80, hz: 120}),
-  );
-  await waitForRest(sheet);
-  expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
 });
 
 /** Each animation running on the sheet: the properties it changes and its duration (ms). */

@@ -3,7 +3,8 @@
 /**
  * @file GestureHost.ts
  * @input DOM touch, pointer, click, contextmenu, scroll and focus events of
- *   one document; elements with recognizers and consumers attached
+ *   one document; elements with recognizers and consumers attached; the
+ *   input hold's held layers (Layer/inputHold `isInHeldLayer`)
  * @output Exports GestureHost (the DOM side of the gesture system) and
  *   getGestureHost (one host per document)
  * @position Browser adapter of packages/core/src/gestures: turns real events
@@ -139,6 +140,7 @@ import type {PressBounds} from './PressTracker';
 import type {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import type {PanGestureRecognizer} from './PanGestureRecognizer';
 import {createNativeScrollProbe, parentAcrossShadow} from './nativeScroll';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {
   gestureHostStyle,
   intersectTouchAction,
@@ -1556,9 +1558,12 @@ export class GestureHost {
     const hovers: HoverGestureRecognizer[] = [];
     let consumer: TouchConsumer | null = null;
     let consumerElement: Element | null = null;
+    // A layer the input hold holds takes no touch while its presentation
+    // runs: the host asks the hold itself, so the hold imports nothing from
+    // gestures/ and a component in the root entry can use it statically.
     if (
       target instanceof Node &&
-      [...this.touchGates].some(gate => gate(target))
+      (isInHeldLayer(target) || [...this.touchGates].some(gate => gate(target)))
     ) {
       return {recognizers, consumer, consumerElement, hovers};
     }
@@ -1699,8 +1704,8 @@ export class GestureHost {
 
   /**
    * Hold touches away from every participant while `gate(target)` answers
-   * true (a presentation running in a layer: its content takes no touch
-   * until it settles). Returns the release.
+   * true. Returns the release. The input hold's held layers need none: the
+   * host asks `isInHeldLayer` for every touch.
    */
   addTouchGate(gate: (target: Node) => boolean): () => void {
     this.touchGates.add(gate);
@@ -1732,13 +1737,15 @@ export class GestureHost {
 
   private readonly onTouchStart = (event: TouchEvent): void => {
     this.noteFingersDown(event);
+    // A second finger leaves the two to the page's pinch, whichever events
+    // the host reads fingers from (FR10).
+    if (this.fingerTargets.length > 1) {
+      this.failUnclaimedLoneFingerPans();
+    }
     // Where the host reads a finger from its pointer events (no ontouchstart,
     // as after touch emulation turns on), its Touch Events would track it twice.
     if (!this.usesTouchEvents || !this.takeEvent(event)) {
       return;
-    }
-    if (this.fingerTargets.length > 1) {
-      this.failUnclaimedLoneFingerPans();
     }
     const time = eventTime(event);
     const inputs: ArenaBeganInput[] = [];
@@ -1829,6 +1836,11 @@ export class GestureHost {
     }
     for (const input of untracked) {
       this.arena.untrackedBegan(input);
+    }
+    // Again once the new fingers are delivered: a pinch's second finger may
+    // have landed on another one-finger pan, the next row (FR10).
+    if (this.fingerTargets.length > 1) {
+      this.failUnclaimedLoneFingerPans();
     }
     // Stamped after the consumers judged the touch: the brake asks whether
     // an EARLIER finger is still driving a scroll.
@@ -2402,6 +2414,19 @@ export class GestureHost {
       });
       return;
     }
+    if (
+      event.pointerType === 'touch' &&
+      this.arena.touches.some(
+        touch =>
+          touch.pointerType === 'touch' &&
+          touch.phase !== 'ended' &&
+          touch.phase !== 'cancelled',
+      )
+    ) {
+      // Fingers from pointer events: a second one, wherever it lands,
+      // leaves the two to the page's pinch, as onTouchStart does (FR10).
+      this.failUnclaimedLoneFingerPans();
+    }
     // A right click, a pen's barrel button, or a ctrl-click on macOS (its
     // context click) starts no press (FR43).
     if (event.pointerType !== 'touch' && !isPrimaryClick(event)) {
@@ -2434,6 +2459,19 @@ export class GestureHost {
         consumer,
       },
     ]);
+    if (
+      event.pointerType === 'touch' &&
+      this.arena.touches.filter(
+        touch =>
+          touch.pointerType === 'touch' &&
+          touch.phase !== 'ended' &&
+          touch.phase !== 'cancelled',
+      ).length > 1
+    ) {
+      // Again once this finger is delivered: it may have landed on another
+      // one-finger pan (FR10).
+      this.failUnclaimedLoneFingerPans();
+    }
     if (locksSelectionFor(event.pointerType)) {
       // The presented target: what the pen is on, where the engine's own
       // hit test may still see the motion's start.
