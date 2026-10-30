@@ -59,7 +59,7 @@ export const docs = {
           name: 'minimizeBehavior',
           type: "'never' | 'onScrollDown'",
           description:
-            "With 'onScrollDown', scrolling the page down collapses the bar into a small circle at its leading end that holds the selected tab's icon, keeping the content in view, as iOS's tab bar does. Scrolling back up leaves it collapsed; reaching the top of the page, a tap on the circle or moving focus to a tab expands it. Only under a finger: a mouse-driven bar stays expanded.",
+            "With 'onScrollDown', scrolling the page down collapses the bar into a small circle at its leading end that holds the selected tab's icon, keeping the content in view, as iOS's tab bar does. Scrolling back up leaves it collapsed; reaching the top of the page or activating the circle expands it. Collapsed, the circle is the bar's one element for assistive technology, named after the selected tab and collapsed, as on iOS. Only under a finger: a mouse-driven bar stays expanded.",
           default: "'never'",
         },
         {
