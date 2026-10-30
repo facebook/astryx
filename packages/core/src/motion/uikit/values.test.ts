@@ -2,7 +2,8 @@
 
 /**
  * @file values.test.ts
- * @input vitest, the UIKit constants table and the motion math
+ * @input vitest, the UIKit constants table, the motion math, and the press
+ *   overlay's release rule as StyleX's dev runtime injects it
  * @output Checks the table's values through the math that plays them: every
  *   spring is valid and settles; the alert spring is UIKit's legacy
  *   derivation; a sheet's detent and presentation springs render alike;
@@ -11,26 +12,30 @@
  * @position Testing; the source rules are uikit.test.ts
  */
 
-import {readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import * as stylex from '@stylexjs/stylex';
 import {describe, expect, it} from 'vitest';
+import {rulesDeclaredFor} from '../../__tests__/pressState';
+import {interactionOverlayStyles} from '../../utils/interactionOverlay.stylex';
+import {cubicBezier} from '../bezier';
 import {solveDecay} from '../decay';
 import {rubberBand} from '../rubberBand';
 import {
+  dampingRatioOf,
   naturalFrequency,
+  responseOf,
   settlingDuration,
   springFromUIKitDampingDuration,
   toSpring,
   type SpringDescription,
 } from '../spring';
 import {scroll, springs} from '.';
+import {datePicker} from './datePicker';
 import {press} from './timing';
 
 describe('UIKit constants table through the motion math', () => {
   const springEntries: [string, SpringDescription][] = [
     ...Object.entries(springs),
     ['scroll.bounce', scroll.bounce],
-    ['scroll.paging.snap', scroll.paging.snap],
   ];
 
   it.each(springEntries)(
@@ -95,16 +100,49 @@ describe('UIKit constants table through the motion math', () => {
     }
   });
 
+  it('the date picker\u2019s animated selection is springDuration 0.3 with no bounce, settling in 0.441 s', () => {
+    // UIKit attached mass 1, stiffness 438.649, damping 41.888 and reported
+    // a settlingDuration of 0.441 s.
+    const spring = toSpring(datePicker.calendar.selection.programmaticSpring);
+    expect(dampingRatioOf(spring)).toBeCloseTo(1, 4);
+    expect(responseOf(spring)).toBeCloseTo(0.3, 4);
+    expect(settlingDuration(spring)).toBeCloseTo(0.441, 3);
+  });
+
+  it('the compact date picker\u2019s popover opens and closes on the menu springs', () => {
+    expect(datePicker.compact.present).toEqual(springs.menuOpen);
+    expect(datePicker.compact.dismiss).toEqual(springs.menuClose);
+  });
+
+  it('a column the date picker turns itself moves on the sinusoid of an animated setContentOffset, within 0.2 %', () => {
+    const ease = cubicBezier(datePicker.wheels.columnTurn.curve);
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      expect(
+        Math.abs(ease(t) - (0.5 - 0.5 * Math.cos(Math.PI * t))),
+      ).toBeLessThan(0.002);
+    }
+  });
+
   it('the press release curve is the press model\u2019s RELEASE_EASE', () => {
     // The table records the curve the touch press model ships with; this pins
-    // the two together so neither drifts alone.
-    const source = readFileSync(
-      join(__dirname, '../../utils/interactionOverlay.stylex.ts'),
-      'utf8',
-    );
-    const match = /const RELEASE_EASE = 'cubic-bezier\(([^)]*)\)'/.exec(source);
-    expect(match?.[1].split(',').map(Number)).toEqual([
-      ...press.highlightOutCurve,
-    ]);
+    // the two together so neither drifts alone. It reads the curve the
+    // overlay's fading arm ships (the rule StyleX injects), so it holds
+    // however the stylesheet spells the value.
+    const element = document.createElement('div');
+    element.className =
+      stylex.props(interactionOverlayStyles.backgroundColor).className ?? '';
+    const curves = rulesDeclaredFor(element)
+      .filter(rule =>
+        rule
+          .slice(0, rule.indexOf('{'))
+          .includes('[data-astryx-press="fading"]'),
+      )
+      .flatMap(rule => {
+        const match =
+          /animation-timing-function:\s*cubic-bezier\(([^)]*)\)/.exec(rule);
+        return match == null ? [] : [match[1].split(',').map(Number)];
+      });
+    expect(curves).toEqual([[...press.highlightOutCurve]]);
   });
 });

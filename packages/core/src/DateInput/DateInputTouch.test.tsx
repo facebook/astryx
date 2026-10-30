@@ -29,6 +29,7 @@ import {
   afterEach,
 } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -54,9 +55,19 @@ import {
   rowsIn,
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
+import {WHEEL_ROW_PITCH} from './wheelLook';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
+import {useCalendarDays} from '../Calendar';
+import type * as CalendarModule from '../Calendar';
+
+// A pass-through spy: each call is one month pane rendering, which the
+// month/year toggle test counts.
+vi.mock('../Calendar', async importOriginal => {
+  const actual = await importOriginal<typeof CalendarModule>();
+  return {...actual, useCalendarDays: vi.fn(actual.useCalendarDays)};
+});
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -136,6 +147,16 @@ function setViewport(kind: 'mobile' | 'desktop'): void {
       ? {pointer: 'coarse', width: 393}
       : {pointer: 'fine', width: 1280},
   );
+}
+
+/**
+ * A touchscreen laptop with the sheet pinned (`presentation="bottom-sheet"`):
+ * the primary pointer is fine, so the calendar is today's native scroller,
+ * and a finger can still swipe it. Under a primary finger the calendar is
+ * MonthPager instead.
+ */
+function stubTouchscreenLaptop(): void {
+  stubMedia({pointer: 'fine', anyPointer: 'coarse', width: 1280});
 }
 
 /**
@@ -857,6 +878,100 @@ describe('DateInput — calendar surface', () => {
     expect(header()).toHaveTextContent('March 2026');
   });
 
+  it('under a finger: names the month at the tap and steps again from it mid-scroll', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('May 2026');
+    // The window follows the target, so May's pane is mounted already.
+    expect(pane('May 2026')).toBeInTheDocument();
+  });
+
+  it('pages the keyboard focus by month with PageUp/PageDown and by year with Shift, on every pointer', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    // Today's scroller follows the focus with a native smooth scroll, which
+    // jsdom does not run; the focus itself is what moves on every pointer.
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+  });
+
+  it('under a finger: only the month the pager shows takes a tab stop', () => {
+    // The neighbouring months are mounted off-screen; Tab into one would
+    // scroll the clipped viewport under the pager's track.
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const tabStops = () =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-scroller="months"] [data-date]',
+        ),
+      ].filter(day => day.tabIndex === 0);
+    expect(within(pane('April 2026')).queryAllByRole('button').length).toBe(42);
+    expect(tabStops().map(day => day.dataset.date)).toEqual(['2026-03-21']);
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(tabStops().map(day => day.dataset.date)).toEqual(['2026-04-01']);
+  });
+
+  it('with a mouse: PageUp/PageDown take the title and the arrows with the focus', () => {
+    // Today's native scroller drops every scroll report while a steered
+    // scroll runs, its arrival included, so the month is reported with the
+    // focus move itself.
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled
+        initial="2026-03-21"
+        min="2025-01-01"
+        max="2026-12-31"
+        presentation="bottom-sheet"
+      />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+    expect(header()).toHaveTextContent('April 2025');
+  });
+
+  it('under a finger: pages the keyboard focus by month with PageUp/PageDown and by year with Shift', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+    expect(header()).toHaveTextContent('April 2025');
+  });
+
   /**
    * A programmatic scroll must not report its own arrival as if the user had
    * scrolled there. Nothing needs the report — whatever asked for the scroll
@@ -869,9 +984,16 @@ describe('DateInput — calendar surface', () => {
    * again — so the month drifted on the way back to the calendar.
    */
   it('does not report a scroll it was told to make', async () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     await withLayout(async () => {
       render(
-        <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
       );
       fireEvent.click(field());
       const header = () =>
@@ -1106,21 +1228,40 @@ describe('DateInput — calendar surface', () => {
    * break if it ever became global, since April 1 is both the selection and
    * a spill day in March's pane.
    */
-  it('gives a spilled date no tab stop in the pane that borrows it', () => {
+  const tabbableIn = (label: string) =>
+    within(pane(label))
+      .getAllByRole('button')
+      .filter(b => b.getAttribute('tabindex') === '0')
+      .map(b => b.getAttribute('aria-label'));
+
+  it('under a finger: gives a spilled date no tab stop, and the off-screen month none at all', () => {
     renderAndOpen(
       <Controlled initial="2026-04-01" min="2026-01-01" max="2026-12-31" />,
     );
-    const tabbableIn = (label: string) =>
-      within(pane(label))
-        .getAllByRole('button')
-        .filter(b => b.getAttribute('tabindex') === '0')
-        .map(b => b.getAttribute('aria-label'));
-
-    // April owns the date, so its stop is the date itself.
+    // April owns the date, so its stop is the date itself; March, mounted
+    // off-screen beside it, takes none (only the month the pager shows has a
+    // tab stop).
     expect(tabbableIn('April 2026')).toHaveLength(1);
     expect(tabbableIn('April 2026')[0]).toMatch(/April 1, 2026/);
-    // March shows the same date, but its stop falls back to a March date —
-    // every pane keeps exactly one, and never on a day it does not own.
+    expect(tabbableIn('March 2026')).toHaveLength(0);
+  });
+
+  it('with a mouse: gives a spilled date no tab stop in the pane that borrows it', () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled
+        initial="2026-04-01"
+        min="2026-01-01"
+        max="2026-12-31"
+        presentation="bottom-sheet"
+      />,
+    );
+    // Today's native scroller keeps one stop in every pane: March shows the
+    // same date, but its stop falls back to a March date, never a day it
+    // does not own.
+    expect(tabbableIn('April 2026')).toHaveLength(1);
+    expect(tabbableIn('April 2026')[0]).toMatch(/April 1, 2026/);
     expect(tabbableIn('March 2026')).toHaveLength(1);
     expect(tabbableIn('March 2026')[0]).toMatch(/March/);
   });
@@ -1268,8 +1409,18 @@ describe('DateInput — a rest position between two months', () => {
     scroller.dispatchEvent(touchEvent('touchend'));
   };
 
+  // Rest positions between two months are the native scroller's; under a
+  // primary finger the calendar is MonthPager, which rests only on a month.
   const openCalendar = () => {
-    render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(
+      <Controlled
+        initial="2026-03-21"
+        {...FIVE_YEARS}
+        presentation="bottom-sheet"
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Event date'));
     const scroller = document.querySelector<HTMLElement>(
       '[data-scroller="months"]',
@@ -1486,6 +1637,23 @@ describe('DateInput — month/year wheels', () => {
     expect(title()).toHaveTextContent('September 2026');
   });
 
+  it('under a finger: moves the hidden calendar to the wheels\u2019 month without an echo', () => {
+    withLayout(() => {
+      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      fireEvent.click(field());
+      openWheels();
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText(
+          'January',
+        ),
+      );
+      expect(title()).toHaveTextContent('January 2026');
+      fireEvent.click(title());
+      expect(title()).toHaveTextContent('January 2026');
+      expect(pane('January 2026')).toBeInTheDocument();
+    });
+  });
+
   /**
    * A wheel commit steers the hidden calendar, and the calendar reports the
    * month it lands on. Taking that report back while the wheels are open
@@ -1546,8 +1714,16 @@ describe('DateInput — month/year wheels', () => {
    * which is what the re-snap amounts to.
    */
   it('holds the month when the hidden calendar is re-snapped on reveal', async () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     await withLayout(async () => {
-      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      render(
+        <Controlled
+          initial="2026-03-21"
+          {...FIVE_YEARS}
+          presentation="bottom-sheet"
+        />,
+      );
       fireEvent.click(field());
       openWheels();
       fireEvent.click(
@@ -1979,8 +2155,9 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     // and the sheet read every downward drag as a dismiss. Paging sideways
     // removes the conflict: horizontal pans stay here and vertical ones go to
     // the sheet, so a downward drag can go back to meaning swipe-to-dismiss.
-    // A move with no direction yet (the same point twice) is nobody's.
-    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
+    // The touch's start reaches the sheet; a move with no direction yet (the
+    // same point twice) is held until the drag has one.
+    expect(ancestor.seen).toEqual(['touchstart']);
     ancestor.stop();
   });
 
@@ -2004,8 +2181,118 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     ancestor.stop();
   });
 
-  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+  it('under a finger: keeps a drag up to 45° from the sheet', () => {
     renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // ~42° off horizontal.
+    swipe(scroller, -80, 72);
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  /**
+   * A drag from `origin` through `points` (offsets from it), then the lift:
+   * each point is one delivered move, so the steps are the sampling.
+   */
+  const dragThrough = (
+    el: Element,
+    points: ReadonlyArray<readonly [number, number]>,
+  ) => {
+    const origin = {x: 150, y: 200};
+    touch(el, 'touchstart', origin);
+    for (const [dx, dy] of points) {
+      touch(el, 'touchmove', {x: origin.x + dx, y: origin.y + dy});
+    }
+    touch(el, 'touchend');
+  };
+
+  /** `count` moves of `step` px along `degrees` off horizontal, leftward. */
+  const stepsAlong = (degrees: number, step: number, count: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    return Array.from(
+      {length: count},
+      (_, i) =>
+        [
+          -Math.cos(radians) * step * (i + 1),
+          Math.sin(radians) * step * (i + 1),
+        ] as const,
+    );
+  };
+
+  /**
+   * UIKit's split in a sheet (motion/MEASUREMENTS.md M-DP01): decided on the
+   * first move where either axis has travelled 10 px, the calendar's when
+   * its sideways travel has reached 10 px there and the sheet's otherwise.
+   * The first moves are the UIKit lab's own samples past the threshold.
+   */
+  it.each([
+    [10, 11, 'calendar'],
+    [10, 13, 'calendar'],
+    [10.7, 12.7, 'calendar'],
+    [9.7, 11.3, 'sheet'],
+    [8, 10.3, 'sheet'],
+    [8.7, 12.3, 'sheet'],
+  ] as const)(
+    'under a finger: a first move past 10 px at (%f, %f) makes the drag the %s’s',
+    (dx, dy, owner) => {
+      renderAndOpen();
+      const scroller = document.querySelector('[data-scroller="months"]')!;
+      const ancestor = watchAncestor();
+      dragThrough(scroller, [
+        [-dx, dy],
+        [-dx * 2, dy * 2],
+        [-dx * 4, dy * 4],
+      ]);
+      expect(ancestor.seen.includes('touchmove')).toBe(owner === 'sheet');
+      ancestor.stop();
+    },
+  );
+
+  it('under a finger: a fast drag steeper than 45° is the calendar’s when its first move jumps 10 px sideways', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // 55° at about 800 px/s: the first move lands 20 px out, 11.5 px sideways.
+    dragThrough(scroller, stepsAlong(55, 20, 5));
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('under a finger: gives a slow drag steeper than 45° to the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // 55° in 3.3 px steps: the vertical travel reaches 10 px first.
+    dragThrough(scroller, stepsAlong(55, 3.3, 30));
+    expect(ancestor.seen).toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('under a finger: holds a touch’s moves from the sheet until it has travelled 10 px either way', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    const origin = {x: 150, y: 200};
+    touch(scroller, 'touchstart', origin);
+    // The sheet promotes its own drag at 8 px: these moves would start it
+    // before the decision.
+    touch(scroller, 'touchmove', {x: origin.x - 5, y: origin.y + 6});
+    touch(scroller, 'touchmove', {x: origin.x - 7, y: origin.y + 8.5});
+    expect(ancestor.seen).toEqual(['touchstart']);
+    // The vertical travel reaches 10 px first: the sheet's from this move.
+    touch(scroller, 'touchmove', {x: origin.x - 8, y: origin.y + 10.3});
+    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
+    touch(scroller, 'touchend');
+    ancestor.stop();
+  });
+
+  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
     const scroller = document.querySelector('[data-scroller="months"]')!;
     const ancestor = watchAncestor();
     // ~50° off horizontal: past the browser's own pan-x cone, still ours.
@@ -2021,7 +2308,11 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
    * from 45° to 60° on an iPhone 15 profile.
    */
   it('pages a month itself when the browser refuses to pan a claimed swipe', () => {
-    renderAndOpen();
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
     const scroller = document.querySelector('[data-scroller="months"]')!;
 
     const forward = swipe(scroller, -60, 72);
@@ -2117,6 +2408,19 @@ describe('DateInput — a mouse can drag a wheel', () => {
   const title = () =>
     document.querySelector<HTMLElement>('[data-title="month-year"]')!;
 
+  // Today's column is the fine pointer's (a finger gets the touch column):
+  // a desktop whose field asks for the sheet.
+  beforeEach(() => {
+    setViewport('desktop');
+  });
+
+  function openWheels() {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
+    fireEvent.click(title());
+  }
+
   /** jsdom has no layout: give the rows a height and the wheel a scrollTop. */
   function withWheelLayout<T>(fn: () => T): T {
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
@@ -2173,8 +2477,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   }
 
   it('scrolls the wheel when a mouse drags it', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2189,8 +2492,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('ignores movement too small to be a drag, so a click is still a click', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2201,8 +2503,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('leaves touch and pen alone — they pan natively, and better', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       for (const pointerType of ['touch', 'pen']) {
         const el = wheel();
@@ -2216,8 +2517,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   it('ignores a secondary button, which belongs to the context menu', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       const track = trackable(el);
@@ -2234,8 +2534,7 @@ describe('DateInput — a mouse can drag a wheel', () => {
    * jumped a whole one.
    */
   it('suspends snapping for the drag, and restores it after', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       trackable(el);
@@ -2250,14 +2549,62 @@ describe('DateInput — a mouse can drag a wheel', () => {
   });
 
   /**
+   * Every `scrollTop` the drag assigns ends in its own `scrollend` in
+   * Chromium, and the hand can rest with the button still down. Neither is
+   * rest: the month the wheel lands on commits at the release, as it does
+   * when a finger lifts.
+   */
+  it('commits nothing while a mouse drag holds the wheel, and commits at the release', () => {
+    vi.useFakeTimers();
+    try {
+      // A year of months, so May is reachable (the default range ends in April).
+      renderAndOpen(
+        <Controlled
+          initial="2026-03-21"
+          min="2026-01-01"
+          max="2026-12-31"
+          presentation="bottom-sheet"
+        />,
+      );
+      fireEvent.click(title());
+      withWheelLayout(() => {
+        const el = wheel();
+        trackable(el);
+        // March, the committed month, sits under the band.
+        el.scrollTop = 2 * 28;
+        const selected = () =>
+          el.querySelector('[aria-selected="true"]')?.textContent;
+        el.dispatchEvent(pointer('pointerdown', {y: 200}));
+        // Two rows on: May is under the band.
+        el.dispatchEvent(pointer('pointermove', {y: 144}));
+        fireEvent.scroll(el);
+        el.dispatchEvent(new Event('scrollend'));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('March');
+        expect(title()).toHaveTextContent('March 2026');
+
+        el.dispatchEvent(pointer('pointerup', {y: 144}));
+        act(() => {
+          vi.advanceTimersByTime(SCROLL_QUIET_MS * 2);
+        });
+        expect(selected()).toBe('May');
+        expect(title()).toHaveTextContent('May 2026');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /**
    * BottomSheet starts its own drag-to-dismiss from a `pointerdown` on its
    * body and CAPTURES the pointer for it, which retargets every later pointer
    * event — including the click. Measured before this: a click on a wheel row
    * that wobbled more than a pixel selected nothing at all.
    */
   it('keeps the press away from the sheet, which would capture the pointer', () => {
-    renderAndOpen();
-    fireEvent.click(title());
+    openWheels();
     withWheelLayout(() => {
       const el = wheel();
       trackable(el);
@@ -2417,6 +2764,31 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     ).toHaveLength(2);
   });
 
+  it('under a finger: the month/year toggle leaves the calendar\u2019s days alone', () => {
+    // The toggle re-renders the sheet; nothing the calendar shows changes, so
+    // no month pane may re-render (each formats 42 day labels, which was most
+    // of the toggle's main-thread work on a phone).
+    renderAndOpen();
+    vi.mocked(useCalendarDays).mockClear();
+    fireEvent.click(document.querySelector('[data-title="month-year"]')!);
+    expect(vi.mocked(useCalendarDays)).not.toHaveBeenCalled();
+  });
+
+  it('under a finger: MonthPager pages the months with the shared pager, each pane on its own layer', () => {
+    const source = read('MonthPager.tsx');
+    // UIKit's paging scroll view, not native scroll snapping: iOS gives a
+    // snapping scroller the fast rate bent onto WebKit's own target.
+    expect(source).toContain('usePager(');
+    expect(source).not.toContain('scrollSnapType');
+    // Mobile Safari paints a layer whole before it moves.
+    expect(source).toContain("willChange: 'transform'");
+    // The pane and the viewport must come from the same expression, or a
+    // pane stops being exactly one screen.
+    expect(
+      source.match(/blockSize: dateInputTouchGeometry\.paneBlockSize/g),
+    ).toHaveLength(2);
+  });
+
   it('positions panes with logical properties, so RTL mirrors', () => {
     const source = read('MonthScroller.tsx');
     // Scoped to the style objects: `scrollTo({left})` is the DOM API and is
@@ -2570,6 +2942,30 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     );
     expect(item).not.toContain('animationTimeline');
     expect(item).not.toContain("overflow: 'hidden'");
+  });
+
+  it('keeps the published tokens module to its released names', async () => {
+    // @astryxdesign/core/DateInput/tokens.stylex is a public subpath: the touch
+    // wheel's geometry lives in an unexported module beside it.
+    const tokens = await import('./tokens.stylex');
+    expect(Object.keys(tokens).sort()).toEqual([
+      'WEEKS_PER_PANE',
+      'dateInputTouchGeometry',
+      'dateInputTouchSizes',
+    ]);
+  });
+
+  it('sizes the touch wheels as today’s column, with the large text of the theme', () => {
+    // The player's row pitch and column height are today's tokens, in
+    // numbers: a row is `wheelItemSize`, the column six day rows.
+    const tokens = read('tokens.stylex.ts');
+    expect(tokens).toContain(`wheelItemSize: '${WHEEL_ROW_PITCH}px'`);
+    expect(tokens).toContain("daySize: '44px'");
+    expect(tokens).toContain('export const WEEKS_PER_PANE = 6;');
+    const source = read('PickerWheel.tsx');
+    expect(source).toContain('const COLUMN_HEIGHT = 6 * 44;');
+    expect(source).toContain('blockSize: dateInputTouchGeometry.paneBlockSize');
+    expect(source).toContain("fontSize: typeScaleVars['--text-large-size']");
   });
 
   it('insets the sheet content equally on every edge', () => {
