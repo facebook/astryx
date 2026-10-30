@@ -333,6 +333,11 @@ export {
   type MobilePowerSearchProps,
 } from './MobilePowerSearch';
 
+// PageControl — UIPageControl's row of page indicators: measured geometry,
+// one page per tap on either side of the current indicator, one adjustable
+// element for assistive technology.
+export {PageControl, type PageControlProps} from './PageControl';
+
 // RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
 // its own package, @astryxdesign/richtext. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
