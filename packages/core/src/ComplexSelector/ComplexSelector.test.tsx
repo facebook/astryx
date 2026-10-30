@@ -1019,5 +1019,52 @@ describe('ComplexSelector onOpenChange', () => {
         container.querySelector('.astryx-field-status'),
       ).not.toBeInTheDocument();
     });
+
+    // family:input-fields FR8: tooltip placement keeps the message reachable.
+    it('puts the tooltip-placement message in a focusable info-tip that describes the trigger', async () => {
+      const user = userEvent.setup();
+      render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="tooltip">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Filter'});
+      const tip = screen.getByRole('button', {name: 'Error details'});
+      // Every id the trigger points at exists, and the status message is
+      // among them.
+      const ids = trigger.getAttribute('aria-describedby')?.split(' ') ?? [];
+      expect(ids.length).toBeGreaterThan(0);
+      for (const id of ids) {
+        expect(document.getElementById(id)).not.toBeNull();
+      }
+      expect(trigger).toHaveAccessibleDescription('Required');
+
+      // Focusing the info-tip reveals the message without opening the popup.
+      await user.tab();
+      await user.tab();
+      expect(tip).toHaveFocus();
+      expect(tip).toHaveAccessibleDescription('Required');
+      await user.click(tip);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('keeps the attached message box and adds no info-tip', () => {
+      render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}>
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(screen.queryByRole('button', {name: 'Error details'})).toBeNull();
+      expect(
+        screen.getByRole('combobox', {name: 'Filter'}),
+      ).toHaveAccessibleDescription('Required');
+    });
   });
 });

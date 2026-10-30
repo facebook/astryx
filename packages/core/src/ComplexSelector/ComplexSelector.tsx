@@ -45,6 +45,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {
   colorVars,
   durationVars,
@@ -65,6 +66,13 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
+  // The tooltip-placement status info-tip sits beside the chevron and keeps
+  // its size when the trigger text is long.
+  statusTip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
   triggerContainer: {
     position: 'relative',
     display: 'flex',
@@ -557,10 +565,25 @@ export function ComplexSelector<Value>({
   const contentId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  // With `tooltip` placement Field renders no message box, so the status
+  // lives in an info-tip button on the trigger row (family:input-fields FR8).
+  // Only that placement renders an on-field status affordance here.
+  const isTooltipStatus = effectiveStatusVariant === 'tooltip';
+  const {statusIcon: statusTip, describedBy: statusTipDescribedBy} =
+    useInputStatusIcon({
+      status: isTooltipStatus ? status : undefined,
+      statusVariant: effectiveStatusVariant,
+      size: 'sm',
+    });
+  const statusTipRef = useRef<HTMLSpanElement>(null);
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      isTooltipStatus
+        ? statusTipDescribedBy
+        : status?.message
+          ? statusMessageId
+          : null,
     ]
       .filter((id): id is string => id != null)
       .join(' ') || undefined;
@@ -654,7 +677,12 @@ export function ComplexSelector<Value>({
         event.stopPropagation();
         return;
       }
-      if (triggerRef.current?.contains(event.target as Node)) {
+      if (
+        triggerRef.current?.contains(event.target as Node) ||
+        // The status info-tip is its own control; a press on it shows the
+        // message without opening the popup.
+        statusTipRef.current?.contains(event.target as Node)
+      ) {
         return;
       }
       // Route the press through the trigger so it behaves exactly like a
@@ -859,6 +887,11 @@ export function ComplexSelector<Value>({
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
+        {isRenderable(statusTip) && (
+          <span ref={statusTipRef} {...stylex.props(styles.statusTip)}>
+            {statusTip}
+          </span>
+        )}
         {isBusy && <Spinner size="sm" aria-hidden="true" />}
         <Icon
           icon="chevronDown"
