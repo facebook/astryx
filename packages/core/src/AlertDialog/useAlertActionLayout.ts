@@ -137,11 +137,13 @@ export function useAlertActionLayout(
   return isCompact ? layout : 'row';
 }
 
-/** The row's gap between two actions, px. */
+/**
+ * The row's gap between two actions, px: its column gap, which a flex row
+ * computes as `normal`, no gap, when none is set.
+ */
 function gapOf(row: HTMLElement): number {
-  const style = getComputedStyle(row);
-  const gap = parseFloat(style.columnGap);
-  return Number.isFinite(gap) ? gap : parseFloat(style.rowGap) || 0;
+  const {columnGap} = getComputedStyle(row);
+  return columnGap === 'normal' ? 0 : parseFloat(columnGap);
 }
 
 /**
@@ -169,10 +171,10 @@ function labelElementOf(action: HTMLElement): HTMLElement | null {
 function requiredWidth(action: HTMLElement): number {
   const style = getComputedStyle(action);
   const chrome =
-    (parseFloat(style.paddingLeft) || 0) +
-    (parseFloat(style.paddingRight) || 0) +
-    (parseFloat(style.borderLeftWidth) || 0) +
-    (parseFloat(style.borderRightWidth) || 0);
+    parseFloat(style.paddingLeft) +
+    parseFloat(style.paddingRight) +
+    parseFloat(style.borderLeftWidth) +
+    parseFloat(style.borderRightWidth);
   const label = labelElementOf(action);
   return (label?.scrollWidth ?? action.scrollWidth) + chrome;
 }

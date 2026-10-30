@@ -47,6 +47,7 @@ function resized(element: Element): void {
 const ROW = 288;
 const GAP = 8;
 const PADDING = 12;
+const BORDER = 1;
 
 let latest: AlertActionLayout | null = null;
 let rowWidth = ROW;
@@ -55,9 +56,11 @@ const labelWidths = new Map<string, number>();
 function Actions({
   labels,
   isCompact = true,
+  columnGap = `${GAP}px`,
 }: {
   labels: [string, string];
   isCompact?: boolean;
+  columnGap?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   latest = useAlertActionLayout(ref, {
@@ -67,13 +70,19 @@ function Actions({
   });
   return (
     <div>
-      <div ref={ref} data-testid="row" style={{columnGap: `${GAP}px`}}>
+      <div ref={ref} data-testid="row" style={{columnGap}}>
         {labels.map(label => (
           <button
             key={label}
             type="button"
             data-action
-            style={{paddingLeft: `${PADDING}px`, paddingRight: `${PADDING}px`}}>
+            style={{
+              paddingLeft: `${PADDING}px`,
+              paddingRight: `${PADDING}px`,
+              borderStyle: 'solid',
+              borderLeftWidth: `${BORDER}px`,
+              borderRightWidth: `${BORDER}px`,
+            }}>
             <span>
               <span data-testid={`label-${label}`}>{label}</span>
             </span>
@@ -171,6 +180,27 @@ describe('useAlertActionLayout', () => {
     labelWidths.set('Delete', 130);
     resized(view.getByTestId('label-Delete'));
     expect(latest).toBe('stack');
+  });
+
+  it("counts each action's padding and borders against its 140 half of the row", () => {
+    // 114 + 2 × 12 of padding + 2 × 1 of border is 140: it fits.
+    labelWidths.set('Cancel', 52);
+    labelWidths.set('Delete', 114);
+    const view = render(<Actions labels={['Cancel', 'Delete']} />);
+    expect(latest).toBe('row');
+    // One more pixel of label is 141: it stacks.
+    labelWidths.set('Delete', 115);
+    resized(view.getByTestId('label-Delete'));
+    expect(latest).toBe('stack');
+  });
+
+  it('counts no gap for a row whose column gap computes to normal', () => {
+    // Half of 288 is 144 with no gap, 140 with the 8 gap: 143 fits only the
+    // first.
+    labelWidths.set('Cancel', 52);
+    labelWidths.set('Delete', 143 - 2 * PADDING - 2 * BORDER);
+    render(<Actions labels={['Cancel', 'Delete']} columnGap="normal" />);
+    expect(latest).toBe('row');
   });
 
   it('keeps the wide row off a compact viewport', () => {

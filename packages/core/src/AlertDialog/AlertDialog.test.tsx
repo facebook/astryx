@@ -297,25 +297,53 @@ describe('AlertDialog', () => {
       }
     });
 
-    /** jsdom lays nothing out: a 338 px action row and 50 px labels. */
-    function stubFittingLabels(): void {
+    /**
+     * jsdom lays nothing out and resolves no `var()`: the lengths a browser
+     * computes for the action row, which the compact layout measures. A
+     * 338 px row with an 8 px column gap, actions with 12 px of padding on
+     * each side and no border, and each label `labelWidth(text)` px wide.
+     */
+    function stubActionRow(labelWidth: (text: string) => number): void {
+      const isRow = (element: Element) =>
+        element.querySelector(':scope > [data-astryx-alert-action]') != null;
       vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
         function (this: HTMLElement) {
-          return this.querySelector(':scope > [data-astryx-alert-action]') !=
-            null
-            ? 338
-            : 0;
+          return isRow(this) ? 338 : 0;
         },
       );
       vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
         function (this: HTMLElement) {
-          const text = this.textContent ?? '';
-          return this.children.length === 0 &&
-            (text === 'Cancel' || text === 'Delete')
-            ? 50
+          return this.children.length === 0
+            ? labelWidth(this.textContent ?? '')
             : 0;
         },
       );
+      const computed = window.getComputedStyle.bind(window);
+      vi.spyOn(window, 'getComputedStyle').mockImplementation(
+        (element, pseudoElement) => {
+          const style = computed(element, pseudoElement);
+          const lengths: Record<string, string> | null = isRow(element)
+            ? {columnGap: '8px'}
+            : element.hasAttribute('data-astryx-alert-action')
+              ? {
+                  paddingLeft: '12px',
+                  paddingRight: '12px',
+                  borderLeftWidth: '0px',
+                  borderRightWidth: '0px',
+                }
+              : null;
+          // The rest of the computed style stays jsdom's own.
+          for (const [property, value] of Object.entries(lengths ?? {})) {
+            Object.defineProperty(style, property, {value});
+          }
+          return style;
+        },
+      );
+    }
+
+    /** Two 50 px labels: each fits its half of the row. */
+    function stubFittingLabels(): void {
+      stubActionRow(text => (text === 'Cancel' || text === 'Delete' ? 50 : 0));
     }
 
     it('with a mouse on a small screen keeps the stack even when the labels fit', () => {
@@ -370,6 +398,14 @@ describe('AlertDialog', () => {
         coarsePointer: true,
         noHover: true,
       });
+      // Each label is wider than its half of the row.
+      stubActionRow(text =>
+        text === 'Keep this workspace'
+          ? 150
+          : text === 'Permanently delete workspace'
+            ? 230
+            : 0,
+      );
       render(
         <AlertDialog
           {...defaultProps}
