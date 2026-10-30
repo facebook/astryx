@@ -1567,6 +1567,10 @@
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
   },
+  "@astryx.textArea.counter": {
+    "defaultMessage": "{count, number}/{limit, number}",
+    "description": "Visible character counter at the bottom of a TextArea that has a character limit, for example `62/2,000`. `{count}` is the characters typed so far and `{limit}` the limit; keep both numbers and reorder or change the separator if your language needs to."
+  },
   "@astryx.textArea.charactersRemaining": {
     "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
     "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."

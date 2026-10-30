@@ -696,7 +696,10 @@ export function TextArea({
               // live-region announcement carry the meaning.
               <Icon icon="warning" size="sm" />
             )}
-            {valueLength}/{maxLength}
+            {t('@astryx.textArea.counter', {
+              count: valueLength,
+              limit: maxLength,
+            })}
           </div>
         )}
       </div>
