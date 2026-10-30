@@ -905,7 +905,7 @@ export interface MultiSelectorProps<
    * Not called when nothing is selected — the placeholder shows instead — and
    * not called for triggerDisplay 'badges', which renders Badge elements
    * rather than text.
-   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   * @default the translated "3 selected" text (`@astryx.multiSelector.triggerCount`) for 'count', "A, B, C, +N" for 'labels'
    */
   formatValue?: (items: MultiSelectorSelectedItem[]) => string;
 

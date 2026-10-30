@@ -828,7 +828,7 @@
     "description": "Visible button label that clears the complete controlled Table row selection, including keys outside the current view."
   },
   "@astryx.table.selection.selectedCount": {
-    "defaultMessage": "{count, number} selected",
+    "defaultMessage": "{count, plural, one {# selected} other {# selected}}",
     "description": "Visible status in TableSelectionToolbar showing the number of selected rows."
   },
   "@astryx.table.selection.selectAllRows": {
