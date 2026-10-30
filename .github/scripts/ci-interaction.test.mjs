@@ -14,6 +14,7 @@
  * behavior is in test-scope-action.test.mjs).
  */
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -74,6 +75,13 @@ describe('interaction proof routing', () => {
     expect(step(proofs, 'Skip the proofs outside their scope').if).toBe(
       "steps.scope.outputs.applies != 'true'",
     );
+    // When it runs, the guard fails the job.
+    const guard = spawnSync(
+      'bash',
+      ['-c', step(proofs, "Require this pull request's Storybook build").run],
+      {encoding: 'utf8'},
+    );
+    expect(guard.status).toBe(1);
   });
 
   it('skips merge-group runs and heads cut before the proofs existed', () => {
