@@ -120,6 +120,14 @@ This draft does not change or extend Pagination's existing navigation landmark,
 button naming, current-page semantics, roving Dot focus, live announcements, or
 input bounds.
 
+- **AR1 — Dots adopt the radio group they already are (`spec:AST-020` FR15,
+  DEC-4).** The Dots act as one composite single-choice control (one Tab stop,
+  arrow keys, Home/End, wrap, selection following focus), so they expose the APG
+  radio group's required parts: the container is a `radiogroup` with the
+  page-indicators label, each Dot is a `radio` named by its page ("Page 3") with
+  `aria-checked` on the current page and no `aria-current` beside it. Keyboard
+  behavior and roving Dot focus are unchanged.
+
 ## Design relationships
 
 | Anatomy or state      | Design requirement                                                 | Representation authority       | Hierarchy role | Component contract |
@@ -194,13 +202,14 @@ does not decide whether it should remain unreachable.
 
 ## Verification map
 
-| Contract            | Verification                                                                                         | Representative states                                      | Mutation or failure expectation                                                                    | Audit section              |
-| ------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------- |
-| FR1                 | `Pagination.test.tsx` presentation, page-size, input, and navigation suites                          | Numbered, count, compact, dots, input, none, known/unknown | Removing or misplacing a stable control fails existing role, text, or interaction assertions.      | `audit:Pagination/anatomy` |
-| FR2                 | Source inspection, public target metadata, target-introduction history, and `themingTargets.test.ts` | Four local targets and their current capabilities          | Removing a current target fails the global inventory; focused placement is not currently pinned.   | `audit:Pagination/theming` |
-| FR3                 | Pagination composition tests plus Button, Text, NumberInput, and Selector target tests and metadata  | All delegated controls and readouts                        | A composed owner losing its target fails owner coverage; replacing it requires this map to change. | `audit:Pagination/theming` |
-| FR4                 | `generatePageRange` tests, render-source inspection, and current target metadata                     | Left, right, and two-sided omission                        | Adding or documenting an Ellipsis target requires an explicit map and target-inventory update.     | `audit:Pagination/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                        | Canonical anatomy and four current local targets           | Missing, extra, prefixed, stale, or multiply assigned local mappings fail repository validation.   | `audit:Pagination/theming` |
+| Contract            | Verification                                                                                                                                      | Representative states                                      | Mutation or failure expectation                                                                                            | Audit section              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| FR1                 | `Pagination.test.tsx` presentation, page-size, input, and navigation suites                                                                       | Numbered, count, compact, dots, input, none, known/unknown | Removing or misplacing a stable control fails existing role, text, or interaction assertions.                              | `audit:Pagination/anatomy` |
+| FR2                 | Source inspection, public target metadata, target-introduction history, and `themingTargets.test.ts`                                              | Four local targets and their current capabilities          | Removing a current target fails the global inventory; focused placement is not currently pinned.                           | `audit:Pagination/theming` |
+| FR3                 | Pagination composition tests plus Button, Text, NumberInput, and Selector target tests and metadata                                               | All delegated controls and readouts                        | A composed owner losing its target fails owner coverage; replacing it requires this map to change.                         | `audit:Pagination/theming` |
+| FR4                 | `generatePageRange` tests, render-source inspection, and current target metadata                                                                  | Left, right, and two-sided omission                        | Adding or documenting an Ellipsis target requires an explicit map and target-inventory update.                             | `audit:Pagination/theming` |
+| AR1                 | `Pagination.test.tsx` dots suite: radio-group roles, names and `aria-checked`, plus the unchanged arrow, Home/End, wrap and focus-selection cases | Dots, current and other pages, disabled                    | A Dot exposed as a button, a missing or second checked radio, `aria-current` beside `aria-checked`, or a changed key fails |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                     | Canonical anatomy and four current local targets           | Missing, extra, prefixed, stale, or multiply assigned local mappings fail repository validation.                           | `audit:Pagination/theming` |
 
 Pagination has broad behavior coverage but no focused assertions for placement
 of its four local target classes. Delegated owner tests pin the owner targets;
