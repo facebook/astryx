@@ -7,6 +7,7 @@
 
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, it, expect, vi} from 'vitest';
+import {useCallback} from 'react';
 import {useTruncation} from './useTruncation';
 
 function Probe({text}: {text: string}) {
@@ -43,17 +44,12 @@ describe('useTruncation', () => {
     });
 
     // Measuring inside React's commit forces a style and layout pass per text
-    // on a page that mounts many; the observer's first notification comes
-    // after layout, for every text at once.
-    it("waits for the resize observer's first notification", () => {
-      let notify: ResizeObserverCallback | null = null;
+    // on a page that mounts many; after the commit, every text reads together.
+    it('measures after the commit, not inside it', async () => {
       const observed: Element[] = [];
       vi.stubGlobal(
         'ResizeObserver',
         class {
-          constructor(callback: ResizeObserverCallback) {
-            notify = callback;
-          }
           observe(target: Element) {
             observed.push(target);
           }
@@ -68,15 +64,51 @@ describe('useTruncation', () => {
       expect(observed).toHaveLength(1);
       expect(screen.getByTestId('full-text')).toHaveTextContent('');
 
-      act(() => {
-        notify?.(
-          [{target: observed[0]} as ResizeObserverEntry],
-          {} as ResizeObserver,
-        );
-      });
+      await act(async () => {});
 
       expect(screen.getByTestId('full-text')).toHaveTextContent(
         'a status line',
+      );
+      unmount();
+    });
+
+    // The browser sends no second first-notification for an element the
+    // shared observer already watches, so the first measurement cannot wait
+    // for one.
+    it('measures an element another subscriber already observes', async () => {
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      const {observeResize} = await import('../utils/sharedResizeObserver');
+      const watched = document.createElement('span');
+      function Shared({text}: {text: string}) {
+        const truncation = useTruncation({maxLines: 1});
+        const {ref} = truncation;
+        const attach = useCallback(
+          (element: HTMLElement | null) => {
+            if (element && element !== watched) {
+              observeResize(element, () => {});
+            }
+            ref(element);
+          },
+          [ref],
+        );
+        return (
+          <>
+            <span ref={attach}>{text}</span>
+            <output data-testid="full-text">{truncation.fullText}</output>
+          </>
+        );
+      }
+      const {unmount} = render(<Shared text="already watched" />);
+      await act(async () => {});
+      expect(screen.getByTestId('full-text')).toHaveTextContent(
+        'already watched',
       );
       unmount();
     });
