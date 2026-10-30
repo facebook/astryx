@@ -26,13 +26,14 @@ import {installPressFeedback, pressableProps} from '../utils/pressFeedback';
  * `interactionOverlayStyles` (from `@astryxdesign/core/utils`) on the same
  * element: `backgroundColor` or `backgroundImage` for a surface whose hover
  * and press are the system's overlays, `pressedBackgroundColor` for one
- * whose hover is its own. The controller writes its attribute on the element
- * while a touch press is believed (after the onset delay, cancelled by travel
- * or by a scroll) and for the release, and the composed style paints the
- * pressed token at the press's strength on the first frame and fades it over
- * the release, keeping `:active` for a mouse on a desktop. On a phone or
- * tablet the stylesheet drops `:active` for every press, so the controller
- * also paints a mouse, trackpad or Space-key press there, at once. A press is
+ * whose hover is its own. Under a finger the controller tracks the press the
+ * way UIKit tracks a control and writes its
+ * attribute on the element while the press is held and for the release; the
+ * composed style paints the pressed token on the first frame and fades it
+ * over the release. A mouse's or a pen's press is the controller's on every
+ * device, painted at once (`spec:AST-094` FR11); a Space press keeps `:active`
+ * on a desktop and is painted by the controller on a phone or tablet, where
+ * the stylesheet drops `:active`. A press is
  * themed through `--color-overlay-pressed`, which the hold, the flash and the
  * fade all read.
  * Every Astryx component that paints a press already does this; reach for it
@@ -46,7 +47,7 @@ import {installPressFeedback, pressableProps} from '../utils/pressFeedback';
  * @example
  * ```
  * const pressable = usePressFeedback();
- * return <div role="button" {...pressable} {...stylex.props(styles.row)} />;
+ * return <button {...pressable} {...stylex.props(styles.button)} />;
  * ```
  */
 export function usePressFeedback(): typeof pressableProps {

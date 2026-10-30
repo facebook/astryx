@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-// @pr-a11y scope core/Button ^packages/core/src/(utils/(pressFeedback|pressGesture|interactionOverlay|touchPresentation)|hooks/usePressFeedback)
+// @pr-a11y scope core/Button ^packages/core/src/(utils/(pressFeedback|pressGesture|interactionOverlay|touchPresentation|controlPressLayer)|hooks/usePressFeedback)
 
 /**
  * @file PressModality.a11y.chromium.spec.ts
@@ -9,8 +9,8 @@
  * @output Real-engine proof that on a touch-first device a held mouse press
  *   and a held Space press paint the pressed state with the same pixels and
  *   scale a desktop `:active` press paints, and fade at the release; that a
- *   desktop press is still `:active` alone; and that a finger's press still
- *   waits for the touch press model's onset
+ *   desktop press is still `:active` alone; and that a finger's press on a
+ *   control is highlighted as the finger lands
  * @position Run with `pnpm test:a11y-contract`. Browser layer of the touch
  *   press model (utils/pressFeedback.ts); the jsdom layer is
  *   utils/pressFeedback.test.ts.
@@ -257,11 +257,13 @@ for (const press of ['mouse', 'space'] as const) {
   });
 }
 
-test('a desktop press is unchanged: `:active` paints it and the controller writes nothing', async ({
+test("a desktop mouse press is the press controller's and paints what `:active` paints; a Space press stays `:active`'s", async ({
   browser,
 }) => {
+  // `spec:AST-094` FR11, DEC-21: a fine pointer's press goes through the
+  // controller, in place of `:active`; a Space press keeps its path.
   const mouse = await desktopReference(browser, 'mouse');
-  expect(mouse.attribute).toBeNull();
+  expect(mouse.attribute).toBe('on');
   expect(mouse.pressed).not.toEqual(mouse.rest);
   expect(mouse.scale).toBeCloseTo(0.98, 3);
   const space = await desktopReference(browser, 'space');
@@ -269,7 +271,7 @@ test('a desktop press is unchanged: `:active` paints it and the controller write
   expectSameColour(space.pressed, mouse.pressed);
 });
 
-test("a finger's press is unchanged: it waits for the onset, then fades at the lift", async ({
+test("a finger's press on a control highlights as the finger lands, then fades at the lift", async ({
   browser,
   browserName,
 }) => {
@@ -289,14 +291,19 @@ test("a finger's press is unchanged: it waits for the onset, then fades at the l
             : [],
       });
     await touch('touchStart');
-    await phone.page.waitForTimeout(60);
-    const early = await pressAttribute(phone.page);
-    await phone.page.waitForTimeout(190);
-    const believed = await pressAttribute(phone.page);
+    // Outside a scroller a control highlights in the frame the finger lands
+    // (UIControl's touchDown); nothing waits for a scroll that cannot come.
+    await phone.page.evaluate(
+      async () =>
+        new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+    );
+    const landed = await pressAttribute(phone.page);
+    await phone.page.waitForTimeout(250);
+    const held = await pressAttribute(phone.page);
     await touch('touchEnd');
     const lifted = await pressAttribute(phone.page);
-    expect(early).toBeNull();
-    expect(believed).toBe('on');
+    expect(landed).toBe('on');
+    expect(held).toBe('on');
     expect(lifted).toBe('fading');
   } finally {
     await phone.close();

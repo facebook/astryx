@@ -9,7 +9,9 @@
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
  *   the touch press's registered strength variable (`pressVars`) and its
- *   clocks (`pressConsts`)
+ *   clock (`pressConsts`). The compositor press layers (a list row's, a
+ *   control's and a card's), and their clocks are
+ *   internal (rowPressLayer.ts, controlPressLayer.ts and their .stylex.ts)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -25,16 +27,16 @@
  * press the same generated specificity; StyleX's native pseudo-state ordering
  * then emits `:active` last.
  *
- * TWO POINTERS, TWO PRESS MODELS. A mouse keeps `:active`. A finger does not:
- * on iOS Safari `:active` paints on the touch itself and can outlive the start
- * of a scroll, so under `@media (pointer: coarse)` the bare `:active` arm is
- * dropped and the press is written by the touch press controller
- * (`utils/pressFeedback.ts`) as `data-astryx-press="on"` once the press is
- * believed (150 ms, no travel, no scroll) and `data-astryx-press="fading"` for the
- * 200 ms release. The query reads the PRIMARY pointer, so on a phone or tablet
- * a mouse, trackpad or Space-key press loses `:active` too; the controller
- * writes the same attribute for those, at once. The two arms paint those
- * through ONE number:
+ ONE PRESS MODEL. The press controller (`utils/pressFeedback.ts`) writes
+ * every pointer's press: a finger's as `data-astryx-press="on"` once the press
+ * is believed (150 ms, no travel, no scroll), a mouse's or a pen's at once on
+ * `pointerdown` (`spec:AST-094` FR11, DEC-21), and `data-astryx-press="fading"`
+ * for the release. `:active` stays for a Space press where the primary
+ * pointer is fine; under `@media (pointer: coarse)` the bare `:active` arm is
+ * dropped (on iOS Safari it paints on the touch itself and can outlive the
+ * start of a scroll), and the controller writes a Space press too. While the
+ * controller paints, the colour arms yield to its image, so a press never
+ * paints twice. The arms paint through ONE number:
  *
  *  - `--astryx-press-alpha` is the press's strength, 0 to 1. It is a
  *    registered custom property (`@property`, syntax `<number>`, declared once
@@ -50,8 +52,9 @@
  *    first frame. Nothing transitions a custom property a composer never named.
  *  - `[data-astryx-press="fading"]` keeps the same paint and runs the release
  *    animation, strength 1 → 0 over {@link PRESS_RELEASE_DURATION} (UIKit's
- *    deselect crossfade; the controller removes the attribute when the same
- *    clock runs out, and by then the paint is gone). It fades to nothing, not
+ *    deselect crossfade; the controller removes the attribute when this
+ *    animation ends, however late a busy main thread let it start, so by then
+ *    the paint is gone). It fades to nothing, not
  *    to the hover strength: under a finger there is no hover to land on.
  *
  * WHY AN ANIMATION AND NOT A TRANSITION. Two reasons, both about composers.
@@ -86,7 +89,10 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {controlPressConsts} from './controlPressLayer.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 /**
  * The touch press's strength on the surface the controller painted, 0 to 1.
@@ -108,16 +114,27 @@ export const pressVars = stylex.defineVars({
  *
  * `defineConsts`, so the one number is inlined here at build time and is the
  * controller's constant at run time (`PRESS_FADE_MS` in pressGesture.ts):
- * the release animation and the timer that removes the attribute after it
- * cannot drift apart.
+ * the release animation and the clock at which the controller checks for
+ * its end cannot drift apart.
  */
 export const pressConsts = stylex.defineConsts({
   /** How long the release takes, in ms. UIKit's deselect clock. */
   releaseMs: 200,
 });
 
-/** The release's clock as CSS. */
+/** The release's clock as CSS: the table's value. */
 const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/** The control release's clock as CSS: the table's value. */
+const CONTROL_RELEASE_DURATION = `${controlPressConsts.controlReleaseMs}ms`;
+/**
+ * Under reduced motion each clock is capped by the Reduce Motion cross-fade's
+ * duration (`design:reduced-motion` DR2: a touch transition is opacity only
+ * and finishes within it), read from its constant (`spec:AST-094` FR4: the
+ * cap is a role, never a literal), so a longer table value never outlasts
+ * it; pressFeedback.ts caps its release clock the same way.
+ */
+const PRESS_RELEASE_DURATION_REDUCED = `min(${PRESS_RELEASE_DURATION}, ${reducedMotionFadeConsts.duration})`;
+const CONTROL_RELEASE_DURATION_REDUCED = `min(${CONTROL_RELEASE_DURATION}, ${reducedMotionFadeConsts.duration})`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -131,7 +148,6 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
-
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
 const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
@@ -172,7 +188,13 @@ const pressRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+const RELEASE_EASE = cellPressConsts.cellReleaseEase;
+
+/**
+ * A control's release curve: UIButton's, UIKit's easeInEaseOut
+ * (`button.highlight.releaseCurve`).
+ */
+const CONTROL_RELEASE_EASE = controlPressConsts.controlReleaseEase;
 
 /**
  * The touch press's strength and its release, on the element the controller
@@ -196,22 +218,85 @@ const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 const pressStrength = {
   default: null,
   '[data-astryx-press="on"]': 1,
-  '[data-astryx-press="fading"]': 1,
+  '[data-astryx-press="fading"]': {
+    default: 1,
+    // Reduce Motion with a fine primary pointer: the release completes at
+    // once (design:reduced-motion DR3), the paint gone at the lift.
+    '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 0,
+  },
 };
+/**
+ * The release, an in-place fade of the paint's alpha: an opacity-only
+ * change, since nothing moves or scales. Under Reduce Motion it is the
+ * system's cross-fade on a coarse pointer (DR2: its duration and curve from
+ * reducedMotionFadeConsts) and nothing on any other (DR3). The keys are the
+ * literal spellings of reducedMotionKeys.fade and .instant.
+ */
 const pressReleaseAnimation = {
   animationName: {
     default: null,
-    '[data-astryx-press="fading"]': pressRelease,
+    '[data-astryx-press="fading"]': {
+      default: pressRelease,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+    },
   },
+  // Under a coarse primary pointer a finger's release runs on a control's
+  // clock (a list row drops this animation for its own layer's, in
+  // rowPressLayer.ts). With any other pointer every release keeps the
+  // deselect clock and curve (the desktop rule, `spec:AST-017` FR59/DEC-25:
+  // touch work leaves a fine pointer's behavior as it is).
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (pointer: coarse)': {
+        default: CONTROL_RELEASE_DURATION,
+        // A mouse or Space press the controller paints on a touch-first
+        // device keeps the fine pointer's clock (PRESS_INPUT_ATTRIBUTE).
+        '[data-astryx-press-input]': {
+          default: PRESS_RELEASE_DURATION,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            PRESS_RELEASE_DURATION_REDUCED,
+        },
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          CONTROL_RELEASE_DURATION_REDUCED,
+      },
+    },
   },
   animationTimingFunction: {
     default: null,
-    '[data-astryx-press="fading"]': RELEASE_EASE,
+    '[data-astryx-press="fading"]': {
+      default: RELEASE_EASE,
+      '@media (pointer: coarse)': {
+        default: CONTROL_RELEASE_EASE,
+        '[data-astryx-press-input]': {
+          default: RELEASE_EASE,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            reducedMotionFadeConsts.easing,
+        },
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          reducedMotionFadeConsts.easing,
+      },
+    },
   },
   animationFillMode: {default: null, '[data-astryx-press="fading"]': 'both'},
+};
+
+/**
+ * The `backgroundImage` variant's arms for a mouse (`:active`) and a hover:
+ * shared with `control`, which replaces that variant's `backgroundImage`.
+ */
+const pointerImageArms = {
+  ':active': {
+    default: pressedImage,
+    [COARSE]: 'none',
+  },
+  [HOVER_HOVER]: {
+    default: null,
+    ':hover': hoverImage,
+    ':active': pressedImage,
+  },
 };
 
 export const interactionOverlayStyles = stylex.create({
@@ -257,15 +342,7 @@ export const interactionOverlayStyles = stylex.create({
       default: null,
       [ENABLED]: {
         default: null,
-        ':active': {
-          default: pressedImage,
-          [COARSE]: 'none',
-        },
-        [HOVER_HOVER]: {
-          default: null,
-          ':hover': hoverImage,
-          ':active': pressedImage,
-        },
+        ...pointerImageArms,
         [PRESSED_ON]: pressedOverlayImage,
         [PRESSED_FADING]: pressedOverlayImage,
       },
