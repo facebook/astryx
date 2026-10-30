@@ -389,29 +389,39 @@ test.describe('frame evidence', () => {
     const control = await startBusyControl(page);
 
     const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
+      // Back and forth until cancelled, so the animation still runs when the
+      // block starts however long a loaded runner takes to start the cast.
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {duration: 1600, easing: 'linear'},
+            {
+              duration: 1600,
+              easing: 'linear',
+              iterations: Infinity,
+              direction: 'alternate',
+            },
           );
         } else {
           const start = performance.now();
           const step = (now: number) => {
-            const p = Math.min(1, (now - start) / 1600);
-            el.style.transform = `translateY(${560 * p}px)`;
-            if (p < 1) {
-              requestAnimationFrame(step);
-            }
+            const p = ((now - start) / 1600) % 2;
+            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
         }
       }, driver);
       const cast = await startScreencast(page, {everyNthFrame});
       await page.waitForTimeout(200);
-      const window = await blockMainThread(page, 700);
+      // The compositor's run is blocked only once it is on the compositor.
+      const window = await blockMainThread(
+        page,
+        700,
+        driver === 'compositor' ? {during: box} : {},
+      );
       await page.waitForTimeout(200);
       const frames = await cast.stop();
       const tracked = await trackMarker(page, frames);
