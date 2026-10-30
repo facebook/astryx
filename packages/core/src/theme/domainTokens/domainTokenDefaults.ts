@@ -5,9 +5,8 @@
  * @input syntaxTokenDefaults, dataTokenDefaults
  * @output domainTokenDefaults
  * @position Merges the domain token defaults for defineTheme. Kept out of the
- *   domainTokens barrel: Core declares its barrels side-effectful
- *   (spec:AST-080 FR4), so a barrel holds only re-exports and a bundle that
- *   never uses these tables can drop them.
+ *   domainTokens barrel because defineTheme sits in a lazily imported module
+ *   graph, which imports no barrel (pinned by scripts/core-single-bundle.test.mjs).
  */
 
 import {syntaxTokenDefaults} from '../syntax/tokens';

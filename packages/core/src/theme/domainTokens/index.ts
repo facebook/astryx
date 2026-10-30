@@ -6,9 +6,10 @@
  * @output domainTokenDefaults, DomainTokenName
  * @position Token aggregator; consumed by defineTheme for validation + autocomplete
  *
- * Re-exports only: Core declares its barrels side-effectful (spec:AST-080 FR4),
- * so the merged map lives in domainTokenDefaults.ts. Actual token definitions
- * live in their own directories (syntax/, dataviz/).
+ * Re-exports only. The merged map lives in domainTokenDefaults.ts so that
+ * defineTheme, inside a lazily imported module graph, imports it without a
+ * barrel. Actual token definitions live in their own directories (syntax/,
+ * dataviz/).
  */
 
 export {syntaxTokenDefaults} from '../syntax/tokens';
