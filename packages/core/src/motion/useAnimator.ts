@@ -13,7 +13,7 @@
  * The animator lives outside React's render cycle: the hook creates it once,
  * returns the same object on every render, and nothing it does ever sets
  * state, so animating, retargeting or tracking a finger never re-renders the
- * component (law M4). The ref attaches the animator when the element mounts
+ * component. The ref attaches the animator when the element mounts
  * and detaches it (cancelling its running animations, keeping its state) when
  * the element unmounts; a remount resumes from the presentation values, which
  * also covers React's development double mount.
