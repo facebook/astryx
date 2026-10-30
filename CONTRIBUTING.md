@@ -385,8 +385,9 @@ Two repo-side rules worth restating here:
   WAI-ARIA APG patterns and are tested once; a bespoke reimplementation of
   one is a review reject.
 - CI is the enforcement layer, not a replacement for the checklist: the
-  `pr-a11y` job in `ci.yml` runs an axe audit on every PR that touches
-  components, a weekly workflow scans the full component surface, and the
+  `pr-a11y` job in `ci.yml` runs an axe audit after merges to `main` and
+  before each release (and on a pull request labelled `ci:heavy-lanes`), a
+  weekly workflow scans the full component surface, and the
   `useAnnounce` lint rule rejects hand-wired `aria-live` regions. axe only
   catches static, DOM-level issues — keyboard behavior, focus management, and
   announcement timing are exactly what the checklist and the component's unit
@@ -531,7 +532,9 @@ any other value:
 // @pr-a11y release-only           never on a PR; the release check runs it
 ```
 
-`pnpm test:a11y-contract:pr origin/main --dry-run` prints what a pull request
+These routes apply when a pull request runs the accessibility owner, which it
+does only with the `ci:heavy-lanes` label; `main` and release checks run every
+spec. `pnpm test:a11y-contract:pr origin/main --dry-run` prints what a pull request
 from your branch would run (component tokens need CI's `analysis.json`; without
 it the runner says so and leaves those specs out). A spec writes its receipts under
 `test-results/<name>/` or, for a component audit, a top-level
@@ -544,8 +547,10 @@ component set, or has no audit spec has an entry in
 
 ### Accessibility audits
 
-PRs that touch components run an axe-core audit (the `pr-a11y` CI job) over
-the Storybook stories of the changed components. The job **fails** when it
+Merges to `main` (checked at the newest commit of a burst), every release
+check, and a PR labelled `ci:heavy-lanes`
+that touches components run an axe-core audit (the `pr-a11y` CI job); on a PR
+it covers the Storybook stories of the changed components. The job **fails** when it
 finds a violation that is not listed in the checked-in baseline,
 `.github/a11y-baseline.json`. Violations are keyed
 `Component::Story::rule-id`, so unrelated markup churn does not invalidate
@@ -607,14 +612,14 @@ not copying its assertions — see the package README and
 
 ### RTL audits
 
-PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
-changed components like `pr-a11y`. It is soft-gated — findings show in the job
+The same events run an RTL audit (`pr-rtl`); on a labelled PR it is scoped to
+the changed components like `pr-a11y`. It is soft-gated — findings show in the job
 summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
 (the `--` matters: `pnpm -F` is itself `--filter`). The report classifies every
 scoped component as **measured**, **verified N-A**, or a **coverage gap**; an
 unexplained all-N-A result is not a clean RTL result. The weekly unfiltered run
-applies the same contract to the full existing roster, while PR CI applies it
-to new and changed components. See `apps/storybook/rtl-audit/README.md`.
+applies the same contract to the full existing roster, while a labelled PR
+applies it to new and changed components. See `apps/storybook/rtl-audit/README.md`.
 
 ### Modal close visibility guard
 

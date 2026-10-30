@@ -32,12 +32,18 @@ function runs(
     operation = 'capture',
     needs = {},
     cancelled = false,
+    labels = [],
   } = {},
 ) {
   // The pull-request gate in front is ci-pr-gate.test.mjs's to prove.
   const expression = ungated(job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    // GitHub's object filter: `labels.*.name` lists the labels' names.
+    .replace(
+      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
+      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
+    );
   if (!/\b(always|cancelled|success|failure)\(/.test(expression)) {
     if (
       cancelled ||
@@ -53,7 +59,10 @@ function runs(
     'cancelled',
     `return Boolean(${expression});`,
   )(
-    {event_name: event},
+    {
+      event_name: event,
+      event: {pull_request: {labels: labels.map(name => ({name}))}},
+    },
     {operation},
     needs,
     () => true,
@@ -108,13 +117,18 @@ describe('CI baseline maintenance routing', () => {
     expect(runs(visual, {needs})).toBe(false);
   });
 
-  it('preserves PR routing when the maintenance guard is skipped', () => {
+  it('preserves focused PR routing on an opted-in pull request when the maintenance guard is skipped', () => {
     const needs = dependencies(visual);
     needs['maintenance-request'].result = 'skipped';
-    // The job decides its stable visual scope in its own steps.
-    expect(runs(visual, {event: 'pull_request', needs})).toBe(true);
-    needs['build-storybook'].result = 'failure';
+    const optedIn = {event: 'pull_request', needs, labels: ['ci:heavy-lanes']};
+    expect(runs(visual, optedIn)).toBe(true);
+    // Without the opt-in label a pull request update runs no visual owner.
     expect(runs(visual, {event: 'pull_request', needs})).toBe(false);
+    needs['check-components'].outputs.has_stable_visual = 'false';
+    expect(runs(visual, optedIn)).toBe(false);
+    needs['check-components'].outputs.has_stable_visual = 'true';
+    needs['build-storybook'].result = 'failure';
+    expect(runs(visual, optedIn)).toBe(false);
     expect(runs(visual, {event: 'merge_group', needs})).toBe(false);
   });
 
@@ -157,10 +171,7 @@ describe('canonical capture and checked-in baseline separation', () => {
     expect(capture.run).not.toMatch(
       /--(?:sample|only|components|themes|max-shots|tiers)\b/,
     );
-    expect(visual.permissions).toEqual({
-      contents: 'read',
-      'pull-requests': 'read',
-    });
+    expect(visual.permissions).toEqual({contents: 'read'});
   });
 
   it('keeps browser-refresh capture reachable, but only uploads validated full captures', () => {

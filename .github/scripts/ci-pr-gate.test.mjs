@@ -135,7 +135,9 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
             startsWithGate(PR_REPORT_GATE),
           );
           const needs = Object.fromEntries(
-            [job.needs ?? []].flat().map(need => [need, {result: 'skipped'}]),
+            [job.needs ?? []]
+              .flat()
+              .map(need => [need, {result: 'skipped', outputs: {}}]),
           );
           expect(
             startsWithNeedsSkipped(condition, needs),

@@ -1,14 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Routing contract for the native Swift packages.
+ * @file Routing contract for the native Swift coverage in the broad CI lane.
  *
- * `test` requires test-native-swift. A runner must be picked before its job
- * starts, so native-swift-runner, a seconds-long job on a free slim runner,
- * runs the same scope step as every test job; test-native-swift takes macOS
- * only when native Swift changed, and otherwise passes on Linux without work.
- * It is the one job that exists only to decide scope, because only it picks a
- * runner.
+ * The Swift packages of @astryxdesign/native build only on macOS. They join
+ * the `test` owner (AST-030 FR11), but a macOS runner is requested only when
+ * a Linux job finds a Swift change under packages/native, or a change to the
+ * lane's own script, so no other pull request waits for one.
  */
 
 import fs from 'node:fs';
@@ -16,17 +14,15 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
-import {gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
   fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
 );
-const runner = ci.jobs['native-swift-runner'];
+const scope = ci.jobs['native-swift-scope'];
 const swift = ci.jobs['test-native-swift'];
 const step = (job, name) =>
   job.steps.find(candidate => candidate.name === name);
-const applies = "needs.native-swift-runner.outputs.applies == 'true'";
 
 describe('native Swift routing', () => {
   it('is joined by test', () => {
@@ -38,52 +34,48 @@ describe('native Swift routing', () => {
     });
   });
 
-  it('decides on Linux and asks for macOS only when Swift changed', () => {
-    expect(runner['runs-on']).toBe('ubuntu-slim');
-    expect(runner.outputs.applies).toBe('${{ steps.scope.outputs.applies }}');
-    expect(runner.steps.find(s => s.id === 'scope').uses).toBe(
-      './.test-scope/.github/actions/test-scope',
-    );
-    expect(swift.needs).toEqual(['native-swift-runner']);
+  it('decides scope on Linux and asks for macOS only when Swift changed', () => {
+    expect(scope['runs-on']).toBe('ubuntu-slim');
+    expect(swift.needs).toEqual(['check-scope', 'native-swift-scope']);
     expect(swift['runs-on']).toBe(
-      `\${{ ${applies} && 'macos-15' || 'ubuntu-slim' }}`,
-    );
-    expect(swift.if).toBe(
-      gated(
-        "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
-      ),
-    );
-  });
-
-  it('fails closed when the runner cannot be decided', () => {
-    expect(step(swift, 'Require a decided Swift runner').if).toBe(
-      "needs.native-swift-runner.result != 'success'",
+      "${{ needs.native-swift-scope.outputs.applies == 'true' && 'macos-15' || 'ubuntu-slim' }}",
     );
     for (const candidate of swift.steps) {
-      if (
-        [
-          'Require a decided Swift runner',
-          'Skip Swift work outside its scope',
-        ].includes(candidate.name)
-      ) {
-        continue;
+      if (candidate.uses || candidate.name?.startsWith('Build and test')) {
+        expect(candidate.if, candidate.name ?? candidate.uses).toBe(
+          "needs.native-swift-scope.outputs.applies == 'true'",
+        );
       }
-      expect(candidate.if, candidate.name ?? candidate.uses).toBe(applies);
     }
+  });
+
+  it('fails closed when the scope cannot be decided', () => {
+    expect(step(scope, 'Require successful scope classification').if).toBe(
+      "needs.check-scope.result != 'success'",
+    );
+    expect(step(swift, 'Require a decided Swift scope').if).toBe(
+      "needs.native-swift-scope.result != 'success'",
+    );
+    const decide = step(scope, 'Decide whether native Swift changed').run;
+    expect(decide).toContain(
+      'git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh"',
+    );
+    // Only "out of scope" (exit 1) skips; unknown (2) runs the Swift work.
+    expect(decide).toContain('if [ "$scope" = 1 ]; then');
   });
 
   it('keeps its own steps in scope, so changing them runs them', () => {
     expect(step(swift, 'Build and test each native Swift package').run).toBe(
       'bash .github/scripts/native-swift.sh',
     );
+    const decide = step(scope, 'Decide whether native Swift changed').run;
     const pattern = new RegExp(
-      runner.steps.find(s => s.id === 'scope').with.paths,
+      decide.match(/bash "\$helper" "\$BASE_SHA" '([^']+)'/)[1],
     );
     for (const touched of [
       '.github/scripts/native-swift.sh',
       'packages/native/apple/Package.swift',
       'packages/native/swift-ios-1/core/Button/AstryxButton.swift',
-      '.github/actions/test-scope/action.yml',
     ]) {
       expect(pattern.test(touched), touched).toBe(true);
     }
@@ -94,5 +86,16 @@ describe('native Swift routing', () => {
     ]) {
       expect(pattern.test(untouched), untouched).toBe(false);
     }
+  });
+
+  it('skips the Swift work on docsite-only and tooling-only changes', () => {
+    const decide = step(scope, 'Decide whether native Swift changed');
+    expect(decide.env).toMatchObject({
+      DOCSITE_ONLY: '${{ needs.check-scope.outputs.docsite_only }}',
+      TOOLING_ONLY: '${{ needs.check-scope.outputs.tooling_only }}',
+    });
+    expect(decide.run).toContain(
+      'if [ "$DOCSITE_ONLY" = true ] || [ "$TOOLING_ONLY" = true ]; then',
+    );
   });
 });

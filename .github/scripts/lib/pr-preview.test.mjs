@@ -159,7 +159,7 @@ function githubFixture({value = identity(), comments = []} = {}) {
   return {github, state};
 }
 
-function fixture(value = identity(), {analysis = true} = {}) {
+function fixture(value = identity(), {analysis = true, a11y = true} = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pr-preview-'));
   roots.push(root);
   const paths = {
@@ -192,10 +192,12 @@ function fixture(value = identity(), {analysis = true} = {}) {
       }),
     );
   }
-  fs.writeFileSync(
-    paths.a11y,
-    '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}',
-  );
+  if (a11y) {
+    fs.writeFileSync(
+      paths.a11y,
+      '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}',
+    );
+  }
   return paths;
 }
 
@@ -203,6 +205,7 @@ async function reconcile({
   value = identity(),
   previewAvailable = false,
   analysis = true,
+  a11y = true,
   comments = [],
   githubFixtureValue = value,
   createIfMissing,
@@ -210,7 +213,7 @@ async function reconcile({
   execute,
   baseStats,
 } = {}) {
-  const paths = fixture(value, {analysis});
+  const paths = fixture(value, {analysis, a11y});
   const baseStatsPath = path.join(
     path.dirname(paths.analysis),
     'size-base.json',
@@ -824,6 +827,12 @@ describe('PR comment preview reconciliation', () => {
       expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
     }
     expect(result.body).not.toContain('facebook.github.io/astryx/pr/');
+  });
+
+  it('says the accessibility audit did not run when there is no report', async () => {
+    const {result} = await reconcile({a11y: false});
+    expect(result.body).toContain('did not run on this pull request');
+    expect(result.body).not.toContain('No accessibility violations detected');
   });
 
   it('keeps current trustworthy analysis when source CI fails', async () => {
