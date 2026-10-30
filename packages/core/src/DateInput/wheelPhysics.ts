@@ -94,6 +94,21 @@ const UIKIT_ROW_HEIGHT = picker.geometry.rowHeight;
 const AT_REST_PT = 1 / 6;
 
 /**
+ * A wheel stream has paused once a frame comes this many of its own
+ * intervals after its last wheel: a trackpad can send its wheels less often
+ * than the screen draws, so a frame with no wheel is not yet a pause.
+ */
+export const WHEEL_PAUSE_INTERVALS = 1.5;
+
+/**
+ * A wheel that comes within this many of the stream's intervals after its
+ * last one, during the glide its pause began, resumes the same scroll: the
+ * stream only hesitated, so the glide's travel is dropped rather than added
+ * to the scroll's.
+ */
+export const WHEEL_RESUME_INTERVALS = 3;
+
+/**
  * The longest a plan runs, s: the animator's limit (`MAX_DURATION_MS` in
  * motion/animator.ts). A spring that has not settled by then (an undamped
  * one, which never does) snaps onto its end.

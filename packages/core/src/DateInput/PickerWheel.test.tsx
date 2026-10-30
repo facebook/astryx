@@ -765,6 +765,77 @@ describe('PickerWheel — a scroll wheel', () => {
     }
   });
 
+  it('follows a scroll whose wheels come less often than frames, never running ahead of it (spec:AST-094 FR43)', () => {
+    // jsdom runs no Web Animations: record when the strip starts one.
+    const started: number[] = [];
+    Element.prototype.animate = vi.fn(function animate(this: Element) {
+      if (this.hasAttribute('data-wheel-strip')) {
+        started.push(performance.now());
+      }
+      return {cancel: () => {}} as unknown as Animation;
+    });
+    try {
+      const {column} = renderWheel({options: YEARS, value: 2000});
+      const strip = column.querySelector('[data-wheel-strip]') as HTMLElement;
+      const stripY = () =>
+        Number(/translateY\((-?[\d.]+)px\)/.exec(strip.style.transform)?.[1]);
+      // A trackpad stream at half the frame rate: a 12 px wheel every other
+      // frame, ten of them.
+      wheel(column, 12);
+      advance(32);
+      wheel(column, 12);
+      const second = stripY();
+      for (let i = 2; i < 10; i++) {
+        advance(32);
+        wheel(column, 12);
+      }
+      // A frame between two of its wheels is not its pause: nothing glided,
+      // and the rows moved by the scroll's own travel.
+      expect(started).toHaveLength(0);
+      expect(second - stripY()).toBeCloseTo(8 * 12, 0);
+      // Once it stops, the wheel still glides on before the pan ends.
+      const last = performance.now();
+      advance(90);
+      expect(started).toHaveLength(1);
+      expect(started[0] - last).toBeLessThan(100);
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'animate');
+    }
+  });
+
+  it('drops a glide\u2019s travel when the scroll only hesitated: the rows neither run ahead of it nor step back (spec:AST-094 FR43)', () => {
+    // jsdom runs no Web Animations: the glide's place comes from its curve.
+    Element.prototype.animate = vi.fn(
+      () => ({cancel: () => {}}) as unknown as Animation,
+    );
+    try {
+      const {column} = renderWheel({options: YEARS, value: 2000});
+      const strip = column.querySelector('[data-wheel-strip]') as HTMLElement;
+      const stripY = () =>
+        Number(/translateY\((-?[\d.]+)px\)/.exec(strip.style.transform)?.[1]);
+      // A stream at half the frame rate that hesitates once for 60 ms, long
+      // enough for its pause to begin a glide.
+      wheel(column, 12);
+      advance(32);
+      wheel(column, 12);
+      const second = stripY();
+      const seen = [second];
+      for (const gap of [32, 32, 60, 32, 32, 32]) {
+        advance(gap);
+        wheel(column, 12);
+        seen.push(stripY());
+      }
+      // The rows moved by the scroll's own six steps, no more, and never
+      // back.
+      expect(second - stripY()).toBeCloseTo(6 * 12, 0);
+      for (let i = 1; i < seen.length; i++) {
+        expect(seen[i]).toBeLessThanOrEqual(seen[i - 1]);
+      }
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'animate');
+    }
+  });
+
   it('turns with a slow scroll and rests on the nearest row', () => {
     const {column, onChange} = renderWheel();
     // Two rows down, slowly: no speed left at the release.

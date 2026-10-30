@@ -131,6 +131,8 @@ import {
   nearestIndex,
   planRelease,
   spinCurve,
+  WHEEL_PAUSE_INTERVALS,
+  WHEEL_RESUME_INTERVALS,
   wrapIndex,
   type WheelCurve,
   type WheelLayout,
@@ -342,14 +344,27 @@ function curveSpan(curve: WheelCurve, rowHeight: number): [number, number] {
 interface DragState {
   /** The finger's offset at the pan's start, before any rubber band. */
   readonly start: number;
+  /**
+   * Where a glide the scroll took back had carried the rows, and the way it
+   * was going: the rows stay there until the scroll passes it, so dropping
+   * the glide's travel never steps them back.
+   */
+  readonly hold?: {readonly offset: number; readonly direction: number};
 }
 
 /** A continuous wheel stream's state between its wheels. */
 interface WheelStream {
   /** The pan's translation at the last wheel, px. */
   translation: number;
-  /** Whether a wheel arrived since the last frame. */
-  sawWheel: boolean;
+  /** When the last wheel was sent, ms on the page's clock. */
+  at: number;
+  /** The time between its last two wheels, ms; null after its first. */
+  gap: number | null;
+  /**
+   * The stream's own interval: the longer of its last two gaps, ms; null
+   * until it has sent two wheels.
+   */
+  interval: number | null;
   /** The frame that watches for the stream's pause. */
   frame: number | undefined;
   isGliding: boolean;
@@ -722,11 +737,14 @@ export function PickerWheel({
   // A trackpad's scroll or a smooth mouse wheel with no momentum of its own
   // stops sending wheel at its last step, and the host ends the pan only
   // WHEEL_END_MS later (GestureHost.ts). The rows do not wait that out: a
-  // stream sends a wheel every frame it moves, so a whole frame with none is
-  // its pause, and the wheel glides on from where it is with the stream's
-  // speed, as the release would. A wheel that arrives during the glide takes
-  // the rows back. Frames, not a timer: the browser dispatches a frame's
-  // input before its animation frame callbacks, however busy the page is.
+  // stream sends its wheels at its own interval, which can be longer than a
+  // frame, so a frame that comes WHEEL_PAUSE_INTERVALS of its intervals after
+  // its last wheel is its pause, and the wheel glides on from where it is
+  // with the stream's speed, as the release would. A wheel that arrives
+  // during the glide takes the rows back. Frames, not a timer: the browser
+  // dispatches a frame's input before its animation frame callbacks, however
+  // busy the page is, and the interval is read from when each wheel was
+  // sent, not when a busy page got to it.
   const endWheelStream = useCallback((): WheelStream | null => {
     const stream = streamRef.current;
     streamRef.current = null;
@@ -738,6 +756,7 @@ export function PickerWheel({
 
   const followWheelStream = useCallback(
     (recognizer: PanGestureRecognizer, translation: number) => {
+      const at = recognizer.trackedTouches[0]?.time ?? performance.now();
       let stream = streamRef.current;
       if (stream == null || stream.isGliding) {
         if (stream?.frame != null) {
@@ -745,14 +764,20 @@ export function PickerWheel({
         }
         stream = {
           translation,
-          sawWheel: true,
+          at,
+          gap: null,
+          interval: null,
           frame: undefined,
           isGliding: false,
         };
         streamRef.current = stream;
+      } else {
+        const gap = at - stream.at;
+        stream.interval = stream.gap == null ? gap : Math.max(gap, stream.gap);
+        stream.gap = gap;
+        stream.at = at;
       }
       stream.translation = translation;
-      stream.sawWheel = true;
       if (stream.frame != null) {
         return;
       }
@@ -762,8 +787,11 @@ export function PickerWheel({
         if (streamRef.current !== current || dragRef.current == null) {
           return;
         }
-        if (current.sawWheel) {
-          current.sawWheel = false;
+        if (
+          current.interval == null ||
+          performance.now() - current.at <
+            WHEEL_PAUSE_INTERVALS * current.interval
+        ) {
           current.frame = requestAnimationFrame(watch);
           return;
         }
@@ -820,16 +848,43 @@ export function PickerWheel({
           const translation = recognizer.translation().y;
           const stream = streamRef.current;
           if (stream?.isGliding === true) {
-            // More wheel after the stream paused: the scroll takes the rows
-            // back from the glide where they are, and moves them by this
-            // wheel's step.
             const shown = motion.stop();
-            drag = {
-              start: fingerOffset(shown, currentLayout) + stream.translation,
-            };
+            const at = recognizer.trackedTouches[0]?.time ?? performance.now();
+            if (
+              stream.interval != null &&
+              at - stream.at < WHEEL_RESUME_INTERVALS * stream.interval
+            ) {
+              // The stream only hesitated: the scroll goes on from where it
+              // has carried the rows, dropping the glide's travel, and the
+              // rows hold where the glide left them until it gets there.
+              const pan = dragOffset(
+                drag.start - stream.translation,
+                currentLayout,
+              );
+              drag = {
+                start: drag.start,
+                hold: {offset: shown, direction: Math.sign(shown - pan)},
+              };
+            } else {
+              // More wheel after the stream paused: the scroll takes the
+              // rows back from the glide where they are, and moves them by
+              // this wheel's step.
+              drag = {
+                start: fingerOffset(shown, currentLayout) + stream.translation,
+              };
+            }
             dragRef.current = drag;
           }
-          const offset = dragOffset(drag.start - translation, currentLayout);
+          let offset = dragOffset(drag.start - translation, currentLayout);
+          if (drag.hold != null) {
+            const {offset: held, direction} = drag.hold;
+            if ((offset - held) * direction < 0) {
+              offset = held;
+            } else {
+              drag = {start: drag.start};
+              dragRef.current = drag;
+            }
+          }
           showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT);
           motion.setOffset(offset, {ticks: true});
           if (recognizer.trackedTouches[0]?.scrollType === 'continuous') {

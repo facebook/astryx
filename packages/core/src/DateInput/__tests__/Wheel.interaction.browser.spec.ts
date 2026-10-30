@@ -22,7 +22,13 @@
  *   holds the oracle itself to the UIKit recordings
  */
 
-import {expect, test, type Locator, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type CDPSession,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   animationStoryboard,
   blockMainThread,
@@ -59,7 +65,11 @@ import {
 } from '@astryxdesign/interaction-harness';
 import {UIKIT_GESTURES} from '../../motion/uikit';
 import {WHEEL_ROW_PITCH} from '../wheelLook';
-import {planRelease, type WheelLayout} from '../wheelPhysics';
+import {
+  planRelease,
+  WHEEL_PAUSE_INTERVALS,
+  type WheelLayout,
+} from '../wheelPhysics';
 
 const storybook = withStorybook(test);
 
@@ -840,6 +850,70 @@ test('a trackpad scroll drives the wheel\u2019s pan: it keeps its speed at the r
   );
 });
 
+/**
+ * Sends `count` wheel steps of `deltaY` on a clock of one every `everyMs`:
+ * each waits for its time on that clock rather than `everyMs` after the last
+ * one's round trip, so a slow round trip does not stretch every gap, and
+ * none is sent before the last one is delivered, so two never arrive at
+ * once.
+ */
+async function sendWheels(
+  cdp: CDPSession,
+  at: {x: number; y: number},
+  deltaY: number,
+  count: number,
+  everyMs: number,
+) {
+  const start = Date.now();
+  for (let i = 0; i < count; i++) {
+    await new Promise(resolve =>
+      setTimeout(resolve, Math.max(0, start + i * everyMs - Date.now())),
+    );
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseWheel',
+      ...at,
+      deltaX: 0,
+      deltaY,
+    });
+  }
+}
+
+/**
+ * A scroll with no momentum of its own glides on once it pauses, without
+ * waiting for the host to end its pan (100 ms after the last wheel, six
+ * frames at 60 Hz). Its pause is the first frame WHEEL_PAUSE_INTERVALS of its
+ * own intervals (the longer of its last two gaps) after its last wheel; the
+ * rows move on at that frame or within two more, as the compositor shows the
+ * glide. Counted in frames, which a busy page delays along with the timer
+ * that would end the pan.
+ */
+function expectGlideAtPause(
+  frames: ReadonlyArray<[number, number]>,
+  wheels: ReadonlyArray<[number, number, number]>,
+  moved: [number, number],
+) {
+  const sent = wheels.map(([time]) => time);
+  const last = sent[sent.length - 1];
+  const received = wheels[wheels.length - 1][2];
+  const interval = Math.max(
+    last - sent[sent.length - 2],
+    sent[sent.length - 2] - sent[sent.length - 3],
+  );
+  // The pause can begin no earlier than the page got the last wheel, however
+  // late a busy page got it.
+  const after = frames.filter(([time]) => time > last);
+  const paused = after.findIndex(
+    ([time]) =>
+      time >= last + WHEEL_PAUSE_INTERVALS * interval && time > received,
+  );
+  const held = after.indexOf(moved);
+  expect(paused, 'a frame came after the pause').toBeGreaterThanOrEqual(0);
+  expect(
+    held,
+    'the frames the rows held still after the scroll',
+  ).toBeLessThanOrEqual(paused + 2);
+}
+
 test('a quick scroll that stops glides on at once: the rows never wait for the pan to end (spec:AST-094 FR43)', async ({
   page,
 }) => {
@@ -857,16 +931,26 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
     x: Math.round(column.x + column.width / 2),
     y: Math.round(column.y + column.height / 2),
   };
-  // The strip's y every frame, and when each wheel reached the column.
+  // The strip's y every frame, and each wheel: when it was sent, its step,
+  // and when the page got it.
   await strip.evaluate(element => {
-    const state = {frames: [] as [number, number][], wheels: [] as number[]};
+    const state = {
+      frames: [] as [number, number][],
+      wheels: [] as [number, number, number][],
+    };
     (window as unknown as {glide: typeof state}).glide = state;
     element
       .closest('[data-wheel]')
-      ?.addEventListener('wheel', () => state.wheels.push(performance.now()), {
-        capture: true,
-        passive: true,
-      });
+      ?.addEventListener(
+        'wheel',
+        event =>
+          state.wheels.push([
+            event.timeStamp,
+            (event as WheelEvent).deltaY,
+            performance.now(),
+          ]),
+        {capture: true, passive: true},
+      );
     const sample = (time: number) => {
       state.frames.push([
         time,
@@ -887,47 +971,145 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
   const scale = await page.evaluate(
     () => window.devicePixelRatio * (window.visualViewport?.scale ?? 1),
   );
-  for (let i = 0; i < 8; i++) {
-    await cdp.send('Input.dispatchMouseEvent', {
-      type: 'mouseWheel',
-      ...at,
-      deltaX: 0,
-      deltaY: 24 * scale,
-    });
-    await page.waitForTimeout(16);
-  }
+  await sendWheels(cdp, at, 24 * scale, 8, 16);
   await page.waitForTimeout(600);
   await waitForRest(strip);
   const {frames, wheels} = await page.evaluate(
     () =>
       (
         window as unknown as {
-          glide: {frames: [number, number][]; wheels: number[]};
+          glide: {
+            frames: [number, number][];
+            wheels: [number, number, number][];
+          };
         }
       ).glide,
   );
-  const last = wheels[wheels.length - 1];
-  expect(wheels.length).toBe(8);
-  // Where the last wheel left the strip, then the first frame that moved on.
-  const atLast = frames.filter(([time]) => time <= last).pop();
+  // Every step arrived (the browser may join two that reach it in one frame).
+  expect(wheels.reduce((sum, [, deltaY]) => sum + deltaY, 0)).toBeCloseTo(
+    8 * 24,
+    0,
+  );
+  // Where the last wheel left the strip (the first frame after the page got
+  // it, which draws its step), then the first frame that moved on.
+  const received = wheels[wheels.length - 1][2];
+  const atLast = frames.find(([time]) => time > received);
   if (atLast == null) {
-    throw new Error('no frame before the last wheel');
+    throw new Error('no frame after the last wheel');
   }
   const moved = frames.find(
-    ([time, y]) => time > last && Math.abs(y - atLast[1]) > 0.5,
+    ([time, y]) => time > atLast[0] && Math.abs(y - atLast[1]) > 0.5,
   );
   if (moved == null) {
     throw new Error('the rows never moved on after the last wheel');
   }
-  // The host ends the pan 100 ms after the last wheel, six frames at 60 Hz.
-  // The rows glide on at the first frame after one with no wheel, and the
-  // compositor shows it within a frame or two more: counted in frames, which
-  // a busy page delays along with the timer that would end the pan.
-  const after = frames.filter(([time]) => time > last);
+  expectGlideAtPause(frames, wheels, moved);
+});
+
+test('a scroll whose wheels come every other frame moves the rows by its own travel, never ahead of it (spec:AST-094 FR43)', async ({
+  page,
+}) => {
+  const {minutes, strip} = await openWheel(page);
+  const input = await webInputDriver(page);
+  test.skip(
+    !input.wheels,
+    'this engine\u2019s mobile emulation has no wheel input (README: engine limits)',
+  );
+  const column = await minutes.boundingBox();
+  if (column == null) {
+    throw new Error('no minute column');
+  }
+  const at = {
+    x: Math.round(column.x + column.width / 2),
+    y: Math.round(column.y + column.height / 2),
+  };
+  // The strip's y every frame, and each wheel: when it was sent, its step,
+  // and when the page got it.
+  await strip.evaluate(element => {
+    const state = {
+      frames: [] as [number, number][],
+      wheels: [] as [number, number, number][],
+    };
+    (window as unknown as {glide: typeof state}).glide = state;
+    element
+      .closest('[data-wheel]')
+      ?.addEventListener(
+        'wheel',
+        event =>
+          state.wheels.push([
+            event.timeStamp,
+            (event as WheelEvent).deltaY,
+            performance.now(),
+          ]),
+        {capture: true, passive: true},
+      );
+    const sample = (time: number) => {
+      state.frames.push([
+        time,
+        new DOMMatrixReadOnly(getComputedStyle(element).transform).m42,
+      ]);
+      if (state.frames.length < 240) {
+        requestAnimationFrame(sample);
+      }
+    };
+    requestAnimationFrame(sample);
+  });
+  // A trackpad stream slower than the screen: eight 24 px steps about two
+  // frames apart, straight through CDP as in the case above.
+  const cdp = await page.context().newCDPSession(page);
+  const scale = await page.evaluate(
+    () => window.devicePixelRatio * (window.visualViewport?.scale ?? 1),
+  );
+  await sendWheels(cdp, at, 24 * scale, 8, 33);
+  await page.waitForTimeout(600);
+  await waitForRest(strip);
+  const {frames, wheels} = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          glide: {
+            frames: [number, number][];
+            wheels: [number, number, number][];
+          };
+        }
+      ).glide,
+  );
+  expect(wheels.reduce((sum, [, deltaY]) => sum + deltaY, 0)).toBeCloseTo(
+    8 * 24,
+    0,
+  );
+  // Where the strip is the frame after the page got a wheel: that wheel's
+  // step is drawn, and no pause could have begun yet.
+  const after = ([, , received]: [number, number, number]) => {
+    const frame = frames.find(([t]) => t > received);
+    if (frame == null) {
+      throw new Error('no frame after a wheel');
+    }
+    return frame;
+  };
+  // After each wheel the rows have moved by the steps so far from where the
+  // first left them, never a step more: a frame between two wheels did not
+  // glide them on. (A stream that hesitates long enough to glide, as a busy
+  // machine's can, holds the rows where the glide left them until the scroll
+  // passes it: less than a step.) By the last they have taken every step.
+  const from = after(wheels[0])[1];
+  let steps = 0;
+  for (const wheel of wheels.slice(1)) {
+    steps += wheel[1];
+    expect(Math.abs(after(wheel)[1] - from)).toBeLessThan(steps + 24);
+  }
   expect(
-    after.indexOf(moved),
-    'the frames the rows held still after the scroll',
-  ).toBeLessThan(4);
+    Math.abs(after(wheels[wheels.length - 1])[1] - from),
+  ).toBeGreaterThanOrEqual(steps - 5);
+  // Once it stops, the rows still glide on before the pan ends.
+  const atLast = after(wheels[wheels.length - 1]);
+  const moved = frames.find(
+    ([time, y]) => time > atLast[0] && Math.abs(y - atLast[1]) > 0.5,
+  );
+  if (moved == null) {
+    throw new Error('the rows never moved on after the last wheel');
+  }
+  expectGlideAtPause(frames, wheels, moved);
 });
 
 test.describe('under a mouse', () => {
