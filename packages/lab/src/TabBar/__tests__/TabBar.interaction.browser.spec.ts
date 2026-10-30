@@ -1,0 +1,2010 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file TabBar.interaction.browser.spec.ts
+ * @input The built "Lab/TabBar" stories on the harness's phone (touch, so
+ *   the touch presentation applies), real touch input (Chromium CDP /
+ *   WebKit's input command) and the interaction harness; the iOS cases run
+ *   on the harness's phone (a coarse pointer, any engine: one touch
+ *   model), the mouse cases without touch
+ *   without it
+ * @output Proofs that TabBar's lens moves like UITabBar's on iOS 26.2: a tap
+ *   on another tab slides it on UIKit's spring (response 0.4 s, damping
+ *   ratio 0.85) to within half a pixel, with the selected copy inside it
+ *   counter-moving exactly; a second tap mid-slide turns it around without a
+ *   jump; the slide keeps advancing every frame through a blocked main
+ *   thread and does no Layout or Paint; under Reduce Motion a touch screen's
+ *   tap cross-fades it and a click moves it at once (design:reduced-motion);
+ *   choosing the
+ *   selected tab reselects and moves nothing; badges change without
+ *   animating; a storyboard of the slide; under a finger, UITabBar's press
+ *   tracking (the lift and flex on landing, the chase, the commit on lift
+ *   with its edge cases, a declined change settling back, right to left);
+ *   minimize on scroll: 66 px into a finger's downward scroll the bar
+ *   collapses into its circle (the lens travelling and shrinking into it on
+ *   UIKit's springs, through a blocked main thread), scrolling up mid-page
+ *   and a script's scroll to the top leave it minimized, the top and a tap
+ *   on the circle expand it, and the minimized bar lets the page take
+ *   touches outside the circle. Under a mouse (a fine pointer) a click is a
+ *   plain click, the bar never minimizes and the lens slides on the theme's
+ *   motion instead, which Reduce Motion replaces as
+ *   above
+ * @position Interaction proof for lab TabBar (TabBar.tsx, tabBarModel.ts);
+ *   shape copied from the harness exemplar,
+ *   BottomSheetDetent.interaction.browser.spec.ts
+ */
+
+import {expect, test, type Locator, type Page} from '@playwright/test';
+import type {TouchDriver} from '@astryxdesign/interaction-harness';
+import {
+  animationStoryboard,
+  blockMainThread,
+  busyWindowProof,
+  castStoryboard,
+  countBetween,
+  drag,
+  holdAnimations,
+  markElement,
+  openStory,
+  releaseAnimations,
+  sampleCurve,
+  sampleRects,
+  springStep,
+  startScreencast,
+  tap as tapScript,
+  touchDriver,
+  touchStoryboard,
+  traceRendering,
+  trackMarker,
+  waitForAnimation,
+  waitForRest,
+  withStorybook,
+  writeEvidence,
+} from '@astryxdesign/interaction-harness';
+
+const storybook = withStorybook(test);
+
+/**
+ * A mouse case's own guard: its context's primary pointer is fine (a context
+ * without touch can still match a coarse pointer in the interaction config).
+ */
+async function expectFinePointer(page: Page) {
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    'the primary pointer is fine',
+  ).toBe(false);
+}
+/**
+ * The opacity of an element's `::before` at each of `times` (ms into the
+ * held curves), as sampleCurve reads an element's: the lens's lifted glass is
+ * its clip's `::before`.
+ */
+async function samplePseudoOpacity(locator: Locator, times: number[]) {
+  return locator.evaluate((element, ts) => {
+    const held =
+      (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ?? [];
+    return ts.map(t => {
+      for (const animation of held) {
+        const end = Number(
+          animation.effect?.getComputedTiming().endTime ?? Infinity,
+        );
+        animation.currentTime = Math.min(t, end - 0.001);
+      }
+      return Number(getComputedStyle(element, '::before').opacity);
+    });
+  }, times);
+}
+
+/** UIKit's lens travel on iOS 26.2 (uikit/tabBar.ts `lensTravel`). */
+const LENS_TRAVEL = {response: 0.4, dampingFraction: 0.85};
+/** The lift (`lift`), the flex while pressed and after (`flexPress`, `flexRelease`). */
+const LIFT = {response: 0.25, dampingFraction: 1};
+const FLEX_PRESS = {response: 0.314, dampingFraction: 0.625};
+const FLEX_RELEASE = {response: 0.36, dampingFraction: 0.6};
+const FLEX_SCALE = 1.0488;
+/** The lifted lens's scale: the resting lens grown by 8 px on every side. */
+async function liftedScale(page: Page) {
+  const width = await lensBody(page).evaluate(
+    element => (element as HTMLElement).offsetWidth,
+  );
+  return {x: (width + 16) / width, y: 70 / 54};
+}
+
+/**
+ * Opens a TabBar story on the harness's phone: a coarse primary pointer, so
+ * the touch presentation applies, whatever the engine (one touch model).
+ */
+async function openBar(page: Page, story = 'default') {
+  await openStory(page, storybook(), `lab-tabbar--${story}`);
+  const driver = await touchDriver(page);
+  const bar = page.getByRole('tablist', {name: 'Sections'});
+  await expect(bar).toBeVisible();
+  return {driver, bar};
+}
+
+const tab = (page: Page, name: string | RegExp) =>
+  page.getByRole('tab', {name});
+
+/** The centre of a tab's 76 × 54 item, where a finger lands on it. */
+async function itemCenter(page: Page, name: string | RegExp) {
+  const box = await tab(page, name).locator('span').first().boundingBox();
+  if (box == null) {
+    throw new Error(`no tab ${String(name)}`);
+  }
+  return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+}
+
+const lensBody = (page: Page) => page.locator('[data-tab-bar-lens-body]');
+const lensCopy = (page: Page) => page.locator('[data-tab-bar-copy]');
+
+/** The lens's centre on screen. */
+async function lensCenterX(page: Page) {
+  const box = await lensBody(page).boundingBox();
+  if (box == null) {
+    throw new Error('no lens');
+  }
+  return box.x + box.width / 2;
+}
+
+/** A presented translateX, px (the animator drives `translate`). */
+const translateX = async (locator: Locator) =>
+  locator.evaluate(element => {
+    const value = getComputedStyle(element).translate;
+    return value === 'none' ? 0 : parseFloat(value);
+  });
+
+/** A presented scale (the animator drives `scale`). */
+const scaleOf = async (locator: Locator) =>
+  locator.evaluate(element => {
+    const value = getComputedStyle(element).scale;
+    if (value === 'none') {
+      return {x: 1, y: 1};
+    }
+    const [x, y = x] = value.split(' ').map(Number);
+    return {x, y};
+  });
+
+/** The capsule's left edge on screen, before its flex (its root is unscaled). */
+async function capsuleLeft(page: Page) {
+  return page.getByRole('tablist').evaluate(element => {
+    const root = element.parentElement?.getBoundingClientRect();
+    return (root?.left ?? 0) + (element as HTMLElement).offsetLeft;
+  });
+}
+
+test('a selection made with the keys slides the lens on UIKit’s spring, the selected copy counter-moving', async ({
+  page,
+}, testInfo) => {
+  await openBar(page);
+  const from = await itemCenter(page, 'Home');
+  const to = await itemCenter(page, 'Browse');
+  await tab(page, 'Home').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  const body = lensBody(page);
+  await waitForAnimation(body);
+  await holdAnimations(page);
+
+  const times = Array.from({length: 49}, (_, i) => i * 16.667);
+  const bodySamples = await sampleCurve(body, times);
+  const copySamples = await sampleCurve(lensCopy(page), times);
+  // The body starts where the lens was (over Home) relative to its new
+  // resting place (Browse) and springs to 0 from rest.
+  const start = from.x - to.x;
+  const samples = times.map((t, i) => ({
+    t: +t.toFixed(1),
+    body: bodySamples[i].transform.translateX,
+    copy: copySamples[i].transform.translateX,
+    analytic: start * (1 - springStep(LENS_TRAVEL, t)),
+  }));
+  await releaseAnimations(page, {finish: true});
+  await writeEvidence(
+    'curves/tabbar-lens-travel',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {start, samples},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+
+  for (const sample of samples) {
+    expect(
+      Math.abs(sample.body - sample.analytic),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.5);
+    // The copy inside undoes the body's travel, so the items stay put.
+    expect(
+      Math.abs(sample.copy + sample.body),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.3);
+  }
+  // UIKit's lens overshoots a little (ζ 0.85) before it settles.
+  expect(Math.max(...samples.map(s => s.body))).toBeGreaterThan(0.5);
+  await waitForRest(body);
+  expect(Math.abs((await lensCenterX(page)) - to.x)).toBeLessThan(0.5);
+});
+
+test('a second tap mid-slide turns the lens around from where it is, without a jump', async ({
+  page,
+}) => {
+  // Software-rendered WebKit can stall input for hundreds of milliseconds
+  // around a tap, so the second finger may reach the page only after the
+  // first slide has ended: then it was no second tap mid-slide. Where the
+  // lens was when the second finger landed is read in the page; such a late
+  // run is played again (at most three times) and every run's motion is
+  // checked.
+  for (let attempt = 1; ; attempt += 1) {
+    const {driver} = await openBar(page);
+    const home = await itemCenter(page, 'Home');
+    const profile = await itemCenter(page, 'Profile');
+    const library = await itemCenter(page, 'Library');
+    // Records the lens's centre as each finger lands: under a finger the
+    // lens turns for the second finger the moment it lands.
+    await page.evaluate(() => {
+      const lens = document.querySelector('[data-tab-bar-lens-body]');
+      const landings: number[] = [];
+      (window as unknown as {__landings: number[]}).__landings = landings;
+      window.addEventListener(
+        'touchstart',
+        () => {
+          const box = lens?.getBoundingClientRect();
+          if (box != null) {
+            landings.push(box.x + box.width / 2);
+          }
+        },
+        {capture: true},
+      );
+    });
+    // Every frame's lens position, sampled in the page while the taps land.
+    const sampling = sampleRects(lensBody(page), 1300);
+    await driver.tap(profile);
+    // Well past Library on its way to Profile.
+    await waitForAnimation(lensBody(page), {minProgressMs: 150});
+    await driver.tap(library);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+    const turnedAt = await page.evaluate(
+      () => (window as unknown as {__landings: number[]}).__landings[1],
+    );
+    const samples = (await sampling).flatMap(sample =>
+      sample.box == null
+        ? []
+        : [{t: sample.t, x: sample.box.x + sample.box.width / 2}],
+    );
+    // It headed for Profile and came back to Library, never jumping: a jump
+    // to either end would cover the whole remaining distance (over 100 px)
+    // in one frame. (A frame the second tap makes long, as it reports the
+    // first tap to the app, can cover 60.) Only consecutive frames are
+    // compared, never samples a stall kept apart.
+    const steps = samples
+      .slice(1)
+      .flatMap((sample, i) =>
+        sample.t - samples[i].t <= 34 ? [sample.x - samples[i].x] : [],
+      );
+    expect(
+      Math.max(...steps.map(Math.abs)),
+      JSON.stringify(samples),
+    ).toBeLessThan(90);
+    expect(Math.min(...samples.map(sample => sample.x))).toBeGreaterThan(
+      home.x - 1,
+    );
+    await waitForRest(lensBody(page));
+    expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
+    // Mid-slide: past Library, short of Profile, when the second finger
+    // landed.
+    expect(turnedAt).toBeGreaterThan(library.x + 5);
+    if (turnedAt < profile.x - 20 || attempt === 3) {
+      expect(turnedAt, `attempt ${attempt}`).toBeLessThan(profile.x - 20);
+      return;
+    }
+  }
+});
+
+test('a finger landing before the last lift reaches the app keeps the lens heading for it', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const profile = await itemCenter(page, 'Profile');
+  const library = await itemCenter(page, 'Library');
+  const sampling = sampleRects(lensBody(page), 1400);
+  // A tap on Profile, then a finger held on Library from right after that
+  // lift: inside the frames before the tap's choice reaches the app, which
+  // then moves the lens's resting place under the held finger. The events go
+  // back to back (no wall-clock gap a loaded box could stretch); the hold
+  // is a wait after the landing.
+  await driver.play(
+    [
+      {t: 0, fingers: [{id: 0, ...profile}]},
+      {t: 60, fingers: []},
+      {t: 80, fingers: [{id: 1, ...library}]},
+      {t: 580, fingers: []},
+    ],
+    {
+      realtime: false,
+      onEvent: async (_step, index) => {
+        if (index === 2) {
+          await page.waitForTimeout(500);
+        }
+      },
+    },
+  );
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  const samples = (await sampling).flatMap(sample =>
+    sample.box == null
+      ? []
+      : [{t: sample.t, x: sample.box.x + sample.box.width / 2}],
+  );
+  const centers = samples.map(sample => sample.x);
+  // Only consecutive frames are compared, never samples a stall kept apart
+  // (software-rendered WebKit can present no frame for a while around a
+  // touch).
+  const steps = samples
+    .slice(1)
+    .flatMap((sample, i) =>
+      sample.t - samples[i].t <= 34 ? [sample.x - samples[i].x] : [],
+    );
+  expect(
+    Math.max(...steps.map(Math.abs)),
+    JSON.stringify(samples),
+  ).toBeLessThan(90);
+  // The lens turned back for the held finger and never reached Profile.
+  expect(Math.max(...centers), JSON.stringify(centers)).toBeLessThan(
+    profile.x - 30,
+  );
+  await waitForRest(lensBody(page));
+  expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
+});
+
+test('a tap on the selected tab reselects it: the lens lifts and settles back', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  await driver.tap(home);
+  await expect(page.getByTestId('reselects')).toHaveText('Reselected 1 times');
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(0.5);
+  expect(await scaleOf(lensBody(page))).toEqual({x: 1, y: 1});
+});
+
+test('with no tab selected, a finger chooses the tab under it', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'no-selection');
+  await expect(page.getByRole('tab', {selected: true})).toHaveCount(0);
+  const browse = await itemCenter(page, 'Browse');
+  await driver.tap(browse);
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a held finger never starts text selection on the bar', async ({page}) => {
+  const {driver} = await openBar(page);
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  // The lens's hold opts into the gesture host's selection lock
+  // (spec:AST-094 FR41). Off iOS that lock writes no style: it cancels
+  // selectstart on what the finger holds, so the proof dispatches one there,
+  // during the hold and after the lift.
+  const refusesSelection = () =>
+    tab(page, 'Browse').evaluate(element => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+  let refusedWhileHeld: boolean | null = null;
+  await driver.play(tapScript(browse, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts.
+      await waitForAnimation(capsule);
+      refusedWhileHeld = await refusesSelection();
+    },
+  });
+  expect(refusedWhileHeld).toBe(true);
+  expect(await refusesSelection()).toBe(false);
+});
+
+test('a tap reports its choice once, and a mouse click chooses through the browser', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'removed-on-lift');
+  const read = () =>
+    page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    );
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  // Under a finger the lift reports, and the click the browser sends after
+  // it must not report again (`spec:AST-094` FR21).
+  await driver.tap(await itemCenter(page, 'Library'));
+  await page.waitForTimeout(400);
+  expect((await read()).filter(entry => entry === 'library')).toEqual([
+    'library',
+  ]);
+});
+
+test('a bar removed as the finger lifts reports nothing after it is gone', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'removed-on-lift');
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  await driver.tap(await itemCenter(page, 'Library'));
+  await expect(page.getByText('Removed')).toBeVisible();
+  await page.waitForTimeout(400);
+  // The lift reports from its own event, so the choice may arrive before
+  // the app removes the bar in that event, never after.
+  const log = await page.evaluate(
+    () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+  );
+  expect(log.at(-1)).toBe('(removed)');
+  expect(log.filter(entry => entry !== '(removed)')).toEqual(
+    log.length > 1 ? ['library'] : [],
+  );
+});
+
+test('a press ends without a choice when the tab list changes under it', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const {driver, bar} = await openBar(page, 'drops-last-tab');
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  const profile = await itemCenter(page, 'Profile');
+  await driver.play(tapScript(profile, {holdMs: 600}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      // The hold has begun once the lens lifts; the app then drops Profile,
+      // the tab under the finger.
+      await waitForAnimation(bar);
+      await page.evaluate(() =>
+        window.dispatchEvent(new Event('tabbar:drop-last')),
+      );
+      await expect(tab(page, 'Profile')).toHaveCount(0);
+    },
+  });
+  await page.waitForTimeout(400);
+  expect(errors).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    ),
+  ).toEqual([]);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  // The lens settled back onto Home, in the three-tab bar.
+  const home = await itemCenter(page, 'Home');
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(1);
+});
+
+test('the bar sets no page-level stacking rank: its layers order inside it', async ({
+  page,
+}) => {
+  await openBar(page);
+  const root = await page.getByTestId('tab-bar').evaluate(element => {
+    const style = getComputedStyle(element);
+    return {zIndex: style.zIndex, isolation: style.isolation};
+  });
+  expect(root).toEqual({zIndex: 'auto', isolation: 'isolate'});
+});
+
+test('badges appear, change and clear without animating', async ({page}) => {
+  const {driver} = await openBar(page, 'badges');
+  const badge = page.locator('[data-tab-bar-badge="inbox"]');
+  await expect(badge).toHaveCount(0);
+  await driver.tap(
+    await page
+      .getByRole('button', {name: 'Add one'})
+      .boundingBox()
+      .then(box => {
+        if (box == null) {
+          throw new Error('no button');
+        }
+        return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+      }),
+  );
+  await expect(badge).toHaveText('1');
+  expect(await badge.evaluate(element => element.getAnimations().length)).toBe(
+    0,
+  );
+  await expect(tab(page, /^Inbox\s*, 1 unread$/)).toBeVisible();
+  await page.getByRole('button', {name: 'Add ten'}).click();
+  await expect(badge).toHaveText('11');
+  // "11" is wider than one digit: the badge grows past its 18.33 px circle.
+  const box = await badge.boundingBox();
+  expect(box?.height).toBeCloseTo(18.33, 1);
+  expect(box?.width ?? 0).toBeGreaterThan(18.5);
+  await page.getByRole('button', {name: 'Clear'}).click();
+  await expect(badge).toHaveCount(0);
+});
+
+test('a finger landing lifts the lens and flexes the bar on UIKit’s springs, the lens heading for the finger', async ({
+  page,
+}, testInfo) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  const LIFTED = await liftedScale(page);
+  const times = Array.from({length: 31}, (_, i) => i * 16.667);
+  let samples: {
+    t: number;
+    flex: number;
+    liftX: number;
+    liftY: number;
+    glass: number;
+    x: number;
+  }[] = [];
+  await driver.play(tapScript(browse, {holdMs: 1200}), {
+    onEvent: async (_step, index) => {
+      if (index !== 0) {
+        return;
+      }
+      await waitForAnimation(capsule);
+      await holdAnimations(page);
+      const flex = await sampleCurve(capsule, times);
+      const body = await sampleCurve(lensBody(page), times);
+      const glass = await samplePseudoOpacity(
+        page.locator('[data-tab-bar-lens-clip]'),
+        times,
+      );
+      samples = times.map((t, i) => ({
+        t: +t.toFixed(1),
+        flex: flex[i].transform.scaleX,
+        liftX: body[i].transform.scaleX,
+        liftY: body[i].transform.scaleY,
+        glass: glass[i],
+        x: body[i].transform.translateX,
+      }));
+      await releaseAnimations(page);
+    },
+  });
+  await writeEvidence(
+    'curves/tabbar-press',
+    {[`${testInfo.project.name}.json`]: JSON.stringify(samples, null, 1)},
+    testInfo,
+  );
+  const travel = browse.x - home.x;
+  for (const s of samples) {
+    const lift = springStep(LIFT, s.t);
+    const where = JSON.stringify(s);
+    expect(
+      Math.abs(s.flex - (1 + (FLEX_SCALE - 1) * springStep(FLEX_PRESS, s.t))),
+      where,
+    ).toBeLessThan(0.002);
+    expect(Math.abs(s.liftX - (1 + (LIFTED.x - 1) * lift)), where).toBeLessThan(
+      0.005,
+    );
+    expect(Math.abs(s.liftY - (1 + (LIFTED.y - 1) * lift)), where).toBeLessThan(
+      0.005,
+    );
+    expect(Math.abs(s.glass - lift), where).toBeLessThan(0.01);
+    expect(
+      Math.abs(s.x - travel * springStep(LENS_TRAVEL, s.t)),
+      where,
+    ).toBeLessThan(0.5);
+  }
+  // The lift commits Browse.
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the lift reports its choice from its own event, the settle already started (react-component-runtime INV2)', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const browse = await itemCenter(page, 'Browse');
+  await page.evaluate(() => {
+    const w = window as unknown as {
+      __lift: {
+        frames: number;
+        atLift: number;
+        atChoice: number;
+        settling: boolean;
+      };
+    };
+    w.__lift = {frames: 0, atLift: -1, atChoice: -1, settling: false};
+    const tick = () => {
+      w.__lift.frames += 1;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    window.addEventListener(
+      'touchend',
+      () => {
+        w.__lift.atLift = w.__lift.frames;
+      },
+      {capture: true},
+    );
+    const tab = [...document.querySelectorAll('[role="tab"]')].find(element =>
+      element.textContent?.includes('Browse'),
+    );
+    const body = document.querySelector('[data-tab-bar-lens-body]');
+    new MutationObserver(() => {
+      if (tab?.getAttribute('aria-selected') === 'true') {
+        w.__lift.atChoice = w.__lift.frames;
+        w.__lift.settling = (body?.getAnimations().length ?? 0) > 0;
+      }
+    }).observe(tab as Element, {attributeFilter: ['aria-selected']});
+  });
+  await driver.play(tapScript(browse, {holdMs: 200}));
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  const lift = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __lift: {
+            frames: number;
+            atLift: number;
+            atChoice: number;
+            settling: boolean;
+          };
+        }
+      ).__lift,
+  );
+  // Chosen in the lift's own task: no frame between the lift and the choice.
+  expect(lift.atLift).toBeGreaterThanOrEqual(0);
+  expect(lift.atChoice).toBe(lift.atLift);
+  // The settle was running when the app heard the choice.
+  expect(lift.settling).toBe(true);
+});
+
+test('the lift settles the lens and relaxes the lift and the flex on UIKit’s springs', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const browse = await itemCenter(page, 'Browse');
+  const capsule = page.getByRole('tablist');
+  const LIFTED = await liftedScale(page);
+  // Held long enough for the press springs to settle.
+  await driver.play(tapScript(browse, {holdMs: 1200}));
+  // The choice reaches the app from the lift itself and restarts the lens's
+  // travel from its new resting place; hold the curves after that, so no
+  // held animation is one the animator has since replaced.
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await waitForAnimation(capsule);
+  await holdAnimations(page);
+  const times = Array.from({length: 37}, (_, i) => i * 16.667);
+  const flex = await sampleCurve(capsule, times);
+  const body = await sampleCurve(lensBody(page), times);
+  await releaseAnimations(page, {finish: true});
+  times.forEach((t, i) => {
+    const where = JSON.stringify({t, flex: flex[i].transform.scaleX});
+    expect(
+      Math.abs(
+        flex[i].transform.scaleX -
+          (FLEX_SCALE + (1 - FLEX_SCALE) * springStep(FLEX_RELEASE, t)),
+      ),
+      where,
+    ).toBeLessThan(0.002);
+    expect(
+      Math.abs(
+        body[i].transform.scaleX -
+          (LIFTED.x + (1 - LIFTED.x) * springStep(LIFT, t)),
+      ),
+      where,
+    ).toBeLessThan(0.005);
+  });
+  await waitForRest(lensBody(page));
+  expect(Math.abs((await lensCenterX(page)) - browse.x)).toBeLessThan(0.5);
+});
+
+test('a drag chases the finger and the lift commits the item nearest it', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const profile = await itemCenter(page, 'Profile');
+  const left = await capsuleLeft(page);
+  const lags: number[] = [];
+  let atRest = Infinity;
+  const script = drag(home, profile, {durationMs: 600, restMs: 400});
+  await driver.play(script, {
+    onEvent: async (step, index) => {
+      const finger = step.fingers[0]?.x;
+      if (finger == null) {
+        return;
+      }
+      // The body's offset is in the capsule's own coordinates, from Home.
+      const lens = (await translateX(lensBody(page))) + (home.x - left);
+      lags.push(finger - left - lens);
+      if (index === script.length - 2) {
+        await page.waitForTimeout(350);
+        atRest =
+          finger -
+          left -
+          ((await translateX(lensBody(page))) + (home.x - left));
+      }
+    },
+  });
+  // The lens trails a moving finger but keeps up with it, and catches up
+  // once it rests.
+  const moving = lags.slice(3, -2);
+  expect(Math.max(...moving)).toBeGreaterThan(1);
+  expect(Math.max(...moving.map(Math.abs))).toBeLessThan(40);
+  expect(Math.abs(atRest)).toBeLessThan(1);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
+});
+
+test('when the app keeps the old selection, the lens settles back onto it', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'keeps-selection');
+  const home = await itemCenter(page, 'Home');
+  const profile = await itemCenter(page, 'Profile');
+  await driver.play(drag(home, profile, {durationMs: 500, restMs: 300}));
+  // The lift chose Profile; the app kept Home.
+  await page.waitForTimeout(150);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'false');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - home.x)).toBeLessThan(0.5);
+  expect(await scaleOf(lensBody(page))).toEqual({x: 1, y: 1});
+});
+
+test('right to left, a drag runs from the first tab leftward and commits where it lifts', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'right-to-left');
+  const library = await itemCenter(page, 'Library');
+  const profile = await itemCenter(page, 'Profile');
+  // The later tab sits to the left.
+  expect(profile.x).toBeLessThan(library.x);
+  await driver.play(drag(library, profile, {durationMs: 500, restMs: 300}));
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
+});
+
+test('a lift between two items commits the nearer one (an exact tie goes to the leading one: tabBarModel.test.ts)', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const library = await itemCenter(page, 'Library');
+  const browse = await itemCenter(page, 'Browse');
+  const midpoint = (library.x + browse.x) / 2;
+  await driver.play(tapScript({x: midpoint + 3, y: library.y}, {holdMs: 120}));
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await driver.play(tapScript({x: midpoint - 3, y: library.y}, {holdMs: 120}));
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a drag that leaves the bar upward still commits where it lifts', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const library = await itemCenter(page, 'Library');
+  const across = [...drag(home, library, {durationMs: 300})];
+  const lift = across.pop();
+  const last = across[across.length - 1];
+  const up = Array.from({length: 10}, (_, i) => ({
+    t: last.t + (i + 1) * 16.7,
+    fingers: [{id: 0, x: library.x, y: library.y - (i + 1) * 8}],
+  }));
+  const end = up[up.length - 1].t + 16.7;
+  await driver.play([...across, ...up, {t: end, fingers: lift?.fingers ?? []}]);
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('past the last item the lens rubber-bands about 8 px beyond it, and the lift commits the last item', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  const home = await itemCenter(page, 'Home');
+  const profile = await itemCenter(page, 'Profile');
+  const left = await capsuleLeft(page);
+  const script = drag(
+    home,
+    {x: profile.x + 60, y: profile.y},
+    {
+      durationMs: 500,
+      restMs: 900,
+    },
+  );
+  let past = NaN;
+  await driver.play(script, {
+    onEvent: async (_step, index) => {
+      if (index === script.length - 2) {
+        await page.waitForTimeout(800);
+        const lens = (await translateX(lensBody(page))) + (home.x - left);
+        past = lens - (profile.x - left);
+      }
+    },
+  });
+  // UIKit: a finger 60 pt past the last item leaves the lens 7.98 pt past it.
+  expect(past).toBeGreaterThan(7.4);
+  expect(past).toBeLessThan(8.5);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a vertical drag that starts on the bar never scrolls the page', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'native scrolling from injected touches is Chromium-only in Playwright',
+  );
+  const {driver} = await openBar(page);
+  const library = await itemCenter(page, 'Library');
+  const before = await page.evaluate(() => window.scrollY);
+  await driver.play(
+    drag(library, {x: library.x, y: library.y - 300}, {durationMs: 300}),
+  );
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the slide keeps advancing every frame while the main thread is blocked', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver} = await openBar(page);
+  const body = lensBody(page);
+  const cast = await startScreencast(page);
+  await driver.tap(await itemCenter(page, 'Profile'));
+  await markElement(body);
+  const [slide] = await waitForAnimation(body, {minProgressMs: 16});
+  // Blocked by the page itself in the frame that sees the slide running.
+  const block = await blockMainThread(page, 600, {during: body});
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  const tracked = await trackMarker(page, castFrames);
+  const proof = busyWindowProof(
+    tracked,
+    {from: block.from, to: Math.min(block.to, slide.to)},
+    {
+      axis: 'x',
+      settledWithin: 2,
+      // Screencast throughput, not the animation: no display-rate bound.
+      maxMedianFrameMs: Infinity,
+    },
+  );
+  await writeEvidence(
+    'busy-main-thread/tabbar-lens-travel',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {block, slide, proof},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  const film = await castStoryboard(page, castFrames, {
+    name: 'tabbar-lens-travel-busy-main-thread',
+    zero: block.from,
+    from: block.from - 40,
+    to: Math.min(block.to, slide.to) + 40,
+    columns: 8,
+    cellScale: 0.35,
+    data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
+  });
+  await film.write(testInfo, {block, slide});
+  // The harness's verdict: no stall past two dropped screencast frames,
+  // and the frames moving (a loaded machine drops a frame
+  // or two; a frozen slide presents none).
+  expect(
+    proof.verdict.pass,
+    `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
+  ).toBe(true);
+});
+
+test('a press, its lift, flex and travel, does no Layout or Paint per frame', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  const {driver} = await openBar(page);
+  const capsule = page.getByRole('tablist');
+  const target = await itemCenter(page, 'Profile');
+  let press = {from: 0, to: 0};
+  // Held for 700 ms: the lens travels, lifts and the bar flexes with no
+  // render at all. Counted while every curve is moving: the first frame
+  // composites the layers, and each animation's end may repaint once as its
+  // layer is folded back (the lift ends at ~0.39 s).
+  const trace = await traceRendering(page, async () => {
+    const playing = driver.play(tapScript(target, {holdMs: 700}));
+    [press] = await waitForAnimation(capsule);
+    await playing;
+    await waitForRest(capsule);
+  });
+  const during = countBetween(trace, press.from + 50, press.from + 340);
+  const when = trace.events
+    .filter(e => e.name === 'Layout' || e.name === 'Paint')
+    .map(e => `${e.name}@${Math.round(e.t - press.from)}`);
+  expect(during.Layout ?? 0, JSON.stringify({during, when})).toBe(0);
+  expect(during.Paint ?? 0, JSON.stringify({during, when})).toBe(0);
+  await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+});
+
+/** The document's timeline now, to read only the animations a change starts. */
+const timelineNow = (page: Page) =>
+  page.evaluate(() => Number(document.timeline.currentTime ?? 0));
+
+/**
+ * Every animation running in the document (CSS transitions included) that
+ * started at or after `since`, as design:reduced-motion's checks read it: the
+ * properties its keyframes interpolate (a value that only jumps, at one
+ * offset, moves nothing on screen), and when its curve reaches its end value
+ * (the animator holds the end after it).
+ */
+async function runningAnimations(page: Page, since = 0) {
+  return page.evaluate(since => {
+    const meta = ['offset', 'computedOffset', 'easing', 'composite'];
+    return document
+      .getAnimations()
+      .filter(
+        animation =>
+          animation.startTime == null ||
+          Number(animation.startTime) >= since - 50,
+      )
+      .map(animation => {
+        const effect = animation.effect as KeyframeEffect;
+        const frames = effect.getKeyframes();
+        const keys = [
+          ...new Set(frames.flatMap(frame => Object.keys(frame))),
+        ].filter(key => !meta.includes(key));
+        const value = (frame: ComputedKeyframe, key: string) =>
+          String(frame[key]);
+        const interpolated = keys.filter(key =>
+          frames.some(
+            (frame, index) =>
+              index > 0 &&
+              frame.computedOffset !== frames[index - 1].computedOffset &&
+              value(frame, key) !== value(frames[index - 1], key),
+          ),
+        );
+        const last = frames[frames.length - 1];
+        let end = frames.length - 1;
+        while (
+          end > 0 &&
+          keys.every(key => value(frames[end - 1], key) === value(last, key))
+        ) {
+          end -= 1;
+        }
+        const timing = effect.getTiming();
+        return {
+          properties: interpolated,
+          endsMs:
+            Number(timing.delay ?? 0) +
+            (frames[end]?.computedOffset ?? 0) * Number(timing.duration),
+        };
+      });
+  }, since);
+}
+
+/**
+ * design:reduced-motion DR2, on a touch screen: the change cross-fades, every
+ * animation it starts changes opacity only and ends within 200 ms.
+ */
+async function expectCrossFade(page: Page, since = 0) {
+  await expect
+    .poll(
+      async () =>
+        (await runningAnimations(page, since)).some(
+          animation =>
+            animation.properties.includes('opacity') && animation.endsMs > 0,
+        ),
+      {message: 'no cross-fade', timeout: 2000},
+    )
+    .toBe(true);
+  assertCrossFade(await runningAnimations(page, since));
+}
+
+/** design:reduced-motion DR2 on animations already read. */
+function assertCrossFade(
+  animations: Awaited<ReturnType<typeof runningAnimations>>,
+) {
+  expect(
+    animations.some(
+      animation =>
+        animation.properties.includes('opacity') && animation.endsMs > 0,
+    ),
+    `no cross-fade: ${JSON.stringify(animations)}`,
+  ).toBe(true);
+  assertOpacityOnly(animations);
+}
+
+/**
+ * design:reduced-motion DR2 on animations already read, the fade itself not
+ * required: every one changes opacity only and ends within 200 ms.
+ */
+function assertOpacityOnly(
+  animations: Awaited<ReturnType<typeof runningAnimations>>,
+) {
+  for (const animation of animations) {
+    expect(
+      animation.properties.filter(property => property !== 'opacity'),
+      JSON.stringify(animations),
+    ).toEqual([]);
+    expect(animation.endsMs, JSON.stringify(animations)).toBeLessThanOrEqual(
+      200,
+    );
+  }
+}
+
+/** design:reduced-motion DR3, under a mouse: nothing animates. */
+async function expectNoMotion(page: Page, since = 0) {
+  await page.waitForTimeout(150);
+  const animations = await runningAnimations(page, since);
+  expect(
+    animations.filter(animation => animation.properties.length > 0),
+    JSON.stringify(animations),
+  ).toEqual([]);
+}
+
+/** A tab's label: its weight tells the selected look from the plain one. */
+const labelWeight = (page: Page, name: string) =>
+  tab(page, name)
+    .locator(':scope > span > span')
+    .nth(1)
+    .evaluate(element => getComputedStyle(element).fontWeight);
+
+test('at rest the selected tab draws its own look; the copy of the items rides in the lens only while it slides', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  // At rest each item is drawn once, the selected one in its selected look.
+  await expect(lensCopy(page)).toHaveCount(0);
+  expect(await labelWeight(page, 'Home')).toBe('600');
+  expect(await labelWeight(page, 'Browse')).not.toBe('600');
+  await driver.tap(await itemCenter(page, 'Browse'));
+  // While the lens slides, the selected look rides inside it…
+  await expect(lensCopy(page)).toHaveCount(1);
+  expect(await labelWeight(page, 'Browse')).not.toBe('600');
+  // …and once it rests the copy goes and the tab draws it again.
+  await waitForRest(lensBody(page));
+  await expect(lensCopy(page)).toHaveCount(0);
+  expect(await labelWeight(page, 'Browse')).toBe('600');
+  expect(await labelWeight(page, 'Home')).not.toBe('600');
+});
+
+test.describe('with Reduce Motion (design:reduced-motion)', () => {
+  test('on a touch screen a tap cross-fades the lens: opacity only, within 200 ms', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page);
+    const to = await itemCenter(page, 'Browse');
+    const since = await timelineNow(page);
+    await driver.tap(to);
+    // The fade starts with the touch; the selection follows the lift a few
+    // frames later.
+    await expectCrossFade(page, since);
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    assertOpacityOnly(await runningAnimations(page, since));
+    await waitForRest(lensBody(page));
+    expect(Math.abs((await lensCenterX(page)) - to.x)).toBeLessThan(0.5);
+  });
+
+  test('a press neither lifts nor flexes, and a drag’s release cross-fades the settle', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'only Chromium’s touches can be read mid-script',
+    );
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page);
+    const home = await itemCenter(page, 'Home');
+    const library = await itemCenter(page, 'Library');
+    let held: unknown = null;
+    await driver.play(tapScript(home, {holdMs: 200}), {
+      onEvent: async step => {
+        if (step.type === 'touchStart') {
+          await page.waitForTimeout(120);
+          held = {
+            lens: await scaleOf(lensBody(page)),
+            bar: await scaleOf(page.getByRole('tablist')),
+          };
+        }
+      },
+    });
+    expect(held).toEqual({lens: {x: 1, y: 1}, bar: {x: 1, y: 1}});
+    // The lens follows the finger through the drag (direct manipulation); the
+    // settle its release starts is a transition, so it cross-fades (DR2).
+    let released = 0;
+    await driver.play(drag(home, library, {durationMs: 400, restMs: 300}), {
+      onEvent: async step => {
+        if (step.type === 'touchEnd') {
+          released = await timelineNow(page);
+        }
+      },
+    });
+    // The fade starts with the input; what it changes follows a few
+    // frames later.
+    await expectCrossFade(page, released);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+    assertOpacityOnly(await runningAnimations(page, released));
+  });
+});
+
+/** The lens's CSS slide under a mouse: its duration and running transitions. */
+const cssSlide = async (page: Page) =>
+  page.locator('[data-tab-bar-lens]').evaluate(element => ({
+    duration: getComputedStyle(element).transitionDuration,
+    transitions: element
+      .getAnimations()
+      .filter(animation => animation instanceof CSSTransition).length,
+  }));
+
+/**
+ * Under a mouse the lens slides in CSS on the theme's motion, and its body,
+ * which the animator moves under a finger, never animates.
+ */
+async function expectCssSlide(page: Page, {isRunning = true} = {}) {
+  expect((await cssSlide(page)).duration).not.toBe('0s');
+  if (isRunning) {
+    await expect.poll(async () => (await cssSlide(page)).transitions).toBe(1);
+  }
+  expect(
+    await lensBody(page).evaluate(element => element.getAnimations().length),
+  ).toBe(0);
+}
+
+test.describe('touch work costs nothing under a fine pointer', () => {
+  test.describe('under a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('a click chooses a tab, where the gesture host attaches nothing', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openBar(page);
+      // `spec:AST-094` FR19/FR24: under a fine pointer no recognizer attaches,
+      // so the tab activates from the browser's own click.
+      await tab(page, 'Library').click();
+      await expect(tab(page, 'Library')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'false');
+      // And from the keyboard, the other route a fine pointer leaves.
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Enter');
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+
+    test('with Reduce Motion a click moves the lens at once', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await openStory(page, storybook(), 'lab-tabbar--default');
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      const since = await timelineNow(page);
+      await tab(page, 'Browse').click();
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expectNoMotion(page, since);
+    });
+
+    test('a click draws no copy of the items', async ({page}) => {
+      await expectFinePointer(page);
+      await openStory(page, storybook(), 'lab-tabbar--default');
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      await tab(page, 'Browse').click();
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      // The selected look moves to the tab at once; the lens slides under it.
+      expect(await labelWeight(page, 'Browse')).toBe('600');
+      await expect(lensCopy(page)).toHaveCount(0);
+      await page.waitForTimeout(400);
+      await expect(lensCopy(page)).toHaveCount(0);
+    });
+
+    test('the bar sets no selection or callout override of its own', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openStory(page, storybook(), 'lab-tabbar--default');
+      const capsule = page.getByRole('tablist', {name: 'Sections'});
+      await expect(capsule).toBeVisible();
+      // Under a finger the gesture host owns them while a finger is down;
+      // under a mouse desktop selection is unchanged.
+      expect(
+        await capsule.evaluate(element => getComputedStyle(element).userSelect),
+      ).not.toBe('none');
+    });
+
+    test('a click slides the lens on the theme’s motion', async ({page}) => {
+      await expectFinePointer(page);
+      await openStory(page, storybook(), 'lab-tabbar--default');
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      await tab(page, 'Browse').click();
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expectCssSlide(page);
+    });
+  });
+});
+
+test(
+  'storyboard: a selection from rest slides the lens (a touch first moves it under the finger: see the press storyboard)',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {bar} = await openBar(page);
+    await tab(page, 'Home').focus();
+    for (let i = 0; i < 3; i += 1) {
+      await page.keyboard.press('ArrowRight');
+    }
+    await page.keyboard.press('Enter');
+    await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
+    await waitForAnimation(lensBody(page));
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const {storyboard} = await animationStoryboard(page, {
+      name: 'tabbar-lens-travel',
+      clip: {
+        x: 0,
+        y: box.y - 12,
+        width: box.x * 2 + box.width,
+        height: box.height + 24,
+      },
+      times: Array.from({length: 37}, (_, i) => i * 16.667),
+      measure: async () => ({x: await translateX(lensBody(page))}),
+      columns: 6,
+      cellScale: 0.6,
+    });
+    await storyboard.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    const xs = storyboard.frames.map(f => (f.data as {x: number}).x);
+    expect(xs[0]).toBeLessThan(-200);
+    expect(Math.abs(xs.at(-1) ?? Infinity)).toBeLessThan(2);
+  },
+);
+
+test(
+  'storyboard: a finger lands, drags across the bar and lifts',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page);
+    const home = await itemCenter(page, 'Home');
+    const browse = await itemCenter(page, 'Browse');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const storyboard = await touchStoryboard(
+      page,
+      driver,
+      drag(home, browse, {durationMs: 400, hz: 20, holdMs: 250, restMs: 250}),
+      {
+        name: 'tabbar-press-drag',
+        clip: {
+          x: 0,
+          y: box.y - 16,
+          width: box.x * 2 + box.width,
+          height: box.height + 32,
+        },
+        measure: async () => ({
+          x: await translateX(lensBody(page)),
+          lift: (await scaleOf(lensBody(page))).x,
+          flex: (await scaleOf(bar)).x,
+        }),
+        columns: 5,
+        cellScale: 0.6,
+      },
+    );
+    await storyboard.write(testInfo);
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    const frames = storyboard.frames.map(
+      f => f.data as {lift: number; flex: number},
+    );
+    // Lifted and flexed while the finger is down.
+    expect(Math.max(...frames.map(f => f.lift))).toBeGreaterThan(1.1);
+    expect(Math.max(...frames.map(f => f.flex))).toBeGreaterThan(1.03);
+  },
+);
+
+// =============================================================================
+// Minimize on scroll
+// =============================================================================
+
+/** uikit/tabBar.ts: `minimizeDistance`, `minimizedSize`, the collapse springs. */
+const MINIMIZE_DISTANCE = 66;
+const MINIMIZED_SIZE = 48;
+const COLLAPSE_TRAVEL = {response: 0.4, dampingFraction: 0.85};
+const COLLAPSE_SIZE = {response: 0.6, dampingFraction: 0.85};
+
+const isMinimized = (page: Page) =>
+  page
+    .getByRole('tablist')
+    .evaluate(element => element.hasAttribute('data-tab-bar-minimized'));
+const pageScroll = (page: Page) => page.evaluate(() => window.scrollY);
+const circle = (page: Page) => page.locator('[data-tab-bar-circle]');
+
+/**
+ * A finger dragging the page content by `dy` px (positive scrolls the page
+ * down), then resting so nothing coasts. Where injected touches scroll
+ * natively (Chromium) the page scrolls itself; in WebKit, whose injected
+ * touches do not scroll, the page is scrolled by the finger's travel after
+ * each move while the finger is down, which the bar reads the same way.
+ */
+async function scrollByFinger(
+  page: Page,
+  driver: TouchDriver,
+  dy: number,
+  {settle = true}: {settle?: boolean} = {},
+) {
+  const from = {x: 200, y: dy > 0 ? 520 : 160};
+  const to = {x: from.x, y: from.y - dy};
+  const script = drag(from, to, {
+    durationMs: Math.max(160, Math.abs(dy) * 3),
+    restMs: settle ? 150 : 0,
+  });
+  if (driver.drivesNativeGestures) {
+    await driver.play(script);
+  } else {
+    let lastY = from.y;
+    await driver.play(script, {
+      realtime: false,
+      onEvent: async step => {
+        const finger = step.changed[0];
+        if (step.type !== 'touchMove' || finger == null) {
+          return;
+        }
+        const delta = lastY - finger.y;
+        lastY = finger.y;
+        await page.evaluate(by => window.scrollBy(0, by), delta);
+      },
+    });
+  }
+  if (settle) {
+    await page.waitForTimeout(200);
+  }
+}
+
+/**
+ * Lays the story out right to left: the story's wrapper carries the
+ * direction (Storybook's decorator sets `dir` on it), so it is switched
+ * there.
+ */
+async function rightToLeft(page: Page) {
+  await page.evaluate(() => {
+    document
+      .querySelector('[role="tablist"]')
+      ?.closest('[dir]')
+      ?.setAttribute('dir', 'rtl');
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
+/** Resolves once the page has not scrolled for three frames. */
+async function waitForScrollIdle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve => {
+        let last = window.scrollY;
+        let still = 0;
+        const tick = () => {
+          still = window.scrollY === last ? still + 1 : 0;
+          last = window.scrollY;
+          if (still >= 3) {
+            resolve();
+          } else {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
+}
+
+/**
+ * Scrolls the page by a finger and reads the running animations in the
+ * frame after `isChanged` first holds, while the finger is still down (a
+ * 200 ms fade ends long before the finger lifts).
+ */
+async function readDuringScroll(
+  page: Page,
+  driver: TouchDriver,
+  isChanged: () => Promise<boolean>,
+  since: number,
+) {
+  let sampled: Awaited<ReturnType<typeof runningAnimations>> | null = null;
+  const from = {x: 200, y: 520};
+  let lastY = from.y;
+  await driver.play(drag(from, {x: 200, y: 320}, {durationMs: 600}), {
+    realtime: driver.drivesNativeGestures,
+    onEvent: async step => {
+      const finger = step.changed[0];
+      if (step.type !== 'touchMove' || finger == null) {
+        return;
+      }
+      if (!driver.drivesNativeGestures) {
+        const delta = lastY - finger.y;
+        lastY = finger.y;
+        await page.evaluate(by => window.scrollBy(0, by), delta);
+      }
+      if (sampled == null && (await isChanged())) {
+        await page.waitForTimeout(40);
+        sampled = await runningAnimations(page, since);
+      }
+    },
+  });
+  if (sampled == null) {
+    throw new Error('it never changed while the finger was down');
+  }
+  return sampled;
+}
+
+async function minimizeBar(page: Page, driver: TouchDriver) {
+  await scrollByFinger(page, driver, 200);
+  await expect.poll(() => isMinimized(page)).toBe(true);
+}
+
+test.describe('minimize on scroll', () => {
+  test('the page root keeps no touch-action of its own while the bar watches the scroll', async ({
+    page,
+  }) => {
+    const {driver, bar} = await openBar(page, 'minimize-on-scroll');
+    const root = () =>
+      page.evaluate(() => ({
+        inline: document.documentElement.style.touchAction || '',
+        computed: getComputedStyle(document.documentElement).touchAction,
+      }));
+    expect(await root()).toEqual({inline: '', computed: 'auto'});
+    // The watch runs from a finger's pan, which claims no touch: the
+    // gesture host manages the styles and writes none here.
+    await scrollByFinger(page, driver, 200);
+    await expect(bar).toHaveAttribute('data-tab-bar-minimized', '');
+    expect(await root()).toEqual({inline: '', computed: 'auto'});
+  });
+
+  test('a finger scrolling the page down minimizes the bar 66 px into the scroll, not before', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await scrollByFinger(page, driver, 45);
+    const first = await pageScroll(page);
+    expect(first).toBeGreaterThan(10);
+    expect(first).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    await scrollByFinger(page, driver, 60);
+    expect(await pageScroll(page)).toBeGreaterThanOrEqual(MINIMIZE_DISTANCE);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('scrolling back up mid-page leaves it minimized; reaching the top expands it', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await scrollByFinger(page, driver, 300);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    await scrollByFinger(page, driver, -120);
+    expect(await pageScroll(page)).toBeGreaterThan(0);
+    expect(await isMinimized(page)).toBe(true);
+    await scrollByFinger(page, driver, -400);
+    expect(await pageScroll(page)).toBe(0);
+    await expect.poll(() => isMinimized(page)).toBe(false);
+  });
+
+  test('expanded by a tap, the bar minimizes again only after another 66 px down', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    // Less than the distance down: still expanded.
+    const from = await pageScroll(page);
+    await scrollByFinger(page, driver, 40);
+    expect((await pageScroll(page)) - from).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    // The rest of the distance minimizes it again.
+    await scrollByFinger(page, driver, 60);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('where the browser sends no scrollend, the watch ends with the person’s scroll: a script’s scroll after it counts for nothing', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      // A browser without scrollend: no handler property to detect, and
+      // no event delivered.
+      // (On the global object the handler is an own property.)
+      for (const target of [
+        window,
+        Window.prototype,
+        Document.prototype,
+        Element.prototype,
+        HTMLElement.prototype,
+      ]) {
+        delete (target as unknown as {onscrollend?: unknown}).onscrollend;
+      }
+      window.addEventListener(
+        'scrollend',
+        event => event.stopImmediatePropagation(),
+        {capture: true},
+      );
+    });
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    expect(await page.evaluate(() => 'onscrollend' in window)).toBe(false);
+    await scrollByFinger(page, driver, 40);
+    expect(await isMinimized(page)).toBe(false);
+    // Past the reader's fallback after the last scroll event.
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollBy(0, 120));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBeGreaterThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+  });
+
+  test('a script scrolling the page to the top leaves it minimized', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBe(0);
+    expect(await isMinimized(page)).toBe(true);
+  });
+
+  test('a tap on the circle expands the bar, keeping the tab and the scroll', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const scrolled = await pageScroll(page);
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    expect(box.width).toBeCloseTo(MINIMIZED_SIZE, 0);
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    expect(await pageScroll(page)).toBe(scrolled);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('minimized, the accessibility tree holds no empty tab list beside the circle', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'reads Chromium’s accessibility tree',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const cdp = await page.context().newCDPSession(page);
+    const {nodes} = await cdp.send('Accessibility.getFullAXTree');
+    const roles = nodes
+      .filter(node => node.ignored !== true)
+      .map(node => node.role?.value);
+    expect(roles).not.toContain('tablist');
+    expect(roles).toContain('button');
+  });
+
+  test('minimized, the circle alone stands for the bar: the selected tab, collapsed; the keys expand it onto that tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const button = page.getByRole('button', {name: 'Library'});
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    // The tabs are inert: out of reach of assistive technology and focus.
+    const tabsInert = () =>
+      page
+        .getByRole('tablist')
+        .evaluate(list =>
+          [...list.querySelectorAll<HTMLElement>('[role="tab"]')].map(
+            element => element.inert,
+          ),
+        );
+    expect(await tabsInert()).toEqual([true, true, true, true]);
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(tab(page, 'Library')).toBeFocused();
+    expect(await tabsInert()).toEqual([false, false, false, false]);
+  });
+
+  test('expanded again, the lens carries no copy at rest, and a slide’s copy lines up with the items', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await waitForRest(lensBody(page));
+    // At rest the selected tab draws its own look: no copy is mounted.
+    await expect(lensCopy(page)).toHaveCount(0);
+    // A slide mounts it again, and it starts where the items are: no offset
+    // or scale left over from the collapse.
+    await driver.tap(await itemCenter(page, 'Browse'));
+    await waitForAnimation(lensCopy(page));
+    await holdAnimations(page);
+    const offsets = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-tab-bar-copy-item]')].map(item => {
+        const value = item.getAttribute('data-tab-bar-copy-item');
+        const face = document.querySelector(
+          `[data-tab-bar-value="${value}"] > span`,
+        );
+        const a = item.getBoundingClientRect();
+        const b = face?.getBoundingClientRect();
+        return b == null
+          ? Infinity
+          : Math.abs(a.left + a.width / 2 - (b.left + b.width / 2));
+      }),
+    );
+    await releaseAnimations(page, {finish: true});
+    expect(offsets.length).toBeGreaterThan(0);
+    for (const offset of offsets) {
+      expect(offset).toBeLessThan(0.5);
+    }
+  });
+
+  test('minimized, the page takes the touches outside the circle', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const profile = await itemCenter(page, 'Profile');
+    await minimizeBar(page, driver);
+    const hit = await page.evaluate(({x, y}) => {
+      const element = document.elementFromPoint(x, y);
+      return {
+        inBar: element?.closest('[role="tablist"]') != null,
+        onCircle: element?.closest('[data-tab-bar-circle]') != null,
+      };
+    }, profile);
+    expect(hit).toEqual({inBar: false, onCircle: false});
+  });
+
+  test('a tap on the circle mid-collapse turns the bar around from where it is', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const library = await itemCenter(page, 'Library');
+    const body = lensBody(page);
+    const sampling = sampleRects(body, 1500);
+    // Just past the trigger, so the page stops scrolling while the bar is
+    // still collapsing: a tap on a page that is still scrolling only stops
+    // it, here as on iOS.
+    await scrollByFinger(page, driver, 80, {settle: false});
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    await waitForScrollIdle(page);
+    expect(
+      await body.evaluate(element =>
+        element.getAnimations().some(a => a.playState === 'running'),
+      ),
+    ).toBe(true);
+    const turning = await lensCenterX(page);
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const samples = (await sampling).flatMap(sample =>
+      sample.box == null
+        ? []
+        : [{t: sample.t, x: sample.box.x + sample.box.width / 2}],
+    );
+    // It was on its way into the circle, then came back without a jump:
+    // consecutive frames never cover the remaining distance at once.
+    expect(Math.abs(turning - library.x)).toBeGreaterThan(5);
+    const steps = samples
+      .slice(1)
+      .flatMap((sample, i) =>
+        sample.t - samples[i].t <= 34 ? [sample.x - samples[i].x] : [],
+      );
+    expect(
+      Math.max(...steps.map(Math.abs)),
+      JSON.stringify(samples),
+    ).toBeLessThan(40);
+    await waitForRest(body);
+    expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('with Reduce Motion the bar cross-fades into the circle: opacity only, within 200 ms', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const since = await timelineNow(page);
+    assertCrossFade(
+      await readDuringScroll(page, driver, () => isMinimized(page), since),
+    );
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('watching the page’s scroll never holds it: no touch listener on the page’s root path blocks a scroll', async ({
+    page,
+    browserName,
+  }) => {
+    // A blocking (non-passive) touchstart, touchmove or wheel listener on the
+    // root path makes the browser wait for the main thread before every page
+    // scroll (the gesture README's measured limit); the watcher's are passive.
+    // (A finger scrolling through a busy main thread is a simulator proof: the
+    // harness cannot drive one.)
+    test.skip(
+      browserName !== 'chromium',
+      'reads listeners through Chromium’s debugger',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    // A scroll first, so every listener the watcher adds while it tracks a
+    // touch is in place.
+    await scrollByFinger(page, driver, 120);
+    const cdp = await page.context().newCDPSession(page);
+    const blocking: string[] = [];
+    for (const expression of [
+      'window',
+      'document',
+      'document.documentElement',
+      'document.body',
+    ]) {
+      const {result} = await cdp.send('Runtime.evaluate', {expression});
+      if (result.objectId == null) {
+        throw new Error(`no ${expression}`);
+      }
+      const {listeners} = await cdp.send('DOMDebugger.getEventListeners', {
+        objectId: result.objectId,
+      });
+      for (const listener of listeners) {
+        if (
+          /^(touchstart|touchmove|wheel)$/.test(listener.type) &&
+          !listener.passive
+        ) {
+          blocking.push(`${expression}: ${listener.type}`);
+        }
+      }
+    }
+    expect(blocking).toEqual([]);
+  });
+
+  test('right to left, the bar collapses into a circle at the right edge', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await rightToLeft(page);
+    const width = await page.evaluate(() => window.innerWidth);
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    // At the right, where the bar starts in a right-to-left layout: the
+    // bar's 21 px inset plus the 7 px the 48 px circle sits inside the
+    // 62 px bar.
+    expect(width - (box.x + box.width)).toBeCloseTo(28, 0);
+    expect(box.width).toBeCloseTo(MINIMIZED_SIZE, 0);
+  });
+
+  test('minimized, a resize keeps the circle whole: the cap and the lens stay on it', async ({
+    page,
+  }) => {
+    // A phone in portrait: the capsule narrower than its natural width.
+    await page.setViewportSize({width: 375, height: 667});
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    // Rotated to landscape while minimized: the capsule widens.
+    await page.setViewportSize({width: 667, height: 375});
+    await page.waitForTimeout(200);
+    const circleBox = await circle(page).boundingBox();
+    const endBox = await page
+      .locator('[data-tab-bar-platter-end]')
+      .boundingBox();
+    const lensBox = await lensBody(page).boundingBox();
+    if (circleBox == null || endBox == null || lensBox == null) {
+      throw new Error('no circle');
+    }
+    // The trailing cap closes on the circle, and the lens sits in it.
+    expect(
+      Math.abs(endBox.x + endBox.width - (circleBox.x + circleBox.width)),
+    ).toBeLessThan(1);
+    expect(
+      Math.abs(
+        lensBox.x + lensBox.width / 2 - (circleBox.x + circleBox.width / 2),
+      ),
+    ).toBeLessThan(1);
+  });
+
+  test('collapsing carries the lens into the circle on UIKit’s springs while the platter contracts', async ({
+    page,
+  }, testInfo) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const body = lensBody(page);
+    const restBox = await body.boundingBox();
+    const circleBox = await circle(page).boundingBox();
+    if (restBox == null || circleBox == null) {
+      throw new Error('no lens or circle');
+    }
+    const travel =
+      circleBox.x + circleBox.width / 2 - (restBox.x + restBox.width / 2);
+    const endScale = MINIMIZED_SIZE / restBox.width;
+    await scrollByFinger(page, driver, 200);
+    await waitForAnimation(body);
+    await holdAnimations(page);
+    const times = Array.from({length: 61}, (_, i) => i * 16.667);
+    const bodySamples = await sampleCurve(body, times);
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      x: bodySamples[i].transform.translateX,
+      scaleX: bodySamples[i].transform.scaleX,
+      opacity: bodySamples[i].opacity,
+      analyticX: travel * springStep(COLLAPSE_TRAVEL, t),
+      analyticScaleX: 1 + (endScale - 1) * springStep(COLLAPSE_SIZE, t),
+    }));
+    await releaseAnimations(page, {finish: true});
+    await writeEvidence(
+      'curves/tabbar-collapse',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {travel, endScale, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.x - sample.analyticX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+      expect(
+        Math.abs(sample.scaleX - sample.analyticScaleX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.005);
+    }
+    // The lens ends inside the circle, faded out; the platter's pieces have
+    // become the circle.
+    expect(samples.at(-1)?.opacity ?? 1).toBeLessThan(0.05);
+    const pieces = await page
+      .locator('[data-tab-bar-platter] > div')
+      .evaluateAll(elements =>
+        elements.map(element => {
+          const rect = element.getBoundingClientRect();
+          return {left: rect.left, right: rect.right};
+        }),
+      );
+    const left = Math.min(...pieces.map(piece => piece.left));
+    const right = Math.max(...pieces.map(piece => piece.right));
+    expect(right - left).toBeCloseTo(MINIMIZED_SIZE, 0);
+    expect(left).toBeCloseTo(circleBox.x, 0);
+  });
+
+  test('the collapse keeps advancing every frame while the main thread is blocked', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const end = page.locator('[data-tab-bar-platter-end]');
+    await markElement(end);
+    const cast = await startScreencast(page);
+    // Just past the trigger, then block as soon as the collapse is running.
+    await driver.play(
+      drag({x: 200, y: 520}, {x: 200, y: 420}, {durationMs: 300, restMs: 150}),
+    );
+    const [collapse] = await waitForAnimation(end, {minProgressMs: 16});
+    // Blocked by the page itself in the frame that sees the collapse running.
+    const block = await blockMainThread(page, 600, {during: end});
+    await page.waitForTimeout(150);
+    const castFrames = await cast.stop();
+    const tracked = await trackMarker(page, castFrames);
+    const proof = busyWindowProof(
+      tracked,
+      {from: block.from, to: Math.min(block.to, collapse.to)},
+      {
+        axis: 'x',
+        settledWithin: 2,
+        // Screencast throughput, not the animation: no display-rate bound.
+        maxMedianFrameMs: Infinity,
+      },
+    );
+    // The harness's verdict (a loaded machine drops a screencast frame or
+    // two; a frozen collapse presents none).
+    expect(
+      proof.verdict.pass,
+      `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
+    ).toBe(true);
+  });
+});
+
+test(
+  'storyboard: the bar collapses into its circle, and a tap on the circle expands it',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page, 'minimize-on-scroll');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const clip = {
+      x: 0,
+      y: box.y - 12,
+      width: box.x * 2 + box.width,
+      height: box.height + 24,
+    };
+    const times = Array.from({length: 25}, (_, i) => i * 33.333);
+    // Crosses the trigger near the end of the drag, so the storyboard holds
+    // the collapse from its first frames.
+    await scrollByFinger(page, driver, 100, {settle: false});
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    const {storyboard: collapse} = await animationStoryboard(page, {
+      name: 'tabbar-collapse',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await collapse.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const {storyboard: expand} = await animationStoryboard(page, {
+      name: 'tabbar-expand',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await expand.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+  },
+);
