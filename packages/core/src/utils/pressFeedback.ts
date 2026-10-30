@@ -89,11 +89,13 @@ import {
 import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
 import {subscribeInput} from './inputStream';
 import {resolveMotion} from '../motion/resolveMotion';
-import {press as pressTiming} from '../motion/uikit/timing';
+import {
+  press as pressTiming,
+  reducedMotionCrossFade,
+} from '../motion/uikit/timing';
 import {parentAcrossShadow} from './flatTree';
 import {isPrimaryClick} from './primaryClick';
 import {TOUCH_QUERY} from './touchPresentation';
-import {timing} from '../motion/uikit/timing';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -310,7 +312,9 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
  * (endAfterRelease). The release's clock is capped under reduced motion by
  * the Reduce Motion cross-fade's duration, as the stylesheet caps its fade
  * (`design:reduced-motion` DR2: a touch transition finishes within it;
- * `spec:AST-094` FR4: the cap is a role, never a literal).
+ * `spec:AST-094` FR4: the cap is a role, never a literal), read from the
+ * fade's own export, so the controller ships that one value, not the rest
+ * of the timing table (`architecture:component-style-authoring` INV6).
  */
 function timerMs(
   kind: NonNullable<PressStep['timer']>,
@@ -329,7 +333,7 @@ function timerMs(
       '(prefers-reduced-motion: reduce)',
     ).matches ?? false;
   return reduced
-    ? Math.min(releaseMs, timing.reducedMotionCrossFadeMs)
+    ? Math.min(releaseMs, reducedMotionCrossFade.durationMs)
     : releaseMs;
 }
 
@@ -360,12 +364,15 @@ const PAINTS: ReadonlySet<string> = new Set(['on', 'held', 'fading']);
 const fadeTimers = new WeakMap<Element, () => void>();
 
 /**
- * The release animations running on `element`: its own CSS animations (on
- * it, or its `::before` or `::after`, never a descendant's), finite, and not
- * yet finished. Nothing at the write reads the document timeline: WebKit
- * starts an animation created after such a read at the time read, so a busy
- * first frame would skip into the release. Empty where the engine has no Web
- * Animations.
+ * The release animations running for `element`'s press: CSS animations on it
+ * (or its `::before` or `::after`), or on a descendant whose nearest press
+ * owner it is, finite, and not yet finished. A component may draw its release
+ * inside the surface (a checkbox's box wrapper), keyed on this press as the
+ * layers are: each reads its nearest owner, so a press owner nested inside
+ * plays its own press's release and never extends this one. Nothing at the
+ * write reads the document timeline: WebKit starts an animation created after
+ * such a read at the time read, so a busy first frame would skip into the
+ * release. Empty where the engine has no Web Animations.
  */
 function releaseAnimationsOf(element: Element): Animation[] {
   if (typeof element.getAnimations !== 'function') {
@@ -375,7 +382,14 @@ function releaseAnimationsOf(element: Element): Animation[] {
     // A CSS animation's effect is a KeyframeEffect: its target is the
     // element it runs on, or the element whose pseudo-element it runs on.
     const effect = animation.effect as KeyframeEffect | null;
-    if (!('animationName' in animation) || effect?.target !== element) {
+    const target = effect?.target ?? null;
+    if (
+      effect == null ||
+      target == null ||
+      !('animationName' in animation) ||
+      (target !== element &&
+        target.closest(`[${PRESSABLE_ATTRIBUTE}]`) !== element)
+    ) {
       return false;
     }
     if (!Number.isFinite(Number(effect.getComputedTiming().endTime))) {
