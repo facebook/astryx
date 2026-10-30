@@ -6,7 +6,7 @@ name: Internal Registry
 # break a build. Temporarily advisory: the check still runs and surfaces
 # annotations, but a failure no longer fails the job (continue-on-error), so it
 # warns instead of blocking. Re-enable gating by removing continue-on-error and
-# marking the merge_group run ("Internal Registry / dependency-check") as a
+# marking the merge_group run ("Internal Registry / test-deps") as a
 # REQUIRED status check; fork PRs are skipped and enforced by that run.
 
 on:
@@ -23,17 +23,26 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # test-deps: its scope is the dependency files the trigger lists, so a pull
-  # request that starts it always changed one; nothing inside reclassifies.
+  # test-deps: the registry check runs only when a pull request changes a
+  # dependency declaration, the lockfile or this workflow (a spec-only change
+  # never does); a merge-group entry always runs it.
   test-deps:
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
       id-token: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 50
 
+      - name: Decide this job's scope
+        id: scope
+        uses: ./.github/actions/test-scope
+        with:
+          paths: '(^|/)package(-lock)?\.json$|^pnpm-lock\.yaml$|^pnpm-workspace\.yaml$|^\.github/workflows/internal-registry\.yml$'
+
       - uses: facebook/lexical/.github/actions/internal-registry/dependency-check@internal-registry-dependency-check-v1
+        if: steps.scope.outputs.touches == 'true'
         continue-on-error: true

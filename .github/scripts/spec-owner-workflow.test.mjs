@@ -421,3 +421,31 @@ describe('spec-only workflow contract', () => {
     expect(workflow).not.toContain("context: 'visual-acceptance'");
   });
 });
+
+describe('test-deps scope (Internal Registry)', () => {
+  it('runs the registry check only for dependency changes on a pull request', () => {
+    const source = read('.github/workflows/internal-registry.yml');
+    const paths = /paths: '([^']+)'/.exec(source)?.[1];
+    expect(paths).toBeDefined();
+    const pattern = new RegExp(paths);
+    for (const file of [
+      'pnpm-lock.yaml',
+      'pnpm-workspace.yaml',
+      'package.json',
+      'packages/core/package.json',
+      '.github/workflows/internal-registry.yml',
+    ]) {
+      expect(pattern.test(file), file).toBe(true);
+    }
+    // A spec-only or source-only change never runs it.
+    for (const file of [
+      'docs/specs/AST-030/spec.md',
+      'packages/core/src/Button/Button.tsx',
+      'packages/core/src/package.json.ts',
+    ]) {
+      expect(pattern.test(file), file).toBe(false);
+    }
+    expect(source).toContain('uses: ./.github/actions/test-scope');
+    expect(source).toContain("if: steps.scope.outputs.touches == 'true'");
+  });
+});
