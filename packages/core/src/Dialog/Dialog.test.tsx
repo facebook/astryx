@@ -1436,15 +1436,24 @@ describe('Dialog focus region (DEC-2)', () => {
   });
 
   it('lets the inner modal answer Tab when a Dialog opens from a Dialog', () => {
-    render(
-      <Dialog isOpen onOpenChange={() => {}} aria-label="Outer">
-        <button type="button">Outer first</button>
-        <Dialog isOpen onOpenChange={() => {}} aria-label="Inner">
-          <button type="button">Inner first</button>
-          <button type="button">Inner last</button>
+    function Nested({isInnerOpen}: {isInnerOpen: boolean}) {
+      return (
+        <Dialog isOpen onOpenChange={() => {}} aria-label="Outer">
+          <button type="button">Outer first</button>
+          <Dialog
+            isOpen={isInnerOpen}
+            onOpenChange={() => {}}
+            aria-label="Inner">
+            <button type="button">Inner first</button>
+            <button type="button">Inner last</button>
+          </Dialog>
         </Dialog>
-      </Dialog>,
-    );
+      );
+    }
+    // The outer modal's region is active before the inner one opens, as when
+    // a person opens a Dialog from a Dialog.
+    const {rerender} = render(<Nested isInnerOpen={false} />);
+    rerender(<Nested isInnerOpen />);
     expectTabWrapsInside(screen.getByRole('dialog', {name: 'Inner'}));
   });
 

@@ -296,6 +296,51 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     expect(screen.getByTestId('first')).toHaveFocus();
   });
 
+  it('leaves controls inside a closed dialog out of the Tab cycle', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="last">
+          Last
+        </button>
+        <dialog>
+          <button type="button" data-testid="hidden">
+            In a closed sheet
+          </button>
+        </dialog>
+      </Trap>,
+    );
+    const last = screen.getByTestId('last');
+    last.focus();
+
+    expect(fireEvent.keyDown(last, {key: 'Tab'})).toBe(false);
+    expect(screen.getByTestId('first')).toHaveFocus();
+  });
+
+  it('leaves Tab to an open dialog nested inside the trap', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="outer">
+          Outer
+        </button>
+        <dialog open>
+          <button type="button" data-testid="inner-last">
+            Continue
+          </button>
+        </dialog>
+      </Trap>,
+    );
+    const innerLast = screen.getByTestId('inner-last');
+    innerLast.focus();
+
+    // The nested dialog is its own focus context; the outer region does not
+    // cancel the press or pull focus to its own first control.
+    expect(fireEvent.keyDown(innerLast, {key: 'Tab'})).toBe(true);
+    expect(innerLast).toHaveFocus();
+  });
+
   it('pulls focus back in when a Tab from inside leaves the trap', () => {
     render(
       <Trap>

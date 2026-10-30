@@ -75,6 +75,10 @@ function isVisiblyFocusable(el: HTMLElement): boolean {
   if (el.hidden || el.closest('[hidden]')) {
     return false;
   }
+  // A closed <dialog> renders nothing, so nothing inside it can take focus.
+  if (el.closest('dialog:not([open])')) {
+    return false;
+  }
   // closest() matches the element itself as well as any ancestor.
   if (el.closest('[aria-hidden="true"]')) {
     return false;
@@ -145,6 +149,18 @@ function attemptFocus(element: HTMLElement): boolean {
 }
 
 /**
+ * Wrap focus to `target` for a Tab press, and cancel the press only when the
+ * target took focus. A target the browser refuses (inert behind a modal
+ * layered over this region) leaves the press to the browser instead of
+ * stranding focus where it was.
+ */
+function wrapFocus(event: KeyboardEvent, target: HTMLElement): void {
+  if (attemptFocus(target)) {
+    event.preventDefault();
+  }
+}
+
+/**
  * Focus the first focusable descendant of a container.
  * Returns true if a focusable element was found and focused.
  */
@@ -177,7 +193,16 @@ function focusLastDescendant(container: HTMLElement): boolean {
 // in the DOM never fight over one key press.
 const activeRegionContainers = new Set<HTMLElement>();
 
-function hasInnerRegionHolding(container: HTMLElement, active: Node): boolean {
+function hasInnerRegionHolding(
+  container: HTMLElement,
+  active: Element,
+): boolean {
+  // An open <dialog> nested in the region that holds focus is its own focus
+  // context (a modal step over a covered sheet): it answers Tab, not us.
+  const dialog = active.closest('dialog[open]');
+  if (dialog != null && dialog !== container && container.contains(dialog)) {
+    return true;
+  }
   for (const other of activeRegionContainers) {
     if (
       other !== container &&
@@ -343,12 +368,7 @@ export function useFocusRegionContainment(
           // Programmatic initial focus can sit on the trap container itself
           // (for example a dialog panel with no content controls). Move into
           // the tabbable cycle instead of letting Tab escape to the page.
-          event.preventDefault();
-          if (event.shiftKey) {
-            last.focus();
-          } else {
-            first.focus();
-          }
+          wrapFocus(event, event.shiftKey ? last : first);
           return;
         }
 
@@ -363,8 +383,7 @@ export function useFocusRegionContainment(
             active === first ||
             (isProgrammaticStop && precedes(active, first))
           ) {
-            event.preventDefault();
-            last.focus();
+            wrapFocus(event, last);
           }
         } else {
           // Tab: if on (or after) the last element, wrap to first
@@ -372,8 +391,7 @@ export function useFocusRegionContainment(
             active === last ||
             (isProgrammaticStop && precedes(last, active))
           ) {
-            event.preventDefault();
-            first.focus();
+            wrapFocus(event, first);
           }
         }
       }
