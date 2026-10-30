@@ -475,6 +475,40 @@ describe('FileInput', () => {
       expect(politeRegion()?.textContent ?? '').toBe('');
     });
 
+    it('identifies every rejected file in one status message (WCAG 3.3.1)', async () => {
+      const onChange = vi.fn();
+      render(
+        <FileInput
+          label="Reports"
+          value={null}
+          onChange={onChange}
+          isMultiple
+          accept=".pdf"
+          maxSize={1024}
+        />,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {
+          files: [
+            createFile('photo.png', 100),
+            createFile('large.pdf', 4096),
+            createFile('small.pdf', 100),
+          ],
+        },
+      });
+      await waitFor(() => {
+        const status = document.querySelector('.astryx-field-status');
+        expect(status).toHaveTextContent(
+          '"photo.png" is not an accepted file type',
+        );
+        expect(status).toHaveTextContent('"large.pdf" exceeds 1.0 KB limit');
+      });
+      // The valid file is still accepted.
+      expect(onChange).toHaveBeenCalledWith([
+        expect.objectContaining({name: 'small.pdf'}),
+      ]);
+    });
+
     it('announces a validation error exactly once across live regions', async () => {
       render(
         <FileInput
