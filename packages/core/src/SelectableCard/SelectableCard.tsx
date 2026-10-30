@@ -46,7 +46,6 @@ import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   FOCUS_OWNER_ATTRIBUTE,
   focusWithinOwnerProps,

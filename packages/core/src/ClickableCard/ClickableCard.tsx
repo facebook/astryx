@@ -46,7 +46,6 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   FOCUS_OWNER_ATTRIBUTE,
   focusWithinOwnerProps,
