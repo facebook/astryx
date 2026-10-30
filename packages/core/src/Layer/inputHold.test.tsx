@@ -186,21 +186,23 @@ describe('holdInput', () => {
     expect(layer.querySelectorAll('[popover]')).toHaveLength(0);
   });
 
-  it("registers one touch gate per document, which answers whether a touch's target is held", () => {
+  it('registers nothing with the gesture host: the host asks isInHeldLayer for each touch', () => {
     const addTouchGate = vi.spyOn(GestureHost.prototype, 'addTouchGate');
     const {layer, child} = mountLayer();
-    holdInput(layer, {until: new Promise(() => {}), scope: 'layer'});
+    const releaseLayer = holdInput(layer, {
+      until: new Promise(() => {}),
+      scope: 'layer',
+    });
     const release = holdInput(layer, {
       until: new Promise(() => {}),
       scope: 'viewport',
     });
-    expect(addTouchGate.mock.calls.length).toBeLessThanOrEqual(1);
-    const registered =
-      addTouchGate.mock.calls[0]?.[0] ??
-      ((target: Node) => isInHeldLayer(target));
-    expect(registered(child)).toBe(true);
-    expect(registered(document.body)).toBe(false);
+    expect(addTouchGate).not.toHaveBeenCalled();
+    expect(isInHeldLayer(child)).toBe(true);
+    expect(isInHeldLayer(document.body)).toBe(false);
     release();
+    releaseLayer();
+    expect(isInHeldLayer(child)).toBe(false);
   });
 });
 
