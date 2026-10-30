@@ -50,7 +50,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'One easing curve, `--ease-standard`.',
+          text: 'Two easing curves. `--ease-standard` decelerates, for things arriving and state changes. `--ease-exit` accelerates, for things leaving: it moves off from rest and leaves fast, so the travel stays visible for the whole duration.',
         },
         {
           type: 'token-ref',
