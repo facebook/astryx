@@ -4,12 +4,14 @@
  * @file harness.interaction.browser.spec.ts
  * @input Fixture pages written inline (no Storybook), real Chromium/WebKit
  * @output Proof that each harness instrument measures what it claims (the
- *   busy-main-thread proof with a negative control beside its positive
- *   check): scripted timestamps reach the
+ *   busy-main-thread proof and the rendering-trace counts with a negative
+ *   control beside their positive checks): scripted timestamps reach the
  *   page; a flick flings natively (Chromium); a second finger and a pinch
  *   arrive as distinct pointers; the screencast shows a compositor animation
  *   advancing through a blocked main thread while a rAF animation freezes;
- *   sampled curves
+ *   the trace counts zero Layout for a transform animation and one per frame
+ *   for a `top` animation; the long-task log records the page's own long
+ *   task but not a DevTools evaluate, which the trace counts; sampled curves
  *   match the oracles, individual transform properties included; a sample at
  *   an end reports the time it was read at; holding takes only running
  *   document-timeline animations, each at its own offset, holds each where it
@@ -35,6 +37,7 @@ import {
   blockMainThread,
   busyWindowProof,
   compareCurve,
+  countBetween,
   cubicBezier,
   curveOf,
   drag,
@@ -43,6 +46,7 @@ import {
   freezeTimers,
   holdAnimations,
   installInputLog,
+  installLongTaskLog,
   installTimerGate,
   markElement,
   merge,
@@ -50,10 +54,12 @@ import {
   PARTIAL_LIFT_SKIP,
   pinch,
   readInputLog,
+  readLongTasks,
   releaseAnimations,
   sampleCurve,
   seekAnimations,
   springStep,
+  startCompositorTrace,
   startScreencast,
   Storyboard,
   tap,
@@ -61,6 +67,7 @@ import {
   timeline,
   touchDriver,
   touchStoryboard,
+  traceRendering,
   trackMarker,
   waitForAnimation,
   waitForRest,
@@ -342,6 +349,85 @@ test.describe('frame evidence', () => {
     expect(slowRaf.verdict.failures.join('\n')).toMatch(/longest stall/);
   });
 
+  test('frames the screencast skips while the compositor presents them are not a stall; a frozen animation still fails with the compositor record', async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    test.skip(
+      browserName !== 'chromium',
+      'compositor traces are Chromium-only (README: engine limits)',
+    );
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const run = async (driver: 'compositor' | 'raf') => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {duration: 1600, easing: 'linear'},
+          );
+        } else {
+          const start = performance.now();
+          const step = (now: number) => {
+            const p = Math.min(1, (now - start) / 1600);
+            el.style.transform = `translateY(${560 * p}px)`;
+            if (p < 1) {
+              requestAnimationFrame(step);
+            }
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page);
+      const compositor = await startCompositorTrace(page);
+      await page.waitForTimeout(200);
+      const window = await blockMainThread(page, 700);
+      await page.waitForTimeout(200);
+      const presented = await compositor.stop();
+      const tracked = await trackMarker(page, await cast.stop());
+      return {window, tracked, presented};
+    };
+
+    const moving = await run('compositor');
+    expect(moving.presented.length).toBeGreaterThan(0);
+    // The screencast as a loaded machine delivers it: four frames in a row
+    // skipped mid-block, which the compositor still presented.
+    const mid = moving.tracked.findIndex(f => f.t > moving.window.from + 350);
+    const skipped = moving.tracked.filter((_, i) => i < mid || i >= mid + 4);
+    const alone = busyWindowProof(skipped, moving.window, {axis: 'y'});
+    expect(alone.verdict.failures.join('\n'), alone.summary).toMatch(
+      /longest stall/,
+    );
+    const proof = busyWindowProof(skipped, moving.window, {
+      axis: 'y',
+      presented: moving.presented,
+    });
+    testInfo.annotations.push({
+      type: 'busy-main-thread compositor record',
+      description: proof.summary,
+    });
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.recorderSkipped).toBeGreaterThanOrEqual(4);
+
+    // A rAF animation presents no change for the whole block: the record
+    // excuses nothing, whatever the compositor drew meanwhile.
+    const frozen = await run('raf');
+    const still = busyWindowProof(frozen.tracked, frozen.window, {
+      axis: 'y',
+      presented: frozen.presented,
+    });
+    testInfo.annotations.push({
+      type: 'busy-main-thread rAF control, compositor record',
+      description: `${still.summary}; compositor frames inside the block: ${frozen.presented.filter(t => t > frozen.window.from && t < frozen.window.to).length}`,
+    });
+    expect(still.verdict.pass).toBe(false);
+    expect(still.recorderSkipped).toBe(0);
+    expect(still.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
   test('a block that starts during a just-started transition still lets the compositor advance it', async ({
     page,
   }, testInfo) => {
@@ -421,6 +507,246 @@ test.describe('frame evidence', () => {
     });
     expect(proof.verdict.failures, proof.summary).toEqual([]);
     expect(proof.monotonic).toBe(true);
+  });
+
+  test('the trace counts no Layout for a transform animation and one per frame for `top`', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    await fixture(page);
+    const box = page.locator('#box');
+    // Count the animation's steady middle: starting and ending it may lay out once each.
+    const animate = async (property: 'transform' | 'top') => {
+      let started = 0;
+      const trace = await traceRendering(page, async () => {
+        started = await box.evaluate((el, prop) => {
+          const keyframes =
+            prop === 'transform'
+              ? [
+                  {transform: 'translateY(0px)'},
+                  {transform: 'translateY(200px)'},
+                ]
+              : [{top: '360px'}, {top: '560px'}];
+          el.animate(keyframes, {duration: 600});
+          return performance.timeOrigin + performance.now();
+        }, property);
+        await page.waitForTimeout(700);
+      });
+      return countBetween(trace, started + 100, started + 500);
+    };
+    const transform = await animate('transform');
+    const top = await animate('top');
+    expect(transform.Layout ?? 0).toBe(0);
+    expect(transform.Paint ?? 0).toBe(0);
+    // ~24 frames in 400 ms: one layout per frame.
+    expect(top.Layout ?? 0).toBeGreaterThan(18);
+  });
+
+  test('the compositor record refuses another open page, whose frames it could not tell apart', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'the compositor record is a Chromium trace (README: engine limits)',
+    );
+    await fixture(page);
+    // Another page animating: its presented frames would be credited to
+    // this one, so the record refuses to start.
+    const other = await page.context().newPage();
+    await other.setContent(
+      '<style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="width:50px;height:50px;background:red;animation:spin 1s linear infinite"></div>',
+    );
+    await expect(startCompositorTrace(page)).rejects.toThrow(
+      /another page is open as the trace starts/,
+    );
+    await other.close();
+    // A page opened mid-trace: stop() refuses too, whether it is still open
+    // or closed again before the record stops.
+    const record = await startCompositorTrace(page);
+    const late = await page.context().newPage();
+    await expect(record.stop()).rejects.toThrow(
+      /another page opened during the record/,
+    );
+    await late.close();
+    const brief = await startCompositorTrace(page);
+    const spinner = await page.context().newPage();
+    await spinner.setContent(
+      '<style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="width:50px;height:50px;background:red;animation:spin 1s linear infinite"></div>',
+    );
+    await page.waitForTimeout(200);
+    await spinner.close();
+    await expect(brief.stop()).rejects.toThrow(
+      /another page opened during the record/,
+    );
+    // In another context too.
+    const browser = page.context().browser();
+    if (browser != null) {
+      const elsewhere = await startCompositorTrace(page);
+      const context = await browser.newContext();
+      await (await context.newPage()).close();
+      await context.close();
+      await expect(elsewhere.stop()).rejects.toThrow(
+        /another page opened during the record/,
+      );
+    }
+    // Alone, it records.
+    const alone = await startCompositorTrace(page);
+    await page.waitForTimeout(100);
+    await expect(alone.stop()).resolves.toBeInstanceOf(Array);
+  });
+
+  test('the long-task log fails closed when it never ran on the document', async ({
+    page,
+  }) => {
+    // No installLongTaskLog before navigating: an empty answer would read as
+    // "no long task", so it throws instead.
+    await fixture(page);
+    await expect(readLongTasks(page)).rejects.toThrow(
+      /not running on this document/,
+    );
+  });
+
+  test("the long-task log records the page's own long task but not a DevTools evaluate, which the trace reports apart", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'the Long Tasks API and rendering traces are Chromium-only',
+    );
+    await installLongTaskLog(page);
+    await fixture(page);
+    // The page's own task: a timer that spins 120 ms.
+    const own = await page.evaluate(
+      () =>
+        new Promise<{from: number; to: number}>(resolve => {
+          setTimeout(() => {
+            const from = performance.timeOrigin + performance.now();
+            const end = performance.now() + 120;
+            while (performance.now() < end) {
+              // spin
+            }
+            resolve({from, to: performance.timeOrigin + performance.now()});
+          }, 0);
+        }),
+    );
+    await frames(page, 2);
+    const recorded = await readLongTasks(page, own);
+    expect(recorded).toHaveLength(1);
+    expect(recorded[0].durationMs).toBeGreaterThanOrEqual(110);
+    // A DevTools evaluate that spins 300 ms: the trace reports it apart from
+    // the page's long tasks, and the log never sees it.
+    let block = {from: 0, to: 0};
+    const trace = await traceRendering(page, async () => {
+      block = await blockMainThread(page, 300);
+    });
+    await frames(page, 2);
+    const inBlock = (t: {start: number}) =>
+      t.start < block.to && t.start >= block.from - 20;
+    expect(
+      trace.devtoolsTasks.some(t => t.durationMs >= 290 && inBlock(t)),
+    ).toBe(true);
+    expect(trace.longTasks.filter(inBlock)).toEqual([]);
+    expect(await readLongTasks(page, block)).toEqual([]);
+  });
+
+  test("a harness read inside a trace is not the page's long task, while a test's own evaluate is, whether it calls the page directly or sets it off", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    // Enough animated rows that describing their keyframes takes a DevTools
+    // task over 50 ms.
+    const rows = Array.from(
+      {length: 1200},
+      (_, i) => `<div class="row">row ${i}</div>`,
+    ).join('');
+    await page.setContent(
+      `<style>.row { height: 4px; animation: slide 2s linear infinite; } @keyframes slide { from { transform: translateX(0); } 25% { transform: translateX(4px); } 50% { transform: translateX(0); } 75% { transform: translateX(4px); } to { transform: translateX(0); } }</style><button id="slow">slow</button><div id="list">${rows}</div>`,
+    );
+    const slow = page.locator('#slow');
+    await slow.evaluate(el =>
+      el.addEventListener('click', () => {
+        const end = performance.now() + 60;
+        while (performance.now() < end) {
+          // spin
+        }
+      }),
+    );
+    // Page code a test can call directly, as through a story's own API.
+    await page.evaluate(() => {
+      (window as unknown as {pageWork: (ms: number) => void}).pageWork = (
+        ms: number,
+      ) => {
+        const end = performance.now() + ms;
+        while (performance.now() < end) {
+          // spin
+        }
+      };
+    });
+    await frames(page, 3);
+    const now = () =>
+      page.evaluate(() => performance.timeOrigin + performance.now());
+    const read = {from: 0, to: 0};
+    const click = {from: 0, to: 0};
+    const direct = {from: 0, to: 0};
+    let timer = {from: 0, to: 0};
+    const trace = await traceRendering(page, async () => {
+      read.from = await now();
+      await waitForAnimation(page.locator('#list'));
+      read.to = await now();
+      // On a slow machine each frame of 1,200 running rows is a long task of
+      // the page's own; the windows below hold only their own work.
+      await page.evaluate(() => document.getElementById('list')?.remove());
+      await frames(page, 2);
+      // The page's own task: a timer that spins 60 ms.
+      timer = await page.evaluate(
+        () =>
+          new Promise<{from: number; to: number}>(resolve => {
+            setTimeout(() => {
+              const from = performance.timeOrigin + performance.now();
+              const end = performance.now() + 60;
+              while (performance.now() < end) {
+                // spin
+              }
+              resolve({from, to: performance.timeOrigin + performance.now()});
+            }, 0);
+          }),
+      );
+      // Page script run inside a DevTools evaluate: a 60 ms click handler.
+      click.from = await now();
+      await slow.evaluate(el => (el as HTMLElement).click());
+      click.to = await now();
+      // Page code a test's evaluate calls directly: 60 ms of the page's work.
+      direct.from = await now();
+      await page.evaluate(() =>
+        (window as unknown as {pageWork: (ms: number) => void}).pageWork(60),
+      );
+      direct.to = await now();
+    });
+    const within = (w: {from: number; to: number}) => (t: {start: number}) =>
+      t.start >= w.from - 20 && t.start < w.to;
+    // The read itself is set apart. The rows' frames around it may be long
+    // tasks too, the page's own: they stay in longTasks.
+    expect(trace.devtoolsTasks.some(within(read))).toBe(true);
+    expect(
+      trace.longTasks.some(t => within(timer)(t) && t.durationMs >= 55),
+    ).toBe(true);
+    expect(
+      trace.longTasks.some(t => within(click)(t) && t.durationMs >= 55),
+    ).toBe(true);
+    expect(
+      trace.longTasks.some(t => within(direct)(t) && t.durationMs >= 55),
+    ).toBe(true);
+    expect(trace.devtoolsTasks.filter(within(direct))).toEqual([]);
   });
 });
 

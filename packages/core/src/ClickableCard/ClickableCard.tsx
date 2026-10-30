@@ -48,8 +48,8 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {
   FOCUS_OWNER_ATTRIBUTE,
-  focusOutlineProps,
-} from '../utils/focusOutline.stylex';
+  focusWithinOwnerProps,
+} from '../internal/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
@@ -369,7 +369,7 @@ export function ClickableCard({
         themeProps('clickable-card', {variant}),
         // Rings for the card's own link or button only; a control in its
         // children rings itself (`architecture:interaction-modality` INV3).
-        focusOutlineProps.focusWithinOwner(),
+        focusWithinOwnerProps(),
         classNameProp,
         style,
       )}

@@ -82,9 +82,6 @@ const focusOutlineLonghands = {
  * Object.assign(el.style, FOCUS_OUTLINE_PARTS_NONE);   // clear
  * ```
  */
-/** Marks the direct child a `focusWithinOwner` wrapper rings for. */
-export const FOCUS_OWNER_ATTRIBUTE = 'data-astryx-focus-owner';
-
 export const FOCUS_OUTLINE_PARTS = {
   outlineWidth: FOCUS_OUTLINE_WIDTH,
   outlineStyle: FOCUS_OUTLINE_STYLE,
@@ -164,37 +161,6 @@ export const focusOutlineStyles = stylex.create({
     },
   },
   /**
-   * Like {@link focusOutlineStyles.focusWithinFirstChild}, but for the direct
-   * child that carries `data-astryx-focus-owner` (`FOCUS_OWNER_ATTRIBUTE`),
-   * wherever it sits among its siblings: a wrapper whose primary control is
-   * not its first child (an icon or a start slot comes first) rings only
-   * for that control, and every other control inside rings itself
-   * (`architecture:interaction-modality` INV3). Only a direct child counts,
-   * so a nested component's own owner never rings this wrapper. Pair it
-   * with {@link focusOutlineStyles.suppressed} on the owner.
-   */
-  focusWithinOwner: {
-    outlineWidth: {
-      default: '0',
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
-        focusOutlineLonghands.outlineWidth,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
-        focusOutlineLonghands.outlineStyle,
-    },
-    outlineColor: {
-      default: null,
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
-        focusOutlineLonghands.outlineColor,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(> [data-astryx-focus-owner]:focus-visible)': FOCUS_OUTLINE_OFFSET,
-    },
-  },
-  /**
    * Draws no ring, and keeps the UA's own off — for an element whose ring an
    * ancestor paints.
    *
@@ -255,7 +221,6 @@ export const focusOutlineProps = {
   focusWithinFirstChild: makeFocusOutlineProps(
     focusOutlineStyles.focusWithinFirstChild,
   ),
-  focusWithinOwner: makeFocusOutlineProps(focusOutlineStyles.focusWithinOwner),
   suppressed: makeFocusOutlineProps(focusOutlineStyles.suppressed),
   publishFocusVisibleVars: makeFocusOutlineProps(
     focusOutlineStyles.publishFocusVisibleVars,

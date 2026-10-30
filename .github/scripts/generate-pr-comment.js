@@ -38,7 +38,7 @@ let analysis = {
   componentStats: {},
   totalBundle: {},
 };
-let a11yReport = {components: {}};
+let a11yReport = null; // stays null when the audit did not run
 try {
   analysis = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
 } catch (e) {
