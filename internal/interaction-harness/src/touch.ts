@@ -122,13 +122,19 @@ export const SCRIPTED_CLICK_SKIP =
   'injected WebKit touches synthesise no click, only driver.tap does (README: engine limits); tap with driver.tap, or capture it on the iOS simulator';
 
 /**
- * The most a gap between two of a gesture's touch events may move from the
- * script by the time the page receives it, in ms. WebKit's touches carry
- * their real dispatch time, in whole ms: on one worker, 440 gaps over 40
- * flicks moved at most 4 ms; a stalled dispatch moves one by 20 ms or more,
- * and the events queued behind it land 1 to 2 ms apart.
+ * The most a move interval a release velocity reads may move from the script
+ * by the time the page receives it, in ms. WebKit's touches carry their real
+ * dispatch time, in whole ms: on one worker, 440 gaps over 40 flicks moved at
+ * most 4 ms; a stalled dispatch moves one by 20 ms or more, and the events
+ * queued behind it land 1 to 2 ms apart.
  */
 export const TOUCH_PACING_TOLERANCE_MS = 4;
+
+/**
+ * How long after its last move a lift may reach the page before the release
+ * reads as still, in ms: UIKit's measured stillness (`spec:AST-100` FR2).
+ */
+export const TOUCH_LIFT_STILLNESS_MS = 40;
 
 const formatGaps = (gaps: readonly number[]) =>
   gaps.map(gap => Number(gap.toFixed(1))).join(', ');
@@ -157,42 +163,66 @@ export class TouchPacingError extends Error {
 }
 
 /**
- * Checks a gesture's pacing at the page: `scripted` are its events' times in
- * the script, `received` the `timeStamp`s the page saw, in order. One event
- * per scripted one (fewer only when `partial`, the touched element having
- * left the document, which takes its later events with it), and every gap
- * within `TOUCH_PACING_TOLERANCE_MS` of the script's. Throws
- * `TouchPacingError` otherwise.
+ * Checks a gesture's pacing at the page where it decides a release: `steps`
+ * are its events in the script, with their times, `received` the
+ * `timeStamp`s the page saw, in order. One event per scripted one (fewer only
+ * when `partial`, the touched element having left the document, which takes
+ * its later events with it); the last two move intervals before the lift,
+ * which a release velocity reads, each within `TOUCH_PACING_TOLERANCE_MS` of
+ * the script's; and the lift within `TOUCH_LIFT_STILLNESS_MS` of the last
+ * move. The gesture's first moves and its lift arrive with the page's own
+ * handling time in WebKit (a burst after `touchstart`, a lift a frame late),
+ * and no release reads them. Throws `TouchPacingError` otherwise.
  */
 export function checkTouchPacing(
-  scripted: readonly number[],
+  steps: readonly {readonly t: number; readonly type: string}[],
   received: readonly number[],
   {partial = false}: {partial?: boolean} = {},
 ): void {
   const gapsOf = (times: readonly number[]) =>
     times.slice(1).map((t, i) => t - times[i]);
-  const scriptedGaps = gapsOf(scripted);
+  const scriptedGaps = gapsOf(steps.map(step => step.t));
   const receivedGaps = gapsOf(received);
+  const fail = (reason: string) => {
+    throw new TouchPacingError(reason, scriptedGaps, receivedGaps);
+  };
   if (
-    received.length > scripted.length ||
-    (received.length < scripted.length && !partial)
+    received.length > steps.length ||
+    (received.length < steps.length && !partial)
   ) {
-    throw new TouchPacingError(
-      `${received.length} touch events arrived for ${scripted.length} dispatched`,
-      scriptedGaps,
-      receivedGaps,
+    fail(
+      `${received.length} touch events arrived for ${steps.length} dispatched`,
     );
   }
-  receivedGaps.forEach((gap, i) => {
-    const off = Math.abs(gap - scriptedGaps[i]);
+  const lift = steps.length - 1;
+  if (received.length < steps.length || steps[lift]?.type !== 'touchEnd') {
+    return;
+  }
+  // The gap ending at event i runs from event i - 1 to event i.
+  const moves = steps.flatMap((step, i) =>
+    step.type === 'touchMove' ? [i] : [],
+  );
+  const lastMove = moves.at(-1);
+  if (lastMove == null) {
+    return;
+  }
+  for (const i of moves.slice(-2)) {
+    if (i === 0 || steps[i - 1].type !== 'touchMove') {
+      continue;
+    }
+    const off = Math.abs(receivedGaps[i - 1] - scriptedGaps[i - 1]);
     if (off > TOUCH_PACING_TOLERANCE_MS) {
-      throw new TouchPacingError(
-        `gap ${i + 1} is ${off.toFixed(1)} ms off, over ${TOUCH_PACING_TOLERANCE_MS} ms`,
-        scriptedGaps,
-        receivedGaps,
+      fail(
+        `the move interval ending at event ${i + 1}, which a release velocity reads, is ${off.toFixed(1)} ms off, over ${TOUCH_PACING_TOLERANCE_MS} ms`,
       );
     }
-  });
+  }
+  const liftAfter = received[lift] - received[lastMove];
+  if (liftAfter >= TOUCH_LIFT_STILLNESS_MS) {
+    fail(
+      `the lift came ${liftAfter.toFixed(1)} ms after the last move, where a release reads as still from ${TOUCH_LIFT_STILLNESS_MS} ms`,
+    );
+  }
 }
 
 /**
@@ -381,11 +411,7 @@ async function webkitDriver(page: Page): Promise<TouchDriver> {
       );
       if (from != null) {
         const pace = await readTouchPace(page, from.count);
-        checkTouchPacing(
-          played.map(p => p.t),
-          pace.times,
-          {partial: !pace.connected},
-        );
+        checkTouchPacing(played, pace.times, {partial: !pace.connected});
       }
       return played.map(p => ({...p, timestamp: null}));
     },
