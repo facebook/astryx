@@ -394,7 +394,7 @@ describe('spec owner decision', () => {
   });
 
   it('accepts only trusted workflow ready attestations', () => {
-    const repository = 'facebook/astryx';
+    const repository = 'meta/astryx';
     const trusted = {
       context: 'spec-owner-ready/cixzhang',
       state: 'success',
@@ -541,7 +541,7 @@ describe('spec owner decision', () => {
   });
 
   it('compares workflow run ids without losing integer precision', () => {
-    const repository = 'facebook/astryx';
+    const repository = 'meta/astryx';
     const statuses = ['9007199254740992', '9007199254740993'].map(runId => ({
       context: 'spec-owner-approval',
       state: 'pending',
@@ -557,7 +557,7 @@ describe('spec owner decision', () => {
   });
 
   it('accepts a ready marker only from a current design owner', () => {
-    const repository = 'facebook/astryx';
+    const repository = 'meta/astryx';
     const marker = login => ({
       context: `spec-owner-ready/${login}`,
       state: 'success',
@@ -592,7 +592,7 @@ describe('spec owner decision', () => {
   });
 
   it('does not let a stale ready marker approve the design group', () => {
-    const repository = 'facebook/astryx';
+    const repository = 'meta/astryx';
     const designApprovers = ['cixzhang', 'imdreamrunner', 'ernestt'];
     const stale = [
       {
