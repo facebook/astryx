@@ -62,6 +62,36 @@ afterEach(() => {
 });
 
 describe('TimeInput presentation', () => {
+  it('bottom-sheet draws its wheels as one picker, with one band across them, under a finger', () => {
+    stubPointer(true);
+    render(
+      <TimeInput
+        label="Start"
+        presentation="bottom-sheet"
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('combobox', {name: 'Start'}));
+    expect(screen.getByRole('listbox', {name: 'Hour'})).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+  });
+
+  it('bottom-sheet keeps its scrolling columns, with no shared band, under a mouse', () => {
+    stubPointer(false);
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(
+      <TimeInput
+        label="Start"
+        presentation="bottom-sheet"
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('combobox', {name: 'Start'}));
+    expect(screen.getByRole('listbox', {name: 'Hour'})).toBeInTheDocument();
+    expect(document.querySelector('[data-wheel-band]')).toBeNull();
+    expect(document.querySelector('[data-wheel]')).toBeNull();
+  });
+
   it('text-input renders the typed field on both pointers', () => {
     for (const isCoarse of [false, true]) {
       stubPointer(isCoarse);
