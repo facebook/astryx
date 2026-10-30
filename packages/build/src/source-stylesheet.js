@@ -61,11 +61,7 @@ function findPackageDir(name, from) {
 }
 
 function readManifest(dir) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
-  } catch {
-    return null;
-  }
+  return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
 }
 
 /**
@@ -124,6 +120,12 @@ function stylexOptions(pkg, packages) {
   };
 }
 
+// Resolution failures that mean an import cannot be found from its importer.
+const UNRESOLVED = new Set([
+  'MODULE_NOT_FOUND',
+  'ERR_PACKAGE_PATH_NOT_EXPORTED',
+]);
+
 /**
  * StyleX's options for `stylexOptions()`, resolving `.stylex` imports as the
  * prebuilt build does (scripts/stylex-module-resolution.cjs): a source-built
@@ -147,13 +149,16 @@ function pluginOptions(options) {
         pkg.entries.get(request) ?? firstFile([path.join(pkg.srcDir, subpath)])
       );
     }
+    const local = resolveStyleXImport(request, importer, aliases);
+    if (local != null) return local;
     try {
-      return (
-        resolveStyleXImport(request, importer, aliases) ??
-        require.resolve(request, {paths: [path.dirname(importer)]})
-      );
-    } catch {
-      return null;
+      return require.resolve(request, {paths: [path.dirname(importer)]});
+    } catch (error) {
+      // An import the importer cannot resolve reads as "not a theme file", as
+      // StyleX's own resolvers treat it; anything else, such as a broken
+      // package.json, throws.
+      if (UNRESOLVED.has(error.code)) return null;
+      throw error;
     }
   };
   const getCanonicalFilePath = file => {
@@ -162,10 +167,7 @@ function pluginOptions(options) {
       if (dir === path.parse(dir).root) return path.relative(rootDir, file);
       dir = path.dirname(dir);
     }
-    const manifest = readManifest(dir);
-    return manifest
-      ? `${manifest.name}:${path.relative(dir, file)}`
-      : path.relative(rootDir, file);
+    return `${readManifest(dir).name}:${path.relative(dir, file)}`;
   };
   return {
     ...options,

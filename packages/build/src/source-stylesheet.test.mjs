@@ -21,6 +21,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 const require = createRequire(import.meta.url);
 const {
   compileRules,
+  pluginOptions,
   sourcePackages,
   sourceStylesheet,
   stylexOptions,
@@ -122,6 +123,27 @@ describe('a source build against the prebuilt stylesheets', () => {
     for (const name of new Set(classes)) {
       expect(astryxCss, name).toContain(`.${name}`);
     }
+  });
+});
+
+describe('reading packages and resolving imports', () => {
+  it('fails on a broken package.json instead of leaving its package out', () => {
+    const app = tempDir();
+    writeFiles(app, {
+      'src/page.tsx': '',
+      'node_modules/broken/package.json': '{',
+    });
+    const {filePathResolver} = pluginOptions({
+      unstable_moduleResolution: {rootDir: app},
+    }).unstable_moduleResolution;
+    const importer = path.join(app, 'src/page.tsx');
+    // Only an import nothing can resolve reads as unresolved.
+    expect(filePathResolver('missing/tokens.stylex', importer, {})).toBeNull();
+    expect(() =>
+      filePathResolver('broken/tokens.stylex', importer, {}),
+    ).toThrow(/Invalid package config/);
+    writeFiles(app, {'node_modules/@astryxdesign/core/package.json': '{'});
+    expect(() => sourcePackages(app)).toThrow(SyntaxError);
   });
 });
 
