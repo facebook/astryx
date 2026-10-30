@@ -12,10 +12,7 @@
  *   overlays (Dialog, DropdownMenu) that move focus programmatically.
  */
 
-import {
-  getInteractionModality,
-  type InteractionModality,
-} from './interactionModality';
+import {getInteractionModality} from './interactionModality';
 
 /**
  * True when focus rests on nothing in particular — no active element, or the
@@ -46,29 +43,21 @@ export function isFocusDetached(doc: Document = document): boolean {
  * autofocus target, the control that opened a Dialog, or a menu trigger the
  * caller renders. Pass `options` (for example `preventScroll`) as to `focus()`.
  *
- * `modality` defaults to the page's last input. A caller moving focus inside a
- * second document (a same-origin iframe, a Document Picture-in-Picture window)
- * passes that document's, which it tracks with `trackInteractionModalityIn`.
- *
  * Make sure modality tracking is active (`useInteractionModalityTracking()`)
  * in the component that calls this.
  */
 export function focusForLastInput(
   element: HTMLElement,
   options?: FocusOptions,
-  modality: InteractionModality = getInteractionModality(),
 ): void {
   // A text-entry field paints its own focus treatment to show where typing
-  // goes, and an extra blur there can run validation or mark it touched. The
-  // field's own window: one in an iframe or a Picture-in-Picture window is
-  // never an instance of the page's constructors.
-  const view = element.ownerDocument.defaultView ?? window;
+  // goes, and an extra blur there can run validation or mark it touched.
   const isTextEntry =
-    element instanceof view.HTMLInputElement ||
-    element instanceof view.HTMLTextAreaElement ||
-    element instanceof view.HTMLSelectElement ||
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
     element.isContentEditable;
-  if (isTextEntry || modality !== 'pointer') {
+  if (isTextEntry || getInteractionModality() !== 'pointer') {
     if (options === undefined) {
       element.focus();
     } else {

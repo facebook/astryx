@@ -3,10 +3,8 @@
 
 /**
  * @file Markdown scorecard for one package's RTL audit report.
- * @input --report <rtl-audit-report.json> --scope <audited components label>,
- *   including any declared D1 exclusions.
- * @output The job-summary section on stdout, with review-facing exclusion
- *   disclosure.
+ * @input --report <rtl-audit-report.json> --scope <audited components label>
+ * @output The job-summary section, on stdout.
  * @position Shared by the pr-rtl package legs and the sharded-package merge
  *   job, so a joined report reads exactly like a single run's.
  */
@@ -20,11 +18,6 @@ const arg = name => {
 };
 const reportPath = arg('report') ?? 'rtl-audit-report.json';
 const scope = arg('scope') ?? '';
-const markdownCell = value =>
-  String(value ?? '')
-    .replaceAll('|', '\\|')
-    .replace(/\s+/g, ' ')
-    .trim();
 
 const lines = [
   '## RTL semantic audit',
@@ -69,21 +62,6 @@ if (!fs.existsSync(reportPath)) {
     .filter(x => x.verdict === 'pass')
     .map(x => x.component);
   out.push(`RTL-ready (D1 pass): ${passes.join(', ') || '—'}.`);
-  out.push('');
-  const declaredD1Exclusions = r.declaredD1Exclusions ?? [];
-  out.push('### Declared D1 exclusions (human review required)');
-  out.push('');
-  if (declaredD1Exclusions.length > 0) {
-    out.push('| Component | Story | Dimension | Rationale |');
-    out.push('|-----------|-------|-----------|-----------|');
-    for (const exclusion of declaredD1Exclusions) {
-      out.push(
-        `| ${markdownCell(exclusion.component)} | ${markdownCell(exclusion.storyId)} | ${markdownCell(exclusion.dimension)} | ${markdownCell(exclusion.reason)} |`,
-      );
-    }
-  } else {
-    out.push('_No declared D1 exclusions in this audit scope._');
-  }
   out.push('');
   const pm = r.positionalMirror;
   if (pm) {
