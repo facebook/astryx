@@ -67,6 +67,7 @@ import {
   watchAnimations,
   withFinger,
 } from './index';
+import {toTouchEvents} from './scripts';
 import {
   SCRIPTED_CLICK_SKIP,
   TOUCH_PACING_TOLERANCE_MS,
@@ -319,12 +320,13 @@ test.describe('touch input', () => {
       {x: 160, y: 200},
       {velocity: {x: 0, y: -1500}, durationMs: 96, hz: 120},
     );
-    // The driver stalls 40 ms after the gesture's fourth event, as a dispatch
-    // does on a loaded runner.
+    // The driver stalls 40 ms before the last move, as a dispatch does on a
+    // loaded runner: the interval a release velocity reads stretches.
+    const count = toTouchEvents(script).length;
     const played = driver.play(script, {
       checkPacing: true,
       onEvent: async (_, index) => {
-        if (index === 3) {
+        if (index === count - 3) {
           await new Promise(r => setTimeout(r, 40));
         }
       },
@@ -341,8 +343,8 @@ test.describe('touch input', () => {
     expect(error).toBeInstanceOf(TouchPacingError);
     const {scriptedGaps, receivedGaps} = error as TouchPacingError;
     expect(receivedGaps).toHaveLength(scriptedGaps.length);
-    // The stall stretches the gap after the fourth event past the tolerance.
-    expect(receivedGaps[3] - scriptedGaps[3]).toBeGreaterThan(
+    // The stall stretches the interval ending at the last move.
+    expect(receivedGaps[count - 3] - scriptedGaps[count - 3]).toBeGreaterThan(
       TOUCH_PACING_TOLERANCE_MS,
     );
   });

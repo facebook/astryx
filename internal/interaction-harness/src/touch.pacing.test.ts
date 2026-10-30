@@ -6,7 +6,8 @@
  *   browser)
  * @output The driver's pacing: after a stalled dispatch the events behind it
  *   keep their scripted gaps rather than leaving together; a gesture the page
- *   received off its pacing fails `checkTouchPacing` with its gaps named; and
+ *   received off its pacing where a release reads it (its last two move
+ *   intervals, its lift) fails `checkTouchPacing` with its gaps named; and
  *   `retakeOnTouchPacing` re-takes only such a gesture, once, listing it.
  * @position Unit test of ./touch's pacing; the browser proof of the same
  *   behavior through WebKit's real input is in
@@ -19,6 +20,7 @@ import {
   checkTouchPacing,
   playSteps,
   retakeOnTouchPacing,
+  TOUCH_LIFT_STILLNESS_MS,
   TOUCH_PACING_TOLERANCE_MS,
   TouchPacingError,
 } from './touch';
@@ -59,44 +61,68 @@ describe('playSteps', () => {
 });
 
 describe('checkTouchPacing', () => {
-  const scripted = [0, 8, 16, 24, 32, 40, 48, 56];
-
-  it('passes a gesture whose gaps reach the page within the tolerance', () => {
-    const received = scripted.map(
-      (t, i) => 1000 + t + (i % 2 === 0 ? 0 : TOUCH_PACING_TOLERANCE_MS / 2),
+  // A flick as the driver plays it: a touch-down, ten moves 8 ms apart, and
+  // the lift 2.1 ms after the last move.
+  const steps = [
+    {t: 0, type: 'touchStart'},
+    ...Array.from({length: 10}, (_, i) => ({
+      t: 8 * (i + 1),
+      type: 'touchMove',
+    })),
+    {t: 82.1, type: 'touchEnd'},
+  ];
+  /** Page timestamps from the gaps between them. */
+  const at = (gaps: readonly number[]) =>
+    gaps.reduce<number[]>(
+      (times, gap) => [...times, times[times.length - 1] + gap],
+      [1000],
     );
-    expect(() => checkTouchPacing(scripted, received)).not.toThrow();
+
+  it("passes the page's own handling in a gesture's first moves and its lift: a burst after the touch-down, a lift a frame late", () => {
+    // What WebKit delivered for a BottomSheet flick on an idle worker.
+    expect(() =>
+      checkTouchPacing(steps, at([4, 11, 3, 8, 8, 8, 8, 8, 8, 8, 9])),
+    ).not.toThrow();
   });
 
-  it('fails a stalled dispatch and the events queued behind it, naming both gap lists', () => {
-    // The shape a loaded runner showed: a 29 ms stall, then moves 1 to 2 ms
-    // apart.
-    const received = [1000, 1008, 1016, 1024, 1053, 1055, 1056, 1058];
-    expect(() => checkTouchPacing(scripted, received)).toThrow(
-      TouchPacingError,
-    );
+  it('fails a stall and the burst behind it in the move intervals a release velocity reads, naming both gap lists', () => {
+    const received = at([8, 8, 8, 8, 8, 8, 8, 29, 2, 1, 2]);
+    expect(() => checkTouchPacing(steps, received)).toThrow(TouchPacingError);
     try {
-      checkTouchPacing(scripted, received);
+      checkTouchPacing(steps, received);
     } catch (error) {
       const pacing = error as TouchPacingError;
-      expect(pacing.message).toMatch(/gap 4 is 21\.0 ms off/);
-      expect(pacing.receivedGaps).toEqual([8, 8, 8, 29, 2, 1, 2]);
-      expect(pacing.scriptedGaps).toEqual([8, 8, 8, 8, 8, 8, 8]);
+      expect(pacing.message).toMatch(
+        /the move interval ending at event 10, which a release velocity reads, is 6\.0 ms off/,
+      );
+      expect(pacing.receivedGaps).toEqual([8, 8, 8, 8, 8, 8, 8, 29, 2, 1, 2]);
+      expect(pacing.scriptedGaps.slice(0, 10)).toEqual(Array(10).fill(8));
     }
+    // The same stall earlier, with the last two intervals on pace: the
+    // release reads the script's velocity.
+    expect(() =>
+      checkTouchPacing(steps, at([8, 8, 29, 2, 1, 2, 8, 8, 8, 8, 2])),
+    ).not.toThrow();
+  });
+
+  it(`fails a lift that reaches the page ${TOUCH_LIFT_STILLNESS_MS} ms or more after the last move, where a release reads as still`, () => {
+    expect(() =>
+      checkTouchPacing(steps, at([8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 45])),
+    ).toThrow(/the lift came 45\.0 ms after the last move/);
   });
 
   it('fails a gesture with an event missing, unless the touched element left the document', () => {
-    const received = [1000, 1008, 1016, 1024, 1032];
-    expect(() => checkTouchPacing(scripted, received)).toThrow(
-      /5 touch events arrived for 8 dispatched/,
+    const received = at([8, 8, 8, 8]);
+    expect(() => checkTouchPacing(steps, received)).toThrow(
+      /5 touch events arrived for 12 dispatched/,
     );
     expect(() =>
-      checkTouchPacing(scripted, received, {partial: true}),
+      checkTouchPacing(steps, received, {partial: true}),
     ).not.toThrow();
-    // What did arrive is still checked.
-    expect(() =>
-      checkTouchPacing(scripted, [1000, 1008, 1030], {partial: true}),
-    ).toThrow(TouchPacingError);
+  });
+
+  it('holds the tolerance it states', () => {
+    expect(TOUCH_PACING_TOLERANCE_MS).toBe(4);
   });
 });
 

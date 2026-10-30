@@ -216,11 +216,16 @@ page only as well as the dispatch keeps pace. `play` sends each event at its
 scripted time, and never sooner after the one before it than the script spaces
 them: a stall stretches one gap instead of sending the events behind it
 together. With `{checkPacing: true}`, `play` then reads the `timeStamp`s the
-page received and throws `TouchPacingError` when an event is missing or a gap
-is more than `TOUCH_PACING_TOLERANCE_MS` (4 ms) off the script. On one worker
-of a loaded machine, 440 gaps over 40 flicks moved at most 4 ms; under eight
-workers, 4% of flicks had a gap further off, up to 21 ms. Wrap a proof whose
-outcome follows a velocity in `retakeOnTouchPacing(testInfo, attempt)`:
+page received and throws `TouchPacingError` where they decide a release: an
+event missing, either of the last two move intervals (what a release velocity
+reads) more than `TOUCH_PACING_TOLERANCE_MS` (4 ms) off the script, or the
+lift `TOUCH_LIFT_STILLNESS_MS` (40 ms) or more after the last move. A
+gesture's first moves and its lift reach the page with its own handling time
+(a burst after `touchstart`, a lift a frame late), and no release reads them.
+On one worker of a loaded machine, 440 gaps over 40 flicks moved at most 4 ms;
+under eight workers, 4% of flicks had a gap further off, up to 21 ms. Wrap a
+proof whose outcome follows a velocity in
+`retakeOnTouchPacing(testInfo, attempt)`:
 `attempt` builds the state, plays with `checkPacing` and asserts, and runs once
 more only on a `TouchPacingError`, listed as a `touch-retake` annotation; a
 second one fails the test with that cause.
