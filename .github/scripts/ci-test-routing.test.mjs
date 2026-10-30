@@ -414,9 +414,28 @@ describe('ci.yml RTL package sharding', () => {
     for (const job of Object.values(workflow.jobs)) {
       expect(JSON.stringify(job)).not.toContain('needs.check-components');
     }
-    for (const job of [shard, join, workflow.jobs['pr-rtl-merge']]) {
+    // Every job that reads the step's audit outputs asks for them: without
+    // `component-audit`, those outputs are missing and the job would skip its
+    // audits while reporting success.
+    const auditOutput =
+      /steps\.scope\.outputs\.(has_components|has_rtl_components|has_rtl_harness|force_full_component_audits|changed_files_path)/;
+    const readers = Object.entries(workflow.jobs).filter(([, job]) =>
+      auditOutput.test(JSON.stringify(job)),
+    );
+    expect(readers.map(([name]) => name).sort()).toEqual(
+      [
+        'pr-a11y-guards',
+        'pr-a11y-specs',
+        'pr-rtl',
+        'pr-rtl-merge',
+        'pr-rtl-shard',
+        'pr-visual',
+        'visual-scout',
+      ].sort(),
+    );
+    for (const [name, job] of readers) {
       const scope = job.steps.find(step => step.id === 'scope');
-      expect(scope.with['component-audit']).toBe('true');
+      expect(scope.with?.['component-audit'], name).toBe('true');
     }
     expect(runLines(shard)).toContain(
       '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
