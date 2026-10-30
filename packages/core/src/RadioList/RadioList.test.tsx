@@ -165,6 +165,34 @@ describe('RadioList', () => {
     expect(screen.getByText(/Required/)).toBeInTheDocument();
   });
 
+  it('keeps required radios valid until the group shows an error', () => {
+    const {rerender} = render(
+      <RadioList label="Preference" value="" onChange={() => {}} isRequired>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    // Native required alone makes Chromium report every radio invalid.
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).toBeRequired();
+      expect(radio).toHaveAttribute('aria-invalid', 'false');
+    }
+    rerender(
+      <RadioList
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        isRequired
+        status={{type: 'error', message: 'Pick one'}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).toHaveAttribute('aria-invalid', 'true');
+    }
+  });
+
   it('shows Optional indicator when isOptional is true', () => {
     render(
       <RadioList label="Preference" value="" onChange={() => {}} isOptional>
