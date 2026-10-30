@@ -239,6 +239,26 @@ describe('DateTimeInput', () => {
     expect(screen.getByDisplayValue('2:30 PM')).toBeInTheDocument();
   });
 
+  it("follows the provider locale's hour cycle when hourFormat is unset", () => {
+    const renderIn = (locale: string) => (
+      <InternationalizationProvider locale={locale}>
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderIn('en-US'));
+    expect(screen.getByDisplayValue('2:30 PM')).toBeInTheDocument();
+
+    rerender(renderIn('de-DE'));
+    expect(screen.getByDisplayValue('14:30')).toBeInTheDocument();
+
+    rerender(renderIn('ko-KR'));
+    expect(screen.getByDisplayValue('오후 2:30')).toBeInTheDocument();
+  });
+
   it('displays formatted time in 24h format', () => {
     render(
       <DateTimeInput

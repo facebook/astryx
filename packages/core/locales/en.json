@@ -1009,11 +1009,11 @@
   },
   "@astryx.dateTimeInput.timeHint12h": {
     "defaultMessage": "e.g., 2:30 PM",
-    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 12-hour format. Gives an example of expected input format."
+    "description": "Placeholder hint shown in the TimeInput and DateTimeInput time fields when focused and empty with 12-hour format. Gives an example of expected input format; write the example time as your locale writes 12-hour time."
   },
   "@astryx.dateTimeInput.timeHint24h": {
     "defaultMessage": "e.g., 14:30",
-    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 24-hour format. Gives an example of expected input format."
+    "description": "Placeholder hint shown in the TimeInput and DateTimeInput time fields when focused and empty with 24-hour format. Gives an example of expected input format; write the example time as your locale writes 24-hour time."
   },
   "@astryx.dateTimeInput.timeSuffix": {
     "defaultMessage": "{label} time",
