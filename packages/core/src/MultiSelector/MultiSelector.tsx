@@ -1794,6 +1794,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onTriggerClick,
     onKeyDown: onComboboxKeyDown,
     onItemMouseEnter: onComboboxItemMouseEnter,
+    setHighlightedIndex,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1823,6 +1824,18 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       [getActionCellIdForActivate],
     ),
   });
+
+  // A new query is a new list: the old highlight's index would name another
+  // row, or one past the end, so it is cleared (`component:MultiSelector` FR11).
+  // Unlike Selector it does not move to the first match: with no row
+  // highlighted, Left and Right stay the search field's caret keys rather
+  // than moving into a row's action cell. Adjusted during render, as the
+  // query changes, rather than in an effect.
+  const [highlightedQuery, setHighlightedQuery] = useState(searchQuery);
+  if (highlightedQuery !== searchQuery) {
+    setHighlightedQuery(searchQuery);
+    setHighlightedIndex(-1);
+  }
 
   // A hover moves the highlight too, but the focus ring follows the shared
   // interaction modality (architecture:interaction-modality INV1): it is read
