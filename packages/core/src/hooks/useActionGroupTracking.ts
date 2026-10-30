@@ -26,8 +26,8 @@
  * losing focus runs nothing. The tracking itself, the rects read once when
  * the press begins, the highlight and its release fade, and the lift's
  * click, is the shared tracker's; this hook only drives it, and reads the
- * group's disabled actions once per finger press for a caller that resolves
- * the finger itself.
+ * group's disabled actions and untracked members once per finger press for a
+ * caller that resolves the finger itself.
  *
  * One recognizer drives it: a long press with no minimum duration and no
  * movement limit, so it begins on the press, claims it (nothing under the
@@ -75,16 +75,17 @@ export interface ActionGroupTrackingOptions {
    * Picks the action under a finger from the actions measured when the press
    * begins, in place of the flat `highlightExpansion` margin: a group whose
    * touch targets grow toward 44 px resolves the nearest action
-   * (`resolveNearestAction`). `disabled` holds the group's disabled actions,
-   * measured once at the same time, so a group can keep a finger on one of
-   * them from resolving to a neighbour. A mouse or a pen hit-tests the exact
+   * (`resolveNearestAction`). `neighbours` holds what a finger must not
+   * reach through, measured once at the same time: the group's disabled
+   * actions and the interactive members it does not track, so a group can
+   * keep a finger on one of them from resolving to an action beside it. A mouse or a pen hit-tests the exact
    * rects.
    */
   resolveTarget?: (
     x: number,
     y: number,
     targets: ReadonlyArray<ActionGroupTarget>,
-    disabled: ReadonlyArray<ActionGroupTarget>,
+    neighbours: ReadonlyArray<ActionGroupTarget>,
   ) => HTMLElement | null;
   /** Pointers that are tracked; others keep the browser's click. @default every pointer */
   pointerTypes?: ReadonlyArray<PointerKind>;
@@ -124,6 +125,14 @@ function tapFocusesButtons(): boolean {
 /** The actions the tracker skips, as its own measure does. */
 const DISABLED = ':disabled, [aria-disabled="true"]';
 
+/**
+ * What a finger can land on besides the group's actions: a member the group
+ * does not track (a menu's trigger, a toggle without a value) keeps its own
+ * target (`spec:AST-094` FR42).
+ */
+const INTERACTIVE =
+  'button, [role="button"], a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 const NO_TARGETS: ReadonlyArray<ActionGroupTarget> = [];
 
 /**
@@ -139,42 +148,56 @@ export const POINTER_PRESS_ATTRIBUTE = 'data-astryx-pointer-press';
 /**
  * The action under a finger: the nearest of the press's enabled actions whose
  * target, grown toward 44 px and clamped against its neighbours, holds the
- * point (utils/hitArea.ts `resolveHitTarget`). The disabled actions count as
- * neighbours, so a point on one, or nearer one than any enabled action,
- * resolves to none: nothing is highlighted over a disabled action
- * (`family:action-groups` FR2). Every group whose targets grow uses this, so
- * the groups resolve a finger alike.
+ * point (utils/hitArea.ts `resolveHitTarget`). The disabled actions and the
+ * members the group does not track count as neighbours, so a point on one,
+ * or nearer one than any enabled action, resolves to none: nothing is
+ * highlighted over a disabled action (`family:action-groups` FR2), and no
+ * grown target reaches into another member's own (`spec:AST-094` FR42).
+ * Every group whose targets grow uses this, so the groups resolve a finger
+ * alike.
  */
 export function resolveNearestAction(
   x: number,
   y: number,
   targets: ReadonlyArray<ActionGroupTarget>,
-  disabled: ReadonlyArray<ActionGroupTarget>,
+  neighbours: ReadonlyArray<ActionGroupTarget>,
 ): HTMLElement | null {
   const index = resolveHitTarget(
     x,
     y,
-    disabled.length === 0 ? targets : [...targets, ...disabled],
+    neighbours.length === 0 ? targets : [...targets, ...neighbours],
   );
   return index >= 0 && index < targets.length ? targets[index].element : null;
 }
 
-/** The disabled actions inside `root`, with their boxes, read once. */
-function measureDisabled(
+/**
+ * The neighbours inside `root` a finger must not reach through, with their
+ * boxes, read once: the disabled actions, and every interactive member the
+ * group does not track.
+ */
+function measureNeighbours(
   root: HTMLElement | null,
   itemSelector: string,
 ): ReadonlyArray<ActionGroupTarget> {
   if (root == null) {
     return NO_TARGETS;
   }
-  const disabled: ActionGroupTarget[] = [];
-  for (const element of root.querySelectorAll<HTMLElement>(itemSelector)) {
-    if (element.matches(DISABLED)) {
+  const neighbours: ActionGroupTarget[] = [];
+  for (const element of root.querySelectorAll<HTMLElement>(
+    `${itemSelector}, ${INTERACTIVE}`,
+  )) {
+    const tracked = element.matches(itemSelector);
+    // A tracked action is a target unless it is disabled; an untracked one
+    // nested inside a tracked action is part of that action.
+    const neighbour = tracked
+      ? element.matches(DISABLED)
+      : element.parentElement?.closest(itemSelector) == null;
+    if (neighbour) {
       const {left, top, right, bottom} = element.getBoundingClientRect();
-      disabled.push({element, left, top, right, bottom});
+      neighbours.push({element, left, top, right, bottom});
     }
   }
-  return disabled;
+  return neighbours;
 }
 
 /** The ref handed to the recognizer while tracking is off: no element. */
@@ -218,7 +241,7 @@ export function useActionGroupTracking(
   const pointerRef = useRef<PointerKind>('touch');
   // The group's disabled actions, read once when a finger's press begins,
   // for the caller's `resolveTarget`: nothing is read per move.
-  const disabledRef = useRef(NO_TARGETS);
+  const neighboursRef = useRef(NO_TARGETS);
   // The action the running pointer press began on, carrying the mark.
   const markedRef = useRef<HTMLElement | null>(null);
   const unmark = () => {
@@ -231,8 +254,12 @@ export function useActionGroupTracking(
       y: number,
       targets: ReadonlyArray<ActionGroupTarget>,
     ) =>
-      optionsRef.current.resolveTarget?.(x, y, targets, disabledRef.current) ??
-      null;
+      optionsRef.current.resolveTarget?.(
+        x,
+        y,
+        targets,
+        neighboursRef.current,
+      ) ?? null;
     return createActionGroupTracker(() => ({
       roots: () => [ref.current],
       itemSelector: optionsRef.current.itemSelector,
@@ -298,10 +325,10 @@ export function useActionGroupTracking(
       switch (recognizer.state) {
         case 'began': {
           const {x, y} = recognizer.location();
-          disabledRef.current =
+          neighboursRef.current =
             pointerRef.current === 'touch' &&
             optionsRef.current.resolveTarget != null
-              ? measureDisabled(ref.current, optionsRef.current.itemSelector)
+              ? measureNeighbours(ref.current, optionsRef.current.itemSelector)
               : NO_TARGETS;
           tracker.begin(x, y);
           markedRef.current = tracker.beganOn;
@@ -328,7 +355,7 @@ export function useActionGroupTracking(
               ? tapFocusesButtons()
               : beganOn != null && focusedBefore === beganOn;
           const lifted = tracker.end();
-          disabledRef.current = NO_TARGETS;
+          neighboursRef.current = NO_TARGETS;
           unmark();
           // After the lift, focus does what a click on the lifted action does
           // (`family:action-groups` FR1): the lift runs that action's own
@@ -348,7 +375,7 @@ export function useActionGroupTracking(
           break;
         }
         case 'cancelled':
-          disabledRef.current = NO_TARGETS;
+          neighboursRef.current = NO_TARGETS;
           unmark();
           tracker.cancel();
           break;
