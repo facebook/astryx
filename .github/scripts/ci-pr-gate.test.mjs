@@ -62,18 +62,31 @@ function evaluate(expression, {event = 'pull_request', ...pr}) {
   )(github, (list, item) => list.includes(item));
 }
 
-/** Whether a required job's own condition, past its draft skip, starts it with every need skipped. */
+/**
+ * Whether a job's condition starts it for an unlabelled fork with every job it
+ * needs skipped, under Actions' rule: a condition with no status-check function
+ * (`always()`, `cancelled()`, `failure()`, `success()`) also needs `success()`,
+ * which is false once a needed job skipped.
+ */
 function startsWithNeedsSkipped(condition, needs) {
   const expression = ungated(condition)
     .replace(`${PR_REPORT_GATE} && (`, '(')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
+    .replace(/^\$\{\{\s*|\s*\}\}$/g, '');
+  const hasStatusCheck = /\b(always|cancelled|failure|success)\(\)/.test(
+    expression,
+  );
+  const succeeded = Object.values(needs).every(
+    need => need.result === 'success',
+  );
   return Function(
     'github',
     'needs',
     'always',
     'cancelled',
+    'failure',
+    'success',
     'startsWith',
-    `return Boolean(${expression});`,
+    `return Boolean(${hasStatusCheck ? '' : 'success() && '}(${expression.replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')}));`,
   )(
     {
       event_name: 'pull_request',
@@ -83,6 +96,8 @@ function startsWithNeedsSkipped(condition, needs) {
     needs,
     () => true,
     () => false,
+    () => !succeeded,
+    () => succeeded,
     (value, prefix) => String(value ?? '').startsWith(prefix),
   );
 }
@@ -149,6 +164,25 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
       }
     },
   );
+
+  it('models the implicit success() a condition without a status check gets', () => {
+    const skipped = {a: {result: 'skipped'}};
+    // Without a status-check function, a skipped need skips the job, so a
+    // required join that dropped its !cancelled() would pass as skipped.
+    expect(
+      startsWithNeedsSkipped(
+        "${{ github.event_name == 'pull_request' }}",
+        skipped,
+      ),
+    ).toBe(false);
+    expect(
+      startsWithNeedsSkipped(
+        "${{ !cancelled() && github.event_name == 'pull_request' }}",
+        skipped,
+      ),
+    ).toBe(true);
+    expect(startsWithNeedsSkipped('${{ always() }}', skipped)).toBe(true);
+  });
 
   it('runs a pull request from a branch here, or from a fork once labelled; never a draft', () => {
     expect(runs({})).toBe(true);
