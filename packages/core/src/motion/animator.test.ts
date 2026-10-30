@@ -605,9 +605,10 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
     }
   });
 
-  it('a block shorter than two frames in the call\u2019s own task moves its start past the block', async () => {
-    // Core Animation dates an animation at the commit, when the calling task
-    // ends, however short the block before it.
+  it('a block within two frames of the call keeps the browser\u2019s start', async () => {
+    // Browser start times are frame times and the task's end a live clock: a
+    // 20 ms block cannot be told apart from that quantization, so the start
+    // stays where the browser put it.
     Object.defineProperty(document, 'timeline', {
       configurable: true,
       get: () => ({currentTime: clock}),
@@ -620,8 +621,8 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
       clock = 1020;
       animation.startTime = 1000;
       await commitFrame(1020);
-      await expect(handle.started).resolves.toBe(1020);
-      expect(animation.startTime).toBe(1020);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
     } finally {
       Reflect.deleteProperty(document, 'timeline');
     }
