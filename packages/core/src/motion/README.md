@@ -127,9 +127,12 @@ await handle.finished; // true if it ran to the end, false if interrupted
   velocity unless a velocity is handed in, so retargeting is continuous
   (`handle.retarget(to)` keeps the call's spring).
 - A call from rest gets no start time, so the browser starts it when it
-  commits it, as Core Animation does: in Chromium a block before that frame
-  delays the motion instead of skipping into it (WebKit starts it at the
-  frame before the block). Everything the call starts shares that start
+  commits it, as Core Animation does: a block before that frame delays the
+  motion instead of skipping into it. WebKit dates the start at the frame
+  before the block, so when the task that created the animations (a
+  presented call's second frame) runs on over two frames, the start moves to
+  the call's first read after it, with every call of that task. Everything
+  the call starts shares that start
   (`handle.started`); a retarget keeps an explicit one, and `{at}` puts
   several animators on one clock. `{start: 'commit'}` lets the browser date
   a retarget too; `{start: 'presented'}` waits two frames, until the

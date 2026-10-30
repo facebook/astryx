@@ -656,7 +656,10 @@ const LATE_START_MS = 34;
  * together (startAfterBlock).
  */
 interface TaskMark {
-  /** The task's first call. */
+  /**
+   * When its first call from rest created animations: the call itself, or a
+   * presented call's second frame.
+   */
   readonly first: number;
   /** When the task ended, at its first microtask. */
   ended?: number;
@@ -2073,7 +2076,10 @@ export function createAnimator(
     }
     pendingGroups.add(group);
     group.fresh = true;
-    group.task = markTask(group.provisional, now);
+    // The task that creates the animations, not the call's: a presented
+    // call's is its second frame's callback, wherever in its frame the call
+    // was made.
+    group.task = markTask(now(), now);
     queueMicrotask(() => {
       group.fresh = false;
     });
@@ -2230,7 +2236,8 @@ export function createAnimator(
    * dates it at its last frame time before that task, so the first frame
    * after the block would show it skipped into its curve. When the task ran
    * on more than LATE_START_MS past its first call, a start the browser put
-   * by the call and more than LATE_START_MS before the call's first read (its
+   * by the task's first animations (a presented call's second frame, not the
+   * call) and more than LATE_START_MS before the call's first read (its
    * `ready`, once the task has ended, or the first frame after it) moves to
    * that read, with every animation of the call, and every call of the task
    * moves to the same read. A shorter task, or a read other tasks delay,
@@ -2241,11 +2248,12 @@ export function createAnimator(
       typeof document === 'undefined'
         ? null
         : (document.timeline?.currentTime as number | null | undefined);
-    // A start well after the call is the browser's commit of it.
+    // A start well after the animations were created is the browser's
+    // commit of them.
     if (
       timeline == null ||
       group.framed === true ||
-      start > group.provisional + LATE_START_MS
+      start > (group.task?.first ?? group.provisional) + LATE_START_MS
     ) {
       return start;
     }
