@@ -34,6 +34,13 @@ interface UseSelectorPresentationOptions {
   onShow: () => void;
   popoverOptions: Omit<UsePopoverOptions, 'onHide' | 'onShow'>;
   triggerRef: RefObject<HTMLElement | null>;
+  /**
+   * Return focus to the trigger on every close, even when a press already
+   * moved focus to another element. A caller-rendered trigger needs this
+   * (spec:AST-055 AR3); the built-in trigger leaves focus where the press put
+   * it (spec:Popover AR4).
+   */
+  isFocusReturnAlways?: boolean;
 }
 
 interface SelectorPresentationController {
@@ -55,6 +62,7 @@ export function useSelectorPresentation({
   onShow,
   popoverOptions,
   triggerRef,
+  isFocusReturnAlways = false,
 }: UseSelectorPresentationOptions): SelectorPresentationController {
   const resolvedPresentation = useAdaptivePresentation(presentation);
   const activePresentationRef =
@@ -90,6 +98,7 @@ export function useSelectorPresentation({
     // focusable still returns focus to the trigger.
     const active = document.activeElement;
     const focusLandedElsewhere =
+      !isFocusReturnAlways &&
       active instanceof HTMLElement &&
       active !== document.body &&
       active !== trigger &&
@@ -99,7 +108,7 @@ export function useSelectorPresentation({
     }
     prepareFocusReturn();
     trigger?.focus();
-  }, [prepareFocusReturn, triggerRef]);
+  }, [isFocusReturnAlways, prepareFocusReturn, triggerRef]);
   const handlePopoverShow = useCallback(() => {
     didShowPopoverRef.current = true;
     resetFocusReturn();

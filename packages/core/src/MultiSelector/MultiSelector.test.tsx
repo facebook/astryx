@@ -3436,6 +3436,47 @@ describe('MultiSelector trigger render prop', () => {
     expect(screen.queryByText('Labels')).toBeNull();
   });
 
+  // spec:AST-055 AR3: a light dismiss returns focus to the caller's control,
+  // even when the press that closed the list focused another field.
+  it('returns focus to the caller control after a light dismiss onto another field', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Pick labels
+            </button>
+          )}
+        />
+        <input aria-label="Notes" />
+      </>,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    await user.click(opener);
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+
+    act(() => {
+      screen.getByRole('textbox', {name: 'Notes'}).focus();
+    });
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveFocus();
+  });
+
   it('opens against the caller control and names the listbox by label', async () => {
     const user = userEvent.setup();
     render(
