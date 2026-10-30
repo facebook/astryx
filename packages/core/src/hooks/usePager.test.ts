@@ -780,6 +780,43 @@ describe('createPager', () => {
     vi.unstubAllGlobals();
   });
 
+  // The shared resize observer is one per module: a fresh pager module, with
+  // this case's ResizeObserver installed first, so another case's observer
+  // cannot stand in for it.
+  it("observes the track once pages becomes 'children' after attach, and stops when it goes back", async () => {
+    const observed: Element[] = [];
+    const unobserved: Element[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(element: Element) {
+          observed.push(element);
+        }
+        unobserve(element: Element) {
+          unobserved.push(element);
+        }
+        disconnect() {}
+      },
+    );
+    vi.resetModules();
+    const fresh = await import('./usePager');
+    const f = setup({defaultIndex: 0});
+    f.pager.dispose();
+    const pager = fresh.createPager(
+      {count: 3, defaultIndex: 0},
+      {host: f.host, animator: f.animator},
+    );
+    pager.attach(f.viewport, f.track);
+    expect(observed).toContain(f.viewport);
+    expect(observed).not.toContain(f.track);
+    pager.setOptions({pages: 'children'});
+    expect(observed).toContain(f.track);
+    pager.setOptions({pages: undefined});
+    expect(unobserved).toContain(f.track);
+    pager.dispose();
+    vi.unstubAllGlobals();
+  });
+
   it('a smaller count clamps the target page', () => {
     const f = setup({defaultIndex: 4});
     f.pager.setOptions({count: 2});
@@ -1461,8 +1498,11 @@ describe('review fixes', () => {
 describe('usePager (React)', () => {
   function Paged(props: {
     index?: number;
+    defaultIndex?: number;
     viewportKey?: string;
+    isPanEnabled?: boolean;
     onIndexChange?: (index: number) => void;
+    onSettle?: (index: number, previous: number) => void;
     onPager?: (pager: Pager) => void;
   }) {
     const viewportRef = useRef<HTMLDivElement>(null);
@@ -1472,7 +1512,10 @@ describe('usePager (React)', () => {
       trackRef,
       count: 5,
       index: props.index,
+      defaultIndex: props.defaultIndex,
+      isPanEnabled: props.isPanEnabled,
       onIndexChange: props.onIndexChange,
+      onSettle: props.onSettle,
     });
     props.onPager?.(pager);
     return createElement(
@@ -1485,6 +1528,111 @@ describe('usePager (React)', () => {
       createElement('div', {ref: trackRef}),
     );
   }
+
+  /**
+   * A finger's drag 40 px toward page 2 and back to where the pan began
+   * (10 px from the landing): the pan has begun and the track rests on the
+   * start page.
+   */
+  function restingDrag(target: Element) {
+    touch('touchstart', target, 300, 100, now);
+    for (let i = 1; i <= 10; i++) {
+      now += 8;
+      vi.advanceTimersByTime(8);
+      touch('touchmove', target, 300 - 4 * i, 100, now);
+    }
+    for (let i = 1; i <= 10; i++) {
+      now += 8;
+      vi.advanceTimersByTime(8);
+      touch('touchmove', target, 260 + 3 * i, 100, now);
+    }
+  }
+
+  /** Animation frames run by hand (the pager defers callbacks to a frame). */
+  function handFrames() {
+    const queued: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      queued.push(callback);
+      return queued.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    return (count = 3) => {
+      for (let i = 0; i < count; i++) {
+        for (const callback of queued.splice(0)) {
+          callback(0);
+        }
+      }
+    };
+  }
+
+  // The pager's contract: no callback runs from an unmount.
+  it('an unmount that ends a drag resting on a page calls no onSettle, then or later', () => {
+    const runFrames = handFrames();
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+      WIDTH,
+    );
+    const onSettle = vi.fn();
+    const box: {pager: Pager | null} = {pager: null};
+    const view = render(
+      createElement(Paged, {
+        defaultIndex: 1,
+        onSettle,
+        onPager: p => {
+          box.pager = p;
+        },
+      }),
+    );
+    const track = view.getByTestId('viewport').firstElementChild as Element;
+    restingDrag(track);
+    expect(box.pager?.isDragging).toBe(true);
+    expect(box.pager?.presentation()).toBe(WIDTH);
+    view.unmount();
+    runFrames(5);
+    expect(onSettle).not.toHaveBeenCalled();
+  });
+
+  // ... and none from the owner's own update: the settle that turning the pan
+  // off causes is reported after the commit, not inside its Effect.
+  it('turning isPanEnabled off during a drag resting on a page calls onSettle after the commit, not inside its Effect', () => {
+    const runFrames = handFrames();
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+      WIDTH,
+    );
+    const onSettle = vi.fn();
+    const box: {pager: Pager | null} = {pager: null};
+    const capture = (p: Pager) => {
+      box.pager = p;
+    };
+    const view = render(
+      createElement(Paged, {
+        defaultIndex: 1,
+        onSettle,
+        isPanEnabled: true,
+        onPager: capture,
+      }),
+    );
+    const track = view.getByTestId('viewport').firstElementChild as Element;
+    restingDrag(track);
+    expect(box.pager?.isDragging).toBe(true);
+    expect(box.pager?.presentation()).toBe(WIDTH);
+    act(() => {
+      view.rerender(
+        createElement(Paged, {
+          defaultIndex: 1,
+          onSettle,
+          isPanEnabled: false,
+          onPager: capture,
+        }),
+      );
+    });
+    expect(onSettle).not.toHaveBeenCalled();
+    act(() => {
+      runFrames(3);
+    });
+    expect(onSettle).toHaveBeenCalledTimes(1);
+    expect(onSettle).toHaveBeenCalledWith(1, 1);
+    view.unmount();
+  });
 
   it('a controlled index change does not echo onIndexChange: the owner caused it', () => {
     const onIndexChange = vi.fn();
