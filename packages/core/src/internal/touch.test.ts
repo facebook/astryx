@@ -33,6 +33,23 @@ describe('internal/touch', () => {
     expect(entry).not.toHaveProperty('touchModule');
   });
 
+  it('re-exports the pan recognizer and the touch queries Lab builds on by name', async () => {
+    const entry: Record<string, unknown> = await import('./touch');
+    const pan = await import('../gestures/PanGestureRecognizer');
+    const presentation = await import('../utils/touchPresentation');
+    expect(entry.PanGestureRecognizer).toBe(pan.PanGestureRecognizer);
+    for (const name of [
+      'useTouchPresentation',
+      'readTouchPresentation',
+      'useCompactDefinition',
+      'TOUCH_QUERY',
+      'COMPACT_QUERY',
+      'COMPACT_TOUCH_QUERY',
+    ] as const) {
+      expect(entry[name], name).toBe(presentation[name]);
+    }
+  });
+
   it('attaches no window or document listeners when it loads', async () => {
     vi.resetModules();
     const onWindow = vi.spyOn(window, 'addEventListener');
