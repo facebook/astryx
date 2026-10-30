@@ -38,7 +38,9 @@ affects_consumer_docs: []
     ".github/scripts/change-scope.*",
     ".github/scripts/*routing*.test.mjs",
     ".github/scripts/pr-scope-touches.*",
-    ".github/scripts/workflow-paths.test.mjs"
+    ".github/scripts/workflow-paths.test.mjs",
+    ".github/actions/heavy-caps/**",
+    ".github/scripts/ci-pr-gate.*"
   ]
 }
 ```
@@ -264,6 +266,36 @@ they are separately named.
   `paths-ignore` or another exclusion list, which would run on any path no one
   thought to exclude.
 
+- **FR16 — One author's pull requests share the heavy suites.** On a pull
+  request, the heavy browser suites (the interaction proofs and the Build
+  package's browser and fixture-contrast contracts) run only when the pull
+  request is among its author's three oldest open non-draft pull requests and
+  the author has had at most twelve heavy runs that UTC day. A heavy run is a
+  CI run on one of those pull requests in which a heavy suite ran; a cancelled
+  run does not count, and neither does a run whose heavy suites were held.
+  Pull requests from the shared agent login count per branch prefix, and that
+  login as a whole is also held to its five oldest pull requests and forty
+  heavy runs a day; bot accounts are exempt. A held suite's check fails with
+  "Queued behind your 3 oldest PRs: runs on a push once it is among them, or at
+  the pre-merge re-run." or "Daily heavy-run cap reached, runs tomorrow or at
+  pre-merge.", so no pull request passes the required checks without its heavy
+  suites. A re-run, which is the pre-merge restart, is exempt from both limits,
+  and when the limits cannot be looked up the suite runs. Merge-queue entries,
+  `main`, release checks and the visual, accessibility and RTL owners a
+  maintainer opts a pull request into with `ci:heavy-lanes` are unaffected.
+- **FR17 — A pull request runs CI when it is ready and a maintainer can vouch
+  for it.** A draft pull request runs no CI, and marking it ready for review
+  starts its pull-request run, which runs what the change reaches (FR13,
+  DEC-6). A pull request runs CI when its head branch lives in this repository,
+  which pushing needs write access for, or when it carries the
+  maintainer-applied `ci:run` label. The label takes effect on the next push or
+  a close and reopen; applying or removing any label starts no run. For a pull
+  request that may not run CI, the required contexts (FR7) report failure with
+  "Waiting for a maintainer's ci:run label", never success, because a skipped
+  required check would count as passing. Events other than a pull request (a
+  push to `main`, a merge-group entry, a dispatch) are unaffected, and a fork's
+  code never runs with the repository's secrets.
+
 ### Platform support
 
 - Supported feature/engine floor: GitHub pull-request and merge-group workflows
@@ -299,18 +331,20 @@ read change (FR14).
 
 ## Verification
 
-| Contract | Verification                                                                | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | classifier unit tests expose the surface set                                | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
-| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier         | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
-| FR5      | mixed-surface and incomplete-owner routing tests                            | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
-| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests    | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
-| FR9      | mutation-sensitive classifier and workflow fixtures                         | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | surface-admission and routing contract tests                                | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
-| FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
-| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
-| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed         |
-| FR14     | `workflow-paths.test.mjs` over every workflow                               | path allowlist; required-context workflow                                                                | a `paths-ignore`, a match-all or exclusion glob, or a path filter on a workflow that reports a required context fails                                                              |
+| Contract | Verification                                                                       | Representative states                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                                                |
+| -------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | classifier unit tests expose the surface set                                       | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown                                                                                                   | an unclassified path receives a specialized lane or a category has no check owner                                                                                                              |
+| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier                | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group                                                                                                      | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                                         |
+| FR5      | mixed-surface and incomplete-owner routing tests                                   | spec+component; tooling+component; named surface without admitted lane; docsite+shared                                                                                                             | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                               |
+| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests           | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher                                                                                           | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears             |
+| FR9      | mutation-sensitive classifier and workflow fixtures                                | unknown path; rename from unknown; truncated list; package-specific public paths                                                                                                                   | weakening a fail-closed rule leaves the suite green                                                                                                                                            |
+| FR10     | surface-admission and routing contract tests                                       | existing surface; proposed surface with and without the full admission contract                                                                                                                    | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                                       |
+| FR11     | surface owner, internal-job, and required-join contract tests                      | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                                                                                                                   | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                                  |
+| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests        | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts                                                                                                       | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                                    |
+| FR13     | classifier, workflow contract, component-analysis and RTL-scope tests              | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build                                                                                             | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed                     |
+| FR14     | `workflow-paths.test.mjs` over every workflow                                      | path allowlist; required-context workflow                                                                                                                                                          | a `paths-ignore`, a match-all or exclusion glob, or a path filter on a workflow that reports a required context fails                                                                          |
+| FR16     | `heavy-caps-action.test.mjs` cap cases and heavy-job contract                      | fourth-oldest PR; thirteenth heavy run of the day, beside cancelled, light and other-branch runs; agent lane and its five-PR and forty-run backstops; bot; the deciding run; re-run; failed lookup | a heavy suite that runs ahead of the author's three oldest PRs, or past the daily cap, a capped job that passes, or a re-run that is held fails                                                |
+| FR17     | `ci-pr-gate.test.mjs` over every `pull_request` workflow and the shared conditions | branch here, fork with and without `ci:run`, another label, draft with the label, ready, push, merge group, dispatch                                                                               | a job that can start on a pull request without the condition, a label trigger, a required job that skips for a pull request that may not run CI, or a draft or unlabelled fork that runs fails |
 
 ## Decision log
 

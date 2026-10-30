@@ -741,8 +741,11 @@ describe('ci.yml interaction proofs', () => {
     expect(job.needs).toEqual(
       expect.arrayContaining(['check-scope', 'build-storybook']),
     );
-    const checkout = job.steps.find(candidate =>
-      candidate.uses?.startsWith('actions/checkout@'),
+    // The workspace checkout; the heavy-suite caps load from a side path.
+    const checkout = job.steps.find(
+      candidate =>
+        candidate.uses?.startsWith('actions/checkout@') &&
+        candidate.with?.path === undefined,
     );
     expect(checkout?.with?.ref).toBe(
       '${{ github.event.pull_request.head.sha }}',
