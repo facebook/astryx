@@ -1,5 +1,19 @@
 # @astryxdesign/build
 
+# 0.7.5
+
+#### Documentation
+
+- Point package metadata and project links at the `meta/astryx` repository.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.7.4
 
 ---
