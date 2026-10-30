@@ -293,6 +293,15 @@ for all 30 shipped locales plus `pseudo`.
   authored file and `@astryxdesign/core/locales/<tag>.generated.js` to the
   generated source module in source mode, so applications and the repository's
   own apps import either form the same way in development and production.
+- **INV17 — Type-to-select matches base letters.** In every Core collection
+  that moves to an item when a person types its first letters (Selector,
+  MultiSelector, DropdownMenu, ContextMenu, TreeList and the like), the typed
+  letters match an item's label by base letter in the active locale: case,
+  accents and other marks, and stroked letters are ignored, so "d" reaches
+  "Đào", "a" reaches "Ánh" and "l" reaches "Łódź". When the typed letters
+  include a mark, items that match it exactly come first. Matching goes through
+  the shared collation helpers (INV8), so every collection compares the same
+  way.
 
 ## Change coupling
 
@@ -386,3 +395,4 @@ callers remain conformance work and do not relax INV1a, INV8, INV9, or INV10.
 | INV8, INV9         | raw-Intl-locale lint (module allowlist plus date-helper locale-argument check) and provider-locale regression tests, including a server/client render pair | Astryx output follows the host locale, raw `Intl` appears outside a named formatter module, an owned call omits the locale argument, or server and client output differ for the same provider locale          |
 | INV10              | PlainDate and built-in date formatter tests, including locales with non-Gregorian defaults                                                                 | locale selects a non-Gregorian built-in date display, changes PlainDate calendar semantics, or loses the explicit low-level display override                                                                  |
 | INV11, INV12       | direction helper/provider tests plus rendered RTL audit                                                                                                    | component layout reads provider direction instead of the region, provider mutates DOM, or overrides stop composing                                                                                            |
+| INV17              | type-to-select tests in Selector, MultiSelector and DropdownMenu with accented, stroked and plain labels                                                   | a plain letter misses an item whose first letter carries a mark or stroke, a marked letter does not prefer exact matches, or two collections match the same letters differently                               |
