@@ -201,13 +201,7 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
       ?.firstElementChild?.firstElementChild as HTMLElement;
   const allCss = () =>
     Array.from(document.styleSheets)
-      .flatMap(sheet => {
-        try {
-          return Array.from(sheet.cssRules).map(rule => rule.cssText);
-        } catch {
-          return [];
-        }
-      })
+      .flatMap(sheet => Array.from(sheet.cssRules).map(rule => rule.cssText))
       .join('\n');
   /**
    * Records the Web Animations elements start from now on (jsdom implements

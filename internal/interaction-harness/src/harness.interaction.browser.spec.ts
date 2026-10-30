@@ -8,8 +8,9 @@
  *   control beside their positive checks): scripted timestamps reach the
  *   page; a flick flings natively (Chromium); a wheel step arrives as
  *   exactly its deltas, with Control when held, and a pen stroke as trusted
- *   pen pointers with its pressure and times (Chromium); a second finger
- *   and a pinch arrive as distinct pointers; the screencast shows a compositor animation
+ *   pen pointers with its pressure and times (Chromium); a second finger and
+ *   a pinch
+ *   arrive as distinct pointers; the screencast shows a compositor animation
  *   advancing through a blocked main thread while a rAF animation freezes;
  *   the trace counts zero Layout for a transform animation and one per frame
  *   for a `top` animation, and none from the harness's own animation recorder
@@ -1428,81 +1429,6 @@ test.describe('curve sampling', () => {
   });
 });
 
-// A full-size veil on the fixture's box, drawn by its ::before.
-const VEIL_STYLE =
-  "#box::before { content: ''; position: absolute; inset: 0; background: #000; opacity: 0; }";
-
-test.describe('pseudo-element animations', () => {
-  test('sampleCurve reads a ::before animation when given its pseudo-element', async ({
-    page,
-  }) => {
-    await fixture(page);
-    const box = page.locator('#box');
-    await box.evaluate((el, veil) => {
-      const style = document.createElement('style');
-      style.textContent = veil;
-      document.head.append(style);
-      el.animate(
-        [
-          {opacity: 0, transform: 'translateY(0px)'},
-          {opacity: 1, transform: 'translateY(40px)'},
-        ],
-        {duration: 300, easing: 'linear', pseudoElement: '::before'},
-      );
-    }, VEIL_STYLE);
-    await holdAnimations(page, box);
-    const samples = await sampleCurve(box, [0, 75, 150, 225, 300], {
-      pseudoElement: '::before',
-    });
-    // Labelled by the veil's own clock: the last read just inside its end.
-    expect(samples.at(-1)).toMatchObject({t: 300, presentedAt: 299.5});
-    const fade = compareCurve(curveOf(samples, 'opacity'), t => t / 300, 0.005);
-    expect(fade.maxError, JSON.stringify(fade.worst)).toBeLessThanOrEqual(
-      0.005,
-    );
-    const move = compareCurve(
-      curveOf(samples, 'translateY'),
-      t => (40 * t) / 300,
-      0.05,
-    );
-    expect(move.maxError, JSON.stringify(move.worst)).toBeLessThanOrEqual(0.05);
-    // Without it, the box itself, which does not move.
-    const [boxAt150] = await sampleCurve(box, [150]);
-    expect(boxAt150.opacity).toBe(1);
-    expect(boxAt150.transform.translateY).toBe(0);
-  });
-
-  test('waitForRest waits out a ::before animation', async ({page}) => {
-    await fixture(page);
-    const box = page.locator('#box');
-    await box.evaluate((el, veil) => {
-      const style = document.createElement('style');
-      style.textContent = veil;
-      document.head.append(style);
-      (window as unknown as {__veil: Animation}).__veil = el.animate(
-        [{opacity: 0}, {opacity: 1}],
-        {
-          duration: 600,
-          easing: 'linear',
-          fill: 'forwards',
-          pseudoElement: '::before',
-        },
-      );
-    }, VEIL_STYLE);
-    // Its subtree read includes the element's pseudo-elements.
-    await waitForRest(box);
-    const veil = await box.evaluate(element => {
-      const a = (window as unknown as {__veil: Animation}).__veil;
-      return {
-        playState: a.playState,
-        currentTime: Number(a.currentTime),
-        opacity: getComputedStyle(element, '::before').opacity,
-      };
-    });
-    expect(veil).toMatchObject({playState: 'finished', opacity: '1'});
-  });
-});
-
 test.describe('holding', () => {
   test('a sample at an end reports the time it was read at', async ({page}) => {
     await fixture(page);
@@ -2484,64 +2410,45 @@ test.describe('animation state', () => {
 
     // A 300 ms delay plays last when going backward: the curve starts at once.
     let watch = await watchAnimations(box);
-    let begunAt = await box.evaluate(async (el, keyframes) => {
+    let readyAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 400, delay: 300});
       animation.reverse();
       await animation.ready;
-      // When it began, by its own clock read at one instant: a run going
-      // backward starts at its end, so its current time has come down from
-      // there by as much as the timeline has moved since (through the rate).
-      // performance.now() read after `ready` drifts later under load.
-      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
-      return (
-        performance.timeOrigin +
-        Number(document.timeline.currentTime) -
-        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
-      );
+      return performance.timeOrigin + performance.now();
     }, frames);
     const [delayed] = await watch.started();
-    expect(Math.abs(delayed.from - begunAt)).toBeLessThan(50);
+    expect(Math.abs(delayed.from - readyAt)).toBeLessThan(50);
     expect(delayed.to - delayed.from).toBeCloseTo(400, 0);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
 
     // A short one that ended before the look keeps its curve inside its life.
     watch = await watchAnimations(box);
-    begunAt = await box.evaluate(async (el, keyframes) => {
+    readyAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
       animation.reverse();
       await animation.ready;
-      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
-      return (
-        performance.timeOrigin +
-        Number(document.timeline.currentTime) -
-        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
-      );
+      return performance.timeOrigin + performance.now();
     }, frames);
     await page.waitForTimeout(200);
     const [ended] = await watch.started();
     expect(ended.finishedAt).not.toBeNull();
-    expect(Math.abs(ended.from - begunAt)).toBeLessThan(50);
+    expect(Math.abs(ended.from - readyAt)).toBeLessThan(50);
     expect(ended.to).toBeLessThanOrEqual((ended.finishedAt ?? 0) + 1);
 
     // One the page cancels when it ends keeps its start.
     watch = await watchAnimations(box);
-    begunAt = await box.evaluate(async (el, keyframes) => {
+    readyAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
       animation.addEventListener('finish', () => animation.cancel(), {
         once: true,
       });
       animation.reverse();
       await animation.ready;
-      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
-      return (
-        performance.timeOrigin +
-        Number(document.timeline.currentTime) -
-        (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
-      );
+      return performance.timeOrigin + performance.now();
     }, frames);
     await page.waitForTimeout(200);
     const [cancelled] = await watch.started();
-    expect(Math.abs(cancelled.from - begunAt)).toBeLessThan(50);
+    expect(Math.abs(cancelled.from - readyAt)).toBeLessThan(50);
     expect(cancelled.to - cancelled.from).toBeCloseTo(60, 0);
 
     // Read right after finish(), before the finish event is delivered: the

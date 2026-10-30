@@ -177,7 +177,7 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Pull to refresh as UIRefreshControl: pull past the top, trigger with the finger down, settle under the spinner until the refresh ends. Under a finger only.',
+    'Pull to refresh as UIRefreshControl, with a finger, a pen or a mouse: pull past the top, trigger with the pointer down, settle under the spinner until the refresh ends. A trackpad’s or a wheel’s scroll does not pull.',
   usage: {
     description:
       'Pull to refresh following UIRefreshControl, with a finger, a pen or a mouse: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the pointer is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. Under a finger (a coarse primary pointer, on iOS and Android alike) it replaces the browser’s own pull to refresh near the top of the page while mounted. A trackpad’s scroll and a wheel’s do not pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
