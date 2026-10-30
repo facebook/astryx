@@ -128,6 +128,7 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
 const CREATABLE_ID_PREFIX = '__xds_create__';
 const LIST_RENDER_BATCH_SIZE = 50;
 const LIST_LOAD_MORE_THRESHOLD_PX = 200;
+const LIST_TOUCH_SCROLL_THRESHOLD_PX = 8;
 
 // The inline Tokenizer's token-row inset: a token's corners (radius-1) sit
 // concentric with the field's (radius-2) when inset = radius-2 − radius-1 −
@@ -141,7 +142,8 @@ type SheetDraftChange<T> = {
 
 function hasSameSelection<T extends SearchableItem>(a: T[], b: T[]): boolean {
   return (
-    a.length === b.length && a.every((item, index) => item.id === b[index].id)
+    a.length === b.length &&
+    a.every(item => b.some(candidate => candidate.id === item.id))
   );
 }
 
@@ -778,6 +780,11 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
   const [valueAtOpen, setValueAtOpen] = useState<T[]>(() => [...value]);
   const [draftValue, setDraftValue] = useState<T[]>(() => [...value]);
   const lastDraftChangeRef = useRef<SheetDraftChange<T> | null>(null);
+  const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
+  const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] =
+    useState(false);
+  const afterConfirmationRef = useRef<'search' | 'clear-all' | null>(null);
+  const shouldRestoreDraftFocusRef = useRef(false);
   const isDraftDirty = !hasSameSelection(valueAtOpen, draftValue);
   const selectedIds = useMemo(
     () => new Set(draftValue.map(item => item.id)),
@@ -881,6 +888,7 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
     LIST_RENDER_BATCH_SIZE,
   );
   const lastLoadScrollHeightRef = useRef<number | null>(null);
+  const listTouchStartYRef = useRef<number | null>(null);
   // Snapshot the selection and reset the rendered window in the render that
   // opens the sheet (the sheet stays mounted through its exit, so a reopen
   // reuses this content), so the first open frame already shows
@@ -911,6 +919,12 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
       } else {
         announcedSearchIdRef.current = searchIdRef.current;
       }
+    } else {
+      // Close both confirmations in the same render that closes the sheet.
+      afterConfirmationRef.current = null;
+      shouldRestoreDraftFocusRef.current = false;
+      setIsClearConfirmationOpen(false);
+      setIsDiscardConfirmationOpen(false);
     }
   }
   const handleQueryChange = (next: string) => {
@@ -1026,24 +1040,10 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
   ]);
 
   // ---- confirmations and dismissal ----
-  const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
-  const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] =
-    useState(false);
-  const afterConfirmationRef = useRef<'search' | 'clear-all' | null>(null);
-  const shouldRestoreDraftFocusRef = useRef(false);
   const closeDiscardConfirmation = () => {
     shouldRestoreDraftFocusRef.current = true;
     setIsDiscardConfirmationOpen(false);
   };
-  useLayoutEffect(() => {
-    if (isOpen) {
-      return;
-    }
-    afterConfirmationRef.current = null;
-    shouldRestoreDraftFocusRef.current = false;
-    setIsClearConfirmationOpen(false);
-    setIsDiscardConfirmationOpen(false);
-  }, [isOpen]);
   useEffect(() => {
     if (
       isDiscardConfirmationOpen ||
@@ -1089,19 +1089,35 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
       return;
     }
     if (isDraftDirty) {
-      const fallbackAdded = draftValue.find(
+      const added = draftValue.find(
         item => !valueAtOpen.some(openItem => openItem.id === item.id),
       );
-      const fallbackRemoved = valueAtOpen.find(
+      const removed = valueAtOpen.find(
         item => !draftValue.some(draftItem => draftItem.id === item.id),
       );
-      const change =
-        lastDraftChangeRef.current ??
-        (fallbackAdded != null
-          ? ({item: fallbackAdded, type: 'add'} as const)
-          : fallbackRemoved != null
-            ? ({item: fallbackRemoved, type: 'remove'} as const)
-            : null);
+      const lastDraftChange = lastDraftChangeRef.current;
+      const lastChangeIsNet =
+        lastDraftChange != null &&
+        (lastDraftChange.type === 'remove'
+          ? valueAtOpen.some(item => item.id === lastDraftChange.item.id) &&
+            !draftValue.some(item => item.id === lastDraftChange.item.id)
+          : draftValue.some(item => item.id === lastDraftChange.item.id) &&
+            !valueAtOpen.some(item => item.id === lastDraftChange.item.id));
+      let change: SheetDraftChange<T> | null = null;
+      if (lastChangeIsNet) {
+        change = lastDraftChange;
+      } else if (lastDraftChange?.type === 'remove' && removed != null) {
+        change = {item: removed, type: 'remove'};
+      } else if (added != null) {
+        const type: SheetDraftChange<T>['type'] =
+          lastDraftChange?.item.id === added.id &&
+          lastDraftChange.type === 'create'
+            ? 'create'
+            : 'add';
+        change = {item: added, type};
+      } else if (removed != null) {
+        change = {item: removed, type: 'remove'};
+      }
       if (change != null) {
         onCommit([...draftValue], change);
       }
@@ -1117,6 +1133,22 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
     if (focusedSearch != null && document.activeElement === focusedSearch) {
       focusedSearch.blur();
     }
+  };
+  const handleListTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    listTouchStartYRef.current = event.touches[0]?.clientY ?? null;
+  };
+  const handleListTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    const startY = listTouchStartYRef.current;
+    const currentY = event.touches[0]?.clientY;
+    if (
+      startY == null ||
+      currentY == null ||
+      Math.abs(currentY - startY) < LIST_TOUCH_SCROLL_THRESHOLD_PX
+    ) {
+      return;
+    }
+    listTouchStartYRef.current = null;
+    blurSearch();
   };
 
   return (
@@ -1166,9 +1198,15 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
           data-testid="mobile-tokenizer-list"
           data-rendered-count={renderedItems.length}
           data-total-count={visibleItems.length}
-          onTouchMove={blurSearch}
+          onTouchStart={handleListTouchStart}
+          onTouchMove={handleListTouchMove}
+          onTouchEnd={() => {
+            listTouchStartYRef.current = null;
+          }}
+          onTouchCancel={() => {
+            listTouchStartYRef.current = null;
+          }}
           onScroll={event => {
-            blurSearch();
             const list = event.currentTarget;
             const distanceFromBottom =
               list.scrollHeight - list.scrollTop - list.clientHeight;

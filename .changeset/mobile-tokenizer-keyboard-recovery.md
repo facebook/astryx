@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Fix Tall BottomSheet keyboard layout recovery when iOS interactively dismisses the software keyboard.
+[chore] Restore a Tall BottomSheet's internal position after keyboard dismissal.
 
-@rubycheung
+@rubyycheung

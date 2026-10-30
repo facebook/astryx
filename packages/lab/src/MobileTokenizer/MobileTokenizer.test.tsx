@@ -144,16 +144,30 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(screen.getByRole('button', {name: 'Save'})).toBeVisible();
 
     fireEvent.scroll(list);
-    expect(search).not.toHaveFocus();
-    expect(search).toHaveValue('En');
-
-    act(() => search.focus());
-    fireEvent.touchMove(search);
     expect(search).toHaveFocus();
     expect(search).toHaveValue('En');
-    fireEvent.touchMove(list);
+
+    // Filtering a scrolled list can produce its own scroll event as the
+    // browser clamps scrollTop; typing must continue to own focus.
+    fireEvent.change(search, {target: {value: 'Eng'}});
+    fireEvent.scroll(list);
+    expect(search).toHaveFocus();
+    fireEvent.change(search, {target: {value: 'Engi'}});
+    expect(search).toHaveValue('Engi');
+    expect(search).toHaveFocus();
+
+    fireEvent.touchStart(list, {
+      touches: [{identifier: 1, target: list, clientY: 120}],
+    });
+    fireEvent.touchMove(list, {
+      touches: [{identifier: 1, target: list, clientY: 115}],
+    });
+    expect(search).toHaveFocus();
+    fireEvent.touchMove(list, {
+      touches: [{identifier: 1, target: list, clientY: 100}],
+    });
     expect(search).not.toHaveFocus();
-    expect(search).toHaveValue('En');
+    expect(search).toHaveValue('Engi');
   });
 
   it('guards dirty Escape, scrim, and swipe dismissal; keeps the draft after confirmation scrim or Keep editing; and discards only on request', async () => {
@@ -289,7 +303,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     fireEvent.click(save);
     expect(spy).toHaveBeenCalledWith(
       [ITEMS[0]],
-      expect.objectContaining({item: ITEMS[1], type: 'remove'}),
+      expect.objectContaining({item: ITEMS[0], type: 'add'}),
     );
   });
 
@@ -376,6 +390,38 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       'Eng',
       'Engineer',
     ]);
+  });
+
+  it('reports the net changed item when draft actions cancel each other', async () => {
+    const spy = vi.fn();
+    render(<Harness spy={spy} />);
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    fireEvent.click(trigger);
+    await screen.findByRole('checkbox', {name: 'Energizer'});
+
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Energizer'}));
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Design'}));
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Energizer'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith([ITEMS[1]], {
+      item: ITEMS[0],
+      type: 'remove',
+    });
+  });
+
+  it('does not commit a selection toggled back to its opening value', async () => {
+    const spy = vi.fn();
+    render(<Harness spy={spy} />);
+    fireEvent.click(screen.getByRole('button', {name: /Tags/}));
+    await screen.findByRole('checkbox', {name: 'Design'});
+
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Design'}));
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Design'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('creates a custom entry with a trailing Add action', async () => {
