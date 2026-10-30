@@ -155,8 +155,8 @@ intentional decision. A `current` contract contains no unresolved rows.
   the modal surface is `role="alertdialog"`, named by its title through
   `aria-labelledby` and described by its description through `aria-describedby`;
   it is modal through Dialog (focus enters it and returns to the opener on close
-  per `component:Dialog/AR1–AR2`; Tab containment follows Dialog, whose record
-  leaves it open); initial
+  per `component:Dialog/AR1–AR2`, and Tab wraps inside it per
+  `component:Dialog/FR7`); initial
   focus lands on Cancel, the least destructive action; Escape cancels; no click
   outside dismisses it. The inline preview is not an alert dialog and carries
   `role="group"`.
