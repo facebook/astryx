@@ -65,12 +65,61 @@ export const navigation = {
    */
   interactivePopFinishProjection: 0.35,
   /**
+   * Past its start (a finger brought back beyond where the screen is fully
+   * in place), the interactive pop's top screen follows the finger at this
+   * share of its travel, linearly; a release there returns on
+   * `springs.navigationInteractivePopReturn`.
+   * @source measured: UIKit lab batch 62 (iOS 26.2 simulator, iPhone 17
+   *   Pro), a back swipe scrubbed to ~50 % and brought back past its start
+   *   at ~310 pt/s, lifted 10.7 pt of finger after the view crossed its
+   *   start: fitted jointly with `springs.navigationInteractivePopReturn` to
+   *   the view's x at the lift (−6.89 pt) and after it, Oct 24 2026
+   */
+  interactivePopRubberBand: 0.71,
+  /**
    * The progress the projected release must pass to finish the pop (a still
    * finger at 0.475 cancels).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, the pop decision method over 61 releases, Oct 23 2026
    */
   interactivePopFinishThreshold: 0.5,
+  /**
+   * Travel, in px, before the full-width content swipe (iOS 26's back swipe
+   * from anywhere in the content) begins.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UINavigationController.contentSwipe began after 27–30 pt
+   *   of travel for drags at or under 600 pt/s, Oct 23 2026
+   * At 1000 pt/s it began on the first move event (~8 pt), so above some
+   * speed between 600 and 1000 pt/s it begins sooner.
+   * @measure M-N4
+   */
+  contentPopHysteresis: 27,
+  /**
+   * The interactive pop's release velocity is the mean of the pan's last
+   * this-many velocities (each velocity(in:).x / width, one per finger move
+   * and one at the lift). It does not decay while the finger rests: a pause
+   * keeps the last value, and only moving back lowers it.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIPercentDrivenInteractiveTransition averageVelocity =
+   *   (prev_n + prev_n−1 + prev_n−2) / 3 at every update to 4 decimals; held
+   *   0–400 ms before the lift it stays 0.73–0.75, Oct 23 2026
+   */
+  interactivePopVelocitySamples: 3,
+  /**
+   * On a push from the root, the back button's glass platter is there from
+   * the first frame and its chevron starts fading in (on
+   * `springs.navigationBackButton`) this many ms after the screens start
+   * moving. On a pop to the root the chevron fades out at once on the same
+   * spring and the platter leaves with the screen.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, inline root ↔ inline detail, per 60 Hz frame (batch
+   *   62): the slide's start fitted with the push spring (rms 0.0015 of the
+   *   travel); the chevron image's effective opacity (0.027, 0.27, 0.53,
+   *   0.72, 0.84, 0.91, 0.97 …) fits the 0.4 s spring from 60.8 ms after it
+   *   within 0.010; on the pop it starts within a frame of the slide (0.973,
+   *   0.825, 0.642, 0.474 … at 34 ms steps), Oct 24 2026
+   */
+  backChevronPushDelayMs: 60,
 } as const;
 
 /**
