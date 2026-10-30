@@ -40,6 +40,32 @@ function Trap({children}: {children: React.ReactNode}) {
   );
 }
 
+function InnerRegion() {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({isActive: true});
+  return (
+    <div ref={containerRef} data-testid="inner-region">
+      <button type="button" data-testid="inner-first">
+        Inner first
+      </button>
+      <button type="button" data-testid="inner-last">
+        Inner last
+      </button>
+    </div>
+  );
+}
+
+function OuterRegion({showInner}: {showInner: boolean}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({isActive: true});
+  return (
+    <div ref={containerRef} data-testid="outer-region">
+      <button type="button" data-testid="outer-first">
+        Outer first
+      </button>
+      {showInner && <InnerRegion />}
+    </div>
+  );
+}
+
 function EscapeTrap({
   isActive,
   onEscape,
@@ -349,6 +375,18 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     expect(fireEvent.keyDown(second, {key: 'Tab'})).toBe(false);
     expect(first).toHaveFocus();
     matches.mockRestore();
+  });
+
+  it('lets the innermost region answer Tab when regions nest at the end', () => {
+    // A region (a Popover, say) opened at the end of an active region (an open
+    // Dialog): its last control is also the outer region's last Tab stop.
+    const {rerender} = render(<OuterRegion showInner={false} />);
+    rerender(<OuterRegion showInner />);
+    const innerLast = screen.getByTestId('inner-last');
+    innerLast.focus();
+
+    expect(fireEvent.keyDown(innerLast, {key: 'Tab'})).toBe(false);
+    expect(screen.getByTestId('inner-first')).toHaveFocus();
   });
 
   it('leaves Tab to an open dialog nested inside the trap', () => {
