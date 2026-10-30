@@ -158,10 +158,12 @@ export function evaluateRtlJoin({
       message: 'All applicable RTL package shards produced reports.',
     };
   }
-  // Out of scope, each shard either did not start or decided its own scope
-  // and did no work: it then reports success with no manifest or report.
+  // Out of scope, each shard job either did not start or decided its own
+  // scope and did no work, reporting success with no manifest or report. The
+  // shard and merge jobs can land on different sides (`skipped/success`).
+  const parts = String(shardResult ?? '').split('/');
   const noOpShards =
-    shardResult === 'success' &&
+    parts.every(part => part === 'skipped' || part === 'success') &&
     evidence.scopes.length === 0 &&
     evidence.reports.length === 0;
   return shardResult === 'skipped' || noOpShards

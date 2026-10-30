@@ -24,6 +24,7 @@ import path from 'node:path';
 const LAB_SRC = 'packages/lab/src';
 const STORIES_DIR = 'apps/storybook/stories';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
+const TEST_SCOPE_ACTION = '.github/actions/test-scope/action.yml';
 const COMPONENT_REGISTRY = 'scripts/component-packages.cjs';
 const RTL_AUDIT = 'apps/storybook/rtl-audit/rtl-audit.mjs';
 
@@ -109,10 +110,17 @@ function ciComponentRoots(repoRoot) {
         match => `${match[1]}/`,
       )
     : [];
+  // The gate projects the registry when ci.yml, or the test-scope action its
+  // audit jobs run with `component-audit: 'true'`, runs the trusted
+  // component-audit-scope.cjs against scripts/component-packages.cjs.
+  const action = read(repoRoot, TEST_SCOPE_ACTION) ?? '';
   const projectsRegistry =
     /COMPONENT_PACKAGES/.test(ci) ||
     (/component-audit-scope\.cjs/.test(ci) &&
-      /scripts\/component-packages\.cjs/.test(ci));
+      /scripts\/component-packages\.cjs/.test(ci)) ||
+    (/component-audit: 'true'/.test(ci) &&
+      /component-audit-scope\.cjs/.test(action) &&
+      /scripts\/component-packages\.cjs/.test(action));
   if (projectsRegistry && registryRoots.length > 0) return registryRoots;
   const pathspec = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
   if (pathspec) return pathspec[1].trim().split(/\s+/).filter(Boolean);
@@ -120,7 +128,8 @@ function ciComponentRoots(repoRoot) {
   if (filtered) {
     return filtered[1].split('|').map(name => `packages/${name}/src/`);
   }
-  return registryRoots;
+  // No recognizable gate: nothing is covered, so the check fails.
+  return [];
 }
 
 /** Story-id prefixes the RTL auto-discovery sweep covers. */

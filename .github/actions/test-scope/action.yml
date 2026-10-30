@@ -88,9 +88,11 @@ outputs:
   force_full_component_audits:
     description: Component audits must run in full (with `component-audit`).
     value: ${{ steps.scope.outputs.force_full_component_audits }}
-  changed_files:
-    description: The PR's changed paths, one per line (with `component-audit`).
-    value: ${{ steps.scope.outputs.changed_files }}
+  changed_files_path:
+    description: >-
+      A file listing the PR's changed paths, one per line (with
+      `component-audit`); empty when the step could not list them.
+    value: ${{ steps.scope.outputs.changed_files_path }}
   applies:
     description: >-
       The job's work applies: not a specialized lane (spec, docsite or tooling
@@ -256,6 +258,11 @@ runs:
                 componentScope = auditAll;
               }
             }
-            componentScope.changed_files = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))].join('\n');
+            // A file, not an output value: a large pull request's list would
+            // not fit an environment variable.
+            const changedFilesPath = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'test-scope-changed-files.txt');
+            const changed = [...new Set(files.flatMap(f => [f.filename, f.previous_filename].filter(Boolean)))];
+            fs.writeFileSync(changedFilesPath, `${changed.join('\n')}\n`);
+            componentScope.changed_files_path = changedFilesPath;
           }
           report({...everything, ...classified, ...componentScope, release_bump: 'false', touches, applies});

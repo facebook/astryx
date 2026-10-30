@@ -873,6 +873,23 @@ describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
     },
   );
 
+  it('installs nothing for the visual jobs outside their visual scope', () => {
+    const scout = workflow.jobs['visual-scout'].steps.find(
+      step => step.name === 'Setup Node and pnpm',
+    );
+    expect(scout.if).toBe(
+      "steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'",
+    );
+    for (const name of ['Setup Node and pnpm', 'Install Playwright']) {
+      const step = workflow.jobs['pr-visual'].steps.find(
+        candidate => candidate.name === name,
+      );
+      expect(step.if, name).toBe(
+        "github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true'",
+      );
+    }
+  });
+
   it('reports no stable visual work on a specialized lane', () => {
     for (const name of ['visual-scout', 'pr-visual']) {
       const decide = workflow.jobs[name].steps.find(
