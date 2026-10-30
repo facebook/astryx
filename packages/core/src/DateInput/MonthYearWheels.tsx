@@ -8,11 +8,16 @@
  * @output Exports MonthYearWheels — the month + year wheel pair
  * @position Internal component; consumed by TouchDateField.tsx
  *
- * The shortcut out of continuous scrolling. Scrolling is the right gesture for
- * "a month or two either way" and the wrong one for "December 2019", so the
- * header title opens this instead: two wheels, one flick each.
+ * The month and year wheels behind the calendar's title. Under a finger they
+ * are UIDatePicker's inline calendar's (motion/uikit/datePicker.ts `calendar.monthYearWheels`):
+ * the month wheel loops (December is followed by January, the year
+ * unchanged), and a year that lacks the month shown in the range turns the
+ * month wheel onto the nearest reachable month, on the wheel's own spin
+ * (`picker.tapSpin` on `timing.curves.move`, UIKit's animated
+ * `setContentOffset`), instead of making it jump. With a mouse they are today's: a
+ * finite month list, and a year change clamps the month at once.
  *
- * It occupies exactly the same box as the month scroller, so opening it never
+ * It occupies exactly the same box as the month pager, so opening it never
  * changes the picker's height.
  *
  * SYNC: When modified, update:
@@ -22,13 +27,15 @@
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {useLocale} from '../i18n';
 import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
-import {Wheel, type WheelOption} from './Wheel';
+import {datePicker} from '../motion/uikit/datePicker';
+import {Wheel, type WheelHandle, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
@@ -70,6 +77,8 @@ export function MonthYearWheels({
 }: MonthYearWheelsProps) {
   const locale = useLocale();
   const {year, month} = fromMonthIndex(monthIndex);
+  const monthWheelRef = useRef<WheelHandle | null>(null);
+  const {isTouch} = useTouchPresentation();
 
   // Day 15 of a fixed year: no timezone can push it into an adjacent month
   // the way day 1 or day 31 can.
@@ -125,9 +134,11 @@ export function MonthYearWheels({
   return (
     <div {...stylex.props(styles.wheels)}>
       <Wheel
+        ref={monthWheelRef}
         label={monthLabel}
         options={monthOptions}
         value={month}
+        isLooping={isTouch && datePicker.calendar.monthYearWheels.monthLoops}
         isActive={isActive}
         onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
       />
@@ -137,10 +148,22 @@ export function MonthYearWheels({
         value={year}
         isActive={isActive}
         onChange={nextYear => {
-          // Jan 31 -> Feb has no equivalent here (months carry no day), but a
-          // year change can still land outside the range; clamp to it.
+          // A year change can land outside the range: it goes on to the
+          // nearest reachable month and selects it there, the month wheel
+          // turning onto it rather than jumping (UIDatePicker's
+          // `restPastBound`; a year with no reachable month is a disabled
+          // row the Wheel itself leaves for the nearest enabled one).
           const candidate = toMonthIndex(nextYear, month);
-          onChange(Math.min(Math.max(candidate, minMonthIndex), maxMonthIndex));
+          const clamped = Math.min(
+            Math.max(candidate, minMonthIndex),
+            maxMonthIndex,
+          );
+          if (isTouch && clamped !== candidate) {
+            void monthWheelRef.current?.spinTo(
+              fromMonthIndex(clamped).month - 1,
+            );
+          }
+          onChange(clamped);
         }}
       />
     </div>
