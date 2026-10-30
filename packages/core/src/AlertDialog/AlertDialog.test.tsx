@@ -515,6 +515,24 @@ describe('AlertDialog action tracking', () => {
     element.getBoundingClientRect = () => rect;
   }
 
+  /** A mouse's pointer event at (x, y), the primary button held until up. */
+  function mouse(target: Element, type: string, y: number, x = 60): void {
+    touchClock += 16;
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      clientX: x,
+      clientY: y,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: touchClock});
+    target.dispatchEvent(event);
+  }
+
   /**
    * Renders the alert open under a finger by default, in any engine (UIKit's
    * motion runs, and touches wait for the presentation), or with a mouse with
@@ -733,22 +751,6 @@ describe('AlertDialog action tracking', () => {
     });
     // A fine primary pointer, before the mouse is checked.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
-    const mouse = (target: Element, type: string, y: number) => {
-      touchClock += 16;
-      const event = new PointerEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 1,
-        pointerType: 'mouse',
-        isPrimary: true,
-        button: 0,
-        buttons: type === 'pointerup' ? 0 : 1,
-        clientX: 60,
-        clientY: y,
-      });
-      Object.defineProperty(event, 'timeStamp', {value: touchClock});
-      target.dispatchEvent(event);
-    };
     mouse(action, 'pointerdown', 116);
     expect(action).toHaveAttribute('data-astryx-press', 'on');
     mouse(action, 'pointermove', 156);
@@ -758,6 +760,41 @@ describe('AlertDialog action tracking', () => {
     expect(onOpenChange).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('runs nothing for a mouse press lifted outside the actions (family:action-groups FR3, FR5)', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen({
+      touch: false,
+    });
+    // A fine primary pointer, before the mouse is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const dialog = screen.getByRole('alertdialog');
+    mouse(action, 'pointerdown', 116);
+    expect(action).toHaveAttribute('data-astryx-press', 'on');
+    // Off both actions: nothing is highlighted while the button is held.
+    mouse(action, 'pointermove', 116, 300);
+    expect(action).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    mouse(dialog, 'pointerup', 116, 300);
+    expect(onAction).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the keyboard on the buttons under every pointer: Enter runs the action and Space cancels (FR8)', async () => {
+    for (const touch of [true, false]) {
+      const user = userEvent.setup();
+      const {onOpenChange, onAction, cancel, action} = renderOpen({touch});
+      action.focus();
+      await user.keyboard('{Enter}');
+      expect(onAction).toHaveBeenCalledTimes(1);
+      cancel.focus();
+      await user.keyboard(' ');
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onAction).toHaveBeenCalledTimes(1);
+      cleanup();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('tracks only the actions: a press that lands on the title, the message or the backdrop and slides onto an action runs nothing', async () => {
