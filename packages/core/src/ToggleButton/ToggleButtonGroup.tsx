@@ -18,18 +18,51 @@
  * - /packages/cli/assets/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import {useCallback, use, useMemo, type ReactNode} from 'react';
+import {
+  useCallback,
+  use,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {ButtonSize} from '../Button';
 import {mergeProps} from '../utils';
+import {
+  resolveNearestAction,
+  useActionGroupTracking,
+} from '../hooks/useActionGroupTracking';
+import {watchHitArea, writeHitInsets} from '../utils/hitArea';
+import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Context
 // =============================================================================
+
+/** The toggles the group tracks: each carries the group item marker. */
+const TRACKED_TOGGLE = `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`;
+
+/**
+ * Whether the group takes a press that lands on `target`: one on a tracked
+ * toggle, or on the group itself (its hit layer). A press on any other
+ * member keeps that member's own press and click. A group with no box (not
+ * rendered) takes none.
+ */
+function takesPress(group: HTMLElement | null, target: unknown): boolean {
+  if (group == null || !(target instanceof Element)) {
+    return false;
+  }
+  const box = group.getBoundingClientRect();
+  if (box.width <= 0 || box.height <= 0) {
+    return false;
+  }
+  return target === group || target.closest(TRACKED_TOGGLE) != null;
+}
 
 interface ToggleButtonGroupContextValue {
   /** Currently selected value(s). */
@@ -40,6 +73,12 @@ interface ToggleButtonGroupContextValue {
   size?: ButtonSize;
   /** Group disabled state. */
   isDisabled?: boolean;
+  /**
+   * Whether the group tracks a held pointer across its toggles
+   * (`family:action-groups`): each toggle carries the group item marker
+   * (`utils/pressFeedback.ts` PRESS_GROUP_ITEM_ATTRIBUTE).
+   */
+  tracksPress?: boolean;
 }
 
 const ToggleButtonGroupContext =
@@ -67,6 +106,26 @@ const styles = stylex.create({
   vertical: {
     flexDirection: 'column',
     alignItems: 'stretch',
+  },
+  /**
+   * The touch target (`family:action-groups` FR5): under a coarse pointer an
+   * invisible layer extends the group by the insets utils/hitArea.ts writes
+   * (toward 44 px, clamped against whatever sits outside the group), so a
+   * finger just past a small toggle lands on the group, whose tracker picks
+   * that toggle. Under the toggles, in the group's own stacking context;
+   * absent under a fine pointer. The custom properties are hitArea.ts's
+   * HIT_INSET_PROPERTIES; physical sides, as it measures them.
+   */
+  hitArea: {
+    position: {default: null, '@media (pointer: coarse)': 'relative'},
+    isolation: {default: null, '@media (pointer: coarse)': 'isolate'},
+    '::after': {
+      content: {default: null, '@media (pointer: coarse)': '""'},
+      position: 'absolute',
+      inset:
+        'calc(var(--astryx-hit-inset-top, 0px) * -1) calc(var(--astryx-hit-inset-right, 0px) * -1) calc(var(--astryx-hit-inset-bottom, 0px) * -1) calc(var(--astryx-hit-inset-left, 0px) * -1)',
+      zIndex: -1,
+    },
   },
 });
 
@@ -217,14 +276,45 @@ export function ToggleButtonGroup(props: ToggleButtonGroupProps): ReactNode {
     [isMultiple, props.value, props.onChange],
   );
 
+  // The toggles are an action group (`family:action-groups`): a held
+  // pointer, a finger, a pen or a mouse, is tracked across them, the toggle
+  // under it highlights, and the lift toggles only that one, through its own
+  // click (FR4); a lift outside the group toggles nothing. Each toggle
+  // carries the group item marker (ToggleButton reads `tracksPress`). A
+  // disabled group tracks nothing; the keyboard is unchanged.
+  const tracksPress = !isDisabled;
+  const groupRef = useRef<HTMLDivElement>(null);
+  useActionGroupTracking(groupRef, {
+    itemSelector: TRACKED_TOGGLE,
+    highlightOnsetMs: 0,
+    highlightExpansion: 0,
+    // The toggle under a finger: the nearest whose 44 px target holds the
+    // point, with disabled toggles as neighbours, read once per press (a
+    // mouse or a pen hit-tests the toggles' own boxes).
+    resolveTarget: resolveNearestAction,
+    shouldTrack: target => takesPress(groupRef.current, target),
+    isEnabled: tracksPress,
+  });
+  // A finger's 44 px target, without the toggles growing (FR5): the hit
+  // layer's insets, live while the group tracks; hitArea.ts measures only
+  // where the primary pointer is coarse.
+  useEffect(() => {
+    const element = groupRef.current;
+    if (!tracksPress || element == null) {
+      return undefined;
+    }
+    return watchHitArea(element, insets => writeHitInsets(element, insets));
+  }, [tracksPress]);
+
   const contextValue = useMemo(
-    () => ({selectedValues, toggle, size, isDisabled}),
-    [selectedValues, toggle, size, isDisabled],
+    () => ({selectedValues, toggle, size, isDisabled, tracksPress}),
+    [selectedValues, toggle, size, isDisabled, tracksPress],
   );
 
   return (
     <ToggleButtonGroupContext value={contextValue}>
       <div
+        ref={groupRef}
         role="group"
         aria-label={label}
         data-testid={testId}
@@ -232,6 +322,7 @@ export function ToggleButtonGroup(props: ToggleButtonGroupProps): ReactNode {
           themeProps('toggle-button-group'),
           stylex.props(
             styles.group,
+            tracksPress && styles.hitArea,
             orientation === 'vertical' && styles.vertical,
             xstyle,
           ),

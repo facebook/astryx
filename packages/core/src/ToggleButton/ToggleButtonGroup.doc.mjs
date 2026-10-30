@@ -10,7 +10,7 @@ export const docs = {
     'togglegroup',
     'buttontogglegroup',
   ],
-  description: 'Groups toggle buttons for exclusive (single) or multi-select behavior. Uses discriminated union on type for type-safe value/onChange.',
+  description: 'Groups toggle buttons for exclusive (single) or multi-select behavior. Uses discriminated union on type for type-safe value/onChange. Under a press the group behaves like a menu: press a toggle, slide across the others while the highlight follows, and only the one you lift on toggles; lifting outside the group toggles nothing. With a finger, each toggle\'s target reaches 44 px without the toggles growing.',
   props: [
     {
       name: 'children',
@@ -85,7 +85,7 @@ export const docs = {
 export const docsZh = {
   name: 'ToggleButtonGroup',
   displayName: 'Toggle Button Group',
-  description: '将切换按钮分组，支持单选或多选行为。通过 type 判别联合类型实现类型安全。',
+  description: '将切换按钮分组，支持单选或多选行为。通过 type 判别联合类型实现类型安全。按住时分组像菜单一样工作：按下一个切换按钮，滑过其他按钮时高亮随之移动，只有抬起时所在的按钮会切换；在分组外抬起则不切换任何按钮。用手指操作时，每个按钮的触控区域可达 44 px，按钮本身不变大。',
   propDescriptions: {
     children: 'ToggleButton 子元素；每个成员都需要 value。分组控制按下状态，并忽略成员的 isPressed、onPressedChange 和 pressedChangeAction。激活成员只调用分组的 onChange，不启动成员的 Action 过渡。',
     label: '分组的无障碍标签 (aria-label)。',
@@ -103,7 +103,7 @@ export const docsZh = {
 export const docsDense = {
   name: 'ToggleButtonGroup',
   displayName: 'Toggle Button Group',
-  description: 'groups toggle btns for exclusive/multi-select; discriminated union on type',
+  description: 'groups toggle btns for exclusive/multi-select; discriminated union on type; a press slides across toggles like a menu and only the one lifted on toggles; finger targets reach 44 px',
   propDescriptions: {
     children: 'ToggleButton children; each member needs a value. Group owns pressed state; member isPressed/onPressedChange/pressedChangeAction are ignored. Selection uses group onChange, with no member Action transition.',
     label: 'a11y label (aria-label)',

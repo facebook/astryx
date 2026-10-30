@@ -4,10 +4,13 @@
  * @file types.ts
  * @input Nothing
  * @output Exports the data the gesture system passes around: recognizer
- *   states, pointer kinds, touches (UITouch), the per-event context, the
- *   environment a host provides, and the view-level touch consumer contract
+ *   states, pointer kinds, touches (UITouch) with the modifier keys each
+ *   began with, the per-event context, the environment a host provides, and
+ *   the view-level touch consumer contract
  * @position Shared vocabulary of packages/core/src/gestures; no runtime code
  */
+
+import type {SelectionLock} from './GestureRecognizer';
 
 /**
  * UIGestureRecognizer.State. A discrete recognizer goes straight from
@@ -46,13 +49,6 @@ export interface NativeScrollProbe {
    * lets the browser pan that axis).
    */
   canScroll(dx: number, dy: number): boolean;
-  /**
-   * How much further (px) the scroller that would move for a finger moving
-   * by (dx, dy) can scroll before it reaches its edge; 0 when none would.
-   * Lets a reader place the point where the content runs out between two
-   * samples instead of at the next one.
-   */
-  distanceToEdge?(dx: number, dy: number): number;
   /** Whether any element under the touch can scroll natively at all. */
   readonly isInsideScroller: boolean;
   /**
@@ -64,10 +60,22 @@ export interface NativeScrollProbe {
 }
 
 /**
+ * The modifier keys held as a contact began, as its pointer or touch event
+ * reports them: a Ctrl-, Cmd- or Shift-click on a link means a new tab or
+ * window, which a group of links leaves to the browser.
+ */
+export interface TouchModifiers {
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+}
+
+/**
  * One contact: UITouch. The arena owns it and updates it in place; a
  * recognizer keeps a reference to every touch it receives.
  */
-export interface GestureTouch {
+export interface GestureTouch extends TouchModifiers {
   /** Unique among the contacts the arena tracks at once. */
   readonly id: number;
   readonly pointerType: PointerKind;
@@ -104,8 +112,11 @@ export interface TouchInput {
   readonly history?: ReadonlyArray<TouchSample>;
 }
 
-/** A new contact: where it is, what made it, and what it landed on. */
-export interface TouchBeganInput extends TouchInput {
+/**
+ * A new contact: where it is, what made it, what it landed on, and the
+ * modifier keys held (none when left out).
+ */
+export interface TouchBeganInput extends TouchInput, Partial<TouchModifiers> {
   readonly pointerType: PointerKind;
   readonly target: unknown;
   readonly scroll?: NativeScrollProbe | null;
@@ -127,6 +138,13 @@ export interface GestureEventContext {
 export interface GestureEnvironment {
   viewportSize(): {readonly width: number; readonly height: number};
   isRtl(view: unknown): boolean;
+  /**
+   * The size of a recognizer's view, or null when it has none to measure.
+   * A screen-edge pan reads it to tell an edge zone from a wider view.
+   */
+  viewSize?(
+    view: unknown,
+  ): {readonly width: number; readonly height: number} | null;
 }
 
 export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
@@ -138,6 +156,13 @@ export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
   },
   isRtl() {
     return false;
+  },
+  viewSize(view) {
+    if (typeof Element === 'undefined' || !(view instanceof Element)) {
+      return null;
+    }
+    const {width, height} = view.getBoundingClientRect();
+    return {width, height};
   },
 };
 
@@ -158,4 +183,27 @@ export interface TouchConsumer {
    * (attached above this consumer) from beginning for a touch on it.
    */
   allowsAncestorRecognizer?(recognizer: unknown): boolean;
+  /**
+   * Whether the consumer holds this touch now (a control whose press was
+   * delivered for that touch): the host cancels the browser's pan for that
+   * finger only, as UIKit's `touchesShouldCancel(in:)` is false for a
+   * tracking control. A move before the press is delivered, and another
+   * finger the consumer is not tracking, still scroll.
+   */
+  keepsTouch?(touchId: number): boolean;
+  /**
+   * A control whose own record defines a hold action (a stepper's
+   * hold-repeat) brings the lock that turns text selection and the callout
+   * off for that press only, as a recognizer created with one does
+   * (`spec:AST-094` FR41). A control whose hold does nothing leaves it
+   * undefined and keeps the browser's long-press selection.
+   */
+  readonly selectionLock?: SelectionLock;
+  /**
+   * Whether the consumer takes touches now (a disabled control does not).
+   * The host listens only while something enabled is attached
+   * (`spec:AST-094` FR24); after this changes, call `host.update(element)`.
+   * @default true
+   */
+  isEnabled?(): boolean;
 }
