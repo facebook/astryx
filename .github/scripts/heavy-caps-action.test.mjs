@@ -148,6 +148,14 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
       runs: [...runsOn(6, 'fix/b'), ...runsOn(3, 'fix/c'), ...runsOn(3)],
     });
     expect(spread.failed).toEqual([CAPPED]);
+    // When the deciding pull request is the author's oldest, the count still
+    // reaches their third-oldest.
+    const first = await check({
+      context: pullRequestContext({number: 1}),
+      open: [{...me, number: 1}, ...pulls('fix/x', 'fix/b', 'fix/c').slice(1)],
+      runs: [...runsOn(4), ...runsOn(4, 'fix/b'), ...runsOn(4, 'fix/c')],
+    });
+    expect(first.failed).toEqual([CAPPED]);
     // Cancelled runs, runs whose heavy suites never ran (a queued PR) and runs
     // on other branches are not heavy runs.
     const light = await check({
@@ -192,6 +200,22 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
       ],
     });
     expect(backstop.failed).toEqual([QUEUED]);
+    // The login's forty-run count reaches its fifth-oldest pull request.
+    const fifth = await check({
+      context: pullRequestContext({
+        number: 1,
+        user: {login: 'cixzhang'},
+        head: {ref: 'lane4/x', repo: {full_name: 'o/r'}},
+      }),
+      open: [
+        {...mine, number: 1},
+        ...pulls('x', 'lane1/a', 'lane2/b', 'lane3/c', 'lane0/d').slice(1),
+      ],
+      runs: ['lane4/x', 'lane1/a', 'lane2/b', 'lane3/c', 'lane0/d'].flatMap(
+        branch => runsOn(8, branch),
+      ),
+    });
+    expect(fifth.failed).toEqual([CAPPED]);
     // The login as a whole stops at forty heavy runs a day.
     const lanes = [...pulls('lane1/a', 'lane2/b'), mine];
     expect(
