@@ -914,6 +914,28 @@ Storybook story for anything you added or altered.
 > `.github/workflows/**` can't be pushed on your behalf — GitHub requires the
 > author to update those; we'll ping you if so.)
 
+### When CI runs on your pull request
+
+- **Drafts run no CI.** Marking the pull request ready for review starts
+  CI, which runs the checks your change reaches.
+- **A pull request from a fork runs CI once a maintainer labels it
+  `ci:run`.** Only maintainers can apply labels, so you don't need to ask: a
+  maintainer adds it after a first look. The label takes effect on your next
+  push, or when the maintainer closes and reopens the pull request; CI then
+  runs on each push while the label stays. Until then the required checks fail
+  with "Waiting for a maintainer's ci:run label".
+- **`ci:heavy-lanes` opts a pull request into the visual, accessibility and
+  RTL suites**, which otherwise run on `main` after it merges. A maintainer
+  applies it when a change needs that evidence before merging; like `ci:run`,
+  it takes effect on the next push or a close and reopen.
+- **Pull requests from a branch in this repository run CI without the label**,
+  since pushing a branch here needs write access. Maintainers who work from a
+  fork either push their branches here or apply `ci:run` themselves.
+- **Heavy browser suites are shared per author.** They run for an author's
+  three oldest open pull requests, up to twelve such runs a day. A pull request
+  past either limit shows a failing check that says why, and runs in full at
+  its pre-merge re-run.
+
 ## Code Style
 
 The design-system rules — StyleX usage, semantic tokens, theming, API
