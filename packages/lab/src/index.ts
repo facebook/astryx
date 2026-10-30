@@ -333,6 +333,16 @@ export {
   type MobilePowerSearchProps,
 } from './MobilePowerSearch';
 
+// RefreshControl — pull to refresh as UIRefreshControl, on the touch
+// foundation (experimental motion and gesture subpaths of core).
+export {
+  RefreshControl,
+  useRefreshControl,
+  type RefreshControlProps,
+  type UseRefreshControlOptions,
+  type UseRefreshControlResult,
+} from './RefreshControl';
+
 // RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
 // its own package, @astryxdesign/richtext. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
