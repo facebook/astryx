@@ -2170,6 +2170,33 @@ describe('toast timer lifecycle (#3589)', () => {
     }
   });
 
+  it('releases the focus hold when the focused control is removed', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      const {card, action} = showPausableToast(onHide);
+      act(() => {
+        fireEvent.mouseEnter(card);
+      });
+      act(() => {
+        action.focus();
+      });
+      // A control that unmounts while focused fires no blur.
+      act(() => {
+        action.remove();
+      });
+      act(() => {
+        fireEvent.mouseLeave(card);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps the timer paused while focus moves between controls inside the card', () => {
     vi.useFakeTimers();
     try {

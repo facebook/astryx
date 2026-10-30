@@ -18,7 +18,7 @@
  */
 
 import {useCallback, useEffect, useRef} from 'react';
-import type {FocusEvent, ReactNode} from 'react';
+import type {FocusEvent, ReactNode, RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
@@ -192,6 +192,9 @@ export function ToastSurface({
   // focus inside it, a touch or pen gesture, the window blurred) is tracked on
   // its own, so one ending resumes the timer only when no other still holds.
   const pauseSourcesRef = useRef<Set<PauseSource>>(new Set());
+  // The card's root, read when a hold ends to drop a focus hold whose focused
+  // control was removed: an unmounting control fires no blur.
+  const cardRootRef = useRef<RefObject<HTMLDivElement | null> | null>(null);
   const remainingRef = useRef(autoHideDuration);
   // Will be initialized by startTimer when actually used
   const startTimeRef = useRef<number | null>(null);
@@ -244,7 +247,18 @@ export function ToastSurface({
         return;
       }
       const sources = pauseSourcesRef.current;
-      if (!sources.delete(source) || sources.size > 0) {
+      if (!sources.delete(source)) {
+        return;
+      }
+      const root = cardRootRef.current?.current;
+      if (
+        sources.has('focus') &&
+        root != null &&
+        !root.contains(document.activeElement)
+      ) {
+        sources.delete('focus');
+      }
+      if (sources.size > 0) {
         return;
       }
       startTimer();
@@ -325,6 +339,7 @@ export function ToastSurface({
     dismiss: dismissFromGesture,
     shouldIgnoreTarget: isInteractiveTarget,
   });
+  cardRootRef.current = rootRef;
 
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
