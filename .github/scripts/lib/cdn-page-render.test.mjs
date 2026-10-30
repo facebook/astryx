@@ -4,6 +4,7 @@ import {EventEmitter} from 'node:events';
 import {describe, expect, it} from 'vitest';
 import {
   cdnOutageUrls,
+  cdnOutageUrlsAcross,
   isCleanRender,
   renderPage,
   renderUntilClean,
@@ -423,5 +424,38 @@ describe('cdnOutageUrls', () => {
         button: 'Click',
       }),
     ).toEqual([]);
+  });
+});
+
+describe('cdnOutageUrlsAcross', () => {
+  const LUCIDE =
+    'https://esm.sh/lucide-react@1.18.0?external=react&target=es2022';
+  const outage = {
+    timedOut: false,
+    pendingRequests: [],
+    consoleErrors: [
+      'Failed to load resource: the server responded with a status of 500 ()',
+    ],
+    pageErrors: [],
+    failedRequests: [`500 ${LUCIDE}`],
+    button: null,
+  };
+  const regression = {
+    ...outage,
+    consoleErrors: [],
+    failedRequests: [],
+    pageErrors: ['SyntaxError: does not provide an export named jsx'],
+  };
+
+  it('names the CDN URLs when every attempt was a CDN outage', () => {
+    expect(cdnOutageUrlsAcross([outage, outage])).toEqual([LUCIDE]);
+  });
+
+  it('is empty when a regression on the first attempt is followed by a CDN error on the retry', () => {
+    expect(cdnOutageUrlsAcross([regression, outage])).toEqual([]);
+  });
+
+  it('is empty with no attempts', () => {
+    expect(cdnOutageUrlsAcross([])).toEqual([]);
   });
 });

@@ -32,7 +32,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
 import {
-  cdnOutageUrls,
+  cdnOutageUrlsAcross,
   renderPage,
   renderUntilClean,
   uncleanFindings,
@@ -160,6 +160,8 @@ const url = `http://127.0.0.1:${server.address().port}/`;
 // smoke-test job's 15-minute limit left, and a page that hangs on both
 // attempts still prints the report naming what hung before the job is stopped.
 const RENDER_BUDGET_MS = 90_000;
+/** Each unclean attempt a retry replaced, for the outage check below. */
+const discardedAttempts = [];
 const result = await renderUntilClean(
   ({budgetMs}) =>
     renderPage(url, {launch: async () => chromium.launch(), budgetMs}),
@@ -170,6 +172,7 @@ const result = await renderUntilClean(
     // on the retry still shows in the log, rather than vanishing behind a
     // green run.
     onRetry: (attempt, leftMs, discarded) => {
+      discardedAttempts.push(discarded);
       console.log(
         `  retry ${attempt} of ${ATTEMPTS - 1}, ${Math.round(leftMs / 1000)} s left, after:`,
       );
@@ -218,7 +221,9 @@ fs.rmSync(tmpDir, {recursive: true, force: true});
 // page that loads from it, but no change in this repository caused it or can
 // fix it. Report it loudly as a soft failure instead of a red build; a 404, a
 // page error or anything at another host still fails.
-const outageUrls = process.exitCode ? cdnOutageUrls(result) : [];
+const outageUrls = process.exitCode
+  ? cdnOutageUrlsAcross([...discardedAttempts, result])
+  : [];
 if (outageUrls.length > 0) {
   console.log(
     `\nSOFT FAILURE: external CDN outage, not a regression in this change.\n${outageUrls

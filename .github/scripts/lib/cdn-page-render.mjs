@@ -202,6 +202,20 @@ export function cdnOutageUrls(result, hosts = CDN_HOSTS) {
   return explained && consoleExplained ? [...outageUrls] : [];
 }
 
+/**
+ * The CDN URLs behind a run of render attempts when every attempt failed only
+ * because a CDN broke on its own side (see `cdnOutageUrls`). Empty when any
+ * attempt failed for another reason, so a regression on one attempt is never
+ * excused by a CDN error on another.
+ */
+export function cdnOutageUrlsAcross(results, hosts = CDN_HOSTS) {
+  const perAttempt = results.map(result => cdnOutageUrls(result, hosts));
+  if (perAttempt.length === 0 || perAttempt.some(urls => urls.length === 0)) {
+    return [];
+  }
+  return [...new Set(perAttempt.flat())];
+}
+
 /** Whether a render went idle with nothing wrong and a button on the page. */
 export function isCleanRender(result) {
   return (
