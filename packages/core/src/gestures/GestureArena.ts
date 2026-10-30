@@ -119,10 +119,15 @@ interface Timer {
   callback: () => void;
 }
 
+/**
+ * The arena that decides which recognizer gets a touch.
+ */
 export class GestureArena {
   readonly environment: GestureEnvironment;
   private readonly clock: GestureClock;
   private readonly options: GestureArenaOptions;
+  /** The touches whose move the arena is delivering right now. */
+  private movingIds: ReadonlySet<number> = new Set();
   private readonly records = new Map<number, TouchRecord>();
   /** Recognizers involved in the current interaction, in resolution order. */
   private active: GestureRecognizer[] = [];
@@ -262,6 +267,41 @@ export class GestureArena {
     });
   }
 
+  /**
+   * A contact began where nothing takes part (plain page content). It is
+   * never tracked and stays the browser's; recognizers already tracking a
+   * gesture hear of it, as of any touch off their hit path.
+   */
+  untrackedBegan(input: TouchBeganInput): void {
+    if (!this.active.some(recognizer => recognizer.numberOfTouches > 0)) {
+      return;
+    }
+    this.run(input.time, () => {
+      const time = this.clampTime(input.time);
+      const touch: GestureTouch = {
+        id: input.id,
+        pointerType: input.pointerType,
+        phase: 'began',
+        x: input.x,
+        y: input.y,
+        time,
+        startX: input.x,
+        startY: input.y,
+        startTime: time,
+        samples: [{x: input.x, y: input.y, time}],
+        target: input.target,
+        scroll: input.scroll ?? null,
+        takenByBrowser: false,
+      };
+      const context = this.context();
+      for (const recognizer of [...this.active]) {
+        if (recognizer.numberOfTouches > 0) {
+          recognizer.deliverBeganElsewhere([touch], context);
+        }
+      }
+    });
+  }
+
   /** Contacts moved. */
   moved(inputs: ReadonlyArray<TouchInput>): void {
     if (inputs.length === 0) {
@@ -273,8 +313,14 @@ export class GestureArena {
         return;
       }
       const context = this.context();
-      for (const recognizer of [...this.active]) {
-        recognizer.deliverMoved(changed, context);
+      const previous = this.movingIds;
+      this.movingIds = new Set(changed.map(touch => touch.id));
+      try {
+        for (const recognizer of [...this.active]) {
+          recognizer.deliverMoved(changed, context);
+        }
+      } finally {
+        this.movingIds = previous;
       }
       for (const touch of changed) {
         const record = this.records.get(touch.id);
@@ -541,12 +587,19 @@ export class GestureArena {
    * A recognition that claimed its touches and then fails or is cancelled (a
    * waiting recognition that fails, a gesture a second finger or the app
    * cancels) gives them back to the browser unless another recognition owns
-   * them, so a finger still resting there can pinch-zoom the page.
+   * them, so a finger still resting there can pinch-zoom the page. A gesture
+   * that cancels itself on a finger's move (a long press past its tolerance)
+   * keeps that finger until it lifts: the drag goes on, and the page never
+   * takes it over midway (`spec:AST-094` FR14), as UIKit's scroll view never
+   * takes a touch another recognizer had.
    */
-  private releaseClaim(recognizer: GestureRecognizer): void {
+  private releaseClaim(
+    recognizer: GestureRecognizer,
+    keep: ReadonlySet<number> = new Set(),
+  ): void {
     for (const touch of recognizer.trackedTouches) {
       const record = this.records.get(touch.id);
-      if (record == null || !record.isClaimed) {
+      if (record == null || !record.isClaimed || keep.has(touch.id)) {
         continue;
       }
       // A recognized discrete gesture (`ended`, a swipe) still owns its
@@ -577,7 +630,9 @@ export class GestureArena {
     if (isTerminal(next)) {
       this.clearTimer(recognizer);
     }
-    if (next === 'cancelled' || next === 'failed') {
+    if (next === 'cancelled') {
+      this.releaseClaim(recognizer, this.movingIds);
+    } else if (next === 'failed') {
       this.releaseClaim(recognizer);
     }
   }
