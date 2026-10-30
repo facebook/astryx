@@ -74,17 +74,11 @@ function runs(
     branch = releaseBranch,
     needs = dependencies(job),
     cancelled = false,
-    labels = [],
   } = {},
 ) {
   const expression = (job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
-    // GitHub's object filter: `labels.*.name` lists the labels' names.
-    .replace(
-      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
-      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
-    );
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
   // GitHub injects success() unless the expression has a status function.
   if (
     !/\b(always|cancelled|success|failure)\(/.test(expression) &&
@@ -104,7 +98,6 @@ function runs(
     {
       event_name: event,
       base_ref: event === 'pull_request' ? 'main' : '',
-      event: {pull_request: {labels: labels.map(name => ({name}))}},
     },
     {operation, 'release-branch': branch},
     needs,
