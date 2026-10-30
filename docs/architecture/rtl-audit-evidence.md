@@ -150,9 +150,13 @@ Lint and rendered audit are complementary:
   discoverable icon, decoration, and positional relationships. Component-specific
   selectors are used only for semantics generic discovery cannot infer, such as
   order, scroll direction, overlay side, or touch-target ownership.
-- **INV7 — CI scope and weekly scope answer different questions.** PR CI checks
-  components affected by the change; it may run per package, but the PR result is
-  the join of every package scope and cannot pass with one scope missing. The
+- **INV7 — CI scope and weekly scope answer different questions.** The RTL audit
+  runs after merges to `main` (a burst of pushes is checked once, at its newest
+  commit) and before each release, at full scope; a pull
+  request runs it only with the `ci:heavy-lanes` label (spec:AST-030 FR12, DEC-7).
+  When a pull request runs it, it checks components affected by the change; it
+  may run per package, but the PR result is the join of every package scope and
+  cannot pass with one scope missing. The
   scheduled unfiltered audit checks the full live roster and shared regressions.
   Neither silently replaces the other.
 - **INV8 — Applicable evidence invalidates N/A.** A new applicable automatic or
