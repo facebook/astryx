@@ -60,6 +60,12 @@ outputs:
   release_bump:
     description: The PR targets a release branch (the generated version bump).
     value: ${{ steps.scope.outputs.release_bump }}
+  decided:
+    description: >-
+      `false` when the step fell back to everything in scope because it could
+      not decide; a job that must do work on a lane it cannot recognize (spec
+      validation) reads this.
+    value: ${{ steps.scope.outputs.decided }}
   touches:
     description: A changed path matches `paths` (true when `paths` is empty or undecidable).
     value: ${{ steps.scope.outputs.touches }}
@@ -94,6 +100,7 @@ runs:
             release_bump: 'false',
             touches: 'true',
             applies: 'true',
+            decided: 'true',
           };
           const report = values => {
             for (const [key, value] of Object.entries(values)) core.setOutput(key, value);
@@ -142,7 +149,7 @@ runs:
             }
           } catch (error) {
             core.warning(`Scope could not be decided (${error.message}); everything is in scope.`);
-            report(everything);
+            report({...everything, decided: 'false'});
             return;
           }
 

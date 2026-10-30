@@ -26,26 +26,26 @@ const dataGuard = owner.steps.find(
   step => step.name === 'Require successful docsite data generation and tests',
 );
 const ACTIVE =
-  "needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'";
+  "steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'";
 
 describe('docsite browser required-check projection', () => {
   it('joins the existing required context and uses the same surface route', () => {
-    expect(owner.needs).toEqual([
-      'check-scope',
-      'docsite-browser',
-      'docsite-data',
-    ]);
+    expect(owner.needs).toEqual(['docsite-browser', 'docsite-data']);
     expect(owner.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
+      "${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}",
     );
-    expect(browser.needs).toEqual(['check-scope']);
-    expect(browser.if).toBe(
-      `github.event_name != 'workflow_dispatch' && ${ACTIVE}`,
-    );
-    expect(data.needs).toEqual(['check-scope']);
-    expect(data.if).toBe(
-      `github.event_name != 'workflow_dispatch' && ${ACTIVE}`,
-    );
+    // Each owner decides its own scope and gates every later step on it.
+    for (const job of [browser, data]) {
+      expect(job.needs).toBeUndefined();
+      expect(job.if).toBe("github.event_name != 'workflow_dispatch'");
+      const scopeAt = job.steps.findIndex(step => step.id === 'scope');
+      expect(scopeAt).toBe(1);
+      for (const step of job.steps.slice(scopeAt + 1)) {
+        expect(step.if, step.name ?? step.uses).toMatch(
+          new RegExp(`(^|&& )${ACTIVE.replace(/[.()|]/g, '\\$&')}$`),
+        );
+      }
+    }
     expect(guard.if).toBe(ACTIVE);
     expect(dataGuard.if).toBe(ACTIVE);
     expect(
@@ -78,7 +78,7 @@ describe('docsite browser required-check projection', () => {
     const upload = browser.steps.find(
       step => step.name === 'Upload docsite browser evidence',
     );
-    expect(upload.if).toBe('always()');
+    expect(upload.if).toBe(`always() && ${ACTIVE}`);
     expect(upload.with['if-no-files-found']).toBe('error');
     expect(path.resolve(root, upload.with.path)).toBe(
       path.resolve(path.dirname(configPath), outputDir),

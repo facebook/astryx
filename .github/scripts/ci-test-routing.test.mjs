@@ -166,7 +166,7 @@ describe.each(Object.entries(WORKFLOWS))(
       expect(suites).toHaveLength(2);
       const [share, isolated] = suites;
       // Its share is the full UI project, or for a scoped pull request the
-      // tests related to its diff (check-scope's full_suite).
+      // tests related to its diff (the scope step's full_suite).
       if (graphScoped) {
         expect(share.run.trim()).toBe(
           [
@@ -187,7 +187,7 @@ describe.each(Object.entries(WORKFLOWS))(
           ].join('\n'),
         );
         expect(share.env.SCOPED).toBe(
-          "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
+          "${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}",
         );
         // The Node lane runs the same scoped share, guards included.
         const node = workflow.jobs['test-node'].steps.find(
@@ -317,7 +317,11 @@ describe.each(Object.entries(WORKFLOWS))(
     if (scopeConditional) {
       it('keeps the lightweight-docs skip on every lane', () => {
         for (const lane of lanes) {
-          expect(workflow.jobs[lane].if).toContain('always()');
+          // Each lane decides its own scope; there is no scope job to wait on.
+          expect(
+            workflow.jobs[lane].steps.some(step => step.id === 'scope'),
+            `${lane} has no scope step`,
+          ).toBe(true);
           const steps = workflow.jobs[lane].steps;
           const suite = steps.find(step =>
             expandScripts(step.run ?? '').includes('--project'),
@@ -328,9 +332,11 @@ describe.each(Object.entries(WORKFLOWS))(
           expect(suite.if, `${lane} suite is unconditional`).toContain(
             "spec_only != 'true'",
           );
+          // A scope step that fails (a classifier rejecting the change)
+          // fails the lane; nothing lets the suite skip past it.
           expect(
-            steps.some(step =>
-              step.run?.includes('refusing to skip required work'),
+            steps.some(
+              step => step.id === 'scope' && step['continue-on-error'] !== true,
             ),
             `${lane} does not guard against an unclassified scope`,
           ).toBe(true);
@@ -424,8 +430,10 @@ describe('ci.yml RTL package sharding', () => {
       'a11y-contracts-shard',
       'pr-rtl-shard',
     ]) {
-      const checkout = workflow.jobs[name].steps.find(candidate =>
-        candidate.uses?.startsWith('actions/checkout@'),
+      const checkout = workflow.jobs[name].steps.find(
+        candidate =>
+          candidate.uses?.startsWith('actions/checkout@') &&
+          candidate.with?.path !== '.test-scope',
       );
       expect(checkout?.with?.ref, `${name} checkout is not exact-head`).toBe(
         exactRef,
@@ -435,7 +443,7 @@ describe('ci.yml RTL package sharding', () => {
       candidate => candidate.name === 'Verify Storybook source checkout',
     );
     expect(storybookVerify.if).toContain(
-      "needs.check-scope.outputs.tooling_only != 'true'",
+      "steps.scope.outputs.tooling_only != 'true'",
     );
     expect(runLines(workflow.jobs['build-storybook'])).toContain(
       'astryx-build-sha.txt',
@@ -778,10 +786,10 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
     throw new Error(`no step named ${name}`);
   };
 
-  it('asks component analysis for full audits unless check-scope reports a scoped suite', () => {
+  it('asks component analysis for full audits unless the scope step reports a scoped suite', () => {
     const analyze = stepNamed('Analyze components');
     expect(analyze.env.FULL_SUITE).toBe(
-      '${{ needs.check-scope.outputs.full_suite }}',
+      '${{ steps.scope.outputs.full_suite }}',
     );
     expect(analyze.run).toContain(
       'if [ "$FULL_SUITE" != false ]; then FORCE_FULL=(--force-full); fi',
