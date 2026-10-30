@@ -42,7 +42,7 @@ system_specs:
 | Builder impact          | The three standard styling mechanisms remain interchangeable parts of one row-styling seam. A builder may use one or combine them; no existing callsite must opt in.                                                                                                         |
 | Compatibility/readiness | The contract is additive and preserves default output, except FR8's group motion under a coarse pointer. Its authority is current; implementation support may arrive separately, but the durable API is incomplete until all three mechanisms are supported on the same row. |
 | Review checks           | Reject an implementation that omits one mechanism from the durable API, sends the mechanisms to different elements, drops a supplied value, targets the semantic `<li>`, or moves the promised row target without an explicit compatibility decision.                        |
-| Governing rules         | [Public component API INV5–INV6](../../../../docs/architecture/public-component-api.md) and [AST-002 FR1, FR4, FR7–FR10, FR12, and DEC-1](../../../../docs/specs/AST-002/spec.md) govern admission, predictability, and composition of the component-local styling seam.     |
+| Governing rules         | [Public component API INV5–INV6](../../../architecture/public-component-api.md) and [AST-002 FR1, FR4, FR7–FR10, FR12, and DEC-1](../../AST-002/spec.md) govern admission, predictability, and composition of the component-local styling seam.                              |
 
 This table is a review projection; the body below is authoritative.
 

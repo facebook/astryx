@@ -52,7 +52,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Drawer/Drawer.doc.mjs (props table, features, usage)
  * - /packages/core/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Drawer/Drawer.spec.md (component contract)
+ * - /docs/specs/components/Drawer/Drawer.spec.md (component contract)
  * - /packages/core/src/Drawer/index.ts (exports if types change)
  * - /packages/cli/assets/templates/blocks/components/Drawer/ (showcase blocks)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)

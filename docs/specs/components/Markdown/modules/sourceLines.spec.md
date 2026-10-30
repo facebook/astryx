@@ -27,7 +27,7 @@ references: [spec:AST-036/DEC-1, spec:AST-036/DEC-11, component:Markdown/DEC-2]
 | Builder impact          | Builders opt in by adding one value to `plugins`. A builder with a custom block renderer places the received `sourceLines` on its own element; a plugin block renderer reads lines from its node's `position`.             |
 | Compatibility/readiness | Additive and opt-in. Omitted or empty plugin lists keep the released AST, DOM, parse cost, and streaming reuse.                                                                                                            |
 | Review checks           | Reject a Markdown prop, stamps on inline elements, line work without the plugin, a wrapper element Markdown adds around custom or plugin output, lines that disagree between full and streaming parses, or offsets in DOM. |
-| Governing rules         | [`spec:AST-036` FR3, FR9, FR15, FR40](../../../../../docs/specs/AST-036/spec.md); [`component:Markdown` FR3, FR12, FR15](../Markdown.spec.md).                                                                             |
+| Governing rules         | [`spec:AST-036` FR3, FR9, FR15, FR40](../../../AST-036/spec.md); [`component:Markdown` FR3, FR12, FR15](../Markdown.spec.md).                                                                                              |
 
 This table is a review projection; the body below is authoritative.
 
