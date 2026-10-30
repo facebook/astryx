@@ -5,11 +5,15 @@
  * @input The press controller (pressFeedback.ts) with resolveMotion standing
  *   in for a theme that retunes the press roles
  * @output The controller's clocks read their `timing.press` motion roles
- *   through resolveMotion under the pressed element: a control's release, a
- *   cell's release, a quick tap's flash, and on a desktop a mouse's release
- * @position Unit proof beside pressFeedback.test.ts. While touch motion stays
- *   internal (`spec:AST-094` DEC-11) resolveMotion answers the table value,
- *   so the stand-in here is the only way to see a clock follow its role.
+ *   through resolveMotion under the pressed element: the release's clock
+ *   (the deselect role) on a control and on a row, a quick tap's flash, and
+ *   on a desktop a mouse's release. A control's longer release is its layer's
+ *   own animation, which the release waits for (endAfterRelease); jsdom runs
+ *   no animation, so only the clock shows here
+ * @position Unit proof beside pressFeedback.test.ts. A theme reaches the
+ *   roles only through `spec:AST-108`'s knobs (`spec:AST-094` DEC-15), and
+ *   resolveMotion answers the table value unless one is set, so the stand-in
+ *   here is the only way to see a clock follow its role.
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -88,43 +92,34 @@ afterEach(() => {
 });
 
 describe("the press controller's clocks read their motion roles (#8268)", () => {
-  it("a control's release lasts its role: `timing.press.buttonReleaseMs`", () => {
+  it("a release's clock reads its role, `timing.press.highlightOutMs`, on a control and on a row", () => {
     coarsePrimaryPointer();
-    const control = surface('');
-    press(control, 'pointerdown');
-    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
-    press(control, 'pointerup');
-    lift(control);
-    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(THEME.buttonReleaseMs - 1);
-    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(1);
-    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
-  });
-
-  it("a cell's release lasts its role: `timing.press.highlightOutMs`", () => {
-    coarsePrimaryPointer();
-    const cell = surface('cell');
-    press(cell, 'pointerdown');
-    expect(cell.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
-    press(cell, 'pointerup');
-    lift(cell);
-    vi.advanceTimersByTime(THEME.highlightOutMs - 1);
-    expect(cell.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-    vi.advanceTimersByTime(1);
-    expect(cell.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    for (const tag of ['button', 'div']) {
+      const pressable = document.createElement(tag);
+      pressable.setAttribute(PRESSABLE_ATTRIBUTE, '');
+      document.body.appendChild(pressable);
+      press(pressable, 'pointerdown');
+      expect(pressable.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+      press(pressable, 'pointerup');
+      lift(pressable);
+      expect(pressable.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(THEME.highlightOutMs - 1);
+      expect(pressable.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(1);
+      expect(pressable.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    }
   });
 
   it("a quick tap's flash lasts its role: `timing.press.flashMs`", () => {
     coarsePrimaryPointer();
-    // A cell in a scroll view waits the content-touch delay, so a tap that
+    // A row in a scroll view waits the content-touch delay, so a tap that
     // lifts before it flashes at the lift.
     const scroller = document.createElement('div');
     scroller.style.overflowY = 'auto';
     Object.defineProperty(scroller, 'clientHeight', {value: 100});
     Object.defineProperty(scroller, 'scrollHeight', {value: 400});
     const cell = document.createElement('div');
-    cell.setAttribute(PRESSABLE_ATTRIBUTE, 'cell');
+    cell.setAttribute(PRESSABLE_ATTRIBUTE, '');
     scroller.appendChild(cell);
     document.body.appendChild(scroller);
     press(cell, 'pointerdown');

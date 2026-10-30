@@ -2,12 +2,12 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts) and the document's pointer,
- *   keyboard, scroll and visibility events
- * @output Exports paintPress and readPressPaint (the one writer of the press
- *   attribute for every painter), PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE,
- *   PRESS_PROFILES, pressableProps, the list row's press profile
- *   (CELL_PRESS_PROFILE, cellPressableProps) and installPressFeedback
+ * @input The press state machine (pressGesture.ts), the flat-tree parent
+ *   (flatTree.ts), and the document's pointer, keyboard, scroll and
+ *   visibility events
+ * @output Exports paintPress and readPressPaint (the press attribute's
+ *   writer for every press they track), PRESSABLE_ATTRIBUTE,
+ *   PRESSED_ATTRIBUTE, pressableProps and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -17,25 +17,18 @@
  *
  * ONE listener set for every pressable surface in the document.
  *
- * TWO PROFILES, chosen by the marker's value. A control (an empty marker: a
- * button, a card, a switch) is a UIControl: under a finger it highlights in
- * the frame the finger lands, unless a scroller sits above it, where it waits
- * UIScrollView's content-touch delay like everything else in a scroll view.
- * A cell (`cell`: a list or tree row) waits that delay inside a scroll view
- * and highlights at once outside one (`spec:AST-094` FR11), like a control.
- * Both are cancelled by travel past
- * the slop or by the scroll that takes the touch, and both fade at the lift
- * on their profile's clock. The release ends when the stylesheet's release
- * animation does (endAfterRelease), so a busy first frame, which starts that
- * animation late, never cuts it short.
+ * A FINGER WAITS ONLY INSIDE A SCROLLER. Under a finger a surface highlights
+ * in the frame the finger lands, as a UIControl does, unless a scroller sits
+ * above it: there it waits UIScrollView's content-touch delay, because the
+ * touch may become a scroll (`spec:AST-094` FR11). A row is no exception: it
+ * waits inside a scroll view and highlights at once outside one. Either way
+ * travel past the slop or the scroll that takes the touch cancels the press,
+ * and the lift fades it.
  *
- * LISTENERS ONLY WHILE A PRESS IS LIVE. At rest the document carries two
- * passive listeners, `pointerdown` and `keydown`, which only arm. A touch, or
- * a mouse button or Space press the controller paints, attaches the rest
- * (move, up, cancel, the finger's lift, scroll, drag and visibility; a Space
- * press also the key's release and focus loss). They come down once no press
- * is live and no finger is down, or, when a lift leaves a fling scrolling,
- * at that scroller's `scrollend`: the brake hears the fling until then.
+ * A mouse button's or the Space key's press on a touch-first device carries
+ * {@link PRESS_INPUT_ATTRIBUTE}, so the stylesheet keeps the fine pointer's
+ * 200 ms release for it, while a finger's press on a control releases over
+ * UIButton's 250 ms (`component:Button` FR15, controlPressLayer.stylex.ts).
  *
  * Why a delegated document-level controller and not a hook on the element: a
  * virtualized list can carry more than a thousand rows, and four listeners
@@ -72,9 +65,8 @@
  * selection (`spec:AST-094` FR41); only an element whose hold does something
  * suppresses it, through the gesture host (utils/selectionLock.ts).
  *
- * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
- * only while a press is tracked and the primary pointer is coarse
- * (coarsePointer.ts, `spec:AST-094` FR24).
+ * Its one touch-only listener, `touchcancel`, is on only while the primary
+ * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
@@ -95,12 +87,13 @@ import {
   pressGestureStep,
 } from './pressGesture';
 import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
-import {controlPressConsts} from './controlPressLayer.stylex';
 import {subscribeInput} from './inputStream';
 import {resolveMotion} from '../motion/resolveMotion';
 import {press as pressTiming} from '../motion/uikit/timing';
+import {parentAcrossShadow} from './flatTree';
 import {isPrimaryClick} from './primaryClick';
 import {TOUCH_QUERY} from './touchPresentation';
+import {timing} from '../motion/uikit/timing';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -122,80 +115,23 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
  * Marks a press the controller paints for a mouse button (`mouse`) or the
  * Space key (`key`) on a touch-first device, beside {@link PRESSED_ATTRIBUTE}:
  * its release keeps the 200 ms fade a fine pointer has, while a finger's
- * press releases on its surface's profile (`component:Button` FR15,
- * `spec:AST-094`).
+ * press on a control releases over UIButton's 250 ms (`component:Button`
+ * FR15, `spec:AST-094`).
  */
 export const PRESS_INPUT_ATTRIBUTE = 'data-astryx-press-input';
 
-/** Spread onto the element that paints the press: a control. */
+/** Spread onto the element that paints the press. */
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
 
-/** How a surface's press behaves under a finger. */
-export interface PressProfile {
-  /**
-   * When the highlight waits UIScrollView's content-touch delay
-   * (`PRESS_ONSET_MS`): only inside a scroller (a control and a cell,
-   * `spec:AST-094` FR11), or always.
-   */
-  readonly highlightDelay: 'inScrollers' | 'always';
-  /** How long the release's exit runs, in ms: the attribute leaves after it. */
-  readonly releaseMs: number;
-  /**
-   * The `timing.press` motion role behind `releaseMs`: the controller
-   * resolves it under the pressed element (`resolveMotion`), so the release
-   * lasts as long as that element's motion says. Without it, `releaseMs`.
-   */
-  readonly releaseRole?: 'buttonReleaseMs' | 'highlightOutMs';
-}
-
 /**
- * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
- * marker: rows paint the press on the cell layer (interactionOverlay.stylex.ts
- * `cell`) and release on the cell's clock; a selection hold finds rows by it.
+ * How long after a touch a scroll can still be that finger's momentum.
+ *
+ * iOS momentum runs for a second or two after the lift; past this window a
+ * scroll is the program moving something, not a list still gliding.
  */
-export const CELL_PRESS_PROFILE = 'cell';
-
-/**
- * Spread on a list row's pressable element after the press feedback hook's
- * props: the marker carries the cell profile.
- */
-export const cellPressableProps: {
-  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
-} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
-
-/**
- * The two press profiles, selected by the marker's value: empty for a
- * control, {@link CELL_PRESS_PROFILE} for a row.
- */
-export const PRESS_PROFILES = {
-  /**
-   * UIControl: highlighted in the frame the finger lands, outside scrollers,
-   * and released on UIButton's clock (the stylesheet's own constant) under
-   * a coarse primary pointer (see `releaseOf`).
-   */
-  control: {
-    highlightDelay: 'inScrollers',
-    releaseMs: controlPressConsts.controlReleaseMs,
-    releaseRole: 'buttonReleaseMs',
-  },
-  /** A table or collection cell: waits only inside a scroll view (FR11). */
-  cell: {
-    highlightDelay: 'inScrollers',
-    releaseMs: PRESS_FADE_MS,
-    releaseRole: 'highlightOutMs',
-  },
-} as const satisfies Readonly<Record<string, PressProfile>>;
-
-export type PressProfileName = keyof typeof PRESS_PROFILES;
-
-/** The profile a surface's marker selects. */
-function profileOf(element: HTMLElement): PressProfile {
-  return element.getAttribute(PRESSABLE_ATTRIBUTE) === CELL_PRESS_PROFILE
-    ? PRESS_PROFILES.cell
-    : PRESS_PROFILES.control;
-}
+export const PRESS_GESTURE_MEMORY_MS = 3000;
 
 /** Overflow values that let a box scroll, and how far it must overflow to. */
 const SCROLLABLE: ReadonlySet<string> = new Set(['auto', 'scroll', 'overlay']);
@@ -239,7 +175,10 @@ function allowedPans(value: string): {x: boolean; y: boolean} {
  * Whether the browser could scroll something under this element: a box above
  * it (the page included) that overflows on an axis it scrolls and that
  * `touch-action` leaves to the browser. That is UIKit's question for a
- * control: is it inside a scroll view?
+ * touch: is it inside a scroll view? It lives here, not in the gesture core's
+ * scroll probe, because every pressable carries this controller and the
+ * gesture core stays out of Core's public entries until a component
+ * imports it.
  */
 function isInsideScroller(element: Element): boolean {
   const doc = element.ownerDocument;
@@ -275,10 +214,9 @@ function isInsideScroller(element: Element): boolean {
         return false;
       }
     }
-    node =
-      node.parentNode instanceof ShadowRoot
-        ? node.parentNode.host
-        : node.parentNode;
+    // The flat tree the browser scrolls: a slotted node goes to its slot, a
+    // shadow root to its host.
+    node = parentAcrossShadow(node);
   }
   return (
     (panY &&
@@ -323,8 +261,6 @@ interface LiveGesture {
    * for a press of the Space key.
    */
   pointerId: number | null;
-  /** The surface's profile's release clock, in ms. */
-  releaseMs: number;
   /** Cancels the clock the current phase owes, or the release it waits for. */
   timer: (() => void) | null;
 }
@@ -346,49 +282,19 @@ const button: Slot = {live: null};
 let holders = 0;
 /** Whether the stylesheet left mouse and keyboard presses to the controller; read at the first one. */
 /**
- * The scroller a finger set moving, from its first scroll until its
- * `scrollend`: during a drag and through the fling that follows the lift.
+ * When a scroller last moved UNDER A FINGER OF ITS OWN, and which one.
  *
  * Only a finger-driven scroll is recorded, so the brake cannot fire for a
  * scroll the app performed itself. The test is the touch's own target: a
- * scroll is that finger's if the finger is down inside the scroller that
- * moved, or if it is the fling that finger left running.
+ * scroll is that finger's if the finger was inside the scroller that moved,
+ * within {@link PRESS_GESTURE_MEMORY_MS}.
  */
-let fling: Node | null = null;
-/*
- * Where an engine has no `scrollend`, a fling ends once its
- * scroll events stop for PRESS_SCROLL_BRAKE_MS, UIKit's measured brake window
- * (a touch on a scroller that moved this recently brakes it): a decelerating
- * scroller fires a scroll every frame, so that long without one means it has
- * come to rest.
- */
-let flingIdleTimer: ReturnType<typeof setTimeout> | undefined;
-
-/** Forget the fling, and the idle timer that stands in for its `scrollend`. */
-function clearFling(): void {
-  fling = null;
-  clearTimeout(flingIdleTimer);
-  flingIdleTimer = undefined;
-}
-/** Whether a finger is on the glass, and where the last one landed. */
-let touching = false;
+let lastScrollAt = 0;
+let lastScroller: Node | null = null;
+/** When a finger was last on the glass, and where it landed. */
+let lastTouchAt = 0;
 let lastTouchTarget: Node | null = null;
-/**
- * Whether a pen is down. A pen raises pointer events but no touch events, so
- * no `touchend` clears it: its `pointerup` does, or, when the browser takes
- * it to scroll (`pointercancel`), the brake window after that, by when the
- * scroll it drives has recorded its fling.
- */
-let penDown = false;
-let penCancelTimer: ReturnType<typeof setTimeout> | undefined;
 
-function clearPen(): void {
-  penDown = false;
-  clearTimeout(penCancelTimer);
-  penCancelTimer = undefined;
-}
-
-/** The machine's clocks; `fade` runs the surface's profile's instead. */
 const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   fade: PRESS_FADE_MS,
   flash: PRESS_FLASH_MS,
@@ -396,35 +302,36 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * How long a timer runs on a press. The release's clock is its surface's
- * press profile's (`releaseOf`: the value the stylesheet's release plays),
- * capped under reduced motion as the stylesheet caps its fade
- * (`design:reduced-motion` DR2: a touch transition finishes in 200 ms or
- * less).
+ * How long a timer runs on `element`. A quick tap's flash and the release's
+ * clock read their motion roles under the element (`timing.press.flashMs`,
+ * and the deselect's `timing.press.highlightOutMs`: PRESS_FADE_MS, the value
+ * the stylesheet's release plays, unless a theme's knobs transform it,
+ * `spec:AST-094` DEC-15); a longer release animation is waited for
+ * (endAfterRelease). The release's clock is capped under reduced motion by
+ * the Reduce Motion cross-fade's duration, as the stylesheet caps its fade
+ * (`design:reduced-motion` DR2: a touch transition finishes within it;
+ * `spec:AST-094` FR4: the cap is a role, never a literal).
  */
 function timerMs(
   kind: NonNullable<PressStep['timer']>,
-  live: {element: Element; releaseMs: number},
+  element: Element,
 ): number {
   if (kind === 'flash') {
     // The quick tap's flash, on its motion role under the pressed element.
-    return resolveMotion(live.element, pressTiming, 'flashMs');
+    return resolveMotion(element, pressTiming, 'flashMs');
   }
   if (kind !== 'fade') {
     return TIMER_MS[kind];
   }
-  const ms = live.releaseMs;
-  // design:reduced-motion DR2: under reduced motion a touch transition
-  // finishes in 200 ms or less (the stylesheet caps its fade the same way).
+  const releaseMs = resolveMotion(element, pressTiming, 'highlightOutMs');
   const reduced =
-    live.element.ownerDocument.defaultView?.matchMedia?.(
+    element.ownerDocument.defaultView?.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
     ).matches ?? false;
-  return reduced ? Math.min(ms, REDUCED_MOTION_MAX_MS) : ms;
+  return reduced
+    ? Math.min(releaseMs, timing.reducedMotionCrossFadeMs)
+    : releaseMs;
 }
-
-/** The longest a touch transition runs under reduced motion (DR2). */
-const REDUCED_MOTION_MAX_MS = 200;
 
 const TIMER_EVENT = {
   fade: 'fadeEnd',
@@ -436,7 +343,11 @@ const TIMER_EVENT = {
 export type PressPaint = 'on' | 'held' | 'fading' | 'none';
 
 export interface PaintPressOptions {
-  /** How long `fading` stays before the attribute goes, ms. @default the press fade */
+  /**
+   * The release's clock, ms: when it runs out, the controller checks for the
+   * release animation, and `fading` stays until that animation ends (or goes
+   * then, where none runs). @default the press fade
+   */
   releaseMs?: number;
   /** The current values this write may replace. @default none, on, fading */
   onlyFrom?: ReadonlyArray<PressPaint>;
@@ -480,11 +391,11 @@ function releaseAnimationsOf(element: Element): Animation[] {
  * out. A busy main thread delays the animation's first frame, and with it
  * its end, so a clock started at the write would remove `fading` mid-fade
  * and cut the release short. The clock only looks: `clockMs` after the
- * write, a release animation still running on the surface, or still waiting
- * for its first frame, is waited for until it finishes or is cancelled (the
- * surface was unmounted or restyled); with none (reduced motion's instant release, a
- * surface without a press layer, an engine without Web Animations) the
- * release ends there. Returns a cancel.
+ * write, a release animation still running, or still waiting for its first
+ * frame, is waited for until it finishes or is cancelled (the surface was
+ * unmounted or restyled); with none (an instant release, a surface without
+ * a release animation, an engine without Web Animations) the release ends
+ * there. Returns a cancel.
  */
 function endAfterRelease(
   element: Element,
@@ -522,10 +433,12 @@ export function readPressPaint(element: Element): PressPaint | null {
 }
 
 /**
- * Write `next` on `element` if its state is one of `onlyFrom`: THE ONE
- * WRITER of the press attribute, for the controller and every other painter
- * (paintPress), so a fade's clock and the attribute never drift apart. Any
- * write ends a fade paintPress left running there. Returns whether it wrote.
+ * Write `next` on `element` if its state is one of `onlyFrom`: the press
+ * attribute's writer for the controller and every painter that uses
+ * paintPress, so a fade's clock and the attribute never drift apart (the
+ * action-group tracker, hooks/actionGroupTracker.ts, still writes its groups'
+ * presses itself). Any write ends a fade paintPress left running there.
+ * Returns whether it wrote.
  */
 function writePress(
   element: Element,
@@ -581,7 +494,7 @@ export function paintPress(
 }
 
 /**
- * The controller's paint, through the one writer: a state the controller did
+ * The controller's paint, through writePress: a state the controller did
  * not write is its owner's (a `held` row), so neither a new press nor a
  * release's end overwrites or clears it.
  */
@@ -632,7 +545,6 @@ function apply(slot: Slot, step: PressStep): void {
   paintElement(live.element, step.paint);
   if (step.gesture.phase === 'idle') {
     slot.live = null;
-    settle();
     return;
   }
   if (step.timer != null) {
@@ -651,12 +563,16 @@ function apply(slot: Slot, step: PressStep): void {
     if (kind === 'fade') {
       // The release is over when its animation is, however late a busy
       // main thread let that animation start.
-      live.timer = endAfterRelease(live.element, timerMs(kind, live), fire);
+      live.timer = endAfterRelease(
+        live.element,
+        timerMs(kind, live.element),
+        fire,
+      );
     } else {
       // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
       // while a scroll runs, so a frame-based delay would fire late, after the
       // scroll, and paint a control nobody is pressing any more.
-      const timer = setTimeout(fire, timerMs(kind, live));
+      const timer = setTimeout(fire, timerMs(kind, live.element));
       live.timer = () => clearTimeout(timer);
     }
   }
@@ -723,15 +639,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
  *     says nothing about a control elsewhere.
  *  2. The scroll must have been driven by a finger IN THAT SCROLLER, which is
  *     what `onScroll` records. "Any finger anywhere, recently" is not enough:
- *     tap a control, then press a button inside a pane that is scrolling on
- *     its own, and that press would be swallowed by a scroll no finger drove.
+ *     tap a control, then within the memory window press a button inside a
+ *     pane that is scrolling on its own, and that press would be swallowed by
+ *     a scroll no finger drove.
  */
 function scrollerIsBraking(element: HTMLElement): boolean {
-  if (fling != null && !fling.isConnected) {
-    // The scroller left the document mid-fling: no `scrollend` will come.
-    clearFling();
+  if (Date.now() - lastScrollAt >= PRESS_SCROLL_BRAKE_MS) {
+    return false;
   }
-  return fling != null && fling.contains(element);
+  return lastScroller instanceof Node && lastScroller.contains(element);
 }
 
 /**
@@ -745,7 +661,6 @@ function releaseIfDead(slot: Slot): void {
   if (slot.live?.gesture.phase === 'dead') {
     clearTimer(slot);
     slot.live = null;
-    settle();
   }
 }
 
@@ -762,7 +677,6 @@ function finish(slot: Slot): void {
   if (slot === button) {
     holdKey(false);
   }
-  settle();
 }
 
 /** A new press on an element owns its paint: the other slot's gesture there ends. */
@@ -773,37 +687,10 @@ function takeOver(other: Slot, element: HTMLElement): void {
 }
 
 /**
- * The release's clock for a press on a surface of `profile`: the profile's
- * own under a coarse primary pointer, and the deselect clock it always had
- * with any other pointer (a finger on a touch screen beside a mouse), as the
- * stylesheet's release arms are (the desktop rule, `spec:AST-017` FR59/DEC-25).
- */
-function releaseOf(
-  profile: PressProfile,
-  element: Element,
-): Pick<PressProfile, 'releaseMs'> {
-  // The same coarse gate the stylesheet's release arms use.
-  return {
-    releaseMs: releaseMsOf(
-      stylesheetDroppedActive() ? profile : PRESS_PROFILES.cell,
-      element,
-    ),
-  };
-}
-
-/** A profile's release clock: its motion role under the element (#8268). */
-function releaseMsOf(profile: PressProfile, element: Element): number {
-  return profile.releaseRole == null
-    ? profile.releaseMs
-    : resolveMotion(element, pressTiming, profile.releaseRole);
-}
-
-/**
  * Whether the stylesheet drops `:active` here (a coarse primary pointer): a
- * Space press is then the controller's to paint, and every release takes its
- * profile's clock. Asked at each such press: rendering a pressable never
- * queries the pointer, so a layout that must not depend on it stays
- * independent.
+ * Space press is then the controller's to paint. Asked at each such press:
+ * rendering a pressable never queries the pointer, so a layout that must
+ * not depend on it stays independent.
  */
 function stylesheetDroppedActive(): boolean {
   // The shared touch resolver's key (`spec:AST-012` FR2): the condition the
@@ -846,20 +733,10 @@ function pressButton(
     return;
   }
   takeOver(finger, element);
-  track();
-  // A mouse's release is a finger's on this device (FR11). A key keeps the
-  // fine pointer's 200 ms release on any surface, and the marker tells the
-  // stylesheet's release arms the same.
-  button.live = {
-    element,
-    gesture: idlePressGesture(),
-    pointerId,
-    releaseMs:
-      pointerId == null
-        ? releaseMsOf(PRESS_PROFILES.cell, element)
-        : releaseOf(profileOf(element), element).releaseMs,
-    timer: null,
-  };
+  button.live = {element, gesture: idlePressGesture(), pointerId, timer: null};
+  // A mouse's release is a finger's on this device (FR11, FR43). A key keeps
+  // the fine pointer's 200 ms release on any surface, and the marker tells
+  // the stylesheet's release arms the same.
   if (pointerId == null) {
     element.setAttribute(PRESS_INPUT_ATTRIBUTE, 'key');
   }
@@ -902,9 +779,7 @@ function onPointerDown(event: PointerEvent): void {
     // A pen's barrel or eraser button: not a press.
     return;
   }
-  // Any finger arms the listeners, a press or not: the scroll it may start is
-  // what the brake listens for.
-  track();
+  armTouchCancel();
   if (finger.live != null) {
     const fingerIsUp =
       finger.live.gesture.phase === 'fading' ||
@@ -920,41 +795,28 @@ function onPointerDown(event: PointerEvent): void {
     // owns the surface from here; swallowing it would make the second of two
     // quick taps answer with nothing.
     finish(finger);
-    // That tap was the only press live and no finger is down yet, so
-    // finishing it took the listeners down: arm them again, or this touch's
-    // lift goes unheard and its press stays on.
-    track();
   }
   const element = surfaceAt(event.target);
-  // The finger is recorded AFTER the brake reads the fling, deliberately: the
-  // question the brake asks is whether a PREVIOUS finger's fling is still
-  // running here.
+  // The touch clock is stamped AFTER the brake reads it, deliberately: the
+  // question the brake asks is whether a PREVIOUS finger could still be
+  // driving this scroll, and stamping first would make every first touch on a
+  // freshly restored page answer yes.
   // The brake is a finger's: a pen, a fine pointer, presses at once, even on
   // a list a finger left moving (FR11).
   const braking =
     event.pointerType === 'touch' &&
     element != null &&
     scrollerIsBraking(element);
-  if (event.pointerType === 'pen') {
-    clearPen();
-    penDown = true;
-  } else {
-    // A finger counts as down only where its lift is heard: the touch-only
-    // listeners are on only while the primary pointer is coarse (FR24).
-    touching = isCoarsePointer(window);
-  }
+  lastTouchAt = Date.now();
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
-    settle();
     return;
   }
   takeOver(button, element);
-  const profile = profileOf(element);
   finger.live = {
     element,
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
-    ...releaseOf(profile, element),
     timer: null,
   };
   apply(
@@ -965,9 +827,7 @@ function onPointerDown(event: PointerEvent): void {
       y: event.clientY,
       // A pen presses at once, in a scroll view too: the content-touch delay
       // waits out a finger's scroll (FR11).
-      delayed:
-        event.pointerType === 'touch' &&
-        (profile.highlightDelay === 'always' || isInsideScroller(element)),
+      delayed: event.pointerType === 'touch' && isInsideScroller(element),
     }),
   );
 }
@@ -1002,19 +862,16 @@ function onPointerUp(event: PointerEvent): void {
     }
     return;
   }
+  // The lift is when momentum starts, so it is the clock the brake wants most.
+  lastTouchAt = Date.now();
   if (event.target instanceof Node) {
     lastTouchTarget = event.target;
-  }
-  if (event.pointerType === 'pen') {
-    // A pen's lift: no touchend follows.
-    clearPen();
   }
   const live = finger.live;
   if (
     live == null ||
     (live.pointerId != null && event.pointerId !== live.pointerId)
   ) {
-    settle();
     return;
   }
   apply(finger, pressGestureStep(live.gesture, {kind: 'up'}));
@@ -1037,16 +894,6 @@ function onCancel(event?: Event): void {
       cancelButton();
     }
     return;
-  }
-  if (pointer?.pointerType === 'pen' && penDown) {
-    // The browser took the pen to scroll: its scroll still drives the
-    // scroller until that scroll records its fling, within the brake window.
-    clearTimeout(penCancelTimer);
-    penCancelTimer = setTimeout(() => {
-      penDown = false;
-      penCancelTimer = undefined;
-      settle();
-    }, PRESS_SCROLL_BRAKE_MS);
   }
   const live = finger.live;
   if (live == null) {
@@ -1072,26 +919,16 @@ function onDragStart(): void {
 /** A scroll anywhere above the pressed element, caught in the capture phase. */
 function onScroll(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
-  // A scroll counts as a finger's only if that finger is down inside THIS
-  // scroller, or this is the fling it left running. Anything else is the
-  // program moving something, and must leave the brake unarmed. The fling
-  // ends at its `scrollend`, or where there is none, once its scroll events
-  // stop for the brake window (PRESS_SCROLL_BRAKE_MS).
+  // A scroll counts as a finger's only if that finger was inside THIS
+  // scroller, recently. Anything else is the program moving something, and
+  // must leave the brake unarmed rather than merely un-refreshed.
   const driven =
-    (touching || penDown || fling === scroller) &&
+    Date.now() - lastTouchAt < PRESS_GESTURE_MEMORY_MS &&
     lastTouchTarget != null &&
     scroller.contains(lastTouchTarget);
   if (driven) {
-    fling = scroller;
-    if (!('onscrollend' in window)) {
-      clearTimeout(flingIdleTimer);
-      flingIdleTimer = setTimeout(() => {
-        if (fling === scroller) {
-          clearFling();
-          settle();
-        }
-      }, PRESS_SCROLL_BRAKE_MS);
-    }
+    lastScrollAt = Date.now();
+    lastScroller = scroller;
   }
   const live = finger.live;
   if (live == null) {
@@ -1105,26 +942,6 @@ function onScroll(event: Event): void {
     return;
   }
   onCancel();
-}
-
-/**
- * The fling stopped: the brake's window ends here, at the scroller's own
- * signal, and so do the listeners that waited for it.
- */
-function onScrollEnd(event: Event): void {
-  const scroller = event.target instanceof Node ? event.target : document;
-  if (fling != null && scroller === fling) {
-    clearFling();
-    settle();
-  }
-}
-
-/** The last finger left the glass. */
-function onTouchEnd(event: TouchEvent): void {
-  if (event.touches.length === 0) {
-    touching = false;
-    settle();
-  }
 }
 
 /** Whether a Space press on this element is an activation browsers paint as `:active`. */
@@ -1187,107 +1004,83 @@ function onBlur(): void {
  */
 function onVisibilityChange(): void {
   if (document.visibilityState === 'hidden') {
-    // A hidden page hears no lift and no `scrollend`: nothing is down or
-    // flinging when it comes back.
-    touching = false;
-    clearPen();
-    clearFling();
     finish(finger);
     finish(button);
   }
 }
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
-const PASSIVE = {passive: true} as const;
+/** The input stream subscriptions while installed. */
+let unsubscribers: (() => void)[] = [];
 
-/*
- * Pointer, touch, drag, scroll and visibility input arrive through the shared
- * input stream (utils/inputStream.ts): one passive listener per type on the
- * window's capture phase for every subscriber in the page, which an app's
- * capture-phase stopPropagation cannot starve, and which hears every
- * scroller's `scroll` and `scrollend` (neither bubbles). The keyboard stays
- * on the window's bubble phase, outside the stream: a Space press must see
- * the target's `preventDefault` (`defaultPrevented`), as `:active` does, and
- * only the bubble phase has run the target's own listeners.
+/** The touch-only `touchcancel` subscription, while the pointer is coarse. */
+let stopTouchCancel: (() => void) | null = null;
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The one touch-only listener is on only while the primary pointer is coarse
+ * (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointercancel`.
  */
-
-/** The stream subscriptions that arm the controller, while it is installed. */
-let arming: (() => void)[] = [];
-/** The stream subscriptions that track a live press, while one is. */
-let trackingSubscriptions: (() => void)[] = [];
-
-const unsubscribeAll = (subscriptions: (() => void)[]): void => {
-  for (const unsubscribe of subscriptions.splice(0)) {
-    unsubscribe();
+function hearTouchCancel(on: boolean): void {
+  if (on === (stopTouchCancel != null)) {
+    return;
   }
-};
-
-/** The two listeners a document carries at rest: they only arm the rest. */
-function addArmingListeners(): void {
-  arming = [subscribeInput(window, 'pointerdown', onPointerDown)];
-  window.addEventListener('keydown', onKeyDown, PASSIVE);
+  if (on) {
+    stopTouchCancel = subscribeInput(window, 'touchcancel', onCancel);
+  } else {
+    stopTouchCancel?.();
+    stopTouchCancel = null;
+  }
 }
 
-function removeArmingListeners(): void {
-  unsubscribeAll(arming);
-  window.removeEventListener('keydown', onKeyDown);
+/**
+ * Read the primary pointer when the first finger or pen lands, and follow it
+ * from then on: installing asks nothing, so a page no one touches never
+ * queries it.
+ */
+function armTouchCancel(): void {
+  if (stopWatchingPointer != null) {
+    return;
+  }
+  stopWatchingPointer = watchCoarsePointer(window, hearTouchCancel);
+  hearTouchCancel(isCoarsePointer(window));
 }
 
-function addTrackingListeners(): void {
-  trackingSubscriptions = [
+// The pointer, drag, scroll and visibility listeners are passive and on the
+// window's capture phase, through the shared input stream
+// (utils/inputStream.ts): a page of pressables blocks no scroll, and an app's
+// capture-phase stopPropagation at the document cannot starve the controller.
+function addListeners(): void {
+  unsubscribers = [
+    subscribeInput(window, 'pointerdown', onPointerDown),
     subscribeInput(window, 'pointermove', onPointerMove),
     subscribeInput(window, 'pointerup', onPointerUp),
     subscribeInput(window, 'pointercancel', onCancel),
     subscribeInput(window, 'dragstart', onDragStart),
+    // `scroll` does not bubble; the capture phase hears every scroller.
     subscribeInput(window, 'scroll', onScroll),
-    subscribeInput(window, 'scrollend', onScrollEnd),
     subscribeInput(window, 'visibilitychange', onVisibilityChange),
   ];
-  stopWatchingPointer = watchCoarsePointer(window, followPointer);
-  hearTouch(isCoarsePointer(window));
+  // The key path listens after the page's own handlers, at the window's
+  // bubble phase: a Space press the page cancels (`defaultPrevented`) paints
+  // nothing. Only Space's press needs the key's release and focus loss, so
+  // those two are attached while it is held (holdKey).
+  window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
-function removeTrackingListeners(): void {
-  unsubscribeAll(trackingSubscriptions);
+function removeListeners(): void {
+  for (const unsubscribe of unsubscribers.splice(0)) {
+    unsubscribe();
+  }
   stopWatchingPointer?.();
   stopWatchingPointer = null;
-  hearTouch(false);
+  hearTouchCancel(false);
+  window.removeEventListener('keydown', onKeyDown);
+  holdKey(false);
 }
 
-/** The finger's touch-only subscriptions, while tracked and coarse. */
-let touchSubscriptions: (() => void)[] = [];
-/** Stops following the primary pointer, while a press is tracked. */
-let stopWatchingPointer: (() => void) | null = null;
-
-/**
- * The finger's touch-only listeners are on only while the primary pointer is
- * coarse (`spec:AST-094` FR24); where it is fine, a finger's press still ends
- * through `pointerup` and `pointercancel`.
- */
-function hearTouch(on: boolean): void {
-  if (on === touchSubscriptions.length > 0) {
-    return;
-  }
-  if (on) {
-    touchSubscriptions = [
-      subscribeInput(window, 'touchcancel', onCancel),
-      subscribeInput(window, 'touchend', onTouchEnd),
-      subscribeInput(window, 'touchcancel', onTouchEnd),
-    ];
-  } else {
-    unsubscribeAll(touchSubscriptions);
-  }
-}
-
-/** The primary pointer turned coarse or fine while a press is tracked. */
-function followPointer(isCoarse: boolean): void {
-  hearTouch(isCoarse);
-  if (!isCoarse && touching) {
-    // Nothing hears the finger's lift any more.
-    touching = false;
-    settle();
-  }
-}
+const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+const PASSIVE = {passive: true} as const;
 
 /** Whether the key-release listeners are attached. */
 let keyHeld = false;
@@ -1313,42 +1106,6 @@ function holdKey(held: boolean): void {
   }
 }
 
-/** Whether the tracking listeners are attached. */
-let tracking = false;
-
-/** A press, or a finger, is live: attach the tracking listeners. */
-function track(): void {
-  if (!tracking) {
-    tracking = true;
-    addTrackingListeners();
-  }
-}
-
-function untrack(): void {
-  if (tracking) {
-    tracking = false;
-    removeTrackingListeners();
-  }
-}
-
-/**
- * Take the tracking listeners down once nothing needs them: no press is live,
- * no finger is down, and no fling a finger left running is still scrolling
- * (its `scrollend` calls this again).
- */
-function settle(): void {
-  if (
-    finger.live != null ||
-    button.live != null ||
-    touching ||
-    penDown ||
-    fling != null
-  ) {
-    return;
-  }
-  untrack();
-}
-
 /**
  * Install the touch press controller on this document, once, however many
  * times it is called: the listeners exist while at least one caller holds it.
@@ -1367,7 +1124,7 @@ export function installPressFeedback(): () => void {
     return () => undefined;
   }
   if (holders === 0) {
-    addArmingListeners();
+    addListeners();
   }
   holders += 1;
   let released = false;
@@ -1380,13 +1137,12 @@ export function installPressFeedback(): () => void {
     if (holders > 0) {
       return;
     }
-    removeArmingListeners();
+    removeListeners();
     finish(finger);
     finish(button);
-    untrack();
-    touching = false;
-    clearPen();
-    clearFling();
+    lastScrollAt = 0;
+    lastScroller = null;
+    lastTouchAt = 0;
     lastTouchTarget = null;
   };
 }
