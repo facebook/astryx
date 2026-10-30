@@ -94,7 +94,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -269,3 +270,32 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Refresh control (UIRefreshControl)
+
+Values the refresh control reads from its own table (`uikit/refresh.ts`); its
+release onto the inset is `scroll.bounce` (M-S3) and its pull past the
+control's height is `scroll.rubberBand`. Subject: RefreshLab, a UIKit host app
+with a `UIRefreshControl` on a table view (334, 400, 874 and 1366 pt tall on
+the iPhone 17 Pro simulator) and buttons for `beginRefreshing` and
+`endRefreshing`.
+
+Done (iOS 26.2 simulator, Oct 23 2026; in the refresh control's table): the
+height and refreshing inset, the one-to-one pull up to the height, the trigger
+distance against the view's height (and its floor), the trigger moment (finger
+down), the step after it, the release onto the inset, the reveal (a paused
+replicator scrubbed by overscroll ÷ trigger distance; 8 spokes), the spin and
+trigger springs, the spokes' geometry and the refreshing gradient (alpha
+offset 0.08, first alpha 0, springing in with `allowsOverdamping` off; Oct 24
+2026), the end clock (three runs at rest, identical), that a
+momentum overshoot never triggers, that a pull while refreshing fires
+`valueChanged` again, and that the trigger makes no feedback-generator call
+(at 50, 150 and 400 pt/s).
+
+| ID    | What                   | App and gesture                                                                                                              | Extract                                                                                                                                 | Method |
+| ----- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-RC2 | Indicator placement    | RefreshLab: slow pulls to 2 × the trigger distance on the 400 and 874 pt views, a screen recording beside the layer log      | the control's frame and the spinner's position against the overscroll (moves with the content, pinned, or centred in the gap)           | B, C   |
+| M-RC3 | Pull after the trigger | RefreshLab: pulls to 300 pt at 150 and 50 pt/s on the 334 and 874 pt views; a second pull while refreshing                   | the offset against the finger past 2 × `height` (is the step back systematic?), and the distance at which a pull while refreshing fires | C      |
+| M-RC4 | Trigger springs        | RefreshLab: pulls through the trigger at 50, 150 and 400 pt/s                                                                | the turn spring's stiffness against the release speed (b51b answered its overdamping and the gradient's targets)                        | A      |
+| M-RC5 | End of a refresh       | RefreshLab: `endRefreshing` while scrolled 300 pt away, while dragging, with a touch 100 ms into it, and 50 ms after a begin | what moves when scrolled away, the end under a finger, what a touch during the end does, any minimum visible time; a screen recording   | A, B   |
+| M-RC7 | Programmatic begin     | RefreshLab: `beginRefreshing` at the top and when scrolled 300 pt                                                            | whether the content moves to reveal the control, and its curve                                                                          | A, C   |
