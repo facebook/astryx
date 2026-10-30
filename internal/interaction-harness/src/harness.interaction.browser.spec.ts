@@ -6,9 +6,12 @@
  * @output Proof that each harness instrument measures what it claims (the
  *   busy-main-thread proof with a negative control beside its positive
  *   check): scripted timestamps reach the
- *   page; a flick flings natively (Chromium); a second finger and a pinch
- *   arrive as distinct pointers; the screencast shows a compositor animation
- *   advancing through a blocked main thread while a rAF animation freezes;
+ *   page; a flick flings natively (Chromium); a wheel step arrives as
+ *   exactly its deltas, with Control when held, and a pen stroke as trusted
+ *   pen pointers with its pressure and times (Chromium); a second finger and
+ *   a pinch arrive as distinct pointers; the screencast shows a compositor
+ *   animation advancing through a blocked main thread while a rAF animation
+ *   freezes;
  *   sampled curves
  *   match the oracles, individual transform properties included; a sample at
  *   an end reports the time it was read at; holding takes only running
@@ -51,6 +54,7 @@ import {
   pinch,
   readInputLog,
   releaseAnimations,
+  retakeOnWheelPacing,
   sampleCurve,
   seekAnimations,
   springStep,
@@ -65,6 +69,9 @@ import {
   waitForAnimation,
   waitForRest,
   watchAnimations,
+  webInputDriver,
+  PEN_SKIP,
+  WHEEL_SKIP,
   withFinger,
 } from './index';
 
@@ -421,6 +428,307 @@ test.describe('frame evidence', () => {
     });
     expect(proof.verdict.failures, proof.summary).toEqual([]);
     expect(proof.monotonic).toBe(true);
+  });
+});
+
+test.describe('wheel and pen input', () => {
+  test("at a device-pixel ratio of 3, a wheel step reaches the page as exactly its delta, where Playwright's own wheel delivers a third of it in Chromium", async ({
+    browser,
+    browserName,
+  }) => {
+    // A desktop context at DPR 3: the phone context has no wheel in WebKit.
+    const context = await browser.newContext({
+      viewport: {width: 402, height: 714},
+      deviceScaleFactor: 3,
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      await page.route('http://wheel.test/', route =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;height:3000px"><script>window.__deltas=[];addEventListener('wheel',e=>__deltas.push(e.deltaY),{passive:true});</script>`,
+        }),
+      );
+      await page.goto('http://wheel.test/');
+      // Read without draining, so a wrong delta shows in the failure.
+      const seen = () =>
+        page.evaluate(() =>
+          (window as unknown as {__deltas: number[]}).__deltas.slice(),
+        );
+      expect(await page.evaluate(() => window.devicePixelRatio)).toBe(3);
+
+      const driver = await webInputDriver(page);
+      expect(driver.wheels).toBe(true);
+      await driver.wheel({x: 200, y: 300, dy: 100});
+      // Read once the page has the step, not at a time.
+      await expect.poll(seen).toEqual([100]);
+
+      // Playwright's own wheel, pinned: Chromium divides it by the ratio.
+      await page.mouse.move(200, 300);
+      await page.mouse.wheel(0, 100);
+      await expect
+        .poll(async () => (await seen())[1])
+        .toBeCloseTo(browserName === 'chromium' ? 100 / 3 : 100, 5);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("a wheel step that misses the main document throws its named error within the limit, while a frozen timer gate holds the page's timers too", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: {width: 402, height: 714},
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      // A frame over the whole page: a step there lands in the frame's
+      // document, never the main one.
+      await page.route('http://wheel-miss.test/', route =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><body style="margin:0;height:3000px"><iframe srcdoc="<body style=height:3000px>" style="position:fixed;inset:0;width:100%;height:100%;border:0"></iframe>',
+        }),
+      );
+      await page.goto('http://wheel-miss.test/');
+      await installTimerGate(page);
+      const driver = await webInputDriver(page);
+      test.skip(!driver.wheels, WHEEL_SKIP);
+      await freezeTimers(page);
+      // Over the frame, the main document receives nothing, and the driver's
+      // own limit, not the test's timeout, ends the wait.
+      await expect(driver.wheel({x: 200, y: 300, dy: 100})).rejects.toThrow(
+        /did not receive the wheel step/,
+      );
+      await thawTimers(page);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('a wheel burst reaches the page as one run with its whole delta and no gap past the 100 ms that ends a wheel gesture, re-taken once when the runner stalls it', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: {width: 402, height: 714},
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      // A recognizer's listener: not passive, and it takes every step.
+      await page.route('http://wheel-burst.test/', route =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><body style="margin:0;height:3000px"><script>window.__deltas=[];addEventListener("wheel",e=>{__deltas.push(e.deltaX);e.preventDefault();},{passive:false});</script>',
+        }),
+      );
+      await page.goto('http://wheel-burst.test/');
+      const driver = await webInputDriver(page);
+      test.skip(!driver.wheels, WHEEL_SKIP);
+      // A recognizer ends a wheel gesture 100 ms after its last step: sent
+      // on its schedule, the run stays one gesture however long each step's
+      // round trip takes, and a runner stall past that bound is re-taken once.
+      await retakeOnWheelPacing(test.info(), async () => {
+        await page.evaluate(() => {
+          (window as unknown as {__deltas: number[]}).__deltas = [];
+        });
+        const {receivedSteps, receivedGapsMs} = await driver.wheelBurst({
+          x: 200,
+          y: 300,
+          steps: Array.from({length: 20}, () => ({dx: 40})),
+          maxGapMs: 100,
+        });
+        // Every pixel arrives, in steps of 40 px or, where the engine
+        // coalesced steps the page was still handling, their sums.
+        const deltas = await page.evaluate(
+          () => (window as unknown as {__deltas: number[]}).__deltas,
+        );
+        expect(deltas.reduce((sum, d) => sum + d, 0)).toBe(800);
+        expect(
+          deltas.every(d => d > 0 && d % 40 === 0),
+          String(deltas),
+        ).toBe(true);
+        expect(receivedSteps).toBe(deltas.length);
+        expect(receivedGapsMs).toHaveLength(receivedSteps - 1);
+      });
+    } finally {
+      await context.close();
+    }
+  });
+
+  /** A non-passive wheel listener: Chromium then waits for the page itself. */
+  const listenNonPassively = (page: Page) =>
+    page.evaluate(() =>
+      window.addEventListener('wheel', () => {}, {passive: false}),
+    );
+  /** The wheel steps the page received. */
+  const wheelsOf = async (page: Page) =>
+    (await readInputLog(page)).filter(r => r.type === 'wheel');
+
+  test('a wheel step reaches the page as exactly its deltas, trusted, with Control when held, by the time wheel() resolves on a page whose wheel listeners are all passive', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    await driver.wheel({x: 60, y: 520, dy: 120});
+    // The input log listens passively, so Chromium answers the dispatch
+    // before the page has the step: read right after the call.
+    expect(await wheelsOf(page)).toHaveLength(1);
+    await driver.wheel({x: 60, y: 520, dx: 30, dy: -40, ctrl: true});
+    const wheels = await wheelsOf(page);
+    expect(wheels).toHaveLength(2);
+    // Chromium's phone context has a device scale factor of 3: the driver
+    // multiplies back what Chromium divides by, so the page sees CSS px.
+    expect(wheels[0]).toMatchObject({
+      isTrusted: true,
+      deltaX: 0,
+      deltaY: 120,
+      deltaMode: 0,
+      ctrlKey: false,
+      x: 60,
+      y: 520,
+    });
+    expect(wheels[1]).toMatchObject({
+      isTrusted: true,
+      deltaX: 30,
+      deltaY: -40,
+      deltaMode: 0,
+      ctrlKey: true,
+    });
+  });
+
+  test('a wheel step reaches the page by the time wheel() resolves with a non-passive wheel listener too', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    await listenNonPassively(page);
+    await driver.wheel({x: 60, y: 520, dy: 80});
+    expect(await wheelsOf(page)).toHaveLength(1);
+    await driver.wheel({x: 60, y: 520, dy: -20, ctrl: true});
+    const wheels = await wheelsOf(page);
+    expect(wheels).toHaveLength(2);
+    expect(wheels[0]).toMatchObject({
+      isTrusted: true,
+      deltaY: 80,
+      ctrlKey: false,
+    });
+    expect(wheels[1]).toMatchObject({
+      isTrusted: true,
+      deltaY: -20,
+      ctrlKey: true,
+    });
+  });
+
+  test('a pen stroke reaches the page as trusted pen pointers, with its pressure, at its scripted times', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    await driver.pen([
+      {x: 100, y: 100, t: 0, pressure: 0.3},
+      {x: 100, y: 140, t: 50, pressure: 0.6},
+      {x: 100, y: 180, t: 100, pressure: 0.6},
+    ]);
+    const log = await readInputLog(page);
+    const down = log.find(r => r.type === 'pointerdown');
+    const moves = log.filter(r => r.type === 'pointermove');
+    const up = log.find(r => r.type === 'pointerup');
+    expect(down).toMatchObject({
+      isTrusted: true,
+      pointerType: 'pen',
+      x: 100,
+      y: 100,
+    });
+    expect(down?.pressure).toBeCloseTo(0.3, 2);
+    expect(moves.at(-1)).toMatchObject({pointerType: 'pen', y: 180});
+    expect(moves.at(-1)?.pressure).toBeCloseTo(0.6, 2);
+    expect(up).toMatchObject({isTrusted: true, pointerType: 'pen'});
+    // The scripted 100 ms between the first and last points reach the page.
+    expect(
+      (moves.at(-1)?.timeStamp ?? NaN) - (down?.timeStamp ?? NaN),
+    ).toBeCloseTo(100, 0);
+  });
+
+  test('a stroke sent right after a navigation presses where it is scripted', async ({
+    page,
+  }) => {
+    // The driver exists before the page navigates, and the stroke goes out
+    // the moment the page has loaded: the press must not take the previous
+    // document's page scale (about:blank's, in the phone project).
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    await fixture(page);
+    await driver.pen([
+      {x: 100, y: 100, t: 0, pressure: 0.5},
+      {x: 100, y: 120, t: 30, pressure: 0.5},
+    ]);
+    const down = (await readInputLog(page)).find(r => r.type === 'pointerdown');
+    expect(down).toMatchObject({pointerType: 'pen', x: 100, y: 100});
+  });
+
+  test('says which inputs it has: WebKit in a phone context has no wheel and no pen', async ({
+    page,
+    browserName,
+  }) => {
+    await fixture(page);
+    const driver = await webInputDriver(page);
+    if (browserName === 'chromium') {
+      expect({wheels: driver.wheels, pens: driver.pens}).toEqual({
+        wheels: true,
+        pens: true,
+      });
+      return;
+    }
+    expect({wheels: driver.wheels, pens: driver.pens}).toEqual({
+      wheels: false,
+      pens: false,
+    });
+    await expect(driver.wheel({x: 60, y: 520, dy: 120})).rejects.toThrow(
+      WHEEL_SKIP,
+    );
+    await expect(driver.pen([{x: 100, y: 100, t: 0}])).rejects.toThrow(
+      PEN_SKIP,
+    );
+  });
+
+  test.describe('in a desktop context', () => {
+    test.use({isMobile: false, hasTouch: false, deviceScaleFactor: 1});
+
+    test('a wheel step reaches the page as exactly its deltas in both engines', async ({
+      page,
+    }) => {
+      await fixture(page);
+      const driver = await webInputDriver(page);
+      expect(driver.wheels).toBe(true);
+      await driver.wheel({x: 60, y: 520, dy: 120});
+      expect(await wheelsOf(page)).toHaveLength(1);
+      await driver.wheel({x: 60, y: 520, dx: -25, dy: 0, ctrl: true});
+      const wheels = await wheelsOf(page);
+      expect(wheels).toHaveLength(2);
+      expect(wheels[0]).toMatchObject({
+        isTrusted: true,
+        deltaX: 0,
+        deltaY: 120,
+        deltaMode: 0,
+        ctrlKey: false,
+      });
+      expect(wheels[1]).toMatchObject({
+        isTrusted: true,
+        deltaX: -25,
+        deltaY: 0,
+        deltaMode: 0,
+        ctrlKey: true,
+      });
+    });
   });
 });
 
