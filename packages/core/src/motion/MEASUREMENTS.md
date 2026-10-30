@@ -94,10 +94,11 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
+| M-G21 | `UIKIT_MENU_PRESS.holdOpenSlop`                 | UIKit lab, a pull-down button inside a UIScrollView: HID presses moved 12.5, 13 and 13.5 pt within the content-touch delay; the largest move that still opens the menu.                          | C      |
 
 Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026: the recognizers' ivars read
 in process, each confirmed with HID touches and the state log; values in
@@ -110,7 +111,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -269,3 +271,15 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Menus (UIMenu)
+
+Probe: the UIKit lab host app with a UIButton whose `UIMenu` is its primary
+action (`showsMenuAsPrimaryAction`), three to twelve items, on a plain view
+and inside a UIScrollView; the gesture-state, presentation-modifier,
+display-link and feedback hooks; real HID touches.
+
+| ID    | Scene                                                         | Gesture                                                                                                                                                 | Extract                                                                                                                                      | Method |
+| ----- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-MN1 | button on a plain view; the same button inside a UIScrollView | holds of 100, 130, 140, 150, 160, 170, 200 ms then lift; a press moved 12 and 30 pt within 80 ms                                                        | when the touch-down recognizer recognizes and the open spring starts, against touch-down; its minimum duration and allowable movement (read) | C, D   |
+| M-MN2 | button on a plain view                                        | hold until the menu is open, then lift still; move 8 pt down, 8 pt right, 12 pt down, (7, 7), (8, 8) and lift; move 6 pt before the open and 6 pt after | row picked or not; handoff and list-selection recognizer states; highlighted row per frame: threshold, metric, where it is counted from      | C      |
