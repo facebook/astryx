@@ -2135,8 +2135,14 @@ export class GestureHost {
     }
   }
 
-  /** End the wheel gesture in progress, at its last wheel's time. */
-  private endWheel(endTime: number = this.clock.now()): void {
+  /**
+   * End the wheel gesture in progress. On its own (its timer, a taker
+   * leaving, a detach) it ends `WHEEL_END_MS` after its last wheel; an input
+   * that ends it sooner (a press, the next gesture's first wheel) passes its
+   * own time. Both are on the wheels' time base (eventTime), never the
+   * host's clock, which need not share it.
+   */
+  private endWheel(endTime?: number): void {
     const gesture = this.wheel;
     if (this.isWheelLatched) {
       this.doc.removeEventListener('wheel', this.onWheel, {capture: true});
@@ -2159,10 +2165,13 @@ export class GestureHost {
     // Never later than the input that ends it (a press, the next gesture's
     // first wheel): the arena's clock only moves forward, so a later stamp
     // would move that input's times too (FR16).
+    const end = gesture.last + WHEEL_END_MS;
     const time =
-      gesture.scrollType === 'discrete'
-        ? Math.max(gesture.last, Math.min(gesture.last + WHEEL_END_MS, endTime))
-        : gesture.last;
+      gesture.scrollType !== 'discrete'
+        ? gesture.last
+        : endTime == null
+          ? end
+          : Math.max(gesture.last, Math.min(end, endTime));
     this.arena.ended(
       gesture.kind === 'pan'
         ? [{id: gesture.ids[0], x: gesture.x, y: gesture.y, time}]

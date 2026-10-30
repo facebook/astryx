@@ -483,6 +483,37 @@ describe('wheel and trackpad input (spec:AST-094 FR43)', () => {
     expect(Math.abs(released.smooth.scroll)).toBeGreaterThan(0);
   });
 
+  it("releases a mouse wheel's notches still whatever the host's clock reads: the release is stamped on the wheels' own times", () => {
+    // The host schedules a gesture's end on its clock, while the arena reads
+    // the wheels' own timestamps, which need not share the clock's base: a
+    // page whose clock a test fakes, as a sheet's tests do.
+    const {notched} = mount('<div id="notched"></div>');
+    const released: number[] = [];
+    const pan = new PanGestureRecognizer({direction: 'vertical'});
+    pan.addTransitionListener((current, _from, to) => {
+      if (to === 'ended') {
+        released.push(current.velocity().y);
+      }
+    });
+    detachers.push(host.attach(notched, pan));
+    clock.time = 0;
+    for (const time of [1_000_000, 1_000_016, 1_000_032]) {
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: 20,
+        clientY: 20,
+        deltaY: 100,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      notched.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+    clock.runDue(100);
+    expect(released.map(Math.abs)).toEqual([0]);
+  });
+
   it('starts a new wheel gesture after a quiet gap even when the end timer has not run yet (a blocked main thread)', () => {
     const {box} = mount('<div id="box"></div>');
     const pan = new PanGestureRecognizer({
