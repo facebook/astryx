@@ -22,6 +22,7 @@ import {
   createAnimator,
   END_HOLD_MS,
   PROMOTION_LINGER_MS,
+  plannedTrackCount,
   type AnimatorOptions,
 } from './animator';
 import {cubicBezier} from './bezier';
@@ -1305,6 +1306,25 @@ describe('start: when a call\u2019s animations start', () => {
       expect(animator.get('y', 1000 + t * 1000)).toBeCloseTo(y.value(t), 9);
     }
     expect(curve?.at(curve.duration)).toBe(400);
+  });
+});
+
+describe('plans: a repeated identical motion reuses its keyframes', () => {
+  it('plans a spring from rest once for two elements making the same move, with the same keyframes', async () => {
+    // A control's press plays the same springs from the same values on every
+    // press; planning their keyframes again each time is the press's largest
+    // cost on a slow phone.
+    const first = setup().animator;
+    const before = plannedTrackCount();
+    first.animate({scaleX: 1.5, scaleY: 1.6}, {spring: springs.settle});
+    const [a] = live('scale');
+    clock += 5000;
+    const second = setup().animator;
+    second.animate({scaleX: 1.5, scaleY: 1.6}, {spring: springs.settle});
+    const b = live('scale').find(animation => animation !== a);
+    expect(plannedTrackCount() - before).toBe(1);
+    expect(JSON.stringify(b?.keyframes)).toBe(JSON.stringify(a.keyframes));
+    expect(b?.options.duration).toBe(a.options.duration);
   });
 });
 

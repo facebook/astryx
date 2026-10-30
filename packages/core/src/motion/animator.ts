@@ -750,6 +750,19 @@ function format(
 
 const shared = new WeakMap<HTMLElement, Map<string, Animator>>();
 
+/** How many times an animator has planned a track's keyframes. */
+let plannedTracks = 0;
+
+/**
+ * How many times any animator has planned a track's keyframes, for the tests
+ * that check repeated identical motions reuse their plan.
+ *
+ * @internal Not exported from the package.
+ */
+export function plannedTrackCount(): number {
+  return plannedTracks;
+}
+
 /**
  * The one animator for `element` (and `options.pseudoElement`), created on
  * first use. Code that animates one element from several places (a swipe on
@@ -1313,6 +1326,7 @@ export function createAnimator(
     // Read where the keyframes are baked: a page moved to another screen
     // bakes its next motion for that screen.
     const devicePixel = 1 / Math.max(1, globalThis.devicePixelRatio || 1);
+    plannedTracks += 1;
     const collect = (scale: number) => {
       const times = new Set<number>([from, end]);
       for (const property of moving) {
