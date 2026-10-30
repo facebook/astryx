@@ -3,6 +3,7 @@
 import {defineConfig} from 'eslint/config';
 import {includeIgnoreFile} from '@eslint/compat';
 import path from 'node:path';
+import {readFileSync} from 'node:fs';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import eslintReact from '@eslint-react/eslint-plugin';
@@ -30,6 +31,29 @@ const astryxConfig = isStrictMode
   ? astryxPlugin.configs.strict
   : astryxPlugin.configs.recommended;
 const reactSeverity = isStrictMode ? 'error' : 'warn';
+
+// Barrel imports that existed when `@astryx/no-internal-barrel-import` arrived,
+// by repo-relative file. The list only shrinks.
+const internalBarrelBaseline = JSON.parse(
+  readFileSync(
+    new URL(
+      './internal/eslint-plugin-astryx/no-internal-barrel-import.baseline.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+);
+// Tests, stories and test helpers never ship, so they may import barrels.
+const INTERNAL_BARREL_TEST_FILES = [
+  '**/*.test.*',
+  '**/*.spec.*',
+  '**/*.stories.*',
+  '**/*.testing.*',
+  '**/*.render-testing.*',
+  '**/__tests__/**',
+  '**/__fixtures__/**',
+  '**/dist/**',
+];
 
 // The internal plugin is plain untyped JS (kept out of the lint/type surface),
 // so its inferred shape doesn't satisfy ESLint's strict `Plugin` type. One
@@ -863,6 +887,27 @@ export default defineConfig(
   //
   // Remove an entry here as its backlog closes; the file is clean when the
   // block is empty.
+  // Inside a package's own shipped source, import the module that defines a
+  // name, not a folder's index (a barrel): a lazily imported module that goes
+  // through a barrel pulls every sibling export into its graph, which broke
+  // the single-file bundle. Public consumers keep importing from the package
+  // entry. The barrel imports that predate the rule are listed in the
+  // baseline and stay allowed until a codemod removes them; anything new is
+  // reported (an error in strict mode, so a pull request that adds one fails
+  // lint, while main stays green). Type-only imports are erased and allowed.
+  {
+    files: ['packages/*/src/**/*.{ts,tsx,mts,cts,js,jsx,mjs}'],
+    ignores: INTERNAL_BARREL_TEST_FILES,
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-internal-barrel-import': [
+        reactSeverity,
+        {baseline: internalBarrelBaseline},
+      ],
+    },
+  },
   {
     files: ['packages/richtext/src/**/*.{ts,tsx}'],
     rules: {
