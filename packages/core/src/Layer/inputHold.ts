@@ -5,11 +5,11 @@
 /**
  * @file inputHold.ts
  * @input A layer's root element, what ends the hold (a promise, or an
- *   animator handle's `finished`), and its scope; the gesture host's touch
- *   gates
- * @output holdInput, useInputHold, isInHeldLayer and
- *   isInputShield: input held away from a layer while its
- *   presentation runs
+ *   animator handle's `finished`), and its scope; the flat-tree walk
+ *   (utils/flatTree)
+ * @output holdInput, useInputHold, isInHeldLayer (which the gesture host
+ *   asks for each touch) and isInputShield: input held away from a layer
+ *   while its presentation runs
  * @position The Layer module's one input hold, for every component
  *   whose layer presents or dismisses under a finger
  *
@@ -51,10 +51,12 @@
  * One hold per layer: holds on a held layer stack, and the layer comes back
  * when the last one ends (when what ends it settles, resolved or rejected;
  * when its release runs; on unmount, for the hook). Nothing is written to
- * the DOM but the shield and the content's `inert` attribute; the host
- * learns through one touch gate per document that asks `isInHeldLayer`,
- * walking the flat tree as it does (a slotted node to its slot, a shadow
- * root to its host).
+ * the DOM but the shield and the content's `inert` attribute. The gesture
+ * host asks `isInHeldLayer` itself for each touch, walking the flat tree as
+ * it does (a slotted node to its slot, a shadow root to its host): this
+ * module imports nothing from gestures/, so a component in the root entry
+ * can hold its layer statically and bring no gesture code
+ * (`architecture:react-component-runtime` INV13).
  *
  * SYNC: When modified, update inputHold.test.tsx,
  * __tests__/inputHold.interaction.browser.spec.ts and the components
@@ -62,8 +64,7 @@
  */
 
 import {useEffect, type RefObject} from 'react';
-import {getGestureHost} from '../gestures/GestureHost';
-import {parentAcrossShadow} from '../gestures/nativeScroll';
+import {parentAcrossShadow} from '../utils/flatTree';
 
 /** What a hold covers: the whole viewport, or the layer alone. */
 export type InputHoldScope = 'viewport' | 'layer';
@@ -88,7 +89,6 @@ interface HeldLayer {
 }
 
 const held = new WeakMap<Element, HeldLayer>();
-const gatedDocuments = new WeakSet<Document>();
 const liveShields = new WeakSet<Node>();
 
 /**
@@ -115,15 +115,6 @@ export function isInHeldLayer(target: Node | null): boolean {
     }
   }
   return false;
-}
-
-/** One gate per document: the host holds a held layer's touches away. */
-function gate(doc: Document): void {
-  if (gatedDocuments.has(doc)) {
-    return;
-  }
-  gatedDocuments.add(doc);
-  getGestureHost(doc).addTouchGate(isInHeldLayer);
 }
 
 const SWALLOWED = [
@@ -197,7 +188,6 @@ export function holdInput(
   layer: Element,
   {until, scope}: InputHoldOptions,
 ): () => void {
-  gate(layer.ownerDocument);
   let state = held.get(layer);
   if (state == null) {
     state = {viewport: 0, layer: 0, shield: null, inertContent: null};
