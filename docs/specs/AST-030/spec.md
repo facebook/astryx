@@ -71,8 +71,9 @@ they are separately named.
 - Define compatibility semantics or release-pair delta classes. Those belong to
   [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
   exact-main release-check execution boundary.
-- Remove required check names, branch protection, merge-queue coverage, or
-  owner approval of spec content.
+- Remove required check names (other than retiring the `spec-owner-approval`
+  mirror, FR15), branch protection, merge-queue coverage, or owner approval of
+  spec content.
 - Infer safety from file extensions, directory names, or the absence of a known
   risky path.
 - Treat tests, specifications, generated files, or changesets as proof that the
@@ -255,7 +256,8 @@ they are separately named.
   relevant on that trigger (`paths:`), and those paths name what the workflow
   reads or runs, never everything; a merge-group entry, which cannot filter by
   path, keeps running. A workflow that reports a required context (`build`,
-  `test`, `docsite-test`, `lint`, `spec-owner-approval`, `review-required`)
+  `test`, `docsite-test`, `lint`, `review-required`, and the
+  `spec-owner-approval` mirror while it is required, FR15)
   starts on every pull request and is never path-filtered: the trusted
   classifier's positive surfaces (FR1–FR5) choose the work inside it, and a job
   whose suite does not apply reports success without running it (FR7). A push
@@ -325,7 +327,7 @@ read change (FR14).
 | FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                            |
 | FR13     | classifier, workflow contract, component-analysis and RTL-scope tests       | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build   | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed             |
 | FR14     | `workflow-paths.test.mjs` over every workflow                               | path allowlist; required-context workflow                                                                | a `paths-ignore`, a match-all or exclusion glob, or a path filter on a workflow that reports a required context fails                                                                  |
-| FR15     | workflow contract and reconciler tests                                      | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                 | `review-required` succeeds while spec approval is missing, a second workflow publishes a review context, a fork review leaves a head pending, or a non-command comment starts a runner |
+| FR15     | workflow contract and reconciler tests                                      | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                 | `review-required` succeeds while spec approval is missing, a second workflow publishes a review context, a fork review starts the spec check, or a non-command comment starts a runner |
 
 ## Decision log
 

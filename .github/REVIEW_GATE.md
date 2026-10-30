@@ -33,23 +33,15 @@ neutral yellow "waiting" signal, not a red failure).
 ## Spec records
 
 Any PR that creates, changes, or archives a `current` architecture, component,
-family, design, or system spec needs a spec owner's approval, which the one
-review gate, `review-required`, carries after code review: `pending` (never a
-failure) with `⏳ Waiting for human spec approval: an eng owner can reply
-/approve-spec <sha>` (or `a design or eng owner` for design-owned records).
-`spec-owner-approval` mirrors the spec half while branch protection requires it.
-
-Any handle in `.github/ENGOWNERS` can approve every record kind; design and
-theme records and normative design assets also accept `.github/DESIGNOWNERS`.
-One approval covers all of a PR's spec changes and binds their content
-(`architecture:knowledge-contracts` DEC-14): `/approve-spec <full-sha>`, or a
-non-author owner's approving review, counts while the head's spec text equals
-that commit's, ignoring `authority`, `approved_by`, and `approved_at`. Merges
-from `main`, rebases, non-spec commits and the `draft` → `current` flip keep it.
-`/revoke-spec` and a request for changes withdraw it. The command must start the
-comment, as the workflow trigger matches the raw body. The gate's details give
-the head's command to copy, the records and the group each needs, and why an
-earlier approval no longer counts; the gate posts no comments.
+family, design, or system spec needs a spec owner's approval of its content
+(`architecture:knowledge-contracts` DEC-14), which `review-required` carries
+after code review: `pending`, never red, with `⏳ Waiting for human spec
+approval: …` naming who can approve. ENGOWNERS approve every record kind;
+design and theme records also accept DESIGNOWNERS. Approve with
+`/approve-spec <full-sha>` at the start of a comment (the trigger matches the
+raw body) or a non-author review; `/revoke-spec` withdraws. The gate's details
+give the command to copy and why an approval no longer counts; it posts no
+comments. `spec-owner-approval` mirrors the spec half.
 
 The gate never re-decides a merged or closed head. A run that starts after the
 merge publishes nothing, and neither does a run yielding to a newer one.
@@ -57,6 +49,8 @@ GitHub has no conditional status write, so the window between the last read and
 the write cannot be closed; the gate makes it one API call wide by reading the
 live pull request last, and if a status still lands on a head that settled
 during that window, the run logs the status as unverified.
+
+The gate decides approval only; it never enables auto-merge.
 
 A PR changes only spec records when every changed path is one of:
 
@@ -74,8 +68,7 @@ CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks
 both sides of a rename. Pure spec-record PRs run knowledge validation, skip
 runtime/build/visual work with successful required-status acknowledgements.
-Mixed code/spec changes keep full CI. The gate decides approval only; it never
-enables auto-merge.
+Mixed code/spec changes keep full CI.
 
 ## Sources of truth
 

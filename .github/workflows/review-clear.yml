@@ -190,9 +190,9 @@ jobs:
                 github.rest.repos.listCommitStatusesForRef,
                 {owner, repo, ref: headSha, per_page: 100},
               );
-              // The code half of the one review gate, read past spec waits
-              // and spec-approval prefixes.
-              const code = decision.readCodeGate(statuses);
+              // The newest status that names the code review, read past spec
+              // waits and spec-approval prefixes.
+              const code = decision.readCodeGate(statuses, {latest: false});
               const description = code?.description || '';
               appClearedStatus = code?.gated === false && description === APP_CLEARED;
               const statusOwnsGate =

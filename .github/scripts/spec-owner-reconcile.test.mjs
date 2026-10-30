@@ -1129,24 +1129,19 @@ describe('spec owner workflow reconciliation', () => {
       });
     });
 
-    it('keeps an approval across a commit that changes no spec text', async () => {
+    it.each([
+      ['a commit that changes no spec text', 'currentRecord', 'review'],
+      ['the draft-to-current flip', 'draftRecord', 'command'],
+    ])('keeps an approval across %s', async (_name, earlier, act) => {
       const harness = createHarness({
         headContent: currentRecord,
-        contentAt: {[oldHead]: currentRecord},
-        reviews: [{...specOwnerReview, commit_id: oldHead}],
-      });
-
-      await run(harness, context({runId: 100n}));
-
-      expect(latestReviewGate(harness.state).state).toBe('success');
-      expect(latestGateStatus(harness.state).state).toBe('success');
-    });
-
-    it('keeps an approval across the draft-to-current flip', async () => {
-      const harness = createHarness({
-        headContent: currentRecord,
-        contentAt: {[oldHead]: draftRecord},
-        comments: [ownerComment(`/approve-spec ${oldHead}`)],
+        contentAt: {
+          [oldHead]: earlier === 'draftRecord' ? draftRecord : currentRecord,
+        },
+        reviews:
+          act === 'review' ? [{...specOwnerReview, commit_id: oldHead}] : [],
+        comments:
+          act === 'command' ? [ownerComment(`/approve-spec ${oldHead}`)] : [],
       });
 
       await run(harness, context({runId: 100n}));
@@ -1197,6 +1192,57 @@ describe('spec owner workflow reconciliation', () => {
         state: 'pending',
         description: waiting,
       });
+    });
+
+    it('reads a spec wait as satisfied code review, not an older code wait', async () => {
+      const gate = (description, state = 'pending') => ({
+        sha: head,
+        context: 'review-required',
+        state,
+        description,
+        creator: {login: 'github-actions[bot]'},
+      });
+      // review-clear cleared code review under a spec wait; the code wait
+      // before it is history.
+      const harness = createHarness({
+        headContent: currentRecord,
+        comments: [ownerComment(`/approve-spec ${head}`)],
+        statuses: [gate(waiting)],
+        codeGate: gate('Waiting on code review: core change (+ spec approval)'),
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestReviewGate(harness.state)).toMatchObject({
+        state: 'success',
+        description: expect.stringContaining('✅ Spec approved by @cixzhang'),
+      });
+    });
+
+    it('names the owner whose request for changes holds the gate', async () => {
+      const harness = createHarness({
+        headContent: currentRecord,
+        comments: [ownerComment(`/approve-spec ${head}`)],
+        reviews: [
+          {
+            user: {login: 'imdreamrunner'},
+            state: 'CHANGES_REQUESTED',
+            commit_id: head,
+            submitted_at: '2026-08-30T10:06:00Z',
+          },
+        ],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestReviewGate(harness.state)).toMatchObject({
+        state: 'pending',
+        description:
+          '⏳ Waiting for human spec approval: @imdreamrunner requested changes and can reply /approve-spec <sha>',
+      });
+      expect(latestGateStatus(harness.state).description).toBe(
+        'Mirrors review-required · spec waiting (changes @imdreamrunner)',
+      );
     });
 
     it('recomposes when code review is withdrawn while it writes', async () => {

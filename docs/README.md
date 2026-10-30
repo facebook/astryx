@@ -54,15 +54,9 @@ Every knowledge record declares `authority: draft | current | archived`.
   accept current `.github/DESIGNOWNERS` members. Legacy v1 `owners` metadata is
   descriptive and does not grant approval rights.
 - Pull requests that create, change, or archive a `current` record wait on the
-  review gate, `review-required`, which stays pending with "Waiting for human
-  spec approval" and names who can approve. Draft-only records need no owner
-  approval.
-- One approval covers all of a pull request's spec changes and binds their
-  content: commits that leave the spec text unchanged, merges from `main`, and
-  the `draft` → `current` flip keep it, and changing approved spec text resets
-  it. An eligible owner approves by commenting `/approve-spec <full-sha>`,
-  which the author may do, or through a GitHub review when they are not the
-  author; `/revoke-spec` withdraws.
+  review gate, `review-required`, until an owner approves their content with
+  `/approve-spec <full-sha>` or a review (`architecture:knowledge-contracts`
+  DEC-14). Draft-only records need no owner approval.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative

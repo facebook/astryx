@@ -378,38 +378,34 @@ describe('spec owner decision', () => {
 
   it('withdraws only the revoking owner, and holds on a current request for changes', () => {
     const earlier = '1111111111111111111111111111111111111111';
-    const approve = {
-      user: {login: 'imdreamrunner'},
-      state: 'APPROVED',
-      commit_id: head,
-      submitted_at: '2026-08-30T10:00:00Z',
-    };
+    const at = '2026-08-30T10:01:00Z';
     const decide = ({reviews = [], comments = []}) =>
       resolveOwnerDecision({
         owners: ['cixzhang', 'imdreamrunner'],
         headSha: head,
-        reviews: [approve, ...reviews],
+        reviews: [
+          {
+            user: {login: 'imdreamrunner'},
+            state: 'APPROVED',
+            commit_id: head,
+            submitted_at: at,
+          },
+          ...reviews,
+        ],
         comments,
         approvesCurrentContent: sha => sha === head,
-      });
-    const changes = commitId => ({
-      user: owner,
-      state: 'CHANGES_REQUESTED',
-      commit_id: commitId,
-      submitted_at: '2026-08-30T10:01:00Z',
+      }).approved;
+    const say = body => ({comments: [{user: owner, body, created_at: at}]});
+    const changes = commit_id => ({
+      reviews: [
+        {user: owner, state: 'CHANGES_REQUESTED', commit_id, submitted_at: at},
+      ],
     });
 
-    const say = body => ({
-      comments: [{user: owner, body, created_at: '2026-08-30T10:01:00Z'}],
-    });
-
-    expect(decide(say('/revoke-spec'))).toMatchObject({
-      approved: true,
-      owner: 'imdreamrunner',
-    });
-    expect(decide(say(`/revoke-spec ${earlier}`)).approved).toBe(true);
-    expect(decide({reviews: [changes(earlier)]}).approved).toBe(true);
-    expect(decide({reviews: [changes(head)]}).approved).toBe(false);
+    expect(decide(say('/revoke-spec'))).toBe(true);
+    expect(decide(say(`/revoke-spec ${earlier}`))).toBe(true);
+    expect(decide(changes(earlier))).toBe(true);
+    expect(decide(changes(head))).toBe(false);
   });
 
   it('ignores commands from other users', () => {

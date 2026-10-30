@@ -132,6 +132,9 @@ const SPEC_WAITING_PREFIX = '⏳ Waiting for human spec approval: ';
 const SPEC_WAITING_TEXT = {
   eng: `${SPEC_WAITING_PREFIX}an eng owner can reply /approve-spec <sha>`,
   design: `${SPEC_WAITING_PREFIX}a design or eng owner can reply /approve-spec <sha>`,
+  // An owner's request for changes on the current content holds the gate.
+  held: login =>
+    `${SPEC_WAITING_PREFIX}@${login} requested changes and can reply /approve-spec <sha>`,
 };
 const SPEC_MIRROR_PREFIX = 'Mirrors review-required · spec ';
 const SPEC_CHECKING_TEXT = '⏳ Checking for spec changes…';
@@ -164,6 +167,14 @@ function readSpecStatus(status) {
   const description = status.description ?? '';
   if (description.startsWith(SPEC_MIRROR_PREFIX)) {
     const rest = description.slice(SPEC_MIRROR_PREFIX.length);
+    const holder = rest.match(/^waiting \(changes @([\w-]+)\)/)?.[1];
+    if (holder) {
+      return {
+        known: true,
+        satisfied: false,
+        text: SPEC_WAITING_TEXT.held(holder),
+      };
+    }
     if (rest.startsWith('waiting (design)')) {
       return {known: true, satisfied: false, text: SPEC_WAITING_TEXT.design};
     }
@@ -186,23 +197,23 @@ function readSpecStatus(status) {
 }
 
 /**
- * The code half: the newest trusted `review-required` carrying one (a spec
- * wait carries none, so an older status decides). `null` when none exists.
+ * The code half, from the newest trusted `review-required`. A spec wait is
+ * written only over satisfied code review, so it reads as satisfied.
+ * `{latest: false}` reads the newest status that names the code review
+ * instead: who owns the gate, for review-clear. `null` when none exists.
  */
-function readCodeGate(statuses) {
-  const gates = (statuses ?? []).filter(
-    status =>
-      status.context === REVIEW_GATE_CONTEXT &&
-      status.creator?.login === TRUSTED_STATUS_CREATOR,
+function readCodeGate(statuses, {latest = true} = {}) {
+  const status = (statuses ?? []).find(
+    gate =>
+      gate.context === REVIEW_GATE_CONTEXT &&
+      gate.creator?.login === TRUSTED_STATUS_CREATOR &&
+      (latest ||
+        !(
+          (gate.description ?? '').startsWith(SPEC_WAITING_PREFIX) ||
+          gate.description === SPEC_CHECKING_TEXT
+        )),
   );
-  if (gates.length === 0) return null;
-  const status =
-    gates.find(
-      gate =>
-        !(gate.description ?? '').startsWith(SPEC_WAITING_PREFIX) &&
-        gate.description !== SPEC_CHECKING_TEXT,
-    ) ?? null;
-  if (!status) return {gated: false, description: REVIEW_COMPLETE};
+  if (!status) return null;
   const description = status.description ?? '';
   if (
     status.state !== 'success' &&

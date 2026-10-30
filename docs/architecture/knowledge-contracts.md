@@ -1031,8 +1031,10 @@ label, or status supplies it.
   | engineering (alone or with design/theme) | `⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>`          |
   | design or theme only                     | `⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>` |
 
-  An approved spec change reads `✅ Spec approved by @owner` beside the code
-  review result. An ENGOWNER approval satisfies every group.
+  A request for changes holding the gate names its owner instead: `…: @owner
+requested changes and can reply /approve-spec <sha>`. An approved spec change
+  reads `✅ Spec approved by @owner` beside the code review result. An ENGOWNER
+  approval satisfies every group.
 
 - **Details.** The gate's details give the head's command to copy, list the
   changed records (id, title, authority change, and the group each needs), the
@@ -1042,9 +1044,11 @@ label, or status supplies it.
 - **Mirror.** `spec-owner-approval` reports the spec half with a minimal
   description while branch protection still requires it; it decides nothing
   `review-required` does not already show.
-- **Event coverage.** Every pull-request event, review, and owner command
-  re-evaluates the gate, and each evaluation publishes a terminal state for the
-  head it read. Comments that are not owner commands start no runner.
+- **Event coverage.** Every pull-request event, same-repository review, and
+  owner command re-evaluates the gate, and each evaluation publishes a terminal
+  state for the head it read. A fork review carries a read-only token and is
+  skipped, so owners approve a fork pull request with the command. Comments that
+  are not owner commands start no runner.
 
 Rejected: binding approval to the exact head commit, because recording the
 approval and every merge from the base branch forced a second approval of

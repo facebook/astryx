@@ -220,9 +220,9 @@ async function reconcileSpecOwnerGate({
     return newest === null || newest.runId <= runId;
   }
 
-  /** Publish the mirror, then the review gate composed with code review. */
   // The owners whose approval decided the gate, once the decision is known.
   let approvedBy = [];
+  /** Publish the mirror, then the review gate composed with code review. */
   async function setFinalStatus(headSha, state, text, missing = null) {
     const approvers = state === 'success' ? approvedBy : [];
     if (!(await isPublishable(headSha))) return false;
@@ -774,10 +774,15 @@ async function reconcileSpecOwnerGate({
     spec: !specDecision.approved,
     design: !designDecision.approved,
     theme: !themeDecision.approved,
+    heldBy: [specDecision, designDecision, themeDecision].find(
+      decision => decision.approved === false && decision.source === 'review',
+    )?.owner,
   };
   const statusText =
     ownerApprovalRequired && !approved
-      ? SPEC_WAITING_TEXT[missingGroups.spec ? 'eng' : 'design']
+      ? missingGroups.heldBy
+        ? SPEC_WAITING_TEXT.held(missingGroups.heldBy)
+        : SPEC_WAITING_TEXT[missingGroups.spec ? 'eng' : 'design']
       : ownerApprovalRequired
         ? approvedDescription(approvingOwners)
         : 'Draft-only knowledge change; owner approval is not required.';

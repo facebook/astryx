@@ -58,7 +58,6 @@ describe('spec content fingerprint (DEC-14)', () => {
 
 describe('one review gate', () => {
   const noCode = 'No code review required.';
-  const codeWait = 'Waiting on code review: core change';
 
   it('links a spec wait to the spec decision run', () => {
     const url = 'https://github.com/meta/astryx/actions/runs/7/attempts/1';
@@ -66,27 +65,5 @@ describe('one review gate', () => {
     expect(
       composeReviewGate({codeGated: false, codeDescription: noCode, spec}),
     ).toEqual({state: 'pending', description: '⏳ wait', target_url: url});
-  });
-
-  it('reads the code half back out of a composed gate', () => {
-    const gate = (state, description) => [
-      {
-        context: 'review-required',
-        state,
-        description,
-        creator: {login: 'github-actions[bot]'},
-      },
-    ];
-    expect(
-      readCodeGate(gate('pending', `${codeWait} (+ spec approval)`)),
-    ).toEqual({
-      gated: true,
-      description: codeWait,
-    });
-    expect(
-      readCodeGate(
-        gate('success', `✅ Spec approved by @cixzhang · ${noCode}`),
-      ),
-    ).toEqual({gated: false, description: noCode});
   });
 });

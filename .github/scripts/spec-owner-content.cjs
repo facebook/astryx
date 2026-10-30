@@ -101,6 +101,8 @@ function mirrorDescription({state, missing, approvers = []}) {
       ? `${SPEC_MIRROR_PREFIX}ok (${approvers.map(name => `@${name}`).join(', ')})`
       : `${SPEC_MIRROR_PREFIX}ok`;
   }
+  if (missing?.heldBy)
+    return `${SPEC_MIRROR_PREFIX}waiting (changes @${missing.heldBy})`;
   return `${SPEC_MIRROR_PREFIX}waiting (${missing?.spec ? 'eng' : 'design'})`;
 }
 

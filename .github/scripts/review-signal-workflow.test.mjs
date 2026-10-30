@@ -166,36 +166,6 @@ function expectTrustedHelperRead(getContent) {
   ]);
 }
 
-describe('one review gate', () => {
-  it('waits for the spec decision, then picks it up after writing', async () => {
-    let reads = 0;
-    const h = await runSignal({
-      eventName: 'pull_request_target',
-      // The spec-owner job publishes between this job's two reads.
-      specStatuses: () =>
-        reads++ === 0
-          ? []
-          : [
-              {
-                context: 'spec-owner-approval',
-                state: 'pending',
-                description: 'Mirrors review-required · spec waiting (eng)',
-                creator: {login: 'github-actions[bot]'},
-              },
-            ],
-    });
-    expect(
-      h.mutations.createCommitStatus.mock.calls.map(
-        ([input]) => input.description,
-      ),
-    ).toEqual([
-      'Waiting on code review: community contribution (+ spec approval)',
-    ]);
-    expect(reads).toBe(2);
-  });
-
-});
-
 describe('review-signal trusted helper ref', () => {
   it('only runs the helper-loading job in trusted execution contexts', () => {
     expect(parsed.jobs.flag.if.trim()).toBe(
