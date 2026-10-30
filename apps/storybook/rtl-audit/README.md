@@ -18,7 +18,9 @@ auto-discovery layer runs with **zero curated selectors**. There are three
 independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 **D6 (directional-decoration)**.
 
-> **Scope in CI.** `pr-rtl` passes `--filter` with the components the PR
+> **Scope in CI.** `pr-rtl` runs after merges to `main` and in release checks at
+> full scope, and on a PR only with the `ci:heavy-lanes` label (spec:AST-030
+> FR12). On a labelled PR it passes `--filter` with the components the PR
 > touched (from `analysis.json`), matching `pr-a11y`. Eligibility is classified
 > by the component policy and package registry loaded from the trusted base ref;
 > a missing policy, empty or unmatched path set, unresolved component list, or
@@ -34,8 +36,10 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > policy requires full scope, every manifest must be runnable with an empty
 > filter and all five package reports must arrive. A planned scan ending in ERROR
 > is incomplete. Missing or malformed analysis/index/manifest input, a noncanonical owner, stale output, a missing or unexpected report, and
-> an all-skipped required matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
-> scope so package discovery and curated aliases cannot skip their own check. The
+> an all-skipped required matrix all fail closed. An RTL-harness-only PR labelled `ci:heavy-lanes` runs the fixed
+> `Chart,ChartLegend` routing smoke scope so package discovery and curated aliases
+> cannot skip their own check; without the label, `main`'s `release-check` covers
+> the harness after merge (spec:AST-030 FR12). The
 > full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
 > Omit `--filter` to run it locally. The blocking accessibility audit consumes the
 > same package-qualified owner-to-story routes and fails if any selected owner
@@ -263,7 +267,8 @@ without inventing a curated measurement.
 - **coverage gap**: every dimension returned N-A and no reason is recorded.
 
 Coverage gaps are findings. This rule applies to the existing full-library
-weekly sweep and to every new or changed component in PR CI. A component with no
+weekly sweep, to main and release checks, and to every new or changed component
+in a labelled PR's CI. A component with no
 story is also a gap when it is named by `--filter`; it cannot disappear from the
 report merely because there was nothing to render.
 

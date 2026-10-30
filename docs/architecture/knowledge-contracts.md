@@ -717,7 +717,7 @@ this flow passes the historical review benchmark and is enforced on pull request
   current design and theme records, normative design assets, and DD-only current
   component/module changes additionally accept `.github/DESIGNOWNERS`. A mixed
   DD plus other component/module edit requires both groups. Record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  self-authorizes. The gate decides approval only; it never enables auto-merge.
 - `.github/workflows/review-signal.yml` lets a DESIGNOWNER author bypass the
   engineering gate only when trusted-base code verifies every changed Core line
   against the fetched base/head source bytes as a conservative declaration inside
@@ -908,8 +908,8 @@ remains in `docs/design/`.
 A team DESIGNOWNER may include the local decision, implementation, and evidence
 in one atomic appearance-only pull request. DD-only current-record changes route
 to design approval; mixing a DD edit with another component/module contract edit
-requires both design and engineering. A DESIGNOWNER's exact-head ready transition
-may satisfy the design group. The Core code gate is bypassed only when trusted-base
+requires both design and engineering. A DESIGNOWNER approves with an exact-head
+review or `/approve-spec <head>` like every other owner. The Core code gate is bypassed only when trusted-base
 classification proves an existing-file declaration-only appearance diff and no
 other code reason applies. Any uncertainty, contributor-authored change, behavior,
 JSX, API, package, barrel, new component, or unknown runtime path fails closed to

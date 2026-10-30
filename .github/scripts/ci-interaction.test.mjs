@@ -120,7 +120,7 @@ describe('interaction proof routing', () => {
       'build-storybook',
     ]);
     expect(proofs['runs-on']).toBe(
-      "${{ needs.interaction-scope.outputs.applies == 'true' && '4-core-ubuntu' || 'ubuntu-slim' }}",
+      "${{ needs.interaction-scope.outputs.applies == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}",
     );
     const guards = new Set([
       'Require a decided interaction scope',
