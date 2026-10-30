@@ -6,7 +6,7 @@
 # reason, so it never passes a required join untested.
 #
 # - One author's suites run for their fifteen oldest open non-draft pull
-#   requests, and for at most twelve heavy runs a UTC day.
+#   requests, and for at most a hundred heavy runs a UTC day.
 # - The shared agent login counts each branch prefix as an author, with that
 #   login also held to its five oldest pull requests and forty runs a day.
 # - An engineering owner (.github/ENGOWNERS, read from the base commit), a
@@ -46,6 +46,8 @@ runs:
 
           // An author's oldest open non-draft pull requests that run heavy suites.
           const OLDEST = 15;
+          // An author's heavy runs a UTC day.
+          const DAILY = 100;
           const limits = [
             // Pull request numbers rise with creation, and the search returns
             // the oldest, so it holds every older one that could queue this.
@@ -90,7 +92,7 @@ runs:
                   if (mine(run.head_branch)) laneHeavy += 1;
                 }
               }
-              if (laneHeavy >= 12 || (shared && loginHeavy >= 40)) {
+              if (laneHeavy >= DAILY || (shared && loginHeavy >= 40)) {
                 return 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
               }
             },

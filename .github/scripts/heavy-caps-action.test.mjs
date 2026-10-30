@@ -158,15 +158,15 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     ).toEqual([QUEUED]);
   });
 
-  it("fails a heavy job past the author's 12 heavy runs today", async () => {
-    expect((await check({open: [me], runs: runsOn(12)})).failed).toEqual([
+  it("fails a heavy job past the author's 100 heavy runs today", async () => {
+    expect((await check({open: [me], runs: runsOn(100)})).failed).toEqual([
       CAPPED,
     ]);
     // The cap counts the author's heavy runs across all of their oldest pull
     // requests, not only the one deciding.
     const spread = await check({
       open: [...pulls('fix/b', 'fix/c'), me],
-      runs: [...runsOn(6, 'fix/b'), ...runsOn(3, 'fix/c'), ...runsOn(3)],
+      runs: [...runsOn(50, 'fix/b'), ...runsOn(25, 'fix/c'), ...runsOn(25)],
     });
     expect(spread.failed).toEqual([CAPPED]);
     // When the deciding pull request is the author's oldest, the count still
@@ -174,7 +174,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     const first = await check({
       context: pullRequestContext({number: 1}),
       open: [{...me, number: 1}, ...older15().slice(1)],
-      runs: [...runsOn(4), ...runsOn(8, 'fix/older-14')],
+      runs: [...runsOn(50), ...runsOn(50, 'fix/older-14')],
     });
     expect(first.failed).toEqual([CAPPED]);
     // Cancelled runs, runs whose heavy suites never ran (a queued PR) and runs
@@ -182,7 +182,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     const light = await check({
       open: [me],
       runs: [
-        ...runsOn(11),
+        ...runsOn(99),
         ...runsOn(5, 'fix/a', {conclusion: 'cancelled'}),
         ...runsOn(5, 'fix/a', {heavy: false}),
         ...runsOn(5, 'fix/old-merged'),
@@ -194,7 +194,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     const elsewhere = await check({
       open: [me],
       runs: [
-        ...runsOn(11),
+        ...runsOn(99),
         ...runsOn(5, 'fix/a', {head_repository: {full_name: 'other/r'}}),
       ],
     });
@@ -319,7 +319,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
       context: {...pullRequestContext(), runId: 900},
       open: [me],
       runs: [
-        ...runsOn(11),
+        ...runsOn(99),
         {
           id: 900,
           head_branch: 'fix/a',
