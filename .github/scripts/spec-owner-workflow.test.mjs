@@ -83,7 +83,7 @@ describe('spec-only workflow contract', () => {
       );
       expect(result.status, result.stderr).toBe(0);
       expect(fs.readFileSync(output, 'utf8')).toBe(
-        'spec_only=true\ndocsite_only=false\ntooling_only=false\n',
+        'spec_only=true\ndocsite_only=false\ntooling_only=false\nfull_suite=false\n',
       );
 
       fs.rmSync(path.join(classifierDir, 'knowledge-paths.cjs'));
@@ -149,7 +149,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>
