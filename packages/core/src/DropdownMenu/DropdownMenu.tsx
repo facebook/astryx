@@ -68,7 +68,7 @@ import {
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useDropdownMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
@@ -452,7 +452,10 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * @default 'popover'
+   * Omitted, the menu is the anchored popover, and under a finger, on every
+   * device, its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * pins the anchored popover with the pointer behavior on every device (a
+   * finger held for 500 ms opens it, as before).
    */
   presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
@@ -460,6 +463,11 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
 }
 
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
+  /**
+   * `'popover'` pins the pointer behavior on every device (a finger held for
+   * 500 ms opens the menu, as before). Omitted, on every device, a finger's
+   * press opens the menu as UIMenu's pull-down button does.
+   */
   presentation?: 'popover';
   items?: undefined;
   children: ReactNode;
@@ -902,6 +910,7 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
+  pressTouchModel = 'uikit',
   header,
   footer,
   className,
@@ -909,7 +918,13 @@ function DropdownMenuPopover({
   xstyle,
   'data-testid': testId,
   ...props
-}: DropdownMenuProps) {
+}: DropdownMenuProps & {
+  /**
+   * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
+   * UIMenu's, unless the caller pins `presentation="popover"`.
+   */
+  pressTouchModel?: 'pointer' | 'uikit';
+}) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
 
@@ -1383,12 +1398,16 @@ function DropdownMenuPopover({
   // The press model: the row under a release acts, the highlight follows a
   // held pointer. A mouse released outside the menu dismisses it; a finger
   // released outside leaves it open, so the hook never calls onDismiss then.
-  const menuPress = useMenuPress({
+  const menuPress = useDropdownMenuPress({
     menuRef: listRef,
     triggerRef: buttonRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
+    // Under a finger, on every device, the trigger is UIMenu's pull-down
+    // button (spec:AST-094 FR29, FR43); `presentation="popover"` pins the
+    // pointer model, today's included.
+    touchModel: pressTouchModel,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -1528,8 +1547,11 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
+      // A flyout runs the root's press model: a finger's on every device
+      // unless the root pins presentation="popover" (spec:AST-094 FR28, FR43).
+      touchModel: pressTouchModel,
     }),
-    [surfaceHost, menuId, resolvedMaxHeight],
+    [surfaceHost, menuId, resolvedMaxHeight, pressTouchModel],
   );
 
   // Resolve menu content: data-driven items become components
@@ -1791,7 +1813,13 @@ export function DropdownMenu(props: DropdownMenuProps) {
     );
   }
 
-  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
+  return (
+    <DropdownMenuPopover
+      {...sharedProps}
+      presentation="popover"
+      pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
+    />
+  );
 }
 
 DropdownMenu.displayName = 'DropdownMenu';
