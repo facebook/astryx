@@ -12,6 +12,7 @@
 
 const babel = require('@babel/core');
 const stylexBabelPlugin = require('@stylexjs/babel-plugin');
+const {pluginOptions} = require('./source-stylesheet');
 
 module.exports = function astryxTurbopackLoader(source) {
   const callback = this.async();
@@ -26,7 +27,7 @@ module.exports = function astryxTurbopackLoader(source) {
       configFile: false,
       sourceMaps: true,
       parserOpts: {plugins: ['typescript', 'jsx']},
-      plugins: [[stylexBabelPlugin, this.getOptions()]],
+      plugins: [[stylexBabelPlugin, pluginOptions(this.getOptions())]],
     })
     .then(result => callback(null, result.code, result.map), callback);
 };

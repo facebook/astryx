@@ -167,3 +167,50 @@ describe('the @astryx PostCSS plugin', () => {
     await expect(run(tempDir())).rejects.toThrow(/No Astryx package/);
   });
 });
+
+describe('a source build across packages', () => {
+  it("names another package's use of a Core marker as Core does, with Core's dist installed", async () => {
+    const app = tempDir();
+    const core = 'node_modules/@astryxdesign/core';
+    const marker =
+      "import * as stylex from '@stylexjs/stylex';\nexport const scope = stylex.defineMarker();";
+    const hover = from =>
+      `import * as stylex from '@stylexjs/stylex';\nimport {scope} from '${from}';\nconst s = stylex.create({root: {color: {default: 'red', [stylex.when.ancestor(':hover', scope)]: 'blue'}}});\nexport const Box = () => stylex.props(s.root);`;
+    writeFiles(app, {
+      [`${core}/package.json`]: JSON.stringify({
+        name: '@astryxdesign/core',
+        exports: {
+          '.': {source: './src/index.ts', default: './dist/index.js'},
+          './scope.stylex': {
+            source: './src/scope.stylex.ts',
+            default: './dist/scope.stylex.js',
+          },
+        },
+      }),
+      [`${core}/src/scope.stylex.ts`]: marker,
+      // Published Core ships its build, where Node resolves the request.
+      [`${core}/dist/scope.stylex.js`]: marker,
+      [`${core}/src/index.ts`]: hover('./scope.stylex'),
+      'node_modules/@astryxdesign/lab/package.json': JSON.stringify({
+        name: '@astryxdesign/lab',
+        exports: {'.': {source: './src/index.ts'}},
+      }),
+      'node_modules/@astryxdesign/lab/src/index.ts': hover(
+        '@astryxdesign/core/scope.stylex',
+      ),
+    });
+    const packages = sourcePackages(app);
+    const markers = [];
+    for (const pkg of packages) {
+      const rules = await compileRules(
+        path.join(pkg.srcDir, 'index.ts'),
+        stylexOptions(pkg, packages),
+      );
+      markers.push(
+        rules.map(([, {ltr}]) => /\.(x\w+):hover/.exec(ltr)?.[1]).find(Boolean),
+      );
+    }
+    // Lab names the marker after Core's source, as scripts/build-css.mjs does.
+    expect(markers).toEqual([expect.any(String), markers[0]]);
+  });
+});

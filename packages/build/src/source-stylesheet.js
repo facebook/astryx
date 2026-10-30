@@ -94,10 +94,8 @@ function sourcePackages(from) {
 /**
  * The StyleX options the prebuilt stylesheets are compiled with: the default
  * `x` class-name prefix, no development class names and StyleX's default
- * property validation. A package other than Core reads Core's variable modules
- * from Core's source, as the prebuilt build does, so each variable hashes to
- * the name Core declares. Plain JSON: Turbopack passes only serializable
- * loader options.
+ * property validation. Plain JSON, since Turbopack passes only serializable
+ * loader options: `pluginOptions()` adds the resolution's functions.
  */
 function stylexOptions(pkg, packages) {
   const core = packages.find(candidate => candidate.name === CORE);
@@ -113,7 +111,60 @@ function stylexOptions(pkg, packages) {
             '@astryxdesign/core/*': [path.join(core.srcDir, '*')],
             '@astryxdesign/core': [core.srcDir],
           },
-    unstable_moduleResolution: {type: 'commonJS', rootDir: pkg.dir},
+    unstable_moduleResolution: {type: 'custom', rootDir: pkg.dir},
+  };
+}
+
+/**
+ * StyleX's options for `stylexOptions()`, resolving `.stylex` imports as the
+ * prebuilt build does (scripts/stylex-module-resolution.cjs): a source-built
+ * package's request names its `source` entry (or `src/<subpath>`), never the
+ * `dist` file Node finds, so a marker, constant or hashed variable keeps the
+ * name its own package gives it. Names follow StyleX's own rule,
+ * `<package name>:<path inside it>`, so Core's are unchanged.
+ */
+function pluginOptions(options) {
+  const {rootDir} = options.unstable_moduleResolution;
+  let packages;
+  const owner = request =>
+    (packages ??= sourcePackages(rootDir)).find(({name}) =>
+      request.startsWith(`${name}/`),
+    );
+  const filePathResolver = (request, importer, aliases) => {
+    const pkg = !request.startsWith('.') && owner(request);
+    if (pkg) {
+      const subpath = request.slice(pkg.name.length + 1);
+      return (
+        pkg.entries.get(request) ?? firstFile([path.join(pkg.srcDir, subpath)])
+      );
+    }
+    try {
+      return (
+        resolveStyleXImport(request, importer, aliases) ??
+        require.resolve(request, {paths: [path.dirname(importer)]})
+      );
+    } catch {
+      return null;
+    }
+  };
+  const getCanonicalFilePath = file => {
+    let dir = path.dirname(file);
+    while (!fs.existsSync(path.join(dir, 'package.json'))) {
+      if (dir === path.parse(dir).root) return path.relative(rootDir, file);
+      dir = path.dirname(dir);
+    }
+    const manifest = readManifest(dir);
+    return manifest
+      ? `${manifest.name}:${path.relative(dir, file)}`
+      : path.relative(rootDir, file);
+  };
+  return {
+    ...options,
+    unstable_moduleResolution: {
+      type: 'custom',
+      filePathResolver,
+      getCanonicalFilePath,
+    },
   };
 }
 
@@ -226,7 +277,7 @@ async function compileRules(file, options) {
       configFile: false,
       code: false,
       parserOpts: {plugins: ['typescript', 'jsx']},
-      plugins: [[stylexBabelPlugin(), options]],
+      plugins: [[stylexBabelPlugin(), pluginOptions(options)]],
     });
     rules = result?.metadata?.stylex ?? [];
   }
@@ -274,6 +325,7 @@ module.exports = {
   findPackageDir,
   sourcePackages,
   stylexOptions,
+  pluginOptions,
   packageModules,
   compileRules,
   renderPackage,
