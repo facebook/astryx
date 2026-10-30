@@ -75,6 +75,21 @@ describe('MonthScroller settle', () => {
   }
 
   /** The browser moving the scroller to `left`, as a scroll event reports. */
+  /**
+   * A touch event carrying the lists a real one always has: jsdom has no
+   * constructible TouchEvent, and the gesture hook reads `touches[0]`.
+   */
+  function touchEvent(type: 'touchstart' | 'touchend') {
+    const event = new Event(type, {bubbles: true});
+    const point = {identifier: 1, clientX: 100, clientY: 100};
+    Object.defineProperties(event, {
+      touches: {value: type === 'touchend' ? [] : [point]},
+      targetTouches: {value: type === 'touchend' ? [] : [point]},
+      changedTouches: {value: [point]},
+    });
+    return event;
+  }
+
   function scrollBy(scroller: HTMLElement, left: number) {
     scroller.scrollLeft = left;
     scroller.dispatchEvent(new Event('scroll'));
@@ -89,6 +104,39 @@ describe('MonthScroller settle', () => {
       handleRef.current?.scrollToMonth(20);
       handleRef.current?.scrollToMonth(9);
     });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(scroller.style.scrollSnapType).toBe('');
+  });
+
+  it('leaves snapping on for a re-center while a finger drives the scroll', () => {
+    const {scroller} = renderScroller();
+    // A finger drags the next month in: the scroller crosses the middle of
+    // October's pane and re-centers its months with the finger still down.
+    act(() => {
+      scroller.dispatchEvent(touchEvent('touchstart'));
+    });
+    act(() => scrollBy(scroller, 9 * PANE + 0.6 * PANE));
+    act(() => {
+      vi.advanceTimersByTime(16);
+    });
+    // Snapping stays on: iOS tracks a snap target for the gesture.
+    expect(scroller.style.scrollSnapType).toBe('');
+  });
+
+  it('pauses snapping for a re-center again once the finger’s scroll has come to rest', () => {
+    const {handleRef, scroller} = renderScroller();
+    act(() => {
+      scroller.dispatchEvent(touchEvent('touchstart'));
+      scroller.dispatchEvent(touchEvent('touchend'));
+    });
+    act(() => {
+      vi.advanceTimersByTime(SCROLL_QUIET_MS + 50);
+    });
+    // An arrow's far jump after the swipe re-centers with snapping paused.
+    act(() => handleRef.current?.scrollToMonth(20));
+    expect(scroller.style.scrollSnapType).toBe('none');
     act(() => {
       vi.advanceTimersByTime(50);
     });

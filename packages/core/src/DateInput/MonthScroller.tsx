@@ -349,11 +349,20 @@ export function MonthScroller({
    * Each pause counts itself, so a batch of re-centers that ends on the
    * center it began from, which commits no new center, still restores
    * snapping.
+   *
+   * Not while a finger drives the scroll, from its touch until the scroll it
+   * started comes to rest: iOS tracks a snap target for the gesture, and
+   * turning snapping off drops it, so the swipe coasted past the month for
+   * about two seconds and was corrected late (iOS 26.2 simulator, where the
+   * same swipe snaps in about 0.6 s with snapping left on).
    */
   const [snapPauses, setSnapPauses] = useState(0);
+  const isFingerScrollRef = useRef(false);
   const recenter = useCallback((scroller: HTMLElement, row: number) => {
-    scroller.style.scrollSnapType = 'none';
-    setSnapPauses(count => count + 1);
+    if (!isFingerScrollRef.current) {
+      scroller.style.scrollSnapType = 'none';
+      setSnapPauses(count => count + 1);
+    }
     setCenterRow(row);
   }, []);
   // Synchronizes the scroller's snapping with the browser's frame loop: it
@@ -543,6 +552,8 @@ export function MonthScroller({
   );
 
   useScrollSettle(scrollerRef, scroller => {
+    // At rest, momentum included: the finger no longer drives the scroll.
+    isFingerScrollRef.current = false;
     if (paneSize === 0) {
       return;
     }
@@ -623,6 +634,11 @@ export function MonthScroller({
     const endSteer = () => {
       steeredRowRef.current = null;
     };
+    // From a touch until its scroll comes to rest (the settle above), the
+    // finger drives the scroll and a re-center leaves snapping on.
+    const onTouchStart = () => {
+      isFingerScrollRef.current = true;
+    };
 
     const onScroll = () => {
       if (frameRef.current != null) {
@@ -670,11 +686,13 @@ export function MonthScroller({
     for (const type of USER_INPUT_EVENTS) {
       scroller.addEventListener(type, endSteer, {passive: true});
     }
+    scroller.addEventListener('touchstart', onTouchStart, {passive: true});
     return () => {
       scroller.removeEventListener('scroll', onScroll);
       for (const type of USER_INPUT_EVENTS) {
         scroller.removeEventListener(type, endSteer);
       }
+      scroller.removeEventListener('touchstart', onTouchStart);
       if (frameRef.current != null) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = undefined;

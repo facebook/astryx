@@ -9,7 +9,8 @@
  *   and year wheels close, a trackpad scroll still pages to the next month and
  *   Reset from four months on still rests on today's month; an arrow step
  *   through a stalled frame moves exactly one month; under a finger, a swipe
- *   that crosses the middle of a month as it lifts still rests on a month.
+ *   that crosses the middle of a month as it lifts keeps scroll snapping on
+ *   and rests on the next month.
  *   (A second arrow step late in the first one's scroll, which WebKit cuts
  *   short, is proven in MonthScrollerSettle.test.tsx: a loaded page's frames
  *   are too far apart to aim a click at a share of a 300 ms scroll.)
@@ -267,10 +268,12 @@ test.describe('under a finger', () => {
 
   /**
    * A swipe whose last move crosses the middle of the month makes the
-   * scroller re-center as the finger lifts, inside the frame its scroll
-   * snapping is off for. The swipe still comes to rest on a month.
+   * scroller re-center as the finger lifts. The finger drives that scroll, so
+   * the re-center leaves scroll snapping on (turning it off drops the snap
+   * target iOS tracks for the gesture, and the swipe coasted past the month),
+   * and the swipe comes to rest on the next month.
    */
-  test('a swipe that crosses the middle of a month as it lifts still rests on a month', async ({
+  test('a swipe that crosses the middle of a month as it lifts keeps snapping on and rests on the next month', async ({
     page,
   }) => {
     const viewport = await openCalendar(page);
@@ -279,6 +282,14 @@ test.describe('under a finger', () => {
     if (box == null) {
       throw new Error('no month scroller');
     }
+    // Every change of the scroller's inline scroll-snap-type from here on.
+    await viewport.evaluate(element => {
+      const changes: string[] = [];
+      (window as unknown as {snapChanges: string[]}).snapChanges = changes;
+      new MutationObserver(() => {
+        changes.push((element as HTMLElement).style.scrollSnapType || 'on');
+      }).observe(element, {attributes: true, attributeFilter: ['style']});
+    });
     const driver = await touchDriver(page);
     const y = box.y + box.height / 2;
     const from = {x: box.x + box.width * 0.8, y};
@@ -291,9 +302,11 @@ test.describe('under a finger', () => {
     const rest = await monthAtRest(viewport);
     expect(rest).not.toBe('');
     expect(rest).not.toBe(start);
-    // Snapping is back on: the re-center's pause has ended.
+    // Snapping was never turned off while the finger drove the scroll.
     expect(
-      await viewport.evaluate(element => element.style.scrollSnapType),
-    ).toBe('');
+      await page.evaluate(
+        () => (window as unknown as {snapChanges: string[]}).snapChanges,
+      ),
+    ).not.toContain('none');
   });
 });
