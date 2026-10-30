@@ -67,6 +67,7 @@ async function decide({
   headFiles = [],
   headError,
   missingBase = [],
+  baseOverrides = {},
 } = {}) {
   const outputs = {};
   const messages = {info: [], warning: [], notice: [], failed: []};
@@ -96,6 +97,13 @@ async function decide({
             (CLASSIFIER_FILES.has(file) || file === AUDIT_FILE)
           ) {
             if (missingBase.includes(file)) throw notFound();
+            if (file in baseOverrides) {
+              return {
+                data: {
+                  content: Buffer.from(baseOverrides[file]).toString('base64'),
+                },
+              };
+            }
             return {
               data: {
                 content: fs
@@ -150,7 +158,7 @@ describe('per-job scope step', () => {
     expect(Object.keys(action.outputs).sort()).toEqual(
       [
         'applies',
-        'changed_files',
+        'changed_files_path',
         'decided',
         'docsite_only',
         'force_full_component_audits',
@@ -368,8 +376,11 @@ describe('per-job scope step', () => {
         has_components: 'true',
         has_rtl_components: 'true',
         force_full_component_audits: 'false',
-        changed_files: 'packages/core/src/Button/Button.tsx',
       });
+      // The list goes through a file: it can outgrow an environment variable.
+      expect(fs.readFileSync(outputs.changed_files_path, 'utf8')).toBe(
+        'packages/core/src/Button/Button.tsx\n',
+      );
       expect(contentCalls).toContainEqual({file: AUDIT_FILE, ref: BASE_SHA});
     });
 
@@ -407,6 +418,23 @@ describe('per-job scope step', () => {
       });
       expect(outputs.force_full_component_audits).toBe('true');
       expect(messages.warning).toHaveLength(1);
+    });
+
+    it('runs every audit in full when the audit classifier fails', async () => {
+      const {outputs, messages} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+        baseOverrides: {[AUDIT_FILE]: 'process.exit(3);\n'},
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'true',
+        has_rtl_components: 'true',
+        has_rtl_harness: 'true',
+        force_full_component_audits: 'true',
+      });
+      expect(messages.warning).toEqual([
+        expect.stringContaining('Component audit scope could not be decided'),
+      ]);
     });
   });
 });

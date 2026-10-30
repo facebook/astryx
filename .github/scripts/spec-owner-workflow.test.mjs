@@ -134,12 +134,9 @@ describe('spec-only workflow contract', () => {
         "steps.scope.outputs.spec_only != 'true'",
       );
     }
-    // The heavy lanes still read check-scope until they decide their own scope.
-    for (const job of ['check-components', 'pr-rtl']) {
-      expect(jobBlock(job), job).toContain(
-        "needs.check-scope.outputs.spec_only != 'true'",
-      );
-    }
+    // No job reads a scope job any more.
+    expect(ci).not.toContain('needs.check-scope');
+    expect(ci).not.toContain('needs.check-components');
     expect(jobBlock('build')).toContain(
       "needs.build-storybook.result != 'skipped'",
     );

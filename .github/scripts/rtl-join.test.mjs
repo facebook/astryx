@@ -116,6 +116,24 @@ describe('RTL matrix join', () => {
         evidence: completeEvidence(),
       }).ok,
     ).toBe(false);
+    // The shard and merge jobs can land on different sides of the no-op.
+    for (const shardResult of ['skipped/success', 'success/skipped']) {
+      expect(
+        evaluateRtlJoin({
+          checkComponentsResult: 'success',
+          shardResult,
+          shouldRun: false,
+        }).ok,
+        shardResult,
+      ).toBe(true);
+    }
+    expect(
+      evaluateRtlJoin({
+        checkComponentsResult: 'success',
+        shardResult: 'skipped/failure',
+        shouldRun: false,
+      }).ok,
+    ).toBe(false);
   });
 
   it('rejects all-skipped manifests when trusted scope requires work', () => {

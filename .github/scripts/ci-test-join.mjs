@@ -27,12 +27,6 @@ function fail(message) {
   process.exitCode = 1;
 }
 
-// check-scope still feeds the heavy lanes and release-check, so a failed
-// classification must still fail the required join.
-if (process.env.CHECK_SCOPE_RESULT !== 'success') {
-  fail(`check-scope: ${process.env.CHECK_SCOPE_RESULT ?? 'missing'}`);
-}
-
 for (const [name, result] of requiredSuccess) {
   if (result !== 'success') fail(`${name}: ${result ?? 'missing'}`);
 }
