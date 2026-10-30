@@ -1332,8 +1332,8 @@ jobs:
   # Join gate that keeps the historical `build` check name: anything keyed on
   # "build" being green (branch protection, tooling, habit) keeps working, and
   # it fails when build-storybook or typecheck fails. A skipped
-  # build-storybook (merge_group, or a failed check-scope) skips this gate
-  # too, as the old single-job build did.
+  # build-storybook (a spec-only or release-bump pull request) skips this
+  # gate too.
   build:
     needs: [build-storybook, typecheck]
     if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
