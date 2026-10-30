@@ -498,19 +498,18 @@ export const MobileSwipeToDismiss: StoryObj = {
   render: () => (
     <MobileCanvas
       title="Swipe dismissal"
-      description="Swipe is an enhancement only; the surface fades as it approaches the edge, and the visible close button remains the simple alternative.">
+      description="Swipe is an enhancement only. Under a finger, as with iOS notification banners, the card follows the finger after a short distance at about half its speed, a quick flick dismisses it, and it leaves by sliding past its edge; with a pen on a desktop the surface fades as it approaches the edge. The visible close button remains the simple alternative.">
       <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
         <MockCard>
           <Text type="supporting" color="secondary">
-            Use touch or pen input, or browser touch emulation, to swipe the
-            toast toward its configured block edge: up for top placement, down
-            for bottom placement. This matches the direction each Toast enters
-            and exits, keeping one spatial model for the whole interaction. The
-            gesture claims the touch only after dominant travel matches the
-            dismiss edge, so opposite-direction and horizontal page scrolling
-            remain available. Pen is supported as direct-contact input; mouse
-            dragging is ignored to avoid conflicting with desktop text
-            selection, where the close button remains available.
+            Use touch, a pen, a mouse, a mouse wheel or a trackpad scroll to
+            swipe the toast toward its configured block edge: up for top
+            placement, down for bottom placement. This matches the direction
+            each Toast enters and exits, keeping one spatial model for the whole
+            interaction. The gesture claims the touch only after dominant travel
+            matches the dismiss edge, so opposite-direction and horizontal page
+            scrolling remain available. Once it claims a mouse or pen drag, the
+            drag selects no text; the close button remains available.
           </Text>
           <ToastReplayControls
             items={[
@@ -531,7 +530,112 @@ export const MobileSwipeToDismiss: StoryObj = {
       story: {
         ...mobileStoryParameters.docs.story,
         description:
-          'Interactive vertical edge swipe-to-dismiss example using real ToastViewport behavior. The vertical axis intentionally matches the Toast placement and motion model: top Toasts leave upward and bottom Toasts leave downward. A non-passive touchmove handoff claims only dominant travel toward that edge; opposite-direction and horizontal page scrolling remain available. Pen is supported as direct-contact input, while mouse drag is excluded to avoid conflicting with desktop selection; the close button and F6 keyboard access remain available.',
+          'Interactive vertical edge swipe-to-dismiss example using real ToastViewport behavior. The vertical axis intentionally matches the Toast placement and motion model: top Toasts leave upward and bottom Toasts leave downward. A non-passive touchmove handoff claims only dominant travel toward that edge; opposite-direction and horizontal page scrolling remain available. A finger, a pen, a mouse, a mouse wheel and a trackpad scroll all swipe (a scroll the page can still take goes to the page), and a claimed mouse or pen drag selects no text; the close button and F6 keyboard access remain available.',
+      },
+    },
+  },
+};
+
+export const MobileToastPresentation: StoryObj = {
+  name: 'Mobile situations / Toast presentation',
+  render: () => (
+    <MobileCanvas
+      title="Toast presentation"
+      description={
+        'presentation="toast" keeps Toast\'s own swipe and fade on every device, a touch screen included. Under Reduce Motion on a touch screen the card fades out where it is, and its row closes after the fade.'
+      }>
+      <ToastViewport
+        position="topEnd"
+        isTopLayer={false}
+        maxVisible={2}
+        presentation="toast">
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Swipe the toast toward its edge, or close it: it fades as Toast
+            always has, on a touch screen too.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-toast-presentation',
+                body: 'Close me',
+                isAutoHide: false,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: mobileStoryParameters,
+};
+
+export const MobileNotificationPresentation: StoryObj = {
+  name: 'Mobile situations / Notification presentation',
+  render: () => (
+    <MobileCanvas
+      title="Notification presentation"
+      description={
+        'presentation="notification" follows iOS notification banners on every device, with a mouse too. Under Reduce Motion with a mouse or a trackpad, its release and its exit change at once.'
+      }>
+      <ToastViewport
+        position="topEnd"
+        isTopLayer={false}
+        maxVisible={2}
+        presentation="notification">
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Drag the toast toward its edge, or close it: it moves and leaves as
+            a notification banner does, whatever the pointer.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-notification-presentation',
+                body: 'Drag or close me',
+                isAutoHide: false,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: mobileStoryParameters,
+};
+
+export const MobileTimedToast: StoryObj = {
+  name: 'Mobile situations / Timed toast',
+  render: () => (
+    <MobileCanvas
+      title="Timed dismissal"
+      description="A toast that leaves on its own after three seconds. Under a finger it slides past its edge, as iOS notification banners leave; with a mouse it fades.">
+      <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Show the toast and wait: it dismisses itself after three seconds,
+            the way any timed toast leaves.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-timed',
+                body: 'I leave after three seconds',
+                autoHideDuration: 3000,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: {
+    ...mobileStoryParameters,
+    docs: {
+      story: {
+        ...mobileStoryParameters.docs.story,
+        description:
+          'A timed toast at the top that dismisses itself after three seconds. Under a finger it slides past its edge, as iOS notification banners leave; with a mouse it fades.',
       },
     },
   },

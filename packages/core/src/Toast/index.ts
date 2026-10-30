@@ -9,6 +9,7 @@ export type {
   ToastPosition,
   ToastCollisionBehavior,
   ToastDismissReason,
+  ToastPresentation,
   ToastOptions,
   ToastDismissFn,
   ShowToastFn,
