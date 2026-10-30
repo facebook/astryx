@@ -675,6 +675,34 @@ describe('ToastViewport keyboard reach + focus', () => {
     // No toasts left — focus returns to the element focused before F6.
     expect(document.activeElement).toBe(trigger);
   });
+
+  it('restores focus after a toast reached with Tab rather than F6 is dismissed', () => {
+    renderViewport(
+      <ShowToastButton options={INFO_A} triggerLabel="Trigger A" />,
+    );
+    const trigger = screen.getByText('Trigger A');
+    trigger.focus();
+    act(() => {
+      fireEvent.click(trigger);
+    });
+    const dismiss = screen.getByRole('button', {name: 'Dismiss notification'});
+    // Tab (or a click) moves focus straight to the toast's control.
+    act(() => {
+      dismiss.focus();
+    });
+    const toastId = document
+      .querySelector('[data-toast-id]')!
+      .getAttribute('data-toast-id')!;
+
+    act(() => {
+      fireEvent.click(dismiss);
+    });
+    act(() => {
+      completeExit(toastId);
+    });
+
+    expect(document.activeElement).toBe(trigger);
+  });
 });
 
 describe('Toast blur timer pause', () => {

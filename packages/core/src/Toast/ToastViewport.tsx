@@ -352,9 +352,9 @@ export function ToastViewport({
   // Toasts dispatched since the last commit, by id: a dismiss() called
   // before the toast first renders still finds it (and its onHide).
   const pendingEntriesRef = useRef<Map<string, ToastEntry>>(new Map());
-  // The element that was focused before the user jumped into the viewport
-  // (via F6). Used to restore focus once all toasts are dismissed so focus
-  // never falls to <body>.
+  // The element that was focused before focus entered the viewport, by F6,
+  // Tab or a click. Used to restore focus once all toasts are dismissed so
+  // focus never falls to <body> (FR10).
   const prevFocusRef = useRef<HTMLElement | null>(null);
   // When a toast is dismissed while focus lives inside it, we need to move
   // focus to a sensible neighbor after that toast unmounts. This holds the
@@ -731,6 +731,17 @@ export function ToastViewport({
   const viewport = (
     <div
       ref={viewportRef}
+      onFocus={event => {
+        // Focus entering from outside, however it came, is where a dismissal
+        // of the last toast returns it.
+        const from = event.relatedTarget;
+        if (
+          from instanceof HTMLElement &&
+          !event.currentTarget.contains(from)
+        ) {
+          prevFocusRef.current = from;
+        }
+      }}
       role={hasToasts ? 'region' : undefined}
       aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
       tabIndex={hasToasts ? -1 : undefined}
