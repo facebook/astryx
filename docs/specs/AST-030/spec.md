@@ -281,8 +281,7 @@ they are separately named.
   suite's check fails with "Queued behind your 3 oldest PRs: runs on a push once
   it is among them, or at the pre-merge re-run.", "Daily heavy-run cap reached,
   runs tomorrow or at pre-merge." or "CI is full (48 jobs running or queued
-  across pull requests): re-run this job once it drains, or it runs at
-  pre-merge.", so no pull request passes the required checks without its heavy
+  across pull requests): runs on a later push, or at the pre-merge re-run.", so no pull request passes the required checks without its heavy
   suites. A re-run, which is the pre-merge restart, is exempt from these limits,
   and when the limits cannot be looked up the suite runs. Merge-queue entries,
   `main`, release checks and the visual, accessibility and RTL owners a

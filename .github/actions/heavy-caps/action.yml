@@ -118,7 +118,7 @@ runs:
                 }
                 if (active < REPO_JOB_LIMIT) return;
                 if (Date.now() >= deadline) {
-                  return `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): re-run this job once it drains, or it runs at pre-merge.`;
+                  return `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): runs on a later push, or at the pre-merge re-run.`;
                 }
                 await new Promise(resolve => setTimeout(resolve, REPO_POLL_MS));
               }

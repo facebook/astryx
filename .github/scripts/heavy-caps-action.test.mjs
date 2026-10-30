@@ -31,7 +31,7 @@ const QUEUED =
   'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.';
 const CAPPED = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
 const REPO_JOB_LIMIT = Number(/const REPO_JOB_LIMIT = (\d+);/.exec(script)[1]);
-const FULL = `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): re-run this job once it drains, or it runs at pre-merge.`;
+const FULL = `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): runs on a later push, or at the pre-merge re-run.`;
 
 function pullRequestContext(pr = {}) {
   return {
