@@ -2068,7 +2068,7 @@ jobs:
 
       # The vibe-tests fixtures share this Playwright-equipped runner: the
       # canonical setup compositions and the guest fixture contrast need a
-      # production browser render (registry scope test-theme-e2e).
+      # production browser render.
       - name: Verify canonical setup compositions
         env:
           ASTRYX_CANONICAL_SETUP_BROWSER: '1'
