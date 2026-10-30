@@ -106,6 +106,11 @@ const STRUCTURAL_VARS = new Set([
   // authored by a theme.
   '--_layout-flush-block-start',
   '--_layout-flush-block-end',
+  // The room a layer has above the software keyboard, written on each open
+  // layer by the layer runtime from the keyboard's measured height
+  // (Layer/useLayerKeyboardClearance.ts; spec:AST-059 FR9). Runtime
+  // geometry, never authored by a theme.
+  '--astryx-layer-keyboard-max-block-size',
 ]);
 
 /**

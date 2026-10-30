@@ -296,7 +296,13 @@ const styles = stylex.create({
   },
   dropdown: {
     boxSizing: 'border-box',
-    maxHeight: '300px',
+    // 300 px, and no taller than its layer's block-size cap, which folds in
+    // the software keyboard's (spec:AST-059 FR9): the list ends above the
+    // keyboard with the layer.
+    maxHeight: stylex.firstThatWorks(
+      `min(300px, ${layerViewportInset.maxBlockSize})`,
+      `min(300px, ${layerViewportInset.maxBlockSizeFallback})`,
+    ),
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
