@@ -3,7 +3,7 @@
 /**
  * @file internal/focusOutline.stylex.ts
  * @input focus ring tokens
- * @output FOCUS_OWNER_ATTRIBUTE and focusOwnerProps, the ring a wrapper paints
+ * @output FOCUS_OWNER_ATTRIBUTE, focusOwnerStyles and focusWithinOwnerProps, the ring a wrapper paints
  *   only for its marked primary control
  * @position The internal half of the focus outline utility: same tokens as
  *   utils/focusOutline.stylex, but no published entry point exports it, so the
@@ -22,7 +22,7 @@ export const FOCUS_OWNER_ATTRIBUTE = 'data-astryx-focus-owner';
 // (`architecture:interaction-modality` INV3). Only a direct child counts, so a
 // nested component's own owner never rings this wrapper. Written as
 // longhands, like focusOutlineStyles.
-const styles = stylex.create({
+export const focusOwnerStyles = stylex.create({
   focusWithinOwner: {
     outlineWidth: {
       default: '0',
@@ -49,5 +49,8 @@ const styles = stylex.create({
 
 /** The owner ring, with caller styles last (as focusOutlineProps does). */
 export function focusWithinOwnerProps(...extra: unknown[]) {
-  return stylex.props(styles.focusWithinOwner as never, ...(extra as never[]));
+  return stylex.props(
+    focusOwnerStyles.focusWithinOwner as never,
+    ...(extra as never[]),
+  );
 }
