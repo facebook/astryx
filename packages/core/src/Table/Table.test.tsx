@@ -961,6 +961,24 @@ describe('Table', () => {
     expect(wrapper.style.overscrollBehaviorX).toBe('auto');
   });
 
+  it('names the scroll region after its table, not a generic "Table" (AST-025)', () => {
+    render(
+      <>
+        <Table aria-label="Orders" data={users} columns={columns} />
+        <h2 id="refunds-title">Refunds</h2>
+        <Table aria-labelledby="refunds-title" data={users} columns={columns} />
+        <Table data={users} columns={columns} />
+      </>,
+    );
+    expect(screen.getByRole('group', {name: 'Orders'})).toBeInTheDocument();
+    expect(screen.getByRole('group', {name: 'Refunds'})).toHaveAttribute(
+      'aria-labelledby',
+      'refunds-title',
+    );
+    // An unnamed table keeps the generic fallback.
+    expect(screen.getAllByRole('group', {name: 'Table'})).toHaveLength(1);
+  });
+
   it('preserves scroll-wrapper HTML attributes from plugins', () => {
     const plugin: TablePlugin<User> = {
       transformScrollWrapper: props => ({

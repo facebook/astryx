@@ -141,8 +141,10 @@ function TableScrollWrapper({
   xstyle: pluginStyles,
   beforeTable,
   afterTable,
+  tableName,
 }: {
   children: React.ReactNode;
+  tableName?: {label?: string; labelledBy?: string};
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
@@ -151,7 +153,12 @@ function TableScrollWrapper({
   afterTable?: React.ReactNode;
 }) {
   const t = useTranslator();
-  const label = t('@astryx.table.label');
+  // The focusable scroll region takes the table's own name (spec:AST-025),
+  // so two tables are not two groups both named "Table"; the generic name is
+  // the fallback for an unnamed table.
+  const label =
+    tableName?.label ??
+    (tableName?.labelledBy != null ? undefined : t('@astryx.table.label'));
   const {getViewportProps, getContentProps, state} = useScrollableArea({
     axis: 'inline',
     keyboardAccess: {owner: 'content'},
@@ -161,6 +168,11 @@ function TableScrollWrapper({
   const viewportProps = getViewportProps<HTMLDivElement>({
     role: 'group',
     'aria-label': label,
+    // A plugin's explicit name stays authoritative (Table FR1).
+    'aria-labelledby':
+      tableName?.label == null && restHtmlProps['aria-label'] == null
+        ? tableName?.labelledBy
+        : undefined,
     ...(state.inline.isScrollable ? {tabIndex: 0} : {}),
     ...restHtmlProps,
     ref,
