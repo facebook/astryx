@@ -180,7 +180,11 @@ Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
 a proof against a control instead of a rate: `startBusyControl(page)` shows a
 small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
 dialog opened before it; `raise()` after one opened later) whose transform
-moves it along the top edge for as long as the page runs. Track it from the
+moves it along the top edge for as long as the page runs. In WebKit a popover
+above an open modal dialog takes the dialog's `::backdrop` animation off the
+compositor, so a proof of a backdrop mounts the control inside the dialog with
+`startBusyControl(page, {within: dialog})`, a plain fixed box with no top-layer
+entry. Track it from the
 same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
 as `control`: the component passes when it moved on every frame the control
 moved and its longest stall is no longer than the control's. Both are read from

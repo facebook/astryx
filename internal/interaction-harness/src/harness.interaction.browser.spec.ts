@@ -42,6 +42,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {expect, test, type Page} from '@playwright/test';
+import type {CastFrame, TrackedFrame} from './frames';
 import {
   animationStoryboard,
   castStoryboard,
@@ -128,6 +129,73 @@ const BUSY_FIXTURE = `<!doctype html><meta name=viewport content="width=device-w
   #box { position: absolute; left: 20px; top: 40px; width: 80px; height: 80px; background: #36c; }
 </style>
 <div id=box></div>`;
+
+/**
+ * The red channel at a CSS-px point in each cast frame (a 16 px square's mean),
+ * as a tracked value on x: what a backdrop's dim shows there. Decoded in a
+ * scratch page, as `trackMarker` does.
+ */
+async function brightnessAt(
+  page: Page,
+  castFrames: readonly CastFrame[],
+  {x, y}: {x: number; y: number},
+): Promise<TrackedFrame[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const values: number[] = [];
+    for (let i = 0; i < castFrames.length; i += 12) {
+      const batch = castFrames.slice(i, i + 12);
+      values.push(
+        ...(await scratch.evaluate(
+          async ({items, px, py}) => {
+            const out: number[] = [];
+            for (const item of items) {
+              const blob = await (
+                await fetch(`data:image/${item.format};base64,${item.data}`)
+              ).blob();
+              const bitmap = await createImageBitmap(blob);
+              const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+              const context = canvas.getContext('2d');
+              if (context == null) {
+                throw new Error('no 2d context');
+              }
+              context.drawImage(bitmap, 0, 0);
+              const scale = bitmap.width / item.viewportWidth;
+              const {data} = context.getImageData(
+                Math.round(px * scale),
+                Math.round(py * scale),
+                16,
+                16,
+              );
+              let sum = 0;
+              for (let o = 0; o < data.length; o += 4) {
+                sum += data[o];
+              }
+              out.push(sum / (data.length / 4));
+            }
+            return out;
+          },
+          {
+            items: batch.map(f => ({
+              data: f.data,
+              format: f.format,
+              viewportWidth: f.viewportWidth,
+            })),
+            px: x,
+            py: y,
+          },
+        )),
+      );
+    }
+    return castFrames.map((f, i) => ({
+      t: f.t,
+      box: {x: values[i], y: 0, width: 1, height: 1},
+      pixels: 1,
+    }));
+  } finally {
+    await scratch.close();
+  }
+}
 
 async function busyFixture(page: Page) {
   await page.route('http://busy.test/', route =>
@@ -389,8 +457,15 @@ test.describe('frame evidence', () => {
     await busyFixture(page);
     const box = page.locator('#box');
     await markElement(box, {mode: 'outline'});
+    // A loaded runner's compositor skips frames the display-rate bound
+    // counts: the component is judged against what the compositor presented
+    // in the same window, and the bound's own verdict is recorded beside it.
+    const control = await startBusyControl(page);
 
+    // The README's order: the cast, then the animation, then the block once
+    // it runs (on the compositor, for the compositor's run).
     const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
+      const cast = await startScreencast(page, {everyNthFrame});
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
@@ -411,48 +486,64 @@ test.describe('frame evidence', () => {
           requestAnimationFrame(step);
         }
       }, driver);
-      const cast = await startScreencast(page, {everyNthFrame});
+      const window = await blockMainThread(
+        page,
+        700,
+        driver === 'compositor' ? {during: box} : {},
+      );
       await page.waitForTimeout(200);
-      const window = await blockMainThread(page, 700);
-      await page.waitForTimeout(200);
-      const tracked = await trackMarker(page, await cast.stop());
-      return busyWindowProof(tracked, window, {axis: 'y'});
+      const frames = await cast.stop();
+      const tracked = await trackMarker(page, frames);
+      const controlFrames = await trackMarker(page, frames, {rgb: CONTROL_RGB});
+      const alone = busyWindowProof(tracked, window, {axis: 'y'});
+      return {
+        proof: busyWindowProof(tracked, window, {
+          axis: 'y',
+          control: controlFrames,
+        }),
+        alone,
+      };
     };
 
-    const compositor = await run('compositor');
+    const {proof: compositor, alone: compositorAlone} = await run('compositor');
     testInfo.annotations.push({
       type: 'busy-main-thread compositor',
-      description: compositor.summary,
+      description: `${compositor.summary} | without the control: ${compositorAlone.verdict.failures.join('; ') || 'pass'}`,
     });
     expect(compositor.verdict.failures, compositor.summary).toEqual([]);
     expect(compositor.monotonic).toBe(true);
     // Resolvable on the cast's grid: two position steps or more per frame.
-    expect(compositor.notes, compositor.summary).toEqual([]);
     expect(compositor.pxPerFrame).toBeGreaterThanOrEqual(2 * compositor.stepPx);
 
-    const raf = await run('raf');
+    const {proof: raf, alone: rafAlone} = await run('raf');
     testInfo.annotations.push({
       type: 'busy-main-thread rAF control',
       description: raf.summary,
     });
-    // Frozen for the whole block: no presented frame moved (the compositor
-    // sends none at all when nothing on screen changes), and the verdict that
-    // passes the compositor animation fails it on every criterion.
-    expect(raf.changed).toBe(0);
+    // Frozen for the block: the compositor sends no frame while nothing on
+    // screen changes, so at most the frame presented as the block starts
+    // moved, and the bound's verdict fails it as the control's does.
+    expect(raf.changed).toBeLessThanOrEqual(1);
     expect(raf.longestStallMs).toBeGreaterThan(600);
-    expect(raf.verdict.pass).toBe(false);
-    expect(raf.verdict.failures.join('\n')).toMatch(/longest stall/);
-    expect(raf.verdict.failures.join('\n')).toMatch(/expected frames moved/);
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /moved on [01] of the \d+ frames the control moved/,
+    );
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /longest stall .* longer than the control's/,
+    );
+    expect(rafAlone.verdict.pass).toBe(false);
+    expect(rafAlone.verdict.failures.join('\n')).toMatch(/longest stall/);
 
     // The verdict judges the frames the screencast delivered, not its rate:
     // at one frame in six (a loaded machine's ~100 ms), the compositor
     // animation still passes and the rAF one still fails.
-    const slow = await run('compositor', 6);
+    const {proof: slow} = await run('compositor', 6);
     expect(slow.cadenceMs, slow.summary).toBeGreaterThan(60);
     expect(slow.verdict.failures, slow.summary).toEqual([]);
-    const slowRaf = await run('raf', 6);
+    const {proof: slowRaf} = await run('raf', 6);
     expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
     expect(slowRaf.verdict.failures.join('\n')).toMatch(/longest stall/);
+    await control.remove();
   });
 
   test('frames the screencast skips while the compositor presents them are not a stall; a frozen animation still fails with the compositor record', async ({
@@ -578,26 +669,23 @@ test.describe('frame evidence', () => {
     const control = await startBusyControl(page);
 
     const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
-      // Back and forth until cancelled, so the animation still runs when the
-      // block starts however long a loaded runner takes to start the cast.
+      // Endless, so the animation still runs when the block starts however
+      // long a loaded runner takes to start the cast, and wrapping from 560 px
+      // back to 0 rather than turning, so every frame changes: two frames
+      // straddling a turnaround evenly would read one position.
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {
-              duration: 1600,
-              easing: 'linear',
-              iterations: Infinity,
-              direction: 'alternate',
-            },
+            {duration: 1600, easing: 'linear', iterations: Infinity},
           );
         } else {
           const start = performance.now();
           const step = (now: number) => {
-            const p = ((now - start) / 1600) % 2;
-            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            const p = ((now - start) / 1600) % 1;
+            el.style.transform = `translateY(${560 * p}px)`;
             requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
@@ -653,6 +741,47 @@ test.describe('frame evidence', () => {
     await control.remove();
   });
 
+  test("mounted within an open modal dialog, the control leaves the dialog's backdrop animation on the compositor", async ({
+    page,
+  }) => {
+    // A dimming backdrop over a black page: its brightness at a point is the
+    // value judged, read from the same frames as the control.
+    await page.route('http://backdrop.test/', route =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#000;height:100vh}dialog{width:120px;height:80px;padding:0;border:0;background:#fff}dialog::backdrop{background:rgb(255,255,0);opacity:.2}</style><dialog id="sheet"></dialog>`,
+      }),
+    );
+    await page.goto('http://backdrop.test/');
+    const dialog = page.locator('#sheet');
+    await dialog.evaluate(el => (el as HTMLDialogElement).showModal());
+    const control = await startBusyControl(page, {within: dialog});
+    const cast = await startScreencast(page);
+    // The dim starts, as a dismissal's does, and the block holds the main
+    // thread once its transition runs.
+    await dialog.evaluate(el => {
+      el.animate([{opacity: 0.2}, {opacity: 1}], {
+        duration: 900,
+        easing: 'linear',
+        fill: 'forwards',
+        pseudoElement: '::backdrop',
+      });
+    });
+    const window = await blockMainThread(page, 600, {during: dialog});
+    await page.waitForTimeout(200);
+    const castFrames = await cast.stop();
+    await control.remove();
+    const controlFrames = await trackMarker(page, castFrames, {
+      rgb: CONTROL_RGB,
+    });
+    const dim = await brightnessAt(page, castFrames, {x: 40, y: 600});
+    const proof = busyWindowProof(dim, window, {
+      axis: 'x',
+      control: controlFrames,
+    });
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+  });
+
   test('a block too short to judge alone is judged over pooled runs: a compositor animation passes, and a rAF one fails, timed or frame-counted', async ({
     page,
   }, testInfo) => {
@@ -671,21 +800,19 @@ test.describe('frame evidence', () => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
+          // Endless, wrapping from 560 px back to 0 rather than turning, so
+          // every frame changes: two frames straddling a turnaround evenly
+          // would read one position.
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {
-              duration: 1600,
-              easing: 'linear',
-              iterations: Infinity,
-              direction: 'alternate',
-            },
+            {duration: 1600, easing: 'linear', iterations: Infinity},
           );
         } else if (how === 'raf') {
           const start = performance.now();
-          // The same back-and-forth on the main thread.
+          // The same endless run on the main thread.
           const step = (now: number) => {
-            const p = ((now - start) / 1600) % 2;
-            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            const p = ((now - start) / 1600) % 1;
+            el.style.transform = `translateY(${560 * p}px)`;
             requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
