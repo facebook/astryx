@@ -932,14 +932,17 @@ async function sendWheels(
  * A scroll with no momentum of its own glides on once it pauses, without
  * waiting for the host to end its pan (100 ms after the last wheel, six
  * frames at 60 Hz). Its pause is the first frame WHEEL_PAUSE_INTERVALS of its
- * own intervals (the longer of its last two gaps) after its last wheel; the
- * rows move on at that frame or within two more, as the compositor shows the
- * glide. Counted in frames, which a busy page delays along with the timer
- * that would end the pan.
+ * own intervals (the longer of its last two gaps) after its last wheel, and
+ * no earlier than the page got that wheel; the glide's animation runs on the
+ * strip from that frame or the next, and the rows then move on. Counted in
+ * frames, which a busy page delays along with the timer that would end the
+ * pan, and read from the strip's animations, not from when the compositor
+ * shows their first step.
  */
 function expectGlideAtPause(
   frames: ReadonlyArray<[number, number]>,
   wheels: ReadonlyArray<[number, number, number]>,
+  gliding: ReadonlyArray<number>,
   moved: [number, number],
 ) {
   const sent = wheels.map(([time]) => time);
@@ -949,19 +952,27 @@ function expectGlideAtPause(
     last - sent[sent.length - 2],
     sent[sent.length - 2] - sent[sent.length - 3],
   );
-  // The pause can begin no earlier than the page got the last wheel, however
-  // late a busy page got it.
   const after = frames.filter(([time]) => time > last);
   const paused = after.findIndex(
     ([time]) =>
       time >= last + WHEEL_PAUSE_INTERVALS * interval && time > received,
   );
-  const held = after.indexOf(moved);
+  const glided = after.findIndex(([time]) => gliding.includes(time));
   expect(paused, 'a frame came after the pause').toBeGreaterThanOrEqual(0);
+  expect(glided, 'the glide began').toBeGreaterThanOrEqual(0);
+  // The wheel reads the clock inside the frame, a little after the frame's
+  // own time: it can find the pause one frame before this count does.
+  expect(glided, 'the glide began at the pause').toBeGreaterThanOrEqual(
+    paused - 1,
+  );
   expect(
-    held,
-    'the frames the rows held still after the scroll',
-  ).toBeLessThanOrEqual(paused + 2);
+    glided,
+    'the frames before the glide began after the scroll',
+  ).toBeLessThanOrEqual(paused + 1);
+  expect(
+    after.indexOf(moved),
+    'the rows moved on in the glide',
+  ).toBeGreaterThanOrEqual(glided);
 }
 
 test('a quick scroll that stops glides on at once: the rows never wait for the pan to end (spec:AST-094 FR43)', async ({
@@ -987,6 +998,7 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
     const state = {
       frames: [] as [number, number][],
       wheels: [] as [number, number, number][],
+      gliding: [] as number[],
     };
     (window as unknown as {glide: typeof state}).glide = state;
     element
@@ -1006,6 +1018,9 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
         time,
         new DOMMatrixReadOnly(getComputedStyle(element).transform).m42,
       ]);
+      if (element.getAnimations().length > 0) {
+        state.gliding.push(time);
+      }
       if (state.frames.length < 240) {
         requestAnimationFrame(sample);
       }
@@ -1024,13 +1039,14 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
   await sendWheels(cdp, at, 24 * scale, 8, 16);
   await page.waitForTimeout(600);
   await waitForRest(strip);
-  const {frames, wheels} = await page.evaluate(
+  const {frames, wheels, gliding} = await page.evaluate(
     () =>
       (
         window as unknown as {
           glide: {
             frames: [number, number][];
             wheels: [number, number, number][];
+            gliding: number[];
           };
         }
       ).glide,
@@ -1053,7 +1069,7 @@ test('a quick scroll that stops glides on at once: the rows never wait for the p
   if (moved == null) {
     throw new Error('the rows never moved on after the last wheel');
   }
-  expectGlideAtPause(frames, wheels, moved);
+  expectGlideAtPause(frames, wheels, gliding, moved);
 });
 
 test('a scroll whose wheels come every other frame moves the rows by its own travel, never ahead of it (spec:AST-094 FR43)', async ({
@@ -1079,6 +1095,7 @@ test('a scroll whose wheels come every other frame moves the rows by its own tra
     const state = {
       frames: [] as [number, number][],
       wheels: [] as [number, number, number][],
+      gliding: [] as number[],
     };
     (window as unknown as {glide: typeof state}).glide = state;
     element
@@ -1098,6 +1115,9 @@ test('a scroll whose wheels come every other frame moves the rows by its own tra
         time,
         new DOMMatrixReadOnly(getComputedStyle(element).transform).m42,
       ]);
+      if (element.getAnimations().length > 0) {
+        state.gliding.push(time);
+      }
       if (state.frames.length < 240) {
         requestAnimationFrame(sample);
       }
@@ -1113,13 +1133,14 @@ test('a scroll whose wheels come every other frame moves the rows by its own tra
   await sendWheels(cdp, at, 24 * scale, 8, 33);
   await page.waitForTimeout(600);
   await waitForRest(strip);
-  const {frames, wheels} = await page.evaluate(
+  const {frames, wheels, gliding} = await page.evaluate(
     () =>
       (
         window as unknown as {
           glide: {
             frames: [number, number][];
             wheels: [number, number, number][];
+            gliding: number[];
           };
         }
       ).glide,
@@ -1159,7 +1180,7 @@ test('a scroll whose wheels come every other frame moves the rows by its own tra
   if (moved == null) {
     throw new Error('the rows never moved on after the last wheel');
   }
-  expectGlideAtPause(frames, wheels, moved);
+  expectGlideAtPause(frames, wheels, gliding, moved);
 });
 
 test.describe('under a mouse', () => {
