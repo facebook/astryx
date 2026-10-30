@@ -117,7 +117,15 @@ describe('native contracts', () => {
     expect(icon!.core.icon).toMatchObject({type: {kind: 'icon'}});
     expect(icon!.core.icon.optional).toBe(false);
     expect(Object.keys(icon!.core)).toEqual(['icon', 'color', 'size', 'label']);
-    expect(icon!.webOnly.map(prop => prop.name)).toEqual(['xstyle']);
+    // `variant` names come from core's augmentable `IconVariantMap`, which has
+    // no portable definition yet, so the prop stays on the web.
+    expect(icon!.webOnly).toEqual([
+      {
+        name: 'variant',
+        reason: 'type "IconVariant" has no portable definition yet',
+      },
+      {name: 'xstyle', reason: 'web styling input'},
+    ]);
 
     const swift = generateSwift(contracts);
     expect(swift['Icon.swift']).toContain('public var icon: IconName');
@@ -177,6 +185,26 @@ describe('native contracts', () => {
     });
     expect(dot!.core.label?.type).toEqual({kind: 'string'});
     expect(dot!.webOnly.map(prop => prop.name)).toContain('icon');
+  });
+
+  it('gives Thumbnail its image, names, states, a press, and a remove action', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const thumbnail = contracts.find(contract => contract.name === 'Thumbnail');
+    expect(thumbnail).toBeDefined();
+    expect(Object.keys(thumbnail!.core)).toEqual([
+      'src',
+      'alt',
+      'label',
+      'onRemove',
+      'onClick',
+      'isLoading',
+      'isDisabled',
+      'showRemoveOn',
+    ]);
+    expect(thumbnail!.core.onRemove?.type).toEqual({kind: 'fn', args: []});
+    expect(thumbnail!.webOnly.map(prop => prop.name)).toEqual(
+      expect.arrayContaining(['xstyle', 'className', 'style', 'data-testid']),
+    );
   });
 
   it('reports naming and portability errors', () => {

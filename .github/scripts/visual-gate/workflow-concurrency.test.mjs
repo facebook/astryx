@@ -160,9 +160,8 @@ describe('PR report and deployment workflow contracts', () => {
     expect(value).not.toContain(
       'storybook_url=https://${REPO_OWNER}.github.io',
     );
-    expect(value).toContain(
-      'name: sandbox-${{ steps.urls.outputs.short_hash }}',
-    );
+    // Vercel builds the Sandbox preview; CI uploads no Sandbox of its own.
+    expect(value).not.toContain('name: sandbox-');
   });
 
   it('stages both static apps in Vercel preview and production', () => {

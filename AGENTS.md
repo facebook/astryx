@@ -141,7 +141,7 @@ Runners may also write an optional `<promptId>.provenance.json` sidecar beside t
 
 ## AI Context
 
-For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebook/astryx/wiki)**:
+For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/meta/astryx/wiki)**:
 
 - **Decisions** — API Conventions, Why StyleX, StyleX Distribution
 - **Architecture** — System Architecture, Component Authoring Guide

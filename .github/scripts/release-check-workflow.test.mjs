@@ -31,6 +31,8 @@ const releaseJobs = [
   'pr-visual',
   'pr-a11y-shard',
   'pr-a11y-audit',
+  'pr-a11y-guards',
+  'pr-a11y-specs',
   'pr-a11y',
   'a11y-contracts-shard',
   'a11y-contracts',
@@ -72,11 +74,17 @@ function runs(
     branch = releaseBranch,
     needs = dependencies(job),
     cancelled = false,
+    labels = [],
   } = {},
 ) {
   const expression = (job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    // GitHub's object filter: `labels.*.name` lists the labels' names.
+    .replace(
+      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
+      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
+    );
   // GitHub injects success() unless the expression has a status function.
   if (
     !/\b(always|cancelled|success|failure)\(/.test(expression) &&
@@ -91,7 +99,10 @@ function runs(
     'cancelled',
     `return Boolean(${expression});`,
   )(
-    {event_name: event},
+    {
+      event_name: event,
+      event: {pull_request: {labels: labels.map(name => ({name}))}},
+    },
     {operation, 'release-branch': branch},
     needs,
     () => true,
@@ -230,7 +241,8 @@ describe('explicit release routing', () => {
 
   it.each([
     'pr-a11y-shard',
-    'pr-a11y',
+    'pr-a11y-guards',
+    'pr-a11y-specs',
     'a11y-contracts-shard',
     'visual-scout',
     'pr-visual',
@@ -239,6 +251,46 @@ describe('explicit release routing', () => {
     const needs = dependencies(jobs[name]);
     needs['build-storybook'].result = 'failure';
     expect(runs(jobs[name], {needs})).toBe(false);
+  });
+
+  it('passes pr-a11y only when both accessibility owners succeed', () => {
+    const join = jobs['pr-a11y'];
+    const owner = step('pr-a11y', 'Require every accessibility owner');
+    expect(join.if).toContain('always()');
+    expect(owner.env).toEqual({
+      GUARDS_RESULT: '${{ needs.pr-a11y-guards.result }}',
+      SPECS_RESULT: '${{ needs.pr-a11y-specs.result }}',
+    });
+    const result = shell(owner.run, {
+      GUARDS_RESULT: 'success',
+      SPECS_RESULT: 'success',
+    });
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each([
+    ['failure', 'success'],
+    ['cancelled', 'success'],
+    ['skipped', 'success'],
+    ['success', 'failure'],
+    ['success', 'cancelled'],
+    ['success', 'skipped'],
+  ])('blocks pr-a11y when its owners are %s/%s', (guards, specs) => {
+    const join = jobs['pr-a11y'];
+    const needs = dependencies(join);
+    needs['pr-a11y-guards'].result = guards;
+    needs['pr-a11y-specs'].result = specs;
+    expect(
+      runs(join, {
+        needs,
+        cancelled: guards === 'cancelled' || specs === 'cancelled',
+      }),
+    ).toBe(true);
+    const result = shell(
+      step('pr-a11y', 'Require every accessibility owner').run,
+      {GUARDS_RESULT: guards, SPECS_RESULT: specs},
+    );
+    expect(result.status).not.toBe(0);
   });
 
   it('keeps dispatch concurrency separate and non-cancelling', () => {
@@ -501,6 +553,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
             docsite_only: 'false',
             spec_only: 'false',
             tooling_only: 'false',
+            full_suite: 'true',
             release_bump: 'false',
           },
         ],
@@ -582,7 +635,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
 
   it('runs the canonical accessibility command without a component filter for full scope', () => {
     const audit = step('pr-a11y-audit', 'Run accessibility audit');
-    expect(runs(step('pr-a11y', 'Run accessibility audit'))).toBe(false);
+    expect(runs(step('pr-a11y-guards', 'Run accessibility audit'))).toBe(false);
     expect(step('pr-a11y-audit', 'Require every audit shard').run).toContain(
       '"$SHARD_RESULT" != success',
     );
@@ -627,7 +680,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
           }),
         );
         const result = shell(
-          step('pr-a11y', 'Run accessibility audit').run.replaceAll(
+          step('pr-a11y-guards', 'Run accessibility audit').run.replaceAll(
             '${{ github.event_name }}',
             'pull_request',
           ),
@@ -653,7 +706,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
 
   it('does not silently audit everything when PR scope resolution fails', () => {
     const result = shell(
-      step('pr-a11y', 'Run accessibility audit').run.replaceAll(
+      step('pr-a11y-guards', 'Run accessibility audit').run.replaceAll(
         '${{ github.event_name }}',
         'pull_request',
       ),
@@ -727,13 +780,17 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
     // Shard legs that run four pages or workers get four cores.
     for (const job of ['visual-scout', 'pr-a11y-shard']) {
-      expect(jobs[job]['runs-on'], job).toBe('4-core-ubuntu');
+      expect(jobs[job]['runs-on'], job).toContain(
+        "'4-core-ubuntu' || 'ubuntu-latest'",
+      );
     }
     expect(
       step('visual-scout', 'Scout this shard of the release plan').run,
     ).toContain('--concurrency 4');
     // Four workers need four cores; on two the CPU-bound specs time out.
-    expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
+    expect(jobs['a11y-contracts-shard']['runs-on']).toContain(
+      "'4-core-ubuntu' || 'ubuntu-latest'",
+    );
     expect(contracts['continue-on-error']).toBeUndefined();
     // The join fails closed: a failed shard, or an evidence set no shard
     // produced, blocks release-check through a11y-contracts.
@@ -751,18 +808,18 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       );
       expect(step('a11y-contracts', name).with['delete-merged']).toBe(true);
     }
-    for (const name of [
-      'Run modal close visibility guard',
-      'Run theme var reachability guard',
-      'Run story play guard',
-      'Run browser accessibility specs',
+    for (const [job, name] of [
+      ['pr-a11y-guards', 'Run modal close visibility guard'],
+      ['pr-a11y-guards', 'Run theme var reachability guard'],
+      ['pr-a11y-guards', 'Run story play guard'],
+      ['pr-a11y-specs', 'Run browser accessibility specs'],
     ]) {
       expect(
-        runs(step('pr-a11y', name), {event: 'pull_request', operation: ''}),
+        runs(step(job, name), {event: 'pull_request', operation: ''}),
         name,
       ).toBe(true);
-      expect(runs(step('pr-a11y', name)), name).toBe(true);
-      expect(step('pr-a11y', name)['continue-on-error']).toBeUndefined();
+      expect(runs(step(job, name)), name).toBe(true);
+      expect(step(job, name)['continue-on-error']).toBeUndefined();
     }
   });
 
