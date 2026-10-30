@@ -289,7 +289,7 @@ describe('per-job scope step', () => {
     const {outputs} = await decide({
       files: [
         {
-          filename: 'docs/specs/AST-030/Button.md',
+          filename: 'docs/specs/AST-030/spec.md',
           previous_filename: 'packages/core/src/Button/Button.tsx',
           status: 'renamed',
         },

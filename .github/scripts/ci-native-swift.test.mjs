@@ -28,6 +28,20 @@ const step = (job, name) =>
 const applies = "needs.native-swift-runner.outputs.applies == 'true'";
 
 describe('native Swift routing', () => {
+  it('runs the macOS build on a merge-queue entry, where there is no PR file list', () => {
+    const scope = runner.steps.find(candidate => candidate.id === 'scope');
+    const action = yaml.parse(
+      fs.readFileSync(
+        path.join(root, '.github/actions/test-scope/action.yml'),
+        'utf8',
+      ),
+    );
+    const outside =
+      scope.with?.['outside-pull-request'] ??
+      action.inputs['outside-pull-request'].default;
+    expect(outside).toBe('run');
+  });
+
   it('is joined by test', () => {
     expect(ci.jobs.test.needs).toContain('test-native-swift');
     expect(
