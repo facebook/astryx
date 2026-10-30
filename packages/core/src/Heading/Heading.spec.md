@@ -116,14 +116,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                   | Required invariant                                             | Allowed variation |
-| ----------------------- | -------------------------------------------------------------- | ----------------- |
-| Level only              | `h{level}` at the level's scale.                               | Level.            |
-| Display type            | Same element; display scale and weight; `data-type` reflected. | Type.             |
-| Theme-added type        | Same element; level baseline; `data-type` reflected.           | Theme paint.      |
-| Accessibility override  | `aria-level` differs from the element's level.                 | —                 |
-| Truncated with tooltip  | Clamped heading anchors one Tooltip with the full text.        | Placement.        |
-| Truncation, tooltip off | Clamped heading; no measurement; no Tooltip.                   | —                 |
+| State                   | Required invariant                                                                                   | Allowed variation |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- | ----------------- |
+| Level only              | `h{level}` at the level's scale.                                                                     | Level.            |
+| Display type            | Same element; display scale and weight; `data-type` reflected.                                       | Type.             |
+| Theme-added type        | Same element; level baseline; `data-type` reflected.                                                 | Theme paint.      |
+| Accessibility override  | `aria-level` differs from the element's level.                                                       | —                 |
+| Truncated with tooltip  | Clamped heading anchors one Tooltip with the full text, mounted on the first pointer entry or focus. | Placement.        |
+| Truncation, tooltip off | Clamped heading; no measurement; no Tooltip.                                                         | —                 |
 
 ### Transformation and precedence order
 
@@ -139,7 +139,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **PR1 — Measured only when needed.** Truncation is measured only when
   `maxLines` is positive and the tooltip is enabled; re-measuring follows size
   and content changes without a per-heading observer; the Tooltip module loads
-  only when the text is truncated.
+  only when the text is truncated, and the Tooltip itself mounts
+  only on the first pointer entry or focus, so a page of clamped text mounts no
+  closed tooltip layers.
 
 ## Accessibility contract
 
@@ -149,7 +151,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   level through `aria-level` without changing the element.
 - **AR3 — Truncated text.** The full text stays in the heading's DOM; the
   truncation Tooltip is the only tooltip, and any description it adds is
-  Tooltip's.
+  Tooltip's. The Tooltip mounts on the first pointer entry or focus on the
+  clamped heading; until then the heading carries no tooltip description,
+  since its full text is already in its DOM.
 
 ## Design relationships
 

@@ -114,13 +114,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                   | Required invariant                                      | Allowed variation |
-| ----------------------- | ------------------------------------------------------- | ----------------- |
-| Default                 | `span` with body type and primary color.                | Content.          |
-| Supporting              | Supporting type with secondary color.                   | Color override.   |
-| Theme-added type        | Body baseline; `data-type` names the added type.        | Theme paint.      |
-| Truncated with tooltip  | Clamped element anchors one Tooltip; no native `title`. | Placement.        |
-| Truncation, tooltip off | Clamped element; no measurement; no Tooltip.            | —                 |
+| State                   | Required invariant                                                                                   | Allowed variation |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- | ----------------- |
+| Default                 | `span` with body type and primary color.                                                             | Content.          |
+| Supporting              | Supporting type with secondary color.                                                                | Color override.   |
+| Theme-added type        | Body baseline; `data-type` names the added type.                                                     | Theme paint.      |
+| Truncated with tooltip  | Clamped element anchors one Tooltip, mounted on the first pointer entry or focus; no native `title`. | Placement.        |
+| Truncation, tooltip off | Clamped element; no measurement; no Tooltip.                                                         | —                 |
 
 ### Transformation and precedence order
 
@@ -136,7 +136,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **PR1 — Measured only when needed.** Truncation is measured only when
   `maxLines` is positive and the tooltip is enabled; re-measuring follows size
   and content changes without a per-element observer; the Tooltip module loads
-  only when the text is truncated.
+  only when the text is truncated, and the Tooltip itself mounts
+  only on the first pointer entry or focus, so a page of clamped text mounts no
+  closed tooltip layers.
 
 ## Accessibility contract
 
@@ -145,7 +147,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   `component:Heading`.
 - **AR2 — Truncated text.** The full text stays in the element's DOM; the
   truncation Tooltip is the only tooltip, and any description it adds is
-  Tooltip's.
+  Tooltip's. The Tooltip mounts on the first pointer entry or focus on the
+  clamped element; until then the element carries no tooltip description,
+  since its full text is already in its DOM.
 
 ## Design relationships
 
