@@ -146,6 +146,62 @@ export function uncleanFindings(result) {
   ];
 }
 
+/** Third-party CDNs the starter page loads from. */
+export const CDN_HOSTS = ['esm.sh', 'cdn.jsdelivr.net'];
+
+/** A server-side failure: the CDN itself broke, not the URL the page asked for. */
+const OUTAGE_STATUS = /^(5\d\d|408) (\S+)$/;
+const OUTAGE_CONSOLE =
+  /^Failed to load resource: the server responded with a status of (5\d\d|408)\b/;
+
+/**
+ * The CDN URLs behind an unclean render when the only thing wrong is a CDN
+ * failing on its own side: every failed request is a 5xx or 408 from a host
+ * in `CDN_HOSTS` (or the browser aborting one of those same URLs), every
+ * console error is the browser reporting such a response, and nothing threw on
+ * the page. Empty when anything else went wrong — a 404 (a missing release or
+ * file), a page error, a timeout, a failure at any other host — because those
+ * are the regressions this smoke test exists to catch.
+ */
+export function cdnOutageUrls(result, hosts = CDN_HOSTS) {
+  if (
+    result.timedOut ||
+    result.pageErrors.length > 0 ||
+    result.failedRequests.length === 0
+  ) {
+    return [];
+  }
+  const isCdn = url => {
+    try {
+      return hosts.includes(new URL(url).hostname);
+    } catch {
+      return false;
+    }
+  };
+  const outageUrls = new Set();
+  for (const entry of result.failedRequests) {
+    const match = OUTAGE_STATUS.exec(entry);
+    if (match && isCdn(match[2])) {
+      outageUrls.add(match[2]);
+    }
+  }
+  if (outageUrls.size === 0) {
+    return [];
+  }
+  const explained = result.failedRequests.every(entry => {
+    const match = OUTAGE_STATUS.exec(entry);
+    if (match) {
+      return outageUrls.has(match[2]);
+    }
+    const [url, reason] = entry.split(' :: ');
+    return outageUrls.has(url) && reason === 'net::ERR_ABORTED';
+  });
+  const consoleExplained = result.consoleErrors.every(entry =>
+    OUTAGE_CONSOLE.test(entry),
+  );
+  return explained && consoleExplained ? [...outageUrls] : [];
+}
+
 /** Whether a render went idle with nothing wrong and a button on the page. */
 export function isCleanRender(result) {
   return (

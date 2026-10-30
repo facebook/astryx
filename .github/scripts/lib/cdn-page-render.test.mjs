@@ -3,6 +3,7 @@
 import {EventEmitter} from 'node:events';
 import {describe, expect, it} from 'vitest';
 import {
+  cdnOutageUrls,
   isCleanRender,
   renderPage,
   renderUntilClean,
@@ -342,5 +343,85 @@ describe('renderUntilClean', () => {
     });
     expect(launches()).toBe(2);
     expect(isCleanRender(result)).toBe(true);
+  });
+});
+
+describe('cdnOutageUrls', () => {
+  const LUCIDE =
+    'https://esm.sh/lucide-react@%5E1.18.0?external=react&target=es2022';
+  const outage = {
+    timedOut: false,
+    pendingRequests: [],
+    consoleErrors: [
+      'Failed to load resource: the server responded with a status of 500 ()',
+    ],
+    pageErrors: [],
+    failedRequests: [`500 ${LUCIDE}`, `${LUCIDE} :: net::ERR_ABORTED`],
+    button: null,
+  };
+
+  it('names the CDN URL when a CDN server error is the only thing wrong', () => {
+    expect(cdnOutageUrls(outage)).toEqual([LUCIDE]);
+  });
+
+  it('counts a 408 from a CDN as an outage too', () => {
+    expect(
+      cdnOutageUrls({
+        ...outage,
+        consoleErrors: [
+          'Failed to load resource: the server responded with a status of 408 ()',
+        ],
+        failedRequests: [`408 ${CORE}`],
+      }),
+    ).toEqual([CORE]);
+  });
+
+  it('is empty for a 404: a missing release or file is a regression to catch', () => {
+    expect(
+      cdnOutageUrls({
+        ...outage,
+        consoleErrors: [
+          'Failed to load resource: the server responded with a status of 404 ()',
+        ],
+        failedRequests: [`404 ${CSS}`],
+      }),
+    ).toEqual([]);
+  });
+
+  it('is empty when the page threw, even beside a CDN server error', () => {
+    expect(
+      cdnOutageUrls({...outage, pageErrors: ['SyntaxError: bad export']}),
+    ).toEqual([]);
+  });
+
+  it('is empty when any other console error appears', () => {
+    expect(
+      cdnOutageUrls({
+        ...outage,
+        consoleErrors: [...outage.consoleErrors, 'Invalid hook call'],
+      }),
+    ).toEqual([]);
+  });
+
+  it('is empty for a server error at a host that is not a known CDN', () => {
+    const other = 'https://example.com/x.js';
+    expect(
+      cdnOutageUrls({
+        ...outage,
+        failedRequests: [`500 ${other}`, `${other} :: net::ERR_ABORTED`],
+      }),
+    ).toEqual([]);
+  });
+
+  it('is empty for a timeout or a clean render', () => {
+    expect(cdnOutageUrls({...outage, timedOut: true})).toEqual([]);
+    expect(
+      cdnOutageUrls({
+        ...outage,
+        consoleErrors: [],
+        failedRequests: [],
+        button: 'Click',
+      }),
+    ).toEqual([]);
   });
 });

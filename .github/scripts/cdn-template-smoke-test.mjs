@@ -18,7 +18,8 @@
  * Usage:
  *   node .github/scripts/cdn-template-smoke-test.mjs
  *
- * Exit code 0 = the page rendered clean
+ * Exit code 0 = the page rendered clean, or the only failure was a CDN's own
+ *               server error on every attempt (reported as a soft failure)
  * Exit code 1 = it did not
  */
 
@@ -31,6 +32,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
 import {
+  cdnOutageUrls,
   renderPage,
   renderUntilClean,
   uncleanFindings,
@@ -212,7 +214,22 @@ if (result.button) {
 }
 
 fs.rmSync(tmpDir, {recursive: true, force: true});
-if (process.exitCode) {
+// A CDN failing on its own side (a 5xx or 408 on both attempts) breaks every
+// page that loads from it, but no change in this repository caused it or can
+// fix it. Report it loudly as a soft failure instead of a red build; a 404, a
+// page error or anything at another host still fails.
+const outageUrls = process.exitCode ? cdnOutageUrls(result) : [];
+if (outageUrls.length > 0) {
+  console.log(
+    `\nSOFT FAILURE: external CDN outage, not a regression in this change.\n${outageUrls
+      .map(entry => `        ${entry}`)
+      .join('\n')}`,
+  );
+  console.log(
+    `::warning title=CDN outage (soft failure)::The CDN starter page could not load ${outageUrls.join(', ')} (server error on every attempt). The page is broken for users until the CDN recovers; this run does not fail for it.`,
+  );
+  process.exitCode = 0;
+} else if (process.exitCode) {
   console.log('\nCDN starter page is broken.');
 } else {
   console.log('\nCDN starter page renders clean.');
