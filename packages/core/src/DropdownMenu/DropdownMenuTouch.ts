@@ -47,10 +47,11 @@ export function createMenuSurfaceMotion(
 }
 
 /**
- * The in-place sub-menu's motion (menuDrillInMotion.ts), with the springs
- * table registered first, whose internal motion roles it reads
- * (`springs.subMenuOpen`, `springs.subMenuBack`, `spec:AST-094` FR4); the
- * menu table's values are constants, read directly.
+ * The in-place sub-menu's motion (menuDrillInMotion.ts). Registers UIKit's
+ * two sub-menu springs first, the internal motion roles it reads
+ * (`springs.subMenuOpen`, `springs.subMenuBack`, `spec:AST-094` FR4);
+ * registering again is a no-op. The menu table's values are constants, read
+ * directly.
  */
 export function createMenuDrillInMotion(
   ...args: Parameters<typeof createDrillInMotion>
