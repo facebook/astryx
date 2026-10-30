@@ -31,6 +31,8 @@
  *   instruments; this file is why it may.
  */
 
+import fs from 'node:fs';
+
 import {expect, test, type Page} from '@playwright/test';
 import {
   animationStoryboard,
@@ -73,6 +75,7 @@ import {
   waitForRest,
   watchAnimations,
   withFinger,
+  writeEvidence,
 } from './index';
 
 const FIXTURE = `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
@@ -1773,6 +1776,41 @@ test.describe('animation state', () => {
     expect(mid.transform.scaleX).toBeCloseTo(1.25, 3);
     expect(end.transform.translateY).toBeCloseTo(120, 1);
     expect(end.transform.scaleY).toBeCloseTo(1.5, 3);
+  });
+});
+
+test.describe('evidence files', () => {
+  test('evidence reaches the report with no file copy inside the test', async ({
+    browserName: _,
+  }, testInfo) => {
+    // A file copy that never returns, as one on a loaded runner has waited
+    // past a test's whole budget: the evidence must not wait on one inside
+    // the test's own time.
+    test.setTimeout(15_000);
+    const promises = fs.promises as unknown as {copyFile: unknown};
+    const copyFile = promises.copyFile;
+    let copies = 0;
+    promises.copyFile = async () => {
+      copies += 1;
+      await new Promise(() => {});
+    };
+    try {
+      const written = await writeEvidence(
+        'harness-self-test/evidence',
+        {'a.json': '{"ok":true}'},
+        testInfo,
+      );
+      expect(copies).toBe(0);
+      // The file stays for local paths, and the report has its bytes.
+      expect(fs.readFileSync(written['a.json'], 'utf8')).toBe('{"ok":true}');
+      const attachment = testInfo.attachments.find(
+        a => a.name === 'harness-self-test/evidence/a.json',
+      );
+      expect(attachment?.contentType).toBe('application/json');
+      expect(String(attachment?.body)).toBe('{"ok":true}');
+    } finally {
+      promises.copyFile = copyFile;
+    }
   });
 });
 
