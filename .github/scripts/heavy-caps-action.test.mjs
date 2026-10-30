@@ -1,15 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Per-author caps on heavy suites (.github/actions/heavy-caps,
- * spec:AST-030 FR16). These cases run the action's real script, as
+ * @file Per-author and repo-wide caps on heavy suites
+ * (.github/actions/heavy-caps, spec:AST-030 FR16). These cases run the action's real script, as
  * actions/github-script runs it, against a stubbed GitHub API.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import yaml from 'yaml';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -30,6 +30,8 @@ const isCaps = step =>
 const QUEUED =
   'Queued behind your 3 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.';
 const CAPPED = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
+const REPO_JOB_LIMIT = Number(/const REPO_JOB_LIMIT = (\d+);/.exec(script)[1]);
+const FULL = `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): re-run this job once it drains, or it runs at pre-merge.`;
 
 function pullRequestContext(pr = {}) {
   return {
@@ -53,7 +55,13 @@ async function check({
   open = [],
   runs = [],
   attempt = '1',
+  // Every pull-request run in progress or queued, with its jobs' statuses;
+  // a function gets the poll number, so a slot can free up while waiting.
+  active = [],
 } = {}) {
+  let polls = 0;
+  const activeRuns = () =>
+    typeof active === 'function' ? active(polls) : active;
   const messages = {failed: [], warning: []};
   const core = {
     setFailed: message => messages.failed.push(message),
@@ -65,8 +73,22 @@ async function check({
       if (open instanceof Error) throw open;
       return {search: {nodes: open}};
     },
+    paginate: async (method, params) => {
+      const {data} = await method(params);
+      return data.workflow_runs ?? data.jobs;
+    },
     rest: {
       actions: {
+        listWorkflowRunsForRepo: async ({status, event}) => {
+          if (event !== 'pull_request')
+            throw new Error('counted runs outside pull requests');
+          if (status === 'in_progress') polls += 1;
+          return {
+            data: {
+              workflow_runs: activeRuns().filter(run => run.status === status),
+            },
+          };
+        },
         // Today's ci.yml runs on a branch name, from any repository.
         listWorkflowRuns: async ({branch}) => ({
           data: {workflow_runs: runs.filter(run => run.head_branch === branch)},
@@ -75,6 +97,8 @@ async function check({
         // heavy job ran its suite has a successful marker step.
         listJobsForWorkflowRun: async ({run_id, per_page = 30}) => {
           if (per_page < 100) throw new Error('read one default page of jobs');
+          const live = activeRuns().find(run => run.id === run_id);
+          if (live) return {data: {jobs: live.jobs.map(status => ({status}))}};
           const heavy = runs.find(run => run.id === run_id).heavy !== false;
           return {
             data: {
@@ -281,6 +305,63 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     const failed = await check({open: new Error('rate limited')});
     expect(failed.failed).toEqual([]);
     expect(failed.warning[0]).toContain('running the heavy suite');
+  });
+
+  describe('repo-wide cap', () => {
+    afterEach(() => vi.useRealTimers());
+    const runOf = (id, jobs, status = 'in_progress') => ({id, status, jobs});
+    const busy = count => Array.from({length: count}, () => 'in_progress');
+    /** Runs the check with fake timers, letting its five-minute wait pass. */
+    async function waited(options) {
+      vi.useFakeTimers();
+      const result = check({open: [me], ...options});
+      await vi.advanceTimersByTimeAsync(6 * 60_000);
+      return result;
+    }
+
+    it('fails a heavy job once the wait ends with CI still full', async () => {
+      const full = await waited({active: [runOf(50, busy(REPO_JOB_LIMIT))]});
+      expect(full.failed).toEqual([FULL]);
+      const room = await waited({
+        active: [runOf(50, busy(REPO_JOB_LIMIT - 1))],
+      });
+      expect(room.failed).toEqual([]);
+    });
+
+    it('counts queued runs and queued jobs, not finished ones, and not its own job', async () => {
+      const queued = await waited({
+        active: [
+          runOf(50, [...busy(REPO_JOB_LIMIT - 10), 'completed', 'completed']),
+          runOf(
+            51,
+            ['queued', 'queued', 'queued', 'queued', 'queued'],
+            'queued',
+          ),
+          runOf(52, [...busy(2), 'queued', 'queued', 'queued']),
+        ],
+      });
+      expect(queued.failed).toEqual([FULL]);
+      // This job is one of its run's in-progress jobs and takes no slot.
+      const own = await waited({active: [runOf(1, busy(REPO_JOB_LIMIT))]});
+      expect(own.failed).toEqual([]);
+    });
+
+    it('starts when a slot frees up during the wait', async () => {
+      const freed = await waited({
+        active: polls => [
+          runOf(50, busy(polls < 3 ? REPO_JOB_LIMIT : REPO_JOB_LIMIT - 1)),
+        ],
+      });
+      expect(freed.failed).toEqual([]);
+    });
+
+    it('exempts the pre-merge re-run', async () => {
+      const rerun = await waited({
+        attempt: '2',
+        active: [runOf(50, busy(REPO_JOB_LIMIT + 20))],
+      });
+      expect(rerun.failed).toEqual([]);
+    });
   });
 
   it('loads every local action from the merge commit, never from a checkout of the pull request head', () => {

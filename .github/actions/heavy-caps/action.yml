@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Holds a heavy suite back when its pull request's author is over a limit
+# Holds a heavy suite back when its pull request's author, or CI as a whole,
+# is over a limit
 # (spec:AST-030 FR16). A heavy job runs this right after its checkout and a
 # "Heavy suite runs" step right after it; a held job fails here with the
 # reason, so it never passes a required join untested.
@@ -9,13 +10,16 @@
 #   requests, and for at most twelve heavy runs a UTC day.
 # - The shared agent login counts each branch prefix as an author, with that
 #   login also held to its five oldest pull requests and forty runs a day.
+# - Across all pull requests, a heavy suite starts only while fewer than
+#   REPO_JOB_LIMIT CI jobs are in progress or queued, not counting its own;
+#   otherwise it waits up to five minutes for a slot.
 # - A re-run (the pre-merge restart) and a bot are exempt; a lookup that fails
 #   runs the suite.
 #
 # Each limit is one entry in `limits`, checked in order.
 
 name: Heavy-suite caps
-description: Fails a heavy job whose pull request's author is over a limit.
+description: Fails a heavy job whose pull request's author, or CI as a whole, is over a limit.
 
 runs:
   using: composite
@@ -42,6 +46,12 @@ runs:
                 {q: `repo:${context.repo.owner}/${context.repo.repo} is:pr is:open draft:false author:${login} sort:created-asc`},
               )
             ).search.nodes);
+
+          // At most this many CI jobs in progress or queued across all pull
+          // requests before a heavy suite waits (spec:AST-030 FR16).
+          const REPO_JOB_LIMIT = 48;
+          const REPO_WAIT_MS = 5 * 60_000;
+          const REPO_POLL_MS = 60_000;
 
           const limits = [
             // Pull request numbers rise with creation, and the search returns
@@ -88,6 +98,31 @@ runs:
                 return 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
               }
             },
+            // Jobs of every pull-request run that is in progress or queued,
+            // except this job itself.
+            async function repoWideJobs() {
+              const deadline = Date.now() + REPO_WAIT_MS;
+              for (;;) {
+                let active = 0;
+                for (const status of ['in_progress', 'queued']) {
+                  const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                    ...context.repo, status, event: 'pull_request', per_page: 100,
+                  });
+                  for (const run of runs) {
+                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                      ...context.repo, run_id: run.id, filter: 'latest', per_page: 100,
+                    });
+                    active += jobs.filter(job => job.status === 'in_progress' || job.status === 'queued').length;
+                    if (run.id === context.runId) active -= 1;
+                  }
+                }
+                if (active < REPO_JOB_LIMIT) return;
+                if (Date.now() >= deadline) {
+                  return `CI is full (${REPO_JOB_LIMIT} jobs running or queued across pull requests): re-run this job once it drains, or it runs at pre-merge.`;
+                }
+                await new Promise(resolve => setTimeout(resolve, REPO_POLL_MS));
+              }
+            },
           ];
 
           try {
@@ -99,5 +134,5 @@ runs:
               }
             }
           } catch (error) {
-            core.warning(`Per-author caps could not be checked (${error.message}); running the heavy suite.`);
+            core.warning(`Heavy-suite caps could not be checked (${error.message}); running the heavy suite.`);
           }
