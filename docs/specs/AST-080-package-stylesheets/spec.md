@@ -95,11 +95,11 @@ first.
   declaration MUST cover that file, so a bundler keeps the product's
   `import '@astryxdesign/<package>/<name>.css'`.
   Core's `sideEffects` declaration also covers its barrel modules
-  (`**/index.js`). Core's lazy `import()`s make a bundler without code
-  splitting wrap the modules they reach in lazy initializers, and a barrel
-  declared side-effect-free loses its initializer call, so a component runs
-  before its module is initialized. Declaring the barrels keeps that order
-  in a single-file bundle.
+  (`**/index.js`). Core's lazy `import()`s make esbuild, bundling without code
+  splitting, wrap the modules they reach in lazy initializers, and esbuild
+  drops the initializer call of a barrel declared side-effect-free, so a
+  component runs before its module is initialized. Declaring the barrels keeps
+  that order in a single-file esbuild bundle.
 
 - **FR5 — Documented setups load prebuilt stylesheets by default.** Each
   default consumer setup path in the documentation (plain CSS, Tailwind, and a
