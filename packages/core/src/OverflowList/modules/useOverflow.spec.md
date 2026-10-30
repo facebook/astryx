@@ -74,9 +74,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                      | Basis                          | Draft review state           |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | ---------------------------- |
-| FR1 | After a commit that mounts or changes the container, the hook MUST measure with every overflow list in that commit, after the commit, and its results MUST land one microtask after the commit, before the frame paints. | `component:OverflowList` DEC-1 | Decided; not yet implemented |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                        | Basis                          | Draft review state           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------- |
+| FR1 | After a commit that mounts or changes the container, the hook MUST measure with every overflow list in that commit, after the commit, and its results MUST land in a microtask after the commit, before the next task and the frame's paint. The container's measured inputs are those `component:OverflowList` FR4 names. | `component:OverflowList` DEC-1 | Decided; not yet implemented |
 
 ### Transformation and precedence order
 
