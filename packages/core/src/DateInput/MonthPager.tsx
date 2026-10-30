@@ -500,8 +500,11 @@ function MonthPagerComponent({
     [minMonthIndex, rowCount, pager, stopFollowingSettle],
   );
 
-  // Deliberately un-keyed: it runs after every render, costs a null check, and
-  // must fire on whichever render finally mounts the pending row's pane.
+  // Synchronizes the pager's position with the DOM: a far jump can move only
+  // once the render that mounts the target's pane has committed it to the
+  // document, and then moves at once, before paint. Deliberately un-keyed: it
+  // runs after every render, costs a null check, and must fire on whichever
+  // render finally mounts the pending row's pane.
   useLayoutEffect(() => {
     const row = pendingRowRef.current;
     if (row == null) {
