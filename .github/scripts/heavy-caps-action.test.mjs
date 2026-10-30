@@ -141,6 +141,13 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     expect((await check({open: [me], runs: runsOn(12)})).failed).toEqual([
       CAPPED,
     ]);
+    // The cap counts the author's heavy runs across all of their oldest pull
+    // requests, not only the one deciding.
+    const spread = await check({
+      open: [...pulls('fix/b', 'fix/c'), me],
+      runs: [...runsOn(6, 'fix/b'), ...runsOn(3, 'fix/c'), ...runsOn(3)],
+    });
+    expect(spread.failed).toEqual([CAPPED]);
     // Cancelled runs, runs whose heavy suites never ran (a queued PR) and runs
     // on other branches are not heavy runs.
     const light = await check({
