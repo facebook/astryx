@@ -10,12 +10,17 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
+// The row's lazily loaded swipe layer, loaded while this file is collected,
+// which no timeout bounds: its first load brings the gesture system with it
+// and can take seconds on a busy machine. The swipeActions case below then
+// finds it cached (as Item.test.tsx does).
+import '../Item/ItemSwipeLayer';
 
 describe('List', () => {
   it('forwards ListItem align to its Item row unchanged', () => {
@@ -1040,12 +1045,13 @@ describe('List and swipe actions', () => {
     const row = screen.getByTestId('row');
     expect(row.tagName).toBe('LI');
     expect(row.parentElement).toBe(screen.getByRole('list'));
-    // The panel arrives with the lazily loaded swipe layer.
-    const panel = await waitFor(() => {
-      const found = row.querySelector('[data-swipe-panel="trailing"]');
-      expect(found).not.toBeNull();
-      return found;
+    // The panel arrives with the lazily loaded swipe layer, imported at the
+    // top of this file: the lazy component resolves from that cached module.
+    await act(async () => {
+      await import('../Item/ItemSwipeLayer');
     });
+    const panel = row.querySelector('[data-swipe-panel="trailing"]');
+    expect(panel).not.toBeNull();
     // Commit: presentational.
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });

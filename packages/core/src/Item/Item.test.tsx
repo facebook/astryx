@@ -19,18 +19,16 @@ import {
   expect,
   vi,
 } from 'vitest';
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+// The lazily loaded swipe layer, loaded while this file is collected, which no
+// timeout bounds: its first load brings the gesture system with it and can
+// take seconds on a busy machine. The swipeActions warm-up below then finds it
+// cached.
+import './ItemSwipeLayer';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -684,9 +682,11 @@ describe('Item', () => {
 
 describe('swipeActions', () => {
   // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
-  // the first row with swipe actions renders them a tick after it mounts.
-  // Mount one once up front: the resolved module is cached on the lazy
-  // component, and every row below renders its panels synchronously.
+  // the first row with swipe actions renders them once the module has loaded.
+  // The module is imported at the top of this file, while it is collected, so
+  // no timed hook waits on its first load. Mount one row once up front: its
+  // lazy component resolves from that cached module, and every row below
+  // renders its panels synchronously.
   beforeAll(async () => {
     render(
       <Item
@@ -695,11 +695,12 @@ describe('swipeActions', () => {
         swipeActions={{leading: [{label: 'Unread', onActivate: () => {}}]}}
       />,
     );
-    await waitFor(() => {
-      expect(
-        screen.getByTestId('warm').querySelector('[data-swipe-panel]'),
-      ).not.toBeNull();
+    await act(async () => {
+      await import('./ItemSwipeLayer');
     });
+    expect(
+      screen.getByTestId('warm').querySelector('[data-swipe-panel]'),
+    ).not.toBeNull();
     cleanup();
   });
 
