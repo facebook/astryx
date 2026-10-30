@@ -1114,6 +1114,12 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node scripts/verify-exports.mjs
 
+      # The story-tree check reads the built index and skips without one, so it
+      # runs here, where Storybook was just built (apps/storybook/README.md).
+      - name: Check the story tree
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm exec vitest run --project node apps/storybook/.storybook/story-tree.test.ts
+
       - name: Stamp Storybook source revision
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: git rev-parse HEAD > apps/storybook/dist/astryx-build-sha.txt
