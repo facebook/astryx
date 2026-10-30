@@ -1890,7 +1890,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         return (
           <span {...stylex.props(styles.triggerText)}>
             {formatValue?.(selectedItems) ??
-              `${optimisticValue.length} selected`}
+              t('@astryx.multiSelector.triggerCount', {
+                count: optimisticValue.length,
+              })}
           </span>
         );
 
@@ -1933,6 +1935,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     placeholder,
     formatValue,
     maxBadges,
+    t,
   ]);
 
   // Render search input

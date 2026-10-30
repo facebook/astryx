@@ -374,6 +374,27 @@ describe('MultiSelector', () => {
     expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
+  it('translates the default count text, with the count as a parameter', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.multiSelector.triggerCount':
+              '{count, plural, one {# sélectionné} other {# sélectionnés}}',
+          },
+        }}>
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+        />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByText('2 sélectionnés')).toBeInTheDocument();
+  });
+
   it('formats the count display with formatValue', () => {
     render(
       <MultiSelector
