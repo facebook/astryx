@@ -14,12 +14,15 @@
  *   and the gate. Everything a finger drives is the touch layer,
  *   refreshTouchController.ts, imported here and nowhere else.
  *
- * Under a finger only: the pull, the inset and the indicator follow the touch
- * presentation (`useTouchPresentation`: a coarse primary pointer, one touch
- * model on iOS and Android alike). On the page, the pull replaces the
- * browser's own pull to refresh near the top (Safari's and Chrome's reload).
- * With a mouse or a trackpad nothing pulls, and a programmatic refresh only
- * reports busy and announces itself: no inset, no indicator.
+ * Every pointer pulls, under any primary pointer (`spec:AST-094` FR43): a
+ * drag at the top, with the same mapping, trigger, settle and drawing; a pen
+ * or a mouse pull clears the text selection its drag started. A trackpad's
+ * or a wheel's scroll does not pull. The top edge follows the touch presentation
+ * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
+ * and Android alike): only there does the pull take the page's overscroll
+ * near the top and replace the browser's own pull to refresh (Safari's and
+ * Chrome's reload). Under a fine pointer a programmatic refresh only reports
+ * busy and announces itself: no inset, no indicator.
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/RefreshControl/refreshTouchController.ts
@@ -139,7 +142,8 @@ export function useRefreshControl({
 
   const dispatchRef = useRef<(event: RefreshEvent) => void>(() => {});
   const touch = useRefreshTouchController({
-    isPullEnabled: isTouch && !isDisabled && !isLocked,
+    isPullEnabled: !isDisabled && !isLocked,
+    isEdgeClaimed: isTouch,
     model,
     dispatchRef,
   });
