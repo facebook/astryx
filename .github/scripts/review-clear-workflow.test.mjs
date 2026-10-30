@@ -137,7 +137,7 @@ function harness(
     },
   };
   const context = {
-    repo: {owner: 'facebook', repo: 'astryx'},
+    repo: {owner: 'meta', repo: 'astryx'},
     sha: trustedSha,
     payload: {
       workflow_run: {

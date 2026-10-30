@@ -362,8 +362,8 @@ const SHORT_SIX_COLUMN_TABLE = [
 const WIDE_TOKEN_TABLE = [
   '| Identifier | Endpoint | Status | Accessibility status and remediation owner |',
   '|---|---|---|---|',
-  '| [PR #6860](https://github.com/facebook/astryx/pull/6860) | https://example.com/v2/pipelines/build/runs/1284/logs | `needs_revision_before_landing_v2` | Pass |',
-  '| [PR #6852](https://github.com/facebook/astryx/pull/6852) | https://example.com/v2/pipelines/docs/runs/97/logs | `ContentNegotiationMiddleware` | Review |',
+  '| [PR #6860](https://github.com/meta/astryx/pull/6860) | https://example.com/v2/pipelines/build/runs/1284/logs | `needs_revision_before_landing_v2` | Pass |',
+  '| [PR #6852](https://github.com/meta/astryx/pull/6852) | https://example.com/v2/pipelines/docs/runs/97/logs | `ContentNegotiationMiddleware` | Review |',
 ].join('\n');
 
 function ReadingColumn({width, children}: {width: string; children: string}) {

@@ -52,9 +52,9 @@ of `.github/ENGOWNERS` or `.github/DESIGNOWNERS`. A mixed PR still needs an
 ENGOWNER for non-design current records. The design record names its content
 owners separately from this repository gate.
 
-A DESIGNOWNER author may attest the exact PR head for the design-approval group
-by marking it ready for review. That evidence also counts in a mixed PR, while
-every other applicable code or spec-owner group remains required. The existing
+A DESIGNOWNER approves with an exact-head review or `/approve-spec <head>`,
+like every other owner; in a mixed PR every other applicable code or spec-owner
+group remains required. The existing
 gate may enable squash auto-merge only when every changed path is a recognized
 spec record, every required group has approved, and all branch checks pass.
 Normative assets and indexes are outside that scope; any code path prevents the

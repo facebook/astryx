@@ -149,7 +149,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>
@@ -208,7 +211,9 @@ describe('spec-only workflow contract', () => {
   it('skips every Storybook build command for spec-only changes', () => {
     const ci = read('.github/workflows/ci.yml');
     const jobStart = ci.indexOf('  build-storybook:');
-    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    // The job ends where the next top-level job begins.
+    const jobEnd =
+      jobStart + 1 + ci.slice(jobStart + 1).search(/\n {2}[a-z0-9-]+:\n/);
     const buildJob = ci.slice(jobStart, jobEnd);
     const steps = buildJob.split(/\n      - name: /).slice(1);
     const commandSteps = steps.filter(step =>
