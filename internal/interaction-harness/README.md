@@ -172,6 +172,40 @@ not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
 two steps per frame, which never fails it. Move a proof's element at least two
 steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
 
+On a two-core runner the software compositor and the screencast share the core
+the block spins on, so every compositor animation presents fewer frames there:
+Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
+7 of 10 runs while it moved on every frame the compositor presented. Judge such
+a proof against a control instead of a rate: `startBusyControl(page)` shows a
+small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
+dialog opened before it; `raise()` after one opened later) whose transform
+moves it along the top edge for as long as the page runs. Track it from the
+same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
+as `control`: the component passes when it moved on every frame the control
+moved and its longest stall is no longer than the control's. Both are read from
+the same screencast frames, so a compositor animation misses none. A window in
+which the control moved on fewer than four frames fails, since the machine
+presented too little to judge. A run of frames with no new position counts as
+moved when the change that ends it is a single cast step: the component moves
+under one step a frame there, as on an easing tail, which the cast cannot show
+on every frame. The run must also read as a slowing curve, at most one frame
+longer than the component's run before it. A freeze ends in a catch-up of more
+than one step, a stall in a frame-counted animation is longer than its runs
+before it, and a run that no change ends stays a miss. The component still has
+to show a new position on at least four of the control's frames. The cast step (`stepPx`)
+is read from the value's changes in the judged part, so a position the page
+commits off the grid once the block ends does not shrink it.
+A main-thread animation still fails: the control moves and it does not.
+
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on every one of them, and in each run
+its longest stall may be no longer than that run's control's, since a stall
+belongs to its run.
+
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. `startCompositorTrace(page)`, started with the screencast and
 stopped after the block, records when the compositor presented each frame

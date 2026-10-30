@@ -265,7 +265,7 @@ describe('PickerWheel — at rest', () => {
     expect(row('08').style.transform).toBe(rowTransform(0));
   });
 
-  it('turns onto a value set from outside while it is shown, as a bound clamping the time (component:DateInput FR13)', () => {
+  it('turns onto a value set from outside while it is shown, as a bound clamping the time (component:DateInput FR14)', () => {
     // jsdom runs no Web Animations: record what the wheel asks of its strip.
     const strips: Keyframe[][] = [];
     Element.prototype.animate = vi.fn(function animate(
