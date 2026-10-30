@@ -1044,6 +1044,8 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
     shouldRestoreDraftFocusRef.current = true;
     setIsDiscardConfirmationOpen(false);
   };
+  // Synchronize DOM focus with the closed discard dialog. Dialog restores focus
+  // in its own close Effect, so focus the search only after that dialog closes.
   useEffect(() => {
     if (
       isDiscardConfirmationOpen ||
@@ -1059,6 +1061,8 @@ function MobileTokenizerSheetContent<T extends SearchableItem>({
     afterConfirmationRef.current = confirmed ? 'search' : 'clear-all';
     setIsClearConfirmationOpen(false);
   };
+  // Synchronize DOM focus and the live-region announcement after the clear
+  // dialog closes, once Dialog's own close Effect has restored focus.
   useEffect(() => {
     if (isClearConfirmationOpen || afterConfirmationRef.current == null) {
       return;
