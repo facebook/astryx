@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, the modal outlet registry, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, BottomSheetHostContext, the private bottom-sheet stack registry
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the layer input hold, the sheet self hold, the modal outlet registry, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, BottomSheetHostContext, the private bottom-sheet stack registry
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -97,6 +97,7 @@ import {
   easeVars,
   spacingVars,
 } from '../theme/tokens.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {mergeProps} from '../utils';
@@ -104,6 +105,8 @@ import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
 import {useModalOutlet} from '../Layer/modalOutlet';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {useInputHold} from '../Layer/inputHold';
+import {useSheetSelfHold} from './sheetSelfHold';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
@@ -207,11 +210,23 @@ const styles = stylex.create({
       // The scrim changes hands between stacked sheets with no fade at all:
       // the host pins this to 0s inline for the frame the change lands in
       // (see `writeScrimOpacity`). Reduced motion keeps the pin too.
+      // Under reduced motion (design:reduced-motion) the scrim fades in
+      // 200 ms on a touch screen (DR2) and changes at once with a fine
+      // pointer (DR3), the pin still overriding either.
       transitionDuration: `var(--_sheet-scrim-duration, ${durationVars['--duration-medium']})`,
       transitionTimingFunction: easeVars['--ease-standard'],
       transitionBehavior: 'allow-discrete',
-      '@media (prefers-reduced-motion: reduce)': {
-        transitionDuration: 'var(--_sheet-scrim-duration, 0.01s)',
+      // The backdrop keeps its own compositing layer while the sheet is open.
+      // A release plays the dim on the compositor; a backdrop given a layer
+      // only for that animation is re-rastered as it gets one and again as it
+      // loses it, which costs a frame on a software GPU.
+      willChange: 'opacity',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': {
+        transitionDuration: `var(--_sheet-scrim-duration, ${reducedMotionFadeConsts.duration})`,
+        transitionTimingFunction: reducedMotionFadeConsts.easing,
+      },
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': {
+        transitionDuration: 'var(--_sheet-scrim-duration, 0s)',
       },
     },
   },
@@ -500,6 +515,12 @@ function StandaloneBottomSheet({
       writeScrimOpacity(dialogRef.current, opacity, scrimWriteRef.current),
     [],
   );
+  // The same rule for the dim a release plays on the backdrop itself: only
+  // the stack's visible backdrop carries it.
+  const isScrimShown = useCallback(() => {
+    const view = stackViewRef.current;
+    return !(view.isStacked && !view.ownsScrim) && !view.isScrimTakenOver;
+  }, []);
   const handleScrimOpacity = useCallback((opacity: number) => {
     // Only the sheet whose backdrop is the visible scrim thins it; a sheet
     // stacked above it has a transparent backdrop that a drag must not reveal.
@@ -511,6 +532,36 @@ function StandaloneBottomSheet({
       '--_sheet-scrim-opacity',
       String(opacity),
     );
+  }, []);
+  // While the sheet's gesture or its release moves the dim, the backdrop
+  // follows it with no easing of its own (the release plays it in lockstep
+  // with the sheet). The pin is lifted only after a style flush has applied
+  // the last value, so that value does not ease in again.
+  // Under a finger every touch presentation holds pointer input while it
+  // enters (`spec:AST-094` FR35, DEC-16), as UIKit drops such a touch (F4
+  // b59). A modal sheet's hold is the layer's, over the sheet and the scrim
+  // until the sheet lands; a non-modal sheet holds only a tap or a drag on
+  // itself, and the page beside it stays live. Keys and assistive technology
+  // stay live.
+  const [isEntranceHeld, setIsEntranceHeld] = useState(false);
+  useInputHold(dialogRef, {
+    isHeld: isEntranceHeld && hasScrim,
+    scope: 'viewport',
+  });
+  useSheetSelfHold(dialogRef, isEntranceHeld && !hasScrim);
+  const handleScrimTracking = useCallback((tracking: boolean) => {
+    const dialog = dialogRef.current;
+    if (dialog == null) {
+      return;
+    }
+    if (tracking) {
+      dialog.style.setProperty('--_sheet-scrim-duration', '0s');
+      return;
+    }
+    if (typeof getComputedStyle === 'function') {
+      void getComputedStyle(dialog, '::backdrop').opacity;
+    }
+    dialog.style.removeProperty('--_sheet-scrim-duration');
   }, []);
 
   // A sheet joins the registry for as long as it is presented. For a modal
@@ -830,6 +881,10 @@ function StandaloneBottomSheet({
         xstyle={xstyle}
         onDismiss={dismissOnLightInteraction}
         onScrimOpacity={handleScrimOpacity}
+        onScrimTracking={hasScrim ? handleScrimTracking : undefined}
+        isScrimShown={hasScrim ? isScrimShown : undefined}
+        hasSpringPresentation
+        onPresentingChange={setIsEntranceHeld}
         onElementChange={handlePanelElementChange}
         onMotionStart={handleMotionStart}
         onMotionComplete={handleMotionComplete}>
@@ -917,6 +972,15 @@ function SwitcherBottomSheetItem({
   const isBlocked = isInactive || (hasScrim && stackView.isBlocked);
   const isHostSheet = hasValidSheetId && hostSheet === sheetId;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
+  // A step's sheet enters on the stylesheet; under a finger it holds pointer
+  // input until that entrance ends, as a lone sheet does, a non-modal flow
+  // only on itself (`spec:AST-094` FR35, DEC-16).
+  const [isEntranceHeld, setIsEntranceHeld] = useState(false);
+  useInputHold(dialogRef, {
+    isHeld: isEntranceHeld && hasScrim,
+    scope: 'viewport',
+  });
+  useSheetSelfHold(dialogRef, isEntranceHeld && !hasScrim);
   const dialogModeRef = useRef<'modal' | 'non-modal' | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousPhaseRef = useRef(phase);
@@ -1167,6 +1231,7 @@ function SwitcherBottomSheetItem({
           xstyle={xstyle}
           onDismiss={dismissOnSwipe}
           onScrimOpacity={handleScrimOpacity}
+          onPresentingChange={setIsEntranceHeld}
           onElementChange={handlePanelElementChange}
           onMotionStart={handleMotionStart}
           onMotionComplete={handleMotionComplete}>
