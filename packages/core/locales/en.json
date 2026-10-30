@@ -1143,6 +1143,10 @@
     "defaultMessage": "Select a time",
     "description": "\"Time\" = clock time (HH:MM), not duration or era. Grey placeholder inside an empty TimeInput field; imperative verb."
   },
+  "@astryx.timeInput.formatHint": {
+    "defaultMessage": "e.g., {time}",
+    "description": "Grey placeholder hint inside an empty TimeInput while it has focus, showing how to type a time. `{time}` is a sample clock time already in the field's format, for example `2:30 PM` or `14:30`. \"e.g.\" means \"for example\"."
+  },
   "@astryx.timeInput.invalidTime": {
     "defaultMessage": "Invalid time",
     "description": "Screen-reader-only live-region alert in TimeInput / DateTimeInput when the typed time cannot be parsed. \"Time\" = clock time (HH:MM). The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."

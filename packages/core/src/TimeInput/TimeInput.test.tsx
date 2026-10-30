@@ -781,6 +781,41 @@ describe('TimeInput', () => {
   });
 });
 
+describe('TimeInput format hint (FR5)', () => {
+  it('shows a 12-hour sample while focused and empty', () => {
+    render(<TimeInput label="Start" hourFormat="12h" />);
+    const input = screen.getByRole('textbox', {name: 'Start'});
+    act(() => {
+      input.focus();
+    });
+    expect(input).toHaveAttribute('placeholder', 'e.g., 2:30 PM');
+  });
+
+  it('shows a 24-hour sample while focused and empty', () => {
+    render(<TimeInput label="Start" hourFormat="24h" />);
+    const input = screen.getByRole('textbox', {name: 'Start'});
+    act(() => {
+      input.focus();
+    });
+    expect(input).toHaveAttribute('placeholder', 'e.g., 14:30');
+  });
+
+  it('takes the hint text from the catalog under another locale', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.timeInput.formatHint': 'p. ex. {time}'}}}>
+        <TimeInput label="Début" hourFormat="24h" />
+      </InternationalizationProvider>,
+    );
+    const input = screen.getByRole('textbox', {name: 'Début'});
+    act(() => {
+      input.focus();
+    });
+    expect(input).toHaveAttribute('placeholder', 'p. ex. 14:30');
+  });
+});
+
 describe('TimeInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(

@@ -587,10 +587,13 @@ function TimeField({
   // Placeholder that shows format hint when focused and empty
   const displayPlaceholder = useMemo(() => {
     if (isFocused && !displayValue) {
-      return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
+      // The sample time is shown in this field's own display format.
+      return t('@astryx.timeInput.formatHint', {
+        time: formatDisplayTime(FORMAT_HINT_SAMPLE_TIME, false),
+      });
     }
     return placeholder;
-  }, [isFocused, displayValue, hourFormat, placeholder]);
+  }, [isFocused, displayValue, formatDisplayTime, placeholder, t]);
 
   // Handle input text change - update immediately if valid
   const handleInputChange = useCallback(
@@ -936,6 +939,9 @@ TimeField.displayName = 'TimeField';
  * and still receives events the component handled, even ones it called
  * `preventDefault` on, so it cannot cancel built-in behavior.
  */
+/** The time the focused-empty format hint shows (2:30 PM, or 14:30). */
+const FORMAT_HINT_SAMPLE_TIME = '14:30' as ISOTimeString;
+
 export function TimeInput(props: TimeInputProps) {
   const inputGroupState = use(InputGroupInternalContext);
   const isDisabled = props.isDisabled || inputGroupState.isDisabled;
