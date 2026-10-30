@@ -256,6 +256,25 @@ describe('Token accessibility', () => {
     ).toBeInTheDocument();
   });
 
+  it("passes aria-labelledby and aria-describedby to a clickable token's button (public-component-api INV5)", () => {
+    render(
+      <>
+        <span id="field-label">Fruit</span>
+        <span id="field-hint">Pick one</span>
+        <Token
+          label="Apple"
+          onClick={() => {}}
+          aria-labelledby="field-label"
+          aria-describedby="field-hint"
+          data-testid="token"
+        />
+      </>,
+    );
+    const button = screen.getByRole('button', {name: 'Fruit'});
+    expect(button).toHaveAccessibleDescription('Pick one');
+    expect(screen.getByTestId('token')).not.toHaveAttribute('aria-labelledby');
+  });
+
   it('keeps both buttons focusable and inert when isDisabled is true', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();

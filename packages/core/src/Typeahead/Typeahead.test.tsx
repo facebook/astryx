@@ -93,6 +93,9 @@ const fruits: SearchableItem[] = [
   {id: '5', label: 'Elderberry'},
 ];
 
+// The token's value also sits in a hidden span its button is labelled by.
+const VISIBLE = {selector: ':not([hidden])'};
+
 const fruitSource: SearchSource = {
   search: (query: string) =>
     fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
@@ -693,6 +696,25 @@ describe('Typeahead', () => {
     expect(screen.getByText(/Required/)).toBeInTheDocument();
   });
 
+  it('names the token button, the Tab stop while a value shows, by the field label and the value', async () => {
+    const user = userEvent.setup();
+    render(
+      <Typeahead
+        label="Fruit"
+        description="Pick your favorite fruit"
+        status={{type: 'error', message: 'Pick a ripe one'}}
+        searchSource={fruitSource}
+        value={{id: 'apple', label: 'Apple'}}
+        onChange={() => {}}
+      />,
+    );
+    await user.tab();
+    const tabStop = document.activeElement as HTMLElement;
+    expect(tabStop).toHaveAccessibleName('Fruit Apple');
+    expect(tabStop).toHaveAccessibleDescription(/Pick your favorite fruit/);
+    expect(tabStop).toHaveAccessibleDescription(/Pick a ripe one/);
+  });
+
   it('renders error status message', () => {
     render(
       <Typeahead
@@ -715,7 +737,7 @@ describe('Typeahead', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.getByText(fruits[0].label)).toBeInTheDocument();
+    expect(screen.getByText(fruits[0].label, VISIBLE)).toBeInTheDocument();
   });
 
   it('shows clear button when hasClear and value is selected', () => {
@@ -1616,10 +1638,10 @@ describe('Typeahead edit mode', () => {
   // iOS raises the software keyboard only for a focus made while the browser
   // still dispatches the person's tap, so the focus must not wait for a frame.
   it.each([
-    ['the token', () => screen.getByText(fruits[0].label)],
+    ['the token', () => screen.getByText(fruits[0].label, VISIBLE)],
     [
       'the field around it',
-      () => screen.getByText(fruits[0].label).closest('div')!,
+      () => screen.getByText(fruits[0].label, VISIBLE).closest('div')!,
     ],
   ])(
     'focuses the input with the label selected inside the tap on %s',
@@ -1679,7 +1701,7 @@ describe('Typeahead edit mode', () => {
     );
     const input = screen.getByRole<HTMLInputElement>('combobox');
 
-    fireEvent.click(screen.getByText(fruits[3].label));
+    fireEvent.click(screen.getByText(fruits[3].label, VISIBLE));
 
     expect(input).toHaveFocus();
     expect(input.value).toBe(fruits[3].label);
@@ -1706,7 +1728,7 @@ describe('Typeahead edit mode', () => {
     screen.getByRole('combobox');
 
     // Click the token text to enter edit mode
-    const tokenText = screen.getByText(fruits[0].label);
+    const tokenText = screen.getByText(fruits[0].label, VISIBLE);
     const tokenContainer = tokenText.closest('div')!;
     fireEvent.click(tokenContainer);
 
@@ -1733,7 +1755,7 @@ describe('Typeahead edit mode', () => {
     const input = screen.getByRole<HTMLInputElement>('combobox');
 
     // Enter edit mode: the token gives way to the label as editable text
-    fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+    fireEvent.click(screen.getByText(fruits[0].label, VISIBLE).closest('div')!);
     await waitFor(() => expect(input.value).toBe(fruits[0].label));
 
     fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
@@ -1772,7 +1794,9 @@ describe('Typeahead edit mode', () => {
       render(<Controlled />);
       const input = screen.getByRole<HTMLInputElement>('combobox');
 
-      fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+      fireEvent.click(
+        screen.getByText(fruits[0].label, VISIBLE).closest('div')!,
+      );
       await waitFor(() => expect(input.value).toBe(fruits[0].label));
 
       leaveEditMode(input);
@@ -1816,7 +1840,7 @@ describe('Typeahead edit mode', () => {
     const input = screen.getByRole('combobox');
 
     // Enter edit mode
-    const tokenText = screen.getByText(fruits[0].label);
+    const tokenText = screen.getByText(fruits[0].label, VISIBLE);
     fireEvent.click(tokenText.closest('div')!);
 
     // Blur without selecting anything
@@ -1839,7 +1863,7 @@ describe('Typeahead edit mode', () => {
 
     // Enter edit mode by clicking the token; the input uncollapses and
     // rejoins the Tab order (tabindex is cleared).
-    const tokenText = screen.getByText(fruits[0].label);
+    const tokenText = screen.getByText(fruits[0].label, VISIBLE);
     fireEvent.click(tokenText.closest('div')!);
     await act(async () => {
       await new Promise(r => requestAnimationFrame(r));
@@ -1890,7 +1914,9 @@ describe('Typeahead collapsed input tab order', () => {
     );
     // Focus the token's internal button, then Tab away — focus must not land
     // on the visually hidden combobox input.
-    const tokenButton = screen.getByRole('button', {name: fruits[0].label});
+    const tokenButton = screen.getByRole('button', {
+      name: new RegExp(`${fruits[0].label}$`),
+    });
     tokenButton.focus();
     await user.tab();
     expect(screen.getByRole('combobox')).not.toHaveFocus();
@@ -1918,7 +1944,7 @@ describe('Typeahead collapsed input tab order', () => {
       />,
     );
     // Entering edit mode removes the token and uncollapses the input
-    const tokenText = screen.getByText(fruits[0].label);
+    const tokenText = screen.getByText(fruits[0].label, VISIBLE);
     fireEvent.click(tokenText.closest('div')!);
     expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex');
   });

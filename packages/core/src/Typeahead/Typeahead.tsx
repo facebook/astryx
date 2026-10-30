@@ -428,6 +428,8 @@ export function Typeahead<T extends SearchableItem>({
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;
   const inputLabelId = useId();
+  const fieldLabelId = useId();
+  const tokenValueId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
@@ -653,14 +655,29 @@ export function Typeahead<T extends SearchableItem>({
         <BusyIndicatorLaneProvider value={busyLane}>
           <div {...stylex.props(styles.contentLane)}>
             {showToken && (
-              <Token
-                ref={tokenRef}
-                label={value.label}
-                size={size}
-                onClick={handleEnterEditMode}
-                isDisabled={isDisabled}
-                xstyle={styles.tokenOverlay}
-              />
+              <>
+                {/* The token's button is the field's Tab stop while a value
+                    shows, so it is named by the field label and the value and
+                    described like the input (input-fields FR10; WCAG 2.4.6,
+                    4.1.2). */}
+                <span id={tokenValueId} hidden>
+                  {value.label}
+                </span>
+                <Token
+                  ref={tokenRef}
+                  label={value.label}
+                  size={size}
+                  onClick={handleEnterEditMode}
+                  isDisabled={isDisabled}
+                  aria-labelledby={`${inputGroup ? inputLabelId : fieldLabelId} ${tokenValueId}`}
+                  aria-describedby={
+                    [ariaDescribedByProp, ariaDescribedBy]
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                  xstyle={styles.tokenOverlay}
+                />
+              </>
             )}
             <TrailingKeyDownContext value={onKeyDown}>
               <BaseTypeahead
@@ -735,6 +752,7 @@ export function Typeahead<T extends SearchableItem>({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputId}
+      labelID={fieldLabelId}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
