@@ -17,7 +17,14 @@ const {
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
-const {parseOwnerCommandTarget} = require('./spec-owner-content.cjs');
+const {
+  fingerprintSpecContent,
+  parseOwnerCommandTarget,
+} = require('./spec-owner-decision.cjs');
+const {
+  composeReviewGate,
+  readSpecGate,
+} = require('./review-signal-decision.cjs');
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const owner = {login: 'cixzhang'};
@@ -661,5 +668,67 @@ describe('spec owner decision', () => {
         expect(parsed, body).toBe(problem === null);
       }
     });
+  });
+});
+
+const record = [
+  '---',
+  'kind: architecture',
+  'authority: draft',
+  'approved_by: null',
+  'approved_at: null',
+  'owners: [cixzhang]',
+  '---',
+  '',
+  '# Example',
+  '',
+  'The contract.',
+  '',
+].join('\n');
+const fingerprint = content =>
+  fingerprintSpecContent([{path: 'docs/a.md', content}]).fingerprint;
+
+describe('spec content fingerprint (DEC-14)', () => {
+  it('ignores only the values approval bookkeeping writes', () => {
+    const flipped = record
+      .replace('authority: draft', 'authority: current')
+      .replace('approved_by: null', 'approved_by: cixzhang')
+      .replace('approved_at: null', 'approved_at: 2026-10-28');
+    expect(fingerprint(flipped)).toBe(fingerprint(record));
+    for (const edited of [
+      record.replace('The contract.', 'Another contract.'),
+      record.replace('owners: [cixzhang]', 'owners: [someone]'),
+      `${record}authority: current\n`,
+    ]) {
+      expect(fingerprint(edited)).not.toBe(fingerprint(record));
+    }
+  });
+
+  it('covers every path, an absent one included, in any order', () => {
+    const one = [{path: 'docs/a.md', content: record}];
+    const two = [...one, {path: 'docs/b.md', content: null}];
+    expect(fingerprintSpecContent(two).fingerprint).not.toBe(
+      fingerprintSpecContent(one).fingerprint,
+    );
+    expect(fingerprintSpecContent([...two].reverse()).fingerprint).toBe(
+      fingerprintSpecContent(two).fingerprint,
+    );
+  });
+});
+
+describe('one review gate', () => {
+  const noCode = 'No code review required.';
+
+  it('fails closed before a spec decision, and links a wait to its run', () => {
+    const compose = spec =>
+      composeReviewGate({codeGated: false, codeDescription: noCode, spec});
+    expect(compose(readSpecGate([]))).toMatchObject({
+      state: 'pending',
+      description: '⏳ Checking for spec changes…',
+    });
+    const url = 'https://github.com/meta/astryx/actions/runs/7/attempts/1';
+    expect(
+      compose({known: true, satisfied: false, text: '⏳ wait', url}),
+    ).toEqual({state: 'pending', description: '⏳ wait', target_url: url});
   });
 });

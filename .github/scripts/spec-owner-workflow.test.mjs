@@ -377,4 +377,16 @@ describe('spec-only workflow contract', () => {
     expect(workflow).toContain("needs.resolve.outputs.spec_only == 'true'");
     expect(workflow).not.toContain("context: 'visual-acceptance'");
   });
+
+  it('lets only the two review workflows publish the review contexts', () => {
+    const dir = path.join(root, '.github/workflows');
+    const writers = fs
+      .readdirSync(dir)
+      .filter(name =>
+        /context: '(review-required|spec-owner-approval)'|reconcileSpecOwnerGate/.test(
+          fs.readFileSync(path.join(dir, name), 'utf8'),
+        ),
+      );
+    expect(writers.sort()).toEqual(['review-clear.yml', 'review-signal.yml']);
+  });
 });

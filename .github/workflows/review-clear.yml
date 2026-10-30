@@ -172,6 +172,7 @@ jobs:
             let codeWithdrawn = false;
             let gateOwned = false;
             let appClearedStatus = false;
+            let shownSatisfied = false;
             try {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: prNumber, per_page: 100,
@@ -195,6 +196,9 @@ jobs:
               const code = decision.readCodeGate(statuses, {latest: false});
               const description = code?.description || '';
               appClearedStatus = code?.gated === false && description === APP_CLEARED;
+              // An owned gate showing code review satisfied (a clear, or a spec
+              // wait or approval over one) stays so only while approvals hold.
+              shownSatisfied = decision.readCodeGate(statuses)?.gated === false;
               const statusOwnsGate =
                 code != null &&
                 ((code.gated &&
@@ -216,7 +220,7 @@ jobs:
             // still approves this head. If it no longer does — the author lost
             // write access, the permission could not be read, or REVIEW_APP was
             // unset — restore the pending gate (fail closed).
-            if (!codeApproved && appClearedStatus) codeWithdrawn = true;
+            if (!codeApproved && (appClearedStatus || shownSatisfied)) codeWithdrawn = true;
             if (!codeApproved && !codeWithdrawn) {
               core.info(`PR #${prNumber}: no effective review-state change; leaving gate as-is.`);
               return;

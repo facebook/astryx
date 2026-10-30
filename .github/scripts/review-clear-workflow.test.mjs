@@ -502,6 +502,30 @@ describe('review-clear review-app approval for write-access authors', () => {
     ]);
   });
 
+  it('restores an app clear hidden under a spec wait when the app path no longer applies', async () => {
+    const h = harness([appReview('APPROVED')], {
+      labels: [],
+      // REVIEW_APP is unset; newest first: the spec wait over the app's clear.
+      statuses: [
+        gateStatus(
+          'pending',
+          '⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>',
+        ),
+        gateStatus(
+          'pending',
+          'Waiting on code review: core runtime change (+ spec approval)',
+        ),
+      ],
+    });
+
+    await run(h);
+
+    expect(statusesOf(h.calls).at(-1)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('withdrawal'),
+    });
+  });
+
   it('ignores app reviews when REVIEW_APP is unset', async () => {
     const h = harness([appReview('APPROVED')]);
 

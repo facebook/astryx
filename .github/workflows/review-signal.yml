@@ -685,9 +685,8 @@ jobs:
 
   # Spec owner gate: reconcile the spec half for one pull request.
   spec-owner:
-    # Fork reviews (read-only tokens) are skipped; fork approvals use the owner
-    # command. Any owner-command shape passes, so a malformed one is explained.
-    # The reconciler orders concurrent runs itself: no concurrency group.
+    # Fork reviews (read-only tokens) are skipped; owners use the command. The
+    # reconciler orders concurrent runs itself: no concurrency group.
     if: >-
       (github.event_name != 'pull_request_review' ||
        github.event.pull_request.head.repo.full_name == github.repository) &&

@@ -9,6 +9,10 @@ const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
   GATE_STATUS_CONTEXT,
+  approvedDescription,
+  fingerprintSpecContent,
+  mirrorDescription,
+  parseOwnerCommandTarget,
   canonicalRunUrl,
   describeOwnerCommandProblem,
   newestGateRun,
@@ -20,16 +24,11 @@ const {
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
 const {
-  approvedDescription,
-  fingerprintSpecContent,
-  mirrorDescription,
-  parseOwnerCommandTarget,
-} = require('./spec-owner-content.cjs');
-const {
   REVIEW_GATE_CONTEXT,
   SPEC_WAITING_TEXT,
   composeReviewGate,
   readCodeGate,
+  readSpecGate,
 } = require('./review-signal-decision.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -208,6 +207,7 @@ async function reconcileSpecOwnerGate({
         description: newest.status.description,
         targetUrl: newest.status.target_url,
       });
+      await publishReviewGate(headSha, readSpecGate([newest.status]));
     }
     core.info(
       `Run ${context.runId} yielded to newer run ${newest.runId.toString()}.`,
@@ -232,6 +232,7 @@ async function reconcileSpecOwnerGate({
       state,
       description: mirrorDescription({state, missing, approvers}),
     });
+    if (await restoreNewerStatus(headSha)) return false;
     await publishReviewGate(headSha, {
       satisfied: state === 'success',
       text: state === 'success' && approvers.length === 0 ? null : text,
@@ -455,9 +456,8 @@ async function reconcileSpecOwnerGate({
 
   /** Compose the review gate; with no code half yet, review-signal does. */
   async function publishReviewGate(headSha, spec) {
-    // The code half comes from the newest `review-required` another job
-    // wrote. If one lands between that read and this write, compose again,
-    // so a withdrawn code review is never overwritten with success.
+    // If another job writes between this read and write, compose again, so a
+    // withdrawn code review is never overwritten with success.
     const written = new Set();
     const othersNewest = statuses =>
       statuses.find(
@@ -612,8 +612,7 @@ async function reconcileSpecOwnerGate({
 
   const {pr, scope, records, reviews, comments, timeline, statuses} = snapshot;
 
-  // A malformed owner command decides nothing. Say why in the gate's
-  // details rather than in another pull-request comment.
+  // A malformed owner command decides nothing; the details say why.
   const commandProblem =
     context.eventName === 'issue_comment' && commentAuthor
       ? describeOwnerCommandProblem(
@@ -680,9 +679,8 @@ async function reconcileSpecOwnerGate({
     );
     return fingerprintSpecContent(entries);
   }
-  // The spec paths a commit changed from the base. An approved commit's paths
-  // join the head's, so a head that drops an approved change no longer
-  // matches. A comparison that fails matches nothing.
+  // An approved commit's spec paths join the head's, so dropping an approved
+  // change no longer matches. A failed comparison matches nothing.
   async function specPathsAt(sha) {
     const {data} = await github.rest.repos.compareCommitsWithBasehead({
       owner,
@@ -711,8 +709,7 @@ async function reconcileSpecOwnerGate({
     }
   }
   const currentContent = await fingerprintAt(initialHead, specPaths);
-  // A review or a SHA command approves the content of its commit. Only
-  // commits an eligible owner named are read.
+  // Only commits an eligible owner named, by review or command, are read.
   const authorLogin = pr.user.login.toLowerCase();
   const ownerReviews = reviews.filter(review => {
     const login = review.user?.login?.toLowerCase();

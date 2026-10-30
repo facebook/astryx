@@ -163,8 +163,9 @@ bypass.)
 ### The mirror
 
 `spec-owner-approval` now only mirrors the spec half of `review-required`.
-Remove it from the required status checks on `main`; `review-required` already
-blocks on a missing spec approval. To re-publish a head's statuses, run
+First re-flag every open PR (`gh workflow run review-signal.yml` with a blank
+`pr`) so each `review-required` carries its spec half; then remove the mirror
+from the required status checks on `main`. To re-publish a head's statuses, run
 `gh workflow run review-signal.yml -f pr=<number>`.
 
 ## Why a commit status (not a check run)

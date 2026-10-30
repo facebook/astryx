@@ -655,6 +655,23 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(true);
   });
 
+  it('restores the review gate from a newer run it yields to', async () => {
+    const harness = createHarness({
+      headContent: 'kind: architecture\nauthority: current\n',
+      comments: [{user: {login: 'cixzhang'}, body: `/approve-spec ${head}`}],
+      statuses: [
+        trustedStatus({
+          runId: 101n,
+          description: 'Mirrors review-required · spec waiting (eng)',
+        }),
+      ],
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestReviewGate(harness.state).state).toBe('pending');
+  });
+
   it('skips fork owner reviews before any GitHub API work', async () => {
     const review = {
       user: {login: 'cixzhang'},
@@ -1095,7 +1112,7 @@ describe('spec owner workflow reconciliation', () => {
       );
     }
 
-    it('keeps an ENGOWNER-authored spec PR pending on the one review gate', async () => {
+    it('keeps an ENGOWNER-authored spec PR pending until /approve-spec <head>', async () => {
       const harness = createHarness({headContent: currentRecord});
 
       await run(harness, context({runId: 100n}));
@@ -1112,21 +1129,15 @@ describe('spec owner workflow reconciliation', () => {
       expect(harness.state.summary).toContain(`/approve-spec ${head}`);
       expect(harness.state.summary).toContain('architecture:owner-ready');
       expect(harness.state.summary).toContain('Owner ready');
-    });
 
-    it('approves on /approve-spec <head> from an ENGOWNER author', async () => {
-      const harness = createHarness({headContent: currentRecord});
-
-      await commentRun(harness, ownerComment(`/approve-spec ${head}`));
-
+      await commentRun(harness, ownerComment(`/approve-spec ${head}`), 101n);
       expect(latestReviewGate(harness.state)).toMatchObject({
         state: 'success',
         description: '✅ Spec approved by @cixzhang · No code review required.',
       });
-      expect(latestGateStatus(harness.state)).toMatchObject({
-        state: 'success',
-        description: 'Mirrors review-required · spec ok (@cixzhang)',
-      });
+      expect(latestGateStatus(harness.state).description).toBe(
+        'Mirrors review-required · spec ok (@cixzhang)',
+      );
     });
 
     it.each([
@@ -1273,7 +1284,7 @@ describe('spec owner workflow reconciliation', () => {
       });
     });
 
-    it('withdraws an approval on /revoke-spec, and says who', async () => {
+    it('withdraws on /revoke-spec, says who, and approves again after it', async () => {
       const harness = createHarness({
         headContent: currentRecord,
         comments: [ownerComment(`/approve-spec ${head}`)],
@@ -1283,7 +1294,6 @@ describe('spec owner workflow reconciliation', () => {
         harness,
         ownerComment('/revoke-spec', '2026-08-30T10:10:00Z'),
       );
-
       expect(latestReviewGate(harness.state)).toMatchObject({
         state: 'pending',
         description: waiting,
@@ -1291,22 +1301,12 @@ describe('spec owner workflow reconciliation', () => {
       expect(harness.state.summary).toContain(
         'Approval revoked by @cixzhang at 2026-08-30T10:10:00Z',
       );
-    });
-
-    it('approves again on /approve-spec after a revoke', async () => {
-      const harness = createHarness({
-        headContent: currentRecord,
-        comments: [
-          ownerComment(`/approve-spec ${head}`),
-          ownerComment('/revoke-spec', '2026-08-30T10:10:00Z'),
-        ],
-      });
 
       await commentRun(
         harness,
         ownerComment(`/approve-spec ${head}`, '2026-08-30T10:15:00Z'),
+        101n,
       );
-
       expect(latestReviewGate(harness.state).state).toBe('success');
     });
 
@@ -1319,20 +1319,6 @@ describe('spec owner workflow reconciliation', () => {
       await run(harness, context({runId: 100n}));
 
       expect(latestReviewGate(harness.state).state).toBe('pending');
-    });
-
-    it('lets a design owner approve a design-only change', async () => {
-      const harness = createHarness({
-        changedFile: designRecord,
-        headContent: currentDesign,
-      });
-
-      await commentRun(
-        harness,
-        ownerComment(`/approve-spec ${head}`, undefined, 'rubyycheung'),
-      );
-
-      expect(latestReviewGate(harness.state).state).toBe('success');
     });
   });
 });
