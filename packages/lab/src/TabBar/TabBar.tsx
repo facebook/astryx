@@ -158,7 +158,7 @@ export interface TabBarProps extends Omit<
   /**
    * Whether scrolling the page down collapses the bar into a circle holding
    * the selected tab's icon (UIKit's `tabBarMinimizeBehavior`): reaching the
-   * top of the page, a tap on the circle or focus on a tab expands it. Under a finger only;
+   * top of the page or activating the circle (a tap, or the keys) expands it. Under a finger only;
    * under a mouse the bar stays expanded.
    * @default 'never'
    */
