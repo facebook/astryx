@@ -298,12 +298,13 @@ a measured, sourced difference exists.
   the drag moves toward that edge (FR14), and only the moves the browser would
   rubber-band, never a real scroll; the pan itself still begins at FR17's
   10 pt, as UIKit's sheet pull does (DEC-18).
-  A recognizer that is cancelled while its touch is moving, such as a long
-  press dragged past its tolerance after it began, keeps owning that touch
-  until it lifts and MAY cancel its moves, so the drag never becomes a page
-  scroll midway (FR14); a touch that is resting when its recognizer is
-  cancelled, and every touch of a waiting recognizer that fails, is given back
-  (FR10). A
+  A recognizer that is cancelled while its touch is moving, other than by the
+  browser taking that touch (FR20), such as a long press dragged past its
+  tolerance after it began, keeps owning that touch until it lifts and MAY
+  cancel its moves, so the drag never becomes a page scroll midway (FR14); a
+  touch that is resting when its recognizer is cancelled, and every touch of a
+  recognizer that requires another to fail when that one recognizes, is given
+  back (FR10). A
   recognizer that competes with native scrolling MUST decide within 10 px of
   travel, before the browser commits to the scroll; a screen-edge pan on an
   element within its band, which leaves the browser no horizontal scroll,
