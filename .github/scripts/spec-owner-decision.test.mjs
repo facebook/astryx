@@ -393,8 +393,94 @@ describe('spec owner decision', () => {
     expect(decision.approved).toBe(false);
   });
 
+  it('orders dismissal by updated_at instead of the original submission', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      comments: [
+        {
+          user: owner,
+          body: `/approve-spec ${head}`,
+          created_at: '2026-08-30T10:01:00Z',
+        },
+      ],
+      reviews: [
+        {
+          id: 17,
+          user: owner,
+          state: 'DISMISSED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:00:00Z',
+          updated_at: '2026-08-30T10:02:00Z',
+        },
+      ],
+    });
+
+    // The dismissal is dated by its update, so it follows the command.
+    expect(decision.approved).toBe(false);
+    expect(decision.source).toBe(null);
+  });
+
+  it('uses review_dismissed timeline time when it is newer', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      comments: [
+        {
+          user: owner,
+          body: `/approve-spec ${head}`,
+          created_at: '2026-08-30T10:01:00Z',
+        },
+      ],
+      reviews: [
+        {
+          id: 17,
+          user: owner,
+          state: 'DISMISSED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:00:00Z',
+          updated_at: '2026-08-30T09:30:00Z',
+        },
+      ],
+      dismissalEvents: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T10:02:00Z',
+          dismissed_review: {review_id: 17},
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
+  });
+
+  it('lets a command after the dismissal approve again', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      comments: [
+        {
+          user: owner,
+          body: `/approve-spec ${head}`,
+          created_at: '2026-08-30T10:03:00Z',
+        },
+      ],
+      reviews: [
+        {
+          id: 17,
+          user: owner,
+          state: 'DISMISSED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:00:00Z',
+          updated_at: '2026-08-30T10:02:00Z',
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(true);
+  });
   it('compares workflow run ids without losing integer precision', () => {
-    const repository = 'facebook/astryx';
+    const repository = 'meta/astryx';
     const statuses = ['9007199254740992', '9007199254740993'].map(runId => ({
       context: 'spec-owner-approval',
       state: 'pending',

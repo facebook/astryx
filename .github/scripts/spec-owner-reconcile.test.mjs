@@ -16,7 +16,7 @@ const {
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const nextHead = '1111111111111111111111111111111111111111';
-const repository = 'facebook/astryx';
+const repository = 'meta/astryx';
 const workspace = path.resolve(import.meta.dirname, '../..');
 const env = {
   REVIEW_LABEL: 'needs:spec-owner-review',
@@ -38,7 +38,7 @@ function context({
     eventName,
     runId,
     runAttempt: 1,
-    repo: {owner: 'facebook', repo: 'astryx'},
+    repo: {owner: 'meta', repo: 'astryx'},
     payload: {
       action,
       issue: eventName === 'issue_comment' ? {number: 17} : undefined,
@@ -685,6 +685,78 @@ describe('spec owner workflow reconciliation', () => {
     ]);
   });
 
+  it('orders a dismissal after an earlier command by its timeline time', async () => {
+    const review = {
+      id: 17,
+      user: {login: 'cixzhang'},
+      state: 'DISMISSED',
+      commit_id: head,
+      submitted_at: '2026-08-30T09:00:00Z',
+      updated_at: '2026-08-30T10:02:00Z',
+    };
+    // A same-owner command at 10:01; the dismissal is dated by its 10:02
+    // timeline event, so it is the latest act and the gate waits.
+    const command = {
+      user: {login: 'cixzhang'},
+      body: `/approve-spec ${head}`,
+      created_at: '2026-08-30T10:01:00Z',
+    };
+    const harness = createHarness({
+      comments: [command],
+      reviews: [review],
+      timeline: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T10:02:00Z',
+          dismissed_review: {review_id: 17},
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'dismissed',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('keeps mixed DD and component-contract edits waiting for engineering', async () => {
+    const harness = createHarness({
+      author: 'ernestt',
+      changedFile: componentRecord,
+      baseContent: currentComponentSpec('Use a quiet label.'),
+      headContent: currentComponentSpec(
+        'Keep the label quiet.',
+        'Changed behavioral contract.',
+      ),
+      reviews: [
+        {
+          user: {login: 'rubyycheung'},
+          state: 'APPROVED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:59:00Z',
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('an eng owner can reply'),
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
   it('reconciles same-repository owner reviews automatically', async () => {
     const review = {
       user: {login: 'czarandy'},
@@ -1050,7 +1122,6 @@ describe('spec owner workflow reconciliation', () => {
       });
     });
 
-
     it('does not count a bare /approve-spec, and says why', async () => {
       const harness = createHarness({headContent: currentRecord});
 
@@ -1158,7 +1229,6 @@ describe('spec owner workflow reconciliation', () => {
       expect(latestReviewGate(harness.state).state).toBe('success');
     });
 
-
     it('leaves the review gate to review-signal until it has published', async () => {
       const harness = createHarness({
         headContent: currentRecord,
@@ -1182,7 +1252,6 @@ describe('spec owner workflow reconciliation', () => {
       expect(latestReviewGate(harness.state).state).toBe('pending');
     });
 
-
     it('lets a design owner approve a design-only change', async () => {
       const harness = createHarness({
         changedFile: designRecord,
@@ -1196,6 +1265,5 @@ describe('spec owner workflow reconciliation', () => {
 
       expect(latestReviewGate(harness.state).state).toBe('success');
     });
-
   });
 });

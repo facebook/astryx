@@ -482,7 +482,7 @@ export function Badge({label}) {
 - Make state controlled via props (consumer owns the state)
 - If the component legitimately needs client behavior, remove it from the presentational list
 
-See: https://github.com/facebook/astryx/issues/493
+See: https://github.com/meta/astryx/issues/493
 
 ### `@astryx/no-nullish-jsx-guard`
 
@@ -516,7 +516,7 @@ import {isRenderable} from '@astryxdesign/core/utils';
 
 Ships as a **warning in both tiers** while core migrates its existing call sites; promote to `error` in strict mode once migrated. Provides an ESLint suggestion that rewrites the comparison to `isRenderable(value)` (add the import manually).
 
-See: https://github.com/facebook/astryx/issues/2538
+See: https://github.com/meta/astryx/issues/2538
 
 ### `@astryx/focus-outline-keyboard-only`
 
@@ -654,7 +654,7 @@ The second spread replaced the className the first built, so `astryx-breadcrumb-
 
 **Scope:** two or more spreads on one opening element whose expressions are statically recognizable className producers. A spread of anything else — `{...rest}`, `{...popover.triggerProps}`, an unknown call — is not a producer and does not count, so one producer beside any number of those is fine. `mergeProps()` is the sanctioned merge and concatenates class names, so anything already inside a single `mergeProps()` call is correct however many producers it takes; it only becomes a problem beside a **second** spread that produces a className of its own. A producer reached through a conditional (`{...(cond ? stylex.props(a) : {})}`) is out of scope: no call site writes one, and reading through the branches invites guesses the rule cannot verify.
 
-Ships as a **warning in both tiers** for now. The spread check has exactly one violation in the repo, in `BreadcrumbItem.tsx`, whose fix is open in [#5332](https://github.com/facebook/astryx/pull/5332); both tiers go back to `error` when that lands.
+Ships as a **warning in both tiers** for now. The spread check has exactly one violation in the repo, in `BreadcrumbItem.tsx`, whose fix is open in [#5332](https://github.com/meta/astryx/pull/5332); both tiers go back to `error` when that lands.
 
 ### `@astryx/disabled-cursor`
 
@@ -755,7 +755,7 @@ detected). Handler indirection is resolved only one hop within the same file —
 imported handler is treated as unknown and not flagged. A `role`/`type`/
 `contentEditable` spread via `{...props}` is not seen.
 
-See: https://github.com/facebook/astryx/issues/4892
+See: https://github.com/meta/astryx/issues/4892
 
 ### `@astryx/require-table-section`
 
@@ -855,7 +855,7 @@ the tests, so a change in that behaviour has to be deliberate. A deliberate
 unwrapped row (the contract test in `Table.test.tsx`) opts out with an
 `eslint-disable-next-line` and a reason.
 
-See: https://github.com/facebook/astryx/issues/5277
+See: https://github.com/meta/astryx/issues/5277
 
 ### `@astryx/no-light-dark-outside-theme`
 
@@ -921,7 +921,7 @@ not covered — a `@media (prefers-color-scheme: …)` block or a
 says nothing about either. `light-dark()` is where the pattern actually shows up
 in this repo; the others can be added if they start to.
 
-See: https://github.com/facebook/astryx/pull/5321
+See: https://github.com/meta/astryx/pull/5321
 
 ### `@astryx/no-raw-color`
 

@@ -129,7 +129,7 @@ async function runSignal({
   await execute(
     github,
     {
-      repo: {owner: 'facebook', repo: 'astryx'},
+      repo: {owner: 'meta', repo: 'astryx'},
       sha: WORKFLOW_SHA,
       eventName,
       payload:
@@ -158,7 +158,7 @@ function expectTrustedHelperRead(getContent) {
       .filter(input => input.path === HELPER_PATH),
   ).toEqual([
     {
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       ref: WORKFLOW_SHA,
       path: HELPER_PATH,
@@ -228,7 +228,7 @@ describe('review-signal trusted helper ref', () => {
       expect(h.core.setFailed).not.toHaveBeenCalled();
       expect(h.core.warning).not.toHaveBeenCalled();
       expect(h.mutations.createCommitStatus).toHaveBeenCalledExactlyOnceWith({
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         sha: HEAD,
         context: 'review-required',
@@ -410,7 +410,7 @@ describe('review-signal review-app approval for write-access authors', () => {
     expect(
       github.rest.repos.getCollaboratorPermissionLevel,
     ).toHaveBeenCalledWith({
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       username: 'contributor',
     });

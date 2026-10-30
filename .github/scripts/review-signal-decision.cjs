@@ -122,7 +122,7 @@ function resolveReviewApprovals({
 }
 
 // One review gate (architecture:knowledge-contracts DEC-14, spec:AST-030
-// FR14): every writer of `review-required` composes code review and the spec
+// FR15): every writer of `review-required` composes code review and the spec
 // half that `spec-owner-approval` mirrors.
 
 const REVIEW_GATE_CONTEXT = 'review-required';
