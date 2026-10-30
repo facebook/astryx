@@ -46,9 +46,11 @@
  * test keeps core's compact-touch keys identical to COMPACT_TOUCH_QUERY and
  * every touch-callout key spelled and nested as above. The iOS style gate
  * is only for a style iOS WebKit itself requires (core's 16px input floor);
- * it never selects a behaviour. The keys are literal because the Astryx
- * StyleX build does not resolve a key shared across files through
- * `defineConsts`. The hook is for behaviour. It answers the server default
+ * it never selects a behaviour. Core spells the keys literally: an imported
+ * `defineConsts` key compiles to a different StyleX priority than the same
+ * literal, which would reorder the cascade. `touchKeys`
+ * (touchPresentation.stylex.ts, internal to core) holds the same keys, and a
+ * test keeps every literal equal to them. The hook is for behaviour. It answers the server default
  * (not touch, not compact) until hydrated unless the caller passes a server
  * hint, and follows the pointer and size when they change (a tablet docking
  * a mouse).
