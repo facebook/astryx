@@ -5,7 +5,7 @@
  * Tests for useTruncation
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, it, expect, vi} from 'vitest';
 import {useTruncation} from './useTruncation';
 
@@ -35,6 +35,51 @@ describe('useTruncation', () => {
         'writing the second step',
       ),
     );
+  });
+
+  describe('first measurement', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    // Measuring inside React's commit forces a style and layout pass per text
+    // on a page that mounts many; the observer's first notification comes
+    // after layout, for every text at once.
+    it("waits for the resize observer's first notification", () => {
+      let notify: ResizeObserverCallback | null = null;
+      const observed: Element[] = [];
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            notify = callback;
+          }
+          observe(target: Element) {
+            observed.push(target);
+          }
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+
+      const {unmount} = render(<Probe text="a status line" />);
+
+      // Observed, but not measured during the commit.
+      expect(observed).toHaveLength(1);
+      expect(screen.getByTestId('full-text')).toHaveTextContent('');
+
+      act(() => {
+        notify?.(
+          [{target: observed[0]} as ResizeObserverEntry],
+          {} as ResizeObserver,
+        );
+      });
+
+      expect(screen.getByTestId('full-text')).toHaveTextContent(
+        'a status line',
+      );
+      unmount();
+    });
   });
 
   describe('content observation', () => {

@@ -123,13 +123,22 @@ export function useTruncation(
       elementRef.current = element;
 
       if (element && maxLines > 0) {
-        // Observe via shared singleton (if available).
-        // observeResize fires the callback once on registration,
-        // so no separate initial check is needed.
+        // Observe via shared singleton (if available). The first measurement
+        // is the observer's own first notification, which the browser sends
+        // after layout for every newly observed element at once, so the
+        // synchronous call observeResize makes on registration is skipped.
+        // That call runs inside React's commit, after other components' DOM
+        // writes, and forced a style and layout pass per text on a page that
+        // mounts many. The truncated state only decides whether to compose
+        // the tooltip, so nothing paints differently.
         if (typeof ResizeObserver !== 'undefined') {
+          let registered = false;
           unobserveRef.current = observeResize(element, () => {
-            checkTruncation(element);
+            if (registered) {
+              checkTruncation(element);
+            }
           });
+          registered = true;
         } else {
           checkTruncation(element);
         }
