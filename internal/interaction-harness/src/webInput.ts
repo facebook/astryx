@@ -68,18 +68,21 @@ export interface WheelBurst {
   /** Hold Control through the run. */
   readonly ctrl?: boolean;
   /**
-   * The longest gap the page may stamp between two received steps, ms (the
-   * gap that would end the proof's wheel gesture, 100 ms for Astryx's gesture
-   * host); past it `wheelBurst` throws `WheelPacingError`.
+   * The longest gap the page may stamp between two received steps, ms: the
+   * gap after which the proof's component would treat the run as more than
+   * one gesture. Past it `wheelBurst` throws `WheelPageStallError` when the
+   * page's own handling of the step before caused the gap, and
+   * `WheelPacingError` otherwise.
    */
   readonly maxGapMs?: number;
 }
 
 /**
  * The page stamped a wheel burst's steps further apart than the proof's
- * `maxGapMs`: WebKit stamps a step when its web process dispatches it, so a
- * stalled runner splits what the driver sent as one gesture. The proof's
- * outcome is the runner's, not the component's.
+ * `maxGapMs` while its main thread was free between them: the dispatch
+ * stalled before the step reached the page. WebKit stamps a step when its web
+ * process dispatches it, so a loaded runner splits what the driver sent as one
+ * gesture, and the proof's outcome is the runner's, not the component's.
  */
 export class WheelPacingError extends Error {
   constructor(
@@ -87,10 +90,66 @@ export class WheelPacingError extends Error {
     readonly receivedGapsMs: readonly number[],
   ) {
     super(
-      `webInputDriver: the page received the wheel burst with a gap of ${Math.max(...receivedGapsMs).toFixed(0)} ms, over its ${maxGapMs} ms (gaps ${receivedGapsMs.map(g => g.toFixed(0)).join(', ')} ms): the runner stalled the dispatch, so the page saw more than one gesture`,
+      `webInputDriver: the page received the wheel burst with a gap of ${Math.max(...receivedGapsMs).toFixed(0)} ms, over its ${maxGapMs} ms (gaps ${receivedGapsMs.map(g => g.toFixed(0)).join(', ')} ms): the dispatch stalled before the page, so the page saw more than one gesture`,
     );
     this.name = 'WheelPacingError';
   }
+}
+
+/**
+ * The page stamped a wheel burst's steps further apart than the proof's
+ * `maxGapMs` because it was still handling the step before: its own wheel
+ * listeners held the main thread, and WebKit dispatches the next step only
+ * once it is free. The page split the gesture, so this is the proof's own
+ * failure, never re-taken.
+ */
+export class WheelPageStallError extends Error {
+  constructor(
+    readonly maxGapMs: number,
+    readonly stall: WheelPageStall,
+  ) {
+    super(
+      `webInputDriver: the page's own wheel listeners took ${stall.handlingMs.toFixed(0)} ms to handle a step, so the next reached it ${stall.gapMs.toFixed(0)} ms later, over its ${maxGapMs} ms: the page split the run, not the runner`,
+    );
+    this.name = 'WheelPageStallError';
+  }
+}
+
+/** A gap the page caused: how long it was, and how long the page spent handling the step before it. */
+export interface WheelPageStall {
+  readonly gapMs: number;
+  readonly handlingMs: number;
+}
+
+/**
+ * Sorts a burst's gaps past `maxGapMs` by cause. `stamps` are the received
+ * steps' `timeStamp`s; `handledAt` is when the page's wheel listeners had
+ * finished with each (NaN where that was not seen). A gap is the page's when,
+ * without the time the page spent handling the step before, it would have
+ * stayed within `maxGapMs`; otherwise it is the dispatch's. Other work on the
+ * page's main thread between steps (timers, frames) counts as the dispatch's.
+ */
+export function wheelGapCauses(
+  stamps: readonly number[],
+  handledAt: readonly number[],
+  maxGapMs: number,
+): {pageStalls: WheelPageStall[]; dispatchStalls: number[]} {
+  const pageStalls: WheelPageStall[] = [];
+  const dispatchStalls: number[] = [];
+  for (let i = 1; i < stamps.length; i++) {
+    const gapMs = stamps[i] - stamps[i - 1];
+    if (gapMs <= maxGapMs) {
+      continue;
+    }
+    const handled = handledAt[i - 1] - stamps[i - 1];
+    const handlingMs = Number.isFinite(handled) && handled > 0 ? handled : 0;
+    if (gapMs - handlingMs <= maxGapMs) {
+      pageStalls.push({gapMs, handlingMs});
+    } else {
+      dispatchStalls.push(gapMs);
+    }
+  }
+  return {pageStalls, dispatchStalls};
 }
 
 /**
@@ -98,7 +157,8 @@ export class WheelPacingError extends Error {
  * its burst off pace: `attempt` builds the page's state, sends the burst with
  * `maxGapMs` and makes the spec's assertions, so a re-take starts over. One
  * re-take, two attempts in all, and only on a `WheelPacingError`: any other
- * error, and a second `WheelPacingError`, fail the test with their own cause.
+ * error (a `WheelPageStallError`, which the page caused, among them), and a
+ * second `WheelPacingError`, fail the test with their own cause.
  * Each re-take is listed in the report as a `wheel-retake` annotation.
  */
 export async function retakeOnWheelPacing<T>(
@@ -144,12 +204,13 @@ export interface WebInputDriver {
    * each step's round trip as `wheel` does, and resolves once the page has
    * received the run's whole delta. Awaited steps land as far apart as a
    * round trip takes on a loaded runner (49 to 141 ms in WebKit), past the
-   * 100 ms after which a recognizer ends a wheel gesture. Where the page still
+   * 100 ms a proof may allow between the steps of one gesture. Where the page still
    * handles one step when the next arrives, the engine coalesces them, as it
    * does a trackpad's: the page can receive fewer, larger steps with the same
    * total. Returns how many steps the page received and the gaps between
    * their `timeStamp`s, ms; with `maxGapMs`, a longer gap throws
-   * `WheelPacingError`.
+   * `WheelPageStallError` when the page's own handling of the step before
+   * caused it, and `WheelPacingError` otherwise.
    */
   wheelBurst(burst: WheelBurst): Promise<{
     readonly receivedSteps: number;
@@ -221,6 +282,8 @@ async function untilReceived(
 
 interface WheelRun {
   stamps: number[];
+  /** When the page's wheel listeners had finished with each step; NaN until seen. */
+  handledAt: number[];
   dx: number;
   dy: number;
   stop: () => void;
@@ -228,24 +291,37 @@ interface WheelRun {
 
 /**
  * Arms a passive capture listener that stamps every wheel step the page
- * receives and sums its deltas, before a burst is dispatched.
+ * receives and sums its deltas, before a burst is dispatched, and a passive
+ * bubble listener on the window, after the page's own, that notes when the
+ * page has finished with each step (a step whose propagation the page stops
+ * is never noted, and counts as handled at once).
  */
 function armWheelRun(page: Page): Promise<JSHandle<WheelRun>> {
   return page.evaluateHandle(() => {
-    const options = {capture: true, passive: true};
+    const first = {capture: true, passive: true};
+    const last = {capture: false, passive: true};
     const run = {
       stamps: [] as number[],
+      handledAt: [] as number[],
       dx: 0,
       dy: 0,
-      stop: () => window.removeEventListener('wheel', listener, options),
+      stop: () => {
+        window.removeEventListener('wheel', received, first);
+        window.removeEventListener('wheel', handled, last);
+      },
     };
-    const listener = (event: Event) => {
+    const received = (event: Event) => {
       const wheel = event as WheelEvent;
       run.stamps.push(wheel.timeStamp);
+      run.handledAt.push(Number.NaN);
       run.dx += wheel.deltaX;
       run.dy += wheel.deltaY;
     };
-    window.addEventListener('wheel', listener, options);
+    const handled = () => {
+      run.handledAt[run.handledAt.length - 1] = performance.now();
+    };
+    window.addEventListener('wheel', received, first);
+    window.addEventListener('wheel', handled, last);
     return run;
   });
 }
@@ -265,7 +341,12 @@ async function untilRunReceived(
   );
   const got = await page.evaluate(
     ([run, total, ms]) =>
-      new Promise<{stamps: number[]; dx: number; dy: number}>(resolve => {
+      new Promise<{
+        stamps: number[];
+        handledAt: number[];
+        dx: number;
+        dy: number;
+      }>(resolve => {
         // The harness's own wait runs on the real timer: a frozen timer gate
         // (story.ts) holds only the page's.
         const later =
@@ -281,7 +362,12 @@ async function untilRunReceived(
         const check = () => {
           if (whole() || performance.now() > deadline) {
             run.stop();
-            resolve({stamps: run.stamps.slice(), dx: run.dx, dy: run.dy});
+            resolve({
+              stamps: run.stamps.slice(),
+              handledAt: run.handledAt.slice(),
+              dx: run.dx,
+              dy: run.dy,
+            });
           } else {
             later(check, 10);
           }
@@ -300,8 +386,18 @@ async function untilRunReceived(
     );
   }
   const receivedGapsMs = got.stamps.slice(1).map((t, i) => t - got.stamps[i]);
-  if (maxGapMs != null && receivedGapsMs.some(gap => gap > maxGapMs)) {
-    throw new WheelPacingError(maxGapMs, receivedGapsMs);
+  if (maxGapMs != null) {
+    const {pageStalls, dispatchStalls} = wheelGapCauses(
+      got.stamps,
+      got.handledAt,
+      maxGapMs,
+    );
+    if (pageStalls.length > 0) {
+      throw new WheelPageStallError(maxGapMs, pageStalls[0]);
+    }
+    if (dispatchStalls.length > 0) {
+      throw new WheelPacingError(maxGapMs, receivedGapsMs);
+    }
   }
   return {receivedSteps: got.stamps.length, receivedGapsMs};
 }
