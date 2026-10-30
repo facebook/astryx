@@ -30,6 +30,7 @@ import {
 } from '../../columnUtils';
 import {observeResize} from '../../../utils/sharedResizeObserver';
 import {getNodeText} from '../../../utils/getNodeText';
+import {useTranslator} from '../../../i18n';
 
 // =============================================================================
 // Config Type
@@ -385,6 +386,7 @@ function ResizeHandle({
   isDraggingRef,
   tableRef,
 }: ResizeHandleProps) {
+  const t = useTranslator();
   const setTableDragging = useCallback(
     (dragging: boolean) => {
       const table = tableRef.current;
@@ -746,7 +748,9 @@ function ResizeHandle({
 
   // Named by the column's visible text, also when its header is a node; the
   // key is the fallback only for a header with no reachable text (AR1).
-  const ariaLabel = `Resize column ${getNodeText(columnHeader) || columnKey}`;
+  const ariaLabel = t('@astryx.table.columnResize.resizeColumn', {
+    label: getNodeText(columnHeader) || columnKey,
+  });
 
   return (
     <div
