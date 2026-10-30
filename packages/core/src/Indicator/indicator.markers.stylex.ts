@@ -17,3 +17,17 @@ import * as stylex from '@stylexjs/stylex';
  */
 export const indicatorScope: ReturnType<typeof stylex.defineMarker> =
   stylex.defineMarker();
+
+/**
+ * Marks a theme indicator that paints its own press layer, for a shape the
+ * owner's rounded-square layer would tint past (a circle).
+ *
+ * The indicator applies this marker together with
+ * `data-astryx-indicator-press="self"` and paints the press itself from what
+ * the owner hands down as inherited private properties (CheckboxInput:
+ * `--_indicator-press-fill` for a mouse press, `--_press-paint-image` for a
+ * touch press, `--_indicator-hover` for hover). The owner finds it with
+ * `stylex.when.descendant()` and leaves its own layer off.
+ */
+export const indicatorPressScope: ReturnType<typeof stylex.defineMarker> =
+  stylex.defineMarker();
