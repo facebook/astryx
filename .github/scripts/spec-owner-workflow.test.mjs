@@ -146,7 +146,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>
@@ -426,30 +429,23 @@ describe('spec-only workflow contract', () => {
 });
 
 describe('test-deps scope (Internal Registry)', () => {
-  it('runs the registry check only for dependency changes on a pull request', () => {
+  it('starts on a pull request only for dependency changes, and never reclassifies', () => {
     const source = read('.github/workflows/internal-registry.yml');
-    const paths = /paths: '([^']+)'/.exec(source)?.[1];
-    expect(paths).toBeDefined();
-    const pattern = new RegExp(paths);
-    for (const file of [
-      'pnpm-lock.yaml',
-      'pnpm-workspace.yaml',
-      'package.json',
-      'packages/core/package.json',
-      '.github/workflows/internal-registry.yml',
+    const trigger = source.slice(
+      source.indexOf('  pull_request:'),
+      source.indexOf('  merge_group:'),
+    );
+    for (const path of [
+      "'pnpm-lock.yaml'",
+      "'pnpm-workspace.yaml'",
+      "'**/package.json'",
+      "'.github/workflows/internal-registry.yml'",
     ]) {
-      expect(pattern.test(file), file).toBe(true);
+      expect(trigger, path).toContain(`- ${path}`);
     }
-    // A spec-only or source-only change never runs it.
-    for (const file of [
-      'docs/specs/AST-030/spec.md',
-      'packages/core/src/Button/Button.tsx',
-      'packages/core/src/package.json.ts',
-    ]) {
-      expect(pattern.test(file), file).toBe(false);
-    }
-    expect(source).toContain('uses: ./.github/actions/test-scope');
-    expect(source).toContain("if: steps.scope.outputs.touches == 'true'");
+    expect(source).toContain('  test-deps:');
+    // The trigger decides its scope: no spec-only skip inside the job.
+    expect(source).not.toContain('steps.scope');
   });
 });
 

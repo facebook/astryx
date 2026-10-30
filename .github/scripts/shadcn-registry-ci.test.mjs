@@ -40,7 +40,7 @@ describe('ShadCN registry CI contract', () => {
     expect(job.if).toBe(
       "github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'",
     );
-    expect(job['runs-on']).toBe('4-core-ubuntu');
+    expect(job['runs-on']).toBe('ubuntu-latest');
     expect(job['timeout-minutes']).toBe(15);
     for (const candidate of job.steps) {
       expect(

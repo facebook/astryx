@@ -217,7 +217,7 @@ will produce, because the gate only runs on a new event. Backfill first.
    gh pr list --state open --limit 300 --json number,headRefOid \
      --jq '.[]|"\(.number) \(.headRefOid)"' \
    | while read -r pr sha; do
-       state=$(gh api "repos/facebook/astryx/commits/$sha/status" \
+       state=$(gh api "repos/meta/astryx/commits/$sha/status" \
          --jq '[.statuses[]|select(.context=="spec-owner-approval")|.state]
                | if length==0 then "MISSING" else .[0] end')
        [ "$state" = MISSING ] && echo "$pr"
