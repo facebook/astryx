@@ -7,7 +7,9 @@
  * Validates that astryx.css contains expected @media wrappers and
  * prefers-reduced-motion rules, and that the touch press's release ships as a
  * real fade: the press strength is a registered `<number>` the fading arm
- * animates on the machine's own clock (utils/interactionOverlay.stylex.ts).
+ * animates on the machine's own clock (utils/interactionOverlay.stylex.ts),
+ * and a list row's compositor press layer (utils/rowPressLayer.ts) releases
+ * its opacity on the cell clock and curve.
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -242,6 +244,11 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
       const match = value.trim().match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
@@ -266,8 +273,12 @@ describe('build-css astryx.css', () => {
         /@keyframes ([\w-]+)\{from\{--astryx-press-alpha:1;?\}to\{--astryx-press-alpha:0;?\}\}/,
       );
       expect(keyframes).not.toBeNull();
-      const fading = lines().filter(line =>
-        line.includes('[data-astryx-press="fading"]'),
+      // The overlay's arms on the element itself; the compositor press
+      // layer's `::before` arms have their own block below.
+      const fading = lines().filter(
+        line =>
+          line.includes('[data-astryx-press="fading"]') &&
+          !line.includes('::before'),
       );
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
@@ -276,8 +287,9 @@ describe('build-css astryx.css', () => {
         .map(line => line.match(/animation-duration:\s*([^;}]+)/))
         .filter(Boolean)
         .map(match => toMs(match[1]));
-      // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      // One clock, the one the controller checks the release at, capped
+      // under reduced motion (DR2).
+      expect([...new Set(durations)]).toEqual([await readReleaseMs()]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
@@ -322,6 +334,73 @@ describe('build-css astryx.css', () => {
       expect(arms.some(line => line.includes('--color-overlay-hover'))).toBe(
         false,
       );
+    });
+  });
+  describe('the compositor press layer (rowPressLayer.ts `cell`)', () => {
+    /** The cell clock and curve, read off their one stylesheet source. */
+    async function readLayerConsts() {
+      const source = await fs.readFile(
+        path.join(ROOT, 'packages/core/src/utils/rowPressLayer.stylex.ts'),
+        'utf8',
+      );
+      const ms = source.match(/cellReleaseMs:\s*(\d+)/);
+      const ease = source.match(/cellReleaseEase:\s*'([^']+)'/);
+      if (ms == null || ease == null) {
+        throw new Error('cellPressConsts not found in rowPressLayer.stylex.ts');
+      }
+      return {
+        ms: Number(ms[1]),
+        points: ease[1].match(/-?\d*\.?\d+/g).map(Number),
+      };
+    }
+    const toMs = value => {
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      return match == null
+        ? Number.NaN
+        : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    };
+    const layerLines = arm =>
+      astryxCss
+        .split('\n')
+        .filter(line => line.includes(arm) && line.includes('::before'));
+
+    it('releases with an opacity keyframe animation on the cell clock and curve', async () => {
+      // Opacity, the property engines run on the compositor: the release
+      // keeps fading while script runs.
+      const keyframes = astryxCss.match(
+        /@keyframes ([\w-]+)\{from\{opacity:1;?\}to\{opacity:0;?\}\}/,
+      );
+      expect(keyframes).not.toBeNull();
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(
+        fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
+      ).toBe(true);
+      const {ms, points} = await readLayerConsts();
+      const durations = fading
+        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => toMs(match[1]));
+      expect([...new Set(durations)]).toEqual([ms]);
+      const curves = fading
+        .map(line => line.match(/animation-timing-function:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
+      expect(curves).toEqual([points]);
+    });
+
+    it('shows the layer at once on the on arm, and rests it at 0 on the fading arm under its release', () => {
+      const on = layerLines('[data-astryx-press="on"]');
+      expect(on.some(line => /\{opacity:1;?\}/.test(line))).toBe(true);
+      expect(on.some(line => line.includes('animation'))).toBe(false);
+      // Nothing of the layer at rest (a row's own `::before` is untouched):
+      // its opacity is only ever a press arm's.
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(fading.some(line => /\{opacity:0;?\}/.test(line))).toBe(true);
     });
   });
 

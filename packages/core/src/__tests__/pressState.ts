@@ -19,7 +19,8 @@
  * The touch arms are asserted the same way: the paint reads the press's
  * strength (`--astryx-press-alpha`, see utils/interactionOverlay.stylex.ts)
  * and the element the controller writes to runs the release animation on the
- * machine's own clock.
+ * machine's own clock; a list row's compositor layer (utils/rowPressLayer.ts)
+ * runs its own release on the row's `::before`, which these checks leave out.
  *
  * SYNC: When modified, update this header.
  */
@@ -179,7 +180,18 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  const text = value.trim();
+  // StyleX folds a constant cap into `calc(<time>)`.
+  const folded = /^calc\((.+)\)$/.exec(text);
+  if (folded != null) {
+    return durationToMs(folded[1]);
+  }
+  // Under reduced motion the clock is capped: `min(<clock>, 200ms)`.
+  const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(text);
+  if (capped != null) {
+    return Math.min(durationToMs(capped[1]), durationToMs(capped[2]));
+  }
+  const match = text.match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }
@@ -194,7 +206,11 @@ export function durationToMs(value: string): number {
  * on a descendant that merely reads the strength.
  */
 export function hasReleaseFade(el: Element): boolean {
-  const fading = rulesWithSelector(el, FADING_ARM);
+  // The element's own release: a layer of its own (a row's `::before`, a
+  // card's `::after`) runs its clock separately.
+  const fading = rulesWithSelector(el, FADING_ARM).filter(
+    rule => !rule.slice(0, rule.indexOf('{')).includes('::'),
+  );
   const durations = fading.flatMap(rule => {
     const match = rule.match(/animation-duration:\s*([^;}]+)/);
     return match == null ? [] : [durationToMs(match[1])];
@@ -205,8 +221,8 @@ export function hasReleaseFade(el: Element): boolean {
   );
   return (
     named &&
-    durations.length === 1 &&
-    durations[0] === PRESS_FADE_MS &&
+    durations.length > 0 &&
+    durations.every(duration => duration === PRESS_FADE_MS) &&
     !onArmAnimates
   );
 }
