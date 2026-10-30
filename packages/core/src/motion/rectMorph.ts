@@ -18,15 +18,16 @@
  * A path (morphPath.ts) names the rect an element shows at each progress,
  * and its curves put the element there with `translate` and `scale` about
  * `transform-origin: 0 0` and a companion `opacity`, on the compositor
- * (law M1). `createRectMorph` plays a path on its element (`present`) and back to the
- * source on a target the caller gives (`dismiss`): a copy placed where the
- * element stands, since the browser hides a closing popover at once, or the
- * element itself. Each interrupts the other: the new motion starts from the
- * rect the animator presents at that moment, on the path restarted there in
- * its own law (`restartFrom`), with the presented velocity projected on it
- * (progress.ts; laws M2, M3). Once a present settles nothing of the morph's
- * is left inline: iOS Safari will not scroll a finger through a popover that
- * keeps a `scale`, even at 1.
+ * (`spec:AST-094` FR5). `createRectMorph` plays a path on its element
+ * (`present`) and back to the source on a target the caller gives
+ * (`dismiss`): a copy placed where the element stands, since the browser
+ * hides a closing popover at once, or the element itself. Each interrupts
+ * the other: the new motion starts from the rect the animator presents at
+ * that moment, on the path restarted there in its own law (`restartFrom`),
+ * with the presented velocity projected on it (progress.ts; `spec:AST-094`
+ * FR6). Once a present settles nothing of the morph's is left inline: iOS
+ * Safari will not scroll a finger through a popover that keeps a `scale`,
+ * even at 1.
  *
  * Reduced Motion is the animator's (design:reduced-motion): on a coarse
  * pointer a present lands at rest and fades in, a dismissal fades out where
