@@ -1644,7 +1644,7 @@
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
   },
   "@astryx.multiSelector.selectedCount": {
-    "defaultMessage": "{count, number} selected",
+    "defaultMessage": "{count, plural, one {# selected} other {# selected}}",
     "description": "Visible text on a closed MultiSelector's trigger when it shows a count of the chosen options (`triggerDisplay=\"count\"`), for example `2 selected`. `{count}` is the number of chosen options; use a plural form if your language needs one."
   },
   "@astryx.multiSelector.createOption": {
