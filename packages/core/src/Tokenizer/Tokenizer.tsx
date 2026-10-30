@@ -85,6 +85,10 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {composeEventHandlers, mergeProps} from '../utils';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
@@ -699,6 +703,18 @@ function EndLane({
   );
 }
 
+/**
+ * Whether `target` is a token's own remove button (Token's ×, which marks
+ * itself `data-token-remove`): the one control a finger's tap with the
+ * touch keyboard down treats differently. Custom `renderToken` controls and
+ * `endContent` keep their defaults.
+ */
+function isTokenRemoveControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest('[data-token-remove]') != null
+  );
+}
+
 // The public signature names no presentation: `ComponentProps<typeof
 // Tokenizer>` and every public call resolve against `TokenizerProps`. The
 // implementation also reads the presentation options, reached only through
@@ -773,6 +789,44 @@ export function Tokenizer<T extends SearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // The last press that started inside the field: whether a finger (or a pen)
+  // made it, and whether the input already had focus when it began. A touch
+  // keyboard rises whenever this field focuses its input during a tap, so a
+  // tap on a token's own control (its remove button) must not move focus to
+  // the input unless the input had it, and the keyboard was up, already.
+  // `getInteractionModality()` says whether that press is still the latest
+  // interaction: any key press since then hands focus decisions back to the
+  // keyboard rules.
+  useInteractionModalityTracking();
+  const lastPressRef = useRef<{
+    isTouch: boolean;
+    inputHadFocus: boolean;
+    /** The token's own remove button the press landed on, if any. */
+    removeControl: Element | null;
+  } | null>(null);
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
+    lastPressRef.current = {
+      isTouch: e.pointerType === 'touch' || e.pointerType === 'pen',
+      inputHadFocus:
+        inputRef.current != null &&
+        inputRef.current.ownerDocument.activeElement === inputRef.current,
+      removeControl:
+        e.target instanceof Element
+          ? e.target.closest('[data-token-remove]')
+          : null,
+    };
+  }, []);
+  // True while the latest interaction is a touch press that began with the
+  // input unfocused (so the touch keyboard is down).
+  const isTouchPressWithKeyboardDown = useCallback(() => {
+    const press = lastPressRef.current;
+    return (
+      press != null &&
+      press.isTouch &&
+      !press.inputHadFocus &&
+      getInteractionModality() === 'pointer'
+    );
+  }, []);
   // Experimental presentation (`component:Tokenizer` DEC-3). `adaptive`
   // resolves through the policy the selection controls share; an open sheet
   // keeps its presentation until it closes, so a resolution change mid-task
@@ -1013,6 +1067,23 @@ export function Tokenizer<T extends SearchableItem>({
     [layer.id],
   );
 
+  // A finger's tap on a token's remove button while the
+  // keyboard is down keeps focus out of the field altogether: where the
+  // browser focuses a pressed button (Chrome does, on the tap's mouse
+  // compatibility events), focus entering would expand an `unfocusedInline`
+  // field, remounting the control under the finger, and focus would then drop
+  // to the page with no blur. Cancelling the press's focus, as
+  // InputClearButton does, leaves the field as it was; the tap's click still
+  // removes the token. A tap on the input itself still focuses it.
+  const handleMouseDownCapture = useCallback(
+    (e: React.MouseEvent) => {
+      if (isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown()) {
+        e.preventDefault();
+      }
+    },
+    [isTouchPressWithKeyboardDown],
+  );
+
   const handleFocusCapture = useCallback(
     (e: React.FocusEvent) => {
       const comingFromOutside = !isFocusInTokenizer(e.relatedTarget);
@@ -1027,13 +1098,26 @@ export function Tokenizer<T extends SearchableItem>({
           onFocus?.(e);
         }
         // Redirect to the input so the user doesn't have to tab through
-        // every token remove button.
-        if (e.target !== inputRef.current) {
+        // every token remove button. Not for a finger landing on a token's
+        // remove button while the keyboard is down: where the browser
+        // focuses the pressed button (Android Chrome), moving focus on to the
+        // input would raise the keyboard for a tap that only meant to remove
+        // a token.
+        if (
+          e.target !== inputRef.current &&
+          !(isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown())
+        ) {
           inputRef.current?.focus();
         }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer, onFocus],
+    [
+      isLayerMode,
+      layer,
+      isFocusInTokenizer,
+      onFocus,
+      isTouchPressWithKeyboardDown,
+    ],
   );
 
   const handleBlurCapture = useCallback(
@@ -1207,10 +1291,34 @@ export function Tokenizer<T extends SearchableItem>({
       if (!options?.silent) {
         announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       }
-      inputRef.current?.focus();
+      // Focus goes to the input, where typing continues, except after a tap
+      // on a token's own × that began with the keyboard down: focusing the
+      // input inside that tap would raise the touch keyboard, which removing
+      // a token never asks for. A keyboard removal, a mouse click, a tap made
+      // while the input was focused, and a custom `renderToken` control still
+      // land on the input; the sheet's own removals (`silent`) are the
+      // sheet's.
+      const pressed =
+        !options?.silent && isTouchPressWithKeyboardDown()
+          ? (lastPressRef.current?.removeControl ?? null)
+          : null;
+      if (pressed == null) {
+        inputRef.current?.focus();
+        return true;
+      }
+      // Where the browser focused the pressed × (Chrome does on a tap), that
+      // button is about to unmount with its token, and an element removed
+      // while focused drops focus without a blur: the field would stay
+      // focused-within (an `unfocusedInline` field expanded) after a tap
+      // elsewhere. Let go of that button first; focus anywhere else (Clear
+      // all, another control) stays where it is.
+      const active = pressed.ownerDocument.activeElement;
+      if (active instanceof HTMLElement && pressed.contains(active)) {
+        active.blur();
+      }
       return true;
     },
-    [value, onChange, isDisabled, announce, t],
+    [value, onChange, isDisabled, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items
@@ -1312,6 +1420,8 @@ export function Tokenizer<T extends SearchableItem>({
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
+      onPointerDownCapture={handlePointerDownCapture}
+      onMouseDownCapture={handleMouseDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       // Keys on the field's other controls (clear button, tokens) reach a
