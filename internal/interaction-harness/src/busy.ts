@@ -39,27 +39,45 @@ const CONTROL_TRAVEL = 240;
  *
  * The box is a manual popover, so it shows in the top layer, above a modal
  * dialog the page opened before it; `raise()` shows it again on top of one
- * opened after. Start it before the block: it resolves once the animation is
- * running and past its first frame (on the compositor; see
+ * opened after. With `within`, it is mounted inside that element instead (an
+ * open modal dialog), as a plain fixed box with no top-layer entry: in WebKit
+ * a popover shown above an open modal dialog takes the dialog's `::backdrop`
+ * animation off the compositor, so a proof of a dialog's backdrop mounts its
+ * control inside the dialog. Start it before the block: it resolves once the
+ * animation is running and past its first frame (on the compositor; see
  * `blockMainThread`). Keep the component's marker out of the strip it crosses
  * (the top `CONTROL_SIDE` px, `CONTROL_SIDE + CONTROL_TRAVEL` px wide).
  */
 export async function startBusyControl(
   page: Page,
-  {rgb = CONTROL_RGB}: {rgb?: readonly [number, number, number]} = {},
+  {
+    rgb = CONTROL_RGB,
+    within,
+  }: {rgb?: readonly [number, number, number]; within?: Locator} = {},
 ): Promise<{
   readonly raise: () => Promise<void>;
   readonly remove: () => Promise<void>;
 }> {
+  if (within != null) {
+    await within.evaluate(host =>
+      host.setAttribute('data-harness-control-host', ''),
+    );
+  }
   await page.evaluate(
     ({color, side, travel}) =>
       new Promise<void>((resolve, reject) => {
+        const host = document.querySelector('[data-harness-control-host]');
+        host?.removeAttribute('data-harness-control-host');
         const box = document.createElement('div');
         box.setAttribute('data-harness-control', '');
-        box.setAttribute('popover', 'manual');
         box.style.cssText = `position:fixed;inset:auto;left:0;top:0;margin:0;padding:0;border:0;overflow:visible;width:${side}px;height:${side}px;background:rgb(${color.join(',')});z-index:2147483647;pointer-events:none;`;
-        document.body.appendChild(box);
-        box.showPopover();
+        if (host == null) {
+          box.setAttribute('popover', 'manual');
+          document.body.appendChild(box);
+          box.showPopover();
+        } else {
+          host.appendChild(box);
+        }
         const animation = box.animate(
           [
             {transform: 'translateX(0px)'},
@@ -97,7 +115,7 @@ export async function startBusyControl(
     raise: () =>
       page.evaluate(() => {
         for (const box of document.querySelectorAll<HTMLElement>(
-          '[data-harness-control]',
+          '[data-harness-control][popover]',
         )) {
           box.hidePopover();
           box.showPopover();

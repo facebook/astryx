@@ -30,6 +30,7 @@
  */
 
 import {expect, test, type Page} from '@playwright/test';
+import type {CastFrame, TrackedFrame} from './frames';
 import {
   animationStoryboard,
   blockMainThread,
@@ -93,6 +94,73 @@ const BUSY_FIXTURE = `<!doctype html><meta name=viewport content="width=device-w
   #box { position: absolute; left: 20px; top: 40px; width: 80px; height: 80px; background: #36c; }
 </style>
 <div id=box></div>`;
+
+/**
+ * The red channel at a CSS-px point in each cast frame (a 16 px square's mean),
+ * as a tracked value on x: what a backdrop's dim shows there. Decoded in a
+ * scratch page, as `trackMarker` does.
+ */
+async function brightnessAt(
+  page: Page,
+  castFrames: readonly CastFrame[],
+  {x, y}: {x: number; y: number},
+): Promise<TrackedFrame[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const values: number[] = [];
+    for (let i = 0; i < castFrames.length; i += 12) {
+      const batch = castFrames.slice(i, i + 12);
+      values.push(
+        ...(await scratch.evaluate(
+          async ({items, px, py}) => {
+            const out: number[] = [];
+            for (const item of items) {
+              const blob = await (
+                await fetch(`data:image/${item.format};base64,${item.data}`)
+              ).blob();
+              const bitmap = await createImageBitmap(blob);
+              const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+              const context = canvas.getContext('2d');
+              if (context == null) {
+                throw new Error('no 2d context');
+              }
+              context.drawImage(bitmap, 0, 0);
+              const scale = bitmap.width / item.viewportWidth;
+              const {data} = context.getImageData(
+                Math.round(px * scale),
+                Math.round(py * scale),
+                16,
+                16,
+              );
+              let sum = 0;
+              for (let o = 0; o < data.length; o += 4) {
+                sum += data[o];
+              }
+              out.push(sum / (data.length / 4));
+            }
+            return out;
+          },
+          {
+            items: batch.map(f => ({
+              data: f.data,
+              format: f.format,
+              viewportWidth: f.viewportWidth,
+            })),
+            px: x,
+            py: y,
+          },
+        )),
+      );
+    }
+    return castFrames.map((f, i) => ({
+      t: f.t,
+      box: {x: values[i], y: 0, width: 1, height: 1},
+      pixels: 1,
+    }));
+  } finally {
+    await scratch.close();
+  }
+}
 
 async function busyFixture(page: Page) {
   await page.route('http://busy.test/', route =>
@@ -482,6 +550,47 @@ test.describe('frame evidence', () => {
     const slowRaf = await run('raf', 6);
     expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
     await control.remove();
+  });
+
+  test("mounted within an open modal dialog, the control leaves the dialog's backdrop animation on the compositor", async ({
+    page,
+  }) => {
+    // A dimming backdrop over a black page: its brightness at a point is the
+    // value judged, read from the same frames as the control.
+    await page.route('http://backdrop.test/', route =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#000;height:100vh}dialog{width:120px;height:80px;padding:0;border:0;background:#fff}dialog::backdrop{background:rgb(255,255,0);opacity:.2}</style><dialog id="sheet"></dialog>`,
+      }),
+    );
+    await page.goto('http://backdrop.test/');
+    const dialog = page.locator('#sheet');
+    await dialog.evaluate(el => (el as HTMLDialogElement).showModal());
+    const control = await startBusyControl(page, {within: dialog});
+    const cast = await startScreencast(page);
+    // The dim starts, as a dismissal's does, and the block holds the main
+    // thread once its transition runs.
+    await dialog.evaluate(el => {
+      el.animate([{opacity: 0.2}, {opacity: 1}], {
+        duration: 900,
+        easing: 'linear',
+        fill: 'forwards',
+        pseudoElement: '::backdrop',
+      });
+    });
+    const window = await blockMainThread(page, 600, {during: dialog});
+    await page.waitForTimeout(200);
+    const castFrames = await cast.stop();
+    await control.remove();
+    const controlFrames = await trackMarker(page, castFrames, {
+      rgb: CONTROL_RGB,
+    });
+    const dim = await brightnessAt(page, castFrames, {x: 40, y: 600});
+    const proof = busyWindowProof(dim, window, {
+      axis: 'x',
+      control: controlFrames,
+    });
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
   });
 
   test('a block too short to judge alone is judged over pooled runs: a compositor animation passes, and a rAF one fails, timed or frame-counted', async ({
