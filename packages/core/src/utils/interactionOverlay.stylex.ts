@@ -9,7 +9,8 @@
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
  *   the touch press's registered strength variable (`pressVars`) and its
- *   clocks (`pressConsts`)
+ *   clock (`pressConsts`). The list row's compositor press layer and its
+ *   clocks are internal (rowPressLayer.ts, rowPressLayer.stylex.ts)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -50,8 +51,9 @@
  *    first frame. Nothing transitions a custom property a composer never named.
  *  - `[data-astryx-press="fading"]` keeps the same paint and runs the release
  *    animation, strength 1 → 0 over {@link PRESS_RELEASE_DURATION} (UIKit's
- *    deselect crossfade; the controller removes the attribute when the same
- *    clock runs out, and by then the paint is gone). It fades to nothing, not
+ *    deselect crossfade; the controller removes the attribute when this
+ *    animation ends, however late a busy main thread let it start, so by then
+ *    the paint is gone). It fades to nothing, not
  *    to the hover strength: under a finger there is no hover to land on.
  *
  * WHY AN ANIMATION AND NOT A TRANSITION. Two reasons, both about composers.
@@ -87,6 +89,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 /**
  * The touch press's strength on the surface the controller painted, 0 to 1.
@@ -108,16 +111,23 @@ export const pressVars = stylex.defineVars({
  *
  * `defineConsts`, so the one number is inlined here at build time and is the
  * controller's constant at run time (`PRESS_FADE_MS` in pressGesture.ts):
- * the release animation and the timer that removes the attribute after it
- * cannot drift apart.
+ * the release animation and the clock at which the controller checks for
+ * its end cannot drift apart.
  */
 export const pressConsts = stylex.defineConsts({
   /** How long the release takes, in ms. UIKit's deselect clock. */
   releaseMs: 200,
 });
 
-/** The release's clock as CSS. */
+/** The release's clock as CSS: the table's value. */
 const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/**
+ * Under reduced motion the clock is capped at 200 ms
+ * (`design:reduced-motion` DR2: a touch transition is opacity only and
+ * finishes in 200 ms or less), so a longer table value never outlasts it;
+ * pressFeedback.ts caps its release clock the same way.
+ */
+const PRESS_RELEASE_DURATION_REDUCED = `min(${PRESS_RELEASE_DURATION}, 200ms)`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -131,7 +141,6 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
-
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
 const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
@@ -172,7 +181,7 @@ const pressRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+const RELEASE_EASE = cellPressConsts.cellReleaseEase;
 
 /**
  * The touch press's strength and its release, on the element the controller
@@ -205,7 +214,10 @@ const pressReleaseAnimation = {
   },
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (prefers-reduced-motion: reduce)': PRESS_RELEASE_DURATION_REDUCED,
+    },
   },
   animationTimingFunction: {
     default: null,
