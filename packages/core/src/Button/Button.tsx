@@ -111,8 +111,14 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    transitionProperty:
-      'background-image, background-color, color, opacity, transform',
+    transitionProperty: {
+      default: 'background-image, background-color, color, opacity, transform',
+      // Under reduced motion a button's hover and press change at once, with
+      // a mouse or a finger (Button's record, FR15): design:reduced-motion
+      // allows a touch screen only an opacity cross-fade (DR2), and nothing
+      // of a button fades on opacity.
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
@@ -128,8 +134,20 @@ const styles = stylex.create({
       ':active:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
+        // Reduced motion: a press never scales the button
+        // (design:reduced-motion DR1); the overlay alone shows it.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'scale(1)',
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'scale(1)',
       },
-      '[data-astryx-press="on"]': 'scale(0.98)',
+      '[data-astryx-press="on"]': {
+        default: 'scale(0.98)',
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'scale(1)',
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'scale(1)',
+      },
     },
   },
   inactive: {

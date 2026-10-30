@@ -222,9 +222,31 @@ const styles = stylex.create({
         default: 'background-color',
         [PRESSED_ON]: 'none',
         [PRESSED_FADING]: 'none',
+        // Reduced motion on a touch screen: only opacity may cross-fade
+        // (design:reduced-motion DR2), so the overlay's colour changes at
+        // once.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'opacity',
       },
-      transitionDuration: durationVars['--duration-fast'],
-      transitionTimingFunction: easeVars['--ease-standard'],
+      transitionDuration: {
+        default: durationVars['--duration-fast'],
+        // Reduced motion (design:reduced-motion): with a fine primary pointer
+        // the change is immediate (DR3); on a touch screen it stays a
+        // cross-fade of 200 ms or less, whatever the theme sets (DR2, DR4).
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          '0s',
+        // The cross-fade's values are reducedMotionFadeConsts'
+        // (motion/reducedMotion.stylex.ts), spelled out because that module is
+        // internal and a swizzled component imports only exported paths;
+        // motion/reducedMotionValues.test.ts holds them equal.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          '200ms',
+      },
+      transitionTimingFunction: {
+        default: easeVars['--ease-standard'],
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'cubic-bezier(0.42, 0, 0.58, 1)',
+      },
       // While the controller paints, the colour yields to the image: a
       // touchscreen beside a fine pointer still matches `:active` under a
       // finger, and the press would otherwise paint twice.
