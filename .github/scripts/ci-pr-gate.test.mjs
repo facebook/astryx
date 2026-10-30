@@ -68,10 +68,11 @@ function evaluate(expression, {event = 'pull_request', ...pr}) {
  * (`always()`, `cancelled()`, `failure()`, `success()`) also needs `success()`,
  * which is false once a needed job skipped.
  */
-function startsWithNeedsSkipped(condition, needs) {
+function startsWithNeedsSkipped(condition, needs, pr = {fork: true}) {
   const expression = ungated(condition)
     .replace(`${PR_REPORT_GATE} && (`, '(')
-    .replace(/^\$\{\{\s*|\s*\}\}$/g, '');
+    .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+    .replace(/\.labels\.\*\.name/g, '.labels.map(l => l.name)');
   const hasStatusCheck = /\b(always|cancelled|failure|success)\(\)/.test(
     expression,
   );
@@ -86,12 +87,14 @@ function startsWithNeedsSkipped(condition, needs) {
     'failure',
     'success',
     'startsWith',
+    'contains',
     `return Boolean(${hasStatusCheck ? '' : 'success() && '}(${expression.replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')}));`,
   )(
     {
       event_name: 'pull_request',
       base_ref: 'main',
-      event: {pull_request: pullRequest({fork: true})},
+      repository: 'meta/astryx',
+      event: {pull_request: pullRequest(pr)},
     },
     needs,
     () => true,
@@ -99,6 +102,7 @@ function startsWithNeedsSkipped(condition, needs) {
     () => !succeeded,
     () => succeeded,
     (value, prefix) => String(value ?? '').startsWith(prefix),
+    (list, item) => list.includes(item),
   );
 }
 
@@ -143,6 +147,13 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
             startsWithNeedsSkipped(condition, needs),
             `${name}/${id}`,
           ).toBe(true);
+          // A pull request that may run CI keeps the job's own rule: a build
+          // join whose Storybook build skipped (spec-only, release bump) skips.
+          if (id === 'build') {
+            expect(startsWithNeedsSkipped(condition, needs, {}), id).toBe(
+              false,
+            );
+          }
           expect(job.steps[0], `${name}/${id}`).toMatchObject({
             if: `\${{ ${PR_HELD} }}`,
           });
