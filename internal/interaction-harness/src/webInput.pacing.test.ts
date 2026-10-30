@@ -33,30 +33,44 @@ describe('WheelPacingError', () => {
 
 describe('wheelGapCauses', () => {
   it('finds nothing within the bound', () => {
-    expect(wheelGapCauses([0, 16, 32, 48], [1, 17, 33, 49], 100)).toEqual({
-      pageStalls: [],
-      dispatchStalls: [],
-    });
+    expect(
+      wheelGapCauses('webkit', [0, 16, 32, 48], [1, 17, 33, 49], 100),
+    ).toEqual({pageStalls: [], dispatchStalls: []});
   });
 
-  it('gives a gap to the page when its handling of the step before caused it', () => {
-    // The page held its main thread 150 ms on the first step; the next was
-    // dispatched 2 ms after it was free.
-    expect(wheelGapCauses([0, 152, 168], [150, 153, 169], 100)).toEqual({
+  it('gives a WebKit gap to the page when the step reached it within a frame of the listeners finishing the one before', () => {
+    // The listeners held the main thread 150 ms on the first step; the next
+    // was dispatched 2 ms after they finished.
+    expect(
+      wheelGapCauses('webkit', [0, 152, 168], [150, 153, 169], 100),
+    ).toEqual({
       pageStalls: [{gapMs: 152, handlingMs: 150}],
       dispatchStalls: [],
     });
   });
 
-  it('gives a gap to the dispatch when the page was free for longer than the bound', () => {
-    expect(wheelGapCauses([0, 16, 157], [1, 17, 158], 100)).toEqual({
+  it('gives a WebKit gap to the dispatch when the page sat free before the step arrived', () => {
+    // A 30 ms listener, steps 125 ms apart: the page was free 95 ms before
+    // each next step.
+    expect(
+      wheelGapCauses('webkit', [0, 125, 250], [30, 155, 280], 100),
+    ).toEqual({
       pageStalls: [],
-      dispatchStalls: [141],
+      dispatchStalls: [125, 125],
     });
   });
 
-  it('counts a step whose handling was never seen as handled at once', () => {
-    expect(wheelGapCauses([0, 150], [Number.NaN, 151], 100)).toEqual({
+  it('gives every Chromium gap to the dispatch, whose stamps the page cannot move', () => {
+    expect(
+      wheelGapCauses('chromium', [0, 120, 240], [25, 145, 265], 100),
+    ).toEqual({pageStalls: [], dispatchStalls: [120, 120]});
+    expect(
+      wheelGapCauses('chromium', [0, 152, 168], [150, 153, 169], 100),
+    ).toEqual({pageStalls: [], dispatchStalls: [152]});
+  });
+
+  it('counts a step whose handling was never seen as the dispatch\u2019s', () => {
+    expect(wheelGapCauses('webkit', [0, 150], [Number.NaN, 151], 100)).toEqual({
       pageStalls: [],
       dispatchStalls: [150],
     });

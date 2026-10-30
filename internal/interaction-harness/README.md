@@ -222,17 +222,18 @@ as it does a trackpad's.
 
 WebKit stamps each step when its web process dispatches it, and dispatches it
 only once the page's main thread is free, so two things can split a run past
-`maxGapMs`. When the page's own wheel listeners held the main thread on the
-step before, the burst throws `WheelPageStallError`: the page split the
-gesture, and the proof fails. Otherwise the dispatch stalled before the page (a
-loaded runner) and it throws `WheelPacingError` with the gaps. Wrap such a
+`maxGapMs`. When a step reached the page within one frame of its own wheel
+listeners finishing the step before, those listeners held it back: the burst
+throws `WheelPageStallError`, the page split the gesture, and the proof fails.
+Otherwise the dispatch stalled before the page (a loaded runner) and it throws
+`WheelPacingError` with the gaps. Wrap such a
 proof in `retakeOnWheelPacing(testInfo, attempt)`: one re-take, only on
 `WheelPacingError`, listed as a `wheel-retake` annotation. The burst times the
 page's handling with a listener on the window that runs after the page's own,
 so a listener that stops the step's propagation, or other main-thread work
 between steps (timers, frames), still counts as the dispatch's stall. Chromium
 stamps a step with its dispatch time, so a page that holds its main thread does
-not widen the gaps there.
+not widen the gaps there, and every gap past `maxGapMs` is a `WheelPacingError`.
 
 The WebKit input command is reached through Playwright's in-process server
 object, so it needs a locally launched browser (the default), not `connect()`.

@@ -599,6 +599,41 @@ test.describe('wheel and pen input', () => {
     }
   });
 
+  test('a burst whose steps the dispatch spaces past maxGapMs throws WheelPacingError over a page whose listener takes 30 ms, in both engines', async ({
+    browser,
+  }) => {
+    // The page is free well before each next step arrives, so the gap is the
+    // dispatch's, not the page's.
+    const context = await browser.newContext({
+      viewport: {width: 402, height: 714},
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      await page.route('http://wheel-busy-listener.test/', route =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><body style="margin:0;height:3000px"><script>addEventListener("wheel",e=>{e.preventDefault();const end=performance.now()+30;while(performance.now()<end){}},{passive:false});</script>',
+        }),
+      );
+      await page.goto('http://wheel-busy-listener.test/');
+      const driver = await webInputDriver(page);
+      test.skip(!driver.wheels, WHEEL_SKIP);
+      await expect(
+        driver.wheelBurst({
+          x: 200,
+          y: 300,
+          steps: Array.from({length: 4}, () => ({dx: 10})),
+          everyMs: 125,
+          maxGapMs: 100,
+        }),
+      ).rejects.toBeInstanceOf(WheelPacingError);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('a page whose wheel listener holds its main thread splits a burst itself: never a runner stall, never re-taken', async ({
     browser,
     browserName,

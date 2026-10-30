@@ -79,10 +79,12 @@ export interface WheelBurst {
 
 /**
  * The page stamped a wheel burst's steps further apart than the proof's
- * `maxGapMs` while its main thread was free between them: the dispatch
- * stalled before the step reached the page. WebKit stamps a step when its web
- * process dispatches it, so a loaded runner splits what the driver sent as one
- * gesture, and the proof's outcome is the runner's, not the component's.
+ * `maxGapMs`, and its wheel listeners did not hold the step back: the step
+ * reached the page later than one frame after they finished the one before.
+ * WebKit stamps a step when its web process dispatches it, so a loaded runner
+ * splits what the driver sent as one gesture. Other work on the page's main
+ * thread between steps (timers, frame callbacks) also lands here, so a
+ * re-taken run is the runner's or that work's, never the wheel listeners'.
  */
 export class WheelPacingError extends Error {
   constructor(
@@ -122,14 +124,25 @@ export interface WheelPageStall {
 }
 
 /**
+ * How soon after the page's wheel listeners finish one step the next must
+ * reach the page for the page to have held it back: one frame, with a few ms
+ * for the dispatch itself.
+ */
+const HELD_BACK_MS = 20;
+
+/**
  * Sorts a burst's gaps past `maxGapMs` by cause. `stamps` are the received
  * steps' `timeStamp`s; `handledAt` is when the page's wheel listeners had
- * finished with each (NaN where that was not seen). A gap is the page's when,
- * without the time the page spent handling the step before, it would have
- * stayed within `maxGapMs`; otherwise it is the dispatch's. Other work on the
- * page's main thread between steps (timers, frames) counts as the dispatch's.
+ * finished with each (NaN where that was not seen). In WebKit, which
+ * dispatches a step only once the page's main thread is free, a gap is the
+ * page's when the step reached the page within one frame of the listeners
+ * finishing the step before: it was waiting on them. Every other gap is the
+ * dispatch's, and in Chromium, which stamps a step with its dispatch time, so
+ * the page cannot move its stamps, every gap is. Other work on the page's main
+ * thread between steps (timers, frame callbacks) counts as the dispatch's.
  */
 export function wheelGapCauses(
+  engine: Engine,
   stamps: readonly number[],
   handledAt: readonly number[],
   maxGapMs: number,
@@ -141,10 +154,12 @@ export function wheelGapCauses(
     if (gapMs <= maxGapMs) {
       continue;
     }
-    const handled = handledAt[i - 1] - stamps[i - 1];
-    const handlingMs = Number.isFinite(handled) && handled > 0 ? handled : 0;
-    if (gapMs - handlingMs <= maxGapMs) {
-      pageStalls.push({gapMs, handlingMs});
+    const heldBack =
+      engine === 'webkit' &&
+      Number.isFinite(handledAt[i - 1]) &&
+      stamps[i] - handledAt[i - 1] <= HELD_BACK_MS;
+    if (heldBack) {
+      pageStalls.push({gapMs, handlingMs: handledAt[i - 1] - stamps[i - 1]});
     } else {
       dispatchStalls.push(gapMs);
     }
@@ -157,8 +172,10 @@ export function wheelGapCauses(
  * its burst off pace: `attempt` builds the page's state, sends the burst with
  * `maxGapMs` and makes the spec's assertions, so a re-take starts over. One
  * re-take, two attempts in all, and only on a `WheelPacingError`: any other
- * error (a `WheelPageStallError`, which the page caused, among them), and a
- * second `WheelPacingError`, fail the test with their own cause.
+ * error (a `WheelPageStallError`, which the page's wheel listeners caused,
+ * among them), and a second `WheelPacingError`, fail the test with their own
+ * cause. A `WheelPacingError` is the runner's or other work on the page's main
+ * thread between steps, so a re-take does not clear the page of that work.
  * Each re-take is listed in the report as a `wheel-retake` annotation.
  */
 export async function retakeOnWheelPacing<T>(
@@ -332,6 +349,7 @@ function armWheelRun(page: Page): Promise<JSHandle<WheelRun>> {
  */
 async function untilRunReceived(
   page: Page,
+  engine: Engine,
   armed: JSHandle<WheelRun>,
   {steps, maxGapMs}: Pick<WheelBurst, 'steps' | 'maxGapMs'>,
 ): Promise<{receivedSteps: number; receivedGapsMs: number[]}> {
@@ -388,6 +406,7 @@ async function untilRunReceived(
   const receivedGapsMs = got.stamps.slice(1).map((t, i) => t - got.stamps[i]);
   if (maxGapMs != null) {
     const {pageStalls, dispatchStalls} = wheelGapCauses(
+      engine,
       got.stamps,
       got.handledAt,
       maxGapMs,
@@ -459,7 +478,7 @@ async function chromiumWebInput(page: Page): Promise<WebInputDriver> {
           modifiers: ctrl ? 2 : 0,
         }),
       );
-      return untilRunReceived(page, armed, {steps, maxGapMs});
+      return untilRunReceived(page, 'chromium', armed, {steps, maxGapMs});
     },
     async pen(points) {
       if (points.length === 0) {
@@ -553,7 +572,10 @@ async function webkitWebInput(page: Page): Promise<WebInputDriver> {
         await dispatchOnSchedule(steps, everyMs, ({dx = 0, dy = 0}) =>
           page.mouse.wheel(dx, dy),
         );
-        return await untilRunReceived(page, armed, {steps, maxGapMs});
+        return await untilRunReceived(page, 'webkit', armed, {
+          steps,
+          maxGapMs,
+        });
       } finally {
         if (ctrl) {
           await page.keyboard.up('Control');
