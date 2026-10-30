@@ -92,7 +92,12 @@ announcement channel.
   assertive region per document. They are created empty, stay mounted for the
   document's lifetime, and clear their text shortly after each announcement so
   stale text does not linger. Messages written to a region before the previous
-  one is exposed are joined in order into one announcement; none is dropped. An
+  one is exposed are joined in order into one announcement; none is dropped,
+  except a status its owner replaces. A status, a message that states its
+  owner's current state such as a search's result count, is replaced by its
+  owner's next status, not joined: when the owner writes a status before its
+  previous one is exposed, the previous one is withdrawn, so only the owner's
+  current status is spoken. Messages from different owners still join. An
   identical message repeated within the same frame is one message (FR6). An
   empty message clears the region, including messages joined but not yet
   exposed.
