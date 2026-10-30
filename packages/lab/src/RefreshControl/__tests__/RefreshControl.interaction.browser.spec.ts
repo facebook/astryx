@@ -1,0 +1,2480 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file RefreshControl.interaction.browser.spec.ts
+ * @input The built RefreshControl stories, real touch input (Chromium CDP /
+ *   WebKit's input command) and the interaction harness
+ * @output Interaction and animation proofs for the pull to refresh: the pull
+ *   follows UIKit's measured mapping and settles back below the trigger; past
+ *   the trigger the refresh starts with the finger down and the content
+ *   settles onto the 60 px inset; the settle follows the scroll view's
+ *   bounce spring and the end UIKit's 0.3 s ease-in-out (seeked Web
+ *   Animations); the settle keeps moving through a blocked main thread and
+ *   does no Layout or Paint per frame, and the pull rasters nothing per move; a short list still pulls; on the page
+ *   the document's top edge belongs to the pull; a pull pushed back hands the
+ *   finger to native scrolling; a pull while refreshing settles back onto the
+ *   inset; a finger catching the settle resumes it without a jump; under
+ *   Reduce Motion (design:reduced-motion) a release and the end only fade,
+ *   within 200 ms, whatever a `--motion-…` variable says, and the trigger
+ *   does not turn the spinner; under a fine pointer a pen's or a mouse's drag
+ *   pulls and refreshes as a finger's does and the top edge stays the
+ *   browser's (spec:AST-094 FR43), and under Reduce Motion a pen's release
+ *   lands at once there (DR3) and cross-fades on a touch screen (DR2);
+ *   a pen's or a mouse's trigger draws the indicator as a finger's does (the
+ *   same copy of the spokes fading over the same stepping spokes), and under
+ *   Reduce Motion applies the gradient at once with no copy (DR2, DEC-3);
+ *   storyboards of the pull, the settle and the end.
+ *
+ * The control follows the touch presentation (a coarse primary pointer, one
+ * touch model on iOS and Android alike). The harness's touch contexts report
+ * a coarse pointer in both engines, so every proof runs as a phone (in
+ * Chromium, as an Android phone's engine); the fine-pointer proof reports a
+ * fine one (`primaryPointer`).
+ * @position Interaction tests of packages/lab/src/RefreshControl, on the shape
+ *   of the BottomSheetDetent exemplar
+ *
+ * The oracles are UIKit's numbers, written here independently of the code
+ * under test: a 10 px pan hysteresis, 60 px one to one, then UIScrollView's
+ * rubber band on the excess (c = 0.55, d = the scroller's height); the
+ * trigger at max(73, 0.198 × d) px of overscroll; the settle on SwiftUI-style
+ * response 0.5 s,
+ * damping 1 (the scroll table's bounce); the end over 300 ms on
+ * cubic-bezier(0.42, 0, 0.58, 1).
+ */
+
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
+import {
+  animationStoryboard,
+  blockMainThread,
+  busyWindowProof,
+  compareCurve,
+  countBetween,
+  cubicBezier,
+  drag,
+  frames,
+  freezeTimers,
+  installLongTaskLog,
+  installTimerGate,
+  markElement,
+  openStory,
+  path,
+  readLongTasks,
+  releaseAnimations,
+  rubberBand,
+  springStep,
+  startCompositorTrace,
+  startScreencast,
+  thawTimers,
+  timeline,
+  touchDriver,
+  touchStoryboard,
+  toTouchEvents,
+  traceRendering,
+  trackMarker,
+  withStorybook,
+  writeEvidence,
+  type TouchDriver,
+  PEN_SKIP,
+  webInputDriver,
+} from '@astryxdesign/interaction-harness';
+
+const storybook = withStorybook(test);
+
+const HYSTERESIS = 10;
+const HEIGHT = 60;
+/**
+ * Three frames at 60 Hz. A Web Animation's start resolves to the time of the
+ * frame that started it, which can lie a frame or two before the task that
+ * made it on a loaded machine; a start dated before a busy task it waited on
+ * lies a whole block earlier.
+ */
+const START_SLACK_MS = 50;
+
+/** UIKit's trigger distance for a scroll view `dimension` tall. */
+const triggerFor = (dimension: number) => Math.max(73, 0.198 * dimension);
+
+/** UIKit's refresh pull: overscroll shown for `travel` px of finger travel. */
+function uikitPull(travel: number, dimension: number): number {
+  const u = travel - HYSTERESIS;
+  if (u <= 0) {
+    return 0;
+  }
+  return u <= HEIGHT ? u : HEIGHT + rubberBand(u - HEIGHT, dimension);
+}
+
+interface Opened {
+  driver: TouchDriver;
+  /** The pulled content (RefreshControl's root). */
+  content: Locator;
+  /** Where the finger lands: on the list, near the top of the screen. */
+  start: {x: number; y: number};
+  /** The scroll owner's height: the rubber band's dimension. */
+  dimension: number;
+}
+
+async function openRefresh(
+  page: Page,
+  story = 'lab-refreshcontrol--in-a-scroll-area',
+  args: Record<string, string> = {},
+): Promise<Opened> {
+  await installLongTaskLog(page);
+  await openStory(page, storybook(), story, args);
+  const driver = await touchDriver(page);
+  const content = page.locator('.astryx-refresh-control').first();
+  await expect(content).toBeVisible();
+  const dimension = await content.evaluate(element => {
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      const overflow = getComputedStyle(node).overflowY;
+      if (overflow === 'auto' || overflow === 'scroll') {
+        return node.clientHeight;
+      }
+    }
+    return window.innerHeight;
+  });
+  return {driver, content, start: {x: 200, y: 160}, dimension};
+}
+
+/** The content's presented translation, px (works while animations are held). */
+const shownPull = (content: Locator) =>
+  content.evaluate(element => {
+    const value = getComputedStyle(element).translate;
+    if (value === 'none' || value === '') {
+      return 0;
+    }
+    return parseFloat(value.split(/\s+/)[1] ?? '0');
+  });
+
+const isBusy = (content: Locator) =>
+  content.evaluate(element => element.getAttribute('aria-busy') === 'true');
+
+/**
+ * Waits for an animation of the content itself (not the spinner's endless
+ * spin inside it) and returns its active interval on the page clock. With
+ * `afterRefresh`, only once the refresh has ended (the end of a refresh);
+ * with `hold`, it is paused where it was found, ready for sampling.
+ */
+async function waitForSettle(
+  content: Locator,
+  {
+    minProgressMs = 1,
+    afterRefresh = false,
+    hold = false,
+    timeout = 6000,
+  }: {
+    minProgressMs?: number;
+    afterRefresh?: boolean;
+    hold?: boolean;
+    timeout?: number;
+  } = {},
+): Promise<{from: number; to: number}> {
+  return content.evaluate(
+    (element, options) =>
+      new Promise<{from: number; to: number}>((resolve, reject) => {
+        const deadline = performance.now() + options.timeout;
+        const tick = () => {
+          const running = element
+            .getAnimations()
+            .filter(
+              a =>
+                a.playState === 'running' &&
+                a.startTime != null &&
+                Number(a.currentTime ?? 0) >= options.minProgressMs,
+            );
+          const ready =
+            running.length > 0 &&
+            (!options.afterRefresh ||
+              element.getAttribute('aria-busy') !== 'true');
+          if (ready) {
+            if (options.hold) {
+              for (const animation of running) {
+                animation.pause();
+              }
+              (
+                window as unknown as {__harnessHeld?: Animation[]}
+              ).__harnessHeld = running;
+            }
+            const timing = running[0].effect?.getComputedTiming();
+            const from =
+              performance.timeOrigin +
+              Number(running[0].startTime) +
+              Number(timing?.delay ?? 0);
+            resolve({from, to: from + Number(timing?.activeDuration ?? 0)});
+            return;
+          }
+          if (performance.now() > deadline) {
+            reject(new Error('waitForSettle: no animation on the content'));
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+    {minProgressMs, afterRefresh, hold, timeout},
+  );
+}
+
+/** Resolves once the content itself holds still (the spinner may spin on). */
+async function waitForContentRest(
+  content: Locator,
+  timeout = 6000,
+): Promise<void> {
+  await content.evaluate(
+    (element, ms) =>
+      new Promise<void>((resolve, reject) => {
+        const deadline = performance.now() + ms;
+        let last = '';
+        let still = 0;
+        const tick = () => {
+          const translate = getComputedStyle(element).translate;
+          const moving = element
+            .getAnimations()
+            .some(a => a.playState === 'running');
+          still = !moving && translate === last ? still + 1 : 0;
+          last = translate;
+          if (still >= 2) {
+            resolve();
+            return;
+          }
+          if (performance.now() > deadline) {
+            reject(
+              new Error(`waitForContentRest: still moving (${translate})`),
+            );
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+    timeout,
+  );
+}
+
+/** A slow pull that rests before the lift (release velocity 0). */
+function slowPull(from: {x: number; y: number}, dy: number, restMs = 150) {
+  return drag(
+    from,
+    {x: from.x, y: from.y + dy},
+    {durationMs: Math.max(200, dy * 5), hz: 60, restMs},
+  );
+}
+
+/** Samples a held animation's presented translation at each time. */
+async function sampleTranslate(
+  content: Locator,
+  times: readonly number[],
+): Promise<{t: number; value: number}[]> {
+  return content.evaluate(
+    (element, ts) => {
+      const held =
+        (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
+        [];
+      return ts.map(t => {
+        for (const animation of held) {
+          const end = Number(
+            animation.effect?.getComputedTiming().endTime ?? Infinity,
+          );
+          animation.currentTime = Math.min(t, end - 0.5);
+        }
+        const value = getComputedStyle(element).translate;
+        return {
+          t,
+          value:
+            value === 'none' || value === ''
+              ? 0
+              : parseFloat(value.split(/\s+/)[1] ?? '0'),
+        };
+      });
+    },
+    [...times],
+  );
+}
+
+/** Reads the shown pull after every move of a script, while the finger is down. */
+async function playReading(
+  page: Page,
+  driver: TouchDriver,
+  content: Locator,
+  script: ReturnType<typeof drag>,
+  onLastMove?: () => Promise<void>,
+): Promise<{travel: number; shown: number}[]> {
+  const startY = script[0].fingers[0].y;
+  const moves = toTouchEvents(script).filter(e => e.type === 'touchMove');
+  const readings: {travel: number; shown: number}[] = [];
+  let index = 0;
+  await driver.play(script, {
+    onEvent: async step => {
+      if (step.type !== 'touchMove') {
+        return;
+      }
+      await frames(page, 1);
+      const y = step.changed[0]?.y ?? step.fingers[0]?.y ?? startY;
+      readings.push({travel: y - startY, shown: await shownPull(content)});
+      if (index === moves.length - 1) {
+        await onLastMove?.();
+      }
+      index++;
+    },
+  });
+  return readings;
+}
+
+test('a pull follows UIKit’s mapping and settles back below the trigger', async ({
+  page,
+}) => {
+  const {driver, content, start, dimension} = await openRefresh(page);
+  const readings = await playReading(
+    page,
+    driver,
+    content,
+    slowPull(start, 76),
+  );
+  // Every reading sits on UIKit's curve for its finger travel (the page may
+  // lag the finger by a frame: compare with the travel's neighbours).
+  const last = readings.at(-1);
+  expect(last?.shown ?? NaN).toBeCloseTo(uikitPull(76, dimension), 0);
+  for (const {travel, shown} of readings) {
+    expect(shown).toBeLessThanOrEqual(uikitPull(travel, dimension) + 1);
+  }
+  expect(Math.max(...readings.map(r => r.shown))).toBeLessThan(
+    triggerFor(dimension),
+  );
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(0, 1);
+  expect(await isBusy(content)).toBe(false);
+});
+
+test('past the trigger the refresh starts with the finger down, then settles onto the inset', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  let busyWhileDown = false;
+  await playReading(
+    page,
+    driver,
+    content,
+    slowPull(start, 300, 200),
+    async () => {
+      busyWhileDown = await isBusy(content);
+    },
+  );
+  expect(busyWhileDown).toBe(true);
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  expect(await isBusy(content)).toBe(true);
+});
+
+test('the settle onto the inset follows the scroll view’s bounce spring', async ({
+  page,
+}, testInfo) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await waitForSettle(content, {hold: true});
+  const times = timeline(700);
+  const samples = await sampleTranslate(content, times);
+  await releaseAnimations(page);
+  const from = samples[0].value;
+  // scroll.bounce: {duration 0.5, bounce 0} = response 0.5 s, damping 1.
+  const oracle = (t: number) =>
+    from + (HEIGHT - from) * springStep({response: 0.5, dampingFraction: 1}, t);
+  const result = compareCurve(samples, oracle, 1);
+  await writeEvidence(
+    'curves/refresh-settle',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {samples, result},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(1);
+  expect(samples.at(-1)?.value).toBeCloseTo(HEIGHT, 0);
+});
+
+test('the end slides the content up over 0.3 s on UIKit’s ease-in-out', async ({
+  page,
+}, testInfo) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '2500',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  // The refresh ends 2.5 s after the trigger.
+  await waitForSettle(content, {afterRefresh: true, hold: true});
+  const samples = await sampleTranslate(content, timeline(300));
+  await releaseAnimations(page);
+  const ease = cubicBezier(0.42, 0, 0.58, 1);
+  const oracle = (t: number) => HEIGHT * (1 - ease(Math.min(1, t / 300)));
+  const result = compareCurve(samples, oracle, 0.75);
+  await writeEvidence(
+    'curves/refresh-end',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {samples, result},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.75,
+  );
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(0, 1);
+});
+
+test('the title fades out with the end over 0.3 s on UIKit’s ease-in-out, as UIRefreshControl’s label does', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '2500',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  await waitForSettle(content, {afterRefresh: true, hold: true});
+  // UIKit fades the label 1 → 0 over 0.3 s as the end starts (iOS 26.2).
+  const samples = await content.evaluate(
+    (element, ts) => {
+      const title = element.querySelector(
+        ':scope > :last-child > div > span:last-child',
+      );
+      if (title == null) {
+        return [];
+      }
+      const held = title.getAnimations();
+      for (const animation of held) {
+        animation.pause();
+      }
+      return ts.map(t => {
+        for (const animation of held) {
+          const end = Number(
+            animation.effect?.getComputedTiming().endTime ?? Infinity,
+          );
+          animation.currentTime = Math.min(t, end - 0.5);
+        }
+        return {t, value: Number(getComputedStyle(title).opacity)};
+      });
+    },
+    [...timeline(300)],
+  );
+  await releaseAnimations(page);
+  expect(samples.length).toBeGreaterThan(0);
+  const ease = cubicBezier(0.42, 0, 0.58, 1);
+  const oracle = (t: number) => 1 - ease(Math.min(1, t / 300));
+  const result = compareCurve(samples, oracle, 0.02);
+  expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
+    0.02,
+  );
+});
+
+test('the end shrinks the spinner to almost nothing as it turns half a turn, over 0.3 s on UIKit’s ease-in-out', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '2500',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  await waitForSettle(content, {afterRefresh: true, hold: true});
+  // UIKit replaces the spin with a 0.3 s transform from identity to scale
+  // 0.001 turned by π − 0.01 (179.43°) on (0.42, 0, 0.58, 1) (iOS 26.2).
+  const samples = await content.evaluate(
+    (element, ts) => {
+      const spinner = element.querySelector(':scope > :last-child span');
+      if (spinner == null) {
+        return [];
+      }
+      const held = spinner.getAnimations();
+      for (const animation of held) {
+        animation.pause();
+      }
+      return ts.map(t => {
+        for (const animation of held) {
+          const end = Number(
+            animation.effect?.getComputedTiming().endTime ?? Infinity,
+          );
+          animation.currentTime = Math.min(t, end - 0.5);
+        }
+        const style = getComputedStyle(spinner);
+        return {
+          t,
+          scale: parseFloat(style.scale === 'none' ? '1' : style.scale),
+          rotate: parseFloat(style.rotate === 'none' ? '0' : style.rotate),
+        };
+      });
+    },
+    [...timeline(300)],
+  );
+  await releaseAnimations(page);
+  expect(samples.length).toBeGreaterThan(0);
+  const ease = cubicBezier(0.42, 0, 0.58, 1);
+  const at = (t: number) => ease(Math.min(1, t / 300));
+  const scale = compareCurve(
+    samples.map(({t, scale: value}) => ({t, value})),
+    t => 1 + (0.001 - 1) * at(t),
+    0.01,
+  );
+  const rotate = compareCurve(
+    samples.map(({t, rotate: value}) => ({t, value})),
+    t => 179.43 * at(t),
+    1,
+  );
+  expect(scale.maxError, JSON.stringify(scale.worst)).toBeLessThanOrEqual(0.01);
+  expect(rotate.maxError, JSON.stringify(rotate.worst)).toBeLessThanOrEqual(1);
+});
+
+test('the settle keeps moving every frame while the main thread is blocked', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await markElement(content);
+  const cast = await startScreencast(page);
+  // The compositor's own frames: a loaded machine's screencast skips frames
+  // the compositor still presents, and the verdict measures those gaps
+  // between the compositor's frames instead.
+  const compositor = await startCompositorTrace(page);
+  await driver.play(slowPull(start, 300, 200));
+  // The settle must be running (and composited) before the block: an
+  // animation cannot start while the main thread is held.
+  const settle = await waitForSettle(content, {minProgressMs: 16});
+  const block = await blockMainThread(page, 400);
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  const presented = await compositor.stop();
+  const tracked = await trackMarker(page, castFrames);
+  const proof = busyWindowProof(
+    tracked,
+    {from: block.from, to: Math.min(block.to, settle.to)},
+    {settledWithin: 3, presented},
+  );
+  await writeEvidence(
+    'busy-main-thread/refresh-settle',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {
+          block,
+          settle,
+          proof,
+          frames: tracked.map(f => ({
+            t: +(f.t - settle.from).toFixed(1),
+            y: f.box?.y ?? null,
+          })),
+        },
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  // The screencast resolves whole CSS pixels: judge until 3 px from rest.
+  // How many frames it delivers is the recorder's rate, not the settle's, so
+  // the harness's verdict alone judges them: every frame judged moved, and no
+  // stall where the compositor presented nothing.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
+});
+
+test('the settle does no Layout or Paint per frame', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  let settle = {from: 0, to: 0};
+  const trace = await traceRendering(page, async () => {
+    await driver.play(slowPull(start, 300, 200));
+    settle = await waitForSettle(content);
+    // A fixed wait: polling the content's style every frame would itself
+    // recalculate style.
+    await page.waitForTimeout(900);
+  });
+  // The steady part of the settle, until it is within a pixel of rest (its
+  // first frame may commit).
+  const during = countBetween(trace, settle.from + 50, settle.from + 600);
+  expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
+  expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
+  expect(trace.longTasks).toEqual([]);
+});
+
+/**
+ * Traces the page while `body` runs, on every thread, and returns each traced
+ * event's name, thread and time (epoch ms).
+ */
+async function traceAllThreads(page: Page, body: () => Promise<unknown>) {
+  const cdp = await page.context().newCDPSession(page);
+  const raw: {name: string; ph: string; ts: number; tid: number}[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    raw.push(...(value as unknown as typeof raw));
+  });
+  const complete = new Promise<void>(resolve =>
+    cdp.once('Tracing.tracingComplete', () => resolve()),
+  );
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: [
+        'devtools.timeline',
+        'disabled-by-default-devtools.timeline',
+        'cc',
+        'blink.user_timing',
+      ],
+      excludedCategories: ['*'],
+    },
+  });
+  const anchor = await page.evaluate(
+    () => performance.timeOrigin + performance.mark('refresh-trace').startTime,
+  );
+  await body();
+  await cdp.send('Tracing.end');
+  await complete;
+  await cdp.detach().catch(() => {});
+  const mark = raw.find(e => e.name === 'refresh-trace');
+  if (mark == null) {
+    throw new Error('traceAllThreads: the anchor mark was not traced');
+  }
+  return raw
+    .filter(e => e.ph !== 'E')
+    .map(e => ({
+      name: e.name,
+      main: e.tid === mark.tid,
+      t: anchor + (e.ts - mark.ts) / 1000,
+    }));
+}
+
+test('the pull rasters nothing per move: it writes transforms, and the reveal reaches only composited layers', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  // When the pull first moves the content and when it triggers, without
+  // reading any style (a MutationObserver on the content only).
+  await content.evaluate(element => {
+    const marks = {firstMove: 0, trigger: 0};
+    (window as unknown as {__marks: typeof marks}).__marks = marks;
+    new MutationObserver(records => {
+      const now = performance.timeOrigin + performance.now();
+      for (const record of records) {
+        if (
+          record.attributeName === 'style' &&
+          marks.firstMove === 0 &&
+          element.style.getPropertyValue('translate') !== ''
+        ) {
+          marks.firstMove = now;
+        }
+        if (
+          record.attributeName === 'aria-busy' &&
+          marks.trigger === 0 &&
+          element.getAttribute('aria-busy') === 'true'
+        ) {
+          marks.trigger = now;
+        }
+      }
+    }).observe(element, {
+      attributes: true,
+      attributeFilter: ['style', 'aria-busy'],
+    });
+  });
+  // The indicator's parts with a compositor layer for their opacity: each
+  // rasters once, when it first shows.
+  const layers = await content.evaluate(
+    element =>
+      [...element.querySelectorAll(':scope > :last-child *')].filter(part =>
+        getComputedStyle(part).willChange.includes('opacity'),
+      ).length,
+  );
+  let lift = 0;
+  const events = await traceAllThreads(page, async () => {
+    await driver.play(slowPull(start, 300, 200));
+    lift = await page.evaluate(
+      () => performance.timeOrigin + performance.now(),
+    );
+  });
+  const marks = await page.evaluate(
+    () =>
+      (window as unknown as {__marks: {firstMove: number; trigger: number}})
+        .__marks,
+  );
+  expect(marks.firstMove).toBeGreaterThan(0);
+  expect(marks.trigger).toBeGreaterThan(marks.firstMove + 200);
+  const count = (name: string, from: number, to: number, main = false) =>
+    events.filter(
+      e => e.name === name && e.t > from && e.t < to && (!main || e.main),
+    ).length;
+  // The reveal, from the second frame of the pull (the first promotes the
+  // content and the band) to the frame before the trigger; then the band,
+  // pulled past the trigger until the lift.
+  const reveal = {from: marks.firstMove + 50, to: marks.trigger - 20};
+  const band = {from: marks.trigger + 100, to: lift - 250};
+  const detail = JSON.stringify({
+    layers,
+    reveal: {
+      raster: count('RasterTask', reveal.from, reveal.to),
+      layout: count('Layout', reveal.from, reveal.to, true),
+    },
+    band: {
+      raster: count('RasterTask', band.from, band.to),
+      layout: count('Layout', band.from, band.to, true),
+    },
+  });
+  // Before, every move re-rastered the spokes and the title (one raster per
+  // frame); now each composited part rasters once, as it first shows.
+  expect(
+    count('RasterTask', reveal.from, reveal.to),
+    detail,
+  ).toBeLessThanOrEqual(layers);
+  expect(count('RasterTask', band.from, band.to), detail).toBe(0);
+  // No layout per move either (the trigger's own render, between the two
+  // windows, is not a move).
+  expect(count('Layout', reveal.from, reveal.to, true), detail).toBe(0);
+  expect(count('Layout', band.from, band.to, true), detail).toBe(0);
+});
+
+test('a list shorter than the screen still pulls and refreshes', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(
+    page,
+    'lab-refreshcontrol--short-list',
+    {refreshMs: '6000'},
+  );
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  expect(await isBusy(content)).toBe(true);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+});
+
+test('on the page, the document’s top edge belongs to the pull near the top only', async ({
+  page,
+  browserName,
+}) => {
+  const {driver, content, start} = await openRefresh(
+    page,
+    'lab-refreshcontrol--on-the-page',
+    {refreshMs: '6000', rows: '80'},
+  );
+  const rootOverscroll = () =>
+    page.evaluate(
+      () => getComputedStyle(document.documentElement).overscrollBehaviorY,
+    );
+  expect(await rootOverscroll()).toBe('none');
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 2));
+  await expect.poll(rootOverscroll).toBe('auto');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(rootOverscroll).toBe('none');
+  const started = await page.evaluate(
+    () => performance.timeOrigin + performance.now(),
+  );
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  expect(await isBusy(content)).toBe(true);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  // No long task from the pull, the trigger or the settle. WebKit has no Long
+  // Tasks API, and the harness's log refuses to read where it never ran.
+  if (browserName === 'chromium') {
+    expect(
+      await readLongTasks(page, {
+        from: started,
+        to: await page.evaluate(
+          () => performance.timeOrigin + performance.now(),
+        ),
+      }),
+    ).toEqual([]);
+  }
+});
+
+test('a pull pushed back past its start hands the finger to native scrolling', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'native scrolling from injected touches is Chromium-only (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page);
+  const scrollTop = () =>
+    page
+      .locator('.astryx-scrollable-area')
+      .first()
+      .evaluate(el => el.scrollTop);
+  // Down 50 px, then up 250 px, in one touch.
+  const at = (progress: number) =>
+    progress < 0.25
+      ? {x: start.x, y: start.y + 50 * (progress / 0.25)}
+      : {x: start.x, y: start.y + 50 - 250 * ((progress - 0.25) / 0.75)};
+  await driver.play(path(at, {durationMs: 900, hz: 60, restMs: 150}));
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(0, 1);
+  expect(await isBusy(content)).toBe(false);
+  expect(await scrollTop()).toBeGreaterThan(50);
+});
+
+test('a drag that began as a scroll pulls once the content reaches the top, in the same touch', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'native scrolling from injected touches is Chromium-only (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  const scroller = page.locator('.astryx-scrollable-area').first();
+  const scrollTop = () => scroller.evaluate(el => el.scrollTop);
+  await scroller.evaluate(el => {
+    el.scrollTop = 80;
+  });
+  await expect.poll(scrollTop).toBe(80);
+  // Down 450 px in one touch: the first 80 px scroll the content to its top
+  // natively, and the rest pulls past the trigger.
+  await driver.play(slowPull(start, 450, 200));
+  await waitForContentRest(content);
+  expect(await scrollTop()).toBe(0);
+  expect(await isBusy(content)).toBe(true);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+});
+
+test('a pull while refreshing stretches from the inset and settles back onto it', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  let deepest = 0;
+  await playReading(
+    page,
+    driver,
+    content,
+    slowPull(start, 200, 200),
+    async () => {
+      deepest = await shownPull(content);
+    },
+  );
+  // The second pull starts from the inset, not from the top.
+  expect(deepest).toBeGreaterThan(HEIGHT + 60);
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  expect(await isBusy(content)).toBe(true);
+});
+
+test('a finger catching the settle holds it where it is, then pulls on from there', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page);
+  await driver.play(slowPull(start, 76, 150));
+  // The settle back to the top is running: catch it 100 ms in.
+  await waitForSettle(content);
+  await page.waitForTimeout(100);
+  // Where the settle stood as the finger landed, read by a listener that runs
+  // before anything handles the touch: a reading taken earlier misses how far
+  // the settle moved before the touch arrived.
+  await content.evaluate(element => {
+    window.addEventListener(
+      'touchstart',
+      () => {
+        const value = getComputedStyle(element).translate;
+        element.dataset.caughtAt = String(
+          value === 'none' || value === ''
+            ? 0
+            : parseFloat(value.split(/\s+/)[1] ?? '0'),
+        );
+      },
+      {capture: true, once: true},
+    );
+  });
+  const readings = await playReading(
+    page,
+    driver,
+    content,
+    drag(
+      start,
+      {x: start.x, y: start.y + 30},
+      {durationMs: 300, hz: 60, restMs: 100},
+    ),
+  );
+  const caught = Number(
+    await content.evaluate(element => element.dataset.caughtAt),
+  );
+  expect(caught).toBeGreaterThan(5);
+  // No jump at the catch: the first reading is where the settle stood, and
+  // the pull goes on from there.
+  expect(Math.abs(readings[0].shown - caught)).toBeLessThan(6);
+  expect(readings.at(-1)?.shown ?? 0).toBeGreaterThan(caught);
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(0, 1);
+});
+
+/** The primary pointer the page reports: coarse (a touch screen) or fine. */
+async function primaryPointer(page: Page, kind: 'coarse' | 'fine') {
+  await page.addInitScript(coarse => {
+    const native = window.matchMedia.bind(window);
+    window.matchMedia = (query: string) => {
+      const pointer = /^\(\s*pointer\s*:\s*(coarse|fine|none)\s*\)$/.exec(
+        query.trim(),
+      );
+      if (pointer == null) {
+        return native(query);
+      }
+      // A static list: the primary pointer never changes in a test.
+      const list = {
+        matches: (pointer[1] === 'coarse') === coarse,
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent: () => false,
+      };
+      return list as unknown as MediaQueryList;
+    };
+  }, kind === 'coarse');
+}
+
+interface RecordedAnimation {
+  part: 'content' | 'band' | 'spinner' | 'title' | 'other';
+  properties: string[];
+  /** How long the animated values change, ms (the held end excluded). */
+  movingMs: number;
+  /**
+   * Whether anything but opacity passes through values in between (travel);
+   * a value that lands at once (two keyframes at one offset) does not.
+   */
+  travels: boolean;
+  /** Repeats forever (the spinner's spin, outside the record). */
+  endless: boolean;
+  /** When it was created (`performance.now()`). */
+  at: number;
+}
+
+/**
+ * Records every animation the page creates on the refresh control from now
+ * on, and when the refresh's busy state clears.
+ */
+async function recordAnimations(page: Page) {
+  await page.evaluate(() => {
+    const log: unknown[] = [];
+    const record = window as unknown as {
+      __animations: unknown[];
+      __endedAt: number | null;
+    };
+    record.__animations = log;
+    record.__endedAt = null;
+    const content = document.querySelector('.astryx-refresh-control');
+    if (content != null) {
+      new MutationObserver(() => {
+        if (!content.hasAttribute('aria-busy') && record.__endedAt == null) {
+          record.__endedAt = performance.now();
+        }
+      }).observe(content, {attributes: true, attributeFilter: ['aria-busy']});
+    }
+    const native = Element.prototype.animate;
+    Element.prototype.animate = function (keyframes, options) {
+      const animation = native.call(this, keyframes, options);
+      const content = document.querySelector('.astryx-refresh-control');
+      const band = content?.querySelector(':scope > :last-child > div');
+      const part =
+        this === content
+          ? 'content'
+          : this === band
+            ? 'band'
+            : band != null && this === band.firstElementChild
+              ? 'spinner'
+              : band != null && this === band.lastElementChild
+                ? 'title'
+                : 'other';
+      const effect = animation.effect as KeyframeEffect | null;
+      const frames = effect?.getKeyframes() ?? [];
+      const skip = new Set(['offset', 'computedOffset', 'easing', 'composite']);
+      const properties = [
+        ...new Set(
+          frames.flatMap(f => Object.keys(f).filter(k => !skip.has(k))),
+        ),
+      ];
+      const timing = effect?.getComputedTiming();
+      const duration = Number(timing?.duration ?? 0);
+      const last = frames.at(-1);
+      let movingMs = 0;
+      for (let i = frames.length - 1; i > 0; i--) {
+        if (properties.some(p => frames[i - 1][p] !== last?.[p])) {
+          movingMs = Number(frames[i].computedOffset) * duration;
+          break;
+        }
+      }
+      const travels = properties
+        .filter(p => p !== 'opacity')
+        .some(p =>
+          frames.some((frame, i) => {
+            const next = frames[i + 1];
+            return (
+              next != null &&
+              frame[p] !== next[p] &&
+              Number(next.computedOffset) > Number(frame.computedOffset) &&
+              !/^step/.test(String(frame.easing ?? 'linear'))
+            );
+          }),
+        );
+      log.push({
+        part,
+        properties,
+        movingMs,
+        travels,
+        endless: timing?.iterations === Infinity,
+        at: performance.now(),
+      });
+      return animation;
+    };
+  });
+}
+
+const recordedAnimations = (page: Page) =>
+  page.evaluate(
+    () =>
+      (window as unknown as {__animations: RecordedAnimation[]}).__animations,
+  );
+
+/** The animations created once the refresh's busy state cleared: the end's. */
+const recordedEnd = (page: Page) =>
+  page.evaluate(() => {
+    const record = window as unknown as {
+      __animations: RecordedAnimation[];
+      __endedAt: number | null;
+    };
+    const endedAt = record.__endedAt ?? Infinity;
+    return record.__animations.filter(a => a.at >= endedAt);
+  });
+
+/**
+ * The record's failures among recorded transitions (spins excluded): travel,
+ * or values still changing after 200 ms.
+ */
+function reducedMotionFailures(log: readonly RecordedAnimation[]) {
+  return log.filter(
+    a => a.part !== 'other' && !a.endless && (a.travels || a.movingMs > 200),
+  );
+}
+
+test('under Reduce Motion a release cross-fades onto the inset: opacity only, within 200 ms', async ({
+  page,
+}) => {
+  // design:reduced-motion DR1, DR2: a transition a touch release starts
+  // fades, opacity only, in 200 ms or less; nothing moves.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await primaryPointer(page, 'coarse');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await recordAnimations(page);
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 1);
+  const log = await recordedAnimations(page);
+  expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+  // A change with no cross-fade fails too.
+  expect(
+    log.some(a => a.part === 'content' && a.properties.includes('opacity')),
+    JSON.stringify(log),
+  ).toBe(true);
+});
+
+test('under Reduce Motion the end cross-fades on a touch screen, and a `--motion-…` variable changes nothing', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2 (coarse pointer) and DR4; the refresh
+  // control's values are internal constants, so no `--motion-…` variable
+  // restores travel or a longer animation.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await primaryPointer(page, 'coarse');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '1500',
+  });
+  await page.evaluate(() => {
+    const root = document.documentElement.style;
+    root.setProperty('--motion-refresh-control-end-ms', '2000ms');
+    root.setProperty('--motion-refresh-control-exit-ms', '2000ms');
+  });
+  await recordAnimations(page);
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content), {timeout: 8000}).toBe(false);
+  await page.waitForTimeout(100);
+  await waitForContentRest(content);
+  expect(await shownPull(content)).toBeCloseTo(0, 1);
+  const log = await recordedEnd(page);
+  expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+  expect(
+    log.some(a => a.part === 'content' && a.properties.includes('opacity')),
+    JSON.stringify(log),
+  ).toBe(true);
+});
+
+test('a `--motion-refresh-control-end-ms` variable changes nothing: the end plays the table’s 300 ms', async ({
+  page,
+}) => {
+  // The refresh control's values are internal constants, not motion roles
+  // (spec:AST-094 FR4 names none of them), so no variable retunes the end.
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '1500',
+  });
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty(
+      '--motion-refresh-control-end-ms',
+      '600ms',
+    );
+  });
+  await recordAnimations(page);
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content), {timeout: 8000}).toBe(false);
+  await page.waitForTimeout(100);
+  await waitForContentRest(content);
+  const log = await recordedEnd(page);
+  const slide = log.find(
+    a => a.part === 'content' && a.properties.includes('translate'),
+  );
+  expect(slide, JSON.stringify(log)).toBeDefined();
+  expect(Math.abs((slide?.movingMs ?? 0) - 300)).toBeLessThan(20);
+});
+
+test('under Reduce Motion the trigger does not turn the spinner', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await primaryPointer(page, 'coarse');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await recordAnimations(page);
+  await driver.play(slowPull(start, 300, 200));
+  await waitForContentRest(content);
+  const log = await recordedAnimations(page);
+  expect(
+    log.filter(
+      a =>
+        a.part === 'spinner' && !a.endless && a.properties.includes('rotate'),
+    ),
+    JSON.stringify(log),
+  ).toEqual([]);
+  expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+});
+
+/** A desktop context: no touch screen, so CSS and script read a fine pointer. */
+async function desktopPage(
+  browser: Browser,
+  options: {reducedMotion?: 'reduce'} = {},
+) {
+  const context = await browser.newContext({
+    viewport: {width: 402, height: 714},
+    hasTouch: false,
+    isMobile: false,
+    ...options,
+  });
+  const page = await context.newPage();
+  await openStory(page, storybook(), 'lab-refreshcontrol--on-the-page', {
+    refreshMs: '6000',
+  });
+  const pointer = await page.evaluate(() => ({
+    coarse: matchMedia('(pointer: coarse)').matches,
+    fine: matchMedia('(pointer: fine)').matches,
+  }));
+  expect(pointer).toEqual({coarse: false, fine: true});
+  const content = page.locator('.astryx-refresh-control').first();
+  await expect(content).toBeVisible();
+  return {context, page, content};
+}
+
+/** A mouse drag down from the top of the page, 15 px a step. */
+async function mousePull(page: Page, content: Locator, steps: number) {
+  await page.mouse.move(200, 160);
+  await page.mouse.down();
+  const shown: number[] = [];
+  for (let step = 1; step <= steps; step++) {
+    await page.mouse.move(200, 160 + step * 15);
+    shown.push(await shownPull(content));
+  }
+  await page.mouse.up();
+  return shown;
+}
+
+/** A pen stroke down from the top of the page: 300 px, 15 px every 16 ms. */
+async function penPull(page: Page) {
+  const driver = await webInputDriver(page);
+  await driver.pen(
+    Array.from({length: 21}, (_, step) => ({
+      x: 200,
+      y: 160 + step * 15,
+      t: step * 16,
+    })),
+  );
+}
+
+const rootOverscroll = (page: Page) =>
+  page.evaluate(
+    () => getComputedStyle(document.documentElement).overscrollBehaviorY,
+  );
+
+test('with a mouse, a drag at the top pulls and refreshes as a finger does, and the top edge stays the browser’s (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    expect(await rootOverscroll(page)).toBe('auto');
+    // 300 px of travel: past the trigger, with the button down.
+    await mousePull(page, content, 20);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+    // The drag selected nothing it keeps: the pull took it.
+    expect(
+      await page.evaluate(() => document.getSelection()?.isCollapsed ?? true),
+    ).toBe(true);
+    expect(await rootOverscroll(page)).toBe('auto');
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a pen, a drag at the top pulls and refreshes as a finger does, and the top edge stays the browser’s (spec:AST-094 FR43)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    expect(await rootOverscroll(page)).toBe('auto');
+    // 300 px of travel: past the trigger, with the pen down.
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+    // Under a fine pointer the browser keeps its own overscroll at the page's
+    // top: only the touch presentation takes the edge.
+    expect(await rootOverscroll(page)).toBe('auto');
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion a release from a pen lands at once where the primary pointer is fine: no travel and no fade (spec:AST-094 FR43: design:reduced-motion DR3)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const {context, page, content} = await desktopPage(browser, {
+    reducedMotion: 'reduce',
+  });
+  try {
+    await recordAnimations(page);
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 1);
+    const log = await recordedAnimations(page);
+    // Nothing moves or fades: every transition but the spin lands at once.
+    expect(
+      log.filter(
+        a =>
+          (a.part === 'content' || a.part === 'band') &&
+          !a.endless &&
+          a.movingMs > 0,
+      ),
+      JSON.stringify(log),
+    ).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test('under Reduce Motion on a touch screen a release from a pen cross-fades as a finger’s does (spec:AST-094 FR43: design:reduced-motion DR2 on a coarse primary pointer)', async ({
+  browser,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', PEN_SKIP);
+  const context = await browser.newContext({
+    viewport: {width: 402, height: 714},
+    hasTouch: false,
+    isMobile: false,
+    reducedMotion: 'reduce',
+  });
+  try {
+    const page = await context.newPage();
+    await primaryPointer(page, 'coarse');
+    await openStory(page, storybook(), 'lab-refreshcontrol--on-the-page', {
+      refreshMs: '6000',
+    });
+    const content = page.locator('.astryx-refresh-control').first();
+    await expect(content).toBeVisible();
+    await recordAnimations(page);
+    await penPull(page);
+    await waitForContentRest(content);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 1);
+    const log = await recordedAnimations(page);
+    expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+    expect(
+      log.some(a => a.part === 'content' && a.properties.includes('opacity')),
+      JSON.stringify(log),
+    ).toBe(true);
+  } finally {
+    await context.close();
+  }
+});
+
+/** The spinner's glyph: the eight spokes, and the trigger's copy while it fades. */
+const glyphOf = (content: Locator) =>
+  content.locator(':scope > div:last-child > div > span').first();
+
+interface GlyphLog {
+  /** Each copy the glyph gained: its spokes, animated properties and fade. */
+  copies: {spokes: number; properties: string[]; fadeMs: number}[];
+  /** For each copy whose fade ended: whether that end had removed it. */
+  removedAtFinish: boolean[];
+}
+
+/** Records the copies the glyph gains from now on (the trigger's cross-fade). */
+async function recordGlyphCopies(glyph: Locator) {
+  await glyph.evaluate(element => {
+    const log: GlyphLog = {copies: [], removedAtFinish: []};
+    (window as unknown as {__glyphLog: GlyphLog}).__glyphLog = log;
+    // The hook starts the copy's fade as it appends the copy, so the fade
+    // exists by the time this observer runs.
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          const copy = node as Element;
+          const [fade] = copy.getAnimations();
+          const keyframes =
+            (fade?.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+          const properties = new Set<string>();
+          for (const keyframe of keyframes) {
+            for (const key of Object.keys(keyframe)) {
+              if (
+                !['offset', 'computedOffset', 'easing', 'composite'].includes(
+                  key,
+                )
+              ) {
+                properties.add(key);
+              }
+            }
+          }
+          log.copies.push({
+            spokes: copy.children.length,
+            properties: [...properties].sort(),
+            fadeMs: Number(fade?.effect?.getComputedTiming().duration),
+          });
+          fade?.addEventListener('finish', () => {
+            log.removedAtFinish.push(!copy.isConnected);
+          });
+        }
+      }
+    }).observe(element, {childList: true});
+  });
+}
+
+/** The copies recorded so far, and each child's animations' timing now. */
+const readGlyph = (glyph: Locator) =>
+  glyph.evaluate(element => ({
+    ...(window as unknown as {__glyphLog: GlyphLog}).__glyphLog,
+    children: element.children.length,
+    steps: Array.from(element.children).map(child =>
+      child.getAnimations().map(animation => {
+        const timing = animation.effect?.getComputedTiming();
+        return {
+          durationMs: Number(timing?.duration),
+          iterations: timing?.iterations ?? null,
+        };
+      }),
+    ),
+  }));
+
+/**
+ * A pull past the trigger on a page whose primary pointer is fine: a pen's
+ * stroke or a mouse drag, 300 px down from the top.
+ */
+async function finePull(input: 'pen' | 'mouse', page: Page, content: Locator) {
+  if (input === 'pen') {
+    await penPull(page);
+  } else {
+    await mousePull(page, content, 20);
+  }
+}
+
+for (const input of ['pen', 'mouse'] as const) {
+  test(`with a ${input}, the trigger draws the indicator as a finger\u2019s does: a copy of the spokes fades out over the same stepping spokes (spec:AST-094 FR43)`, async ({
+    page,
+    browser,
+    browserName,
+  }) => {
+    // A pen exists only in Chromium's input; a mouse in both engines.
+    test.skip(input === 'pen' && browserName !== 'chromium', PEN_SKIP);
+    // Under a finger, on the phone page.
+    const finger = await openRefresh(page, undefined, {refreshMs: '8000'});
+    const fingerGlyph = glyphOf(finger.content);
+    await recordGlyphCopies(fingerGlyph);
+    await finger.driver.play(slowPull(finger.start, 300, 200));
+    await expect.poll(() => isBusy(finger.content)).toBe(true);
+    await expect
+      .poll(async () => (await readGlyph(fingerGlyph)).removedAtFinish.length, {
+        timeout: 9000,
+      })
+      .toBe(1);
+    const underFinger = await readGlyph(fingerGlyph);
+    expect(underFinger.copies.map(copy => copy.spokes)).toEqual([8]);
+    // Under the pen or the mouse, on a page whose primary pointer is fine.
+    const {context, page: desktop, content} = await desktopPage(browser);
+    try {
+      const glyph = glyphOf(content);
+      await recordGlyphCopies(glyph);
+      await finePull(input, desktop, content);
+      await expect.poll(() => isBusy(content)).toBe(true);
+      await expect
+        .poll(async () => (await readGlyph(glyph)).removedAtFinish.length, {
+          timeout: 9000,
+        })
+        .toBe(1);
+      const underInput = await readGlyph(glyph);
+      // One copy of the eight spokes, fading its opacity alone on the
+      // finger's curve, and removed by its own fade's end.
+      expect(underInput.copies, JSON.stringify(underInput)).toEqual([
+        {
+          spokes: 8,
+          properties: ['opacity'],
+          fadeMs: underFinger.copies[0].fadeMs,
+        },
+      ]);
+      expect(underInput.removedAtFinish).toEqual([true]);
+      // Then the eight spokes alone, each stepping on one endless animation
+      // of one turn, as under the finger.
+      expect(underInput.children).toBe(8);
+      expect(underInput.steps, JSON.stringify(underInput.steps)).toEqual(
+        underFinger.steps,
+      );
+      expect(
+        underInput.steps.map(steps => steps.map(step => step.iterations)),
+      ).toEqual(Array.from({length: 8}, () => [Infinity]));
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`under Reduce Motion a ${input}\u2019s trigger applies the gradient at once, with no copy of the spokes (design:reduced-motion DR2, DEC-3; spec:AST-094 FR43)`, async ({
+    browser,
+    browserName,
+  }) => {
+    test.skip(input === 'pen' && browserName !== 'chromium', PEN_SKIP);
+    // DEC-3: the spokes' gradient changes in place, so under reduced motion
+    // it applies at once on any pointer, with no added element.
+    const {context, page, content} = await desktopPage(browser, {
+      reducedMotion: 'reduce',
+    });
+    try {
+      const glyph = glyphOf(content);
+      await recordGlyphCopies(glyph);
+      await finePull(input, page, content);
+      await expect.poll(() => isBusy(content)).toBe(true);
+      await page.waitForTimeout(400);
+      const underInput = await readGlyph(glyph);
+      expect(underInput.copies, JSON.stringify(underInput)).toEqual([]);
+      expect(underInput.children).toBe(8);
+      // The gradient steps from the trigger.
+      expect(
+        underInput.steps.map(steps => steps.map(step => step.iterations)),
+      ).toEqual(Array.from({length: 8}, () => [Infinity]));
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/**
+ * The indicator band's top, px below the scroll view's top: the band holding
+ * the spinner (the spinner itself turns, so its box grows with the angle).
+ */
+const spinnerTop = (content: Locator) =>
+  content.evaluate(element => {
+    const spinner = element.querySelector(
+      ':scope > :last-child span',
+    )?.parentElement;
+    let scroller = element.parentElement;
+    while (
+      scroller != null &&
+      !/auto|scroll/.test(getComputedStyle(scroller).overflowY)
+    ) {
+      scroller = scroller.parentElement;
+    }
+    const top = scroller?.getBoundingClientRect().top ?? 0;
+    return (spinner?.getBoundingClientRect().top ?? NaN) - top;
+  });
+
+test('the spinner stays at the top of the scroll view while the content is pulled and settles, as UIRefreshControl’s does', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  const readings: {shown: number; spinner: number}[] = [];
+  await driver.play(slowPull(start, 300, 150), {
+    onEvent: async step => {
+      if (step.type !== 'touchMove') {
+        return;
+      }
+      await frames(page, 1);
+      readings.push({
+        shown: await shownPull(content),
+        spinner: await spinnerTop(content),
+      });
+    },
+  });
+  await waitForContentRest(content);
+  const revealed = readings.filter(r => r.shown >= HEIGHT + 10);
+  const shown = revealed.map(r => r.shown);
+  const spinner = revealed.map(r => r.spinner);
+  // The content travelled while the spinner held still.
+  expect(Math.max(...shown) - Math.min(...shown)).toBeGreaterThan(40);
+  expect(Math.max(...spinner) - Math.min(...spinner)).toBeLessThanOrEqual(1);
+  // Settled onto the inset, it is where it was during the pull.
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  expect(
+    Math.abs((await spinnerTop(content)) - spinner[0]),
+  ).toBeLessThanOrEqual(1);
+});
+
+/**
+ * Samples the content's presented translation every frame from `from`
+ * ('lift': the finger's lift, 'end': the refresh's end) and blocks the main
+ * thread for `blockMs` right after it, as a busy app would: in its own task
+ * after the lift (the next frame may come first on a loaded machine), or in
+ * the commit that ends the busy state. It also records, for each animation on
+ * the content, when the main thread first saw it and when its curve starts on
+ * the document timeline.
+ */
+async function sampleAfter(
+  content: Locator,
+  from: 'lift' | 'end',
+  blockMs: number,
+): Promise<void> {
+  await content.evaluate(
+    (element, {from, blockMs}) => {
+      const shown = () => {
+        const value = getComputedStyle(element).translate;
+        return value === 'none' || value === ''
+          ? 0
+          : parseFloat(value.split(/\s+/)[1] ?? '0');
+      };
+      const samples: number[] = [];
+      (window as unknown as {__after: number[]}).__after = samples;
+      const tracked: {
+        animation: Animation;
+        seen: number;
+        start: number | null;
+      }[] = [];
+      (window as unknown as {__tracked: typeof tracked}).__tracked = tracked;
+      const track = () => {
+        const now = performance.now();
+        for (const animation of element.getAnimations()) {
+          let entry = tracked.find(item => item.animation === animation);
+          if (entry == null) {
+            entry = {animation, seen: now, start: null};
+            tracked.push(entry);
+          }
+          if (entry.start == null && animation.startTime != null) {
+            entry.start = Number(animation.startTime);
+          }
+        }
+      };
+      const block = () => {
+        const until = performance.now() + blockMs;
+        while (performance.now() < until) {
+          // A busy app.
+        }
+      };
+      const sample = () => {
+        track();
+        samples.push(shown());
+        if (samples.length < 90) {
+          requestAnimationFrame(sample);
+        }
+      };
+      const begin = () => {
+        track();
+        samples.push(shown());
+        requestAnimationFrame(sample);
+      };
+      if (from === 'lift') {
+        addEventListener(
+          'touchend',
+          () => {
+            begin();
+            setTimeout(block, 0);
+          },
+          {once: true},
+        );
+      } else {
+        const observer = new MutationObserver(() => {
+          if (element.getAttribute('aria-busy') !== 'true') {
+            observer.disconnect();
+            begin();
+            block();
+          }
+        });
+        observer.observe(element, {
+          attributes: true,
+          attributeFilter: ['aria-busy'],
+        });
+      }
+    },
+    {from, blockMs},
+  );
+}
+
+/**
+ * The first animation the content ran after `sampleAfter`'s moment: when the
+ * main thread first saw it, and when its curve starts on the document
+ * timeline.
+ */
+async function firstAnimation(
+  page: Page,
+): Promise<{seen: number; start: number | null} | null> {
+  return page.evaluate(() => {
+    const [first] = (
+      window as unknown as {
+        __tracked: {seen: number; start: number | null}[];
+      }
+    ).__tracked;
+    return first == null ? null : {seen: first.seen, start: first.start};
+  });
+}
+
+/** How far the first moving frame went, as a share of the whole travel. */
+async function firstStep(page: Page, to: number): Promise<number> {
+  const samples = await page.evaluate(
+    () => (window as unknown as {__after: number[]}).__after,
+  );
+  const from = samples[0];
+  const moved = samples.find(value => Math.abs(value - from) > 0.5);
+  expect(moved, JSON.stringify(samples)).toBeDefined();
+  return Math.abs((moved ?? from) - from) / Math.abs(to - from);
+}
+
+test('the settle starts where its curve starts, even when the page is busy right after the lift', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '6000',
+  });
+  await sampleAfter(content, 'lift', 250);
+  await driver.play(slowPull(start, 300, 150));
+  await page.waitForTimeout(1200);
+  // The settle is made in the lift's own task and starts at the next frame the
+  // main thread commits: before the busy task (the compositor then plays it
+  // through the block) or after it. Either way its curve starts at the frame
+  // it was made for, so its first frames show; a start dated back to before a
+  // block it waited on would skip them. Where the content sits in the first
+  // frame after the block tells the cases apart only by luck: that frame
+  // carries the time it was due, or on a loaded machine the current time, so
+  // the proof reads the animation's own start.
+  const settle = await firstAnimation(page);
+  expect(settle).not.toBeNull();
+  expect(settle?.start).not.toBeNull();
+  expect(settle?.start ?? 0).toBeGreaterThanOrEqual(
+    (settle?.seen ?? 0) - START_SLACK_MS,
+  );
+  expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+});
+
+test('the end slides from its start, even when the page is busy as the refresh ends', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '1200',
+  });
+  await sampleAfter(content, 'end', 250);
+  await driver.play(slowPull(start, 300, 150));
+  await waitForSettle(content, {afterRefresh: true});
+  await page.waitForTimeout(800);
+  expect(await firstStep(page, 0)).toBeLessThanOrEqual(0.25);
+});
+
+test(
+  'storyboard: pull past the trigger, settle onto the inset, end',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, content, start} = await openRefresh(page, undefined, {
+      refreshMs: '1200',
+    });
+    await installTimerGate(page);
+    const viewport = page.viewportSize() ?? {width: 402, height: 714};
+    const clip = {
+      x: 0,
+      y: 0,
+      width: viewport.width,
+      height: Math.min(320, viewport.height),
+    };
+    const measure = async () => ({
+      pull: await shownPull(content),
+      busy: await isBusy(content),
+    });
+    const pullBoard = await touchStoryboard(
+      page,
+      driver,
+      drag(
+        start,
+        {x: start.x, y: start.y + 300},
+        {durationMs: 600, hz: 30, restMs: 150},
+      ),
+      {
+        name: 'refresh-pull-to-trigger',
+        clip,
+        measure,
+        columns: 6,
+        cellScale: 0.4,
+      },
+    );
+    await waitForSettle(content);
+    await freezeTimers(page);
+    // The film runs to the latest curve end among the held animations; it
+    // starts at the trigger turn, which began before the lift.
+    const {storyboard: settleBoard} = await animationStoryboard(page, {
+      name: 'refresh-settle-onto-inset',
+      clip,
+      scope: content,
+      measure,
+      columns: 7,
+      cellScale: 0.4,
+    });
+    await releaseAnimations(page);
+    await thawTimers(page);
+    await waitForSettle(content, {afterRefresh: true});
+    await freezeTimers(page);
+    const {storyboard: endBoard} = await animationStoryboard(page, {
+      name: 'refresh-end',
+      clip,
+      scope: content,
+      times: timeline(300),
+      measure,
+      columns: 7,
+      cellScale: 0.4,
+    });
+    await releaseAnimations(page);
+    await thawTimers(page);
+    await pullBoard.write(testInfo);
+    await settleBoard.write(testInfo);
+    await endBoard.write(testInfo);
+    // The traces are the assertions; the sheets are the evidence.
+    // One frame per scripted event; the last is the lift, after which the
+    // settle has started back.
+    const pulls = pullBoard.frames.slice(0, -1).map(f => f.data.pull as number);
+    expect(pulls.every((v, i) => i === 0 || v >= pulls[i - 1] - 0.5)).toBe(
+      true,
+    );
+    expect(pullBoard.frames.some(f => f.data.busy === true)).toBe(true);
+    const settles = settleBoard.frames.map(f => f.data.pull as number);
+    expect(settles.at(-1)).toBeCloseTo(HEIGHT, 0);
+    const ends = endBoard.frames.map(f => f.data.pull as number);
+    expect(ends.every((v, i) => i === 0 || v <= ends[i - 1] + 0.5)).toBe(true);
+    expect(ends.at(-1)).toBeCloseTo(0, 0);
+  },
+);
+
+// -----------------------------------------------------------------------------
+// The indicator's spin (opacity steps on the compositor)
+// -----------------------------------------------------------------------------
+
+/**
+ * For each frame, which of the eight spokes is the darkest (the gradient's
+ * head), sampled at the middle of each spoke (10 pt from the center), and
+ * each spoke's darkness there.
+ */
+async function spinHeads(
+  page: Page,
+  castFrames: readonly {t: number; data: string}[],
+  glyph: {x: number; y: number; width: number; height: number},
+): Promise<{t: number; head: number; contrast: number; dark: number[]}[]> {
+  const scratch = await page.context().newPage();
+  try {
+    const viewport = page.viewportSize() ?? {width: 402, height: 874};
+    return await scratch.evaluate(
+      async ({items, box, width}) => {
+        const out: {
+          t: number;
+          head: number;
+          contrast: number;
+          dark: number[];
+        }[] = [];
+        for (const item of items) {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item.data}`)).blob(),
+          );
+          const scale = bitmap.width / width;
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(bitmap, 0, 0);
+          const cx = (box.x + box.width / 2) * scale;
+          const cy = (box.y + box.height / 2) * scale;
+          const dark: number[] = [];
+          for (let k = 0; k < 8; k += 1) {
+            const angle = (k * Math.PI) / 4;
+            const x = Math.round(cx + 10 * scale * Math.sin(angle));
+            const y = Math.round(cy - 10 * scale * Math.cos(angle));
+            const {data} = context.getImageData(x - 1, y - 1, 3, 3);
+            let sum = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              sum += data[i] + data[i + 1] + data[i + 2];
+            }
+            dark.push(765 - sum / (data.length / 4));
+          }
+          const max = Math.max(...dark);
+          const sorted = [...dark].sort((a, b) => b - a);
+          out.push({
+            t: item.t,
+            head: dark.indexOf(max),
+            contrast: max - sorted[1],
+            dark,
+          });
+        }
+        return out;
+      },
+      {
+        items: castFrames.map(f => ({t: f.t, data: f.data})),
+        box: glyph,
+        width: viewport.width,
+      },
+    );
+  } finally {
+    await scratch.close();
+  }
+}
+
+test('the spin steps clockwise every eighth of a second while the main thread is blocked', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  // Past the trigger turn and the gradient's spring (both about 3 s).
+  await page.waitForTimeout(3600);
+  const spinner = content
+    .locator(':scope > div:last-child > div > span')
+    .first();
+  const glyph = await spinner.boundingBox();
+  if (glyph == null) {
+    throw new Error('no indicator');
+  }
+  // The step, from the running spin itself: one turn over the stepping
+  // spokes.
+  const {stepMs, spokes} = await spinner.evaluate(element => {
+    const turns = Array.from(element.children).flatMap(child =>
+      child
+        .getAnimations()
+        .filter(
+          animation => animation.effect?.getTiming().iterations === Infinity,
+        ),
+    );
+    return {
+      stepMs: Number(turns[0]?.effect?.getTiming().duration) / turns.length,
+      spokes: turns.length,
+    };
+  });
+  const cast = await startScreencast(page);
+  await page.waitForTimeout(150);
+  const block = await blockMainThread(page, 700);
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  const heads = await spinHeads(page, castFrames, glyph);
+  // A frame may catch the 0.1 ms ramp between two steps (the head then
+  // barely stands out): judge the frames where it clearly does.
+  const inside = heads.filter(
+    f => f.t >= block.from + 20 && f.t <= block.to - 20 && f.contrast > 15,
+  );
+  const steps: {t: number; from: number; to: number}[] = [];
+  for (let i = 1; i < inside.length; i += 1) {
+    if (inside[i].head !== inside[i - 1].head) {
+      steps.push({
+        t: inside[i].t,
+        from: inside[i - 1].head,
+        to: inside[i].head,
+      });
+    }
+  }
+  await writeEvidence(
+    'busy-main-thread/refresh-spin',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {block, glyph, steps, heads: inside},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  // The head is clearly the darkest spoke in nearly every frame.
+  const judged = heads.filter(
+    f => f.t >= block.from + 20 && f.t <= block.to - 20,
+  );
+  expect(inside.length).toBeGreaterThanOrEqual(judged.length - 2);
+  const first = inside[0];
+  const last = inside[inside.length - 1];
+  if (first == null || last == null) {
+    throw new Error('no frame to judge');
+  }
+  // Judged against the clock, not the frame rate: between any two judged
+  // frames the head has moved clockwise by as many spokes as step boundaries
+  // fit between them. A frame's time is known to within the screencast's own
+  // interval, so the count may fall either side of that window by it; a
+  // freeze, a catch-up jump or a backward step fails at any cadence.
+  const intervals = inside
+    .slice(1)
+    .map((f, i) => f.t - inside[i].t)
+    .sort((a, b) => a - b);
+  const slackMs = intervals[Math.floor(intervals.length / 2)] ?? 0;
+  const moved = [0];
+  for (let i = 1; i < inside.length; i += 1) {
+    moved.push(
+      moved[i - 1] + ((inside[i].head - inside[i - 1].head + spokes) % spokes),
+    );
+  }
+  const offClock: {from: number; to: number; moved: number}[] = [];
+  for (let i = 0; i < inside.length; i += 1) {
+    for (let j = i + 1; j < inside.length; j += 1) {
+      const elapsedMs = inside[j].t - inside[i].t;
+      const count = moved[j] - moved[i];
+      if (
+        count < Math.floor((elapsedMs - slackMs) / stepMs) ||
+        count > Math.ceil((elapsedMs + slackMs) / stepMs)
+      ) {
+        offClock.push({from: inside[i].t, to: inside[j].t, moved: count});
+      }
+    }
+  }
+  expect(offClock.slice(0, 5), JSON.stringify({stepMs, slackMs})).toEqual([]);
+  // The judged frames reach across the block, within the screencast's own
+  // interval at each end.
+  expect(first.t - (block.from + 20)).toBeLessThanOrEqual(2 * slackMs);
+  expect(block.to - 20 - last.t).toBeLessThanOrEqual(2 * slackMs);
+});
+
+test('the trigger\u2019s copy of the spokes leaves when its fade ends, mid-refresh', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  // When the copy's fade finishes: whether the copy is still mounted, and
+  // whether the refresh is still busy. The hook sets the fade's finish
+  // handler as it starts it, before this listener exists, so a copy its own
+  // fade removes is already gone when this one runs.
+  await glyph.evaluate(element => {
+    const log: {
+      fadeMs: number | null;
+      mountedAtFinish: boolean | null;
+      busyAtFinish: boolean | null;
+    } = {fadeMs: null, mountedAtFinish: null, busyAtFinish: null};
+    (window as unknown as {__copy: typeof log}).__copy = log;
+    const root = element.closest('.astryx-refresh-control');
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          const copy = node as Element;
+          const [fade] = copy.getAnimations();
+          log.fadeMs = Number(fade?.effect?.getComputedTiming().duration);
+          fade?.addEventListener('finish', () => {
+            log.mountedAtFinish = copy.isConnected;
+            log.busyAtFinish = root?.getAttribute('aria-busy') === 'true';
+          });
+        }
+      }
+    }).observe(element, {childList: true});
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  const readLog = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __copy: {
+              fadeMs: number | null;
+              mountedAtFinish: boolean | null;
+              busyAtFinish: boolean | null;
+            };
+          }
+        ).__copy,
+    );
+  await expect
+    .poll(async () => (await readLog()).mountedAtFinish, {timeout: 9000})
+    .not.toBeNull();
+  const log = await readLog();
+  expect(log.fadeMs, JSON.stringify(log)).toBeGreaterThan(0);
+  // Removed by its own fade's end, mid-refresh: not by the refresh's end.
+  expect(log.mountedAtFinish, JSON.stringify(log)).toBe(false);
+  expect(log.busyAtFinish, JSON.stringify(log)).toBe(true);
+  expect(await glyph.evaluate(element => element.children.length)).toBe(8);
+});
+
+test('the cross-fade and the spin do no Layout or Paint per frame', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  // While the transient copy fades out over the stepping spokes, once the
+  // content holds still (the pull itself repaints: the content's translate).
+  await waitForSettle(content);
+  const copyCount = () => glyph.evaluate(element => element.children.length);
+  expect(await copyCount()).toBe(9);
+  const during = await traceRendering(page, async () => {
+    await page.waitForTimeout(600);
+  });
+  // The copy was still fading the whole time.
+  expect(await copyCount()).toBe(9);
+  expect(during.layout, JSON.stringify(during.counts)).toBe(0);
+  expect(during.paint, JSON.stringify(during.counts)).toBe(0);
+  // Then the spin alone, once the copy is gone: eight steps.
+  await expect
+    .poll(() => glyph.evaluate(element => element.children.length), {
+      timeout: 8000,
+    })
+    .toBe(8);
+  await page.waitForTimeout(200);
+  const after = await traceRendering(page, async () => {
+    await page.waitForTimeout(1000);
+  });
+  expect(after.layout, JSON.stringify(after.counts)).toBe(0);
+  expect(after.paint, JSON.stringify(after.counts)).toBe(0);
+});
+
+test('at the trigger each spoke cross-fades into the gradient: UIKit\u2019s two images summed', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Chromium screenshot proof');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  await page.waitForTimeout(1200);
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  // Hold everything 0.755 s after the trigger: the copy's fade at the
+  // gradient spring's midpoint (w = 0.5), the spokes' steps at step 6, the
+  // trigger turn finished.
+  const held = await glyph.evaluate(element => {
+    const kinds: string[] = [];
+    const spinStarts = new Set<number | null>();
+    for (const animation of element.getAnimations({subtree: true})) {
+      const startTime = animation.startTime;
+      animation.pause();
+      const timing = animation.effect?.getTiming();
+      if ((animation.effect as KeyframeEffect).target === element) {
+        animation.finish();
+        kinds.push('turn');
+      } else if (timing?.iterations === Infinity) {
+        spinStarts.add(Number(startTime));
+        animation.currentTime = 755;
+        kinds.push('spin');
+      } else {
+        animation.currentTime = 755;
+        kinds.push('cross-fade');
+      }
+    }
+    return {
+      kinds,
+      spinStarts: [...spinStarts],
+      children: element.children.length,
+      copySpokes: element.lastElementChild?.children.length ?? 0,
+      color: getComputedStyle(element.firstElementChild as Element)
+        .backgroundColor,
+    };
+  });
+  // The eight spokes and the transient copy of them, each element with its
+  // one animation: eight steps and one fade.
+  expect(held.children).toBe(9);
+  expect(held.copySpokes).toBe(8);
+  expect(held.kinds.filter(k => k === 'spin')).toHaveLength(8);
+  expect(held.kinds.filter(k => k === 'cross-fade')).toHaveLength(1);
+  // The eight spokes step on one clock.
+  expect(held.spinStarts).toHaveLength(1);
+  const shot = await glyph.screenshot();
+  const ink = (held.color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const alphas = await page.evaluate(
+    async ({png, color}) => {
+      const bitmap = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${png}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (context == null) {
+        throw new Error('no 2d context');
+      }
+      context.drawImage(bitmap, 0, 0);
+      const {data, width} = context.getImageData(
+        0,
+        0,
+        bitmap.width,
+        bitmap.height,
+      );
+      const scale = bitmap.width / 30;
+      const c = bitmap.width / 2;
+      const out: number[] = [];
+      for (let p = 0; p < 8; p += 1) {
+        const a = (p * Math.PI) / 4;
+        const x = Math.round(c + 10 * scale * Math.sin(a));
+        const y = Math.round(c - 10 * scale * Math.cos(a));
+        let sum = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const i = ((y + dy) * width + (x + dx)) * 4;
+            sum += data[i] + data[i + 1] + data[i + 2];
+            n += 3;
+          }
+        }
+        const level = sum / n;
+        const gray = (color[0] + color[1] + color[2]) / 3;
+        // The page is white: level = 255 - alpha * (255 - ink).
+        out.push((255 - level) / (255 - gray));
+      }
+      return out;
+    },
+    {png: shot.toString('base64'), color: ink},
+  );
+  // Each spoke at 1 - w + w × its instance's alpha (spoke p holds instance
+  // (p - 6) mod 8 at step 6): the copy at 1 - w over the stepping spoke,
+  // UIKit's sum of its two images.
+  const w = 0.5;
+  alphas.forEach((alpha, p) => {
+    const instance = 0.08 * ((p + 2) % 8);
+    const sum = 1 - w + w * instance;
+    expect(
+      Math.abs(alpha - sum),
+      `spoke ${p}: ${alpha.toFixed(3)}`,
+    ).toBeLessThan(0.03);
+  });
+  // The brightest spoke (instance 7, at spoke 5) shows the sum, not normal
+  // blending's 0.64.
+  expect(alphas[5]).toBeGreaterThan(0.74);
+});
+
+test('the cross-fade keeps moving while the main thread is blocked right after the trigger', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  // The compositor's own frames, for gaps the screencast skips under load.
+  const compositor = await startCompositorTrace(page);
+  const cast = await startScreencast(page);
+  await driver.play(slowPull(start, 300, 200));
+  // Blocked from the page itself as soon as the trigger has mounted the
+  // copy, so the block covers the start of its fade.
+  const {block, glyph} = await content.evaluate(async element => {
+    const spinner = element.querySelector(
+      ':scope > div:last-child > div > span',
+    ) as Element;
+    while (spinner.children.length < 9) {
+      await new Promise(requestAnimationFrame);
+    }
+    // A few frames after the lift, so the settle it starts has committed,
+    // then from a task of its own: a block that holds a pending commit makes
+    // the compositor wait for it before drawing on, a startup gap that is
+    // not the cross-fade's.
+    for (let i = 0; i < 3; i += 1) {
+      await new Promise(requestAnimationFrame);
+    }
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const rect = spinner.getBoundingClientRect();
+    const from = performance.timeOrigin + performance.now();
+    const end = performance.now() + 700;
+    while (performance.now() < end) {
+      // Hold the main thread.
+    }
+    return {
+      block: {from, to: performance.timeOrigin + performance.now()},
+      glyph: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
+    };
+  });
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  const presented = await compositor.stop();
+  // The glyph's whole ink, frame by frame: the turn moves the spokes but not
+  // how much they cover, so only the fade changes it.
+  const scratch = await page.context().newPage();
+  const viewport = page.viewportSize() ?? {width: 402, height: 874};
+  const inks = await scratch
+    .evaluate(
+      async ({items, box, width}) => {
+        const out: {t: number; ink: number}[] = [];
+        for (const item of items) {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item.data}`)).blob(),
+          );
+          const scale = bitmap.width / width;
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(bitmap, 0, 0);
+          const pad = 2;
+          const x = Math.floor((box.x - pad) * scale);
+          const y = Math.floor((box.y - pad) * scale);
+          const side = Math.ceil((box.width + 2 * pad) * scale);
+          const {data} = context.getImageData(x, y, side, side);
+          let ink = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            ink += 765 - (data[i] + data[i + 1] + data[i + 2]);
+          }
+          out.push({t: item.t, ink: ink / (scale * scale * 765)});
+        }
+        return out;
+      },
+      {
+        items: castFrames.map(f => ({t: f.t, data: f.data})),
+        box: glyph,
+        width: viewport.width,
+      },
+    )
+    .finally(() => scratch.close());
+  const judged = {from: block.from + 20, to: block.to - 20};
+  const inside = inks.filter(f => f.t >= judged.from && f.t <= judged.to);
+  // The screencast's own cadence, from the frames around the block.
+  const around = inks.filter(
+    f => f.t >= block.from - 300 && f.t <= block.to + 150,
+  );
+  const intervals = around
+    .slice(1)
+    .map((f, i) => f.t - around[i].t)
+    .sort((a, b) => a - b);
+  const cadenceMs = intervals[Math.floor(intervals.length / 2)] ?? 16.7;
+  // A loaded machine's screencast skips frames the compositor still
+  // presents, so the frames it delivered are judged, never counted against
+  // its cadence (`busyWindowProof`'s rule). The copy fades every frame, so
+  // each delivered frame shows less ink than the one before it.
+  const moved: number[] = [];
+  const unchanged: number[] = [];
+  for (let i = 1; i < inside.length; i += 1) {
+    (inside[i].ink < inside[i - 1].ink - 0.05 ? moved : unchanged).push(
+      inside[i].t,
+    );
+  }
+  // The longest time with no presented change. A gap between two changed
+  // frames that holds no delivered frame is measured between the
+  // compositor's own frames there; a gap that opens or closes the judged
+  // part, or holds an unchanged frame, is the screencast's.
+  const between = (times: readonly number[], a: number, b: number) =>
+    times.filter(t => t > a && t < b);
+  const edges = [judged.from, ...moved, judged.to];
+  let longestStill = 0;
+  for (let i = 1; i < edges.length; i += 1) {
+    const a = edges[i - 1];
+    const b = edges[i];
+    const interior =
+      i > 1 && i < edges.length - 1 && between(unchanged, a, b).length === 0;
+    const marks = interior ? [a, ...between(presented, a, b), b] : [a, b];
+    for (let k = 1; k < marks.length; k += 1) {
+      longestStill = Math.max(longestStill, marks[k] - marks[k - 1]);
+    }
+  }
+  // At least 90% of the delivered frames change, one miss always allowed.
+  const minChanged = Math.max(
+    inside.length - 3,
+    Math.ceil(0.9 * (inside.length - 1)) - 1,
+  );
+  await writeEvidence(
+    'busy-main-thread/refresh-trigger',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {
+          block,
+          glyph,
+          cadenceMs,
+          presentedInside: between(presented, judged.from, judged.to).length,
+          changed: moved.length,
+          longestStill,
+          frames: inside,
+        },
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  // Enough delivered frames to judge (`busyWindowProof`'s `minJudgedFrames`).
+  expect(inside.length).toBeGreaterThanOrEqual(4);
+  expect(moved.length, JSON.stringify(inside)).toBeGreaterThanOrEqual(
+    minChanged,
+  );
+  expect(longestStill).toBeLessThanOrEqual(3 * cadenceMs);
+});
+
+test('under Reduce Motion the gradient applies at once at the trigger on a touch screen, with no copy of the spokes', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Chromium proof');
+  // design:reduced-motion DR2, DEC-3: the spokes' gradient is an in-place
+  // value change, so under reduced motion it applies at once on any pointer:
+  // no copy of the spokes joins the spinner and nothing cross-fades.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await primaryPointer(page, 'coarse');
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  await glyph.evaluate(element => {
+    const state = {added: 0};
+    (window as unknown as {__added: typeof state}).__added = state;
+    new MutationObserver(records => {
+      for (const record of records) {
+        state.added += record.addedNodes.length;
+      }
+    }).observe(element, {childList: true});
+  });
+  await recordAnimations(page);
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  await page.waitForTimeout(400);
+  const log = await recordedAnimations(page);
+  const added = await page.evaluate(
+    () => (window as unknown as {__added: {added: number}}).__added.added,
+  );
+  expect(added).toBe(0);
+  expect(await glyph.evaluate(element => element.children.length)).toBe(8);
+  expect(
+    log.filter(a => a.part === 'other' && !a.endless),
+    JSON.stringify(log),
+  ).toEqual([]);
+  expect(reducedMotionFailures(log), JSON.stringify(log)).toEqual([]);
+});
+
+test(
+  'storyboard: the spin, one turn of the gradient',
+  {tag: '@storyboard'},
+  async ({page, browserName}, testInfo) => {
+    test.skip(browserName !== 'chromium', 'Chromium storyboard');
+    const {driver, content, start} = await openRefresh(page, undefined, {
+      refreshMs: '8000',
+    });
+    await driver.play(slowPull(start, 300, 200));
+    await expect.poll(() => isBusy(content)).toBe(true);
+    const glyph = content
+      .locator(':scope > div:last-child > div > span')
+      .first();
+    // Once the trigger's cross-fade is over and its copy gone.
+    await expect
+      .poll(() => glyph.evaluate(element => element.children.length), {
+        timeout: 8000,
+      })
+      .toBe(8);
+    // Hold the glyph's animations, then show each eighth of a turn mid-hold.
+    await glyph.evaluate(element => {
+      for (const animation of element.getAnimations({subtree: true})) {
+        animation.pause();
+      }
+    });
+    const shots: Buffer[] = [];
+    for (let step = 0; step < 8; step += 1) {
+      await glyph.evaluate(
+        (element, t) => {
+          for (const animation of element.getAnimations({subtree: true})) {
+            const iterations = animation.effect?.getTiming().iterations;
+            // The turn repeats; the gradient's spring has settled.
+            if (iterations === Infinity) {
+              animation.currentTime = t;
+            }
+          }
+        },
+        step * 125 + 62,
+      );
+      shots.push(await glyph.screenshot());
+    }
+    const sheet = await page.context().newPage();
+    try {
+      const png = await sheet.evaluate(
+        async items => {
+          const decoded = await Promise.all(
+            items.map(async item =>
+              createImageBitmap(
+                await (await fetch(`data:image/png;base64,${item}`)).blob(),
+              ),
+            ),
+          );
+          const w = decoded[0].width + 8;
+          const canvas = new OffscreenCanvas(
+            w * decoded.length,
+            decoded[0].height + 8,
+          );
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.fillStyle = '#fff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          decoded.forEach((bitmap, i) =>
+            context.drawImage(bitmap, i * w + 4, 4),
+          );
+          const blob = await canvas.convertToBlob({type: 'image/png'});
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let binary = '';
+          for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
+          }
+          return btoa(binary);
+        },
+        shots.map(shot => shot.toString('base64')),
+      );
+      await writeEvidence(
+        'storyboards/refresh-spin',
+        {[`${testInfo.project.name}.png`]: Buffer.from(png, 'base64')},
+        testInfo,
+      );
+    } finally {
+      await sheet.close();
+    }
+  },
+);
