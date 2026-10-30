@@ -290,8 +290,10 @@ LayoutContent and LayoutPanel do not currently republish every automatic
 outer-edge inset they apply:
 
 - LayoutContent's no-start path changes inline-start padding and writes the outer
-  value to both inline geometry variables, while its no-end path changes
-  inline-end padding without changing the matching variable.
+  value to both inline geometry variables, so with only an end panel the
+  inline-end variable carries the outer value while the applied inline-end
+  padding is the inner inset. Beside a header or footer without a divider, its
+  block edge applies zero while publishing the inner inset.
 - LayoutPanel changes padding on shell-facing inline and block edges while its
   baseline geometry variables remain on the inner values.
 

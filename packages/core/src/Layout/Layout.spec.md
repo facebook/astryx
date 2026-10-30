@@ -77,8 +77,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   block-start edge instead of the outer inset `family:layout-regions` FR3 gives
   an edge on the Layout boundary. With `contentWidth`, a `false` start or end
   slot (the `showPanel && <LayoutPanel />` idiom) switches Layout to its
-  one-panel composition, so LayoutContent and its scrollbar stop at the
-  content-width frame instead of reaching the Layout edge (FR6).
+  one-panel composition, so LayoutContent stops at the content-width frame on
+  that side, and with a `false` end slot its scrollbar does too, instead of
+  reaching the Layout edge (FR6).
 
 ## Ownership boundary
 
