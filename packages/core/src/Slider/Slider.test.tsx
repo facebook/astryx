@@ -59,6 +59,15 @@ beforeEach(() => {
   };
 });
 
+/** A thumb's control (the track container), where the pointer handlers live. */
+function controlOf(thumb: HTMLElement): HTMLElement {
+  const control = thumb.closest<HTMLElement>('.astryx-slider-control');
+  if (control == null) {
+    throw new Error('no slider control');
+  }
+  return control;
+}
+
 describe('Slider', () => {
   // --- Aria labels ---
 
@@ -91,44 +100,38 @@ describe('Slider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '72');
   });
 
+  // The thumb and the fill are placed by their progress along the travel,
+  // written inline as custom properties; CSS turns it into a translate in
+  // the control's container units (jsdom computes neither, so the geometry
+  // itself is checked in a real browser).
+  const progressOf = (element: HTMLElement, name = '--_slider-progress') =>
+    element.style.getPropertyValue(name);
+
   it.each([
-    {value: 150, expectedValue: 100, expectedPosition: 'calc(100% - 10px)'},
-    {value: -50, expectedValue: 0, expectedPosition: 'calc(0% + 10px)'},
+    {value: 150, expectedValue: 100, expectedProgress: '1'},
+    {value: -50, expectedValue: 0, expectedProgress: '0'},
   ])(
     'clamps a controlled value of $value to $expectedValue',
-    ({value, expectedValue, expectedPosition}) => {
+    ({value, expectedValue, expectedProgress}) => {
       render(<Slider label="Volume" value={value} min={0} max={100} />);
       const slider = screen.getByRole('slider');
       expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
-      // Thumb positions via the logical `inset-inline-start` so it mirrors
-      // under RTL (see RTL Phase 4), offset by half a thumb so the extremes
-      // stay inside the component box.
-      expect(slider).toHaveStyle({insetInlineStart: expectedPosition});
-    },
-  );
-
-  // Regression: #5050 — at min/max the thumb centred on the container edge,
-  // so half of it (10px of a 20px thumb) hung outside the component.
-  it.each([
-    {value: 0, position: 'calc(0% + 10px)'},
-    {value: 50, position: 'calc(50% + 0px)'},
-    {value: 100, position: 'calc(100% - 10px)'},
-  ])(
-    'insets the thumb at value $value so it stays in bounds',
-    ({value, position}) => {
-      render(<Slider label="Volume" value={value} min={0} max={100} />);
-      expect(screen.getByRole('slider')).toHaveStyle({
-        insetInlineStart: position,
-      });
+      expect(progressOf(slider)).toBe(expectedProgress);
     },
   );
 
   it.each([
-    {value: 0, position: 'calc(0% + 10px)'},
-    {value: 100, position: 'calc(100% - 10px)'},
+    {value: 0, progress: '0'},
+    {value: 25, progress: '0.25'},
+    {value: 100, progress: '1'},
   ])(
-    'insets a vertical thumb at value $value so it stays in bounds',
-    ({value, position}) => {
+    'places the thumb by its progress at value $value, horizontal and vertical',
+    ({value, progress}) => {
+      const {unmount} = render(
+        <Slider label="Volume" value={value} min={0} max={100} />,
+      );
+      expect(progressOf(screen.getByRole('slider'))).toBe(progress);
+      unmount();
       render(
         <Slider
           label="Volume"
@@ -138,9 +141,36 @@ describe('Slider', () => {
           orientation="vertical"
         />,
       );
-      expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
+      expect(progressOf(screen.getByRole('slider'))).toBe(progress);
     },
   );
+
+  it('places a range fill between the two thumbs and a single fill from the start', () => {
+    const {container, rerender} = render(
+      <Slider label="Volume" value={40} min={0} max={200} />,
+    );
+    const fills = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>('[aria-hidden="true"] [style]'),
+      ).filter(element => progressOf(element, '--_slider-fill-end') !== '');
+    expect(fills().length).toBeGreaterThan(0);
+    for (const fill of fills()) {
+      expect(progressOf(fill, '--_slider-fill-start')).toBe('0');
+      expect(progressOf(fill, '--_slider-fill-end')).toBe('0.2');
+    }
+    rerender(
+      <Slider
+        label="Volume"
+        value={[50, 150] as [number, number]}
+        min={0}
+        max={200}
+      />,
+    );
+    for (const fill of fills()) {
+      expect(progressOf(fill, '--_slider-fill-start')).toBe('0.25');
+      expect(progressOf(fill, '--_slider-fill-end')).toBe('0.75');
+    }
+  });
 
   it('reflects orientation and disabled state on the interactive control target', () => {
     render(
@@ -152,7 +182,7 @@ describe('Slider', () => {
         isDisabled
       />,
     );
-    const control = screen.getByRole('slider').parentElement;
+    const control = controlOf(screen.getByRole('slider'));
     expect(control).not.toBeNull();
     expect(control).toHaveClass('astryx-slider-control');
     expect(control).toHaveAttribute('data-orientation', 'vertical');
@@ -402,7 +432,7 @@ describe('Slider', () => {
       />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -633,7 +663,7 @@ describe('Slider', () => {
       />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -666,7 +696,7 @@ describe('Slider', () => {
       <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
     );
     const slider = screen.getByRole('slider');
-    const trackContainer = slider.parentElement!;
+    const trackContainer = controlOf(slider);
 
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
@@ -707,7 +737,7 @@ describe('Slider', () => {
         onChange={handleChange}
       />,
     );
-    const track = screen.getByRole('slider').parentElement!;
+    const track = controlOf(screen.getByRole('slider'));
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -739,7 +769,7 @@ describe('Slider', () => {
         onChange={handleChange}
       />,
     );
-    const track = screen.getByRole('slider').parentElement!;
+    const track = controlOf(screen.getByRole('slider'));
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -786,7 +816,7 @@ describe('Slider', () => {
       />,
     );
     const thumb = screen.getByRole('slider');
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     const realGetComputedStyle = window.getComputedStyle;
     const gcsSpy = vi
       .spyOn(window, 'getComputedStyle')
@@ -824,7 +854,7 @@ describe('Slider', () => {
       />,
     );
     const thumb = screen.getByRole('slider');
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     const realGetComputedStyle = window.getComputedStyle;
     const gcsSpy = vi
       .spyOn(window, 'getComputedStyle')
@@ -1004,7 +1034,7 @@ describe('Slider', () => {
     const h = {hidden: true} as const;
 
     function getTrack(): HTMLElement {
-      return screen.getByRole('slider').parentElement!;
+      return controlOf(screen.getByRole('slider'));
     }
 
     it('shows the reason tooltip on hover when disabled with a reason', async () => {
@@ -1171,7 +1201,7 @@ describe('Slider', () => {
 
     // The track has no layout in jsdom; pointer maths needs a real rect.
     const grabTrack = (thumb: HTMLElement) => {
-      const track = thumb.parentElement!;
+      const track = controlOf(thumb);
       track.getBoundingClientRect = () => ({
         left: 0,
         top: 0,
@@ -1357,7 +1387,7 @@ describe('one pointer per drag', () => {
   }
 
   function trackOf(thumb: HTMLElement): HTMLElement {
-    const track = thumb.parentElement!;
+    const track = controlOf(thumb);
     track.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -1508,7 +1538,7 @@ describe('pressed state', () => {
       <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
     );
     const thumb = screen.getByRole('slider');
-    const trackContainer = thumb.parentElement!;
+    const trackContainer = controlOf(thumb);
     trackContainer.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
@@ -1620,7 +1650,7 @@ describe('pressed state', () => {
   it('does not press a disabled slider', () => {
     render(<Slider label="Volume" value={50} isDisabled onChange={vi.fn()} />);
     const thumb = screen.getByRole('slider');
-    fireEvent.pointerDown(thumb.parentElement!, {
+    fireEvent.pointerDown(controlOf(thumb), {
       clientX: 20,
       clientY: 10,
       pointerId: 1,

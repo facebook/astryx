@@ -88,5 +88,15 @@ export default defineConfig({
       testMatch: ['packages/*/src/**/*.a11y.browser.spec.ts'],
       use: {...devices['Desktop Safari']},
     },
+    // Engines resolve CSS anchor positioning against a transformed anchor
+    // differently (Firefox uses the untransformed box), so the Slider value
+    // tooltip's contract also runs in Firefox.
+    {
+      name: 'firefox',
+      testMatch: [
+        'packages/core/src/Slider/__tests__/SliderValueTooltip.a11y.browser.spec.ts',
+      ],
+      use: {...devices['Desktop Firefox']},
+    },
   ],
 });
