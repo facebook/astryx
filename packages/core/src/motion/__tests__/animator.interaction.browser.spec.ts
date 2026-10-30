@@ -6,7 +6,8 @@
  *   esbuild onto a blank fixture page; the interaction harness's screencast,
  *   busy-main-thread and trace instruments; Chromium and WebKit on the phone
  *   profile
- * @output Proof that the animator's motion runs on the compositor (law M1):
+ * @output Proof that the animator's motion runs on the compositor
+ *   (`spec:AST-094` FR5):
  *   a spring keeps advancing every frame through a 1 s main-thread block, on
  *   its analytic curve; a spring that ends inside the block keeps its end
  *   state; no Layout or Paint runs while it animates (Chromium trace); the
