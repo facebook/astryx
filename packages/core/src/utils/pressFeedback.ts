@@ -4,7 +4,10 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   keyboard, scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
+ * @output Exports paintPress and readPressPaint (the press attribute's
+ *   writer for every press they track), PRESSABLE_ATTRIBUTE,
+ *   PRESSED_ATTRIBUTE, pressableProps, the action-group item marker
+ *   (PRESS_GROUP_ITEM_ATTRIBUTE, pressGroupItemProps) and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
@@ -39,12 +42,30 @@
  * release, the way a finger's press leaves. The query is the stylesheet's
  * own, so the two cannot disagree about which presses are the controller's.
  *
+ * A surface's hold does nothing, so it keeps the browser's long-press text
+ * selection (`spec:AST-094` FR41); only an element whose hold does something
+ * suppresses it, through the gesture host (utils/selectionLock.ts).
+ *
+ * Its one touch-only listener, `touchcancel`, is on only while the primary
+ * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
+ *
+ * An action of a group whose own tracker follows a held pointer across its
+ * siblings (`family:action-groups`) carries {@link PRESS_GROUP_ITEM_ATTRIBUTE}:
+ * that tracker paints its press, so the controller leaves a pointer's press
+ * there alone, and the two never write the attribute over each other. A
+ * member the group's tracker skips (a field, a menu trigger) carries no
+ * marker and keeps the controller's press.
+ *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
  * pressFeedback.test.ts.
  */
 
-import type {PressGesture, PressPaint, PressStep} from './pressGesture';
+import type {
+  PressGesture,
+  PressPaint as GesturePaint,
+  PressStep,
+} from './pressGesture';
 import {
   idlePressGesture,
   PRESS_FADE_MS,
@@ -53,6 +74,8 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {subscribeInput} from './inputStream';
 import {TOUCH_QUERY} from './touchPresentation';
 
 /**
@@ -75,6 +98,18 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/**
+ * Marks an action whose group tracks a held pointer across its siblings
+ * (`family:action-groups`): the group's tracker paints a pointer's press on
+ * it, and the controller paints none there. The owner renders it on each
+ * action its tracker follows, so it is in place before the first press.
+ */
+export const PRESS_GROUP_ITEM_ATTRIBUTE = 'data-astryx-press-group-item';
+
+/** Spread onto each action a group's tracker follows. */
+export const pressGroupItemProps: {readonly [PRESS_GROUP_ITEM_ATTRIBUTE]: ''} =
+  {[PRESS_GROUP_ITEM_ATTRIBUTE]: ''};
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.
@@ -162,12 +197,98 @@ const TIMER_EVENT = {
   onset: 'onset',
 } as const;
 
-function paintElement(element: HTMLElement, paint: PressPaint): void {
-  if (paint === 'none') {
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-    return;
+/** The press attribute's states: on, held, fading on its release, none. */
+export type PressPaint = 'on' | 'held' | 'fading' | 'none';
+
+export interface PaintPressOptions {
+  /** How long `fading` stays before the attribute goes, ms. @default the press fade */
+  releaseMs?: number;
+  /** The current values this write may replace. @default none, on, fading */
+  onlyFrom?: ReadonlyArray<PressPaint>;
+}
+
+/** What a press may replace: a `held` row is its owner's until released. */
+const PRESS_REPLACES: ReadonlyArray<PressPaint> = ['none', 'on', 'fading'];
+const PAINTS: ReadonlySet<string> = new Set(['on', 'held', 'fading']);
+/** A `fading` paint's own release clock, per element (paintPress). */
+const fadeTimers = new WeakMap<Element, ReturnType<typeof setTimeout>>();
+
+/** The press state painted on `element` now; `null` for a value no painter wrote. */
+export function readPressPaint(element: Element): PressPaint | null {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  if (value == null) {
+    return 'none';
   }
-  element.setAttribute(PRESSED_ATTRIBUTE, paint);
+  return PAINTS.has(value) ? (value as PressPaint) : null;
+}
+
+/**
+ * Write `next` on `element` if its state is one of `onlyFrom`: the press
+ * attribute's writer for the controller and every painter that uses
+ * paintPress, so a fade's clock and the attribute never drift apart (the
+ * action-group tracker, hooks/actionGroupTracker.ts, still writes its groups'
+ * presses itself). Any write ends a fade paintPress left running there.
+ * Returns whether it wrote.
+ */
+function writePress(
+  element: Element,
+  next: PressPaint,
+  onlyFrom: ReadonlyArray<PressPaint> = PRESS_REPLACES,
+): boolean {
+  const current = readPressPaint(element);
+  if (current == null || !onlyFrom.includes(current)) {
+    return false;
+  }
+  const pending = fadeTimers.get(element);
+  if (pending != null) {
+    clearTimeout(pending);
+    fadeTimers.delete(element);
+  }
+  if (next === 'none') {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
+  } else if (current !== next) {
+    element.setAttribute(PRESSED_ATTRIBUTE, next);
+  }
+  return true;
+}
+
+/**
+ * Paint `next` on `element` if its current press state is in `onlyFrom`
+ * (by default none, on or fading: a hold survives a press, and its owner
+ * releases it with `onlyFrom: ['held']`). A `fading` paint ends on its own
+ * clock. Returns whether it painted. For a painter other than the touch
+ * press controller: a group that tracks its selection, a row that keeps its
+ * selection through a navigation.
+ */
+export function paintPress(
+  element: Element,
+  next: PressPaint,
+  options: PaintPressOptions = {},
+): boolean {
+  if (!writePress(element, next, options.onlyFrom)) {
+    return false;
+  }
+  if (next === 'fading') {
+    fadeTimers.set(
+      element,
+      setTimeout(() => {
+        fadeTimers.delete(element);
+        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
+          element.removeAttribute(PRESSED_ATTRIBUTE);
+        }
+      }, options.releaseMs ?? PRESS_FADE_MS),
+    );
+  }
+  return true;
+}
+
+/**
+ * The controller's paint, through writePress: a state the controller did
+ * not write is its owner's (a `held` row), so neither a new press nor a
+ * release's end overwrites or clears it.
+ */
+function paintElement(element: HTMLElement, paint: GesturePaint): void {
+  writePress(element, paint);
 }
 
 function clearTimer(slot: Slot): void {
@@ -251,6 +372,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 }
 
 /**
+ * Whether a group's own tracker paints this surface's press
+ * ({@link PRESS_GROUP_ITEM_ATTRIBUTE}). The touch is still recorded, so a
+ * scroll it drives arms the brake as any finger's does.
+ */
+function trackedByGroup(element: HTMLElement): boolean {
+  return element.closest(`[${PRESS_GROUP_ITEM_ATTRIBUTE}]`) != null;
+}
+
+/**
  * Is this touch a BRAKE on a list the finger set moving, rather than a press?
  *
  * A native list highlights nothing for one, and nothing else would cancel it:
@@ -299,7 +429,7 @@ function finish(slot: Slot): void {
     return;
   }
   clearTimer(slot);
-  live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  writePress(live.element, 'none');
   slot.live = null;
   if (slot === button) {
     holdKey(false);
@@ -330,8 +460,9 @@ function stylesheetDroppedActive(): boolean {
 
 /**
  * The surface a mouse button's or the Space key's press paints, if any: the
- * innermost marked surface, outside a menu. A key's press paints only a
- * focused element that is itself the surface, as `:active` does.
+ * innermost marked surface, outside a menu and off an action a group's
+ * tracker paints. A key's press paints only a focused element that is
+ * itself the surface, as `:active` does.
  */
 function buttonSurfaceAt(
   target: EventTarget | null,
@@ -342,6 +473,11 @@ function buttonSurfaceAt(
     return null;
   }
   if (pointerId == null && element !== target) {
+    return null;
+  }
+  // A group's tracker paints a pointer's press on its actions, a mouse's too;
+  // a key's press is the action's own.
+  if (pointerId != null && trackedByGroup(element)) {
     return null;
   }
   return element;
@@ -394,6 +530,7 @@ function onPointerDown(event: PointerEvent): void {
     }
     return;
   }
+  armTouchCancel();
   if (finger.live != null) {
     const fingerIsUp =
       finger.live.gesture.phase === 'fading' ||
@@ -418,7 +555,7 @@ function onPointerDown(event: PointerEvent): void {
   const braking = element != null && scrollerIsBraking(element);
   lastTouchAt = Date.now();
   lastTouchTarget = event.target instanceof Node ? event.target : null;
-  if (element == null || braking) {
+  if (element == null || braking || trackedByGroup(element)) {
     return;
   }
   takeOver(button, element);
@@ -615,37 +752,78 @@ function onVisibilityChange(): void {
   }
 }
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
-const PASSIVE = {passive: true} as const;
+/** The input stream subscriptions while installed. */
+let unsubscribers: (() => void)[] = [];
 
+/** The touch-only `touchcancel` subscription, while the pointer is coarse. */
+let stopTouchCancel: (() => void) | null = null;
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The one touch-only listener is on only while the primary pointer is coarse
+ * (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointercancel`.
+ */
+function hearTouchCancel(on: boolean): void {
+  if (on === (stopTouchCancel != null)) {
+    return;
+  }
+  if (on) {
+    stopTouchCancel = subscribeInput(window, 'touchcancel', onCancel);
+  } else {
+    stopTouchCancel?.();
+    stopTouchCancel = null;
+  }
+}
+
+/**
+ * Read the primary pointer when the first finger or pen lands, and follow it
+ * from then on: installing asks nothing, so a page no one touches never
+ * queries it.
+ */
+function armTouchCancel(): void {
+  if (stopWatchingPointer != null) {
+    return;
+  }
+  stopWatchingPointer = watchCoarsePointer(window, hearTouchCancel);
+  hearTouchCancel(isCoarsePointer(window));
+}
+
+// The pointer, drag, scroll and visibility listeners are passive and on the
+// window's capture phase, through the shared input stream
+// (utils/inputStream.ts): a page of pressables blocks no scroll, and an app's
+// capture-phase stopPropagation at the document cannot starve the controller.
 function addListeners(): void {
-  window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  // `scroll` does not bubble, so the capture phase is the only way one
-  // listener hears every scroller in the document.
-  document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  // Only Space's press needs the key's release and focus loss, so those two
-  // are attached while it is held (holdKey).
+  unsubscribers = [
+    subscribeInput(window, 'pointerdown', onPointerDown),
+    subscribeInput(window, 'pointermove', onPointerMove),
+    subscribeInput(window, 'pointerup', onPointerUp),
+    subscribeInput(window, 'pointercancel', onCancel),
+    subscribeInput(window, 'dragstart', onDragStart),
+    // `scroll` does not bubble; the capture phase hears every scroller.
+    subscribeInput(window, 'scroll', onScroll),
+    subscribeInput(window, 'visibilitychange', onVisibilityChange),
+  ];
+  // The key path listens after the page's own handlers, at the window's
+  // bubble phase: a Space press the page cancels (`defaultPrevented`) paints
+  // nothing. Only Space's press needs the key's release and focus loss, so
+  // those two are attached while it is held (holdKey).
   window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
 function removeListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
+  for (const unsubscribe of unsubscribers.splice(0)) {
+    unsubscribe();
+  }
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouchCancel(false);
   window.removeEventListener('keydown', onKeyDown);
   holdKey(false);
 }
+
+const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+const PASSIVE = {passive: true} as const;
 
 /** Whether the key-release listeners are attached. */
 let keyHeld = false;
