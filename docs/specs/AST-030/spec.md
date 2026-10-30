@@ -250,41 +250,35 @@ they are separately named.
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.
 
-- **FR16 — One author's pull requests share the heavy suites.** On a
-  pull request, a heavy job (one that runs the `heavy-caps` step right after its
-  checkout: `pr-interaction`, `test-build` and `fixture-contrast`) runs its
-  suite only when the pull request is among its author's three oldest open
-  non-draft pull requests, and its author has at most twelve heavy runs that
-  UTC day. A heavy run is a CI run on one of the author's oldest open pull
-  requests in which a heavy job ran its suite, which that job's "Heavy suite
-  runs" step records; a cancelled run does not count, nor does a queued pull
-  request's run, since it starts no heavy suite. Pull requests from the shared
-  agent login count per branch prefix, with that login also held to its five
-  oldest pull requests and forty heavy runs a day; bot accounts are exempt. A
-  queued or capped heavy job fails with "Queued behind your 3 oldest PRs: runs
-  on a push once it is among them, or at the pre-merge re-run." or "Daily
-  heavy-run cap reached, runs tomorrow or at pre-merge.", so no pull request
-  passes the required joins without its heavy suites. A re-run, which is the
-  pre-merge restart, is exempt from both caps, and a lookup that fails runs the
-  suite. Merge-queue entries, `main`, release checks and the visual, accessibility and
-  RTL owners a maintainer opts a pull request into with `ci:heavy-lanes` are
-  unaffected. The limits are an ordered list in that step, so another limit
-  joins as one more entry.
+- **FR16 — One author's pull requests share the heavy suites.** On a pull
+  request, the heavy browser suites (the interaction proofs and the Build
+  package's browser and fixture-contrast contracts) run only when the pull
+  request is among its author's three oldest open non-draft pull requests and
+  the author has had at most twelve heavy runs that UTC day. A heavy run is a
+  CI run on one of those pull requests in which a heavy suite ran; a cancelled
+  run does not count, and neither does a run whose heavy suites were held.
+  Pull requests from the shared agent login count per branch prefix, and that
+  login as a whole is also held to its five oldest pull requests and forty
+  heavy runs a day; bot accounts are exempt. A held suite's check fails with
+  "Queued behind your 3 oldest PRs: runs on a push once it is among them, or at
+  the pre-merge re-run." or "Daily heavy-run cap reached, runs tomorrow or at
+  pre-merge.", so no pull request passes the required checks without its heavy
+  suites. A re-run, which is the pre-merge restart, is exempt from both limits,
+  and when the limits cannot be looked up the suite runs. Merge-queue entries,
+  `main`, release checks and the visual, accessibility and RTL owners a
+  maintainer opts a pull request into with `ci:heavy-lanes` are unaffected.
 - **FR17 — A pull request runs CI when it is ready and a maintainer can vouch
-  for it.** A `pull_request` workflow starts on `opened`, `synchronize`,
-  `reopened` and `ready_for_review`, never on a label. A draft runs no job, and
-  marking it ready for review starts its pull-request run, which runs what the change reaches (FR13, DEC-6). A pull request runs CI when
-  its head branch lives in this repository, which pushing needs write access
-  for, or when it carries the maintainer-applied `ci:run` label; the label
-  takes effect on the next push or a close and reopen. Every job that can start
-  on a pull request begins with that condition, except the jobs that report a
-  required context (`build`, `test`, `docsite-test`, `lint`): they skip only a
-  draft, and for a pull request that may not run CI their first step fails with
-  "Waiting for a maintainer's ci:run label", because a skipped required check
-  would count as passing. Events other than a pull request (a push to `main`, a
-  merge-group entry, a dispatch) are unaffected. These workflows stay on
-  `pull_request`, never `pull_request_target`, so a fork's code runs without
-  secrets.
+  for it.** A draft pull request runs no CI, and marking it ready for review
+  starts its pull-request run, which runs what the change reaches (FR13,
+  DEC-6). A pull request runs CI when its head branch lives in this repository,
+  which pushing needs write access for, or when it carries the
+  maintainer-applied `ci:run` label. The label takes effect on the next push or
+  a close and reopen; applying or removing any label starts no run. For a pull
+  request that may not run CI, the required contexts (FR7) report failure with
+  "Waiting for a maintainer's ci:run label", never success, because a skipped
+  required check would count as passing. Events other than a pull request (a
+  push to `main`, a merge-group entry, a dispatch) are unaffected, and a fork's
+  code never runs with the repository's secrets.
 
 ### Platform support
 
