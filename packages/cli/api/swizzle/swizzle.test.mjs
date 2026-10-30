@@ -99,6 +99,28 @@ describe('rewriteImports', () => {
       `import { focusOutlineProps } from '@astryxdesign/core/utils/focusOutline.stylex';`,
     );
   });
+
+  it('keeps imports that stay inside the component for a nested file', () => {
+    // From `Table/plugins/sortable/x.ts` (depth 2): `../../types` is
+    // `Table/types`, copied alongside, so it must stay relative; only the
+    // third `../` leaves the component.
+    const input = [
+      `import type { Row } from '../../types';`,
+      `import { grammar } from '../grammar';`,
+      `import { tokens } from '../../../theme/tokens.stylex';`,
+      `import { Icon } from '../../../Icon';`,
+      `const T = lazy(() => import('../../../Tooltip/Tooltip'));`,
+    ].join('\n');
+    expect(rewriteImports(input, undefined, 2)).toBe(
+      [
+        `import type { Row } from '../../types';`,
+        `import { grammar } from '../grammar';`,
+        `import { tokens } from '@astryxdesign/core/theme/tokens.stylex';`,
+        `import { Icon } from '@astryxdesign/core/Icon';`,
+        `const T = lazy(() => import('@astryxdesign/core/Tooltip'));`,
+      ].join('\n'),
+    );
+  });
 });
 
 describe('swizzle() API', () => {
@@ -122,7 +144,7 @@ describe('swizzle() API', () => {
 });
 
 describe('swizzle rewriteImports compiles for components with .stylex imports', () => {
-  it('Button: every rewritten import resolves in the core exports map', async () => {
+  it('every component: every rewritten import resolves in the core exports map', async () => {
     const corePkg = JSON.parse(
       fs.readFileSync(
         path.join(REPO, 'packages/core/package.json'),
@@ -131,27 +153,58 @@ describe('swizzle rewriteImports compiles for components with .stylex imports', 
     );
     const exportKeys = new Set(Object.keys(corePkg.exports));
 
-    const buttonDir = path.join(REPO, 'packages/core/src/Button');
-    const files = fs.readdirSync(buttonDir).filter(
-      f => (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('.test.') && !f.includes('.doc.'),
-    );
+    // A cross-directory `.stylex` import that is missing from the exports map
+    // only surfaces in the consumer's build after `astryx swizzle <Name>`, so
+    // check every swizzleable component, not just one.
+    const srcDir = path.join(REPO, 'packages/core/src');
+    const componentDirs = fs
+      .readdirSync(srcDir, {withFileTypes: true})
+      .filter(e => e.isDirectory() && /^[A-Z]/.test(e.name))
+      .map(e => e.name);
+    expect(componentDirs.length).toBeGreaterThan(50);
 
-    for (const file of files) {
-      const content = fs.readFileSync(path.join(buttonDir, file), 'utf-8');
-      const rewritten = rewriteImports(content);
+    // Subdirectories are copied too, with their depth deciding which `../`
+    // imports leave the component.
+    /** @param {string} dir @param {string} rel @returns {string[]} */
+    const walk = (dir, rel = '') =>
+      fs.readdirSync(dir, {withFileTypes: true}).flatMap(e => {
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          return e.name.startsWith('__') ? [] : walk(path.join(dir, e.name), r);
+        }
+        return (e.name.endsWith('.ts') || e.name.endsWith('.tsx')) &&
+          !e.name.includes('.test.') &&
+          !e.name.includes('.doc.')
+          ? [r]
+          : [];
+      });
 
-      // Extract all rewritten @astryxdesign/core/* imports
-      const importRe = /from ['"](@astryxdesign\/core\/[^'"]+)['"]/g;
-      let m;
-      while ((m = importRe.exec(rewritten)) !== null) {
-        const specifier = m[1];
-        const subpath = './' + specifier.replace('@astryxdesign/core/', '');
+    const unresolved = [];
+    for (const dirName of componentDirs) {
+      const dir = path.join(srcDir, dirName);
+      for (const file of walk(dir)) {
+        const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+        const depth = file.split('/').length - 1;
+        const rewritten = rewriteImports(content, undefined, depth);
 
-        expect(
-          exportKeys.has(subpath),
-          `${specifier} (subpath ${subpath}) must resolve in core exports`,
-        ).toBe(true);
+        // Extract all rewritten @astryxdesign/core/* imports. A specifier
+        // already present verbatim in the source (a usage example in a doc
+        // comment) was not rewritten and is not checked.
+        const importRe = /from ['"](@astryxdesign\/core\/[^'"]+)['"]/g;
+        const preexisting = new Set(
+          Array.from(content.matchAll(importRe), hit => hit[1]),
+        );
+        let m;
+        while ((m = importRe.exec(rewritten)) !== null) {
+          const specifier = m[1];
+          if (preexisting.has(specifier)) continue;
+          const subpath = './' + specifier.replace('@astryxdesign/core/', '');
+          if (!exportKeys.has(subpath)) {
+            unresolved.push(`${dirName}/${file}: ${specifier}`);
+          }
+        }
       }
     }
+    expect(unresolved, 'rewritten imports must resolve in core exports').toEqual([]);
   });
 });
