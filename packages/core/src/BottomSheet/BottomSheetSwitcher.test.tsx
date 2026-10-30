@@ -10,6 +10,8 @@
  * update these tests to match the public behavior.
  */
 
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {
   StrictMode,
@@ -22,6 +24,7 @@ import {
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {Dialog} from '../Dialog';
 import {hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
@@ -32,6 +35,74 @@ import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 // dialogs are modal, standing in for the `:modal` pseudo-class jsdom cannot
 // match.
 const modalDialogs = new WeakSet<HTMLDialogElement>();
+
+// Input reaches a sheet as in a browser: a mouse (the stubbed primary pointer
+// is fine) through the handle's own pointer listeners (spec:AST-017 FR59), on
+// explicit timestamps that start past the previous test's. A press is sent
+// with its first move, where the test put it: a mouse moves the sheet from
+// the first pixel.
+let timeBase = 0;
+let pendingPress: {y: number; time: number} | null = null;
+beforeEach(() => {
+  timeBase += 1_000_000;
+  pendingPress = null;
+  // A test that ends mid-drag leaves its pointer down in the host: losing
+  // window focus cancels every contact in flight.
+  window.dispatchEvent(new Event('blur'));
+  // jsdom has no hit test; null keeps a touch where it was sent.
+  Object.defineProperty(document, 'elementFromPoint', {
+    configurable: true,
+    value: () => null,
+  });
+});
+
+function mouse(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  y: number,
+  time: number,
+): boolean {
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+    clientX: 50,
+    clientY: y,
+    button: type === 'pointermove' ? -1 : 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+  });
+  Object.defineProperty(event, 'timeStamp', {value: timeBase + time});
+  return fireEvent(target, event);
+}
+
+function fireTimedPointer(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  {time, y}: {time: number; y: number},
+): boolean {
+  if (type === 'pointerdown') {
+    pendingPress = {y, time};
+    return true;
+  }
+  if (pendingPress != null) {
+    const landing = pendingPress;
+    pendingPress = null;
+    // Every pointer's pan begins past its threshold (spec:AST-094 FR17,
+    // FR19, FR43), a mouse's too: the press lands that far behind the first
+    // move, so the positions a test moves to are the drag's.
+    mouse(
+      target,
+      'pointerdown',
+      landing.y - Math.sign(y - landing.y) * PAN_THRESHOLD,
+      landing.time,
+    );
+  }
+  return mouse(target, type, y, time);
+}
+const PAN_THRESHOLD = 10;
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
@@ -771,18 +842,8 @@ describe('BottomSheetSwitcher', () => {
       throw new Error('sheet handle not found');
     }
 
-    fireEvent.pointerDown(handle, {
-      pointerId: 1,
-      clientY: 100,
-      timeStamp: 0,
-      button: 0,
-      isPrimary: true,
-    });
-    fireEvent.pointerMove(handle, {
-      pointerId: 1,
-      clientY: 600,
-      timeStamp: 16,
-    });
+    fireTimedPointer(handle, 'pointerdown', {time: 0, y: 100});
+    fireTimedPointer(handle, 'pointermove', {time: 16, y: 600});
     const detailsDialog = getSheetDialog('details-sheet');
     expect(
       detailsDialog.style.getPropertyValue('--_sheet-scrim-opacity'),
@@ -794,11 +855,7 @@ describe('BottomSheetSwitcher', () => {
     expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
     expect(getActiveDialog()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
 
-    fireEvent.pointerMove(handle, {
-      pointerId: 1,
-      clientY: 680,
-      timeStamp: 32,
-    });
+    fireTimedPointer(handle, 'pointermove', {time: 32, y: 680});
     expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
     expect(getActiveDialog()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
   });
@@ -968,14 +1025,9 @@ describe('BottomSheetSwitcher', () => {
     }
 
     fireEvent.click(dialog);
-    fireEvent.pointerDown(handle, {
-      pointerId: 1,
-      clientY: 0,
-      button: 0,
-      isPrimary: true,
-    });
-    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
-    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+    fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+    fireTimedPointer(handle, 'pointermove', {time: 16, y: 120});
+    fireTimedPointer(handle, 'pointerup', {time: 32, y: 120});
 
     expect(onActiveSheetChange).not.toHaveBeenCalled();
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
@@ -1038,14 +1090,9 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.click(dialog);
     fireEvent.keyDown(dialog, {key: 'Escape'});
     fireEvent(dialog, new Event('cancel', {cancelable: true}));
-    fireEvent.pointerDown(handle, {
-      pointerId: 1,
-      clientY: 0,
-      button: 0,
-      isPrimary: true,
-    });
-    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
-    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+    fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+    fireTimedPointer(handle, 'pointermove', {time: 16, y: 120});
+    fireTimedPointer(handle, 'pointerup', {time: 32, y: 120});
 
     expect(onActiveSheetChange).not.toHaveBeenCalled();
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
@@ -1069,17 +1116,17 @@ describe('BottomSheetSwitcher', () => {
       throw new Error('sheet handle not found');
     }
 
-    fireEvent.pointerDown(handle, {
-      pointerId: 1,
-      clientY: 0,
-      button: 0,
-      isPrimary: true,
-    });
-    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
-    expect(panel.style.transform).toBe('translateY(300px)');
+    fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+    fireTimedPointer(handle, 'pointermove', {time: 16, y: 300});
+    // The drag moves the sheet on its travel channel (`translate`).
+    expect(panel.style.translate).toBe('0px 300px');
 
     expect(fireEvent.contextMenu(handle)).toBe(false);
 
+    // Back to the detent on the detent spring (jsdom: its end at once). At
+    // rest an identity leaves the element (the animator writes no inline
+    // `translate: 0px 0px`, which would make the panel a containing block).
+    expect(panel.style.translate).toBe('');
     expect(panel.style.transform).toBe('');
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
     expect(onActiveSheetChange).not.toHaveBeenCalled();
@@ -1307,6 +1354,44 @@ describe('BottomSheetSwitcher', () => {
       expect(confirmDialog).toContainElement(
         screen.getByTestId('confirm-sheet'),
       );
+    });
+
+    it('under a finger, holds pointer input while each sheet enters the flow, and releases it as the entrance ends (FR35)', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          // A finger without Reduce Motion.
+          matches:
+            query.includes('pointer: coarse') &&
+            !query.includes('prefers-reduced-motion'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      const details = getSheetLayer('details-sheet');
+      // Entering: its dialog is a held layer.
+      expect(isInHeldLayer(details)).toBe(true);
+      finishSheetTransition(details, 'transform');
+      expect(isInHeldLayer(details)).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      const confirm = getSheetLayer('confirm-sheet');
+      expect(isInHeldLayer(confirm)).toBe(true);
+      finishSheetTransition(confirm, 'transform');
+      expect(isInHeldLayer(confirm)).toBe(false);
+    });
+
+    it('with a mouse, holds nothing while a sheet enters the flow (FR35, DEC-16)', () => {
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      expect(isInHeldLayer(getSheetLayer('details-sheet'))).toBe(false);
     });
 
     it('presents the entering dialog once and closes the retained dialog only after it fades', () => {
@@ -1736,31 +1821,27 @@ describe('BottomSheetSwitcher', () => {
       expect(getSheetDialog('c')).toHaveAttribute('role', 'alertdialog');
     });
 
-    it('keeps the scrim takeover pin under prefers-reduced-motion: the reduced duration reads the pinned variable', () => {
-      render(<HostFlow initialSheet="details" />);
-      // jsdom evaluates neither @media nor ::backdrop; read the compiled
-      // rules the dialog's scrim class produced. The reduced-motion rule for
-      // the backdrop's transition-duration must defer to the takeover pin
-      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal 0.01s
-      // there would win the cascade and paint a frame with no scrim.
-      const rules: string[] = [];
-      for (const sheet of Array.from(document.styleSheets)) {
-        for (const rule of Array.from(sheet.cssRules)) {
-          rules.push(rule.cssText);
-        }
-      }
-      const reducedBackdropDurations = rules.filter(
-        text =>
-          text.includes('prefers-reduced-motion: reduce') &&
-          text.includes('::backdrop') &&
-          text.includes('transition-duration'),
-      );
-      expect(reducedBackdropDurations.length).toBeGreaterThan(0);
-      for (const text of reducedBackdropDurations) {
-        expect(text).toMatch(
-          /transition-duration:\s*var\(--_sheet-scrim-duration,\s*0?\.01s\)/,
+    it('keeps the scrim takeover pin under reduced motion: each reduced duration reads the pinned variable', () => {
+      // The backdrop's reduced-motion durations must defer to the takeover pin
+      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal there
+      // would win the cascade and paint a frame with no scrim. Read from the
+      // source: StyleX's runtime injection dedupes rules by a key that, for a
+      // media query with `and`, is the query alone, so only the first rule per
+      // query (the panel's) reaches jsdom.
+      const source = readFileSync(join(__dirname, 'BottomSheet.tsx'), 'utf8');
+      const start = source.indexOf("'::backdrop': {");
+      const backdrop = source.slice(start, source.indexOf('\n    },\n', start));
+      const reduced = [
+        ...backdrop.matchAll(
+          /'@media \(prefers-reduced-motion: reduce\)[^']*': \{([^}]*)\}/g,
+        ),
+      ].map(match => match[1]);
+      // design:reduced-motion: a fade on a touch screen, at once otherwise.
+      expect(reduced).toHaveLength(2);
+      for (const block of reduced) {
+        expect(block).toMatch(
+          /transitionDuration:\s*[`']var\(--_sheet-scrim-duration,/,
         );
-        expect(text).not.toMatch(/transition-duration:\s*0?\.01s/);
       }
     });
 
