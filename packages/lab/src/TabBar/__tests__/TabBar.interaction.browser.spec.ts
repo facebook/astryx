@@ -809,6 +809,28 @@ test('right to left, a drag runs from the first tab leftward and commits where i
   expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
 });
 
+test('a disabled tab is announced disabled on the tab itself, with its name, in the accessibility tree (spec:AST-085 FR5)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'reads Chromium’s accessibility tree');
+  await openBar(page, 'disabled-tab');
+  const cdp = await page.context().newCDPSession(page);
+  const {nodes} = await cdp.send('Accessibility.getFullAXTree');
+  const tabs = nodes
+    .filter(node => node.ignored !== true && node.role?.value === 'tab')
+    .map(node => ({
+      name: node.name?.value,
+      disabled:
+        node.properties?.some(
+          property =>
+            property.name === 'disabled' && property.value.value === true,
+        ) ?? false,
+    }));
+  expect(tabs).toContainEqual({name: 'Browse', disabled: true});
+  expect(tabs.filter(entry => entry.disabled)).toHaveLength(1);
+});
+
 test('a tap on a disabled tab never moves or lifts the lens (UIKit ignores it)', async ({
   page,
   browserName,

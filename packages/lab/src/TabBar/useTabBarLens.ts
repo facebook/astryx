@@ -659,10 +659,11 @@ export function useTabBarLens({
     },
   );
 
-  // The bar minimized (the recognizer turns off) or the presentation changed
-  // under a press: the press ends here, as a cancel, since a recognizer turned
-  // off reports nothing more. A cancel chooses nothing, so the app hears
-  // nothing.
+  // Synchronizes the recognizer's press with the bar's state and the
+  // presentation: when the bar minimizes (the recognizer turns off) or the
+  // presentation changes under a press, the press ends here, as a cancel,
+  // since a recognizer turned off reports nothing more. A cancel chooses
+  // nothing, so the app hears nothing.
   const endRef = useRef(end);
   endRef.current = end;
   useEffect(() => {
@@ -760,7 +761,8 @@ export function useTabBarLens({
     return () => observer.disconnect();
   }, [isMinimized, capsuleRef, body, count]);
 
-  // The tab list changed under a held finger: the press ends here, as a
+  // Synchronizes the recognizer's press and the lens's animations with the
+  // tab list: when it changes under a held finger, the press ends here, as a
   // cancel, rather than at the lift, so no move chases the old centres.
   useLayoutEffect(() => {
     if (pressRef.current != null && pressRef.current.count !== count) {
