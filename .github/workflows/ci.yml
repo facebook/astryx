@@ -1000,6 +1000,7 @@ jobs:
   test:
     needs:
       [
+        check-scope,
         release-bump,
         test-ui,
         test-node,
@@ -1036,6 +1037,9 @@ jobs:
       - name: Require expected test-owner outcomes
         if: steps.scope.outputs.spec_only != 'true' || steps.scope.outputs.release_bump == 'true'
         env:
+          # check-scope still gates the heavy lanes and release-check; the
+          # join fails when it does not succeed.
+          CHECK_SCOPE_RESULT: ${{ needs.check-scope.result }}
           RELEASE_BUMP: ${{ steps.scope.outputs.release_bump }}
           RELEASE_BUMP_RESULT: ${{ needs.release-bump.result }}
           DOCSITE_ONLY: ${{ steps.scope.outputs.docsite_only }}

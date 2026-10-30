@@ -9,6 +9,7 @@ import {describe, expect, it} from 'vitest';
 
 const script = path.join(import.meta.dirname, 'ci-test-join.mjs');
 const broad = {
+  CHECK_SCOPE_RESULT: 'success',
   DOCSITE_ONLY: 'false',
   SPEC_ONLY: 'false',
   TOOLING_ONLY: 'false',
@@ -71,6 +72,11 @@ describe('pull-request test join', () => {
       ).toMatchObject({status: 1});
     },
   );
+
+  it('fails closed when classification failed or omitted', () => {
+    expect(run({CHECK_SCOPE_RESULT: 'failure'})).toMatchObject({status: 1});
+    expect(run({CHECK_SCOPE_RESULT: ''})).toMatchObject({status: 1});
+  });
 
   it('requires the release bump only on a release-branch pull request', () => {
     const release = {
