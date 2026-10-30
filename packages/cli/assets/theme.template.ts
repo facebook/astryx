@@ -181,12 +181,29 @@ export const myTheme = defineTheme({
   radius: {base: 4, multiplier: 1},
 
   /**
-   * Duration scale in ms. Each of fast/medium/slow also gets a -min and -max
-   * sibling computed with `ratio` (min = base × ratio, max = base ÷ ratio), so
-   * a component can pick a longer or shorter variant of the same tempo.
+   * Motion. Three knobs set how it feels everywhere, CSS durations and touch
+   * springs alike:
+   *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
+   *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
+   *     curves and how lively a spring is. Exits and fades keep their
+   *     measured bounce.
+   *   reducedMotion — 'always' reduces motion for everyone (so far the
+   *     theme's motion-keyed adaptation rules, the press release fade and the
+   *     animator, with its layout glide and Reduce Motion fade, not yet
+   *     components' other Reduce Motion styles); 'system' (the default)
+   *     follows each person's setting.
+   *   e.g. motion: {tempo: 0.85, character: 'crisp'}
+   * Finger tracking, momentum, the keyboard, hover, the press's onset delay
+   * and tap flash, and busy loops never follow them; the press release fade
+   * follows tempo, up to the 200 ms Reduce Motion cap.
+   *
+   * A duration scale in ms wins over tempo for the durations it sets. Each of
+   * fast/medium/slow also gets a -min and -max sibling computed with `ratio`
+   * (min = base × ratio, max = base ÷ ratio), so a component can pick a longer
+   * or shorter variant of the same tempo.
    *   Snappy {fast: 100, medium: 250} · Default {fast: 175, medium: 410, slow: 975}
    *   Cinematic {fast: 200, medium: 500, slow: 1200}
-   * `easing` overrides --ease-standard.
+   * `easing` overrides --ease-standard. Explicit `tokens` win over both.
    *
    * Reference: `astryx docs motion`.
    */

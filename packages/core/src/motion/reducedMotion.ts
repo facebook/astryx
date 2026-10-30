@@ -45,7 +45,12 @@
  */
 
 import {defaultIsCoarsePointer, defaultPrefersReducedMotion} from './animator';
-import {reducedMotionCrossFade} from './uikit/timing';
+import {resolveMotion} from './resolveMotion';
+import {themeReducesMotion} from './themeKnobs';
+import {
+  reducedMotionCrossFade,
+  registerReducedMotionCrossFade,
+} from './uikit/timing';
 
 /** Reduce Motion on a coarse primary pointer: an opacity-only cross-fade. */
 export const REDUCED_MOTION_FADE_QUERY =
@@ -79,14 +84,22 @@ export function reducedMotionFade(
     touchRelease?: boolean;
   } = {},
 ): ReducedMotionFade | null {
-  if (!defaultPrefersReducedMotion()) {
+  // A theme that reduces motion for everyone counts as the setting
+  // (spec:AST-108 FR6).
+  if (!defaultPrefersReducedMotion() && !themeReducesMotion(element)) {
     return null;
   }
   const fades = options.touchRelease === true || defaultIsCoarsePointer();
   if (!fades) {
     return {duration: 0, easing: 'linear'};
   }
-  const curve = reducedMotionCrossFade.curve;
+  if (element != null) {
+    registerReducedMotionCrossFade();
+  }
+  const curve =
+    element != null
+      ? resolveMotion(element, reducedMotionCrossFade.curve)
+      : reducedMotionCrossFade.curve;
   return {
     duration: reducedMotionCrossFade.durationMs,
     easing: `cubic-bezier(${curve.join(', ')})`,

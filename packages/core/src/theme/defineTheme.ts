@@ -117,7 +117,7 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
-import type {MotionScaleConfig} from './expandMotionScale';
+import type {ThemeMotionConfig} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
@@ -290,13 +290,30 @@ export interface DefineThemeInput<
    */
   typography?: TypographyConfig;
   /**
-   * Motion configuration. Computes duration min/max variants from
-   * base values and a scaling ratio: min = base × ratio, max = base / ratio.
+   * Motion configuration: three knobs (spec:AST-108), a motion scale, or both.
    *
-   * Explicit `tokens` overrides take precedence over motion-generated values.
+   * - `tempo` (default 1, clamped to 0.75–1.5) scales every motion duration,
+   *   the theme's CSS durations and the springs of its touch motion alike.
+   * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
+   *   entrance and move curves and how lively a spring is; exits and fades
+   *   keep their measured bounce.
+   * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
+   *   for everyone; so far the theme's motion-keyed adaptation rules, the
+   *   press release fade and the animator, with its layout glide and Reduce
+   *   Motion fade, follow it, not yet components' other Reduce Motion styles. Nothing loosens a person's own setting.
+   *
+   * A motion scale computes duration min/max variants from base values and a
+   * ratio (min = base × ratio, max = base / ratio); its durations win over
+   * `tempo`, and explicit `tokens` overrides win over both. Finger tracking,
+   * momentum, the keyboard, hover, the press's onset delay and tap flash, and
+   * busy loops never follow the knobs; the press release fade follows
+   * `tempo`.
    *
    * @example
    * ```
+   * motion: { tempo: 1.2, character: 'crisp' }
+   *
+   * // A motion scale, as before:
    * motion: { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
    *
    * // Suggested starting points:
@@ -305,7 +322,7 @@ export interface DefineThemeInput<
    * //   Cinematic: { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
    * ```
    */
-  motion?: MotionScaleConfig;
+  motion?: ThemeMotionConfig;
   /**
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
@@ -648,6 +665,43 @@ function describeBadBase(value: unknown): string {
   return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
 }
 
+/** The slow band's duration tokens. */
+const SLOW_BAND = [
+  '--duration-slow-min',
+  '--duration-slow',
+  '--duration-slow-max',
+] as const;
+
+/**
+ * The base's tokens for the duration-scale fields a child leaves unset
+ * (spec:AST-108 FR5, field by field): a child that sets no `slow` of its own
+ * regenerates only the fast and medium bands, so an inherited slow band stays
+ * as the base's tokens hold it, at the ratio it was made with; and a child
+ * that sets no `easing` keeps the base's `--ease-standard`, an explicit one
+ * included, however many themes down either is inherited.
+ */
+function inheritedScaleTokens(
+  base: DefinedTheme,
+  baseMotion: ThemeMotionConfig,
+  own: ThemeMotionConfig,
+): Partial<Record<string, TokenValue>> | undefined {
+  const names = [
+    ...('slow' in baseMotion && !('slow' in own) ? SLOW_BAND : []),
+    ...('easing' in baseMotion && !('easing' in own)
+      ? (['--ease-standard'] as const)
+      : []),
+  ];
+  if (names.length === 0) {
+    return undefined;
+  }
+  const tokens = base.tokens as Record<string, string | undefined>;
+  return Object.fromEntries(
+    names.flatMap(name =>
+      tokens[name] !== undefined ? [[name, tokens[name]]] : [],
+    ),
+  );
+}
+
 /**
  * Create an Astryx theme.
  *
@@ -682,13 +736,33 @@ export function defineTheme<
   // The theme's own value axes and the resolved base an `extends` supplies.
   // The same axis metadata is retained so adaptation rules can complete partial
   // configs without approximating values from unrelated built-in defaults.
+  //
+  // Motion inherits field by field (spec:AST-108 FR5): a duration-scale field
+  // or knob the child leaves unset keeps its base's value, so the child's
+  // motion tokens come from the merged configuration. They resolve base first,
+  // then generated (`architecture:theme-authoring-contract`): what the child
+  // generates replaces the base's tokens, its explicit ones included. A
+  // child's motion regenerates only what it sets: an inherited slow band and
+  // an inherited easing keep the base's tokens.
+  const baseMotion = base?.__axes?.motion;
+  const motion: ThemeMotionConfig | undefined =
+    input.motion != null && baseMotion != null
+      ? {...baseMotion, ...input.motion}
+      : input.motion;
+  const inheritedScale =
+    input.motion != null && base != null && baseMotion != null
+      ? inheritedScaleTokens(base, baseMotion, input.motion)
+      : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
     color: input.color,
     radius: input.radius,
-    motion: input.motion,
+    motion,
     syntax: input.syntax,
-    tokens: input.tokens,
+    tokens:
+      inheritedScale != null && Object.keys(inheritedScale).length > 0
+        ? {...inheritedScale, ...input.tokens}
+        : input.tokens,
     components: input.components,
   };
   const ownAxes: ThemeGenerativeAxes = {
@@ -701,7 +775,11 @@ export function defineTheme<
     ? {tokens: base.tokens, components: base.components}
     : undefined;
 
-  const {tokens, components} = resolveThemeValues(ownValues, seed);
+  // An explicit --ease-standard follows the character the theme inherits
+  // when it sets no motion of its own (FR2).
+  const {tokens, components} = resolveThemeValues(ownValues, seed, {
+    inheritedCharacter: baseMotion?.character,
+  });
 
   // On-media token overrides (base's resolved surface, then defaults, then
   // this theme's own overrides). They compile after adaptations so the

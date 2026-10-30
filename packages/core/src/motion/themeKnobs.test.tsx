@@ -1,0 +1,233 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file themeKnobs.test.tsx
+ * @input vitest (jsdom), React Testing Library, Theme and defineTheme, the
+ *   springs and timing tables, resolveMotion, the motion animator and
+ *   reducedMotionFade
+ * @output Checks `spec:AST-108` FR3, FR4, FR5 and FR6 on the animator side:
+ *   the knobs are the custom properties an element carries, and a role's
+ *   spring and duration follow them (tempo scales the duration; character
+ *   moves the bounce by the role's weight, never for an exit),
+ *   finger-following motion never follows the knobs, a duration scale alone
+ *   leaves the springs alone,
+ *   Astryx's own knobs give the table value itself, and a theme that reduces
+ *   motion for everyone counts as the person's Reduce Motion setting
+ * @position Testing; validates themeKnobs.ts and resolveMotion.ts against
+ *   the properties a theme writes; inheritance into nested themes and
+ *   adaptation rules is checked in a browser
+ *   (__tests__/themeKnobs.interaction.browser.spec.ts)
+ */
+
+import {cleanup, render} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {defineTheme, type DefineThemeInput} from '../theme/defineTheme';
+import {Theme} from '../theme/Theme';
+import {createAnimator} from './animator';
+import {reducedMotionFade} from './reducedMotion';
+import {CHARACTER_BOUNCE_STEP, resolveMotion} from './resolveMotion';
+import {durationBounceOf, toSpring, type SpringDescription} from './spring';
+import {themeMotionKnobs, themeReducesMotion} from './themeKnobs';
+import {registerSpringsTable, springs} from './uikit/springs';
+import {registerTimingTable, timing} from './uikit/timing';
+
+const originalMatchMedia = window.matchMedia;
+
+beforeEach(() => {
+  registerSpringsTable();
+  registerTimingTable();
+  // No Reduce Motion setting, a fine pointer.
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+});
+
+afterEach(() => {
+  cleanup();
+  window.matchMedia = originalMatchMedia;
+});
+
+/**
+ * An element rendered inside a Theme whose motion is `motion`, carrying the
+ * motion knobs that theme writes. A browser inherits them from the theme's
+ * root (themeKnobs.interaction.browser.spec.ts); jsdom reads a custom
+ * property only where it is declared.
+ */
+function inTheme(name: string, motion?: DefineThemeInput['motion']) {
+  const theme = defineTheme({name, motion});
+  const knobs = Object.fromEntries(
+    Object.entries(theme.tokens).filter(([property]) =>
+      property.startsWith('--_astryx-motion-'),
+    ),
+  );
+  const {getByTestId} = render(
+    <Theme theme={theme}>
+      <div data-testid="moving" style={knobs} />
+    </Theme>,
+  );
+  return getByTestId('moving');
+}
+
+const shape = (spring: SpringDescription) => durationBounceOf(toSpring(spring));
+
+describe('the knobs an element inherits from its theme (FR3, FR6)', () => {
+  it('are Astryx\u2019s own outside a theme and in a theme that sets none', () => {
+    const loose = document.createElement('div');
+    document.body.append(loose);
+    expect(themeMotionKnobs(loose)).toEqual({
+      tempo: 1,
+      tempoIsSet: false,
+      character: 'standard',
+    });
+    expect(themeMotionKnobs(null).tempo).toBe(1);
+    expect(themeMotionKnobs(inTheme('KnobPlain'))).toEqual({
+      tempo: 1,
+      tempoIsSet: false,
+      character: 'standard',
+    });
+    loose.remove();
+  });
+
+  it('are the custom properties the element\u2019s theme or adaptation rule writes, which nested themes inherit', () => {
+    const element = document.createElement('div');
+    element.style.setProperty('--_astryx-motion-tempo', '1.25');
+    element.style.setProperty('--_astryx-motion-character', 'crisp');
+    document.body.append(element);
+    expect(themeMotionKnobs(element)).toEqual({
+      tempo: 1.25,
+      tempoIsSet: true,
+      character: 'crisp',
+    });
+    element.remove();
+  });
+
+  it('say a theme reduces motion for everyone from its root mark', () => {
+    expect(
+      themeReducesMotion(inTheme('Still', {reducedMotion: 'always'})),
+    ).toBe(true);
+    cleanup();
+    expect(themeReducesMotion(inTheme('Moving', {tempo: 1.2}))).toBe(false);
+  });
+});
+
+describe('a role at the theme\u2019s knobs (FR3, FR4, FR5)', () => {
+  it('is the table value itself at Astryx\u2019s own knobs', () => {
+    const element = inTheme('Plain');
+    expect(resolveMotion(element, springs.stateChange)).toBe(
+      springs.stateChange,
+    );
+    expect(resolveMotion(element, timing, 'stateChangeMs')).toBe(
+      timing.stateChangeMs,
+    );
+  });
+
+  it('tempo scales a spring\u2019s duration and a role\u2019s duration', () => {
+    const element = inTheme('Slow', {tempo: 1.5});
+    const base = shape(springs.stateChange);
+    const slowed = shape(resolveMotion(element, springs.stateChange));
+    expect(slowed.duration).toBeCloseTo(base.duration * 1.5, 6);
+    expect(slowed.bounce).toBeCloseTo(base.bounce, 6);
+    expect(resolveMotion(element, timing, 'stateChangeMs')).toBeCloseTo(
+      timing.stateChangeMs * 1.5,
+      6,
+    );
+  });
+
+  it('character moves the bounce by the role\u2019s weight, and never an exit\u2019s', () => {
+    const lively = inTheme('Lively', {character: 'expressive'});
+    const bounce = (element: Element, spring: SpringDescription) =>
+      shape(resolveMotion(element, spring)).bounce - shape(spring).bounce;
+    // An entrance (weight 1), a state change (0.5), an exit (0).
+    expect(bounce(lively, springs.menuOpen)).toBeCloseTo(
+      CHARACTER_BOUNCE_STEP,
+      6,
+    );
+    expect(bounce(lively, springs.stateChange)).toBeCloseTo(
+      CHARACTER_BOUNCE_STEP / 2,
+      6,
+    );
+    expect(bounce(lively, springs.menuClose)).toBeCloseTo(0, 6);
+    cleanup();
+    const crisp = inTheme('Crisp', {character: 'crisp'});
+    expect(bounce(crisp, springs.stateChange)).toBeCloseTo(
+      -CHARACTER_BOUNCE_STEP / 2,
+      6,
+    );
+    expect(bounce(crisp, springs.menuClose)).toBeCloseTo(0, 6);
+  });
+
+  it('finger-following motion never follows the knobs', () => {
+    const element = inTheme('Everything', {
+      tempo: 1.5,
+      character: 'expressive',
+    });
+    expect(resolveMotion(element, springs.fingerTracking)).toBe(
+      springs.fingerTracking,
+    );
+  });
+
+  it('a duration scale alone leaves the springs at tempo 1', () => {
+    const element = inTheme('Scaled', {fast: 100, medium: 250, ratio: 0.75});
+    expect(resolveMotion(element, springs.stateChange)).toBe(
+      springs.stateChange,
+    );
+  });
+
+  it('is the same object each time for the same knobs', () => {
+    const element = inTheme('Stable', {tempo: 1.2});
+    expect(resolveMotion(element, springs.settle)).toBe(
+      resolveMotion(element, springs.settle),
+    );
+  });
+});
+
+describe('a theme that reduces motion for everyone (FR6)', () => {
+  it('counts as the Reduce Motion setting for the animator and the fade', () => {
+    const still = inTheme('StillAnimator', {reducedMotion: 'always'});
+    // A fine pointer: reduced motion lands at once.
+    expect(createAnimator(still).reducedMotion()).toBe('instant');
+    expect(reducedMotionFade(still)).toEqual({duration: 0, easing: 'linear'});
+    cleanup();
+    const moving = inTheme('MovingAnimator');
+    expect(createAnimator(moving).reducedMotion()).toBe('off');
+    expect(reducedMotionFade(moving)).toBeNull();
+  });
+
+  it("an ancestor's 'always' reaches every nested theme's script readers: one set to 'system' or with no motion config cannot remove it", () => {
+    const {getByTestId} = render(
+      <Theme
+        theme={defineTheme({
+          name: 'StillAncestor',
+          motion: {reducedMotion: 'always'},
+        })}>
+        <Theme
+          theme={defineTheme({
+            name: 'StillNestedSystem',
+            motion: {reducedMotion: 'system'},
+          })}>
+          <div data-testid="system" />
+        </Theme>
+        <Theme theme={defineTheme({name: 'StillNestedPlain'})}>
+          <div data-testid="plain" />
+        </Theme>
+      </Theme>,
+    );
+    for (const id of ['system', 'plain']) {
+      const element = getByTestId(id);
+      expect(themeReducesMotion(element), id).toBe(true);
+      expect(createAnimator(element).reducedMotion(), id).toBe('instant');
+      expect(reducedMotionFade(element), id).toEqual({
+        duration: 0,
+        easing: 'linear',
+      });
+    }
+  });
+});

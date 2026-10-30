@@ -69,7 +69,7 @@ export const docs = {
       type: 'DefinedTheme',
       required: true,
       description:
-        'Theme object to apply. Prefer built theme objects for static production themes; use runtime `defineTheme()` for dynamic themes.',
+        "Theme object to apply. Prefer built theme objects for static production themes; use runtime `defineTheme()` for dynamic themes. Its `motion` can set `character` (`'crisp' | 'standard' | 'expressive'`) and `reducedMotion` (`'system' | 'always'`).",
     },
     {
       name: 'mode',
