@@ -5,7 +5,7 @@
 /**
  * @file NumberInput.tsx
  * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
- * @output Exports NumberInput component, NumberInputProps
+ * @output Exports NumberInput component, NumberInputProps; optional steppers are hidden on coarse pointers
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -100,7 +100,10 @@ const styles = stylex.create({
     paddingInlineEnd: padInlineEnd,
   },
   wrapperWithNumberSteppers: {
-    paddingInlineEnd: 0,
+    paddingInlineEnd: {
+      default: 0,
+      '@media (pointer: coarse)': padInlineEnd,
+    },
   },
   input: {
     display: 'block',
@@ -142,7 +145,12 @@ const styles = stylex.create({
   },
   numberSteppers: {
     alignSelf: 'stretch',
-    display: 'flex',
+    // These compact buttons are a fine-pointer affordance. Touch users can
+    // enter a value directly; keyboard stepping remains available.
+    display: {
+      default: 'flex',
+      '@media (pointer: coarse)': 'none',
+    },
     flexDirection: 'column',
     flexShrink: 0,
     width: spacingVars['--spacing-4'],
@@ -385,6 +393,8 @@ interface NumberInputPropsBase extends Omit<
   isWheelEnabled?: boolean;
   /**
    * Whether to show increment and decrement buttons at the end of the input.
+   * The buttons are hidden on coarse pointers (such as touch screens).
+   * Direct text entry and keyboard stepping remain available.
    * @default false
    */
   hasNumberSteppers?: boolean;
