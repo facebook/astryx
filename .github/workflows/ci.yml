@@ -2025,7 +2025,7 @@ jobs:
       - name: Decide stable visual scope
         id: visual-scope
         env:
-          FILES: ${{ steps.scope.outputs.changed_files }}
+          FILES_PATH: ${{ steps.scope.outputs.changed_files_path }}
           SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
           SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
         run: |
@@ -2033,16 +2033,16 @@ jobs:
             printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
+          if [ "${{ github.event_name }}" != pull_request ] || [ ! -s "$FILES_PATH" ]; then
             printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           VISUAL_ARGS=()
           if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
-          printf '%s\n' "$FILES" \
-            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
+          node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}" < "$FILES_PATH"
 
       - name: Setup Node and pnpm
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
@@ -2135,7 +2135,7 @@ jobs:
       - name: Decide stable visual scope
         id: visual-scope
         env:
-          FILES: ${{ steps.scope.outputs.changed_files }}
+          FILES_PATH: ${{ steps.scope.outputs.changed_files_path }}
           SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
           SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
         run: |
@@ -2143,16 +2143,16 @@ jobs:
             printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
+          if [ "${{ github.event_name }}" != pull_request ] || [ ! -s "$FILES_PATH" ]; then
             printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           VISUAL_ARGS=()
           if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
-          printf '%s\n' "$FILES" \
-            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
+          node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}" < "$FILES_PATH"
 
       - name: Setup Node and pnpm
+        if: github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
@@ -2191,6 +2191,7 @@ jobs:
           merge-multiple: true
 
       - name: Install Playwright
+        if: github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       - name: Build canonical maintenance Storybook

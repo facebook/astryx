@@ -120,12 +120,21 @@ describe('spec-only workflow contract', () => {
       const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
-    const unrelatedJobs = ['test-ui', 'test-node', 'test', 'build-storybook'];
+    const unrelatedJobs = [
+      'test-ui',
+      'test-node',
+      'registry-contract',
+      'test',
+      'build-storybook',
+    ];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
         "steps.scope.outputs.spec_only != 'true'",
       );
     }
+    // No job reads a scope job any more.
+    expect(ci).not.toContain('needs.check-scope');
+    expect(ci).not.toContain('needs.check-components');
     expect(jobBlock('build')).toContain(
       "needs.build-storybook.result != 'skipped'",
     );
