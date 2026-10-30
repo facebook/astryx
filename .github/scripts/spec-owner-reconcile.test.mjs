@@ -60,6 +60,14 @@ function context({
   };
 }
 
+const reviewGate = (description, state = 'pending') => ({
+  sha: head,
+  context: 'review-required',
+  state,
+  description,
+  creator: {login: 'github-actions[bot]'},
+});
+
 function trustedStatus({
   runId,
   statusContext = 'spec-owner-approval',
@@ -669,7 +677,26 @@ describe('spec owner workflow reconciliation', () => {
 
     await run(harness, context({runId: 100n}));
 
-    expect(latestReviewGate(harness.state).state).toBe('pending');
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'pending',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+  });
+
+  it('leads with code review, and relinks the same text to a newer run', async () => {
+    const harness = createHarness({
+      headContent: 'kind: architecture\nauthority: current\n',
+      codeGate: reviewGate('Waiting on code review: core change'),
+    });
+
+    await run(harness, context({runId: 100n}));
+    await run(harness, context({runId: 101n}));
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'pending',
+      description: 'Waiting on code review: core change (+ spec approval)',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
   });
 
   it('skips fork owner reviews before any GitHub API work', async () => {
@@ -1210,22 +1237,10 @@ describe('spec owner workflow reconciliation', () => {
         headContent: currentRecord,
         comments: [ownerComment(`/approve-spec ${head}`)],
         // review-clear cleared code review under a spec wait.
-        statuses: [
-          {
-            sha: head,
-            context: 'review-required',
-            state: 'pending',
-            description: waiting,
-            creator: {login: 'github-actions[bot]'},
-          },
-        ],
-        codeGate: {
-          sha: head,
-          context: 'review-required',
-          state: 'pending',
-          description: 'Waiting on code review: core change (+ spec approval)',
-          creator: {login: 'github-actions[bot]'},
-        },
+        statuses: [reviewGate(waiting)],
+        codeGate: reviewGate(
+          'Waiting on code review: core change (+ spec approval)',
+        ),
       });
 
       await run(harness, context({runId: 100n}));
@@ -1266,12 +1281,8 @@ describe('spec owner workflow reconciliation', () => {
           if (input.context !== 'review-required' || injected) return;
           injected = true;
           state.statuses.unshift({
+            ...reviewGate('Waiting on code review after approval withdrawal.'),
             id: 999,
-            sha: head,
-            context: 'review-required',
-            state: 'pending',
-            description: 'Waiting on code review after approval withdrawal.',
-            creator: {login: 'github-actions[bot]'},
           });
         },
       });

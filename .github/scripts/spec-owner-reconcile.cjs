@@ -60,10 +60,6 @@ function isSpecPath(filePath) {
   return scope.touchesKnowledgeRecords || scope.touchesDesignAssets;
 }
 
-function formatTime(iso) {
-  return new Date(iso).toISOString().replace('.000Z', 'Z');
-}
-
 function isSettled(pr) {
   return Boolean(pr.merged_at) || pr.state === 'closed';
 }
@@ -412,12 +408,12 @@ async function reconcileSpecOwnerGate({
     const lines = [`### ${statusText.replace(/</g, '&lt;')}`, ''];
     if (!isApproved && notes.revokedBy) {
       lines.push(
-        `Approval revoked by @${notes.revokedBy.owner} at ${formatTime(notes.revokedBy.at)}.`,
+        `Approval revoked by @${notes.revokedBy.owner} at ${notes.revokedBy.at}.`,
         '',
       );
     } else if (!isApproved && notes.staleApprovalAt) {
       lines.push(
-        `Spec changed after approval at ${formatTime(notes.staleApprovalAt)}; approve the current head again.`,
+        `Spec changed after approval at ${notes.staleApprovalAt}; approve the current head again.`,
         '',
       );
     }
@@ -474,12 +470,15 @@ async function reconcileSpecOwnerGate({
         codeDescription: code.description,
         spec,
       });
+      // The details link names the spec decision run (a newer one on yield).
+      const targetUrl = gate.target_url ?? runUrl;
       const current = live.find(
         status => status.context === REVIEW_GATE_CONTEXT,
       );
       if (
         current?.state === gate.state &&
-        current?.description === gate.description
+        current?.description === gate.description &&
+        current?.target_url === targetUrl
       ) {
         return;
       }
@@ -489,6 +488,7 @@ async function reconcileSpecOwnerGate({
         context: REVIEW_GATE_CONTEXT,
         state: gate.state,
         description: gate.description,
+        targetUrl,
       });
       if (status?.id != null) written.add(status.id);
       if (othersNewest(await listStatuses(headSha))?.id === basis?.id) return;

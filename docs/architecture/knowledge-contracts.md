@@ -1050,16 +1050,12 @@ requested changes and can reply /approve-spec <sha>`. An approved spec change
   skipped, so owners approve a fork pull request with the command. Comments that
   are not owner commands start no runner.
 
-Rejected: binding approval to the exact head commit, because recording the
-approval and every merge from the base branch forced a second approval of
-unchanged text; approving per record or per changed section, because spec
-review accepts or reworks a pull request's spec changes as a whole; a command
-without a SHA, because a push landing just before the comment would be approved
-unseen; a separate spec status contributors must read, because one review gate
-should carry one message; reaction approvals, because reactions raise no event
-and reading them would need a polling job; having the workflow push the
-`draft`-to-`current` change, because a workflow-identity push starts no pull-request checks and cannot write a fork's
-branch.
+Rejected: exact-head binding (recording the approval and every base merge
+forced re-approval of unchanged text); per-record or per-section approval
+(spec review is all or nothing); a command without a SHA (a push just before
+it would be approved unseen); a separate spec status (one gate, one message);
+reaction approvals (no event, so a polling job); a workflow-pushed
+`draft`-to-`current` change (it starts no checks and cannot write a fork).
 
 ## Verification
 

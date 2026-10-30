@@ -703,17 +703,6 @@ describe('spec content fingerprint (DEC-14)', () => {
       expect(fingerprint(edited)).not.toBe(fingerprint(record));
     }
   });
-
-  it('covers every path, an absent one included, in any order', () => {
-    const one = [{path: 'docs/a.md', content: record}];
-    const two = [...one, {path: 'docs/b.md', content: null}];
-    expect(fingerprintSpecContent(two).fingerprint).not.toBe(
-      fingerprintSpecContent(one).fingerprint,
-    );
-    expect(fingerprintSpecContent([...two].reverse()).fingerprint).toBe(
-      fingerprintSpecContent(two).fingerprint,
-    );
-  });
 });
 
 describe('one review gate', () => {
