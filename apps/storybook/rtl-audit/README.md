@@ -74,6 +74,33 @@ Directional-icon mirroring. For each audited story it:
 This is the broad safety net: a component that lands a directional chevron
 without RTL support shows up as a not-RTL finding automatically.
 
+D1 selects one representative per component by stable story source-file and
+export order, rather than depending on generated `index.json` object order. A
+reference fixture that intentionally preserves caller-supplied directional
+glyph geometry may opt out of D1 only, with a colocated rationale:
+
+```ts
+import {rtlAuditParameters} from '../rtl-audit/story-parameters';
+
+export const ReferenceFixture: StoryObj = {
+  parameters: rtlAuditParameters({
+    D1: {
+      applicable: false,
+      reason: 'The samples are caller-supplied data, not directional controls.',
+    },
+  }),
+};
+```
+
+The audit validates the rendered, resolved Storybook parameters for every
+in-scope story before choosing the D1 representative. Story-level parameters
+therefore override meta-level defaults through normal Storybook precedence.
+`applicable: false` without a nonempty reason is an error, and D5 and D6
+continue scanning the same story. The JSON report and Markdown scorecard list
+every declared D1 exclusion with its component, story ID, dimension, and
+rationale—even when an earlier applicable story is selected—so a human reviewer
+can confirm the fixture is data rather than a directional control or cue.
+
 #### Interaction-revealed icons (popovers, dialogs, menus)
 
 Many directional icons live inside content that is closed by default — e.g. the

@@ -40,7 +40,7 @@ pixel/evidence uploads run only during `release-check`.
 Release callers must bind the CI run/attempt and all three job outcomes to its
 exact main SHA, and confirm that SHA remains an ancestor of current main before
 release mutation. The public
-[Release Process](https://github.com/facebook/astryx/wiki/Release-Process) uses
+[Release Process](https://github.com/meta/astryx/wiki/Release-Process) uses
 the same checked-SHA boundary; later fast-forward commits are next-release input.
 
 ## Coverage and results

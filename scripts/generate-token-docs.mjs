@@ -268,7 +268,7 @@ const groups = [
     exportName: 'easeDefaults',
     title: 'Easing Tokens',
     description:
-      "Easing curves for animations and transitions. Of a theme's three `motion` knobs, `character` sets `--ease-entrance` and `--ease-move`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`; exits keep their own curve at every character. `tempo` and `reducedMotion` (`system`, its only value) leave curves alone. A duration scale's own fields win over the knobs, and explicit `tokens` win over everything. No curve here shapes motion that follows a finger or the system (dragging, momentum, the rubber band, the on-screen keyboard), and the press's clocks, hover-intent delays and gesture thresholds keep their timing whatever the character.",
+      "Easing curves for animations and transitions. Of a theme's three `motion` knobs, `character` sets `--ease-entrance` and `--ease-move`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`; `--ease-exit` keeps its own curve at every character. `tempo` and `reducedMotion` (`system`, its only value) leave curves alone. A duration scale's own fields win over the knobs, and explicit `tokens` win over everything. No curve here shapes motion that follows a finger or the system (dragging, momentum, the rubber band, the on-screen keyboard), and the press's clocks, hover-intent delays and gesture thresholds keep their timing whatever the character.",
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },
