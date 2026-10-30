@@ -140,7 +140,7 @@ describe('Wheel — where it comes to rest', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('turns onto a value set while it is shown, as a bound clamping the time after another wheel turned (component:DateInput FR13)', () => {
+  it('turns onto a value set while it is shown, as a bound clamping the time after another wheel turned (component:DateInput FR14)', () => {
     // 22:00 past a 17:00 maximum: the field clamps to 17:00, and the hour
     // wheel, at rest on 22, turns onto 17 as UIDatePicker's does; it never
     // jumps there, and it commits nothing of its own.
