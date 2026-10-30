@@ -28,7 +28,14 @@ import {
 import {Profiler, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
-import {render, screen, fireEvent, within} from '@testing-library/react';
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 import {DateTimeInput as CoreDateTimeInput} from './DateTimeInput';
 import type {DateTimeInputProps, ISODateTimeString} from './DateTimeInput';
 
@@ -487,6 +494,126 @@ describe('DateTimeInput touch surface', () => {
     expect(timeField()).toHaveValue('');
   });
 
+  it('under a finger: moves the chosen date with the month wheel, keeping the day and the time', () => {
+    // UIDatePicker's wheels, under a finger (this file's coarse pointer).
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-21T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+      );
+      expect(onChange).toHaveBeenLastCalledWith('2026-05-21T09:30');
+    });
+  });
+
+  it('under a finger: a date the month wheel moves runs changeAction after onChange, shows at once, and is busy until it settles (family:input-fields FR6)', async () => {
+    const calls: string[] = [];
+    let resolve: () => void = () => {};
+    const changeAction = vi.fn(async (value: string | undefined) => {
+      calls.push(`changeAction ${value}`);
+      return new Promise<void>(done => {
+        resolve = done;
+      });
+    });
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-21T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          onChange={value => calls.push(`onChange ${value}`)}
+          changeAction={changeAction}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+      );
+    });
+    await waitFor(() => {
+      expect(calls).toEqual([
+        'onChange 2026-05-21T09:30',
+        'changeAction 2026-05-21T09:30',
+      ]);
+    });
+    // Optimistic: the moved date shows while the Action is pending, though
+    // the controlled value is still March 21.
+    expect(dateField()).toHaveValue('May 21, 2026');
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    await act(async () => {
+      resolve();
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+    });
+  });
+
+  it('under a finger: opening the month/year wheels on a date outside the range changes nothing', () => {
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2025-12-15T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('under a finger: keeps a date a custom constraint refuses, while the calendar moves', () => {
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-21T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          // May 21, 2026 is refused; the wheels must not choose it.
+          dateConstraints={[
+            date => !(date.getMonth() === 4 && date.getDate() === 21),
+          ]}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText('May'),
+      );
+      expect(onChange).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      ).toHaveTextContent('May 2026');
+    });
+  });
+
   it('commits 12-hour wheel changes against the controlled date', () => {
     const onChange = vi.fn();
     render(
@@ -691,6 +818,74 @@ describe('DateTimeInput touch surface', () => {
         'true',
       );
     });
+  });
+
+  it('keeps the arrows and Reset out of reach while the month/year toggle fades', async () => {
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+      openDateSheet();
+    });
+    const surface = (which: 'calendar' | 'wheels') => {
+      const element = document.querySelector<HTMLElement>(
+        `[data-date-surface="${which}"]`,
+      );
+      if (element == null) {
+        throw new Error(`no ${which} surface`);
+      }
+      return element;
+    };
+    // A running exit on both surfaces, so their own `inert` waits for the
+    // fade's end (useFadeInert).
+    for (const which of ['calendar', 'wheels'] as const) {
+      surface(which).getAnimations = () =>
+        [
+          {transitionProperty: 'opacity', playState: 'running'},
+        ] as unknown as Animation[];
+    }
+    // Queried by attribute: role queries compute a name for every element of
+    // the open sheet.
+    const actions = () =>
+      [
+        document.querySelector('button[aria-label="Previous month"]'),
+        document.querySelector('button[aria-label="Next month"]'),
+        [...document.querySelectorAll('dialog[open] button')].find(
+          button => button.textContent?.trim() === 'Reset',
+        ),
+      ].map(button => button?.closest('[inert]') != null);
+    const title = document.querySelector<HTMLElement>(
+      'button[aria-label$="Choose month and year"]',
+    );
+    if (title == null) {
+      throw new Error('no month/year title');
+    }
+    const fadeEnd = async (which: 'calendar' | 'wheels') => {
+      const event = new Event('transitionend', {bubbles: true});
+      Object.assign(event, {propertyName: 'opacity'});
+      act(() => {
+        surface(which).dispatchEvent(event);
+      });
+      // The swap lands one frame after the end.
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+    };
+
+    // Opening: the arrows and Reset leave with the toggle.
+    fireEvent.click(title);
+    expect(actions()).toEqual([true, true, true]);
+    await fadeEnd('calendar');
+    expect(actions()).toEqual([true, true, true]);
+    // Closing: they wait for the fade, as the calendar does.
+    fireEvent.click(title);
+    expect(actions()).toEqual([true, true, true]);
+    await fadeEnd('wheels');
+    expect(actions()).toEqual([false, false, false]);
   });
 
   it('keeps Save date disabled until a valid date exists', () => {

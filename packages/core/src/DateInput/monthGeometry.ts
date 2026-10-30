@@ -17,7 +17,12 @@
  * SYNC: When modified, update DateInputTouch.test.tsx.
  */
 
-import type {PlainDate} from '../utils';
+import {
+  getDaysInMonth,
+  plainDateIsAfter,
+  plainDateIsBefore,
+  type PlainDate,
+} from '../utils';
 
 /** How many months are reachable in either direction when unbounded. */
 export const DEFAULT_MONTH_REACH = 600;
@@ -80,6 +85,40 @@ export function scrollOffsetForRow(
 ): number {
   const distance = row * paneSize;
   return isRTL ? -distance : distance;
+}
+
+/**
+ * `date` moved to the month at `monthIndex`, keeping its day, as
+ * UIDatePicker's month and year wheels move the date
+ * (motion/uikit/datePicker.ts `calendar.monthYearWheels.changesDate`): a day
+ * the month lacks becomes the month's last day (`wheels.dayClampsToMonth`),
+ * and the result is held inside the bounds.
+ *
+ * @example
+ * ```
+ * dateInMonth({year: 2026, month: 1, day: 31}, toMonthIndex(2026, 2));
+ * // {year: 2026, month: 2, day: 28}
+ * ```
+ */
+export function dateInMonth(
+  date: PlainDate,
+  monthIndex: number,
+  min?: PlainDate | null,
+  max?: PlainDate | null,
+): PlainDate {
+  const {year, month} = fromMonthIndex(monthIndex);
+  const moved = {
+    year,
+    month,
+    day: Math.min(date.day, getDaysInMonth(year, month)),
+  };
+  if (min != null && plainDateIsBefore(moved, min)) {
+    return min;
+  }
+  if (max != null && plainDateIsAfter(moved, max)) {
+    return max;
+  }
+  return moved;
 }
 
 export interface PaneWindow {
