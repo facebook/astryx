@@ -6,10 +6,10 @@
  * @file CommentParts.tsx
  * @input Uses React, StyleX, theme tokens, and Astryx primitives (Avatar,
  *   Badge, Banner, Blockquote, Button, Card, Dialog, EmptyState, Item, Link,
- *   Section, Skeleton, Spinner, Text, Thumbnail, Timestamp, Tooltip)
- * @output Exports the presentational parts of a comment row: author name and
- *   avatar, metadata, quoted passages, progress, clamped body, error banner,
- *   reply rail, activity event row, edit history dialog, and loading skeletons
+ *   Section, Skeleton, Text, Thumbnail, Timestamp, Tooltip), plus Lab's
+ *   loading-message and shared busy-start announcement helpers
+ * @output Exports comment row parts, loading skeletons, and an edit history
+ *   dialog whose busy start uses the shared in-dialog announcement channel
  * @position Internal building blocks of the Comments family
  */
 
@@ -35,7 +35,6 @@ import {
 import {Link} from '@astryxdesign/core/Link';
 import {Section} from '@astryxdesign/core/Section';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
-import {Spinner} from '@astryxdesign/core/Spinner';
 import {Text} from '@astryxdesign/core/Text';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
@@ -60,6 +59,8 @@ import type {
   CommentVersion,
   CommentActivityEvent,
 } from './types';
+import {LoadingMessage} from '../LoadingMessage';
+import {useAnnounceBusyStart} from '../useAnnounceBusyStart';
 
 /** The 28px avatar column every comment row, reply, and event aligns to. */
 export const AVATAR_SIZE = `calc(${spacingVars['--spacing-6']} + ${spacingVars['--spacing-1']})`;
@@ -623,6 +624,12 @@ export function CommentAvatarFrame({user}: {user: CommentUser}) {
   );
 }
 
+/** Runs beneath Dialog so useAnnounce reaches its modal scope (AST-086 FR14). */
+function BusyStatus({isBusy, message}: {isBusy: boolean; message: string}) {
+  useAnnounceBusyStart(isBusy, message);
+  return null;
+}
+
 /** The empty 28px avatar column, for rows without an avatar. */
 export function AvatarSpacer() {
   return (
@@ -724,8 +731,17 @@ export function HistoryDialog({
         }
         content={
           <LayoutContent>
+            {/* Keep the announcement owner beneath Dialog: the shared channel
+                routes its busy start into this modal (AST-086 FR8, FR14). */}
+            <BusyStatus
+              isBusy={history.isLoading}
+              message={t('@astryx.comments.historyLoading')}
+            />
             {history.isLoading ? (
-              <Spinner size="lg" label={t('@astryx.comments.historyLoading')} />
+              <LoadingMessage
+                size="lg"
+                label={t('@astryx.comments.historyLoading')}
+              />
             ) : history.error != null ? (
               <Banner
                 status="error"

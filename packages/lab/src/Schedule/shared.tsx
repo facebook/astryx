@@ -43,6 +43,7 @@ import type {
   ScheduleHeaderContent,
   ScheduleEventColor,
 } from './types';
+import {useAnnounceBusyStart} from '../useAnnounceBusyStart';
 
 const DEFAULT_EVENT_CATEGORY: ScheduleCategory = {
   label: 'Event',
@@ -67,17 +68,20 @@ export function ScheduleFrame({
   children: ReactNode;
 }) {
   const {plugins} = useScheduleContext();
+  // The ring is silent; the Schedule announces its own busy start (AST-086 FR8).
+  useAnnounceBusyStart(isLoading, 'Loading events');
   const initialHeader: ScheduleHeaderContent = {
     startContent: null,
     centerContent: (
       <span {...stylex.props(styles.headerTitleContent)}>
         <Heading level={2}>{title}</Heading>
         <span
+          aria-hidden={!isLoading}
           {...stylex.props(
             styles.loadingSpinner,
             !isLoading && styles.loadingSpinnerHidden,
           )}>
-          <Spinner size="md" aria-label="Loading events" />
+          <Spinner size="md" aria-label="Loading events" aria-hidden />
         </span>
       </span>
     ),
