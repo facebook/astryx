@@ -26,7 +26,7 @@ function fixture({
       state: 'open',
       draft: false,
       head: {sha: SHA, repo: {full_name: 'contributor/astryx'}},
-      base: {repo: {full_name: 'facebook/astryx'}},
+      base: {repo: {full_name: 'meta/astryx'}},
     },
   ],
 } = {}) {
@@ -60,7 +60,7 @@ function fixture({
 function resolve(github, options = {}) {
   return resolveVercelPreview({
     github,
-    owner: 'facebook',
+    owner: 'meta',
     repo: 'astryx',
     prNumber: 123,
     headSha: SHA,
@@ -139,7 +139,7 @@ describe('exact-head Vercel preview', () => {
     expect(
       await resolveVercelDeploymentEvent({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         deployment,
         status,
@@ -169,7 +169,7 @@ describe('exact-head Vercel preview', () => {
     expect(
       await resolveVercelDeploymentEvent({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         deployment,
         status: {state: 'success', environment_url: ORIGIN},
@@ -240,7 +240,7 @@ describe('exact-head Vercel preview', () => {
     const github = fixture();
     expect(await resolve(github)).toBe(ORIGIN);
     expect(github.rest.repos.listDeployments).toHaveBeenCalledWith({
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       sha: SHA,
       environment: 'Preview',
@@ -276,7 +276,7 @@ describe('exact-head Vercel preview', () => {
     });
     expect(await resolve(github)).toBeNull();
     expect(github.rest.repos.listDeploymentStatuses).toHaveBeenCalledWith({
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       deployment_id: 8,
       per_page: 1,
@@ -315,7 +315,7 @@ describe('exact-head Vercel preview', () => {
       creator: {login: 'vercel[bot]'},
     };
     const status = {state: 'success', environment_url: ORIGIN};
-    for (const headRepository of ['contributor/astryx', 'facebook/astryx']) {
+    for (const headRepository of ['contributor/astryx', 'meta/astryx']) {
       const github = fixture({
         candidates: [
           {
@@ -323,14 +323,14 @@ describe('exact-head Vercel preview', () => {
             state: 'open',
             draft: false,
             head: {sha: SHA, repo: {full_name: headRepository}},
-            base: {repo: {full_name: 'facebook/astryx'}},
+            base: {repo: {full_name: 'meta/astryx'}},
           },
         ],
       });
       expect(
         await resolveVercelDeploymentEvent({
           github,
-          owner: 'facebook',
+          owner: 'meta',
           repo: 'astryx',
           deployment,
           status,
@@ -338,7 +338,7 @@ describe('exact-head Vercel preview', () => {
         }),
       ).toEqual({prNumber: 123, headSha: SHA, origin: ORIGIN});
       expect(github.paginate).toHaveBeenCalledWith(github.rest.pulls.list, {
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         state: 'open',
         per_page: 100,
@@ -363,7 +363,7 @@ describe('exact-head Vercel preview', () => {
       expect(
         await resolveVercelDeploymentEvent({
           github,
-          owner: 'facebook',
+          owner: 'meta',
           repo: 'astryx',
           ...invalid,
         }),
@@ -375,7 +375,7 @@ describe('exact-head Vercel preview', () => {
       state: 'open',
       draft: false,
       head: {sha: SHA},
-      base: {repo: {full_name: 'facebook/astryx'}},
+      base: {repo: {full_name: 'meta/astryx'}},
     };
     for (const candidates of [
       [{...candidate, draft: true}],
@@ -386,7 +386,7 @@ describe('exact-head Vercel preview', () => {
       expect(
         await resolveVercelDeploymentEvent({
           github,
-          owner: 'facebook',
+          owner: 'meta',
           repo: 'astryx',
           deployment,
           status,

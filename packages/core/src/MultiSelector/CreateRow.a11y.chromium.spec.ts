@@ -40,6 +40,17 @@ async function polite(page: Page): Promise<string> {
   );
 }
 
+/**
+ * Matches a polite region whose newest message is `message`. Messages written
+ * before the region exposes the previous one are joined in order
+ * (spec:AST-086 FR9), so typing faster than a frame can leave the previous
+ * keystroke's message ahead of the one under test.
+ */
+function newestMessage(message: string): RegExp {
+  const escaped = message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|\\s)${escaped}$`);
+}
+
 async function activeDescendantText(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     const id = document.activeElement?.getAttribute('aria-activedescendant');
@@ -59,7 +70,9 @@ test('the create row is announced as it appears and the highlight survives it va
   // "Bu": a partial match plus the create row above it.
   await search.pressSequentially('Bu');
   await expect(page.getByRole('option')).toHaveText(['Create "Bu"', 'Bug']);
-  await expect.poll(async () => polite(page)).toBe('1 result');
+  await expect
+    .poll(async () => polite(page))
+    .toMatch(newestMessage('1 result'));
 
   // Highlight the create row, then type the letter that makes it vanish: the
   // highlight must not be left pointing at a row that no longer exists.
@@ -78,12 +91,16 @@ test('the create row is announced as it appears and the highlight survives it va
   await search.fill('');
   await search.pressSequentially('Urgent');
   await expect(page.getByRole('option')).toHaveText(['Create "Urgent"']);
-  await expect.poll(async () => polite(page)).toBe('Create "Urgent"');
+  await expect
+    .poll(async () => polite(page))
+    .toMatch(newestMessage('Create "Urgent"'));
 
   // Enter commits: the caller adds the option, the search clears, and the new
   // label is a real row.
   await search.press('Enter');
-  await expect.poll(async () => polite(page)).toBe('Urgent created');
+  await expect
+    .poll(async () => polite(page))
+    .toMatch(newestMessage('Urgent created'));
   await expect(search).toHaveValue('');
   await expect(page.getByRole('option', {name: 'Urgent'})).toHaveAttribute(
     'aria-selected',
