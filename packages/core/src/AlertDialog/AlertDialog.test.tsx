@@ -602,6 +602,24 @@ describe('AlertDialog action tracking', () => {
     element.getBoundingClientRect = () => rect;
   }
 
+  /** A mouse's pointer event at (x, y), the primary button held until up. */
+  function mouse(target: Element, type: string, y: number, x = 60): void {
+    touchClock += 16;
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      clientX: x,
+      clientY: y,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: touchClock});
+    target.dispatchEvent(event);
+  }
+
   /**
    * Renders the alert open under a finger by default, in any engine (UIKit's
    * motion runs, and touches wait for the presentation), or with a mouse with
@@ -612,7 +630,7 @@ describe('AlertDialog action tracking', () => {
       isInline?: boolean;
       touch?: boolean;
       smallScreen?: boolean;
-      presentation?: 'adaptive' | 'dialog';
+      width?: number;
     } = {},
   ) {
     const isTouch = props.touch ?? true;
@@ -627,7 +645,7 @@ describe('AlertDialog action tracking', () => {
       <AlertDialog
         isOpen={isOpen}
         isInline={props.isInline}
-        presentation={props.presentation}
+        width={props.width}
         onOpenChange={onOpenChange}
         title="Delete item?"
         description="This cannot be undone."
@@ -738,25 +756,17 @@ describe('AlertDialog action tracking', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('with presentation="dialog" under a finger keeps the theme motion and Dialog\'s 400: a click acts at once and a close is immediate', () => {
-    const {onOpenChange, cancel, close} = renderOpen({presentation: 'dialog'});
-    // A coarse pointer, before anything is checked.
-    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
-    const dialog = screen.getByRole('alertdialog');
-    expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
-    // No presentation to wait for: the click acts as it lands.
-    fireEvent.click(cancel);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    // No fade to wait for either: the dialog closes with the caller.
-    close();
-    expect(dialog).not.toHaveAttribute('open');
-  });
-
-  it("takes UIKit's alert width on a phone under a finger, and Dialog's 400 on a wider touch screen or with a mouse", () => {
+  it("takes iOS's alert width on a phone, a caller's width there, and Dialog's 400 on a wider touch screen or with a mouse (FR9)", () => {
     const widthOf = () => screen.getByRole('alertdialog').getAttribute('style');
-    // A phone: a compact width with a touch pointer.
+    // A phone: a compact window under a coarse primary pointer.
     renderOpen();
     expect(widthOf()).toContain('--x-width: 320px');
+    cleanup();
+    vi.unstubAllGlobals();
+    // A caller's width still wins on a phone.
+    renderOpen({width: 360});
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+    expect(widthOf()).toContain('--x-width: 360px');
     cleanup();
     vi.unstubAllGlobals();
     // A wider touch screen (a tablet): Dialog's 400.
@@ -822,45 +832,12 @@ describe('AlertDialog action tracking', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('tracks the actions with presentation="dialog" too: a slide from the action to Cancel cancels', () => {
-    const {onOpenChange, onAction, cancel, action} = renderOpen({
-      presentation: 'dialog',
-    });
-    // The group owns both actions, as under every presentation.
-    for (const button of [cancel, action]) {
-      expect(button).toHaveAttribute(PRESS_GROUP_ITEM_ATTRIBUTE, '');
-    }
-    const id = touchId++;
-    touch('touchstart', action, {x: 60, y: 116}, id);
-    touch('touchmove', action, {x: 60, y: 156}, id);
-    expect(cancel).toHaveAttribute('data-astryx-press', 'on');
-    touch('touchend', action, {x: 60, y: 156}, id);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onAction).not.toHaveBeenCalled();
-  });
-
   it('tracks a mouse too (family:action-groups FR5): a press on the action slid to Cancel cancels, once', () => {
     const {onOpenChange, onAction, cancel, action} = renderOpen({
       touch: false,
     });
     // A fine primary pointer, before the mouse is checked.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
-    const mouse = (target: Element, type: string, y: number) => {
-      touchClock += 16;
-      const event = new PointerEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 1,
-        pointerType: 'mouse',
-        isPrimary: true,
-        button: 0,
-        buttons: type === 'pointerup' ? 0 : 1,
-        clientX: 60,
-        clientY: y,
-      });
-      Object.defineProperty(event, 'timeStamp', {value: touchClock});
-      target.dispatchEvent(event);
-    };
     mouse(action, 'pointerdown', 116);
     expect(action).toHaveAttribute('data-astryx-press', 'on');
     mouse(action, 'pointermove', 156);
@@ -870,6 +847,41 @@ describe('AlertDialog action tracking', () => {
     expect(onOpenChange).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('runs nothing for a mouse press lifted outside the actions (family:action-groups FR3, FR5)', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen({
+      touch: false,
+    });
+    // A fine primary pointer, before the mouse is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const dialog = screen.getByRole('alertdialog');
+    mouse(action, 'pointerdown', 116);
+    expect(action).toHaveAttribute('data-astryx-press', 'on');
+    // Off both actions: nothing is highlighted while the button is held.
+    mouse(action, 'pointermove', 116, 300);
+    expect(action).not.toHaveAttribute('data-astryx-press');
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    mouse(dialog, 'pointerup', 116, 300);
+    expect(onAction).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the keyboard on the buttons under every pointer: Enter runs the action and Space cancels (FR8)', async () => {
+    for (const touch of [true, false]) {
+      const user = userEvent.setup();
+      const {onOpenChange, onAction, cancel, action} = renderOpen({touch});
+      action.focus();
+      await user.keyboard('{Enter}');
+      expect(onAction).toHaveBeenCalledTimes(1);
+      cancel.focus();
+      await user.keyboard(' ');
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onAction).toHaveBeenCalledTimes(1);
+      cleanup();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('tracks only the actions: a press that lands on the title, the message or the backdrop and slides onto an action runs nothing', async () => {

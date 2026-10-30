@@ -108,12 +108,6 @@ const styles = stylex.create({
   },
 });
 
-/**
- * How AlertDialog presents under a finger: `'adaptive'` follows the device,
- * `'dialog'` keeps the dialog a mouse gets on every device.
- */
-export type AlertDialogPresentation = 'adaptive' | 'dialog';
-
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
   /**
@@ -177,20 +171,11 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is. By default 400,
-   * and on a phone (a compact width under a finger) with
-   * `presentation="adaptive"` UIKit's alert width, 320.
+   * and on a phone (a compact window under a coarse primary pointer) iOS's
+   * alert width, 320, in every theme; a width set here wins there too.
    * @default 400
    */
   width?: number | string;
-  /**
-   * How the alert presents under a finger. `'adaptive'` gives a touch screen
-   * the native alert: it appears and leaves the way an iOS alert does, and
-   * it is 320 wide on a phone. `'dialog'` keeps the dialog a mouse gets on
-   * every device: the theme's motion, 400 wide. Either way the actions are
-   * tracked as one group under every pointer (`family:action-groups`).
-   * @default 'adaptive'
-   */
-  presentation?: AlertDialogPresentation;
 }
 
 /**
@@ -232,7 +217,6 @@ export function AlertDialog({
   isActionLoading,
   onAction,
   width: widthProp,
-  presentation = 'adaptive',
   xstyle,
   className,
   style,
@@ -256,17 +240,16 @@ export function AlertDialog({
   // touch layer's useAlertMotion): it stays presented while it fades out.
   // Only under a touch presentation (a coarse primary pointer, after
   // hydration): where the primary pointer is fine nothing of it attaches
-  // (`spec:AST-094` FR13, FR19). A caller's `presentation="dialog"` keeps the
-  // fine-pointer dialog on every device (`architecture:public-component-api`
-  // INV16).
+  // (`spec:AST-094` FR13, FR19; `component:AlertDialog` FR6, FR7).
   const touch = useTouchPresentation();
-  const isTouch = presentation !== 'dialog' && touch.isTouch;
+  const isTouch = touch.isTouch;
   // UIKit's action layout needs both a finger and a compact viewport (the
   // active theme's compact definition).
   const isCompactTouch = isTouch && touch.isCompact;
-  // On a phone (a compact width under a finger), UIKit's alert width in
+  // On a phone (a compact window under a finger), iOS's alert width in
   // every theme (alertController.width), so the presentation's 1.2 start
-  // stays on screen; on a wider touch screen and with a mouse, Dialog's 400.
+  // stays on screen; a caller's width wins, and on a wider touch screen and
+  // with a mouse it stays Dialog's 400 (`component:AlertDialog` FR9).
   const width = widthProp ?? (isCompactTouch ? alertController.width : 400);
   // The actions' row: the action group's element and UIKit's layout's.
   const actionRowRef = useRef<HTMLElement>(null);
