@@ -106,6 +106,14 @@ const STRUCTURAL_VARS = new Set([
   // authored by a theme.
   '--_layout-flush-block-start',
   '--_layout-flush-block-end',
+  // ProgressBar's filled share of the track, written inline from `value` on
+  // every render and read by the fill's transform. Runtime state, never
+  // authored by a theme.
+  '--_progress-bar-fill',
+  // How long the touch fill takes to reach a new value, written inline from
+  // the size of the change (UIKit's 1 s per whole track). Runtime state too.
+  '--_progress-bar-change',
+  '--_progress-bar-flip',
 ]);
 
 /**
