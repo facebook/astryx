@@ -296,10 +296,8 @@ export interface DefineThemeInput<
    *   token; touch motion's springs don't read it yet.
    * - `character` (`'crisp'`, `'standard'` or `'expressive'`) sets the
    *   entrance and move curves; exits and fades never overshoot.
-   * - `reducedMotion` (`'system'` or `'always'`): `'always'` reduces motion
-   *   for everyone; so far the theme's motion-keyed adaptation rules and the
-   *   press release fade follow it, not yet components' other Reduce Motion
-   *   styles. Nothing loosens a person's own setting.
+   * - `reducedMotion` (`'system'`, the default and only value) follows each
+   *   person's Reduce Motion setting. Nothing loosens it.
    *
    * A motion scale computes duration min/max variants from base values and a
    * ratio (min = base × ratio, max = base / ratio); its durations win over

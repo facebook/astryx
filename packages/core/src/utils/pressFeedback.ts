@@ -158,10 +158,9 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 
 /**
  * The release fade's clock on `element`, read once, at the release, from the
- * properties its stylesheet reads: the theme's `--_astryx-motion-tempo` and,
- * under its `reducedMotion: 'always'` mark, `--_astryx-reduced-motion`
- * (`spec:AST-108` FR4, FR6; `component:Button` FR15). Under Reduce Motion a
- * tempo may shorten the fade, never lengthen it past 200 ms.
+ * property its stylesheet reads: the theme's `--_astryx-motion-tempo`
+ * (`spec:AST-108` FR4, `component:Button` FR15). Under Reduce Motion a tempo
+ * may shorten the fade, never lengthen it past 200 ms.
  */
 function fadeMs(element: Element): number {
   const style = getComputedStyle(element);
@@ -170,9 +169,8 @@ function fadeMs(element: Element): number {
   const tempo = Number.isFinite(read) && read > 0 ? read : 1;
   const scaled = PRESS_FADE_MS * tempo;
   const reduced =
-    style.getPropertyValue('--_astryx-reduced-motion').trim() === '1' ||
-    (typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   return reduced ? Math.min(scaled, PRESS_FADE_MS) : scaled;
 }
 

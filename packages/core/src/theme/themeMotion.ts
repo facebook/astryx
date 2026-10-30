@@ -11,11 +11,10 @@
  *   no import-time work, safe on the server.
  *
  * `tempo` scales every motion duration token, clamped to 0.75–1.5.
- * `character` picks the entrance and move curves. `reducedMotion: 'always'`
- * marks the theme's root; so far motion-keyed adaptation rules and the press
- * release fade read the mark, not yet components' other Reduce Motion styles.
- * `'system'` follows each person's setting. No spring reads the knobs yet. With the
- * defaults (tempo 1, `'standard'`, `'system'`) every token is today's.
+ * `character` picks the entrance and move curves. `reducedMotion` takes only
+ * `'system'`, which follows each person's setting. No spring reads the knobs
+ * yet. With the defaults (tempo 1, `'standard'`, `'system'`) every token is
+ * today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
  * win over `tempo` (FR5); explicit `tokens` win over both in
@@ -86,13 +85,6 @@ function msOf(value: string): number {
  * multiplies its clock by it.
  */
 export const MOTION_TEMPO_PROPERTY = '--_astryx-motion-tempo';
-
-/**
- * The private custom property the reduced-motion mark carries, 1 under it
- * (`spec:AST-108` FR6), for a style that cannot key a selector on the mark,
- * such as the press release's shared clock (utils/interactionOverlay.stylex.ts).
- */
-export const REDUCED_MOTION_PROPERTY = '--_astryx-reduced-motion';
 
 /** The duration tokens at `tempo`: today's values times it, to the ms. */
 export function durationTokensAt(tempo: number): Record<string, string> {

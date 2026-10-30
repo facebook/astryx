@@ -118,11 +118,10 @@ export const pressConsts = stylex.defineConsts({
 
 /**
  * The release's clock as CSS, scaled by the theme's `--_astryx-motion-tempo`
- * (`spec:AST-108` FR4, `component:Button` FR15) up to 1.5, its maximum, or
- * to 1 under a theme's `reducedMotion: 'always'` mark (FR6), so the 200 ms
- * Reduce Motion cap holds. The controller's timer reads the same properties.
+ * (`spec:AST-108` FR4, `component:Button` FR15) up to 1.5, its maximum. The
+ * controller's timer reads the same property.
  */
-const PRESS_RELEASE_DURATION = `calc(${pressConsts.releaseMs}ms * min(var(--_astryx-motion-tempo, 1), 1.5 - 0.5 * var(--_astryx-reduced-motion, 0)))`;
+const PRESS_RELEASE_DURATION = `calc(${pressConsts.releaseMs}ms * min(var(--_astryx-motion-tempo, 1), 1.5))`;
 /** The same clock under Reduce Motion: a tempo may shorten it, never lengthen it. */
 const PRESS_RELEASE_DURATION_REDUCED = `min(${pressConsts.releaseMs}ms, calc(${pressConsts.releaseMs}ms * var(--_astryx-motion-tempo, 1)))`;
 

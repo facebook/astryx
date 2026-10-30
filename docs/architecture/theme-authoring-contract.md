@@ -315,12 +315,12 @@ owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped
 FR6): no spring reads the motion knobs yet. Until they land, that part of FR6
 is current authority but not enforcement.
 
-The reach of `reducedMotion: 'always'` is accepted but partly unshipped
-(`spec:AST-108` FR6, INV15). Motion-keyed adaptation rules and the press
-release fade key reduced motion on the mark; components' other Reduce Motion
-styles, the animator, and other script readers of `prefers-reduced-motion` do
-not yet. Until they do, that part of INV15 and FR6 is current authority but not
-enforcement.
+`reducedMotion: 'always'` is accepted but unshipped (`spec:AST-108` FR6,
+INV15): `motion` takes only `reducedMotion: 'system'`, and nothing marks a
+theme's root, until component styles, the animator, script readers of
+`prefers-reduced-motion`, and motion-keyed adaptation rules key reduced motion
+on the mark. Until then, that part of INV15 and FR6 is current authority but
+not enforcement.
 
 ## Verification
 

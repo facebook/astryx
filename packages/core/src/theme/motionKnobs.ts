@@ -18,8 +18,10 @@
 /** How lively a theme's motion feels. */
 export type MotionCharacter = 'crisp' | 'standard' | 'expressive';
 
-/** Whether a theme reduces motion for everyone. */
-export type ThemeReducedMotion = 'system' | 'always';
+/**
+ * Whose Reduce Motion setting a theme follows: `'system'`, each person's own.
+ */
+export type ThemeReducedMotion = 'system';
 
 /** The three motion knobs a theme sets (`spec:AST-108` FR1). */
 export interface ThemeMotionKnobs {
@@ -35,8 +37,8 @@ export interface ThemeMotionKnobs {
    */
   character?: MotionCharacter;
   /**
-   * `'always'` reduces motion for everyone; `'system'` follows each person's
-   * Reduce Motion setting. No value loosens Reduce Motion. Default `'system'`.
+   * `'system'` follows each person's Reduce Motion setting. It is the only
+   * value, and the default: no theme loosens Reduce Motion.
    */
   reducedMotion?: ThemeReducedMotion;
 }
@@ -79,7 +81,5 @@ export function resolveKnobs(
     config?.character != null && CHARACTERS.includes(config.character)
       ? config.character
       : 'standard';
-  const reducedMotion =
-    config?.reducedMotion === 'always' ? 'always' : 'system';
-  return {tempo, character, reducedMotion, tempoIsSet};
+  return {tempo, character, reducedMotion: 'system', tempoIsSet};
 }

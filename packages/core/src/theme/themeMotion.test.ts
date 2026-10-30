@@ -54,13 +54,11 @@ describe('the motion knobs (spec:AST-108 FR1)', () => {
     });
   });
 
-  it('take reducedMotion always, and system otherwise', () => {
-    expect(resolveMotionKnobs({reducedMotion: 'always'}).reducedMotion).toBe(
-      'always',
-    );
+  it('take reducedMotion system, its only value', () => {
     expect(resolveMotionKnobs({reducedMotion: 'system'}).reducedMotion).toBe(
       'system',
     );
+    expect(resolveMotionKnobs({}).reducedMotion).toBe('system');
   });
 });
 
@@ -212,7 +210,7 @@ describe('existing motion configuration (spec:AST-108 FR5)', () => {
             {
               when: {pointer: 'coarse'},
               value: {
-                motion: {reducedMotion: 'always'} as never,
+                motion: {reducedMotion: 'system'} as never,
               },
             },
           ],
@@ -225,13 +223,13 @@ describe('existing motion configuration (spec:AST-108 FR5)', () => {
 describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
   it('returns the knobs, durations and easings with explicit tokens applied', () => {
     const motion = resolveThemeMotion({
-      motion: {tempo: 1.2, character: 'expressive', reducedMotion: 'always'},
+      motion: {tempo: 1.2, character: 'expressive', reducedMotion: 'system'},
       tokens: {'--duration-fast': '200ms'},
     });
     expect(motion.knobs).toEqual({
       tempo: 1.2,
       character: 'expressive',
-      reducedMotion: 'always',
+      reducedMotion: 'system',
       tempoIsSet: true,
     });
     expect(motion.durations['--duration-fast']).toBe('200ms');
@@ -473,7 +471,7 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
     for (const knob of [
       {character: 'expressive' as const},
       {tempo: 1.2},
-      {reducedMotion: 'always' as const},
+      {reducedMotion: 'system' as const},
     ]) {
       const grandchild = defineTheme({
         name: 'KnobGrandchild',

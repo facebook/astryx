@@ -186,10 +186,8 @@ export const myTheme = defineTheme({
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
    *     curves. Exits and fades never overshoot.
-   *   reducedMotion — 'always' reduces motion for everyone (so far the
-   *     theme's motion-keyed adaptation rules and the press release fade, not
-   *     yet components' other Reduce Motion styles); 'system' (the default)
-   *     follows each person's setting.
+   *   reducedMotion — 'system' (the default and only value) follows each
+   *     person's Reduce Motion setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
    * Finger tracking, momentum, the keyboard, hover, the press's onset delay
    * and tap flash, and busy loops never follow them; the press release fade
