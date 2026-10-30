@@ -11,7 +11,7 @@ import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
-import {PR_CI_GATE, PR_HELD, ungated} from './ci-pr-gate.mjs';
+import {PR_CI_GATE, PR_HELD, PR_REPORT_GATE, ungated} from './ci-pr-gate.mjs';
 
 const dir = path.resolve(import.meta.dirname, '../workflows');
 const workflows = fs
@@ -34,7 +34,7 @@ const REQUIRED = {
 };
 
 const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const gatedBy = new RegExp(`^(\\$\\{\\{ )?${escape(PR_CI_GATE)}`);
+const startsWithGate = gate => new RegExp(`^(\\$\\{\\{ )?${escape(gate)}`);
 
 function pullRequest({draft = false, fork = false, labels = []}) {
   return {
@@ -62,12 +62,11 @@ function evaluate(expression, {event = 'pull_request', ...pr}) {
   )(github, (list, item) => list.includes(item));
 }
 
-/** Whether a job's own condition lets it start for a pull request whose needs all skipped. */
-function starts(condition, needs, pr) {
-  const expression = ungated(condition || 'true').replace(
-    /needs\.([a-z][a-z0-9-]*)/g,
-    'needs["$1"]',
-  );
+/** Whether a required job's own condition, past its draft skip, starts it with every need skipped. */
+function startsWithNeedsSkipped(condition, needs) {
+  const expression = ungated(condition)
+    .replace(`${PR_REPORT_GATE} && (`, '(')
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
   return Function(
     'github',
     'needs',
@@ -79,7 +78,7 @@ function starts(condition, needs, pr) {
     {
       event_name: 'pull_request',
       base_ref: 'main',
-      event: {pull_request: pullRequest(pr)},
+      event: {pull_request: pullRequest({fork: true})},
     },
     needs,
     () => true,
@@ -115,18 +114,18 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
       for (const [id, job] of Object.entries(value.jobs)) {
         const condition = String(job.if ?? '');
         if (REQUIRED[name]?.includes(id)) {
-          // Not gated: it starts for a draft or an unlabelled fork even when
-          // every job it needs skipped, and its first step fails with the reason.
-          expect(condition, `${name}/${id}`).not.toMatch(gatedBy);
+          // Skips only a draft. For an unlabelled fork it starts even when every
+          // job it needs skipped, and its first step fails with the reason.
+          expect(condition, `${name}/${id}`).toMatch(
+            startsWithGate(PR_REPORT_GATE),
+          );
           const needs = Object.fromEntries(
             [job.needs ?? []].flat().map(need => [need, {result: 'skipped'}]),
           );
-          for (const pr of [{draft: true}, {fork: true}]) {
-            expect(
-              starts(condition, needs, pr),
-              `${name}/${id} ${JSON.stringify(pr)}`,
-            ).toBe(true);
-          }
+          expect(
+            startsWithNeedsSkipped(condition, needs),
+            `${name}/${id}`,
+          ).toBe(true);
           expect(job.steps[0], `${name}/${id}`).toMatchObject({
             if: `\${{ ${PR_HELD} }}`,
           });
@@ -146,7 +145,7 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
           )
         )
           continue;
-        expect(condition, `${name}/${id}`).toMatch(gatedBy);
+        expect(condition, `${name}/${id}`).toMatch(startsWithGate(PR_CI_GATE));
       }
     },
   );
@@ -160,17 +159,21 @@ describe('pull-request CI gate (spec:AST-030 FR17)', () => {
     expect(runs({draft: true, fork: true, labels: ['ci:run']})).toBe(false);
   });
 
-  it('holds the required checks of a draft or an unlabelled fork, failing instead of skipping', () => {
-    expect(held({})).toBe(false);
-    expect(held({fork: true, labels: ['ci:run']})).toBe(false);
+  it('skips the required checks of a draft and fails those of an unlabelled fork', () => {
+    const reports = event => evaluate(PR_REPORT_GATE, event) && !held(event);
+    expect(reports({})).toBe(true);
+    expect(reports({fork: true, labels: ['ci:run']})).toBe(true);
+    expect(evaluate(PR_REPORT_GATE, {fork: true})).toBe(true);
     expect(held({fork: true})).toBe(true);
-    expect(held({draft: true})).toBe(true);
+    expect(evaluate(PR_REPORT_GATE, {draft: true})).toBe(false);
   });
 
   it('passes every event that is not a pull request', () => {
     for (const event of ['push', 'merge_group', 'workflow_dispatch']) {
       expect(runs({event}), event).toBe(true);
-      expect(held({event}), event).toBe(false);
+      expect(evaluate(PR_REPORT_GATE, {event}) && !held({event}), event).toBe(
+        true,
+      );
     }
   });
 });
