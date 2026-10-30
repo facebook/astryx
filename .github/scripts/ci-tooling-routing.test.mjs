@@ -105,7 +105,8 @@ describe('Node-tooling CI routing', () => {
       'pnpm test:build',
     );
     // The Build package's owner keeps its contracts, in order: the plugin is
-    // built before the cascade guard imports it.
+    // built before the cascade guard imports it. Its real-browser checks run
+    // here, on the Build owner's runner, not in the sharded Node job.
     const rootScripts = JSON.parse(
       fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
     ).scripts;
@@ -115,6 +116,7 @@ describe('Node-tooling CI routing', () => {
       'pnpm -F @astryxdesign/build build',
       'node .github/scripts/theme-layer-cascade.js',
       'ASTRYX_STYLEX_BROWSER=1 vitest run scripts/stylex-module-resolution.browser.test.mjs --project node --maxWorkers=1',
+      'ASTRYX_TURBOPACK_E2E=1 vitest run packages/build/src/next.turbopack.test.mjs --project node --maxWorkers=1',
     ]);
     expect(ci.jobs['fixture-contrast'].if).toContain(TOOLING_FALSE);
     // The merge-base size build is heavy build work and stays off the

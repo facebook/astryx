@@ -10,7 +10,8 @@
  *   prebuilt class names and source-built rules (spec:AST-080 FR7), keep the
  *   app's rules to its files in their order, let a theme override win, and
  *   declare Core's data-colour defaults in an app with Core alone
- * @position Opt-in end-to-end check for the Turbopack half of @astryxdesign/build:
+ * @position End-to-end check for the Turbopack half of @astryxdesign/build, run by
+ *   `pnpm test:build` (the Build package's own CI job) or directly:
  *   ASTRYX_TURBOPACK_E2E=1 pnpm exec vitest run --project node packages/build/src/next.turbopack.test.mjs
  */
 
@@ -19,6 +20,7 @@ import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {chromium} from 'playwright';
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 
 const packageDir = path.resolve(
@@ -32,7 +34,6 @@ const env = {
   TURBOPACK: undefined,
   NODE_PATH: undefined,
 };
-const {chromium} = await import('playwright').catch(() => ({}));
 
 let root, app, html, css, ruleLog;
 const roots = [];
@@ -111,6 +112,40 @@ function built(dir) {
   return {page, css: sheets.join('\n')};
 }
 
+/**
+ * The page a just-started `next dev` serves at `origin`. Only "not listening
+ * yet" is waited out, up to `timeout`; its first answer must be the page, and
+ * every other outcome fails, naming the command.
+ */
+async function servedPage(origin, child, command, timeout = 300_000) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    if (child.exitCode != null || child.signalCode != null) {
+      throw new Error(
+        `${command} exited (${child.exitCode ?? child.signalCode}) before listening on ${origin}`,
+      );
+    }
+    const response = await fetch(origin).catch(error => {
+      if (error.cause?.code === 'ECONNREFUSED') return null;
+      throw error;
+    });
+    if (response != null) {
+      if (!response.ok) {
+        throw new Error(
+          `${command} answered ${origin} with ${response.status}`,
+        );
+      }
+      return response.text();
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `${command} never listened on ${origin} within ${timeout / 1000} s`,
+      );
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
+
 /** The rendered class lists, split by whether Astryx or the app made them. */
 function classLists(page) {
   const lists = [...page.matchAll(/<\w+([^>]*?) class="([^"]*)"/g)].map(
@@ -144,7 +179,8 @@ function expectStyled(page, stylesheet) {
 }
 
 // Real Next.js builds, a dev server and Chromium take minutes of every core, so
-// the default suite skips them; ASTRYX_TURBOPACK_E2E=1 runs them (with Chromium).
+// the default suite skips them; ASTRYX_TURBOPACK_E2E=1 runs them (with Chromium),
+// as `pnpm test:build` does on the Build package's own CI runner.
 describe.runIf(process.env.ASTRYX_TURBOPACK_E2E === '1')(
   'Turbopack end to end (ASTRYX_TURBOPACK_E2E=1)',
   () => {
@@ -162,7 +198,7 @@ describe.runIf(process.env.ASTRYX_TURBOPACK_E2E === '1')(
 
     afterAll(() => {
       for (const dir of roots) {
-        fs.rmSync(dir, {recursive: true, force: true, maxRetries: 5});
+        fs.rmSync(dir, {recursive: true, force: true});
       }
     });
 
@@ -196,19 +232,21 @@ describe.runIf(process.env.ASTRYX_TURBOPACK_E2E === '1')(
             server.close(() => resolve(free));
           });
         });
-        const child = spawn(
-          process.execPath,
-          [nextBin(), 'dev', '-p', String(port)],
-          {cwd: app, env, detached: true, stdio: 'ignore'},
-        );
+        const args = [nextBin(), 'dev', '-p', String(port)];
+        const command = [process.execPath, ...args].join(' ');
+        const child = spawn(process.execPath, args, {
+          cwd: app,
+          env,
+          detached: true,
+          stdio: 'ignore',
+        });
         try {
           const origin = `http://localhost:${port}`;
-          let page;
-          for (let i = 0; i < 300 && page == null; i++) {
-            const response = await fetch(origin).catch(() => null);
-            if (response?.ok) page = await response.text();
-            else await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+          const page = await servedPage(
+            origin,
+            child,
+            `${command} (in ${app})`,
+          );
           const hrefs = [...page.matchAll(/href="([^"]+\.css[^"]*)"/g)];
           const sheets = await Promise.all(
             hrefs.map(async ([, href]) => (await fetch(origin + href)).text()),
