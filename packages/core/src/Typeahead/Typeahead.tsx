@@ -691,6 +691,9 @@ export function Typeahead<T extends SearchableItem>({
                 // FormLayout default hides the visible marker (component:FormLayout
                 // FR5, AR2).
                 aria-required={isEffectivelyRequired || undefined}
+                // An error status is exposed on the combobox as on every other field
+                // (WCAG 4.1.2; spec:AST-020 FR9).
+                aria-invalid={status?.type === 'error' || undefined}
                 onChangeQuery={onChangeQuery}
                 onOpenChange={onOpenChange}
                 debounceMs={debounceMs}
