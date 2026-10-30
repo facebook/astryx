@@ -525,8 +525,10 @@ describe('Outline keyboard navigation', () => {
     render(<Outline items={items} onNavigateEnd={onNavigateEnd} />);
     await user.click(screen.getByRole('link', {name: 'Installation'}));
 
-    // Arrow keys inside the outline move focus; they are prevented, so they do
-    // not scroll the page and must not cancel the in-flight navigation.
+    // Following the link focuses the section; return to the outline. Arrow
+    // keys inside it move focus; they are prevented, so they do not scroll
+    // the page and must not cancel the in-flight navigation.
+    screen.getByRole('link', {name: 'Installation'}).focus();
     await user.keyboard('{ArrowDown}');
     expect(onNavigateEnd).not.toHaveBeenCalled();
 
@@ -568,6 +570,30 @@ describe('Outline navigate callbacks', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+  });
+
+  it('moves focus to the chosen section, so the next Tab continues there (WCAG 2.4.3)', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const install = document.getElementById('install')!;
+    const focus = vi.spyOn(install, 'focus');
+    render(<Outline items={items} />);
+
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    expect(install).toHaveFocus();
+    // Focusing must not fight Outline's own scroll.
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    // A heading is made programmatically focusable only, never a Tab stop.
+    expect(install).toHaveAttribute('tabindex', '-1');
+
+    // A target that already sets its own tabindex keeps it.
+    install.blur();
+    install.setAttribute('tabindex', '0');
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    expect(install).toHaveFocus();
+    expect(install).toHaveAttribute('tabindex', '0');
+
+    cleanup();
   });
 
   it('fires onNavigateStart on click and onNavigateEnd when the scroll settles', async () => {

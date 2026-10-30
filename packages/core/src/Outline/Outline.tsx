@@ -306,6 +306,25 @@ function getIndentStyle(level: number) {
  * />
  * ```
  */
+
+/**
+ * A followed in-page link moves the sequential focus starting point to its
+ * target, so the next Tab continues inside that section. Outline cancels the
+ * link's default to scroll itself, so it restores that by focusing the target
+ * without scrolling (WCAG 2.4.3). A target that is not focusable becomes
+ * programmatically focusable only.
+ */
+function moveFocusTo(id: string) {
+  const target = document.getElementById(id);
+  if (target == null) {
+    return;
+  }
+  if (!target.hasAttribute('tabindex')) {
+    target.setAttribute('tabindex', '-1');
+  }
+  target.focus({preventScroll: true});
+}
+
 export function Outline({
   items,
   activeId,
@@ -392,6 +411,7 @@ export function Outline({
   const navigate = (id: string) => {
     if (scrollTo(id)) {
       window.history.pushState(null, '', `#${id}`);
+      moveFocusTo(id);
     }
   };
 
