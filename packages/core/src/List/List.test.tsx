@@ -9,10 +9,11 @@
  * SYNC: When modified, update this header
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
+import {cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
+import {emulateTouch} from '../Item/__tests__/emulateTouch';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
@@ -1013,6 +1014,14 @@ describe('List', () => {
 });
 
 describe('List and swipe actions', () => {
+  // The suite answers as a phone (a coarse primary pointer).
+  beforeEach(() => {
+    emulateTouch();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
       <List>
@@ -1026,7 +1035,7 @@ describe('List and swipe actions', () => {
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
   });
 
-  it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
+  it('passes swipeActions and swipeBehavior through to the row unchanged', () => {
     render(
       <List>
         <ListItem
@@ -1040,12 +1049,9 @@ describe('List and swipe actions', () => {
     const row = screen.getByTestId('row');
     expect(row.tagName).toBe('LI');
     expect(row.parentElement).toBe(screen.getByRole('list'));
-    // The panel arrives with the lazily loaded swipe layer.
-    const panel = await waitFor(() => {
-      const found = row.querySelector('[data-swipe-panel="trailing"]');
-      expect(found).not.toBeNull();
-      return found;
-    });
+    // The panel is there at the first render: the layer comes with the row.
+    const panel = row.querySelector('[data-swipe-panel="trailing"]');
+    expect(panel).not.toBeNull();
     // Commit: presentational.
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });

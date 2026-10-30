@@ -94,7 +94,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -269,3 +270,19 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Swipe actions (UIContextualAction)
+
+UIKit lab host app: a plain `UITableView` (402 and 375 pt wide, 60 pt rows)
+with one, two and three trailing `UIContextualAction`s (the last one
+`.destructive`) and one leading `.normal` action; drags driven with known
+velocity, the touch stream, the swipe handler's tracking and move calls and
+every animator and `CAAnimation` logged.
+
+| ID     | Value                                             | Gesture                                                                                                                                | Extract                                                                                                                    | Method |
+| ------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-SA01 | `swipeActions.openFraction`                       | swipes released at rest at 0.3, 0.35, 0.4, 0.45, 0.5, 0.55 × the open width (past the 25 pt threshold)                                 | open or closed per release: the fraction                                                                                   | C      |
+| M-SA02 | `swipeActions.commitPastPanel`, `.commitFraction` | slow drag out past the full-swipe point and back; releases at rest and at ±1000 pt/s around it; 1, 2, 3 actions; 375, 402, 440 pt wide | the offsets where the primary action expands and collapses; perform or not per release; `confirmationThreshold`            | C, D   |
+| M-SA03 | `swipeActions.overdragResistance`                 | drag to the row width + 200 pt at 100 pt/s, with `performsFirstActionWithFullSwipe` on and off                                         | the row's offset against the finger's, per frame; `-[UISwipeOccurrence _extraOffsetForOffset:withDirection:]` over a sweep | C, D   |
+| M-SA04 | `swipeActions.slideOutOvershoot`                  | full swipe released past the confirmation point, `.normal` and `.destructive`                                                          | the row's position per frame until the action runs and the row returns or is removed; when the handler runs                | A, C   |
+| M-SA05 | `swipeActions.releaseVelocity`                    | releases past half the open width closing at 42, 44, 46, 48, 50, 52 and 54 pt/s (the pan's velocity at its end)                        | open or closed per release: the slowest closing speed that closes the row                                                  | C      |
