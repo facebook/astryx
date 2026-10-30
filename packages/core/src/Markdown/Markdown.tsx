@@ -6,7 +6,9 @@
  * @file Markdown.tsx
  * @input Markdown string, canonical AST, optional plugins and custom renderers;
  *   static document lists permit outside counter paint through ordered and
- *   unordered ancestors, matching RichText's native indentation
+ *   unordered ancestors. Flow-task
+ *   bodies use per-item first-line markers; paragraph-only task lists retain
+ *   their CheckboxList representation.
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
@@ -1700,10 +1702,16 @@ function renderBlock(
       );
     }
     case 'list': {
-      // Detect task lists: all items have a checked state
+      // Preserve the released CheckboxList representation for paragraph-only
+      // pure task lists. Flow/nested task bodies use the shared per-item marker
+      // path below, which owns first-line placement and static outside paint.
       const isTaskList =
         node.children.length > 0 &&
-        node.children.every(item => item.checked != null);
+        node.children.every(
+          item =>
+            item.checked != null &&
+            item.children.every(block => block.type === 'paragraph'),
+        );
 
       if (isTaskList) {
         // Extract labels from task items — render as rich inline content
@@ -1869,7 +1877,7 @@ function renderBlock(
                 </>
               );
 
-              // A task item beside plain items keeps its own checked state
+              // Each task item on this shared list path keeps its checked state
               // (FR23): it shows a read-only checkbox where its marker
               // would be, named by its text.
               const firstParagraph = item.children.find(

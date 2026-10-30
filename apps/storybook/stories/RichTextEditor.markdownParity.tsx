@@ -5,12 +5,13 @@
  * @input Core Markdown for the read surface; RichTextEditor with its toolbar and
  *   the Lexical plugins available today for the edit surface; the parity
  *   fixture; the Storybook demo Markdown plugins; 16px wide-counter fixtures
- *   with ordered and mixed unordered ancestry.
+ *   with ordered, unordered and pure-task ancestry.
  * @output `MarkdownParitySandbox`: one Markdown document rendered by both
  *   surfaces side by side, swapped in place, or overlaid, with diagnostic
  *   per-block geometry and the scroll anchor across a mode switch.
- *   `WideNumberMarkerParity` and `MixedNumberMarkerParity` compare short and
- *   wide outside counters on Markdown, RichTextView, and RichTextEditor.
+ *   `WideNumberMarkerParity`, `MixedNumberMarkerParity` and
+ *   `TaskParentNumberMarkerParity` compare short and wide outside counters on
+ *   Markdown, RichTextView, and RichTextEditor.
  * @position Storybook-only diagnostic for RichTextEditor.stories.tsx. It shows
  *   current behavior and fixes nothing: every difference it reports is a
  *   finding, and none of its numbers is a target.
@@ -892,6 +893,21 @@ const MIXED_MARKER_SOURCE = [
   '    388. Mixed roman counter',
   '    389. Roman sibling',
 ].join('\n');
+
+const TASK_PARENT_MARKER_SOURCE = [
+  'Reference paragraph.',
+  '',
+  '- [ ] Outer task',
+  '  - [x] Inner task',
+  '',
+  '    388. Task roman counter',
+  '    389. Task roman sibling',
+].join('\n');
+
+/** Reusable comparison for a numbered list below two pure task ancestors. */
+export function TaskParentNumberMarkerParity() {
+  return <NumberMarkerParity source={TASK_PARENT_MARKER_SOURCE} />;
+}
 
 /** Reusable comparison for a numbered list below two unordered ancestors. */
 export function MixedNumberMarkerParity() {

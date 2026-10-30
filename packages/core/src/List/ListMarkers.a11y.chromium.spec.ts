@@ -51,6 +51,8 @@ const UNCLIPPED = '#storybook-root ol { overflow: visible !important; }';
 interface Ink {
   readonly start: number;
   readonly end: number;
+  readonly top: number;
+  readonly bottom: number;
 }
 
 /**
@@ -87,6 +89,8 @@ async function inkOf(
       return rows.map(box => {
         let start = Infinity;
         let end = -Infinity;
+        let top = Infinity;
+        let bottom = -Infinity;
         const from = Math.max(
           0,
           Math.floor(rtl ? box.left - 2 : box.right - box.counterWidth - 2),
@@ -101,10 +105,12 @@ async function inkOf(
             if (data[i] - Math.max(data[i + 1], data[i + 2]) > 80) {
               start = Math.min(start, x);
               end = Math.max(end, x + 1);
+              top = Math.min(top, y);
+              bottom = Math.max(bottom, y + 1);
             }
           }
         }
-        return {start, end};
+        return {start, end, top, bottom};
       });
     },
     {
@@ -591,6 +597,7 @@ test('general and swipe-capable Lists retain their inline clip', async ({
     for (const story of [
       'core-list--long-number-markers',
       'core-item--swipe-actions',
+      'core-checkboxlist--default',
     ]) {
       await page.goto(
         `${storybook.origin}/iframe.html?id=${story}&viewMode=story&globals=direction:${dir};colorMode:light`,
@@ -622,58 +629,259 @@ test('general and swipe-capable Lists retain their inline clip', async ({
 
 // A numbered list's outside counter must not be cut by an unordered ancestor.
 // Removing only OL clipping misses this mixed nesting path (AST-061 FR11).
-for (const dir of ['ltr', 'rtl'] as const) {
-  test(`mixed nested counter stays whole (${dir})`, async ({
-    page,
-  }, testInfo) => {
-    await page.setViewportSize({width: 1440, height: 900});
-    await page.goto(
-      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-parity-mixed-number-markers&viewMode=story&globals=direction:${dir};colorMode:light`,
-    );
-    const root = '[data-wide-marker-surface="markdown"]';
-    await expect(page.locator(`${root} ol > li`)).toHaveCount(2);
-    await expect(
-      page.locator('[data-wide-marker-surface="view"]'),
-    ).toContainText('Mixed roman counter');
-    await page.evaluate(async () => document.fonts.ready);
-    const boxes = await markerBoxes(page, `${root} ol`);
-    await page.screenshot({
-      path: testInfo.outputPath('mixed-surfaces.png'),
-      fullPage: true,
+for (const {name, story, probe, hasTasks} of [
+  {
+    name: 'mixed',
+    story: 'mixed-number-markers',
+    probe: 'Mixed roman counter',
+    hasTasks: false,
+  },
+  {
+    name: 'pure task-parent',
+    story: 'task-parent-number-markers',
+    probe: 'Task roman counter',
+    hasTasks: true,
+  },
+] as const) {
+  for (const dir of ['ltr', 'rtl'] as const) {
+    test(`${name} nested counter stays whole (${dir})`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({width: 1440, height: 900});
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-parity-${story}&viewMode=story&globals=direction:${dir};colorMode:light`,
+      );
+      const root = '[data-wide-marker-surface="markdown"]';
+      await expect(page.locator(`${root} ol > li`)).toHaveCount(2);
+      await expect(
+        page.locator('[data-wide-marker-surface="view"]'),
+      ).toContainText(probe);
+      await page.evaluate(async () => document.fonts.ready);
+      const geometry = hasTasks
+        ? await page.locator('[data-wide-marker-surface]').evaluateAll(roots =>
+            roots.map(surface => {
+              const rtl = getComputedStyle(surface).direction === 'rtl';
+              const labels = [
+                'Reference paragraph.',
+                'Outer task',
+                'Inner task',
+                'Task roman counter',
+                'Task roman sibling',
+              ];
+              const rows = new Map<
+                string,
+                {start: number; top: number; lines: number; fontSize: string}
+              >();
+              const walker = document.createTreeWalker(
+                surface,
+                NodeFilter.SHOW_TEXT,
+              );
+              for (
+                let node = walker.nextNode();
+                node;
+                node = walker.nextNode()
+              ) {
+                const text = node.textContent?.trim() ?? '';
+                const parent = node.parentElement;
+                if (
+                  !labels.includes(text) ||
+                  parent == null ||
+                  parent.closest('label') != null
+                ) {
+                  continue;
+                }
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                const rects = Array.from(range.getClientRects()).filter(
+                  rect => rect.width > 0,
+                );
+                const first = rects.filter(rect => rect.top === rects[0].top);
+                rows.set(text, {
+                  start: rtl
+                    ? Math.max(...first.map(rect => rect.right))
+                    : Math.min(...first.map(rect => rect.left)),
+                  top: rects[0].top + window.scrollY,
+                  lines: new Set(rects.map(rect => rect.top)).size,
+                  fontSize: getComputedStyle(parent).fontSize,
+                });
+              }
+              const origin = rows.get('Reference paragraph.')?.start ?? NaN;
+              return {
+                surface: surface.getAttribute('data-wide-marker-surface'),
+                origin,
+                lists: Array.from(surface.querySelectorAll('ul, ol')).map(
+                  list => {
+                    const box = list.getBoundingClientRect();
+                    const style = getComputedStyle(list);
+                    return {
+                      tag: list.tagName,
+                      start: (rtl ? box.right : box.left) - origin,
+                      paddingStart: style.paddingInlineStart,
+                      marker: style.listStyleType,
+                      overflow: style.overflowX,
+                    };
+                  },
+                ),
+                measure:
+                  (
+                    surface.querySelector('[data-lexical-editor]') ??
+                    surface.firstElementChild
+                  )?.getBoundingClientRect().width ?? NaN,
+                text: Array.from(rows, ([label, line]) => ({
+                  label,
+                  ...line,
+                  start: line.start - origin,
+                })),
+                checkboxes: Array.from(
+                  surface.querySelectorAll<HTMLInputElement>(
+                    'input[type="checkbox"]',
+                  ),
+                ).map((input, index) => {
+                  const box = input.getBoundingClientRect();
+                  const parentText = rows.get(
+                    index === 0 ? 'Outer task' : 'Inner task',
+                  );
+                  return {
+                    checked: input.checked,
+                    width: box.width,
+                    gap:
+                      parentText == null
+                        ? null
+                        : rtl
+                          ? box.left - parentText.start
+                          : parentText.start - box.right,
+                    top: box.top + window.scrollY,
+                    bottom: box.bottom + window.scrollY,
+                    left: box.left + window.scrollX,
+                    right: box.right + window.scrollX,
+                  };
+                }),
+              };
+            }),
+          )
+        : undefined;
+      const boxes = await markerBoxes(page, `${root} ol`);
+      await page.screenshot({
+        path: testInfo.outputPath('mixed-surfaces.png'),
+        fullPage: true,
+      });
+      await page.addStyleTag({
+        content: `#storybook-root, #storybook-root * {color: transparent !important;} #storybook-root ${root} ol > li > :first-child {color: rgb(255, 0, 0) !important;}`,
+      });
+      const resting = await page.screenshot({
+        path: testInfo.outputPath('mixed-resting-ink.png'),
+        fullPage: true,
+      });
+      // This diagnostic lifts ALL list ancestors, not just numbered lists.
+      await page.addStyleTag({
+        content:
+          '#storybook-root ul, #storybook-root ol {overflow: visible !important;}',
+      });
+      const whole = await page.screenshot({
+        path: testInfo.outputPath('mixed-whole-ink.png'),
+        fullPage: true,
+      });
+      const ink = await inkOf(page, resting, boxes[0], dir);
+      const unclipped = await inkOf(page, whole, boxes[0], dir);
+      const overlaps =
+        geometry?.[0].checkboxes.flatMap(checkbox =>
+          unclipped.map(counter => ({
+            width: Math.max(
+              0,
+              Math.min(counter.end, checkbox.right) -
+                Math.max(counter.start, checkbox.left),
+            ),
+            height: Math.max(
+              0,
+              Math.min(counter.bottom, checkbox.bottom) -
+                Math.max(counter.top, checkbox.top),
+            ),
+          })),
+        ) ?? [];
+      await writeFile(
+        testInfo.outputPath('mixed-counter-receipt.json'),
+        JSON.stringify(
+          {dir, boxes, ink, unclipped, geometry, overlaps},
+          null,
+          2,
+        ),
+      );
+      for (const box of boxes[0]) {
+        expect(box.counterWidth).toBeGreaterThan(40);
+        expect(
+          dir === 'rtl' ? box.left : box.right - box.counterWidth,
+        ).toBeGreaterThanOrEqual(0);
+        expect(
+          dir === 'rtl' ? box.left + box.counterWidth : box.right,
+        ).toBeLessThanOrEqual(1440);
+      }
+      expect(ink, 'unordered ancestors do not clip roman counters').toEqual(
+        unclipped,
+      );
+      if (geometry != null) {
+        const markdown = geometry[0];
+        for (const surface of geometry) {
+          expect(surface.checkboxes.map(input => input.checked)).toEqual([
+            false,
+            true,
+          ]);
+          expect(surface.text).toHaveLength(5);
+          expect(
+            Math.abs(surface.measure - markdown.measure),
+          ).toBeLessThanOrEqual(0.5);
+          for (const text of surface.text) {
+            const other = markdown.text.find(line => line.label === text.label);
+            expect(text.fontSize).toBe('16px');
+            expect(
+              text.lines,
+              `${surface.surface}: ${text.label} line count`,
+            ).toBe(other?.lines);
+            // RichText's source-preserving chunk import has a separate parent-
+            // anchor defect for this pure-task case. Record all three surfaces
+            // but assert Markdown's parent-text anchors below, rather than
+            // accepting the native misalignment. Other parity assertions stay strict.
+          }
+        }
+        const starts = new Map(
+          markdown.text.map(line => [line.label, line.start]),
+        );
+        const direction = dir === 'rtl' ? -1 : 1;
+        expect(starts.get('Outer task')).toBe(direction * 28);
+        expect(starts.get('Inner task')).toBe(direction * 56);
+        expect(starts.get('Task roman counter')).toBe(direction * 80);
+        expect(starts.get('Task roman sibling')).toBe(direction * 80);
+        for (const overlap of overlaps) {
+          expect(
+            overlap.width * overlap.height,
+            'checkbox never covers counter ink',
+          ).toBe(0);
+        }
+        for (const [index, checkbox] of markdown.checkboxes.entries()) {
+          const label = markdown.text.find(
+            line => line.label === (index === 0 ? 'Outer task' : 'Inner task'),
+          );
+          if (label == null) {
+            throw new Error('missing task parent text');
+          }
+          expect(
+            checkbox.top,
+            'checkbox stays on the parent text line',
+          ).toBeLessThan(label.top + 24);
+          expect(checkbox.bottom).toBeGreaterThan(label.top);
+        }
+        const inputs = page.locator(`${root} input[type="checkbox"]`);
+        for (const input of await inputs.all()) {
+          await expect(input).toHaveAttribute('aria-readonly', 'true');
+          await input.click({force: true});
+          await input.focus();
+          await page.keyboard.press('Space');
+        }
+        expect(
+          await inputs.evaluateAll(elements =>
+            elements.map(element => (element as HTMLInputElement).checked),
+          ),
+        ).toEqual([false, true]);
+      }
     });
-    await page.addStyleTag({
-      content: `#storybook-root, #storybook-root * {color: transparent !important;} #storybook-root ${root} ol > li > :first-child {color: rgb(255, 0, 0) !important;}`,
-    });
-    const resting = await page.screenshot({
-      path: testInfo.outputPath('mixed-resting-ink.png'),
-      fullPage: true,
-    });
-    // This diagnostic lifts ALL list ancestors, not just numbered lists.
-    await page.addStyleTag({
-      content:
-        '#storybook-root ul, #storybook-root ol {overflow: visible !important;}',
-    });
-    const whole = await page.screenshot({
-      path: testInfo.outputPath('mixed-whole-ink.png'),
-      fullPage: true,
-    });
-    const ink = await inkOf(page, resting, boxes[0], dir);
-    const unclipped = await inkOf(page, whole, boxes[0], dir);
-    await writeFile(
-      testInfo.outputPath('mixed-counter-receipt.json'),
-      JSON.stringify({dir, boxes, ink, unclipped}, null, 2),
-    );
-    for (const box of boxes[0]) {
-      expect(box.counterWidth).toBeGreaterThan(40);
-      expect(
-        dir === 'rtl' ? box.left : box.right - box.counterWidth,
-      ).toBeGreaterThanOrEqual(0);
-      expect(
-        dir === 'rtl' ? box.left + box.counterWidth : box.right,
-      ).toBeLessThanOrEqual(1440);
-    }
-    expect(ink, 'unordered ancestors do not clip roman counters').toEqual(
-      unclipped,
-    );
-  });
+  }
 }

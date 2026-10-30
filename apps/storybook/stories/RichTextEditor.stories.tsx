@@ -21,6 +21,7 @@ import {
   MarkdownParitySandbox,
   WideNumberMarkerParity,
   MixedNumberMarkerParity,
+  TaskParentNumberMarkerParity,
   type MarkdownParitySandboxProps,
 } from './RichTextEditor.markdownParity';
 import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from './RichTextEditor.markdownPluginsImportExport';
@@ -575,6 +576,12 @@ export const MarkdownParityMixedNumberMarkers: Story = {
   name: 'Markdown parity: mixed nested number markers at 16px',
   tags: ['!autodocs'],
   render: () => <MixedNumberMarkerParity />,
+};
+
+export const MarkdownParityTaskParentNumberMarkers: Story = {
+  name: 'Markdown parity: pure task-parent number markers at 16px',
+  tags: ['!autodocs'],
+  render: () => <TaskParentNumberMarkerParity />,
 };
 
 export const MarkdownParityToggle: MarkdownParityStory = {
