@@ -6,7 +6,9 @@
  *   keyboard, scroll and visibility events
  * @output Exports paintPress and readPressPaint (the press attribute's
  *   writer for every press they track), PRESSABLE_ATTRIBUTE,
- *   PRESSED_ATTRIBUTE, pressableProps and installPressFeedback
+ *   PRESSED_ATTRIBUTE, pressableProps, the action-group item marker
+ *   (PRESS_GROUP_ITEM_ATTRIBUTE, pressGroupItemProps) and
+ *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -46,6 +48,13 @@
  *
  * Its one touch-only listener, `touchcancel`, is on only while the primary
  * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
+ *
+ * An action of a group whose own tracker follows a held pointer across its
+ * siblings (`family:action-groups`) carries {@link PRESS_GROUP_ITEM_ATTRIBUTE}:
+ * that tracker paints its press, so the controller leaves a pointer's press
+ * there alone, and the two never write the attribute over each other. A
+ * member the group's tracker skips (a field, a menu trigger) carries no
+ * marker and keeps the controller's press.
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
@@ -89,6 +98,18 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/**
+ * Marks an action whose group tracks a held pointer across its siblings
+ * (`family:action-groups`): the group's tracker paints a pointer's press on
+ * it, and the controller paints none there. The owner renders it on each
+ * action its tracker follows, so it is in place before the first press.
+ */
+export const PRESS_GROUP_ITEM_ATTRIBUTE = 'data-astryx-press-group-item';
+
+/** Spread onto each action a group's tracker follows. */
+export const pressGroupItemProps: {readonly [PRESS_GROUP_ITEM_ATTRIBUTE]: ''} =
+  {[PRESS_GROUP_ITEM_ATTRIBUTE]: ''};
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.
@@ -351,6 +372,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 }
 
 /**
+ * Whether a group's own tracker paints this surface's press
+ * ({@link PRESS_GROUP_ITEM_ATTRIBUTE}). The touch is still recorded, so a
+ * scroll it drives arms the brake as any finger's does.
+ */
+function trackedByGroup(element: HTMLElement): boolean {
+  return element.closest(`[${PRESS_GROUP_ITEM_ATTRIBUTE}]`) != null;
+}
+
+/**
  * Is this touch a BRAKE on a list the finger set moving, rather than a press?
  *
  * A native list highlights nothing for one, and nothing else would cancel it:
@@ -430,8 +460,9 @@ function stylesheetDroppedActive(): boolean {
 
 /**
  * The surface a mouse button's or the Space key's press paints, if any: the
- * innermost marked surface, outside a menu. A key's press paints only a
- * focused element that is itself the surface, as `:active` does.
+ * innermost marked surface, outside a menu and off an action a group's
+ * tracker paints. A key's press paints only a focused element that is
+ * itself the surface, as `:active` does.
  */
 function buttonSurfaceAt(
   target: EventTarget | null,
@@ -442,6 +473,11 @@ function buttonSurfaceAt(
     return null;
   }
   if (pointerId == null && element !== target) {
+    return null;
+  }
+  // A group's tracker paints a pointer's press on its actions, a mouse's too;
+  // a key's press is the action's own.
+  if (pointerId != null && trackedByGroup(element)) {
     return null;
   }
   return element;
@@ -519,7 +555,7 @@ function onPointerDown(event: PointerEvent): void {
   const braking = element != null && scrollerIsBraking(element);
   lastTouchAt = Date.now();
   lastTouchTarget = event.target instanceof Node ? event.target : null;
-  if (element == null || braking) {
+  if (element == null || braking || trackedByGroup(element)) {
     return;
   }
   takeOver(button, element);

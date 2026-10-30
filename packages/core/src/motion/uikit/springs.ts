@@ -7,7 +7,9 @@
  *   presentations use (`SHEET_PRESENT_SPRING`, `SETTLE_SPRING`, …), each in
  *   the vocabulary of its source (SpringDescription: duration/bounce,
  *   response/dampingRatio or mass/stiffness/damping; a reader normalizes them
- *   to one form), and `springs`, the table of all of them by row name
+ *   to one form), `springs`, the table of all of them by row name, and the
+ *   role registrations: registerSpringsTable (every spring `spec:AST-094`
+ *   FR4 names) and registerAlertSprings (the alert's two alone)
  * @position The springs domain of the UIKit constants table (motion/uikit)
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
@@ -497,6 +499,8 @@ const SPRING_ROLES = {
   menuClose: MENU_CLOSE_SPRING,
   subMenuOpen: SUB_MENU_OPEN_SPRING,
   subMenuBack: SUB_MENU_BACK_SPRING,
+  alertPresent: ALERT_PRESENT_SPRING,
+  alertDismiss: ALERT_DISMISS_SPRING,
 };
 
 // UIKit's menu springs under their table paths, for registerMenuSprings.
@@ -546,5 +550,23 @@ export function registerSubMenuSprings(): void {
 export function registerSpringsTable(): void {
   registerMotionTable('springs', SPRING_ROLES, {
     roles: Object.keys(SPRING_ROLES),
+  });
+}
+
+// The alert's two rows under their table paths, for registerAlertSprings.
+const alertSpringRoles = {
+  alertPresent: ALERT_PRESENT_SPRING,
+  alertDismiss: ALERT_DISMISS_SPRING,
+};
+
+/**
+ * Registers only the alert's springs as their roles, `springs.alertPresent`
+ * and `springs.alertDismiss` (`component:AlertDialog` FR6), for AlertDialog,
+ * which plays them without the rest of the table: its bundle carries these
+ * two springs and no other.
+ */
+export function registerAlertSprings(): void {
+  registerMotionTable('springs', alertSpringRoles, {
+    roles: Object.keys(alertSpringRoles),
   });
 }

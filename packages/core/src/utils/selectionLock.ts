@@ -31,7 +31,6 @@
  * iOS query matches utils/touchPresentation.ts.
  */
 
-import {isCoarsePointer} from './coarsePointer';
 import {parentAcrossShadow} from './flatTree';
 
 /** What a held finger must not start on a control or a cell. */
@@ -54,16 +53,12 @@ const TEXT_ENTRY_TYPES = new Set([
 
 /**
  * Whether a contact of this pointer kind takes the lock: a finger or a pen,
- * and only where the primary pointer is coarse (a phone, an iPad and its
- * pencil). Where the primary pointer is fine (a laptop's touchscreen, a
- * desktop pen tablet), a finger and a pen get the browser's defaults, as a
- * mouse does (`spec:AST-094` FR19, `spec:AST-017` FR59). A mouse never does.
+ * under any primary pointer, a laptop's touchscreen and a desktop pen tablet
+ * included, since a pen's hold acts as a finger's (`spec:AST-094` FR41). A
+ * mouse never does: it keeps its released behavior (`spec:AST-017` FR59).
  */
-export function locksSelectionFor(
-  pointerType: string,
-  view: Window | null | undefined,
-): boolean {
-  return pointerType !== 'mouse' && isCoarsePointer(view);
+export function locksSelectionFor(pointerType: string): boolean {
+  return pointerType !== 'mouse';
 }
 
 /** Locked elements, how many contacts hold each, and what to restore. */
@@ -110,6 +105,115 @@ export function lockSelection(
       }
     };
   }
+  return lockStyles(set);
+}
+
+/** How a drag's selection hold begins. */
+export interface DragSelectionLockOptions {
+  /**
+   * The press claimed at its own pointerdown, before any movement (an action
+   * group's press): it has selected nothing, so the page's selection stays.
+   * The hold still refuses a new one, and puts the page's back over any
+   * selection that appears while it runs.
+   */
+  keepsSelection?: boolean;
+}
+
+/** How a drag's selection hold ends: at a lift, or at a cancel. */
+export interface DragSelectionReleaseOptions {
+  /**
+   * The press was cancelled (a pointercancel, a blur, a detach): no mouseup
+   * or click follows.
+   */
+  isCancel?: boolean;
+}
+
+/**
+ * Refuse a selection while a mouse or a pen drag a recognizer claimed runs,
+ * until the returned function runs (`spec:AST-094` FR43, FR41). A drag that
+ * moved before it claims has already started selecting, so that selection
+ * goes first; a press that claims at its own pointerdown keeps the page's
+ * (`keepsSelection`).
+ * `elements` refuse one with inline styles, on every engine. The document
+ * refuses one too, as WebKit extends a drag's selection over text outside
+ * the elements without another `selectstart`: a `selectstart` anywhere is
+ * refused and a selection the drag extends is cleared. The press's own
+ * `mouseup` and `click` come after its `pointerup` in the same task, and
+ * WebKit settles the drag's selection there, so the document's hold ends a
+ * task after a lift; a cancel, which nothing follows, ends it at once. Page
+ * listeners only during a press (FR24).
+ * Idempotent release.
+ */
+export function lockDragSelection(
+  elements: Iterable<Element>,
+  view: Window | null | undefined,
+  {keepsSelection = false}: DragSelectionLockOptions = {},
+): (options?: DragSelectionReleaseOptions) => void {
+  const kept = keepsSelection ? rangesOf(view?.getSelection()) : [];
+  const clear = () => {
+    const selection = view?.getSelection();
+    if (
+      selection == null ||
+      selection.rangeCount === 0 ||
+      selection.isCollapsed ||
+      holdsRanges(selection, kept)
+    ) {
+      return;
+    }
+    selection.removeAllRanges();
+    for (const range of kept) {
+      selection.addRange(range.cloneRange());
+    }
+  };
+  if (!keepsSelection) {
+    view?.getSelection()?.removeAllRanges();
+  }
+  const set = new Set(elements);
+  const refuse = (event: Event) => {
+    if (!isTextEntry(event.target)) {
+      event.preventDefault();
+    }
+  };
+  for (const element of set) {
+    element.addEventListener('selectstart', refuse);
+  }
+  const doc = view?.document ?? null;
+  // The focused field keeps its own selection (a drag never starts in one).
+  const clearOutsideEntry = () => {
+    if (!isTextEntry(doc?.activeElement ?? null)) {
+      clear();
+    }
+  };
+  doc?.addEventListener('selectstart', refuse, true);
+  doc?.addEventListener('selectionchange', clearOutsideEntry);
+  const unlockStyles = lockStyles(set);
+  let isReleased = false;
+  return ({isCancel = false}: DragSelectionReleaseOptions = {}) => {
+    if (isReleased) {
+      return;
+    }
+    isReleased = true;
+    for (const element of set) {
+      element.removeEventListener('selectstart', refuse);
+    }
+    unlockStyles();
+    const release = () => {
+      clearOutsideEntry();
+      doc?.removeEventListener('selectstart', refuse, true);
+      doc?.removeEventListener('selectionchange', clearOutsideEntry);
+    };
+    // A lift's own mouseup and click follow in its task and must still meet
+    // the hold; nothing follows a cancel, which lifts it at once (FR41).
+    if (view == null || isCancel) {
+      release();
+    } else {
+      view.setTimeout(release, 0);
+    }
+  };
+}
+
+/** The selection-lock styles on `set`, refcounted per element; idempotent release. */
+function lockStyles(set: ReadonlySet<Element>): () => void {
   const locked: Element[] = [];
   for (const element of set) {
     const style = styleOf(element);
@@ -225,4 +329,35 @@ function isWithin(node: Node, ancestor: Element): boolean {
 function styleOf(element: Element): CSSStyleDeclaration | null {
   const style = (element as Partial<ElementCSSInlineStyle>).style;
   return style instanceof Object ? style : null;
+}
+
+/** A selection's ranges, copied; none for a collapsed or empty one. */
+function rangesOf(selection: Selection | null | undefined): Range[] {
+  if (selection == null || selection.isCollapsed) {
+    return [];
+  }
+  const ranges: Range[] = [];
+  for (let index = 0; index < selection.rangeCount; index++) {
+    ranges.push(selection.getRangeAt(index).cloneRange());
+  }
+  return ranges;
+}
+
+/** Whether `selection` holds exactly `ranges`, in order. */
+function holdsRanges(
+  selection: Selection,
+  ranges: ReadonlyArray<Range>,
+): boolean {
+  if (ranges.length === 0 || selection.rangeCount !== ranges.length) {
+    return false;
+  }
+  return ranges.every((range, index) => {
+    const held = selection.getRangeAt(index);
+    return (
+      held.startContainer === range.startContainer &&
+      held.startOffset === range.startOffset &&
+      held.endContainer === range.endContainer &&
+      held.endOffset === range.endOffset
+    );
+  });
 }

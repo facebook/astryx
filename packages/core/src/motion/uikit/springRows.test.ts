@@ -58,13 +58,30 @@ describe('spring rows', () => {
     }
   });
 
+  it('registering the alert\u2019s roles carries its spring and no other row', () => {
+    const alert = bundle(
+      "import {registerAlertSprings} from './springs'; registerAlertSprings();",
+    );
+    expect(alert).toContain(ALERT);
+    for (const other of [
+      KEYBOARD,
+      SHEET_DETENT,
+      FINGER_TRACKING,
+      DIRECT_CHANGE,
+    ]) {
+      expect(alert).not.toContain(other);
+    }
+  });
+
   it('registering the motion roles carries only the springs that are roles', () => {
     const roles = bundle(
       "import {registerSpringsTable} from './springs'; registerSpringsTable();",
     );
     expect(roles).toContain(FINGER_TRACKING);
     expect(roles).toContain(DIRECT_CHANGE);
-    for (const other of [KEYBOARD, ALERT, SHEET_DETENT]) {
+    // The alert's springs are roles too (AlertDialog FR6).
+    expect(roles).toContain(ALERT);
+    for (const other of [KEYBOARD, SHEET_DETENT]) {
       expect(roles).not.toContain(other);
     }
   });
