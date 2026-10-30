@@ -10,6 +10,8 @@
  * update these tests to match the public behavior.
  */
 
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {
   StrictMode,
@@ -22,6 +24,7 @@ import {
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {Dialog} from '../Dialog';
 import {hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
@@ -1076,10 +1079,15 @@ describe('BottomSheetSwitcher', () => {
       isPrimary: true,
     });
     fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
-    expect(panel.style.transform).toBe('translateY(300px)');
+    // The drag moves the sheet on its travel channel (`translate`).
+    expect(panel.style.translate).toBe('0px 300px');
 
     expect(fireEvent.contextMenu(handle)).toBe(false);
 
+    // Back to the detent on the detent spring (jsdom: its end at once). At
+    // rest an identity leaves the element (the animator writes no inline
+    // `translate: 0px 0px`, which would make the panel a containing block).
+    expect(panel.style.translate).toBe('');
     expect(panel.style.transform).toBe('');
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
     expect(onActiveSheetChange).not.toHaveBeenCalled();
@@ -1307,6 +1315,44 @@ describe('BottomSheetSwitcher', () => {
       expect(confirmDialog).toContainElement(
         screen.getByTestId('confirm-sheet'),
       );
+    });
+
+    it('under a finger, holds pointer input while each sheet enters the flow, and releases it as the entrance ends (FR35)', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          // A finger without Reduce Motion.
+          matches:
+            query.includes('pointer: coarse') &&
+            !query.includes('prefers-reduced-motion'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      const details = getSheetLayer('details-sheet');
+      // Entering: its dialog is a held layer.
+      expect(isInHeldLayer(details)).toBe(true);
+      finishSheetTransition(details, 'transform');
+      expect(isInHeldLayer(details)).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      const confirm = getSheetLayer('confirm-sheet');
+      expect(isInHeldLayer(confirm)).toBe(true);
+      finishSheetTransition(confirm, 'transform');
+      expect(isInHeldLayer(confirm)).toBe(false);
+    });
+
+    it('with a mouse, holds nothing while a sheet enters the flow (FR35, DEC-16)', () => {
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      expect(isInHeldLayer(getSheetLayer('details-sheet'))).toBe(false);
     });
 
     it('presents the entering dialog once and closes the retained dialog only after it fades', () => {
@@ -1736,31 +1782,27 @@ describe('BottomSheetSwitcher', () => {
       expect(getSheetDialog('c')).toHaveAttribute('role', 'alertdialog');
     });
 
-    it('keeps the scrim takeover pin under prefers-reduced-motion: the reduced duration reads the pinned variable', () => {
-      render(<HostFlow initialSheet="details" />);
-      // jsdom evaluates neither @media nor ::backdrop; read the compiled
-      // rules the dialog's scrim class produced. The reduced-motion rule for
-      // the backdrop's transition-duration must defer to the takeover pin
-      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal 0.01s
-      // there would win the cascade and paint a frame with no scrim.
-      const rules: string[] = [];
-      for (const sheet of Array.from(document.styleSheets)) {
-        for (const rule of Array.from(sheet.cssRules)) {
-          rules.push(rule.cssText);
-        }
-      }
-      const reducedBackdropDurations = rules.filter(
-        text =>
-          text.includes('prefers-reduced-motion: reduce') &&
-          text.includes('::backdrop') &&
-          text.includes('transition-duration'),
-      );
-      expect(reducedBackdropDurations.length).toBeGreaterThan(0);
-      for (const text of reducedBackdropDurations) {
-        expect(text).toMatch(
-          /transition-duration:\s*var\(--_sheet-scrim-duration,\s*0?\.01s\)/,
+    it('keeps the scrim takeover pin under reduced motion: each reduced duration reads the pinned variable', () => {
+      // The backdrop's reduced-motion durations must defer to the takeover pin
+      // (`--_sheet-scrim-duration: 0s` for one style flush); a literal there
+      // would win the cascade and paint a frame with no scrim. Read from the
+      // source: StyleX's runtime injection dedupes rules by a key that, for a
+      // media query with `and`, is the query alone, so only the first rule per
+      // query (the panel's) reaches jsdom.
+      const source = readFileSync(join(__dirname, 'BottomSheet.tsx'), 'utf8');
+      const start = source.indexOf("'::backdrop': {");
+      const backdrop = source.slice(start, source.indexOf('\n    },\n', start));
+      const reduced = [
+        ...backdrop.matchAll(
+          /'@media \(prefers-reduced-motion: reduce\)[^']*': \{([^}]*)\}/g,
+        ),
+      ].map(match => match[1]);
+      // design:reduced-motion: a fade on a touch screen, at once otherwise.
+      expect(reduced).toHaveLength(2);
+      for (const block of reduced) {
+        expect(block).toMatch(
+          /transitionDuration:\s*[`']var\(--_sheet-scrim-duration,/,
         );
-        expect(text).not.toMatch(/transition-duration:\s*0?\.01s/);
       }
     });
 

@@ -23,7 +23,8 @@
  *   `Input.dispatchTouchEvent` on the page proxy. Touches and the pointer
  *   events derived from them are trusted and cancelable, multi-touch works.
  *   Limits, measured with WebKit 26.5: no timestamp parameter (the page sees
- *   the real dispatch time, so velocity comes from real-time pacing, ±1 ms);
+ *   the real dispatch time, so velocity comes from real-time pacing, about
+ *   ±1 ms on an idle worker; `checkPacing` reads what the page received);
  *   integer coordinates only; no native scrolling, fling or pinch-zoom from
  *   these touches; a `touchstart` lists only the fingers that landed in it
  *   (pointer events are exact); no click synthesised from a raw touch sequence (use
@@ -36,7 +37,7 @@
  *   harness self-test (../src/harness.interaction.browser.spec.ts).
  */
 
-import type {CDPSession, Page} from '@playwright/test';
+import type {CDPSession, Page, TestInfo} from '@playwright/test';
 import {
   toTouchEvents,
   type Finger,
@@ -55,6 +56,14 @@ export interface PlayOptions {
    * behaviors that run on the compositor clock (a fling) want real pacing.
    */
   readonly realtime?: boolean;
+  /**
+   * Check, once the gesture is played in real time, that the page received it
+   * at the script's pacing, and throw `TouchPacingError` if not (default
+   * false). Only WebKit can fail it: its touches carry their real dispatch
+   * time. For a proof whose outcome follows a velocity, with
+   * `retakeOnTouchPacing` around it.
+   */
+  readonly checkPacing?: boolean;
   /** Called after each event is dispatched, before the next one (storyboards). */
   readonly onEvent?: (
     step: TouchEventStep,
@@ -81,6 +90,13 @@ export interface TouchDriver {
    * Skip such proofs with `PARTIAL_LIFT_SKIP` where it is false.
    */
   readonly partialLifts: boolean;
+  /**
+   * Whether a scripted press and lift in place (`play(tap(at))`) gets the
+   * click a finger's tap gets. Playwright's WebKit synthesises that click only
+   * from `tap` (its tap gesture), never from a scripted touch sequence. Use
+   * `tap` for a tap that must click, or skip with `SCRIPTED_CLICK_SKIP`.
+   */
+  readonly synthesizesClicks: boolean;
   /** Plays a script; resolves when its last event has been dispatched. */
   play(script: TouchScript, options?: PlayOptions): Promise<PlayedEvent[]>;
   /** A tap through the engine's tap path (WebKit synthesises click only from this). */
@@ -96,6 +112,146 @@ export interface TouchDriver {
 export const PARTIAL_LIFT_SKIP =
   'injected WebKit touches report no remaining touches when one finger of several lifts (README: engine limits); capture it on the iOS simulator';
 
+/**
+ * The skip reason for a proof that needs the click a scripted tap gets, on a
+ * driver whose `synthesizesClicks` is false: Playwright's WebKit synthesises
+ * the click only from its tap gesture (`driver.tap`), never from touches it
+ * is sent one by one.
+ */
+export const SCRIPTED_CLICK_SKIP =
+  'injected WebKit touches synthesise no click, only driver.tap does (README: engine limits); tap with driver.tap, or capture it on the iOS simulator';
+
+/**
+ * The most a move interval a release velocity reads may move from the script
+ * by the time the page receives it, in ms. WebKit's touches carry their real
+ * dispatch time, in whole ms: on one worker, 440 gaps over 40 flicks moved at
+ * most 4 ms; a stalled dispatch moves one by 20 ms or more, and the events
+ * queued behind it land 1 to 2 ms apart.
+ */
+export const TOUCH_PACING_TOLERANCE_MS = 4;
+
+/**
+ * How long after its last move a lift may reach the page before the release
+ * reads as still, in ms: UIKit's measured stillness (`spec:AST-100` FR2).
+ */
+export const TOUCH_LIFT_STILLNESS_MS = 40;
+
+const formatGaps = (gaps: readonly number[]) =>
+  gaps.map(gap => Number(gap.toFixed(1))).join(', ');
+
+/**
+ * A gesture the page received off its scripted pacing. WebKit's touch command
+ * takes no timestamp, so the page times each event by when it arrives: under
+ * load a dispatch can stall and the events behind it arrive at once, and the
+ * page measures another velocity than the script's.
+ */
+export class TouchPacingError extends Error {
+  readonly scriptedGaps: readonly number[];
+  readonly receivedGaps: readonly number[];
+  constructor(
+    reason: string,
+    scriptedGaps: readonly number[],
+    receivedGaps: readonly number[],
+  ) {
+    super(
+      `the page received this gesture off its scripted pacing: ${reason} (scripted gaps ${formatGaps(scriptedGaps)} ms; received ${formatGaps(receivedGaps)} ms)`,
+    );
+    this.name = 'TouchPacingError';
+    this.scriptedGaps = scriptedGaps;
+    this.receivedGaps = receivedGaps;
+  }
+}
+
+/**
+ * Checks a gesture's pacing at the page where it decides a release: `steps`
+ * are its events in the script, with their times, `received` the
+ * `timeStamp`s the page saw, in order. One event per scripted one (fewer only
+ * when `partial`, the touched element having left the document, which takes
+ * its later events with it); the last two move intervals before the lift,
+ * which a release velocity reads, each within `TOUCH_PACING_TOLERANCE_MS` of
+ * the script's; and the lift within `TOUCH_LIFT_STILLNESS_MS` of the last
+ * move. The gesture's first moves and its lift arrive with the page's own
+ * handling time in WebKit (a burst after `touchstart`, a lift a frame late),
+ * and no release reads them. Throws `TouchPacingError` otherwise.
+ */
+export function checkTouchPacing(
+  steps: readonly {readonly t: number; readonly type: string}[],
+  received: readonly number[],
+  {partial = false}: {partial?: boolean} = {},
+): void {
+  const gapsOf = (times: readonly number[]) =>
+    times.slice(1).map((t, i) => t - times[i]);
+  const scriptedGaps = gapsOf(steps.map(step => step.t));
+  const receivedGaps = gapsOf(received);
+  const fail = (reason: string) => {
+    throw new TouchPacingError(reason, scriptedGaps, receivedGaps);
+  };
+  if (
+    received.length > steps.length ||
+    (received.length < steps.length && !partial)
+  ) {
+    fail(
+      `${received.length} touch events arrived for ${steps.length} dispatched`,
+    );
+  }
+  const lift = steps.length - 1;
+  if (received.length < steps.length || steps[lift]?.type !== 'touchEnd') {
+    return;
+  }
+  // The gap ending at event i runs from event i - 1 to event i.
+  const moves = steps.flatMap((step, i) =>
+    step.type === 'touchMove' ? [i] : [],
+  );
+  const lastMove = moves.at(-1);
+  if (lastMove == null) {
+    return;
+  }
+  for (const i of moves.slice(-2)) {
+    if (i === 0 || steps[i - 1].type !== 'touchMove') {
+      continue;
+    }
+    const off = Math.abs(receivedGaps[i - 1] - scriptedGaps[i - 1]);
+    if (off > TOUCH_PACING_TOLERANCE_MS) {
+      fail(
+        `the move interval ending at event ${i + 1}, which a release velocity reads, is ${off.toFixed(1)} ms off, over ${TOUCH_PACING_TOLERANCE_MS} ms`,
+      );
+    }
+  }
+  const liftAfter = received[lift] - received[lastMove];
+  if (liftAfter >= TOUCH_LIFT_STILLNESS_MS) {
+    fail(
+      `the lift came ${liftAfter.toFixed(1)} ms after the last move, where a release reads as still from ${TOUCH_LIFT_STILLNESS_MS} ms`,
+    );
+  }
+}
+
+/**
+ * Plays a gesture through `attempt`, and once more when the page received it
+ * off its scripted pacing: `attempt` builds the page's state, plays the
+ * gesture and makes the spec's assertions, so a re-take starts over. One
+ * re-take, two attempts in all, and only on a `TouchPacingError`: any other
+ * error, and a second `TouchPacingError`, fail the test with their own
+ * cause. Each re-take is listed in the report as a `touch-retake`
+ * annotation.
+ */
+export async function retakeOnTouchPacing<T>(
+  testInfo: Pick<TestInfo, 'annotations'>,
+  attempt: (n: 1 | 2) => Promise<T>,
+): Promise<T> {
+  try {
+    return await attempt(1);
+  } catch (error) {
+    if (!(error instanceof TouchPacingError)) {
+      throw error;
+    }
+    testInfo.annotations.push({
+      type: 'touch-retake',
+      description: error.message,
+    });
+    return attempt(2);
+  }
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /** Waits until `performance.now()` reaches `deadline` with ~0.1 ms precision. */
@@ -109,7 +265,11 @@ async function until(deadline: number): Promise<void> {
   }
 }
 
-async function playSteps(
+/**
+ * Dispatches a script's events through `dispatch`, paced in real time unless
+ * `realtime` is false. Exported for its unit test; specs use `touchDriver`.
+ */
+export async function playSteps(
   script: TouchScript,
   options: PlayOptions,
   dispatch: (step: TouchEventStep, timestamp: number) => Promise<void>,
@@ -119,12 +279,21 @@ async function playSteps(
   const steps = toTouchEvents(script);
   const played: PlayedEvent[] = [];
   const origin = performance.now();
+  let previous: {t: number; sentAt: number} | null = null;
   for (const [index, step] of steps.entries()) {
     if (realtime) {
-      await until(origin + step.t);
+      // At its scripted time, and never sooner after the event before it
+      // than the script spaces them: after a stall the rest keep their gaps
+      // instead of leaving together.
+      await until(
+        previous == null
+          ? origin + step.t
+          : Math.max(origin + step.t, previous.sentAt + (step.t - previous.t)),
+      );
     }
     const timestamp = stampFor(step.t);
     const dispatchedAt = Date.now();
+    previous = {t: step.t, sentAt: performance.now()};
     await dispatch(step, timestamp);
     played.push({...step, dispatchedAt, timestamp});
     await onEvent?.(step, index);
@@ -148,6 +317,7 @@ async function chromiumDriver(page: Page): Promise<TouchDriver> {
     scriptedTimestamps: true,
     drivesNativeGestures: true,
     partialLifts: true,
+    synthesizesClicks: true,
     async play(script, options = {}) {
       // Stamps follow the wall clock the page's own clock is on: with real-time
       // pacing an event's stamp and its dispatch agree to ~0.1 ms.
@@ -213,13 +383,20 @@ async function webkitDriver(page: Page): Promise<TouchDriver> {
   // (an empty list releases nothing), a move every finger down.
   const points = (fingers: readonly Finger[]) =>
     fingers.map(f => ({x: Math.round(f.x), y: Math.round(f.y), id: f.id}));
+  // The page's own record of each touch's `timeStamp`, to check the pacing.
+  await page.addInitScript(TOUCH_PACE_SCRIPT);
+  await page.evaluate(TOUCH_PACE_SCRIPT);
   return {
     engine: 'webkit',
     scriptedTimestamps: false,
     drivesNativeGestures: false,
     partialLifts: false,
+    synthesizesClicks: false,
     async play(script, options = {}) {
-      return playSteps(
+      const check =
+        (options.checkPacing ?? false) && (options.realtime ?? true);
+      const from = check ? await readTouchPace(page, 0) : null;
+      const played = await playSteps(
         script,
         options,
         async step => {
@@ -231,12 +408,53 @@ async function webkitDriver(page: Page): Promise<TouchDriver> {
           });
         },
         () => Date.now(),
-      ).then(played => played.map(p => ({...p, timestamp: null})));
+      );
+      if (from != null) {
+        const pace = await readTouchPace(page, from.count);
+        checkTouchPacing(played, pace.times, {partial: !pace.connected});
+      }
+      return played.map(p => ({...p, timestamp: null}));
     },
     async tap(at) {
       await page.touchscreen.tap(Math.round(at.x), Math.round(at.y));
     },
   };
+}
+
+/**
+ * Records the `timeStamp` of every trusted touch event the page receives, and
+ * the element the last `touchstart` touched (WebKit's pacing check).
+ */
+const TOUCH_PACE_SCRIPT = `(() => {
+  if (window.__harnessTouchPace) return;
+  const pace = (window.__harnessTouchPace = {times: [], start: null});
+  for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+    window.addEventListener(type, event => {
+      if (!event.isTrusted) return;
+      pace.times.push(event.timeStamp);
+      if (type === 'touchstart') pace.start = event.target;
+    }, {capture: true, passive: true});
+  }
+})()`;
+
+/** The touch times recorded since `from`, and whether the touched element is still in the document. */
+async function readTouchPace(
+  page: Page,
+  from: number,
+): Promise<{count: number; times: number[]; connected: boolean}> {
+  return page.evaluate(at => {
+    const pace = (
+      window as unknown as {
+        __harnessTouchPace?: {times: number[]; start: Node | null};
+      }
+    ).__harnessTouchPace;
+    const times = pace?.times ?? [];
+    return {
+      count: times.length,
+      times: times.slice(at),
+      connected: pace?.start?.isConnected ?? true,
+    };
+  }, from);
 }
 
 /** A touch driver for the page's engine. Firefox is not supported (no touch input path). */

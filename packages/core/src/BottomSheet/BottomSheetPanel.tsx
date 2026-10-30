@@ -49,6 +49,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
@@ -81,7 +82,9 @@ const HEIGHT_BUDGETS = {
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 export type {BottomSheetSnapPoint};
 
-// SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
+// How far the surface extends below the viewport, so a release that carries
+// the sheet past fully open (the 0.8-damped spring overshoots) never shows a
+// gap under it.
 const OVERSCROLL_PADDING = 48;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
@@ -240,6 +243,16 @@ const styles = stylex.create({
   sheetFading: {
     opacity: 0,
   },
+  // Under a finger the standalone sheet opens and closes on UIKit's spring
+  // (useSheetGestures `present` / `dismiss`), on the compositor: the
+  // stylesheet's entrance and exit transforms must not also run. Nor its
+  // reduced-motion cross-fade: the animator plays that one (DR2), and reads
+  // the sheet's opacity to fade it in, which a stylesheet fade from 0 would
+  // still be holding at 0.
+  sheetSprung: {
+    transitionProperty: 'opacity',
+    opacity: null,
+  },
   sheetInactive: {
     pointerEvents: 'none',
   },
@@ -369,6 +382,23 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   isPageScrollLocked?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
+  /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
+  onScrimTracking?: (tracking: boolean) => void;
+  /** Whether that ::backdrop is the stack's visible scrim; see useSheetGestures. */
+  isScrimShown?: () => boolean;
+  /**
+   * Under a finger (any touch device), the sheet opens and closes
+   * on UIKit's sheet spring (useSheetGestures `present` / `dismiss`) instead
+   * of the stylesheet's entrance and exit. Set by the standalone sheet.
+   */
+  hasSpringPresentation?: boolean;
+  /**
+   * True while the sheet enters under a finger: on UIKit's present spring
+   * (useSheetGestures `present`), or, where the sheet does not spring (a
+   * switcher's step), on the stylesheet's entrance until its transition ends.
+   * The host holds pointer input meanwhile (`spec:AST-094` FR35).
+   */
+  onPresentingChange?: (presenting: boolean) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -514,6 +544,10 @@ export function BottomSheetPanel({
   isPageScrollLocked = false,
   onDismiss,
   onScrimOpacity,
+  onScrimTracking,
+  isScrimShown,
+  hasSpringPresentation = false,
+  onPresentingChange,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -554,6 +588,11 @@ export function BottomSheetPanel({
   const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const alignmentOffset =
     isRetained && !isReducedMotion ? state.alignmentOffset : 0;
+  // Under a finger, on every touch device (one touch model), the standalone
+  // sheet opens and closes on UIKit's spring; under a mouse on today's
+  // transitions.
+  const {isTouch} = useTouchPresentation();
+  const springsPresentation = hasSpringPresentation && isTouch;
 
   // Everything derived from the snap points keys off their identity, not the
   // array's: the resolver's identity is the hook's signal that the stops
@@ -600,7 +639,11 @@ export function BottomSheetPanel({
     scrollPreservationInset,
     settlingLayoutOffset,
     settledLayoutOffset,
-    completeScrollAreaSettle,
+    gestureExitRef,
+    resetTravel,
+    present,
+    afterEntrance,
+    dismiss,
   } = useSheetGestures({
     isOpen: isInteractive,
     isOpenRequested: isOpenRequested ?? isInteractive,
@@ -609,6 +652,9 @@ export function BottomSheetPanel({
     onDismiss,
     snapHeights,
     onScrimOpacity,
+    onScrimTracking,
+    isScrimShown,
+    onPresentingChange,
   });
 
   const {getViewportProps, getContentProps} = useScrollableArea({
@@ -675,6 +721,41 @@ export function BottomSheetPanel({
       pendingMotionCompleteRef.current = motion;
       return;
     }
+    const complete = () => {
+      if (startedMotionRef.current === motion) {
+        onMotionCompleteRef.current?.(motion);
+      } else {
+        pendingMotionCompleteRef.current = motion;
+      }
+    };
+    // Under a finger a sheet that replaces another arrives on UIKit's present
+    // spring, as any sheet it opens does: its entrance is over when the spring
+    // lands, and only then does the replaced sheet fade. It is entering from
+    // its first commit, so the spring starts here rather than in the effect
+    // that presents a lone sheet.
+    if (motion === 'entering' && springsPresentation) {
+      present();
+      return afterEntrance(complete);
+    }
+    // A sheet dismissed by a drag leaves on its release spring (the gesture
+    // hook carries it off screen), not on the exit transition: its exit is
+    // over when that spring lands. Under a finger any other close leaves on
+    // UIKit's dismiss spring the same way.
+    const gestureExit =
+      motion === 'exiting'
+        ? (gestureExitRef.current ?? (springsPresentation ? dismiss() : null))
+        : null;
+    if (gestureExit != null) {
+      let isCurrent = true;
+      void gestureExit.finished.then(() => {
+        if (isCurrent) {
+          complete();
+        }
+      });
+      return () => {
+        isCurrent = false;
+      };
+    }
     // What ends a motion: the fade is opacity; the entrance, alignment and
     // exit are transforms — except that under the reduced-motion cross-fade
     // (DR2) an exit fades out where it is and its dialog may close only once
@@ -685,29 +766,74 @@ export function BottomSheetPanel({
     return waitForTransition(
       elementRef.current,
       motion === 'fading' || crossFadeMotion ? 'opacity' : 'transform',
-      () => {
-        if (startedMotionRef.current === motion) {
-          onMotionCompleteRef.current?.(motion);
-        } else {
-          pendingMotionCompleteRef.current = motion;
-        }
-      },
+      complete,
     );
-  }, [motion, isCrossFade]);
-  // The snap is transform-only; the layout height reconciles when it lands.
-  // waitForTransition — the same helper the motion states use — resolves that
-  // even when no `transitionend` is coming: inline or computed
-  // `transition: none`, a zero duration, and a timer backstop otherwise.
+  }, [
+    afterEntrance,
+    dismiss,
+    gestureExitRef,
+    isCrossFade,
+    motion,
+    present,
+    springsPresentation,
+  ]);
+  // Under a finger the sheet arrives on UIKit's present spring. From an
+  // effect, so the dim is taken over before the host shows the dialog (a
+  // child's effects run before its host's).
+  const wasPresentedRef = useRef(false);
+  useEffect(() => {
+    const opens =
+      state.kind === 'open' && !state.entering && !wasPresentedRef.current;
+    wasPresentedRef.current = state.kind !== 'hidden';
+    if (opens && springsPresentation) {
+      present();
+    }
+  }, [present, springsPresentation, state]);
+  // Under a finger a stylesheet entrance (a switcher's step) holds pointer
+  // input as the spring entrance does (`spec:AST-094` FR35): from the frame
+  // the sheet opens, or its swap starts, until its transition ends. Keyed on
+  // the state's kind, not its identity: a host renders a new state object on
+  // every render.
+  const onPresentingChangeRef = useRef(onPresentingChange);
   useLayoutEffect(() => {
-    if (settlingLayoutOffset == null) {
+    onPresentingChangeRef.current = onPresentingChange;
+  }, [onPresentingChange]);
+  const entranceHeldRef = useRef(false);
+  const holdEntrance = useCallback((isHeld: boolean) => {
+    if (entranceHeldRef.current !== isHeld) {
+      entranceHeldRef.current = isHeld;
+      onPresentingChangeRef.current?.(isHeld);
+    }
+  }, []);
+  const stateKind = state.kind;
+  const wasOpenRef = useRef(false);
+  useLayoutEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = stateKind === 'open';
+    if (!isTouch || springsPresentation) {
+      holdEntrance(false);
       return;
     }
+    if (stateKind !== 'open' || (!isEntering && wasOpen)) {
+      holdEntrance(false);
+      return;
+    }
+    holdEntrance(true);
+    // Under reduced motion on a coarse pointer the entrance is the opacity
+    // cross-fade (design:reduced-motion DR2) and its transform is instant.
     return waitForTransition(
       elementRef.current,
-      'transform',
-      completeScrollAreaSettle,
+      isCoarseCrossFade ? 'opacity' : 'transform',
+      () => holdEntrance(false),
     );
-  }, [completeScrollAreaSettle, settlingLayoutOffset]);
+  }, [
+    holdEntrance,
+    isCoarseCrossFade,
+    isEntering,
+    isTouch,
+    springsPresentation,
+    stateKind,
+  ]);
   useEffect(() => {
     if (motion == null) {
       return;
@@ -784,22 +910,30 @@ export function BottomSheetPanel({
       ? retainedTransform
       : undefined;
   const consumerTransform = style?.transform;
-  // The transform is written to the element here, not rendered through the
-  // style prop. A drag writes it straight to the element once per input
-  // sample (useSheetGestures) and renders nothing in between, so React never
-  // sees those writes; rendered through the prop, the resting value would be
-  // skipped as "unchanged" when the drag ends and the sheet would stay where
-  // the finger left it. Written after every commit instead, outside a drag,
-  // the resting value lands in the same style update as the restored
-  // transition, so a settle or a dismissal animates from the live position.
+  // The resting transform is written to the element here, after every
+  // commit, not rendered through the style prop: the gesture hook moves the
+  // sheet on the separate `translate` channel (a drag once per input sample,
+  // a release on its spring), and the new resting value is written once that
+  // travel is over, in the same commit as the layout reconcile, with the
+  // travel folded into it (resetTravel). While a release spring runs, the
+  // previous resting transform stays: the travel is measured from it. A
+  // drag-dismissed sheet keeps it through its exit too, which also holds off
+  // the closing style's transform, since the release spring carries it out.
   useLayoutEffect(() => {
     if (isDragging || consumerTransform != null) {
       return;
     }
     const element = elementRef.current;
-    if (element != null) {
-      element.style.transform = sheetTransform ?? '';
+    if (element == null || settlingLayoutOffset != null) {
+      return;
     }
+    const gestureExit = gestureExitRef.current;
+    if (gestureExit != null) {
+      element.style.transform = gestureExit.transform;
+      return;
+    }
+    element.style.transform = sheetTransform ?? '';
+    resetTravel();
   });
   const gestureStyle = {
     transition: contentProps.style.transition,
@@ -823,6 +957,8 @@ export function BottomSheetPanel({
           isClosing && styles.sheetClosing,
           isClosing && isCrossFade && styles.sheetClosingCrossFade,
           isFading && styles.sheetFading,
+          // A replaced sheet aligns and fades on its stylesheet.
+          springsPresentation && !isRetained && styles.sheetSprung,
           isInactive && styles.sheetInactive,
           xstyle,
         ),
