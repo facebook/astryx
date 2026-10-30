@@ -189,7 +189,7 @@ jobs:
   canary:
     name: Publish canary to npm
     if: github.event_name == 'push'
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     # Dedicated group, cancel-in-progress so a newer main push supersedes an
     # in-flight canary. Independent of the stable group, so this can never
     # cancel or starve a stable dispatch.

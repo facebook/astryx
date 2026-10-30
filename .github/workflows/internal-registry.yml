@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   dependency-check:
-    runs-on: 4-core-ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
