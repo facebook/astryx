@@ -32,7 +32,7 @@ import type {TokenizerChange} from './Tokenizer';
 import {TokenizerWithPresentation} from '../internal/tokenizer-presentation';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetDevWarnings} from '../utils/devWarning';
-import {colorVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 
 import {COMPACT_TOUCH_PRESENTATION_QUERY as COMPACT_TOUCH_QUERY} from '../hooks/useAdaptivePresentation';
@@ -238,6 +238,38 @@ describe('Tokenizer experimental.presentation (FR16)', () => {
 });
 
 describe('Tokenizer sheet presentation (single-sheet touch flow)', () => {
+  it('draws the search field as a bordered input box — 1px emphasized border, element radius, surface background, 44px — unlike the borderless panel field the dropdowns share (FR18)', () => {
+    // The same declarations as the sheet's style compile to the same atomic
+    // classes; the field's own panel style has none of them.
+    const atoms = (style: stylex.StyleXStyles) =>
+      stylex
+        .props(style)
+        .className!.split(' ')
+        .filter(name => !name.includes('__'));
+    const box = stylex.create({
+      field: {
+        borderWidth: borderVars['--border-width'],
+        borderStyle: 'solid',
+        borderColor: {
+          default: colorVars['--color-border-emphasized'],
+          ':focus-within': colorVars['--color-accent'],
+        },
+        borderRadius: radiusVars['--radius-element'],
+        backgroundColor: colorVars['--color-background-surface'],
+        minHeight: 44,
+      },
+    });
+    render(<Harness />);
+    fireEvent.click(openTrigger());
+    const input = screen.getByLabelText('Search Tags');
+    // The field box is the input's styled ancestor, the one the shared panel
+    // field rings on keyboard focus.
+    const field = input.parentElement!;
+    for (const name of atoms(box.field)) {
+      expect(field).toHaveClass(name);
+    }
+  });
+
   it('keeps rows stable while open and applies selected-first order on reopen (FR19)', async () => {
     const spy = vi.fn();
     render(<Harness spy={spy} />);
