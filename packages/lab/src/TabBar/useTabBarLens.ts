@@ -478,13 +478,16 @@ export function useTabBarLens({
         location.y > press.box.bottom;
       // A fine pointer's drag carries the lens's resting place, held on an
       // enabled tab like a finger's chase; from a disabled tab it counts
-      // from here.
+      // from here. Off the bar the release chooses nothing, so the lens
+      // shows the selected tab again.
       if (!press.isDragging) {
         return;
       }
       press.isIgnored = false;
       if (press.hasLens && selected >= 0) {
-        placeLens(chaseTarget(x, press.centers) - press.centers[0]);
+        placeLens(
+          press.isOff ? null : chaseTarget(x, press.centers) - press.centers[0],
+        );
       }
       return;
     }
@@ -538,6 +541,22 @@ export function useTabBarLens({
         isDisabledRef.current?.(nearest) !== true
       ) {
         flushSync(() => onLiftRef.current(nearest));
+        // After a slide focus does what a click on the chosen tab does
+        // (family:action-groups FR1): where the press focused the tab it
+        // landed on, the chosen tab takes the focus.
+        const capsule = capsuleRef.current;
+        const active = document.activeElement;
+        const chosen = capsule?.querySelector('[data-tab-bar-items]')?.children[
+          nearest
+        ];
+        if (
+          chosen instanceof HTMLElement &&
+          active !== chosen &&
+          active instanceof HTMLElement &&
+          capsule?.contains(active) === true
+        ) {
+          chosen.focus({preventScroll: true});
+        }
       }
       placeLens(null);
       return;

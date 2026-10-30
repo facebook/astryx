@@ -1481,6 +1481,40 @@ test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
       .toBeLessThan(0.5);
   });
 
+  test('after a mouse slide, focus does what a click on the chosen tab does: it never stays on the tab the press left (family:action-groups FR1)', async ({
+    page,
+  }) => {
+    await openFine(page);
+    await mouseDragTo(page, 'Home', 'Browse');
+    await page.mouse.up();
+    await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+    // The press focused Home, as a click does in both engines here; after
+    // the slide the chosen tab has the focus, never Home, which has left the
+    // tab order.
+    await expect(tab(page, 'Browse')).toBeFocused();
+    await expect(tab(page, 'Home')).not.toBeFocused();
+  });
+
+  test('a mouse press dragged off the bar shows the selected tab again, since its release will choose nothing', async ({
+    page,
+  }) => {
+    await openFine(page);
+    const home = await itemCenter(page, 'Home');
+    const browse = await mouseDragTo(page, 'Home', 'Browse');
+    await expect
+      .poll(async () => Math.abs((await lensCenterX(page)) - browse.x))
+      .toBeLessThan(1);
+    // Up off the bar, the button still down.
+    for (let step = 1; step <= 8; step++) {
+      await page.mouse.move(browse.x, browse.y - 15 * step);
+    }
+    await expect
+      .poll(async () => Math.abs((await lensCenterX(page)) - home.x))
+      .toBeLessThan(1);
+    await page.mouse.up();
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  });
+
   test('a mouse press released off the bar chooses nothing, a tab or a reselect: slide-off cancels (spec:AST-020 FR9)', async ({
     page,
   }) => {
