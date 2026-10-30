@@ -4,8 +4,9 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   keyboard, scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
- *   installPressFeedback
+ * @output Exports paintPress and readPressPaint (the press attribute's
+ *   writer for every press they track), PRESSABLE_ATTRIBUTE,
+ *   PRESSED_ATTRIBUTE, pressableProps and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -39,12 +40,23 @@
  * release, the way a finger's press leaves. The query is the stylesheet's
  * own, so the two cannot disagree about which presses are the controller's.
  *
+ * A surface's hold does nothing, so it keeps the browser's long-press text
+ * selection (`spec:AST-094` FR41); only an element whose hold does something
+ * suppresses it, through the gesture host (utils/selectionLock.ts).
+ *
+ * Its one touch-only listener, `touchcancel`, is on only while the primary
+ * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
+ *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
  * pressFeedback.test.ts.
  */
 
-import type {PressGesture, PressPaint, PressStep} from './pressGesture';
+import type {
+  PressGesture,
+  PressPaint as GesturePaint,
+  PressStep,
+} from './pressGesture';
 import {
   idlePressGesture,
   PRESS_FADE_MS,
@@ -53,7 +65,10 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {subscribeInput} from './inputStream';
 import {TOUCH_QUERY} from './touchPresentation';
+import {reducedMotionCrossFade} from '../motion/uikit/timing';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -117,7 +132,8 @@ interface LiveGesture {
    * for a press of the Space key.
    */
   pointerId: number | null;
-  timer: ReturnType<typeof setTimeout> | null;
+  /** Cancels the clock the current phase owes, or the release it waits for. */
+  timer: (() => void) | null;
 }
 
 /**
@@ -156,23 +172,214 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   onset: PRESS_ONSET_MS,
 };
 
+/**
+ * How long a timer runs on `element`. The release's clock is the table's
+ * (PRESS_FADE_MS, the value the stylesheet's release plays), capped under
+ * reduced motion by the Reduce Motion cross-fade's duration, as the
+ * stylesheet caps its fade (`design:reduced-motion` DR2: a touch transition
+ * finishes within it; `spec:AST-094` FR4: the cap is a role, never a
+ * literal). The fade's own export, so the controller ships that one value,
+ * not the rest of the timing table (`architecture:component-style-authoring`
+ * INV6).
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  element: Element,
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  const reduced =
+    element.ownerDocument.defaultView?.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches ?? false;
+  return reduced
+    ? Math.min(TIMER_MS.fade, reducedMotionCrossFade.durationMs)
+    : TIMER_MS.fade;
+}
+
 const TIMER_EVENT = {
   fade: 'fadeEnd',
   flash: 'flashEnd',
   onset: 'onset',
 } as const;
 
-function paintElement(element: HTMLElement, paint: PressPaint): void {
-  if (paint === 'none') {
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-    return;
+/** The press attribute's states: on, held, fading on its release, none. */
+export type PressPaint = 'on' | 'held' | 'fading' | 'none';
+
+export interface PaintPressOptions {
+  /**
+   * The release's clock, ms: when it runs out, the controller checks for the
+   * release animation, and `fading` stays until that animation ends (or goes
+   * then, where none runs). @default the press fade
+   */
+  releaseMs?: number;
+  /** The current values this write may replace. @default none, on, fading */
+  onlyFrom?: ReadonlyArray<PressPaint>;
+}
+
+/** What a press may replace: a `held` row is its owner's until released. */
+const PRESS_REPLACES: ReadonlyArray<PressPaint> = ['none', 'on', 'fading'];
+const PAINTS: ReadonlySet<string> = new Set(['on', 'held', 'fading']);
+/** Cancels a `fading` paint's own release, per element (paintPress). */
+const fadeTimers = new WeakMap<Element, () => void>();
+
+/**
+ * The release animations running for `element`'s press: CSS animations on it
+ * (or its `::before` or `::after`), or on a descendant whose nearest press
+ * owner it is, finite, and not yet finished. A component may draw its release
+ * on a part inside the surface, keyed on this press as the layers are: each
+ * reads its nearest owner, so a press owner nested inside
+ * plays its own press's release and never extends this one. Nothing at the
+ * write reads the document timeline: WebKit starts an animation created after
+ * such a read at the time read, so a busy first frame would skip into the
+ * release. Empty where the engine has no Web Animations.
+ */
+function releaseAnimationsOf(element: Element): Animation[] {
+  if (typeof element.getAnimations !== 'function') {
+    return [];
   }
-  element.setAttribute(PRESSED_ATTRIBUTE, paint);
+  return element.getAnimations({subtree: true}).filter(animation => {
+    // A CSS animation's effect is a KeyframeEffect: its target is the
+    // element it runs on, or the element whose pseudo-element it runs on.
+    const effect = animation.effect as KeyframeEffect | null;
+    const target = effect?.target ?? null;
+    if (
+      effect == null ||
+      target == null ||
+      !('animationName' in animation) ||
+      (target !== element &&
+        target.closest(`[${PRESSABLE_ATTRIBUTE}]`) !== element)
+    ) {
+      return false;
+    }
+    if (!Number.isFinite(Number(effect.getComputedTiming().endTime))) {
+      return false;
+    }
+    return animation.playState !== 'finished';
+  });
+}
+
+/**
+ * Call `end` when the release a `fading` write just started on `element` is
+ * over: when the stylesheet's release animation ends, not when a clock runs
+ * out. A busy main thread delays the animation's first frame, and with it
+ * its end, so a clock started at the write would remove `fading` mid-fade
+ * and cut the release short. The clock only looks: `clockMs` after the
+ * write, a release animation still running, or still waiting for its first
+ * frame, is waited for until it finishes or is cancelled (the surface was
+ * unmounted or restyled); with none (an instant release, a surface without
+ * a release animation, an engine without Web Animations) the release ends
+ * there. Returns a cancel.
+ */
+function endAfterRelease(
+  element: Element,
+  clockMs: number,
+  end: () => void,
+): () => void {
+  let waiting = true;
+  const timer = setTimeout(() => {
+    const running = releaseAnimationsOf(element);
+    if (running.length === 0) {
+      end();
+      return;
+    }
+    void Promise.allSettled(
+      running.map(async animation => animation.finished),
+    ).then(() => {
+      if (waiting) {
+        end();
+      }
+    });
+  }, clockMs);
+  return () => {
+    waiting = false;
+    clearTimeout(timer);
+  };
+}
+
+/** The press state painted on `element` now; `null` for a value no painter wrote. */
+export function readPressPaint(element: Element): PressPaint | null {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  if (value == null) {
+    return 'none';
+  }
+  return PAINTS.has(value) ? (value as PressPaint) : null;
+}
+
+/**
+ * Write `next` on `element` if its state is one of `onlyFrom`: the press
+ * attribute's writer for the controller and every painter that uses
+ * paintPress, so a fade's clock and the attribute never drift apart (the
+ * action-group tracker, hooks/actionGroupTracker.ts, still writes its groups'
+ * presses itself). Any write ends a fade paintPress left running there.
+ * Returns whether it wrote.
+ */
+function writePress(
+  element: Element,
+  next: PressPaint,
+  onlyFrom: ReadonlyArray<PressPaint> = PRESS_REPLACES,
+): boolean {
+  const current = readPressPaint(element);
+  if (current == null || !onlyFrom.includes(current)) {
+    return false;
+  }
+  const pending = fadeTimers.get(element);
+  if (pending != null) {
+    pending();
+    fadeTimers.delete(element);
+  }
+  if (next === 'none') {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
+  } else if (current !== next) {
+    element.setAttribute(PRESSED_ATTRIBUTE, next);
+  }
+  return true;
+}
+
+/**
+ * Paint `next` on `element` if its current press state is in `onlyFrom`
+ * (by default none, on or fading: a hold survives a press, and its owner
+ * releases it with `onlyFrom: ['held']`). A `fading` paint ends when its
+ * release animation does, or on its own clock where none runs
+ * (endAfterRelease). Returns whether it painted. For a painter other than the touch
+ * press controller: a group that tracks its selection, a row that keeps its
+ * selection through a navigation.
+ */
+export function paintPress(
+  element: Element,
+  next: PressPaint,
+  options: PaintPressOptions = {},
+): boolean {
+  if (!writePress(element, next, options.onlyFrom)) {
+    return false;
+  }
+  if (next === 'fading') {
+    fadeTimers.set(
+      element,
+      endAfterRelease(element, options.releaseMs ?? PRESS_FADE_MS, () => {
+        fadeTimers.delete(element);
+        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
+          element.removeAttribute(PRESSED_ATTRIBUTE);
+        }
+      }),
+    );
+  }
+  return true;
+}
+
+/**
+ * The controller's paint, through writePress: a state the controller did
+ * not write is its owner's (a `held` row), so neither a new press nor a
+ * release's end overwrites or clears it.
+ */
+function paintElement(element: HTMLElement, paint: GesturePaint): void {
+  writePress(element, paint);
 }
 
 function clearTimer(slot: Slot): void {
   if (slot.live?.timer != null) {
-    clearTimeout(slot.live.timer);
+    slot.live.timer();
     slot.live.timer = null;
   }
 }
@@ -214,10 +421,7 @@ function apply(slot: Slot, step: PressStep): void {
   }
   if (step.timer != null) {
     const kind = step.timer;
-    // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
-    // while a scroll runs, so a frame-based delay would fire late, after the
-    // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
+    const fire = () => {
       if (slot.live != null) {
         slot.live.timer = null;
       }
@@ -227,7 +431,22 @@ function apply(slot: Slot, step: PressStep): void {
           kind: TIMER_EVENT[kind],
         }),
       );
-    }, TIMER_MS[kind]);
+    };
+    if (kind === 'fade') {
+      // The release is over when its animation is, however late a busy
+      // main thread let that animation start.
+      live.timer = endAfterRelease(
+        live.element,
+        timerMs(kind, live.element),
+        fire,
+      );
+    } else {
+      // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
+      // while a scroll runs, so a frame-based delay would fire late, after the
+      // scroll, and paint a control nobody is pressing any more.
+      const timer = setTimeout(fire, timerMs(kind, live.element));
+      live.timer = () => clearTimeout(timer);
+    }
   }
 }
 
@@ -299,7 +518,7 @@ function finish(slot: Slot): void {
     return;
   }
   clearTimer(slot);
-  live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  writePress(live.element, 'none');
   slot.live = null;
   if (slot === button) {
     holdKey(false);
@@ -394,6 +613,7 @@ function onPointerDown(event: PointerEvent): void {
     }
     return;
   }
+  armTouchCancel();
   if (finger.live != null) {
     const fingerIsUp =
       finger.live.gesture.phase === 'fading' ||
@@ -615,37 +835,78 @@ function onVisibilityChange(): void {
   }
 }
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
-const PASSIVE = {passive: true} as const;
+/** The input stream subscriptions while installed. */
+let unsubscribers: (() => void)[] = [];
 
+/** The touch-only `touchcancel` subscription, while the pointer is coarse. */
+let stopTouchCancel: (() => void) | null = null;
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The one touch-only listener is on only while the primary pointer is coarse
+ * (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointercancel`.
+ */
+function hearTouchCancel(on: boolean): void {
+  if (on === (stopTouchCancel != null)) {
+    return;
+  }
+  if (on) {
+    stopTouchCancel = subscribeInput(window, 'touchcancel', onCancel);
+  } else {
+    stopTouchCancel?.();
+    stopTouchCancel = null;
+  }
+}
+
+/**
+ * Read the primary pointer when the first finger or pen lands, and follow it
+ * from then on: installing asks nothing, so a page no one touches never
+ * queries it.
+ */
+function armTouchCancel(): void {
+  if (stopWatchingPointer != null) {
+    return;
+  }
+  stopWatchingPointer = watchCoarsePointer(window, hearTouchCancel);
+  hearTouchCancel(isCoarsePointer(window));
+}
+
+// The pointer, drag, scroll and visibility listeners are passive and on the
+// window's capture phase, through the shared input stream
+// (utils/inputStream.ts): a page of pressables blocks no scroll, and an app's
+// capture-phase stopPropagation at the document cannot starve the controller.
 function addListeners(): void {
-  window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  // `scroll` does not bubble, so the capture phase is the only way one
-  // listener hears every scroller in the document.
-  document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  // Only Space's press needs the key's release and focus loss, so those two
-  // are attached while it is held (holdKey).
+  unsubscribers = [
+    subscribeInput(window, 'pointerdown', onPointerDown),
+    subscribeInput(window, 'pointermove', onPointerMove),
+    subscribeInput(window, 'pointerup', onPointerUp),
+    subscribeInput(window, 'pointercancel', onCancel),
+    subscribeInput(window, 'dragstart', onDragStart),
+    // `scroll` does not bubble; the capture phase hears every scroller.
+    subscribeInput(window, 'scroll', onScroll),
+    subscribeInput(window, 'visibilitychange', onVisibilityChange),
+  ];
+  // The key path listens after the page's own handlers, at the window's
+  // bubble phase: a Space press the page cancels (`defaultPrevented`) paints
+  // nothing. Only Space's press needs the key's release and focus loss, so
+  // those two are attached while it is held (holdKey).
   window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
 function removeListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
+  for (const unsubscribe of unsubscribers.splice(0)) {
+    unsubscribe();
+  }
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouchCancel(false);
   window.removeEventListener('keydown', onKeyDown);
   holdKey(false);
 }
+
+const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+const PASSIVE = {passive: true} as const;
 
 /** Whether the key-release listeners are attached. */
 let keyHeld = false;
