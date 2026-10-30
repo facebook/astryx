@@ -22,6 +22,14 @@
  * A sub-menu drills in on a phone through the view stack useMenuDrillIn
  * keeps; the root shows the drilled view in place of its rows.
  *
+ * Under a finger (a coarse primary pointer, the shared touch resolver; one
+ * touch model on every touch device) the popover opens and closes the way
+ * UIMenu does: it grows out of its trigger on UIKit's open spring and
+ * collapses back into it on the close spring (menuSurfaceMotion.ts), and a
+ * pan that begins outside closes it. On every screen it opens beside its
+ * trigger at the layer's placement. Under a mouse it keeps the layer's own
+ * entrance and the theme's motion tokens (D-01).
+ *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
  * (APG menu-button); a pointer open focuses the menu container itself so no
@@ -68,7 +76,7 @@ import {
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useDropdownMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
@@ -81,10 +89,16 @@ import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
 import {menuTouchActionStyles} from './menuTouchAction.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import {usePresentation} from '../utils/presentation';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
-  useAdaptivePresentation,
-  type AdaptivePresentation,
-} from '../hooks/useAdaptivePresentation';
+  MenuActionSheetCard,
+  createMenuDrillInMotion,
+  createMenuSurfaceMotion,
+  isActionSheetCardEligible,
+  type MenuSurfaceMotion,
+} from './DropdownMenuTouch';
 // Loaded on demand: only the bottom-sheet presentation renders the sheet.
 import {
   MenuBottomSheet,
@@ -100,6 +114,7 @@ import {
   radiusVars,
   durationVars,
   easeVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -116,6 +131,15 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 const MENU_BLOCK_CAP = '300px';
 const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
+// While the menu's box grows or shrinks around a sub-menu's card
+// (menuDrillInMotion.ts sets the attribute to the edge that stays).
+const BOX_MOTION = ':is([data-astryx-menu-box-motion])';
+const BOX_KEEPS_TOP = ':is([data-astryx-menu-box-motion="top"])';
+const BOX_KEEPS_BOTTOM = ':is([data-astryx-menu-box-motion="bottom"])';
+const BOX_CAP = 'var(--_menu-box-radius, 0px)';
+/** How far a moving part of the box may cast its shadow, px. */
+const BOX_SHADOW_REACH = '200px';
+
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 // A sub-menu's drilled-in view with a header or footer renders in the surface
@@ -177,6 +201,75 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+  },
+  // A sub-menu's card shares one cell with the parent's rows it lies over
+  // (useMenuDrillIn), so the menu's box grows to hold it.
+  cardStack: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    alignContent: 'start',
+    position: 'relative',
+  },
+  // A card going back plays out over the rows, positioned in the menu.
+  cardLeaving: {
+    position: 'relative',
+  },
+  // The menu's box while it grows or shrinks around a sub-menu's card
+  // (menuDrillInMotion.ts): its paint steps aside for its own pseudo-elements,
+  // so nothing is added to draw it. Its background stays only on the corner
+  // cap at the edge that stays; ::after is the middle, which scales, and
+  // ::before the cap at the moving edge, which travels; each casts the box's
+  // shadow on its outer sides only.
+  boxMotion: {
+    isolation: 'isolate',
+    backgroundColor: {default: null, [BOX_MOTION]: 'transparent'},
+    boxShadow: {default: null, [BOX_MOTION]: 'none'},
+    backgroundImage: {
+      default: null,
+      [BOX_KEEPS_TOP]: `linear-gradient(to bottom, ${colorVars['--color-background-popover']} ${BOX_CAP}, transparent ${BOX_CAP})`,
+      [BOX_KEEPS_BOTTOM]: `linear-gradient(to top, ${colorVars['--color-background-popover']} ${BOX_CAP}, transparent ${BOX_CAP})`,
+    },
+    '::before': {
+      content: '""',
+      display: {default: 'none', [BOX_MOTION]: 'block'},
+      position: 'absolute',
+      insetInline: 0,
+      height: BOX_CAP,
+      top: {default: null, [BOX_KEEPS_BOTTOM]: 0},
+      bottom: {default: null, [BOX_KEEPS_TOP]: 0},
+      backgroundColor: colorVars['--color-background-popover'],
+      boxShadow: shadowVars['--shadow-low'],
+      borderRadius: {
+        default: null,
+        [BOX_KEEPS_TOP]: `0 0 ${BOX_CAP} ${BOX_CAP}`,
+        [BOX_KEEPS_BOTTOM]: `${BOX_CAP} ${BOX_CAP} 0 0`,
+      },
+      clipPath: {
+        default: null,
+        [BOX_KEEPS_TOP]: `inset(0 -${BOX_SHADOW_REACH} -${BOX_SHADOW_REACH})`,
+        [BOX_KEEPS_BOTTOM]: `inset(-${BOX_SHADOW_REACH} -${BOX_SHADOW_REACH} 0)`,
+      },
+      zIndex: -1,
+      pointerEvents: 'none',
+    },
+    '::after': {
+      content: '""',
+      display: {default: 'none', [BOX_MOTION]: 'block'},
+      position: 'absolute',
+      insetInline: 0,
+      top: BOX_CAP,
+      bottom: BOX_CAP,
+      backgroundColor: colorVars['--color-background-popover'],
+      boxShadow: shadowVars['--shadow-low'],
+      clipPath: `inset(0 -${BOX_SHADOW_REACH})`,
+      transformOrigin: {
+        default: null,
+        [BOX_KEEPS_TOP]: '50% 0%',
+        [BOX_KEEPS_BOTTOM]: '50% 100%',
+      },
+      zIndex: -1,
+      pointerEvents: 'none',
+    },
   },
   // With a header or footer, the regions and the menu share one column under
   // the menu's block cap: the regions keep their height and the menu shrinks
@@ -452,7 +545,10 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * @default 'popover'
+   * Omitted, the menu is the anchored popover, and under a finger, on every
+   * device, its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * pins the anchored popover with the pointer behavior on every device (a
+   * finger held for 500 ms opens it, as before).
    */
   presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
@@ -460,6 +556,11 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
 }
 
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
+  /**
+   * `'popover'` pins the pointer behavior on every device (a finger held for
+   * 500 ms opens the menu, as before). Omitted, on every device, a finger's
+   * press opens the menu as UIMenu's pull-down button does.
+   */
   presentation?: 'popover';
   items?: undefined;
   children: ReactNode;
@@ -654,6 +755,26 @@ function DropdownMenuBottomSheet({
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
+  // On a compact touch screen (a phone, on every touch device), an action
+  // sheet of plain actions presents the way iOS 26 presents one: an
+  // alert-style card (MenuActionSheetCard). Larger screens and a mouse keep
+  // the bottom sheet. Decided as the menu opens, so it never changes shape
+  // while open.
+  const {isTouch, isCompact} = useTouchPresentation();
+  const isCompactTouch = isTouch && isCompact;
+  const [presentsAsCard, setPresentsAsCard] = useState(false);
+  const [cardDecidedFor, setCardDecidedFor] = useState(false);
+  if (cardDecidedFor !== isOpen) {
+    setCardDecidedFor(isOpen);
+    if (isOpen) {
+      setPresentsAsCard(
+        isCompactTouch &&
+          isActionSheetCardEligible(items, {
+            hasRegions: isRenderable(header) || isRenderable(footer),
+          }),
+      );
+    }
+  }
 
   const setOpen = useCallback(
     (nextIsOpen: boolean) => {
@@ -833,59 +954,81 @@ function DropdownMenuBottomSheet({
         />
       )}
 
-      <MenuBottomSheet
-        isOpen={isOpen}
-        onOpenChange={setOpen}
-        finalFocusRef={buttonRef}
-        label={sheetLabel}>
-        <div
-          ref={actionListRef}
-          id={sheetId}
-          {...rest}
-          {...mergeProps(
-            themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-            stylex.props(
-              bottomSheetStyles.content,
-              menuBottomSheetStyles.content,
-              xstyle,
+      {presentsAsCard ? (
+        <MenuActionSheetCard
+          isOpen={isOpen}
+          onOpenChange={setOpen}
+          label={button.label}
+          items={items}
+          onSelect={handleSelect}
+          cancelLabel={t('@astryx.alertDialog.cancel')}
+          finalFocusRef={buttonRef}
+          contentProps={{
+            id: sheetId,
+            ...rest,
+            ...mergeProps(
+              themeProps('dropdown-menu', {presentation: 'action-sheet'}),
+              stylex.props(xstyle),
+              className,
+              style,
             ),
-            className,
-            style,
-          )}>
-          {submenuPath.length > 0 ? (
-            <div {...stylex.props(bottomSheetStyles.header)}>
-              <Button
-                label={backLabel}
-                variant="ghost"
-                size="sm"
-                icon={
-                  <Icon
-                    icon="chevronLeft"
-                    size="sm"
-                    xstyle={rtlStyles.mirror}
-                  />
-                }
-                isIconOnly
-                onClick={() => setSubmenuPath(path => path.slice(0, -1))}
-              />
-              {viewHeading}
-            </div>
-          ) : (
-            viewHeading
-          )}
-          {isRenderable(header) && (
-            <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
-          )}
-          <MenuBottomSheetActionList
-            items={currentItems}
-            onSelect={handleSelect}
-            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
-          />
-          {isRenderable(footer) && (
-            <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
-          )}
-        </div>
-      </MenuBottomSheet>
+          }}
+        />
+      ) : (
+        <MenuBottomSheet
+          isOpen={isOpen}
+          onOpenChange={setOpen}
+          finalFocusRef={buttonRef}
+          label={sheetLabel}>
+          <div
+            ref={actionListRef}
+            id={sheetId}
+            {...rest}
+            {...mergeProps(
+              themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
+              stylex.props(
+                bottomSheetStyles.content,
+                menuBottomSheetStyles.content,
+                xstyle,
+              ),
+              className,
+              style,
+            )}>
+            {submenuPath.length > 0 ? (
+              <div {...stylex.props(bottomSheetStyles.header)}>
+                <Button
+                  label={backLabel}
+                  variant="ghost"
+                  size="sm"
+                  icon={
+                    <Icon
+                      icon="chevronLeft"
+                      size="sm"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
+                  isIconOnly
+                  onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+                />
+                {viewHeading}
+              </div>
+            ) : (
+              viewHeading
+            )}
+            {isRenderable(header) && (
+              <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
+            )}
+            <MenuBottomSheetActionList
+              items={currentItems}
+              onSelect={handleSelect}
+              onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+            />
+            {isRenderable(footer) && (
+              <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
+            )}
+          </div>
+        </MenuBottomSheet>
+      )}
     </>
   );
 }
@@ -902,6 +1045,8 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
+  touchModes,
+  pressTouchModel = 'uikit',
   header,
   footer,
   className,
@@ -909,7 +1054,18 @@ function DropdownMenuPopover({
   xstyle,
   'data-testid': testId,
   ...props
-}: DropdownMenuProps) {
+}: DropdownMenuProps & {
+  /**
+   * Whether the touch modes apply (the resolved presentation): the grow and
+   * collapse are a finger's on a touch device (`spec:AST-094` FR31).
+   */
+  touchModes?: boolean;
+  /**
+   * How a finger's press runs, on every device (`spec:AST-094` FR29, FR43):
+   * UIMenu's, unless the caller pins `presentation="popover"`.
+   */
+  pressTouchModel?: 'pointer' | 'uikit';
+}) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
 
@@ -962,6 +1118,55 @@ function DropdownMenuPopover({
   // The press model is mounted below (it needs the popover); the hide path
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
+
+  // The touch presentation's open and close (menuSurfaceMotion.ts), created
+  // for the popover element the first time the menu opens, with the
+  // `beforetoggle` listener that plays the close.
+  const surfaceMotionRef = useRef<{
+    element: HTMLElement;
+    motion: MenuSurfaceMotion;
+    detach: () => void;
+  } | null>(null);
+  // Whether the open in progress is under a finger: it then runs UIMenu's
+  // motion and the pan-outside dismissal.
+  const isTouchPresentationRef = useRef(false);
+  const isUikitMotionRef = useRef(false);
+  const getSurfaceMotion = useCallback(
+    (element: HTMLElement): MenuSurfaceMotion => {
+      const current = surfaceMotionRef.current;
+      if (current?.element === element) {
+        return current.motion;
+      }
+      current?.detach();
+      const motion = createMenuSurfaceMotion(element);
+      const handleBeforeToggle = (event: Event) => {
+        if (
+          (event as ToggleEvent).newState === 'closed' &&
+          isUikitMotionRef.current
+        ) {
+          motion.exit();
+        }
+      };
+      element.addEventListener('beforetoggle', handleBeforeToggle);
+      surfaceMotionRef.current = {
+        element,
+        motion,
+        detach: () => {
+          element.removeEventListener('beforetoggle', handleBeforeToggle);
+          motion.dispose();
+        },
+      };
+      return motion;
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      surfaceMotionRef.current?.detach();
+      surfaceMotionRef.current = null;
+    },
+    [],
+  );
 
   // Submenu flyouts are `popover="manual"` elements nested inside the menu's
   // `popover="auto"` element, so the browser's light dismiss of the menu never
@@ -1068,6 +1273,38 @@ function DropdownMenuPopover({
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
     resetFocusReturn();
+    // UIKit's motion under a finger, decided as the menu opens: the touch
+    // modes of the resolved presentation (a pinned 'popover' keeps the
+    // layer's own entrance).
+    const surface = contentRef.current;
+    isTouchPresentationRef.current = touchModes === true;
+    const isUikitMotion = touchModes === true;
+    isUikitMotionRef.current = isUikitMotion;
+    const trigger = buttonRef.current;
+    if (surface != null && trigger != null) {
+      if (isUikitMotion) {
+        getSurfaceMotion(surface).enter(() => {
+          const triggerBox = trigger.getBoundingClientRect();
+          const surfaceBox = surface.getBoundingClientRect();
+          return {
+            surface: {
+              left: surfaceBox.left,
+              top: surfaceBox.top,
+              width: surfaceBox.width,
+              height: surfaceBox.height,
+            },
+            anchor: {
+              x: triggerBox.left + triggerBox.width / 2,
+              y: triggerBox.top + triggerBox.height / 2,
+            },
+          };
+        });
+      } else if (surfaceMotionRef.current?.element === surface) {
+        // A mouse runs nothing touch-related (spec:AST-094 FR24): it creates
+        // no motion, and stops one a finger's open left.
+        surfaceMotionRef.current.motion.reset();
+      }
+    }
     if (renderTrigger != null) {
       setTriggerName(readAccessibleName(buttonRef.current));
     }
@@ -1079,7 +1316,15 @@ function DropdownMenuPopover({
     if (!isControlled) {
       setInternalIsOpen(true);
     }
-  }, [isControlled, onClick, onOpenChange, renderTrigger, resetFocusReturn]);
+  }, [
+    getSurfaceMotion,
+    isControlled,
+    onClick,
+    onOpenChange,
+    renderTrigger,
+    resetFocusReturn,
+    touchModes,
+  ]);
 
   // The menu's name: the dialog around it with a header or footer, and the
   // Back row of a drilled-in view ("Back to <this>"), both read it.
@@ -1113,11 +1358,76 @@ function DropdownMenuPopover({
     dialogLabel: hasRegions
       ? (menuLabel ?? t(DEFAULT_BUTTON_I18N_KEY))
       : undefined,
+    // The box's own pseudo-elements draw it while it grows around a
+    // sub-menu's card (menuDrillInMotion.ts).
+    className: stylex.props(styles.boxMotion).className,
   });
 
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
+  // usePopover returns a new object each render, so closeMenu changes too:
+  // the pan-outside tracking below reads it through a ref, so a re-render
+  // between an outside pointerdown and its pointercancel keeps the pointer.
+  const closeMenuRef = useRef(closeMenu);
+  closeMenuRef.current = closeMenu;
+
+  // A pan that starts outside the open menu, in its touch presentation,
+  // dismisses it as the pan begins, and the same touch goes on to scroll the
+  // page; a tap or a hold outside dismisses at the lift (the browser's light
+  // dismiss already acts there). UIKit's popovers on iOS 26.2 behave this
+  // way. The browser announces that it took the touch for a pan with a
+  // pointercancel, which its light dismiss ignores.
+  const isPopoverOpen = popover.isOpen;
+  useEffect(() => {
+    if (!isPopoverOpen || !isTouchPresentationRef.current) {
+      return;
+    }
+    const doc = contentRef.current?.ownerDocument ?? document;
+    const outside = new Set<number>();
+    const isInsideMenu = (target: EventTarget | null) => {
+      const node = target instanceof Node ? target : null;
+      return (
+        node != null &&
+        (contentRef.current?.contains(node) === true ||
+          buttonRef.current?.contains(node) === true)
+      );
+    };
+    // The press's end listeners are held only while an outside press is live
+    // (react-component-runtime INV5).
+    const release = () => {
+      doc.removeEventListener('pointerup', handleEnd, true);
+      doc.removeEventListener('pointercancel', handleCancel, true);
+    };
+    const handleEnd = (event: PointerEvent) => {
+      if (outside.delete(event.pointerId) && outside.size === 0) {
+        release();
+      }
+    };
+    const handleCancel = (event: PointerEvent) => {
+      if (outside.delete(event.pointerId)) {
+        if (outside.size === 0) {
+          release();
+        }
+        closeMenuRef.current();
+      }
+    };
+    const handleDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' && !isInsideMenu(event.target)) {
+        if (outside.size === 0) {
+          doc.addEventListener('pointerup', handleEnd, true);
+          doc.addEventListener('pointercancel', handleCancel, true);
+        }
+        outside.add(event.pointerId);
+      }
+    };
+    doc.addEventListener('pointerdown', handleDown, true);
+    return () => {
+      doc.removeEventListener('pointerdown', handleDown, true);
+      doc.removeEventListener('pointerup', handleEnd, true);
+      doc.removeEventListener('pointercancel', handleCancel, true);
+    };
+  }, [isPopoverOpen]);
 
   // Single keyboard navigation path for both modes.
   // The selector matches plain items plus selectable items
@@ -1383,12 +1693,16 @@ function DropdownMenuPopover({
   // The press model: the row under a release acts, the highlight follows a
   // held pointer. A mouse released outside the menu dismisses it; a finger
   // released outside leaves it open, so the hook never calls onDismiss then.
-  const menuPress = useMenuPress({
+  const menuPress = useDropdownMenuPress({
     menuRef: listRef,
     triggerRef: buttonRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
+    // Under a finger, on every device, the trigger is UIMenu's pull-down
+    // button (spec:AST-094 FR29, FR43); `presentation="popover"` pins the
+    // pointer model, today's included.
+    touchModel: pressTouchModel,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -1497,7 +1811,43 @@ function DropdownMenuPopover({
     : styles.popoverMatchTrigger;
 
   // The drill-in view stack for sub-menus on a phone.
-  const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // UIMenu's in-place sub-menu: the box grows to the drilled-in view, the
+  // parent stays behind as a card, and back reverses it (touch only; the
+  // drill-in itself happens only on a compact touch display).
+  const [drillInMotion] = useState(() =>
+    createMenuDrillInMotion(() => ({
+      surface: contentRef.current,
+      list: listRef.current,
+    })),
+  );
+  useEffect(() => () => drillInMotion.dispose(), [drillInMotion]);
+  // Only a touch presentation plays it; a drill-in under a mouse (an explicit
+  // `presentation="drill-in"`) swaps the view as before.
+  const drillInTransition = useMemo(
+    () => ({
+      capture: (
+        kind: 'push' | 'pop',
+        row: HTMLElement | null,
+        atRoot: boolean,
+      ) => {
+        if (isTouchPresentationRef.current) {
+          drillInMotion.capture(kind, row, atRoot);
+        }
+      },
+      play: (done?: () => void) => drillInMotion.play(done),
+      reset: () => drillInMotion.reset(),
+    }),
+    [drillInMotion],
+  );
+  // Under a finger a sub-menu opens as UIMenu's does, a card over the
+  // parent's rows (useMenuDrillIn); a mouse's drill-in (an explicit
+  // `presentation="drill-in"`) replaces the rows as before (spec:AST-094: a
+  // mouse keeps today's behavior).
+  const {drillIn, isCardShown, isCardLeaving, wrapContent} = useMenuDrillIn(
+    isOpen,
+    drillInTransition,
+    {isCard: touchModes === true},
+  );
   // The surface host is owned through a ref. State keeps only a key that
   // changes whenever a host element attaches, the host included when it
   // moves (a header or footer coming or going), so sub-menus re-render into
@@ -1709,6 +2059,8 @@ function DropdownMenuPopover({
                   : menuTouchActionStyles.fits,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
+                isCardShown && styles.cardStack,
+                isCardLeaving && styles.cardLeaving,
                 // Between a header and a footer the menu is a Tab stop, so
                 // keyboard focus on it must be visible (the base style removes
                 // the ring for the pointer-open focus target).
@@ -1757,9 +2109,12 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  const requestedPresentation =
-    'items' in props ? (props.presentation ?? 'popover') : 'popover';
-  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
+  // The touch modes are the default on a touch device (spec:AST-094);
+  // `presentation="popover"` pins the fine-pointer surface and modes.
+  const {surface: resolvedPresentation, touchModes} = usePresentation(
+    props.presentation,
+    {whenOmitted: 'touch'},
+  );
   const isControlled = props.isMenuOpen !== undefined;
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
@@ -1791,7 +2146,14 @@ export function DropdownMenu(props: DropdownMenuProps) {
     );
   }
 
-  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
+  return (
+    <DropdownMenuPopover
+      {...sharedProps}
+      presentation="popover"
+      touchModes={touchModes}
+      pressTouchModel={props.presentation === 'popover' ? 'pointer' : 'uikit'}
+    />
+  );
 }
 
 DropdownMenu.displayName = 'DropdownMenu';

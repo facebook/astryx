@@ -1077,6 +1077,40 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
+export const ActionSheetCardPresentation: Story = {
+  name: 'Presentation / action sheet card',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Plain actions, a label and an icon each, in the bottom-sheet presentation. On a compact touch screen they present the way iOS 26 presents an action sheet: an alert-style card. Rows with descriptions keep the sheet (Presentation / action sheet).',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'Project actions'}}
+        items={PROJECT_ACTIONS.map(({label, icon}) => ({
+          label,
+          icon,
+          onClick: () => console.log(`${label} selected`),
+        }))}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const ActionSheetCustomTrigger: Story = {
   name: 'Presentation / action sheet, custom trigger',
   parameters: {
