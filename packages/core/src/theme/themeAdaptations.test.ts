@@ -185,7 +185,87 @@ describe('closed conditions and media queries', () => {
 
     expect(mediaPreludes(generateAdaptationCSS(theme).component)).toEqual([
       '(width >= 768px) and (width < 1280px) and (pointer: coarse) and (prefers-contrast: more) and (prefers-reduced-motion: reduce)',
+      // The same rule under the reduced-motion mark (spec:AST-108 FR6).
+      '(width >= 768px) and (width < 1280px) and (pointer: coarse) and (prefers-contrast: more)',
     ]);
+  });
+
+  describe('a rule keyed on motion under the reduced-motion mark (spec:AST-108 FR6)', () => {
+    const MARK = '[data-astryx-reduced-motion]';
+    const scopes = (css: string) =>
+      [...css.matchAll(/@scope \(([^)]*(?:\([^)]*\)[^)]*)*)\) to/g)].map(
+        match => match[1],
+      );
+
+    it("a 'reduce' rule also applies inside a marked theme, whatever the person's setting", () => {
+      const css = generateAdaptationCSS(
+        defineTheme(
+          adaptationInput([
+            {
+              when: {motion: 'reduce'},
+              value: {tokens: {'--duration-fast': '0ms'}},
+            },
+          ]),
+        ),
+      ).component;
+      expect(mediaPreludes(css)).toEqual(['(prefers-reduced-motion: reduce)']);
+      expect(scopes(css)).toEqual([
+        '[data-astryx-theme="adaptive"]',
+        `[data-astryx-theme="adaptive"]${MARK}, ${MARK} [data-astryx-theme="adaptive"]`,
+      ]);
+      expect(count(css, '--duration-fast: 0ms')).toBe(2);
+    });
+
+    it("keeps a 'reduce' rule's other conditions under the mark", () => {
+      const css = generateAdaptationCSS(
+        defineTheme(
+          adaptationInput([
+            {
+              when: {motion: 'reduce', pointer: 'coarse'},
+              value: {tokens: {'--duration-fast': '0ms'}},
+            },
+          ]),
+        ),
+      ).component;
+      expect(mediaPreludes(css)).toEqual([
+        '(pointer: coarse) and (prefers-reduced-motion: reduce)',
+        '(pointer: coarse)',
+      ]);
+    });
+
+    it("leaves a marked theme out of a 'no-preference' rule", () => {
+      const css = generateAdaptationCSS(
+        defineTheme(
+          adaptationInput([
+            {
+              when: {motion: 'no-preference'},
+              value: {tokens: {'--duration-fast': '300ms'}},
+            },
+          ]),
+        ),
+      ).component;
+      expect(mediaPreludes(css)).toEqual([
+        '(prefers-reduced-motion: no-preference)',
+      ]);
+      expect(scopes(css)).toEqual([
+        `[data-astryx-theme="adaptive"]:not(${MARK}):not(${MARK} *)`,
+      ]);
+    });
+
+    it('changes nothing for a rule that is not keyed on motion', () => {
+      const css = generateAdaptationCSS(
+        defineTheme(
+          adaptationInput([
+            {
+              when: {pointer: 'coarse'},
+              value: {tokens: {'--duration-fast': '50ms'}},
+            },
+          ]),
+        ),
+      ).component;
+      expect(scopes(css)).toEqual(['[data-astryx-theme="adaptive"]']);
+      expect(css).not.toContain(MARK);
+    });
   });
 
   it.each([
