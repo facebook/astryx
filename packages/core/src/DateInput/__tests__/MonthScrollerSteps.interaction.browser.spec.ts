@@ -5,11 +5,12 @@
  * @input The built "Default" DateInput story, shown in a bottom sheet, the
  *   arrows clicked from the page, real mouse and trackpad input and the
  *   interaction harness
- * @output Interaction proofs for the month scroller's steps: a second arrow
- *   step clicked late in the first one's smooth scroll still brings the
- *   scroller to rest on the month the title names; after the month and year
- *   wheels close, a trackpad scroll still pages to the next month and Reset
- *   from four months on still rests on today's month
+ * @output Interaction proofs for the month scroller's steps: after the month
+ *   and year wheels close, a trackpad scroll still pages to the next month and
+ *   Reset from four months on still rests on today's month.
+ *   (A second arrow step late in the first one's scroll, which WebKit cuts
+ *   short, is proven in MonthScrollerSettle.test.tsx: a loaded page's frames
+ *   are too far apart to aim a click at a share of a 300 ms scroll.)
  * @position Interaction tests of MonthScroller.tsx
  *   (`*.interaction.browser.spec.ts`, run by `pnpm test:interaction`)
  */
@@ -44,6 +45,41 @@ async function waitForRest(viewport: Locator): Promise<number> {
 }
 
 /** The month the scroller rests on, as the pane's own grid names it. */
+/**
+ * Waits until a month's grid sits flush with the scroller's edge, the offset
+ * unchanged, for ten frames: the end of the scroller's own settle
+ * correction, however long the page takes to run it. (The panes' width can
+ * be fractional, so the grid's own box is the measure, not the offset.)
+ */
+async function waitForRestOnMonth(viewport: Locator): Promise<number> {
+  return viewport.evaluate(
+    async element =>
+      new Promise<number>(resolve => {
+        let last = element.scrollLeft;
+        let still = 0;
+        const flush = () => {
+          const edge = element.getBoundingClientRect().left;
+          return [
+            ...element.querySelectorAll<HTMLElement>('[role="grid"]'),
+          ].some(
+            grid => Math.abs(grid.getBoundingClientRect().left - edge) < 1,
+          );
+        };
+        const check = () => {
+          const now = element.scrollLeft;
+          still = now === last && flush() ? still + 1 : 0;
+          last = now;
+          if (still >= 10) {
+            resolve(now);
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      }),
+  );
+}
+
 async function monthAtRest(viewport: Locator): Promise<string> {
   return viewport.evaluate(element => {
     const box = element.getBoundingClientRect();
@@ -71,72 +107,6 @@ async function openCalendar(page: Page) {
 }
 
 test.use({hasTouch: false, isMobile: false});
-
-/**
- * The first step's smooth scroll is still running when the second arrow is
- * clicked, late in it: WebKit ends the retargeted scroll part-way, and the
- * scroller has to finish the second step rather than round back to the
- * first one's month. The second step lands once the first scroll has covered
- * 95 % of a month, where WebKit's cut always strands the scroller on the
- * first arrow's month. Both arrows are clicked from the page: the second in
- * its own task, as a click arrives, posted from the first frame that reaches
- * the share; that task measures the share it runs at. A click sent from the
- * test runner instead could arrive after the first scroll had ended.
- */
-const SHARE = 0.95;
-
-test('a second arrow step late in the first one’s scroll (95 %) rests on the month the title names', async ({
-  page,
-}) => {
-  const viewport = await openCalendar(page);
-  const title = page.getByRole('button', {name: /Choose month and year/});
-  const start = await monthAtRest(viewport);
-  expect(start).not.toBe('');
-  const atSecondStep = await viewport.evaluate(
-    async (element, wanted) =>
-      new Promise<number>(resolve => {
-        const arrow = (name: string) => {
-          const button = document.querySelector<HTMLButtonElement>(
-            `button[aria-label="${name}"]`,
-          );
-          if (button == null) {
-            throw new Error(`no ${name} button`);
-          }
-          return button;
-        };
-        const next = arrow('Next month');
-        const previous = arrow('Previous month');
-        const from = element.scrollLeft;
-        const travelled = () =>
-          Math.abs(element.scrollLeft - from) / element.clientWidth;
-        const secondStep = new MessageChannel();
-        secondStep.port1.onmessage = () => {
-          const at = travelled();
-          previous.click();
-          resolve(at);
-        };
-        const check = () => {
-          if (travelled() >= wanted - 0.002) {
-            secondStep.port2.postMessage(null);
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        next.click();
-        requestAnimationFrame(check);
-      }),
-    SHARE,
-  );
-  // The second step ran inside the first one's scroll, past the share.
-  expect(atSecondStep).toBeGreaterThanOrEqual(SHARE - 0.01);
-  expect(atSecondStep).toBeLessThan(1);
-  await waitForRest(viewport);
-  // Past the scroller's own settle correction too.
-  await page.waitForTimeout(600);
-  await waitForRest(viewport);
-  await expect(title).toHaveAccessibleName(new RegExp(start));
-  expect(await monthAtRest(viewport)).toBe(start);
-});
 
 /**
  * Closing the month and year wheels re-asserts the month shown, a steer that
@@ -170,14 +140,13 @@ test('after the month and year wheels close, a trackpad scroll to the next month
     throw new Error('no month scroller');
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  // A horizontal swipe of 70 % of a month, as a trackpad sends it.
-  for (let step = 0; step < 7; step++) {
-    await page.mouse.wheel(box.width * 0.1, 0);
-  }
-  await waitForRest(viewport);
-  // Past the scroller's own settle correction too.
-  await page.waitForTimeout(600);
-  await waitForRest(viewport);
+  // A horizontal trackpad scroll of 70 % of a month, as one wheel event: a
+  // burst of small ones reaches a loaded page far enough apart to count as
+  // separate gestures, each snapping back on its own.
+  await page.mouse.wheel(box.width * 0.7, 0);
+  // Past the scroller's own settle correction too, which ends on a month's
+  // boundary.
+  await waitForRestOnMonth(viewport);
   const next = await monthAtRest(viewport);
   expect(next).not.toBe(start);
   await expect(toggle).toHaveAccessibleName(new RegExp(next));
@@ -215,10 +184,9 @@ test('after the month and year wheels close, Reset from four months on rests on 
   await waitForRest(viewport);
 
   await clickCentre('Reset');
-  await waitForRest(viewport);
-  // Past the scroller's own settle correction too.
-  await page.waitForTimeout(600);
-  await waitForRest(viewport);
+  // Past the scroller's own settle correction too, which ends on a month's
+  // boundary.
+  await waitForRestOnMonth(viewport);
   expect(await monthAtRest(viewport)).toBe(today);
   await expect(toggle).toHaveAccessibleName(new RegExp(today));
 });
