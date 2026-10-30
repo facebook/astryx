@@ -1388,6 +1388,58 @@ describe('MultiSelector', () => {
     expect(within(listbox).getByText('Add a fruit first')).toBeInTheDocument();
   });
 
+  describe('count trigger text', () => {
+    it('shows the default count in the catalog message', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          triggerDisplay="count"
+        />,
+      );
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+    });
+
+    it('translates the default count, with plural forms, under another locale', () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectedCount':
+                '{count, number} {count, plural, one {sélectionné} other {sélectionnés}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={['Apple', 'Banana']}
+            onChange={() => {}}
+            triggerDisplay="count"
+          />
+        </InternationalizationProvider>,
+      );
+      expect(screen.getByText('2 sélectionnés')).toBeInTheDocument();
+      expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+    });
+
+    it('still lets formatValue replace the count text', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          triggerDisplay="count"
+          formatValue={items => `${items.length} fruits`}
+        />,
+      );
+      expect(screen.getByText('2 fruits')).toBeInTheDocument();
+    });
+  });
+
   describe('result announcements', () => {
     it('announces the match count politely while searching', async () => {
       const user = userEvent.setup();
