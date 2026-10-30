@@ -81,6 +81,13 @@ export interface TouchDriver {
    * Skip such proofs with `PARTIAL_LIFT_SKIP` where it is false.
    */
   readonly partialLifts: boolean;
+  /**
+   * Whether a scripted press and lift in place (`play(tap(at))`) gets the
+   * click a finger's tap gets. Playwright's WebKit synthesises that click only
+   * from `tap` (its tap gesture), never from a scripted touch sequence. Use
+   * `tap` for a tap that must click, or skip with `SCRIPTED_CLICK_SKIP`.
+   */
+  readonly synthesizesClicks: boolean;
   /** Plays a script; resolves when its last event has been dispatched. */
   play(script: TouchScript, options?: PlayOptions): Promise<PlayedEvent[]>;
   /** A tap through the engine's tap path (WebKit synthesises click only from this). */
@@ -93,6 +100,15 @@ export interface TouchDriver {
  * sends that lift's `touchend` with no remaining `touches`, an emulation quirk
  * iOS does not have. Those cases need a simulator capture.
  */
+/**
+ * The skip reason for a proof that needs the click a scripted tap gets, on a
+ * driver whose `synthesizesClicks` is false: Playwright's WebKit synthesises
+ * the click only from its tap gesture (`driver.tap`), never from touches it
+ * is sent one by one.
+ */
+export const SCRIPTED_CLICK_SKIP =
+  'injected WebKit touches synthesise no click, only driver.tap does (README: engine limits); tap with driver.tap, or capture it on the iOS simulator';
+
 export const PARTIAL_LIFT_SKIP =
   'injected WebKit touches report no remaining touches when one finger of several lifts (README: engine limits); capture it on the iOS simulator';
 
@@ -148,6 +164,7 @@ async function chromiumDriver(page: Page): Promise<TouchDriver> {
     scriptedTimestamps: true,
     drivesNativeGestures: true,
     partialLifts: true,
+    synthesizesClicks: true,
     async play(script, options = {}) {
       // Stamps follow the wall clock the page's own clock is on: with real-time
       // pacing an event's stamp and its dispatch agree to ~0.1 ms.
@@ -218,6 +235,7 @@ async function webkitDriver(page: Page): Promise<TouchDriver> {
     scriptedTimestamps: false,
     drivesNativeGestures: false,
     partialLifts: false,
+    synthesizesClicks: false,
     async play(script, options = {}) {
       return playSteps(
         script,
@@ -265,6 +283,13 @@ export interface InputRecord {
   readonly x?: number;
   readonly y?: number;
   readonly touches?: number;
+  /** A pointer event's pressure (a pen's, 0–1). */
+  readonly pressure?: number;
+  /** A wheel step's deltas, mode and Control key (webInput.ts). */
+  readonly deltaX?: number;
+  readonly deltaY?: number;
+  readonly deltaMode?: number;
+  readonly ctrlKey?: boolean;
   readonly target: string;
 }
 
@@ -276,20 +301,21 @@ const INPUT_LOG_SCRIPT = `(() => {
     ? node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + (node.getAttribute('aria-label') ? '[' + node.getAttribute('aria-label') + ']' : '')
     : String(node && node.nodeName);
   const types = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'touchstart', 'touchmove',
-    'touchend', 'touchcancel', 'click', 'contextmenu', 'gotpointercapture', 'lostpointercapture'];
+    'touchend', 'touchcancel', 'click', 'contextmenu', 'gotpointercapture', 'lostpointercapture', 'wheel'];
   for (const type of types) {
     // Bubble phase on window, so defaultPrevented reflects the page's own handlers.
     window.addEventListener(type, event => {
       const record = {type, timeStamp: event.timeStamp, isTrusted: event.isTrusted, cancelable: event.cancelable,
         defaultPrevented: event.defaultPrevented, target: describe(event.target)};
-      if ('pointerId' in event) Object.assign(record, {pointerId: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY});
+      if ('pointerId' in event) Object.assign(record, {pointerId: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY, pressure: event.pressure});
+      if (type === 'wheel') Object.assign(record, {deltaX: event.deltaX, deltaY: event.deltaY, deltaMode: event.deltaMode, ctrlKey: event.ctrlKey, x: event.clientX, y: event.clientY});
       if (event.touches) Object.assign(record, {touches: event.touches.length, x: event.changedTouches[0] && event.changedTouches[0].clientX, y: event.changedTouches[0] && event.changedTouches[0].clientY});
       log.push(record);
     }, {passive: true});
   }
 })()`;
 
-/** Records every pointer/touch/click the page receives (install before navigation). */
+/** Records every pointer, touch, click and wheel step the page receives (install before navigation). */
 export async function installInputLog(page: Page): Promise<void> {
   await page.addInitScript(INPUT_LOG_SCRIPT);
 }
