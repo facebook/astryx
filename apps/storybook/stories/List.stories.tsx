@@ -7,17 +7,19 @@
  * @position Storybook demonstrations for List consumers
  */
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
+import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -257,6 +259,73 @@ export const Links: Story = {
   ),
 };
 
+function EndControlsDemo() {
+  const [isWifiOn, setIsWifiOn] = useState(true);
+  return (
+    // The button after the list sits 4 px below its last row.
+    <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+      <List
+        density="compact"
+        hasDividers
+        header={
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+            <Text type="label" size="lg">
+              Connections
+            </Text>
+            <Button label="Edit" variant="ghost" size="sm" />
+          </div>
+        }>
+        <ListItem
+          label="Network"
+          onClick={() => {}}
+          endContent={<Icon icon={ChevronRightIcon} />}
+          swipeActions={{trailing: [{label: 'Forget', onActivate: () => {}}]}}
+        />
+        <ListItem
+          label="Wi-Fi"
+          endContent={
+            <Switch
+              label="Wi-Fi"
+              isLabelHidden
+              value={isWifiOn}
+              onChange={checked => setIsWifiOn(checked)}
+            />
+          }
+        />
+        <ListItem
+          label="Bluetooth"
+          onClick={() => {}}
+          endContent={<Icon icon={ChevronRightIcon} />}
+        />
+      </List>
+      <Button label="Load more" variant="secondary" />
+    </div>
+  );
+}
+
+export const WithEndControls: Story = {
+  render: () => <EndControlsDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact row whose end content is its own control, a switch, ' +
+          'between two interactive rows (the first one swipeable), under a ' +
+          'header with its own button ' +
+          'and above a button 4 px after the list. Under a finger, the ' +
+          'interactive rows grow ' +
+          'their touch targets only where nothing is near, never into the ' +
+          "control's row, and a tap on the switch stays the switch's.",
+      },
+    },
+  },
+};
+
 export const OrderedList: Story = {
   render: args => (
     <List listStyle="decimal" {...args}>
@@ -404,6 +473,157 @@ export const HeaderInFlexParent: Story = {
         story:
           'Demonstrates the list with a header inside a flex parent. ' +
           'The header should appear above the list, not beside it.',
+      },
+    },
+  },
+};
+
+function AnimatedChangesDemo() {
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    'Spam',
+  ]);
+  const [next, setNext] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
+  return (
+    <div ref={containerRef}>
+      <VStack gap={4}>
+        <List animatedLayout={animatedLayout} hasDividers>
+          {rows.map(label => (
+            <ListItem
+              key={label}
+              itemKey={label}
+              label={label}
+              onClick={() => {}}
+            />
+          ))}
+        </List>
+        <Text data-testid="after-list">{`${rows.length} folders`}</Text>
+        <Button
+          label="Insert a row second"
+          onClick={() => {
+            setRows(current => [
+              current[0],
+              `Folder ${next}`,
+              ...current.slice(1),
+            ]);
+            setNext(n => n + 1);
+          }}
+        />
+        <Button
+          label="Remove the second row"
+          onClick={() =>
+            setRows(current => current.filter((_, index) => index !== 1))
+          }
+        />
+        <Button
+          label="Move the last row first"
+          onClick={() =>
+            setRows(current => [
+              current[current.length - 1],
+              ...current.slice(0, -1),
+            ])
+          }
+        />
+      </VStack>
+    </div>
+  );
+}
+
+export const AnimatedChanges: Story = {
+  render: () => <AnimatedChangesDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `animatedLayout` (the handle from `useAnimatedLayout`) and ' +
+          'an `itemKey` on each row, an inserted row enters, a removed row ' +
+          'collapses in place, a row crossing rows that move the other way ' +
+          'rides above them with the surface color behind it, and the rows ' +
+          'after a change and the buttons below the list glide to their new ' +
+          'places, all on one shared motion, under every pointer.',
+      },
+    },
+  },
+};
+
+/** The swipe story's row with no swipe actions. */
+const PLAIN_ROW = 'Notes';
+
+function AnimatedChangesSwipeDemo() {
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    PLAIN_ROW,
+  ]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
+  const moveFirst = (label: string) =>
+    setRows(current =>
+      current.includes(label)
+        ? [label, ...current.filter(row => row !== label)]
+        : current,
+    );
+  return (
+    <div ref={containerRef}>
+      <List animatedLayout={animatedLayout} hasDividers>
+        {rows.map(label => (
+          <ListItem
+            key={label}
+            itemKey={label}
+            label={label}
+            onClick={() => {}}
+            swipeActions={
+              label === PLAIN_ROW
+                ? undefined
+                : {
+                    trailing: [
+                      {
+                        label: 'Delete',
+                        variant: 'destructive',
+                        hasRemoval: true,
+                        onActivate: () =>
+                          setRows(current =>
+                            current.filter(row => row !== label),
+                          ),
+                      },
+                    ],
+                  }
+            }
+          />
+        ))}
+      </List>
+      <Button
+        label="Move Archive first"
+        variant="secondary"
+        onClick={() => moveFirst('Archive')}
+      />
+      <Button
+        label="Move Notes first"
+        variant="secondary"
+        onClick={() => moveFirst(PLAIN_ROW)}
+      />
+    </div>
+  );
+}
+
+export const AnimatedChangesSwipe: Story = {
+  render: () => <AnimatedChangesSwipeDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `animatedLayout`, a row swiped away with a removal action ' +
+          'collapses in place, its action showing, while the rows below ' +
+          'glide up into its gap on the shared motion. A row moved up ' +
+          'across the swipeable rows, with swipe actions (Archive) or ' +
+          'without (Notes), rides above the rows it crosses.',
       },
     },
   },

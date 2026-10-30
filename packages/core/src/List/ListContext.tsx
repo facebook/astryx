@@ -14,6 +14,7 @@
 
 import {use, useMemo, type ReactNode} from 'react';
 import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
+import type {AnimatedLayout} from '../hooks/useAnimatedLayout';
 
 export type ListDensity = 'compact' | 'balanced' | 'spacious';
 export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
@@ -54,6 +55,12 @@ export interface ListContextValue {
    * `'none'`.
    */
   task?: ListTaskMarker;
+  /**
+   * The list's `animatedLayout` handle (`component:List` FR12), for its rows;
+   * internal: a row's own layout changes (its start and end content) report
+   * to the same handle.
+   */
+  animatedLayout?: AnimatedLayout;
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);

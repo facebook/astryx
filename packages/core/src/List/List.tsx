@@ -18,7 +18,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -29,6 +29,10 @@ import {
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useListLayoutUpdates} from './listLayoutUpdates';
+import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
+import type {AnimatedLayout} from '../motion/animatedLayout';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 
@@ -56,6 +60,18 @@ export interface ListProps extends BaseProps<
    * @default 'balanced'
    */
   density?: ListDensity;
+
+  /**
+   * The handle from `useAnimatedLayout({containerRef})` (`component:List`
+   * FR12). With it, when rows are inserted, removed or reordered, an inserted
+   * row enters, a removed row collapses in place, a row crossing rows that
+   * move the other way rides above them, and the rows after a change and the
+   * content after the list up to that container glide to their new places,
+   * all on one shared motion and under every pointer. A row's identity is its
+   * `itemKey`: a row without one changes at once. Without a handle the list
+   * changes at once.
+   */
+  animatedLayout?: AnimatedLayout;
 
   /**
    * Whether to show dividers between list items.
@@ -147,6 +163,11 @@ const styles = stylex.create({
     // `hidden`: hidden makes a scroll container, which fights the list's
     // vertical scroller. (StyleX emits the physical longhand of this axis.)
     overflowInline: 'clip',
+    // The isolation boundary for what rises inside the list: a row's touch
+    // band and a swipeable row (utils/touchHitArea.stylex.ts, ListItem) order
+    // above the rows after them and stay below a page-level sticky header at
+    // the same z-index (`spec:AST-027` DEC-1, DEC-2).
+    isolation: 'isolate',
   },
   // 'outset' and 'bleed' rows reach into the container's padding. The list
   // reaches the container's padding edge on each inline edge first, so its
@@ -209,6 +230,7 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
+  animatedLayout,
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -224,6 +246,12 @@ export function List({
   ...props
 }: ListProps) {
   const headerId = useId();
+  const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
+  const measureRows = useListLayoutUpdates(listRef, animatedLayout);
+  const mergedRef = useMergedRefs(
+    listRef,
+    ref as React.Ref<HTMLUListElement & HTMLOListElement>,
+  );
   const isOrdered = listStyle === 'decimal';
   const Tag = isOrdered ? 'ol' : 'ul';
   // Plain use of the deprecated prop is reported by its @deprecated type;
@@ -239,13 +267,19 @@ export function List({
   const reachesContainerPadding = edge === 'outset' || edge === 'bleed';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, edge, listStyle}),
-    [density, hasDividers, edge, listStyle],
+    () => ({
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      animatedLayout,
+    }),
+    [density, hasDividers, edge, listStyle, animatedLayout],
   );
 
   const listElement = (
     <Tag
-      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      ref={mergedRef}
       // Consumer props first: everything the component sets for itself below
       // is part of its contract and wins on conflict.
       {...props}
@@ -280,12 +314,26 @@ export function List({
     </Tag>
   );
 
+  // Every change of the rows is measured before it lands (`spec:AST-105`
+  // FR1): LayoutChangeSnapshot calls this in the commit, before the DOM
+  // changes.
+  const snapshot =
+    animatedLayout != null ? (
+      <LayoutChangeSnapshot value={children} onBeforeChange={measureRows} />
+    ) : null;
+
   if (header == null) {
-    return <ListContext value={contextValue}>{listElement}</ListContext>;
+    return (
+      <ListContext value={contextValue}>
+        {snapshot}
+        {listElement}
+      </ListContext>
+    );
   }
 
   return (
     <ListContext value={contextValue}>
+      {snapshot}
       <div {...stylex.props(styles.root)}>
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
