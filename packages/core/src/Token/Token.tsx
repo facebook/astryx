@@ -348,7 +348,41 @@ export function Token({
     ...(description != null ? {'aria-description': description} : {}),
   };
 
-  if (role === 'link') {
+  // A disabled link keeps a focusable link with aria-disabled and no
+  // destination, as a disabled Link does (spec:AST-085 FR1, FR5;
+  // component:Link FR5). useInteractiveRole reports no link role once
+  // disabled, so the structure is chosen here.
+  const isDisabledLink = isDisabled && href != null && effectiveOnClick == null;
+
+  if (isDisabledLink && onRemove == null) {
+    return (
+      <a
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        role="link"
+        aria-disabled={true}
+        tabIndex={0}
+        {...mergeProps(
+          themeProps('token', {color, size, disabled: 'disabled'}),
+          focusOutlineProps.focusVisible(
+            styles.base,
+            sizeStyles[size],
+            colorStyles[color],
+            styles.interactive,
+            styles.disabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...rest}
+        {...disabledInteractionProps()}
+        {...sharedProps}>
+        {content}
+      </a>
+    );
+  }
+
+  if (role === 'link' || isDisabledLink) {
     if (onRemove == null) {
       return (
         <LinkComponent
@@ -356,7 +390,11 @@ export function Token({
           href={href as string}
           {...pressable}
           {...mergeProps(
-            themeProps('token', {color, size}),
+            themeProps('token', {
+              color,
+              size,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
             focusOutlineProps.focusVisible(
               styles.base,
               sizeStyles[size],
@@ -405,7 +443,11 @@ export function Token({
           </span>
         }
         {...mergeProps(
-          themeProps('token', {color, size}),
+          themeProps('token', {
+            color,
+            size,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
@@ -439,7 +481,11 @@ export function Token({
         onClick={isDisabled ? undefined : handleContainerClick}
         {...pressable}
         {...mergeProps(
-          themeProps('token', {color, size}),
+          themeProps('token', {
+            color,
+            size,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
@@ -479,7 +525,11 @@ export function Token({
     <span
       ref={ref}
       {...mergeProps(
-        themeProps('token', {color, size}),
+        themeProps('token', {
+          color,
+          size,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           styles.base,
           sizeStyles[size],
