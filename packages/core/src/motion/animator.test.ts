@@ -554,6 +554,57 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
     }
   });
 
+  it('a start the browser dates at the frame before the call stays when the call\u2019s task runs on a few ms', async () => {
+    // Browser start times are frame times and a task's end is a live clock:
+    // on every call they differ by up to a frame plus the task's own length.
+    // A task that runs on 5 ms after the call (a component's effect after a
+    // tap) blocks nothing, so the start stays the browser's and a sequence
+    // chained on it keeps its clock.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      clock = 1005;
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      clock = 1010;
+      animation.startTime = 1000;
+      await commitFrame(1016);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('calls made in one task start together, whichever of them a block follows', async () => {
+    // One motion's parts are often separate calls in one task (a
+    // component's effect): a block measured per call would move the
+    // earlier calls past it and leave a later one on the browser's start,
+    // splitting the parts by a frame.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const first = animator.animate({x: 300}, {spring: springs.settle});
+      clock = 1030;
+      const second = animator.animate({opacity: 0.5}, {spring: springs.settle});
+      clock = 1040;
+      for (const animation of recorded) {
+        animation.startTime = 1000;
+      }
+      await commitFrame(1040);
+      const [a, b] = await Promise.all([first.started, second.started]);
+      expect(a).toBe(b);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
   it('a block shorter than two frames in the call\u2019s own task moves its start past the block', async () => {
     // Core Animation dates an animation at the commit, when the calling task
     // ends, however short the block before it.
