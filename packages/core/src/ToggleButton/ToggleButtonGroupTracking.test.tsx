@@ -276,6 +276,43 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("a finger slid from Bold that lifts just inside a toggle without a value toggles nothing: Bold's target does not reach into the other's own (spec:AST-094 FR42)", () => {
+    const onChange = vi.fn();
+    const view = render(
+      <ToggleButtonGroup
+        type="multiple"
+        label="Formatting"
+        value={[]}
+        onChange={onChange}
+        data-testid="group">
+        <ToggleButton label="Bold" value="bold" data-testid="a" />
+        <ToggleButton label="Wrap" isPressed={false} data-testid="wrap" />
+      </ToggleButtonGroup>,
+    );
+    const bold = view.getByTestId('a');
+    const wrap = view.getByTestId('wrap');
+    // Two 32 px toggles 4 px apart: grown toward 44 px, Bold's target would
+    // reach 2 px into Wrap, which the group does not track.
+    place(view.getByTestId('group'), {
+      left: 0,
+      top: 100,
+      width: 68,
+      height: 32,
+    });
+    place(bold, {left: 0, top: 100, width: 32, height: 32});
+    place(wrap, {left: 36, top: 100, width: 32, height: 32});
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const f = finger();
+    f.down(bold, {x: 16, y: 116});
+    expect(paintOf(bold)).toBe('on');
+    f.move(bold, {x: 37, y: 116});
+    expect(paintOf(bold)).not.toBe('on');
+    f.up(bold, {x: 37, y: 116});
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('leaves a toggle without a value standalone (AV1): no group marker, and a press that starts on it and slides onto Bold toggles nothing', () => {
     const onChange = vi.fn();
     const onPressedChange = vi.fn();
