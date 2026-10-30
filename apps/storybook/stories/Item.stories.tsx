@@ -251,7 +251,6 @@ export const SearchResults: Story = {
   ),
 };
 
-/** Disabled items. */
 /**
  * Rows holding a control of their own in `endContent`: a row with an action
  * rings for that action, a row without one draws no ring, and the end
@@ -289,6 +288,7 @@ export const WithEndActions: Story = {
   ),
 };
 
+/** Disabled items. */
 export const Disabled: Story = {
   render: () => (
     <Stack gap={0}>
