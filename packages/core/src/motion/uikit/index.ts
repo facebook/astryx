@@ -3,7 +3,7 @@
 /**
  * @file index.ts
  * @input The domain files of the UIKit constants table
- * @output Re-exports `springs` and one constant per spring (`SHEET_PRESENT_SPRING`,
+ * @output Re-exports `springs`, `tabBar` and one constant per spring (`SHEET_PRESENT_SPRING`,
  *   …), `scroll`, `timing`, `navigation` and the
  *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
  *   `UIKIT_GESTURES`, and the haptic tables)
@@ -40,6 +40,7 @@ export {
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
+export {registerTabBarTable, tabBar} from './tabBar';
 export {
   ACTION_SHEET_DISMISS_SPRING,
   ACTION_SHEET_PRESENT_SPRING,
