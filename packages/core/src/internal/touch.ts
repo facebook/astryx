@@ -37,5 +37,44 @@ export {
   unwrapAngle,
 } from '../gestures/geometry';
 export {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+export {lockSelection} from '../gestures/selectionLock';
 export {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 export {DEFAULT_ENVIRONMENT} from '../gestures/types';
+
+// The pan recognizer, the gesture types and the touch presentation queries
+// Lab builds on.
+export {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
+export type {
+  PanDirection,
+  PanGestureRecognizerOptions,
+} from '../gestures/PanGestureRecognizer';
+export type {
+  GestureEnvironment,
+  GestureEventContext,
+  GestureState,
+  GestureTouch,
+  NativeScrollProbe,
+  Point,
+  PointerKind,
+  TouchBeganInput,
+  TouchConsumer,
+  TouchInput,
+  TouchPhase,
+  TouchSample,
+} from '../gestures/types';
+export {useFingerScroll} from '../gestures/useFingerScroll';
+export {useGestureRecognizer} from '../gestures/useGestureRecognizer';
+export {usePressTracker} from '../gestures/usePressTracker';
+export {isRtlElement} from '../hooks/isRtlElement';
+export {COARSE_POINTER_QUERY} from '../utils/coarsePointer';
+export {
+  COMPACT_QUERY,
+  COMPACT_TOUCH_QUERY,
+  IOS_SUPPORTS_QUERY,
+  IOS_TOUCH_STYLE_KEYS,
+  readTouchPresentation,
+  TOUCH_QUERY,
+  useCompactDefinition,
+  useTouchPresentation,
+} from '../utils/touchPresentation';
+export type {TouchPresentation} from '../utils/touchPresentation';
