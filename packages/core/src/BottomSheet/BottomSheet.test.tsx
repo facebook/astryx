@@ -19,7 +19,7 @@ import {
   onTestFinished,
 } from 'vitest';
 import {act, render, screen, fireEvent} from '@testing-library/react';
-import {createRef, useState} from 'react';
+import {createRef, useState, type ReactNode} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {resetBottomSheetStackForTests} from './bottomSheetStack';
@@ -2184,10 +2184,12 @@ describe('BottomSheet', () => {
         instantScrollBy = false,
         roomRangeShort = 0,
         pointer = 'coarse',
+        picker,
       }: {
         instantScrollBy?: boolean;
         roomRangeShort?: number;
         pointer?: 'coarse' | 'fine';
+        picker?: ReactNode;
       } = {}) {
         mockKeyboardGeometryApi();
         mockPrimaryPointer(pointer);
@@ -2200,6 +2202,7 @@ describe('BottomSheet', () => {
             label="Add a comment"
             height="tall">
             <input aria-label="Comment" />
+            {picker}
           </BottomSheet>,
         );
         const body = getBody();
@@ -2293,6 +2296,44 @@ describe('BottomSheet', () => {
         expect(body.scrollTop).toBe(100);
         expect(content.style.translate).toBe('');
       });
+
+      it.each([
+        [
+          'a select',
+          <select key="s" aria-label="Picker">
+            <option>One</option>
+          </select>,
+        ],
+        ['a date input', <input key="d" type="date" aria-label="Picker" />],
+      ] as const)(
+        'rides the content down and keeps the room through the hide when focus moves to %s, whose picker Chrome opens over the page',
+        async (_, picker) => {
+          const {body, content, input, report} = renderChromeSheet({
+            instantScrollBy: true,
+            picker,
+          });
+          // The picker sits above the field, in view while the keyboard is up.
+          const pickerControl = screen.getByLabelText('Picker');
+          vi.spyOn(pickerControl, 'getBoundingClientRect').mockImplementation(
+            () =>
+              rect({top: 600 - body.scrollTop, bottom: 640 - body.scrollTop}),
+          );
+          act(() => input.focus());
+          report(500);
+          await afterTheSlide();
+          expect(body.scrollTop).toBe(248);
+          // Gboard slides down for the picker: Chrome reports the keyboard
+          // gone, and no keyboard comes back.
+          act(() => pickerControl.focus());
+          report(800);
+          expect(keyboardInsetOf(body)).toBe(348);
+          expect(content.style.translate).toBe('0px 148px');
+          await afterTheSlide();
+          expect(keyboardInsetOf(body)).toBe(0);
+          expect(body.scrollTop).toBe(100);
+          expect(content.style.translate).toBe('');
+        },
+      );
 
       it('rides by the scroll the room\u2019s drop takes back where the room adds less range than its height, as in Chrome 124', async () => {
         // Chrome 124 added 344 px of scroll range for a 360 px room: here 16

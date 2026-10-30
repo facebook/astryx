@@ -84,6 +84,16 @@ const FRAME_WATCH_MS = 1000;
 // gone for a moment (measured: back within 50 ms of the move).
 const FOCUS_HANDOFF_MS = 150;
 
+// Controls whose picker Chrome on Android opens over the page while the
+// keyboard goes away; on iOS the picker takes the keyboard's place.
+const PICKER_INPUT_TYPES = new Set([
+  'date',
+  'datetime-local',
+  'month',
+  'time',
+  'week',
+]);
+
 // Input types that never bring up a keyboard.
 const KEYLESS_INPUT_TYPES = new Set([
   'button',
@@ -131,6 +141,20 @@ export function bringsUpKeyboard(target: EventTarget | null): boolean {
     default:
       return false;
   }
+}
+
+// Whether `target` is a select, or a date or time field, which Chrome on
+// Android edits in a picker over the page.
+function opensPickerOverPage(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
+  if (element == null || element.nodeType !== 1) {
+    return false;
+  }
+  return (
+    element.tagName === 'SELECT' ||
+    (element.tagName === 'INPUT' &&
+      PICKER_INPUT_TYPES.has((element as HTMLInputElement).type))
+  );
 }
 
 const guides = new WeakMap<Window, KeyboardLayoutGuide>();
@@ -239,14 +263,12 @@ function createGuide(win: Window): KeyboardLayoutGuide {
     profile = keyboardProfileOf(win);
     model = createKeyboardModel(getKeyboardHeight(win), {profile});
     // Whether focusing `target` keeps an input view where the keyboard is: a
-    // select's picker takes the keyboard's place on iOS, but Chrome on
-    // Android opens its list over the page and the keyboard goes away.
+    // select's or a date or time field's picker takes the keyboard's place on
+    // iOS, but Chrome on Android opens it over the page and the keyboard goes
+    // away.
     const keepsInputView = (target: EventTarget | null): boolean =>
       bringsUpKeyboard(target) &&
-      !(
-        profile === 'chromium' &&
-        (target as Element | null)?.tagName === 'SELECT'
-      );
+      !(profile === 'chromium' && opensPickerOverPage(target));
     // When a field that brings up a keyboard last gained focus.
     let keyboardFocusAt = -Infinity;
     let handoffTimer: ReturnType<typeof setTimeout> | null = null;

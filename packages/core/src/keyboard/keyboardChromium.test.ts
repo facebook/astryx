@@ -176,21 +176,40 @@ describe('the keyboard layout guide on Chrome', () => {
     );
   });
 
-  it('rides the hide down when focus moves to a select, whose list Chrome opens in place of the keyboard', () => {
-    const select = document.createElement('select');
-    select.append(new Option('One'), new Option('Two'));
-    document.body.append(select);
-    a.focus();
-    report(312);
-    vi.advanceTimersByTime(1000);
-    expect(seen.map(t => t.kind)).toEqual(['show']);
-    // No keyboard comes back for a select: its hide is not a momentary one.
-    select.focus();
-    report(0);
-    expect(seen.at(-1)).toMatchObject({kind: 'hide', to: 0, animated: true});
-    vi.advanceTimersByTime(500);
-    expect(getKeyboardLayoutGuide(window).inset).toBe(0);
-  });
+  it.each([
+    [
+      'a select',
+      () => {
+        const select = document.createElement('select');
+        select.append(new Option('One'), new Option('Two'));
+        return select;
+      },
+    ],
+    [
+      'a date input',
+      () => Object.assign(document.createElement('input'), {type: 'date'}),
+    ],
+    [
+      'a time input',
+      () => Object.assign(document.createElement('input'), {type: 'time'}),
+    ],
+  ] as const)(
+    'rides the hide down when focus moves to %s, whose picker Chrome opens over the page as the keyboard goes',
+    (_, make) => {
+      const picker = make();
+      document.body.append(picker);
+      a.focus();
+      report(312);
+      vi.advanceTimersByTime(1000);
+      expect(seen.map(t => t.kind)).toEqual(['show']);
+      // No keyboard comes back for a picker: its hide is not a momentary one.
+      picker.focus();
+      report(0);
+      expect(seen.at(-1)).toMatchObject({kind: 'hide', to: 0, animated: true});
+      vi.advanceTimersByTime(500);
+      expect(getKeyboardLayoutGuide(window).inset).toBe(0);
+    },
+  );
 
   it('holds the momentary hide Chrome reports while focus moves to another field', () => {
     a.focus();
