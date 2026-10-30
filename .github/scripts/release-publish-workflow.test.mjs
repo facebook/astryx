@@ -41,7 +41,7 @@ describe('stable and canary publication authority', () => {
     expect(gateInputs['release-version']).toBeDefined();
     expect(gateInputs['plan-digest']).toBeDefined();
     const gate = step(
-      ci.jobs['check-scope'],
+      ci.jobs['release-authority'],
       'Validate active release authority',
     ).run;
     expect(gate).toContain('--release-version "$RELEASE_VERSION"');

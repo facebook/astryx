@@ -46,6 +46,11 @@ permissions: {}
 # `ci-duration` reports each job's run time and the run's span. Split a job
 # that nears the limit (shard, scope, cache); do not raise it.
 #
+# There is no scope job. Each job that owns tests decides its own scope in its
+# first steps (.github/actions/test-scope: the PR's file list against the
+# base's trusted classifier) and skips its work, reporting success, when
+# nothing in its scope changed; anything undecidable runs everything.
+#
 # One group per pull request (a fork's branch name can repeat across forks),
 # so a new push cancels the superseded run. Merge-queue entries and dispatches
 # get their own groups and are never cancelled by a pull request.
@@ -66,48 +71,36 @@ jobs:
             exit 1
           fi
 
-  # Detect lightweight changes. Missing merge-base data fails closed.
-  check-scope:
-    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check'
+  # The release authority for an explicit release check: the active release
+  # marker, or the exact main pre-cut head, that the canonical checks bind to.
+  # Pull requests never run it: a release-branch pull request validates its
+  # own bump in release-bump, and every test job decides its own scope.
+  release-authority:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
     runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
-      docsite_only: ${{ steps.scope.outputs.docsite_only }}
-      spec_only: ${{ steps.scope.outputs.spec_only }}
-      tooling_only: ${{ steps.scope.outputs.tooling_only }}
-      # 'false' only for a pull request whose changes the import graph can
-      # scope (components, shared modules, docs, records). Anything else, an
-      # empty value included, runs the full suite: main, release branches,
-      # the merge queue, release-check dispatches, and shared infrastructure
-      # (build and test config, the test harness, tokens, themes, root
-      # dependencies, CI itself).
-      full_suite: ${{ steps.scope.outputs.full_suite }}
-      release_bump: ${{ steps.scope.outputs.release_bump }}
       release_branch: ${{ steps.release-authority.outputs.branch || steps.main-authority.outputs.branch }}
       release_head: ${{ steps.release-authority.outputs.head || steps.main-authority.outputs.head }}
       release_plan_digest: ${{ steps.release-authority.outputs.planDigest }}
     steps:
       # Full history only where the release-branch validator reads it (tags,
-      # the cut commit, release diffs). A PR's merge commit has the base tip
-      # as a parent, and a main pre-cut check fetches current main on top, so
-      # 50 commits are plenty there; the full clone took over a minute.
+      # the cut commit, release diffs). A main pre-cut check fetches current
+      # main on top, so 50 commits are plenty there; the full clone took over
+      # a minute.
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
-          fetch-depth: ${{ ((github.event_name == 'workflow_dispatch' && inputs['release-branch'] != 'main') || (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))) && '0' || '50' }}
+          fetch-depth: ${{ inputs['release-branch'] != 'main' && '0' || '50' }}
 
       - name: Fetch active release refs
-        if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
-          (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
+        if: inputs['release-branch'] != 'main'
         run: git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
 
       - name: Validate active release authority
         id: release-authority
-        if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
-          (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
+        if: inputs['release-branch'] != 'main'
         env:
           RELEASE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs['release-branch'] || github.base_ref }}
           RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs['release-version'] || '' }}
@@ -177,55 +170,10 @@ jobs:
           fi
           printf 'branch=main\nhead=%s\n' "$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch base branch
-        if: github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=50
-
-      - name: Determine change scope
-        id: scope
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if [ "$EVENT_NAME" != pull_request ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [[ "$BASE_REF" == release/v* ]]; then
-            # Release bump PRs contain generated bookkeeping only. The final
-            # branch head receives one full visual/a11y/RTL release-check.
-            printf 'docsite_only=false\nspec_only=true\ntooling_only=true\nfull_suite=true\nrelease_bump=true\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
-          if [ -z "$MERGE_BASE" ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo 'release_bump=false' >> "$GITHUB_OUTPUT"
-          CLASSIFIER_ROOT="$RUNNER_TEMP/change-scope"
-          CLASSIFIER_DIR="$CLASSIFIER_ROOT/.github/scripts"
-          REGISTRY_DIR="$CLASSIFIER_ROOT/scripts"
-          mkdir -p "$CLASSIFIER_DIR" "$REGISTRY_DIR"
-          CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
-          MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
-          REGISTRY="$REGISTRY_DIR/component-packages.cjs"
-          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
-            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null \
-            && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
-            git diff --name-status "$MERGE_BASE"...HEAD \
-              | node "$CLASSIFIER" --github-output
-          else
-            # Missing trusted policy or dependencies cannot grant a specialized
-            # lane. Run broad CI until the base branch supplies the full classifier.
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\n' \
-              >> "$GITHUB_OUTPUT"
-          fi
   # Generated-only version PR lane. It validates release bookkeeping in a few
   # minutes; the merged branch head receives one full visual/a11y/RTL projection.
   release-bump:
-    needs: [check-scope]
-    if: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.release_bump == 'true' }}
+    if: ${{ github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v') }}
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 15
     permissions:
@@ -555,95 +503,6 @@ jobs:
           path: test-results/docsite/
           if-no-files-found: error
           retention-days: 7
-
-  # Lightweight check — does the PR touch any published components?
-  # Gates pr-a11y and pr-rtl to avoid unnecessary work.
-  #
-  # `scripts/component-packages.cjs` owns the component source roots used here
-  # and by the RTL roster. `analyze-pr.js` still decides which changed components
-  # each downstream audit receives. When those projections disagree the audits
-  # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
-  # Spec-only changes keep only the trusted scope classifier and the
-  # knowledge validator below. Unrelated component discovery must not take a
-  # runner or fan out into visual, accessibility, or RTL work.
-  check-components:
-    needs: [check-scope]
-    if: (github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')
-    runs-on: ubuntu-slim
-    permissions:
-      contents: read
-    outputs:
-      has_components: ${{ steps.check.outputs.has_components }}
-      has_rtl_components: ${{ steps.check.outputs.has_rtl_components }}
-      has_rtl_harness: ${{ steps.check.outputs.has_rtl_harness }}
-      force_full_component_audits: ${{ steps.check.outputs.force_full_component_audits }}
-      # Stable visual scope is separate from component scope: Core and the
-      # non-private shipped themes participate; canaryOnly packages do not.
-      has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
-      broad_stable_visual: ${{ steps.check.outputs.broad_stable_visual }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          # Depth 50 (same as check-scope) so the three-dot diff below can find
-          # a merge base. With the default depth of 1 the diff fails with
-          # "no merge base", the error is swallowed by the pipeline, and
-          # has_components silently becomes false — skipping pr-a11y entirely.
-          fetch-depth: 50
-
-      - name: Fetch base branch
-        if: github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=50
-
-      - name: Check for component changes
-        id: check
-        env:
-          SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
-        run: |
-          if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
-            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\nhas_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ "${{ needs.check-scope.outputs.docsite_only }}" = "true" ] \
-            || [ "${{ needs.check-scope.outputs.spec_only }}" = "true" ] \
-            || [ "${{ needs.check-scope.outputs.tooling_only }}" = "true" ]; then
-            printf 'has_components=false\nhas_rtl_components=false\nhas_rtl_harness=false\nforce_full_component_audits=false\nhas_stable_visual=false\n' >> "$GITHUB_OUTPUT"
-            echo "Trusted specialized lane — component audits explicitly not applicable."
-            exit 0
-          fi
-          if ! MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null); then
-            echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} — running full component audits"
-            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
-            echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
-            echo "broad_stable_visual=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          POLICY_ROOT="$RUNNER_TEMP/component-audit-scope"
-          mkdir -p "$POLICY_ROOT/.github/scripts" "$POLICY_ROOT/scripts"
-          SCOPE="$POLICY_ROOT/.github/scripts/component-audit-scope.cjs"
-          REGISTRY="$POLICY_ROOT/scripts/component-packages.cjs"
-          if git show "origin/${{ github.base_ref }}:.github/scripts/component-audit-scope.cjs" > "$SCOPE" 2>/dev/null \
-            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$POLICY_ROOT/.github/scripts/knowledge-paths.cjs" 2>/dev/null \
-            && git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs" > "$REGISTRY" 2>/dev/null; then
-            git diff --name-status "$MERGE_BASE"...HEAD \
-              | node "$SCOPE" --registry "$REGISTRY" --github-output
-          else
-            echo "::warning::Trusted component audit policy is unavailable — running full component audits"
-            printf 'has_components=true\nhas_rtl_components=true\nhas_rtl_harness=true\nforce_full_component_audits=true\n' >> "$GITHUB_OUTPUT"
-          fi
-
-          FILES=$(git diff --name-only "$MERGE_BASE"...HEAD)
-
-          # One classifier owns the release-channel rule. It reads each
-          # package's `astryx.canaryOnly` metadata rather than hard-coding
-          # today's Lab/charts/richtext/vega list.
-          # A pull request that runs what it reaches audits a shared Core
-          # module through its reverse dependents (spec:AST-030 FR13).
-          VISUAL_ARGS=()
-          if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
-          printf '%s\n' "$FILES" \
-            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
 
   # Tests run as two parallel lanes joined by `test` below.
   #
@@ -1493,9 +1352,8 @@ jobs:
   # Join gate that keeps the historical `build` check name: anything keyed on
   # "build" being green (branch protection, tooling, habit) keeps working, and
   # it fails when either parallel build fails. build-sandbox is legitimately
-  # skipped on docsite-only PRs; a skipped build-storybook (merge_group, or a
-  # failed check-scope) skips this gate too — both match the old single-job
-  # behavior.
+  # skipped on docsite-only PRs; a skipped build-storybook (merge_group)
+  # skips this gate too — both match the old single-job behavior.
   build:
     needs: [build-storybook, build-sandbox, typecheck]
     if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
@@ -1528,8 +1386,8 @@ jobs:
   # pr-a11y itself, so neither runs there.
   pr-a11y-shard:
     name: pr-a11y (${{ matrix.shard }}/${{ strategy.job-total }})
-    needs: [build-storybook, check-components]
-    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true'
+    needs: [build-storybook]
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
     strategy:
       fail-fast: false
       matrix:
@@ -1577,8 +1435,8 @@ jobs:
 
   pr-a11y-audit:
     name: pr-a11y (full audit)
-    needs: [build-storybook, check-components, pr-a11y-shard]
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true' }}
+    needs: [build-storybook, pr-a11y-shard]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -1634,20 +1492,37 @@ jobs:
 
   pr-a11y-guards:
     name: pr-a11y (audit and guards)
-    needs: [build-storybook, check-components]
-    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
+    needs: [build-storybook]
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify evidence checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
@@ -1655,22 +1530,26 @@ jobs:
       # Dependencies are installed later, together with the Playwright browser,
       # because the analysis artifact has to be downloaded first.
       - name: Setup Node and pnpm
+        if: steps.scope.outputs.has_components == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: steps.scope.outputs.has_components == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # Fails on axe violations not present in the checked-in baseline
@@ -1679,7 +1558,7 @@ jobs:
       # Release checks scan the full roster in pr-a11y-shard and gate it in
       # pr-a11y-audit; this job keeps the scoped PR audit and the guards.
       - name: Run accessibility audit
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         run: |
           SCOPE_ARGS=()
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
@@ -1700,7 +1579,7 @@ jobs:
       # if: always() so the report artifact (and the PR comment built from it)
       # still exists when the gate above fails.
       - name: Upload a11y artifact
-        if: always() && github.event_name == 'pull_request'
+        if: (always() && github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report
@@ -1713,6 +1592,7 @@ jobs:
       # and this Chromium probe is the guard. Runs after the upload above so an
       # a11y failure still publishes its report.
       - name: Run modal close visibility guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
       # A public component var can be documented, read, and emitted into the
@@ -1723,6 +1603,7 @@ jobs:
       # checkable. The source-side wiring half lives in
       # packages/cli/foundation/discovery/theming-targets.test.mjs.
       - name: Run theme var reachability guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
 
       # A story play function is where geometry assertions live (they need
@@ -1733,6 +1614,7 @@ jobs:
       # throw. Hosted here with the sibling Chromium guards because pr-a11y is
       # the blocking job that runs whenever components change.
       - name: Run story play guard
+        if: steps.scope.outputs.has_components == 'true'
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
   # Browser accessibility specs get their own budget. The scoped axe sweep and
@@ -1741,41 +1623,62 @@ jobs:
   # inside the budget without weakening the stable pr-a11y join.
   pr-a11y-specs:
     name: pr-a11y (browser specs)
-    needs: [build-storybook, check-components]
-    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
+    needs: [build-storybook]
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify evidence checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.scope.outputs.has_components == 'true'
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
+        if: steps.scope.outputs.has_components == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: steps.scope.outputs.has_components == 'true'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: steps.scope.outputs.has_components == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # The runner runs every spec playwright.config.ts matches whose own
@@ -1783,7 +1686,7 @@ jobs:
       # routing lines come from the merge commit these steps come from, so an
       # older PR head is routed by current policy while specs run at that head.
       - name: Run browser accessibility specs
-        if: ${{ !cancelled() }}
+        if: (!cancelled()) && steps.scope.outputs.has_components == 'true'
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -1796,7 +1699,7 @@ jobs:
           node "$runner"
 
       - name: Upload browser accessibility evidence
-        if: ${{ !cancelled() }}
+        if: (!cancelled()) && steps.scope.outputs.has_components == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}
@@ -1810,8 +1713,8 @@ jobs:
 
   # Stable required context joining the scoped audit/guards and browser specs.
   pr-a11y:
-    needs: [check-components, pr-a11y-guards, pr-a11y-specs]
-    if: ${{ always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true' }}
+    needs: [pr-a11y-guards, pr-a11y-specs]
+    if: ${{ always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -1833,8 +1736,8 @@ jobs:
   # pr-a11y.
   a11y-contracts-shard:
     name: Accessibility spec-test contracts (${{ matrix.shard }}/${{ strategy.job-total }})
-    needs: [build-storybook, check-components]
-    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true'
+    needs: [build-storybook]
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
     strategy:
       fail-fast: false
       matrix:
@@ -1912,8 +1815,8 @@ jobs:
   # produced fails the merge, as the single job's upload used to fail.
   a11y-contracts:
     name: Accessibility spec-test contracts
-    needs: [build-storybook, check-components, a11y-contracts-shard]
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true' }}
+    needs: [build-storybook, a11y-contracts-shard]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
     runs-on: ubuntu-slim
     permissions: {}
     steps:
@@ -2088,14 +1991,11 @@ jobs:
   # joins them only when every shard succeeded, and otherwise scouts inline.
   visual-scout:
     name: Stable visual scout (${{ matrix.shard }}/${{ strategy.job-total }})
-    needs: [build-storybook, check-components]
+    needs: [build-storybook]
     if: >-
       !cancelled() &&
       needs.build-storybook.result == 'success' &&
-      needs.check-components.result == 'success' &&
-      ((github.event_name == 'pull_request' &&
-        needs.check-components.outputs.has_stable_visual == 'true' &&
-        needs.check-components.outputs.broad_stable_visual == 'true') ||
+      (github.event_name == 'pull_request' ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     # Five legs: at three, each leg's scout took ~4.5 minutes and the visual
     # regression waited for the slowest one.
@@ -2109,9 +2009,50 @@ jobs:
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
+
+      # Stable visual scope: Core and the non-private shipped themes take
+      # part; canaryOnly packages do not. A pull request the import graph can
+      # scope audits the changed components and their reverse dependents
+      # (spec:AST-030 FR13).
+      - name: Decide stable visual scope
+        id: visual-scope
+        env:
+          FILES: ${{ steps.scope.outputs.changed_files }}
+          SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
+          SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
+        run: |
+          if [ "$SPECIALIZED" = true ]; then
+            printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
+            printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VISUAL_ARGS=()
+          if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
+          printf '%s\n' "$FILES" \
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
@@ -2119,6 +2060,7 @@ jobs:
           install: 'false'
 
       - name: Download Storybook artifact
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
@@ -2127,6 +2069,7 @@ jobs:
       # The artifact carries the themes and the Core dist they import, built
       # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -2134,9 +2077,11 @@ jobs:
           path: packages
 
       - name: Install Playwright
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       - name: Scout this shard of the release plan
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         run: |
           node .github/scripts/visual-gate/gate.mjs scout \
             --storybook-dir apps/storybook/dist \
@@ -2146,6 +2091,7 @@ jobs:
             --observations-out ".visual-scout/observations-${{ matrix.shard }}.json"
 
       - name: Upload scout shard
+        if: steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
@@ -2160,26 +2106,63 @@ jobs:
   # Audit and interaction fixtures stay with their existing browser checks.
   pr-visual:
     name: Stable visual regression
-    needs:
-      [build-storybook, check-components, maintenance-request, visual-scout]
+    needs: [build-storybook, maintenance-request, visual-scout]
     if: >-
       !cancelled() &&
       ((github.event_name == 'pull_request' &&
-        needs.build-storybook.result == 'success' &&
-        needs.check-components.result == 'success' &&
-        needs.check-components.outputs.has_stable_visual == 'true') ||
+        needs.build-storybook.result == 'success') ||
        (github.event_name == 'workflow_dispatch' &&
         ((inputs.operation == 'release-check' &&
-          needs.build-storybook.result == 'success' &&
-          needs.check-components.result == 'success') ||
+          needs.build-storybook.result == 'success') ||
          (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
+
+      # Stable visual scope: Core and the non-private shipped themes take
+      # part; canaryOnly packages do not. A pull request the import graph can
+      # scope audits the changed components and their reverse dependents
+      # (spec:AST-030 FR13).
+      - name: Decide stable visual scope
+        id: visual-scope
+        env:
+          FILES: ${{ steps.scope.outputs.changed_files }}
+          SCOPED: ${{ github.event_name == 'pull_request' && steps.scope.outputs.full_suite == 'false' }}
+          SPECIALIZED: ${{ steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.tooling_only == 'true' }}
+        run: |
+          if [ "$SPECIALIZED" = true ]; then
+            printf 'has_stable_visual=false\nbroad_stable_visual=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" != pull_request ] || [ -z "$FILES" ]; then
+            printf 'has_stable_visual=true\nbroad_stable_visual=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VISUAL_ARGS=()
+          if [ "$SCOPED" = true ]; then VISUAL_ARGS=(--scoped); fi
+          printf '%s\n' "$FILES" \
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT" "${VISUAL_ARGS[@]}"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
@@ -2187,13 +2170,13 @@ jobs:
           install: 'false'
 
       - name: Download analysis artifact
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
+        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
@@ -2202,7 +2185,7 @@ jobs:
       # The artifact carries the themes and the Core dist they import, built
       # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
-        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
+        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -2212,7 +2195,7 @@ jobs:
       # Only a complete set: the gate refuses a partial or mismatched one, and
       # without any it scouts inline as before.
       - name: Download scout shards
-        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success'
+        if: ((github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success') && (github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true')
         uses: actions/download-artifact@v8
         with:
           pattern: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-*
@@ -2231,9 +2214,9 @@ jobs:
 
       - name: Run the visual gate for the touched components
         id: visual
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && steps.visual-scope.outputs.has_stable_visual == 'true'
         env:
-          BROAD_STABLE_VISUAL: ${{ needs.check-components.outputs.broad_stable_visual }}
+          BROAD_STABLE_VISUAL: ${{ steps.visual-scope.outputs.broad_stable_visual }}
           ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -2320,7 +2303,7 @@ jobs:
           esac
 
       - name: Upload visual verdict and report
-        if: always() && github.event_name == 'pull_request'
+        if: (always() && github.event_name == 'pull_request') && steps.visual-scope.outputs.has_stable_visual == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: visual-pr-report
@@ -2440,13 +2423,10 @@ jobs:
   # To promote findings too, remove the audit step's continue-on-error.
   pr-rtl-shard:
     name: pr-rtl (${{ matrix.package }}${{ matrix.parts > 1 && format(' {0}/{1}', matrix.part, matrix.parts) || '' }})
-    needs: [build-storybook, check-components]
+    needs: [build-storybook]
     if: >-
       (github.event_name == 'pull_request' ||
-       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) &&
-      (needs.check-components.outputs.has_rtl_components == 'true' ||
-       needs.check-components.outputs.has_rtl_harness == 'true' ||
-       needs.check-components.outputs.force_full_component_audits == 'true')
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     # Core is the largest package, so its audit is split three ways
     # (`--shard`) and joined by pr-rtl-merge; every other package runs whole.
     strategy:
@@ -2464,35 +2444,56 @@ jobs:
     timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify RTL checkout
-        if: github.event_name == 'pull_request'
+        if: (github.event_name == 'pull_request') && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
 
       - name: Setup Node and pnpm
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Download analysis artifact
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # The D7 native-size regression test lives on the PR head. A head cut
@@ -2501,7 +2502,7 @@ jobs:
       # so and passes; a head that has the file always runs it, and a failure
       # fails. ci-rtl-d7.test.mjs keeps the path pointing at a real file.
       - name: Verify D7 native target regression
-        if: matrix.package == 'core' && matrix.part == 1
+        if: (matrix.package == 'core' && matrix.part == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         env:
           ASTRYX_RTL_BROWSER: '1'
         run: |
@@ -2518,20 +2519,21 @@ jobs:
       # step can run. An ordinary harness-only change uses the bounded routing
       # smoke scope.
       - name: Resolve RTL shard scope
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         id: rtl-scope
         run: |
           node .github/scripts/rtl-shard-scope.mjs \
             --analysis analysis.json \
             --package "${{ matrix.package }}" \
-            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
-            --has-components "${{ needs.check-components.outputs.has_rtl_components }}" \
-            --has-harness "${{ needs.check-components.outputs.has_rtl_harness }}" \
+            --force-full "${{ steps.scope.outputs.force_full_component_audits }}" \
+            --has-components "${{ steps.scope.outputs.has_rtl_components }}" \
+            --has-harness "${{ steps.scope.outputs.has_rtl_harness }}" \
             --manifest rtl-shard-scope.json \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Run RTL audit
         id: rtl
-        if: steps.rtl-scope.outputs.should_run == 'true'
+        if: (steps.rtl-scope.outputs.should_run == 'true') && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         continue-on-error: true
         run: |
           PACKAGE=${{ matrix.package }}
@@ -2555,7 +2557,7 @@ jobs:
             "${FILTER_ARGS[@]}"
 
       - name: Require completed RTL shard report
-        if: always()
+        if: always() && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: |
           SCOPE_OUTCOME="${{ steps.rtl-scope.outcome }}"
           SHOULD_RUN="${{ steps.rtl-scope.outputs.should_run }}"
@@ -2589,14 +2591,14 @@ jobs:
           fi
 
       - name: Write scorecard summary
-        if: always() && steps.rtl-scope.outputs.should_run == 'true' && matrix.parts == 1
+        if: (always() && steps.rtl-scope.outputs.should_run == 'true' && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: |
           node .github/scripts/rtl-scorecard-summary.mjs \
             --report rtl-audit-report.json \
             --scope "${{ steps.rtl-scope.outputs.components }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL shard evidence
-        if: always() && matrix.parts == 1
+        if: (always() && matrix.parts == 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-${{ matrix.package }}
@@ -2607,7 +2609,7 @@ jobs:
           retention-days: 1
 
       - name: Upload RTL part
-        if: always() && matrix.parts > 1
+        if: (always() && matrix.parts > 1) && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}
@@ -2623,40 +2625,58 @@ jobs:
   # part fails here.
   pr-rtl-merge:
     name: pr-rtl (core)
-    needs: [build-storybook, check-components, pr-rtl-shard]
+    needs: [build-storybook, pr-rtl-shard]
     if: >-
       always() && !cancelled() &&
       (github.event_name == 'pull_request' ||
-       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) &&
-      (needs.check-components.outputs.has_rtl_components == 'true' ||
-       needs.check-components.outputs.has_rtl_harness == 'true' ||
-       needs.check-components.outputs.force_full_component_audits == 'true')
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 15
     permissions:
       contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node and pnpm
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: ./.github/actions/setup
 
       - name: Download Storybook artifact
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Download Core RTL parts
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/download-artifact@v8
         with:
           pattern: rtl-audit-part-core-*
           path: rtl-parts
 
       - name: Join Core RTL parts
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         id: join
         run: |
           set -eu
@@ -2694,14 +2714,14 @@ jobs:
             --filter "$FILTER"
 
       - name: Write scorecard summary
-        if: always() && hashFiles('rtl-audit-report.json') != ''
+        if: (always() && hashFiles('rtl-audit-report.json') != '') && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         run: |
           node .github/scripts/rtl-scorecard-summary.mjs \
             --report rtl-audit-report.json \
             --scope "${{ steps.join.outputs.components }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL shard evidence
-        if: always()
+        if: always() && (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-core
@@ -2713,15 +2733,34 @@ jobs:
 
   # Stable required context joining the five package shards above.
   pr-rtl:
-    needs: [check-scope, check-components, pr-rtl-shard, pr-rtl-merge]
-    if: ${{ always() && !cancelled() && ((github.event_name == 'pull_request' && needs.check-scope.outputs.spec_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
+    needs: [pr-rtl-shard, pr-rtl-merge]
+    if: ${{ always() && !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) }}
     runs-on: ubuntu-slim
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
+      # This job decides its own component scope (no separate scope job):
+      # the step reads the PR's file list and the base's trusted classifiers.
+      # Outside a pull request every audit applies in full.
+      - name: Check out the scope action
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/test-scope
+          path: .test-scope
+          persist-credentials: false
+
+      - name: Decide this job's component scope
+        id: scope
+        uses: ./.test-scope/.github/actions/test-scope
+        with:
+          component-audit: 'true'
+
       - uses: actions/checkout@v7
 
       - name: Download applicable RTL shard reports
-        if: ${{ needs.check-components.result == 'success' && (needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true') }}
+        if: (steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true')
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
@@ -2732,10 +2771,10 @@ jobs:
         if: always()
         run: |
           node .github/scripts/rtl-join.mjs \
-            --check-components "${{ needs.check-components.result }}" \
+            --check-components "${{ steps.scope.outcome }}" \
             --shards "${{ needs.pr-rtl-shard.result == needs.pr-rtl-merge.result && needs.pr-rtl-shard.result || format('{0}/{1}', needs.pr-rtl-shard.result, needs.pr-rtl-merge.result) }}" \
-            --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
-            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
+            --should-run "${{ steps.scope.outputs.has_rtl_components == 'true' || steps.scope.outputs.has_rtl_harness == 'true' || steps.scope.outputs.force_full_component_audits == 'true' }}" \
+            --force-full "${{ steps.scope.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
 
   # Report-only: after every pull-request job finishes, each job's run time
@@ -2745,13 +2784,11 @@ jobs:
   ci-duration:
     needs:
       [
-        check-scope,
         release-bump,
         release-merge-back,
         docsite-data,
         docsite-browser,
         docsite-test,
-        check-components,
         test-ui,
         test-node,
         native-swift-runner,
@@ -2814,8 +2851,7 @@ jobs:
   release-check:
     needs:
       [
-        check-scope,
-        check-components,
+        release-authority,
         build-storybook,
         typecheck,
         pr-visual,
@@ -2835,12 +2871,12 @@ jobs:
           RELEASE_NEEDS: ${{ toJSON(needs) }}
           RELEASE_BRANCH: ${{ inputs['release-branch'] }}
           EXPECTED_HEAD: ${{ inputs['expected-head'] }}
-          CHECKED_HEAD: ${{ needs.check-scope.outputs.release_head }}
-          PLAN_DIGEST: ${{ needs.check-scope.outputs.release_plan_digest }}
+          CHECKED_HEAD: ${{ needs.release-authority.outputs.release_head }}
+          PLAN_DIGEST: ${{ needs.release-authority.outputs.release_plan_digest }}
         with:
           script: |
             const needs = JSON.parse(process.env.RELEASE_NEEDS);
-            for (const name of ['check-scope', 'check-components', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
+            for (const name of ['release-authority', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
               if (needs[name]?.result !== 'success') {
                 throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
               }

@@ -95,25 +95,32 @@ function a11yComponentFromTitle(title) {
   return componentPart.replace(/^XDS/i, '').toLowerCase();
 }
 
-/** Roots the ci.yml `check-components` gate diffs against. */
+/**
+ * Roots the ci.yml component audits cover. Without change detection in
+ * ci.yml (the audits run every registered package in full for release-check)
+ * or when it projects the registry, that is every registered package root.
+ */
 function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);
   if (!ci) return [];
   const registry = read(repoRoot, COMPONENT_REGISTRY);
+  const registryRoots = registry
+    ? [...registry.matchAll(/\bsrc:\s*['"]([^'"]+)['"]/g)].map(
+        match => `${match[1]}/`,
+      )
+    : [];
   const projectsRegistry =
     /COMPONENT_PACKAGES/.test(ci) ||
     (/component-audit-scope\.cjs/.test(ci) &&
       /scripts\/component-packages\.cjs/.test(ci));
-  if (registry && projectsRegistry) {
-    const roots = [...registry.matchAll(/\bsrc:\s*['"]([^'"]+)['"]/g)].map(
-      match => `${match[1]}/`,
-    );
-    if (roots.length > 0) return roots;
-  }
+  if (projectsRegistry && registryRoots.length > 0) return registryRoots;
   const pathspec = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
   if (pathspec) return pathspec[1].trim().split(/\s+/).filter(Boolean);
   const filtered = ci.match(/grep -E ['"]\^packages\/\(([^)]+)\)\/src\/['"]/);
-  return filtered ? filtered[1].split('|').map(name => `packages/${name}/src/`) : [];
+  if (filtered) {
+    return filtered[1].split('|').map(name => `packages/${name}/src/`);
+  }
+  return registryRoots;
 }
 
 /** Story-id prefixes the RTL auto-discovery sweep covers. */
@@ -413,7 +420,7 @@ export function deriveChecks(repoRoot, candidate) {
       failures.push('ci.yml change detection excludes packages/lab/src');
       evidence.push(
         ev(
-          `check-components diffs only ${roots.join(' ') || '(unparsed)'}, so a lab-only PR skips pr-a11y entirely.`,
+          `ci.yml component audits cover only ${roots.join(' ') || '(unparsed)'}, so a lab component skips pr-a11y entirely.`,
           CI_WORKFLOW,
           lineOf(read(repoRoot, CI_WORKFLOW), /git diff --name-only/),
         ),
