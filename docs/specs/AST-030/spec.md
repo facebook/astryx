@@ -492,9 +492,8 @@ they run in one workflow, and a contributor reads one review gate:
 `spec-owner-approval` remains a mirror until branch protection stops requiring
 it, so the merge rules change only when an administrator removes it.
 
-Rejected: keeping a separate spec-owner workflow, which started a second runner
-for every pull-request event; two visible gates, which split one review state
-across two messages.
+Rejected: keeping a separate spec-owner workflow, which split one review state
+across two workflows and two visible gates.
 
 ## Open questions
 

@@ -101,7 +101,9 @@ function createHarness({
   baseContent = '',
   // Spec text by commit, for heads before the current one.
   contentAt = {},
-  commits = [],
+  // Changed files of an earlier commit against the base; the head's files
+  // when absent.
+  filesAt = {},
   codeGate = {
     sha: head,
     context: 'review-required',
@@ -159,7 +161,6 @@ function createHarness({
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
-    listCommits: async () => ({data: commits.map(sha => ({sha}))}),
     listStatuses: async ({ref}) => {
       state.reads.push('statuses');
       return {data: state.statuses.filter(status => status.sha === ref)};
@@ -173,7 +174,6 @@ function createHarness({
         get: methods.getPull,
         listFiles: methods.listFiles,
         listReviews: methods.listReviews,
-        listCommits: methods.listCommits,
       },
       issues: {
         listComments: methods.listComments,
@@ -215,11 +215,15 @@ function createHarness({
         },
       },
       repos: {
+        compareCommitsWithBasehead: async ({basehead}) => ({
+          data: {files: filesAt[basehead.split('...')[1]] ?? files},
+        }),
         listCommitStatusesForRef: methods.listStatuses,
         createCommitStatus: async input => {
           onCreateStatus?.(input, state);
           state.reads.push(`status:${input.context}:${input.state}`);
           const status = {
+            id: (state.nextStatusId = (state.nextStatusId ?? 0) + 1),
             ...input,
             creator: {login: 'github-actions[bot]'},
             created_at: '2026-08-30T10:00:30Z',
@@ -229,14 +233,16 @@ function createHarness({
           state.calls.push(`status:${input.context}:${input.state}`);
           return {data: status};
         },
-        getContent: async ({ref}) => ({
+        getContent: async ({ref, path: filePath}) => ({
           data: {
             content: Buffer.from(
-              ref in contentAt
-                ? contentAt[ref]
-                : ref === state.pr.head.sha
-                  ? headContent
-                  : baseContent,
+              `${ref}:${filePath}` in contentAt
+                ? contentAt[`${ref}:${filePath}`]
+                : ref in contentAt
+                  ? contentAt[ref]
+                  : ref === state.pr.head.sha
+                    ? headContent
+                    : baseContent,
             ).toString('base64'),
           },
         }),
@@ -688,16 +694,17 @@ describe('spec owner workflow reconciliation', () => {
   it('orders a dismissal after an earlier command by its timeline time', async () => {
     const review = {
       id: 17,
-      user: {login: 'cixzhang'},
+      user: {login: 'imdreamrunner'},
       state: 'DISMISSED',
       commit_id: head,
       submitted_at: '2026-08-30T09:00:00Z',
       updated_at: '2026-08-30T10:02:00Z',
     };
-    // A same-owner command at 10:01; the dismissal is dated by its 10:02
+    // A same-owner command at 10:01 (a non-author owner, as GitHub accepts no
+    // review from the author); the dismissal is dated by its 10:02
     // timeline event, so it is the latest act and the gate waits.
     const command = {
-      user: {login: 'cixzhang'},
+      user: {login: 'imdreamrunner'},
       body: `/approve-spec ${head}`,
       created_at: '2026-08-30T10:01:00Z',
     };
@@ -1176,6 +1183,63 @@ describe('spec owner workflow reconciliation', () => {
       expect(harness.state.summary).toContain(
         'Spec changed after approval at 2026-08-30T10:05:00Z',
       );
+    });
+
+    it('resets an approval when the head drops an approved spec path', async () => {
+      const dropped = 'docs/specs/dropped/spec.md';
+      const harness = createHarness({
+        headContent: currentRecord,
+        contentAt: {
+          [oldHead]: currentRecord,
+          [`${head}:docs/specs/dropped/spec.md`]: 'base text\n',
+          [`${oldHead}:docs/specs/dropped/spec.md`]: 'approved text\n',
+        },
+        // The approved commit also changed a second record, which the head
+        // reverted to its base text.
+        filesAt: {
+          [oldHead]: [
+            {filename: 'docs/specs/owner-ready/spec.md', status: 'added'},
+            {filename: dropped, status: 'modified'},
+          ],
+        },
+        comments: [ownerComment(`/approve-spec ${oldHead}`)],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestReviewGate(harness.state)).toMatchObject({
+        state: 'pending',
+        description: waiting,
+      });
+    });
+
+    it('recomposes when code review is withdrawn while it writes', async () => {
+      let injected = false;
+      const harness = createHarness({
+        headContent: currentRecord,
+        comments: [ownerComment(`/approve-spec ${head}`)],
+        // review-clear withdraws the code approval between this job's read of
+        // review-required and its write.
+        onCreateStatus: (input, state) => {
+          if (input.context !== 'review-required' || injected) return;
+          injected = true;
+          state.statuses.unshift({
+            id: 999,
+            sha: head,
+            context: 'review-required',
+            state: 'pending',
+            description: 'Waiting on code review after approval withdrawal.',
+            creator: {login: 'github-actions[bot]'},
+          });
+        },
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestReviewGate(harness.state)).toMatchObject({
+        state: 'pending',
+        description: 'Waiting on code review after approval withdrawal.',
+      });
     });
 
     it('withdraws an approval on /revoke-spec, and says who', async () => {

@@ -1016,9 +1016,9 @@ label, or status supplies it.
 - **What keeps approval.** Commits that change only other paths, merges from
   the base branch, rebases, and approval bookkeeping keep the fingerprint, so
   they keep every approval.
-- **What resets it.** A change to approved spec text, or a newly changed spec
-  path, changes the fingerprint; the earlier approval stops counting until an
-  owner approves a commit that carries the current content.
+- **What resets it.** A change to approved spec text, a newly changed spec
+  path, or a head that drops an approved spec change; the earlier approval stops
+  counting until an owner approves a commit that carries the current content.
 - **One review gate.** `review-required` carries both the code review and the
   spec approval. Code review leads while it is missing; once it is satisfied, a
   missing spec approval shows on the same status; success needs both. A missing
@@ -1032,11 +1032,8 @@ label, or status supplies it.
   An approved spec change reads `✅ Spec approved by @owner` beside the code
   review result. An ENGOWNER approval satisfies every group.
 
-- **Details.** The gate's details give the current head's command to copy,
-  each changed record with its id, title, authority change, and the group it
-  needs, and the changed paths and fingerprint. They say why an earlier act no
-  longer counts: "Spec changed after approval at {time}", "Approval revoked by
-  @owner at {time}", or a malformed command.
+- **Details.** The gate's details list the changed records and the group each
+  needs, give the head's command, and say why an earlier act no longer counts.
 - **Mirror.** `spec-owner-approval` reports the spec half with a minimal
   description while branch protection still requires it; it decides nothing
   `review-required` does not already show.
@@ -1051,9 +1048,7 @@ review accepts or reworks a pull request's spec changes as a whole; a command
 without a SHA, because a push landing just before the comment would be approved
 unseen; a separate spec status contributors must read, because one review gate
 should carry one message; reaction approvals, because reactions raise no event
-and reading them would need a polling job; taking the fingerprint from a comment
-or status, because the approved content must come from the pull request's
-files; having the workflow push the `draft`-to-`current` change, because a
+and reading them would need a polling job; having the workflow push the `draft`-to-`current` change, because a
 workflow-identity push starts no pull-request checks and cannot write a fork's
 branch.
 

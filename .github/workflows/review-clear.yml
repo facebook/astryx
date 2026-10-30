@@ -240,9 +240,7 @@ jobs:
             }
             const labels = current.labels.map((l) => l.name);
 
-            // One review gate (architecture:knowledge-contracts DEC-14):
-            // compose the code review with the spec decision mirrored in
-            // spec-owner-approval. Code review leads; success needs both.
+            // One review gate (DEC-14): code review leads; success needs both.
             async function publishReviewGate(codeGated, codeDescription) {
               // Write, then read the spec half once more: the spec-owner job
               // writes its half before it reads this one, so one of the two

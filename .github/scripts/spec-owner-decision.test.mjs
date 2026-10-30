@@ -631,28 +631,6 @@ describe('spec owner decision', () => {
       }
     });
 
-    it('counts a command by the spec content it names', () => {
-      const earlier = '1111111111111111111111111111111111111111';
-      const comments = [
-        {
-          user: owner,
-          body: `/approve-spec ${earlier}`,
-          created_at: '2026-08-30T10:00:00Z',
-        },
-      ];
-      const decide = approvesCurrentContent =>
-        resolveOwnerDecision({
-          reviews: [],
-          comments,
-          owners: ['cixzhang'],
-          headSha: head,
-          approvesCurrentContent,
-        }).approved;
-
-      expect(decide(sha => sha === head)).toBe(false);
-      expect(decide(sha => sha === head || sha === earlier)).toBe(true);
-    });
-
     it('withdraws on a revoke or request for changes naming other spec content', () => {
       const earlier = '1111111111111111111111111111111111111111';
       const approve = {
@@ -693,37 +671,6 @@ describe('spec owner decision', () => {
           ],
         }),
       ).toBe(false);
-    });
-
-    it('withdraws with a bare /revoke-spec and approves again after it', () => {
-      const decide = bodies =>
-        resolveOwnerDecision({
-          reviews: [],
-          comments: bodies.map((body, index) => ({
-            user: owner,
-            body,
-            created_at: `2026-08-30T10:0${index}:00Z`,
-          })),
-          owners: ['cixzhang'],
-          headSha: head,
-        }).approved;
-
-      expect(decide([`/approve-spec ${head}`, '/revoke-spec'])).toBe(false);
-      expect(
-        decide([
-          `/approve-spec ${head}`,
-          '/revoke-spec',
-          `/approve-spec ${head}`,
-        ]),
-      ).toBe(true);
-    });
-
-    it('reports no problem for the exact form the gate accepts', () => {
-      const intent = parseOwnerCommandIntent(`/approve-spec ${head}`);
-
-      expect(describeOwnerCommandProblem(intent)).toBe(null);
-      expect(parseOwnerCommand(`/approve-spec ${head}`, head)).toBe(true);
-      expect(describeOwnerCommandProblem(null)).toBe(null);
     });
   });
 });

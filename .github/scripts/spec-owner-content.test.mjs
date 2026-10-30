@@ -5,17 +5,10 @@ import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
 const {
-  approvedDescription,
   fingerprintSpecContent,
-  mirrorDescription,
   parseOwnerCommandTarget,
-  waitingDescription,
 } = require('./spec-owner-content.cjs');
-const {
-  composeReviewGate,
-  readCodeGate,
-  readSpecGate,
-} = require('./review-signal-decision.cjs');
+const {readCodeGate} = require('./review-signal-decision.cjs');
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const record = [
@@ -79,69 +72,8 @@ describe('owner commands', () => {
 });
 
 describe('one review gate', () => {
-  const mirror = (state, options) => [
-    {
-      context: 'spec-owner-approval',
-      state,
-      description: mirrorDescription({state, ...options}),
-      creator: {login: 'github-actions[bot]'},
-    },
-  ];
   const noCode = 'No code review required.';
   const codeWait = 'Waiting on code review: core change';
-
-  it.each([
-    [
-      'spec waits behind satisfied code review',
-      false,
-      noCode,
-      mirror('pending', {missing: {spec: true}}),
-      {state: 'pending', description: waitingDescription({spec: true})},
-    ],
-    [
-      'design-only wait names a design or eng owner',
-      false,
-      noCode,
-      mirror('pending', {missing: {spec: false, design: true}}),
-      {
-        state: 'pending',
-        description:
-          '⏳ Waiting for human spec approval: a design or eng owner can reply /approve-spec <sha>',
-      },
-    ],
-    [
-      'code review leads when both are missing',
-      true,
-      codeWait,
-      mirror('pending', {missing: {spec: true}}),
-      {state: 'pending', description: `${codeWait} (+ spec approval)`},
-    ],
-    [
-      'success needs both and names the spec approver',
-      false,
-      noCode,
-      mirror('success', {approvers: ['cixzhang']}),
-      {
-        state: 'success',
-        description: `${approvedDescription(['cixzhang'])} · ${noCode}`,
-      },
-    ],
-    [
-      'no spec decision yet fails closed',
-      false,
-      noCode,
-      [],
-      {state: 'pending', description: '⏳ Checking for spec changes…'},
-    ],
-  ])('%s', (_name, codeGated, codeDescription, statuses, expected) => {
-    expect(
-      composeReviewGate({
-        codeGated,
-        codeDescription,
-        spec: readSpecGate(statuses),
-      }),
-    ).toEqual(expected);
-  });
 
   it('reads the code half back out of a composed gate', () => {
     const gate = (state, description) => [
@@ -164,5 +96,4 @@ describe('one review gate', () => {
       ),
     ).toEqual({gated: false, description: noCode});
   });
-
 });

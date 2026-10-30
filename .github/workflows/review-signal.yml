@@ -61,8 +61,8 @@
 # ONE REVIEW GATE: "review-required" carries code review and spec-owner
 # approval (architecture:knowledge-contracts DEC-14, spec:AST-030 FR15). The
 # spec-owner job decides the spec half and mirrors it in "spec-owner-approval";
-# every writer of "review-required" composes both. The job checks out only the trusted default branch
-# and runs the tested reconciler from it; it never runs PR-controlled code.
+# every writer of "review-required" composes both. It runs the tested reconciler
+# from the trusted default branch, never PR-controlled code.
 
 name: Review signal
 
@@ -223,10 +223,7 @@ jobs:
             );
             const reviewDecision = reviewDecisionModule.exports;
 
-            // One review gate (architecture:knowledge-contracts DEC-14):
-            // compose the code review with the spec decision the spec-owner
-            // job mirrors in spec-owner-approval. Code review leads; success
-            // needs both. A missing approval is pending, never a failure.
+            // One review gate (DEC-14): code review leads; success needs both.
             async function publishReviewGate(codeGated, codeDescription) {
               // Write, then read the spec half once more: the spec-owner job
               // writes its half before it reads this one, so one of the two
@@ -690,9 +687,7 @@ jobs:
       - name: Note review state change
         run: echo "Review state changed; review-clear will reconcile the code gate."
 
-  # ---------------------------------------------------------------------------
-  # Spec owner gate: reconcile "spec-owner-approval" for one pull request.
-  # ---------------------------------------------------------------------------
+  # Spec owner gate: reconcile the spec half for one pull request.
   spec-owner:
     # Fork review events have read-only tokens. Same-repo reviews reconcile
     # automatically; fork approvals use the trusted issue_comment command path.

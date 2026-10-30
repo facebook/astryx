@@ -142,7 +142,7 @@ async function reconcileSpecOwnerGate({
     description,
     targetUrl = runUrl,
   }) {
-    await github.rest.repos.createCommitStatus({
+    const {data} = await github.rest.repos.createCommitStatus({
       owner,
       repo,
       sha,
@@ -151,6 +151,7 @@ async function reconcileSpecOwnerGate({
       description: description.slice(0, 140),
       target_url: targetUrl,
     });
+    return data;
   }
 
   async function newestRun(headSha) {
@@ -324,7 +325,10 @@ async function reconcileSpecOwnerGate({
       });
       if (Array.isArray(data)) return null;
       if (data.content == null) return `blob:${data.sha}`;
-      return Buffer.from(data.content, 'base64').toString('utf8');
+      // Only Markdown is read as text; other assets hash as their bytes.
+      return filePath.endsWith('.md')
+        ? Buffer.from(data.content, 'base64').toString('utf8')
+        : `base64:${data.content.replace(/\s/g, '')}`;
     } catch (error) {
       if (error.status === 404) return null;
       throw error;
@@ -471,28 +475,44 @@ async function reconcileSpecOwnerGate({
    * yet, review-signal composes it when it publishes.
    */
   async function publishReviewGate(headSha, spec) {
-    const live = await listStatuses(headSha);
-    const code = readCodeGate(live);
-    if (!code) return;
-    const gate = composeReviewGate({
-      codeGated: code.gated,
-      codeDescription: code.description,
-      spec,
-    });
-    const current = live.find(status => status.context === REVIEW_GATE_CONTEXT);
-    if (
-      current?.state === gate.state &&
-      current?.description === gate.description
-    ) {
-      return;
+    // The code half comes from the newest `review-required` another job
+    // wrote. If one lands between that read and this write, compose again,
+    // so a withdrawn code review is never overwritten with success.
+    const written = new Set();
+    const othersNewest = statuses =>
+      statuses.find(
+        status =>
+          status.context === REVIEW_GATE_CONTEXT && !written.has(status.id),
+      ) ?? null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const live = await listStatuses(headSha);
+      const basis = othersNewest(live);
+      const code = readCodeGate(basis ? [basis] : []);
+      if (!code) return;
+      const gate = composeReviewGate({
+        codeGated: code.gated,
+        codeDescription: code.description,
+        spec,
+      });
+      const current = live.find(
+        status => status.context === REVIEW_GATE_CONTEXT,
+      );
+      if (
+        current?.state === gate.state &&
+        current?.description === gate.description
+      ) {
+        return;
+      }
+      if (!(await isLiveHeadWritable(headSha))) return;
+      const status = await createStatus({
+        sha: headSha,
+        context: REVIEW_GATE_CONTEXT,
+        state: gate.state,
+        description: gate.description,
+      });
+      if (status?.id != null) written.add(status.id);
+      if (othersNewest(await listStatuses(headSha))?.id === basis?.id) return;
     }
-    if (!(await isLiveHeadWritable(headSha))) return;
-    await createStatus({
-      sha: headSha,
-      context: REVIEW_GATE_CONTEXT,
-      state: gate.state,
-      description: gate.description,
-    });
   }
 
   async function fetchSnapshot() {
@@ -660,21 +680,57 @@ async function reconcileSpecOwnerGate({
       ),
     ),
   ].sort();
-  const contentBySha = new Map();
-  async function specContentAt(sha) {
-    const key = sha.toLowerCase();
-    if (!contentBySha.has(key)) {
-      const entries = await Promise.all(
-        specPaths.map(async filePath => ({
-          path: filePath,
-          content: await readSpecContent(pr.head.repo.full_name, sha, filePath),
-        })),
+  const textCache = new Map();
+  function specText(sha, filePath) {
+    const key = `${sha.toLowerCase()}\0${filePath}`;
+    if (!textCache.has(key)) {
+      textCache.set(
+        key,
+        readSpecContent(pr.head.repo.full_name, sha, filePath),
       );
-      contentBySha.set(key, fingerprintSpecContent(entries));
     }
-    return contentBySha.get(key);
+    return textCache.get(key);
   }
-  const currentContent = await specContentAt(initialHead);
+  async function fingerprintAt(sha, paths) {
+    const entries = await Promise.all(
+      paths.map(async filePath => ({
+        path: filePath,
+        content: await specText(sha, filePath),
+      })),
+    );
+    return fingerprintSpecContent(entries);
+  }
+  // The spec paths a commit changed from the base. An approved commit's paths
+  // join the head's, so a head that drops an approved change no longer
+  // matches. A comparison that fails matches nothing.
+  async function specPathsAt(sha) {
+    const {data} = await github.rest.repos.compareCommitsWithBasehead({
+      owner,
+      repo,
+      basehead: `${pr.base.sha}...${sha}`,
+    });
+    return (data.files ?? []).flatMap(file =>
+      [file.filename, file.previous_filename].filter(
+        filePath => filePath && isSpecPath(filePath),
+      ),
+    );
+  }
+  async function hasCurrentContent(sha) {
+    try {
+      const paths = [
+        ...new Set([...specPaths, ...(await specPathsAt(sha))]),
+      ].sort();
+      const [atHead, atSha] = await Promise.all([
+        fingerprintAt(initialHead, paths),
+        fingerprintAt(sha, paths),
+      ]);
+      return atHead.fingerprint === atSha.fingerprint;
+    } catch (error) {
+      core.warning(`Could not compare ${sha.slice(0, 7)}: ${error.message}`);
+      return false;
+    }
+  }
+  const currentContent = await fingerprintAt(initialHead, specPaths);
   // A review or a SHA command approves the content of its commit. Only
   // commits an eligible owner named are read.
   const authorLogin = pr.user.login.toLowerCase();
@@ -692,10 +748,8 @@ async function reconcileSpecOwnerGate({
       .map(comment => parseOwnerCommandTarget(comment.body)?.sha),
   ]);
   const sameContent = new Set([initialHead.toLowerCase()]);
-  for (const sha of [...namedShas].filter(Boolean).slice(0, 20)) {
-    if (sameContent.has(sha)) continue;
-    const content = await specContentAt(sha);
-    if (content.fingerprint === currentContent.fingerprint) {
+  for (const sha of [...namedShas].filter(Boolean)) {
+    if (!sameContent.has(sha) && (await hasCurrentContent(sha))) {
       sameContent.add(sha);
     }
   }
