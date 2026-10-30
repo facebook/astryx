@@ -31,7 +31,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
+          "Leave hourFormat unset so the field follows the InternationalizationProvider locale's hour cycle (12-hour in en-US, 24-hour in en-GB or de-DE). Set it only when the field itself needs a fixed format, and carry a person's own 12/24-hour preference on the provider locale (e.g. 'en-US-u-hc-h23') rather than on each field.",
       },
       {
         guidance: true,
@@ -476,7 +476,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
+          "Leave hourFormat unset so the field follows the InternationalizationProvider locale's hour cycle (12-hour in en-US, 24-hour in en-GB or de-DE). Set it only when the field itself needs a fixed format, and carry a person's own 12/24-hour preference on the provider locale (e.g. 'en-US-u-hc-h23') rather than on each field.",
       },
       {
         guidance: true,
@@ -565,7 +565,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Choose hour format (12h/24h) to match locale: 12h for US, 24h for international.',
+          "Leave hourFormat unset to follow the provider locale's hour cycle; put a person's 12/24h preference on the locale tag (en-US-u-hc-h23), not on each field.",
       },
       {
         guidance: true,

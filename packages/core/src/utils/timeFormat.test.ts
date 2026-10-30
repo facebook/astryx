@@ -16,7 +16,7 @@ import {
   resolveHourFormat,
   type HourFormat,
 } from './timeFormat';
-import type {ISOTimeString} from './timeParser';
+import {parseTimeInput, type ISOTimeString} from './timeParser';
 
 const iso = (time: string) => time as ISOTimeString;
 
@@ -167,13 +167,32 @@ describe('parseLocaleTime', () => {
     expect(parseLocaleTime('2:30 PM', 'gd')).toBe('14:30');
     expect(parseLocaleTime('12:00 PM', 'gd')).toBe('12:00');
     expect(parseLocaleTime('2pm', 'gd')).toBe('14:00');
+    expect(parseLocaleTime('2:30 p.m', 'gd')).toBe('14:30');
+    expect(parseLocaleTime('12:00 p.m', 'gd')).toBe('12:00');
+    expect(parseLocaleTime('2 p.m', 'gd')).toBe('14:00');
+    expect(parseLocaleTime('11 a.m', 'gd')).toBe('11:00');
     expect(parseLocaleTime('2:30m', 'gd')).toBe('02:30');
   });
 
-  it('still reads English input in every locale', () => {
+  it('still reads English input in every locale exactly as before', () => {
+    const inputs = [
+      '2:30 PM',
+      '2:30 p.m',
+      '2:30 p.m.',
+      '12:00 PM',
+      '12:00 AM',
+      '2pm',
+      '2 p.m',
+      '11 a.m',
+      '14:30',
+      '1430',
+    ];
     for (const locale of LOCALES) {
-      expect(parseLocaleTime('2:30 PM', locale), locale).toBe('14:30');
-      expect(parseLocaleTime('14:30', locale), locale).toBe('14:30');
+      for (const input of inputs) {
+        expect(parseLocaleTime(input, locale), `${locale} "${input}"`).toBe(
+          parseTimeInput(input),
+        );
+      }
     }
   });
 

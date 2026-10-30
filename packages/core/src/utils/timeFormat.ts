@@ -62,8 +62,9 @@ const symbolsByLocale = new Map<string, LocaleTimeSymbols>();
 // The space family Intl writes between a time and its day period ("2:30 PM"
 // uses U+202F). A typed field shows a plain space so people can edit it.
 const SPACES = /[\u00A0\u2007\u202F]/g;
-// Built at runtime: see the property-escape note in unicodeDigits.ts.
-const LETTER = new RegExp('\\p{L}', 'u');
+// What may sit on a peeled word's inner side: a digit (digits are already
+// ASCII here), whitespace, or nothing.
+const WORD_BOUNDARY = /^[\d\s]?$/;
 
 function utcDate(hour: number, minute: number, second: number): Date {
   return new Date(Date.UTC(2000, 0, 1, hour, minute, second));
@@ -269,16 +270,16 @@ export function parseLocaleTime(
   // Peel the day period and edge words off both ends, in whatever order the
   // locale writes them ("ŋdi ga 2:30", "kl. 2.30 pm").
   let isPM: boolean | null = null;
-  // A word counts only when no letter sits on its inner side, so gd's "m"
-  // (morning) is not read out of an English "pm".
+  // A word counts only when a digit, whitespace, or nothing sits on its inner
+  // side, so gd's "m" (morning) is not read out of an English "pm" or "p.m".
   const strip = (word: string) => {
-    if (text.startsWith(word) && !LETTER.test(text.charAt(word.length))) {
+    if (text.startsWith(word) && WORD_BOUNDARY.test(text.charAt(word.length))) {
       text = text.slice(word.length).trim();
       return true;
     }
     if (
       text.endsWith(word) &&
-      !LETTER.test(text.charAt(text.length - word.length - 1))
+      WORD_BOUNDARY.test(text.charAt(text.length - word.length - 1))
     ) {
       text = text.slice(0, -word.length).trim();
       return true;
