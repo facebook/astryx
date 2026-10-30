@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {
   ContextMenu,
   ContextMenuItem,
   ContextMenuCheckboxItem,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
+  createContextMenu,
+  useContextMenu,
 } from '@astryxdesign/core/ContextMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
@@ -588,4 +590,173 @@ export const InScrollContainer: Story = {
       </ContextMenu>
     </div>
   ),
+};
+
+const touchStyles = stylex.create({
+  card: {
+    width: '200px',
+    height: '120px',
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: '12px',
+    backgroundColor: '#e5e7eb',
+    color: '#374151',
+    userSelect: 'none',
+  },
+});
+
+export const TouchLongPress: Story = {
+  name: 'Touch / long press',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'On a touch screen (iOS or Android), hold a finger on the card. As on iOS, it starts to grow after 150 ms; at 500 ms, UIKit’s long press, a haptic plays where the device can play one and the menu opens. A finger that lifts before 500 ms, or drifts more than 10 px before it, gets no menu, and the card springs back. While the menu is up the page stays still, and the card returns to its size when the menu closes.',
+      },
+    },
+  },
+  render: () => (
+    <ContextMenu
+      data-testid="touch-context-menu"
+      label="Photo actions"
+      items={[
+        {label: 'Copy', icon: ClipboardIcon, onClick: () => {}},
+        {label: 'Share', icon: ShareIcon, onClick: () => {}},
+        {label: 'Save to Files', icon: ArrowDownTrayIcon, onClick: () => {}},
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
+          onClick: () => {},
+        },
+      ]}>
+      <div {...stylex.props(touchStyles.card)}>Hold for actions</div>
+    </ContextMenu>
+  ),
+};
+
+export const TouchLongPressPopover: Story = {
+  name: 'Touch / long press, presentation="popover"',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `presentation="popover"`, ContextMenu keeps today’s menu on every device: a finger held for 500 ms opens it at the finger, with no growth. A finger on a device whose primary pointer is fine (a mouse or a trackpad) gets the same long press.',
+      },
+    },
+  },
+  render: () => (
+    <ContextMenu
+      data-testid="touch-context-menu"
+      label="Photo actions"
+      presentation="popover"
+      items={[
+        {label: 'Copy', icon: ClipboardIcon, onClick: () => {}},
+        {label: 'Share', icon: ShareIcon, onClick: () => {}},
+        {label: 'Save to Files', icon: ArrowDownTrayIcon, onClick: () => {}},
+      ]}>
+      <div {...stylex.props(touchStyles.card)}>Hold for actions</div>
+    </ContextMenu>
+  ),
+};
+
+const headlessStyles = stylex.create({
+  list: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    maxWidth: '320px',
+  },
+  row: {
+    padding: '12px 16px',
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: '#e5e7eb',
+    userSelect: 'none',
+  },
+});
+
+/**
+ * Three rows of a list: the second carries a menu from the framework-agnostic
+ * createContextMenu, the third from useContextMenu. The list keeps only `li`
+ * children; the menus render outside it. The log below the list records what
+ * the page saw, for the interaction tests.
+ */
+function HeadlessRows() {
+  const plainRowRef = useRef<HTMLLIElement>(null);
+  const hookRowRef = useRef<HTMLLIElement>(null);
+  const contentRowRef = useRef<HTMLLIElement>(null);
+  const [log, setLog] = useState<ReadonlyArray<string>>([]);
+  const record = (entry: string) => setLog(entries => [...entries, entry]);
+  useEffect(() => {
+    const row = plainRowRef.current;
+    if (row == null) {
+      return;
+    }
+    const menu = createContextMenu(row, {
+      label: 'Inbox actions',
+      onOpenChange: isOpen => record(isOpen ? 'open' : 'close'),
+      items: [
+        {label: 'Archive', onClick: () => record('archive')},
+        {label: 'Delete', variant: 'destructive', onClick: () => {}},
+      ],
+    });
+    return () => menu.destroy();
+  }, []);
+  useContextMenu(hookRowRef, {
+    label: 'Sent actions',
+    items: [{label: 'Forward', onClick: () => record('forward')}],
+  });
+  useContextMenu(contentRowRef, {
+    label: 'Archive actions',
+    menuContent: (
+      <ContextMenuItem label="Restore" onClick={() => record('restore')} />
+    ),
+  });
+  return (
+    <div>
+      <ul {...stylex.props(headlessStyles.list)} data-testid="headless-list">
+        <li tabIndex={0} {...stylex.props(headlessStyles.row)}>
+          Drafts
+        </li>
+        <li
+          ref={plainRowRef}
+          tabIndex={0}
+          data-testid="headless-row"
+          onClick={() => record('row-click')}
+          {...stylex.props(headlessStyles.row)}>
+          Inbox
+        </li>
+        <li
+          ref={hookRowRef}
+          tabIndex={0}
+          data-testid="hook-row"
+          {...stylex.props(headlessStyles.row)}>
+          Sent
+        </li>
+        <li
+          ref={contentRowRef}
+          tabIndex={0}
+          data-testid="hook-content-row"
+          {...stylex.props(headlessStyles.row)}>
+          Archive
+        </li>
+      </ul>
+      <output data-testid="headless-log">{log.join(',')}</output>
+    </div>
+  );
+}
+
+export const HeadlessOnAListRow: Story = {
+  name: 'Headless / createContextMenu on a list row',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'createContextMenu attaches ContextMenu to an element that is already on the page, here a list row, without React; useContextMenu does the same from a component. A held finger, a right click, Shift+F10 or the context-menu key opens it.',
+      },
+    },
+  },
+  render: () => <HeadlessRows />,
 };
