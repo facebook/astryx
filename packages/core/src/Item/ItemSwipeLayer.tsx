@@ -4,23 +4,34 @@
 
 /**
  * @file ItemSwipeLayer.tsx
- * @input The row root (by ref), the swipe entries per side, the behavior;
- *   useSwipeAction, theme tokens
+ * @input The swipe entries per side, the behavior; useSwipeAction,
+ *   theme tokens
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
- *   through which the root reaches the gesture's handlers
- * @position Internal to Item, reached only through a dynamic import from
- *   Item.tsx when `swipeActions` is set, so a row without them never loads
- *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
+ *   through which the root reaches the gesture's key handler
+ * @position Internal to Item, imported by Item.tsx with the row (no lazy
+ *   chunk: a row's first swipe never waits for one). Tested through
+ *   Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
- * its pointer, click-capture and key events into the bridge this layer fills.
- * This layer renders the two panels as out-of-flow children of that root and
- * runs the gesture against it, so the DOM is the one Item rendered before the
- * split — no element is added for the swipe (spec AST-057, FR2).
+ * its key events into the bridge this layer fills; the gesture attaches to
+ * the root itself. This layer renders the two panels as out-of-flow children
+ * of that root, so the DOM is the one Item rendered before the split — no
+ * element is added to the row for the swipe (spec AST-057, FR2).
+ *
+ * A panel is two boxes and the entries themselves, all moved by transforms
+ * only (see useSwipeAction): a window over the row's resting box that clips
+ * to it, a track inside it that moves with the row and clips the entries to
+ * the space the row vacates, and the entries, each translated to stay pinned
+ * at the outer edge. Past the open width the outermost entry's colour,
+ * painted beside it, fills the rest out to that edge; on a confirmed full
+ * swipe it slides to the row's edge while the others fade over the track's
+ * fill of its colour. No wrapper holds the entries (minimal DOM,
+ * `architecture:component-style-authoring` INV7): the colours are
+ * pseudo-elements.
  */
 
-import {useEffect, useRef, type RefObject} from 'react';
+import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   fontWeightVars,
@@ -32,12 +43,7 @@ import {
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useMediaQuery} from '../hooks/useMediaQuery';
-import {
-  useSwipeAction,
-  type SwipeHandlers,
-  type SwipeSide,
-} from './useSwipeAction';
+import {isSwipeOpen, useSwipeAction, type SwipeSide} from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
 // =============================================================================
@@ -45,94 +51,118 @@ import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 // =============================================================================
 
 /**
- * What the root needs from the gesture: the handlers it forwards its events
- * into, and the test for the click the browser synthesizes after a drag. The
- * layer writes it on every render; the root reads it on every event.
+ * What the root needs from the gesture: the key handler it forwards its key
+ * events into (Escape closes a resting row). The layer writes it on every
+ * render; the root reads it on every event.
  */
 export interface ItemSwipeBridge {
-  handlers: SwipeHandlers;
-  shouldSuppressClick: () => boolean;
+  onKeyDown: (event: React.KeyboardEvent) => void;
 }
 
 export interface ItemSwipeLayerProps {
-  /** The row root: the gesture's target and the element that translates. */
-  rootRef: RefObject<HTMLElement | null>;
   /**
    * Called with the gesture for the root to forward into, after every render
    * of the layer, and with `null` when the layer leaves.
    */
   onBridge: (bridge: ItemSwipeBridge | null) => void;
+  /**
+   * Called with `true` when the row opens (from the release that opens it)
+   * and with `false` when it closes or the layer leaves. The root takes no
+   * press while open: a tap on an open row's content only closes it, as in
+   * UIKit, where the cell never sees that touch.
+   */
+  onOpenChange: (isOpen: boolean) => void;
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
 }
 
 // =============================================================================
-// Constants
-// =============================================================================
-
-// The custom properties the gesture writes on the root (see useSwipeAction;
-// StyleX wants literals here, so the names are spelled out rather than imported).
-/** The travel a drag writes on the row root, in physical px. */
-const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
-/** +1 when the inline end is to the right, -1 under RTL; written beside the travel. */
-const SWIPE_DIR = 'var(--_item-swipe-dir, 1)';
-/** The settle clock, `0s` while the finger drives the row. */
-const SWIPE_DURATION = 'var(--_item-swipe-duration, 0s)';
-/** The travel measured toward the inline end. */
-const SWIPE_LOGICAL_TRAVEL = `calc(${SWIPE_TRAVEL} * ${SWIPE_DIR})`;
-
-// =============================================================================
 // Styles
 // =============================================================================
 
 const styles = stylex.create({
-  // A side's panel: an out-of-flow child of the root at the inline start or
-  // end, counter-translated so it appears fixed in the space the row
-  // vacates, and exactly as wide as the travel toward its side — a padded box
-  // at `width: 0` would still paint its padding, so the panel has none; its
-  // entries carry their own. Not a pixel of it shows at rest.
+  // A side's window: the row's resting box. It is translated back by the
+  // travel, so it stays where the row rests, and clips the track to that box
+  // and its corners. Transparent and not hit: only the entries take touches.
   swipePanel: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 0,
-    display: 'flex',
-    alignItems: 'stretch',
-    boxSizing: 'border-box',
-    overflow: 'hidden',
+    insetBlock: 0,
+    insetInline: 0,
+    overflow: 'clip',
     borderRadius: 'inherit',
-    transform: `translate3d(calc(-1 * ${SWIPE_TRAVEL}), 0, 0)`,
-    transitionProperty: 'transform, width',
-    transitionDuration: `${SWIPE_DURATION}, ${SWIPE_DURATION}`,
-    transitionTimingFunction: 'ease-out, ease-out',
+    pointerEvents: 'none',
   },
-  swipePanelLeading: {
-    insetInlineStart: 0,
-    justifyContent: 'flex-start',
-    width: `max(0px, ${SWIPE_LOGICAL_TRAVEL})`,
-  },
-  swipePanelTrailing: {
-    insetInlineEnd: 0,
-    justifyContent: 'flex-end',
-    width: `max(0px, calc(-1 * ${SWIPE_LOGICAL_TRAVEL}))`,
-  },
-  // The entries at their natural width; the panel clips them to the travel.
-  // The outermost entry is the last, at the panel's outer edge: on the leading
-  // side that is the inline start, so the row of entries runs in reverse.
-  swipeEntries: {
+  // The track: beside the window at rest (so not a pixel of it shows), moved
+  // with the row, so the part inside the window is exactly the space the row
+  // vacates, and the entries show only there. Twice the row's width covers
+  // every travel, the slide-out included. The entries run in a row from its
+  // edge next to the row, each translated back so they stay pinned at the
+  // row's outer edge until the row has uncovered them all, then riding the
+  // row, on the surface it paints: the neutral variant is translucent and
+  // shows what is under it. Its `::before` is the confirm fill: the
+  // outermost entry's colour, hidden until a full swipe confirms, which then
+  // shows through the others as they fade (swipeTrackFillStyles).
+  swipeTrack: {
+    position: 'absolute',
+    insetBlock: 0,
+    width: '200%',
+    overflow: 'clip',
+    borderRadius: 'inherit',
     display: 'flex',
-    flexShrink: 0,
-    height: '100%',
-    // The entries sit on the surface, not on the panel's own colour: the
-    // neutral variant is translucent and would otherwise take the outermost
-    // entry's colour through it.
+    isolation: 'isolate',
     backgroundColor: colorVars['--color-background-surface'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      opacity: 0,
+      pointerEvents: 'none',
+    },
   },
-  swipeEntriesLeading: {
+  // The outermost entry is the last, at the outer edge: on the leading side
+  // that is the inline start, so the row of entries runs in reverse from the
+  // track's inline end.
+  swipeTrackLeading: {
+    insetInlineEnd: '100%',
     flexDirection: 'row-reverse',
   },
+  swipeTrackTrailing: {
+    insetInlineStart: '100%',
+  },
+  // The outermost entry: its colour, painted beside it out to the row's
+  // outer edge, fills whatever the row uncovers past the open width (the
+  // entry stretches), and a slide-out fills the row with it. Decoration
+  // only, on a pseudo-element; the entry's own fill, theme included.
+  swipeOuterEntry: {
+    position: 'relative',
+  },
+  swipeOuterEntryLeading: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlock: 0,
+      insetInlineEnd: '100%',
+      width: '100vw',
+      backgroundColor: 'inherit',
+      pointerEvents: 'none',
+    },
+  },
+  swipeOuterEntryTrailing: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlock: 0,
+      insetInlineStart: '100%',
+      width: '100vw',
+      backgroundColor: 'inherit',
+      pointerEvents: 'none',
+    },
+  },
   swipeEntry: {
+    flexShrink: 0,
+    pointerEvents: 'auto',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -156,13 +186,15 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     whiteSpace: 'nowrap',
   },
+  // Half strength as a filter, so the entry's own opacity stays free for the
+  // full swipe's fade.
   swipeEntryDisabled: {
-    opacity: 0.5,
+    filter: 'opacity(0.5)',
   },
 });
 
-// A verb's colour: ordinary, the one you mean, the dangerous one. The panel
-// wears its outermost entry's, so a slide-out fills the row with it.
+// A verb's colour: ordinary, the one you mean, the dangerous one. The
+// outermost entry's fills the row on a slide-out (swipeOuterEntry).
 const swipeVariantStyles = stylex.create({
   neutral: {
     backgroundColor: colorVars['--color-neutral'],
@@ -187,6 +219,20 @@ const swipeVariantStyles = stylex.create({
   },
 });
 
+// The track's confirm fill: the outermost entry's colour (a disabled one
+// never confirms, so it has none to show).
+const swipeTrackFillStyles = stylex.create({
+  neutral: {
+    '::before': {backgroundColor: colorVars['--color-neutral']},
+  },
+  accent: {
+    '::before': {backgroundColor: colorVars['--color-accent']},
+  },
+  destructive: {
+    '::before': {backgroundColor: colorVars['--color-error']},
+  },
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -196,136 +242,148 @@ const swipeVariantStyles = stylex.create({
  * the root Item owns, and the gesture that drives that root.
  */
 export default function ItemSwipeLayer({
-  rootRef,
   onBridge,
+  onOpenChange,
   leading,
   trailing,
   behavior,
 }: ItemSwipeLayerProps) {
-  const leadingEntriesRef = useRef<HTMLDivElement | null>(null);
-  const trailingEntriesRef = useRef<HTMLDivElement | null>(null);
-  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const outermost = (side: SwipeSide): ItemSwipeAction | undefined => {
-    const entries = side === 'leading' ? leading : trailing;
-    return entries[entries.length - 1];
-  };
+  // The entries, read when an entry fires (after the render that showed them).
+  // Synchronizes the gesture system's fire callback, which runs outside React
+  // from the recognizer, with the committed entries.
+  const entriesRef = useRef({leading, trailing});
+  useEffect(() => {
+    entriesRef.current = {leading, trailing};
+  });
   const swipe = useSwipeAction({
-    isEnabled: true,
     behavior,
-    sides: {
-      leading: leading.length > 0,
-      trailing: trailing.length > 0,
+    // An open row's root takes no press.
+    onOpenChange,
+    // A disabled outermost entry cannot fire, so a full swipe never confirms
+    // toward it.
+    canConfirm: side => {
+      const entries = entriesRef.current[side];
+      const entry = entries[entries.length - 1];
+      return entry != null && entry.isDisabled !== true;
     },
-    measurePanel: side =>
-      (side === 'leading' ? leadingEntriesRef : trailingEntriesRef).current
-        ?.offsetWidth ?? 0,
     fireOutermost: side => {
-      const entry = outermost(side);
+      const entries = entriesRef.current[side];
+      const entry = entries[entries.length - 1];
       if (entry == null || entry.isDisabled === true) {
         return false;
       }
       void entry.onActivate();
       return entry.hasRemoval === true;
     },
-    isReducedMotion,
-    rootRef,
+    sides: {
+      leading: leading.length > 0,
+      trailing: trailing.length > 0,
+    },
   });
-  // The root forwards its events into what this publishes. Published from an
-  // effect, like the gesture's own latest-callback refs: React flushes
-  // effects before it delivers a discrete event, so a handler never meets a
-  // stale bridge; and withdrawn when the layer leaves.
+  // The root forwards its key events into what this publishes. The Effect
+  // installs this layer's key handler on Item's root, which
+  // lives outside the layer, and releases it when the layer leaves. React
+  // flushes effects before it delivers a discrete event, so a handler never
+  // meets a stale bridge.
   useEffect(() => {
-    onBridge({
-      handlers: swipe.handlers,
-      shouldSuppressClick: swipe.shouldSuppressClick,
-    });
+    onBridge({onKeyDown: swipe.onKeyDown});
     return () => {
       onBridge(null);
     };
   });
-  const isSwipeResting = swipe.state.phase === 'resting';
+  // Open from the release that opens it (`isSwipeOpen`), as UIKit counts it:
+  // an entry the finger can see while the row springs open is tappable.
+  const isOpen = isSwipeOpen(swipe.state);
 
   // A side's panel: entries as real buttons under `reveal`, presentational
   // blocks under `commit`. Out of the accessibility tree and the tab order
-  // except while the row rests open, so the row keeps one tab stop and a
-  // pointer that can hover never meets it.
+  // except while the row is open on its side, so the row keeps one tab
+  // stop, the other side's entries (out of sight behind the row) are never
+  // reached, and a pointer that can hover never meets it.
   const renderSwipePanel = (side: SwipeSide, entries: ItemSwipeAction[]) => {
     if (entries.length === 0) {
       return null;
     }
     const outer = entries[entries.length - 1];
     const isCommit = behavior === 'commit';
-    const isLive = isSwipeResting && !isCommit;
+    const isLive = isOpen && swipe.state.side === side && !isCommit;
+    const refs = swipe.panelRefs[side];
+    const renderEntry = (entry: ItemSwipeAction) => {
+      const variant = entry.variant ?? 'accent';
+      const key = entry.id ?? entry.label;
+      // The outermost entry is the full swipe's moving part itself.
+      const isOuter = entry === outer;
+      const ref = isOuter ? refs.outer : refs.entry(key);
+      const content = (
+        <>
+          {entry.icon}
+          <span>{entry.label}</span>
+        </>
+      );
+      const entryStyles = [
+        styles.swipeEntry,
+        swipeVariantStyles[variant],
+        entry.isDisabled === true && styles.swipeEntryDisabled,
+        isOuter && styles.swipeOuterEntry,
+        isOuter &&
+          (side === 'leading'
+            ? styles.swipeOuterEntryLeading
+            : styles.swipeOuterEntryTrailing),
+      ];
+      if (isCommit) {
+        return (
+          <span
+            key={key}
+            ref={ref}
+            {...mergeProps(
+              themeProps('item-swipe-action', {variant}),
+              stylex.props(...entryStyles),
+            )}>
+            {content}
+          </span>
+        );
+      }
+      return (
+        <button
+          key={key}
+          ref={ref}
+          type="button"
+          disabled={entry.isDisabled === true}
+          onClick={() =>
+            swipe.activateEntry(() => {
+              void entry.onActivate();
+              return entry.hasRemoval === true;
+            })
+          }
+          {...mergeProps(
+            themeProps('item-swipe-action', {variant}),
+            focusOutlineProps.focusVisible(...entryStyles),
+          )}>
+          {content}
+        </button>
+      );
+    };
     return (
       <div
         key={side}
+        ref={refs.panel}
         data-swipe-panel={side}
         inert={isLive ? undefined : true}
         aria-hidden={isCommit ? true : undefined}
-        {...mergeProps(
-          themeProps('item-swipe-panel', {side}),
-          stylex.props(
-            styles.swipePanel,
-            side === 'leading'
-              ? styles.swipePanelLeading
-              : styles.swipePanelTrailing,
-            swipeVariantStyles[outer.variant ?? 'accent'],
-          ),
-        )}>
+        {...stylex.props(styles.swipePanel)}>
         <div
-          ref={side === 'leading' ? leadingEntriesRef : trailingEntriesRef}
-          {...stylex.props(
-            styles.swipeEntries,
-            side === 'leading' && styles.swipeEntriesLeading,
+          ref={refs.track}
+          {...mergeProps(
+            themeProps('item-swipe-panel', {side}),
+            stylex.props(
+              styles.swipeTrack,
+              side === 'leading'
+                ? styles.swipeTrackLeading
+                : styles.swipeTrackTrailing,
+              swipeTrackFillStyles[outer.variant ?? 'accent'],
+            ),
           )}>
-          {entries.map(entry => {
-            const variant = entry.variant ?? 'accent';
-            const content = (
-              <>
-                {entry.icon}
-                <span>{entry.label}</span>
-              </>
-            );
-            const entryStyle = stylex.props(
-              styles.swipeEntry,
-              swipeVariantStyles[variant],
-              entry.isDisabled === true && styles.swipeEntryDisabled,
-            );
-            if (isCommit) {
-              return (
-                <span
-                  key={entry.id ?? entry.label}
-                  {...mergeProps(
-                    themeProps('item-swipe-action', {variant}),
-                    entryStyle,
-                  )}>
-                  {content}
-                </span>
-              );
-            }
-            return (
-              <button
-                key={entry.id ?? entry.label}
-                type="button"
-                disabled={entry.isDisabled === true}
-                onClick={() =>
-                  swipe.activateEntry(() => {
-                    void entry.onActivate();
-                    return entry.hasRemoval === true;
-                  })
-                }
-                {...mergeProps(
-                  themeProps('item-swipe-action', {variant}),
-                  focusOutlineProps.focusVisible(
-                    styles.swipeEntry,
-                    swipeVariantStyles[variant],
-                    entry.isDisabled === true && styles.swipeEntryDisabled,
-                  ),
-                )}>
-                {content}
-              </button>
-            );
-          })}
+          {entries.map(renderEntry)}
         </div>
       </div>
     );
