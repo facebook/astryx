@@ -18,6 +18,7 @@ import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Icon} from '@astryxdesign/core/Icon';
 import {SharedTopNav} from './SharedTopNav';
+import {DEPRECATED_LABEL} from './Deprecation';
 import {DocsBanner} from './InternalDocsPrompt';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -34,7 +35,7 @@ interface DocsShellProps {
 }
 
 const styles = stylex.create({
-  canaryMarker: {
+  endMarker: {
     alignItems: 'center',
     display: 'inline-flex',
     height: 24,
@@ -45,8 +46,17 @@ const styles = stylex.create({
 
 function CanaryCategoryMarker() {
   return (
-    <span {...stylex.props(styles.canaryMarker)}>
+    <span {...stylex.props(styles.endMarker)}>
       <Icon icon={FlaskConical} label="Canary" size="sm" />
+    </span>
+  );
+}
+
+// An icon, like the canary marker, so a long nested label keeps its room.
+function DeprecatedMarker() {
+  return (
+    <span {...stylex.props(styles.endMarker)}>
+      <Icon icon="warning" color="warning" label={DEPRECATED_LABEL} size="sm" />
     </span>
   );
 }
@@ -151,15 +161,20 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
     />
   );
 
+  const renderComponentEntry = (entry: ComponentSidebarEntry) => (
+    <SideNavItem
+      key={`${entry.packageName}:${entry.name}`}
+      label={entry.displayName}
+      href={entry.href}
+      isSelected={pathname === entry.href}
+      endContent={entry.isDeprecated ? <DeprecatedMarker /> : undefined}
+    />
+  );
+
   const renderComponentItems = (items: ComponentSidebarItem[]) =>
     items.map(item =>
       item.type === 'entry' ? (
-        <SideNavItem
-          key={`${item.packageName}:${item.name}`}
-          label={item.displayName}
-          href={item.href}
-          isSelected={pathname === item.href}
-        />
+        renderComponentEntry(item)
       ) : (
         <SideNavItem
           key={`${item.packageName}:${item.label}`}
@@ -167,14 +182,7 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
           collapsible={{
             defaultIsCollapsed: !item.entries.some(e => pathname === e.href),
           }}>
-          {item.entries.map(entry => (
-            <SideNavItem
-              key={`${entry.packageName}:${entry.name}`}
-              label={entry.displayName}
-              href={entry.href}
-              isSelected={pathname === entry.href}
-            />
-          ))}
+          {item.entries.map(renderComponentEntry)}
         </SideNavItem>
       ),
     );
@@ -296,14 +304,7 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
                   />
                 )}
                 {q
-                  ? flatSearchResults.map(item => (
-                      <SideNavItem
-                        key={`${item.packageName}:${item.name}`}
-                        label={item.displayName}
-                        href={item.href}
-                        isSelected={pathname === item.href}
-                      />
-                    ))
+                  ? flatSearchResults.map(renderComponentEntry)
                   : renderComponentItems(componentItems)}
                 {/* Utilities — secondary list rendered below the main Components
                     section. Always starts collapsed; users can expand on demand. */}

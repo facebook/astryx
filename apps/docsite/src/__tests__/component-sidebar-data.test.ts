@@ -69,4 +69,22 @@ describe('component sidebar data', () => {
     );
     expect(threeD?.displayName).toBe('3D');
   });
+
+  it('marks exactly the entries whose doc is deprecated', () => {
+    const deprecated = new Set(
+      Object.entries(components).flatMap(([packageName, entries]) =>
+        entries
+          .filter(entry => entry.deprecated != null)
+          .map(entry => `${packageName}:${entry.name}`),
+      ),
+    );
+    const entries = flattenComponentSidebarEntries();
+
+    expect(entries.some(entry => entry.isDeprecated)).toBe(true);
+    for (const entry of entries) {
+      expect(entry.isDeprecated, entry.name).toBe(
+        deprecated.has(`${entry.packageName}:${entry.name}`),
+      );
+    }
+  });
 });
