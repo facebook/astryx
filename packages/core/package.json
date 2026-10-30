@@ -31,8 +31,7 @@
     "**/*.stylex.ts",
     "**/*.stylex.js",
     "**/componentStyles.ts",
-    "**/*.css",
-    "**/index.js"
+    "**/*.css"
   ],
   "exports": {
     ".": {

@@ -94,12 +94,6 @@ first.
   resolve its stylesheet subpath in the packed package, and its `sideEffects`
   declaration MUST cover that file, so a bundler keeps the product's
   `import '@astryxdesign/<package>/<name>.css'`.
-  Core's `sideEffects` declaration also covers its barrel modules
-  (`**/index.js`). Core's lazy `import()`s make esbuild, bundling without code
-  splitting, wrap the modules they reach in lazy initializers, and esbuild
-  drops the initializer call of a barrel declared side-effect-free, so a
-  component runs before its module is initialized. Declaring the barrels keeps
-  that order in a single-file esbuild bundle.
 
 - **FR5 — Documented setups load prebuilt stylesheets by default.** Each
   default consumer setup path in the documentation (plain CSS, Tailwind, and a
@@ -210,7 +204,7 @@ first.
 | FR1      | package manifest and stylesheet build tests          | every published package with styled modules; a module's rules in its package stylesheet                                                                                                             | a styled published package has no `.css` export; a rule a module uses is missing                                                                                         |
 | FR2      | real-browser computed styles with no StyleX compiler | a representative component from each package; default, hover, focus, disabled, dark, and right-to-left                                                                                              | removing the package stylesheet changes a computed style; a non-Core stylesheet repeats a group `astryx.css` declares                                                    |
 | FR3      | stylesheet structure tests and real-browser cascade  | each package stylesheet and `reset.css`; theme first and last; package stylesheets in either order; `reset.css` last; a theme override                                                              | an unlayered rule or another layer; a missing or reordered registration; the theme override loses in any load order                                                      |
-| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle; Core's List and Item rendered from a single esbuild bundle of the built package                                                            | the subpath does not resolve from the packed package; the bundle drops the stylesheet; a barrel left side-effect-free throws on first render                             |
+| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle                                                                                                                                             | the subpath does not resolve from the packed package; the bundle drops the stylesheet                                                                                    |
 | FR5–FR6  | consumer-doc checks                                  | every setup snippet in the styling overview, getting started, and migration setup; each package README                                                                                              | a default setup omits `astryx.css` or a used package stylesheet; a setup loads a prebuilt stylesheet and compiles the same package's source; a package import is missing |
 | FR7      | build-package compile tests and real-browser cascade | every Core module compiled through the build package; a subset of modules; a development build; Core source-built beside a prebuilt Lab stylesheet; a source-built component under a theme override | the every-module compile differs from the prebuilt rules or order; an Astryx rule sits in a nested or other layer; the theme override loses                              |
 | FR8      | pull-request size report against base                | a component whose styles change; a touch-only feature adding 0.9 KB and 1.1 KB gzip CSS to one component; a pull request with no styled change                                                      | a changed package stylesheet or component with no base-against-head gzip figure; a touch-only feature over 1 KB gzip CSS per component that is not flagged               |

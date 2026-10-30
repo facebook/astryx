@@ -21,8 +21,8 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
-import {mergeProps} from '../utils';
-import {useTranslator} from '../i18n';
+import {mergeProps} from '../utils/mergeProps';
+import {useTranslator} from '../i18n/useTranslator';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
