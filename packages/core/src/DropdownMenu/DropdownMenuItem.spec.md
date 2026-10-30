@@ -112,7 +112,7 @@ intentional decision.
 | FR4 | The parent menu MUST remain the only keyboard owner. It synthesizes click activation with modifiers, moves focus, and runs typeahead; the row MAY focus itself on pointer hover but MUST NOT create a second roving-focus model.                     | `architecture:interaction-modality`; current parent tests        | verify                                                       |
 | FR5 | The visible root MUST carry `dropdown-menu-item`; size and destructive state MUST reflect through `themeProps`; semantic tokens own layout and paint before caller styling inputs compose.                                                           | `architecture:component-theming-surface/INV3–INV6`; source/tests | verify                                                       |
 | FR6 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root without replacing owned role, tab stop, disabled behavior, destination handling, or activation order.                          | `architecture:public-component-api/INV5–INV9`; focused tests     | verify                                                       |
-| FR7 | Disabled menu rows remain inert. Whether the menu keyboard model should visit them is unresolved at the shared owner and MUST NOT be changed by a component-local audit.                                                                             | WAI-ARIA menu pattern; parent `component:DropdownMenu/OQ1`       | human API decision                                           |
+| FR7 | Disabled menu rows remain inert, and the menu keyboard model reaches them as `component:DropdownMenu` FR17 states.                                                                                                                                   | WAI-ARIA menu pattern; parent `component:DropdownMenu/FR17`      | follows the parent's proposed DEC-14                         |
 | FR8 | Keyboard focus MUST remain perceivable, including in forced-colors mode. The current background-only treatment is an objective gap; a remediation must preserve modality and row-content visibility without inventing new ordinary-theme appearance. | WCAG 2.2 SC 1.4.11 and 2.4.7; current rendered behavior          | objective gap; owner must confirm the shared visual boundary |
 
 ### Allowed variation
@@ -197,8 +197,6 @@ None. This draft records current facts and introduces no product decision.
 
 ## Open questions
 
-- **OQ1 — Which shared keyboard owner should keep disabled menu items discoverable
-  while preserving their inert behavior?** (`human-api`)
 - **OQ2 — Should forced-colors focus use a component-specific system outline, or a
   shared row-focus treatment that also governs ordinary themes?** (`human-design`)
 

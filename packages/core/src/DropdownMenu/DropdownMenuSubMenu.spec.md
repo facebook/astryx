@@ -118,7 +118,7 @@ intentional decision.
 | FR4 | A drilled-in view MUST replace the root's rows with a Back row named after the parent menu and then this row's children; Back, Escape, and the close arrow MUST return to the row.                                                                                           | Current source and focused tests                                  | verify                                                                                                   |
 | FR5 | Selecting a leaf row inside the surface MUST close every level and the root menu.                                                                                                                                                                                            | Current source, focused tests, and browser evidence               | verify                                                                                                   |
 | FR6 | `onOpenChange` MUST report `true` once when the surface opens and `false` once when it closes, from the action that caused the change.                                                                                                                                       | Documented promise; `architecture:react-component-runtime/INV2`   | objective gap: a drilled-in view reset by the root menu closing reports no `false` (owner: DropdownMenu) |
-| FR7 | A disabled row MUST expose `aria-disabled="true"`, render no `tabindex`, take no hover focus, open on no input, and run no caller `onClick`.                                                                                                                                 | Current source, focused tests, and browser evidence               | verify                                                                                                   |
+| FR7 | A disabled row MUST expose `aria-disabled="true"`, carry `tabindex="-1"` so the parent's keyboard model reaches it (`component:DropdownMenu` FR17), take no hover focus, open on no input, and run no caller `onClick`.                                                      | Current source, focused tests, and browser evidence               | verify                                                                                                   |
 | FR8 | With `hasSpinner` the row MUST show a decorative spinner in place of the caret and announce the busy start once the root menu shows.                                                                                                                                         | `spec:AST-086/FR8`; current source                                | verify                                                                                                   |
 | FR9 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` MUST reach or compose on the row root after the row's own behavior; the open keys and a disabled click stop before the caller's handler.                                                     | `architecture:public-component-api/INV5–INV8`; focused tests      | verify                                                                                                   |
 
@@ -162,8 +162,8 @@ intentional decision.
   are exposed through ARIA; its caret and spinner are decorative.
 - **AR2 — Level-scoped keys.** Each level owns its own arrows, typeahead, and
   Escape; a deeper level's keys never act on its parent.
-- **AR3 — Disabled discoverability.** Whether disabled rows stay
-  keyboard-discoverable is owned by `component:DropdownMenu` (its OQ1).
+- **AR3 — Disabled discoverability.** The keyboard reaches a disabled row as
+  `component:DropdownMenu` FR17 states.
 - **AR4 — Focus visibility (objective gap).** Keyboard focus MUST be
   perceivable (WCAG 2.2 SC 2.4.7 and 1.4.11). The row currently paints focus
   only as the menu overlay tint with no outline, and paints nothing under
@@ -188,7 +188,7 @@ No new component-local visual decision is settled by this draft.
 - `component:DropdownMenu` owns the root surface, the drill-in stack, the
   surface host, the `dropdown-menu`, `dropdown-menu-item`, and
   `dropdown-menu-indicator-icon` target inventory, and disabled keyboard
-  discoverability (its OQ1).
+  discoverability (its FR17).
 - `architecture:layer-runtime` owns flyout placement, flipping, and insets.
 - `architecture:public-component-api` owns root input and handler composition.
 - `architecture:react-component-runtime` owns callback timing.
