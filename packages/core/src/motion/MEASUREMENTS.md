@@ -94,7 +94,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -251,6 +252,23 @@ match the probe.
 | M-SH21  | SheetProbe on iPad, iOS 27 `preferredPlacement` each case, RTL                                                         | present                                                                                                                             | placement geometry and motion                                                                                                                           | B, C    |
 | M-SH22  | SheetProbe iOS 26 `preferredTransition = .zoom` from a bar button                                                      | present, dismiss                                                                                                                    | morph geometry per frame                                                                                                                                | A, C    |
 
+## Date picker (UIDatePicker)
+
+Values the DateInput, DateTimeInput and TimeInput touch surfaces read from
+their own table (`uikit/datePicker.ts`). The month grid's release and arrow
+step are a paging scroll view's and the wheels' physics are UIPickerView's:
+the table only names them, and their values belong to the pager's and the
+wheel's own tables.
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the date picker's table):
+a day tap and `setDate(_:animated:)`, the title following the drag, the
+chevron's retarget and its state at a bound, the month/year toggle's fades and
+chevron turn, the month/year wheels, the compact popover's springs, the AM/PM
+column following the hour, the looping time columns, the minutes not carrying,
+the turn back onto a bound, the day clamped to the month, and the
+year-and-month mode; the AM/PM column's turn, the disabled chevron and the
+short minute lists' loop followed on Oct 24 2026.
+
 ## Context menu (UIContextMenuInteraction)
 
 Values the context menu reads from its own table, which lands with the
@@ -269,3 +287,17 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Picker (UIPickerView)
+
+Values the Wheel reads from its own table (`uikit/picker.ts`).
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the picker's table): the
+geometry (row pitch, cylinder, perspective, band, the band copy's
+magnification, the dimmed copies' opacity), the rubber band's dimension, the
+coast's stop speed, the velocity floor, the snap at rest, the tap spin and
+the selection tick. Measured and kept by the gesture system instead: the
+scroll view coasts with 0.25 × the pan's velocity plus 0.75 × its value one
+event earlier (four HID releases; `velocity.scrollReleaseWeight`, which a
+pan's `scrollVelocity()` reads). On UIKit, Reduce Motion with Prefer Cross-Fade changes
+nothing on a picker; the Wheel follows design:reduced-motion instead.
