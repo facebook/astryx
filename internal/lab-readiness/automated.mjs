@@ -97,9 +97,10 @@ function a11yComponentFromTitle(title) {
 }
 
 /**
- * Roots the ci.yml component audits cover. Without change detection in
- * ci.yml (the audits run every registered package in full for release-check)
- * or when it projects the registry, that is every registered package root.
+ * Roots the ci.yml component audits cover: every registered package root
+ * when the gate projects the registry (in ci.yml, or through the test-scope
+ * action its audit jobs run with `component-audit: 'true'`), else the roots a
+ * change-detection pathspec or package filter names, else none.
  */
 function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);

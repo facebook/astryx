@@ -23,7 +23,9 @@
  * the commands are checked with each script expanded to its body.
  */
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
@@ -887,6 +889,56 @@ describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
       expect(step.if, name).toBe(
         "github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true'",
       );
+    }
+  });
+
+  it('gives the full visual plan when the file list is unreadable or there is no pull request', () => {
+    const decide = (job, {event, files, specialized = 'false'}) => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'visual-scope-'));
+      try {
+        const output = path.join(dir, 'output');
+        const filesPath = path.join(dir, 'files');
+        fs.writeFileSync(output, '');
+        fs.writeFileSync(filesPath, files);
+        const step = workflow.jobs[job].steps.find(
+          candidate => candidate.name === 'Decide stable visual scope',
+        );
+        const result = spawnSync(
+          'bash',
+          ['-e', '-c', step.run.replaceAll('${{ github.event_name }}', event)],
+          {
+            cwd: path.resolve(import.meta.dirname, '../..'),
+            env: {
+              ...process.env,
+              GITHUB_OUTPUT: output,
+              FILES_PATH: filesPath,
+              SCOPED: 'false',
+              SPECIALIZED: specialized,
+            },
+            encoding: 'utf8',
+          },
+        );
+        expect(result.status, result.stderr).toBe(0);
+        return fs.readFileSync(output, 'utf8');
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    };
+    const full = 'has_stable_visual=true\nbroad_stable_visual=true\n';
+    for (const job of ['visual-scout', 'pr-visual']) {
+      expect(decide(job, {event: 'pull_request', files: ''}), job).toBe(full);
+      expect(
+        decide(job, {event: 'workflow_dispatch', files: 'docs/x.md\n'}),
+        job,
+      ).toBe(full);
+      expect(
+        decide(job, {
+          event: 'pull_request',
+          files: 'packages/core/src/Button/Button.tsx\n',
+          specialized: 'true',
+        }),
+        job,
+      ).toBe('has_stable_visual=false\nbroad_stable_visual=false\n');
     }
   });
 
