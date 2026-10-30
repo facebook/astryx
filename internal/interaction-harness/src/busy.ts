@@ -4,8 +4,10 @@
  * @file busy.ts
  * @input Uses a Playwright `Page`
  * @output `blockMainThread` — a synchronous busy loop on the page's main thread
- *   that reports exactly when it ran — and `busyWindowProof`, which reads frame
- *   evidence for that window.
+ *   that reports exactly when it ran —, `startBusyControl` — a plain
+ *   compositor-only control animation recorded in the same window — and
+ *   `busyWindowProof`, which reads frame evidence for that window, against
+ *   the control when it has one.
  * @position The busy-main-thread proof: an animation that runs on the
  *   compositor keeps advancing at display rate while JavaScript holds the main
  *   thread; one driven from the main thread (rAF, style writes, layout
@@ -17,6 +19,117 @@
 
 import type {Locator, Page} from '@playwright/test';
 import {frameStats, type FrameStats, type TrackedFrame} from './frames';
+
+/** The control's colour, apart from the component's marker (`MARKER_RGB`). */
+export const CONTROL_RGB: readonly [number, number, number] = [0, 255, 255];
+
+/** The control box's side, and how far it travels along the top edge, CSS px. */
+const CONTROL_SIDE = 12;
+const CONTROL_TRAVEL = 240;
+
+/**
+ * Starts a plain compositor-only control animation: a `CONTROL_RGB` box in the
+ * page's top-left corner whose transform moves it back and forth along the top
+ * edge (`CONTROL_TRAVEL` px every 400 ms, linear) for as long as the page
+ * runs. It shows what the compositor presented in a busy window on this
+ * machine, so a proof can judge a component against it rather than against a
+ * frame rate: track it from the same screencast (`trackMarker(page, frames,
+ * {rgb: CONTROL_RGB})`) and pass it to `busyWindowProof` as `control`.
+ *
+ * The box is a manual popover, so it shows in the top layer, above a modal
+ * dialog the page opened before it; `raise()` shows it again on top of one
+ * opened after. Start it before the block: it resolves once the animation is
+ * running and past its first frame (on the compositor; see
+ * `blockMainThread`). Keep the component's marker out of the strip it crosses
+ * (the top `CONTROL_SIDE` px, `CONTROL_SIDE + CONTROL_TRAVEL` px wide).
+ */
+export async function startBusyControl(
+  page: Page,
+  {rgb = CONTROL_RGB}: {rgb?: readonly [number, number, number]} = {},
+): Promise<{
+  readonly raise: () => Promise<void>;
+  readonly remove: () => Promise<void>;
+}> {
+  await page.evaluate(
+    ({color, side, travel}) =>
+      new Promise<void>((resolve, reject) => {
+        const box = document.createElement('div');
+        box.setAttribute('data-harness-control', '');
+        box.setAttribute('popover', 'manual');
+        box.style.cssText = `position:fixed;inset:auto;left:0;top:0;margin:0;padding:0;border:0;overflow:visible;width:${side}px;height:${side}px;background:rgb(${color.join(',')});z-index:2147483647;pointer-events:none;`;
+        document.body.appendChild(box);
+        box.showPopover();
+        const animation = box.animate(
+          [
+            {transform: 'translateX(0px)'},
+            {transform: `translateX(${travel}px)`},
+          ],
+          {
+            duration: 400,
+            iterations: Infinity,
+            direction: 'alternate',
+            easing: 'linear',
+          },
+        );
+        // The harness's own waits run on the real timers (see blockMainThread).
+        const gate = (
+          window as unknown as {
+            __harnessTimerGate?: {frame?: typeof requestAnimationFrame};
+          }
+        ).__harnessTimerGate;
+        const frame = gate?.frame ?? window.requestAnimationFrame.bind(window);
+        const deadline = performance.now() + 5_000;
+        const tick = () => {
+          if (!animation.pending && Number(animation.currentTime ?? 0) >= 16) {
+            resolve();
+          } else if (performance.now() > deadline) {
+            reject(new Error('startBusyControl: the control did not start'));
+          } else {
+            frame(tick);
+          }
+        };
+        frame(tick);
+      }),
+    {color: [...rgb], side: CONTROL_SIDE, travel: CONTROL_TRAVEL},
+  );
+  return {
+    raise: () =>
+      page.evaluate(() => {
+        for (const box of document.querySelectorAll<HTMLElement>(
+          '[data-harness-control]',
+        )) {
+          box.hidePopover();
+          box.showPopover();
+        }
+      }),
+    remove: () =>
+      page.evaluate(() => {
+        for (const box of document.querySelectorAll('[data-harness-control]')) {
+          box.remove();
+        }
+      }),
+  };
+}
+
+/** What the control presented in the judged part (see `busyWindowProof`). */
+export interface BusyControlRead {
+  /** Frames in the judged part that presented a new control position. */
+  readonly moved: number;
+  /** Of those, the frames that also presented a new component position. */
+  readonly movedWith: number;
+  /** The control's longest time without a new position, the edges included. */
+  readonly longestStallMs: number;
+  /**
+   * Of `movedWith`, the frames counted as moved because the component's motion
+   * there was under one cast step per frame (see `busyWindowProof`).
+   */
+  readonly belowStep: number;
+  /**
+   * The component's longest time without a new position, read the same way:
+   * a run of unchanged frames under one cast step per frame is motion.
+   */
+  readonly componentStallMs: number;
+}
 
 export interface BusyWindow {
   /** Epoch ms when the loop started and ended, on the page's own clock. */
@@ -206,6 +319,8 @@ export interface BusyProof extends FrameStats {
    * frames were delivered.
    */
   readonly movedFraction: number;
+  /** With a `control`: what it presented in the judged part; null without one. */
+  readonly control: BusyControlRead | null;
   /** The judgment against the limits (see `busyWindowProof`). */
   readonly verdict: BusyVerdict;
   /** One line with the raw numbers, for an annotation or a failure message. */
@@ -262,6 +377,30 @@ export interface BusyProof extends FrameStats {
  * that opens or closes the judged part, or holds a delivered frame that did
  * not move, is judged from the screencast as before, so a frozen element
  * fails whatever else the compositor draws.
+ *
+ * With a `control` (`startBusyControl`'s box, tracked from the same
+ * screencast), the window is judged against what the compositor presented in
+ * it rather than against a frame rate: on a two-core runner the software
+ * compositor and the screencast share the core the block spins on, so every
+ * compositor animation presents fewer frames there, the control too. The
+ * component passes when:
+ * - the control moved on at least `minJudgedFrames` frames of the judged part
+ *   (fewer: the machine presented too little to judge, which fails);
+ * - the component moved on every frame the control moved: both are read from
+ *   the same screencast frames, so a compositor animation misses none;
+ * - its longest stall is no longer than the control's.
+ * A run of frames with no new component position counts as moved when the
+ * change that ends it is a single cast step (`stepPx`): the component moves
+ * under one step per frame there, as on an easing tail, which the cast cannot
+ * show on every frame. The run also has to read as a slowing curve, at most
+ * one frame longer than the component's run before it. A freeze ends in a
+ * catch-up of more than one step, a stall in a frame-counted animation is
+ * longer than its runs before it, and a run that no change ends stays a miss.
+ * The component still has to show a new position on at least
+ * `minJudgedFrames` of the control's frames.
+ * A main-thread animation still fails: the control moves and it does not.
+ * `maxMedianFrameMs`, when given, still applies; `minMovedFraction` and the
+ * absolute stall, frame and motion limits do not.
  */
 export function busyWindowProof(
   tracked: readonly TrackedFrame[],
@@ -276,6 +415,7 @@ export function busyWindowProof(
     minMovedFraction = 0.9,
     minJudgedFrames = 4,
     presented,
+    control,
   }: {
     axis?: 'x' | 'y' | 'width' | 'height';
     marginMs?: number;
@@ -316,6 +456,11 @@ export function busyWindowProof(
      * judged alone.
      */
     presented?: readonly number[];
+    /**
+     * The control's frames (`startBusyControl`, tracked from the same
+     * screencast with `CONTROL_RGB`): judge the component against them.
+     */
+    control?: readonly TrackedFrame[];
   } = {},
 ): BusyProof {
   let end = window.to - marginMs;
@@ -479,12 +624,29 @@ export function busyWindowProof(
         ? expectedFrames
         : deliveredFrames;
   const movedFraction = (moved + recorderSkipped) / Math.max(1, judgedFrames);
-  // The cast's position step, and the motion per interval it has to resolve.
-  const positions = tracked.flatMap(f => (f.box == null ? [] : [f.box[axis]]));
+  // The cast's position step for the tracked value: the largest of 2, 1 and
+  // 0.5 CSS px that every change between its consecutive positions in the
+  // judged part is a multiple of. Changes rather than positions: a position
+  // the page commits once the block ends can sit off that grid.
+  const partValues = tracked.flatMap(f =>
+    f.box != null && f.t >= judged.from && f.t <= judged.to
+      ? [f.box[axis]]
+      : [],
+  );
+  const stepChanges = partValues
+    .slice(1)
+    .map((p, i) => Math.abs(p - partValues[i]))
+    .filter(d => d > 0.25);
+  // With no change to read, the finest step: a coarser one would let a larger
+  // jump pass for a single step.
   const stepPx =
-    [2, 1, 0.5].find(step =>
-      positions.every(p => Math.abs(p / step - Math.round(p / step)) < 0.01),
-    ) ?? 0.5;
+    stepChanges.length === 0
+      ? 0.5
+      : ([2, 1, 0.5].find(step =>
+          stepChanges.every(
+            d => Math.abs(d / step - Math.round(d / step)) < 0.01,
+          ),
+        ) ?? 0.5);
   const judgedValues = tracked.flatMap(f =>
     f.box != null && f.t >= judged.from && f.t <= judged.to
       ? [{t: f.t, value: f.box[axis]}]
@@ -512,20 +674,123 @@ export function busyWindowProof(
       `${pxPerFrame.toFixed(1)} px/frame is under two of the cast's ${stepPx} px position steps: a frame delivered early can show no step and read as not moved`,
     );
   }
+  // The control's own new positions in the judged part, against its frame
+  // before the part, and of those the frames the component moved on too:
+  // both are tracked from the same screencast frames, so their times match.
+  let controlRead: BusyControlRead | null = null;
+  if (control != null) {
+    const baseline = [...control]
+      .reverse()
+      .find(f => f.box != null && f.t < inner.from);
+    let last: number | null = baseline?.box == null ? null : baseline.box.x;
+    const controlChanges: number[] = [];
+    for (const f of control) {
+      if (f.box == null || f.t < inner.from || f.t > judged.to) {
+        continue;
+      }
+      if (last != null && Math.abs(f.box.x - last) > 0.25) {
+        if (f.t > judged.from || onScreenFrom == null) {
+          controlChanges.push(f.t);
+        }
+      }
+      last = f.box.x;
+    }
+    const controlEdges = [judged.from, ...controlChanges, judged.to];
+    // A frame with no new component position, in a run of such frames whose
+    // next change is a single cast step: the component moves under one step
+    // per frame there, which the cast cannot show on every frame, so the
+    // frame counts as moved. A freeze ends in a catch-up of more than one
+    // step, and a run that no change ends stays a miss.
+    const series = tracked.flatMap(f =>
+      f.box == null ? [] : [{t: f.t, value: f.box[axis]}],
+    );
+    const seriesIndex = new Map(series.map((f, i) => [f.t, i]));
+    const same = (a: number, b: number) =>
+      Math.abs(series[a].value - series[b].value) <= 0.25;
+    // The first frame of the run of equal positions that holds frame i.
+    const runStart = (i: number): number => {
+      let s = i;
+      while (s > 0 && same(s - 1, i)) {
+        s -= 1;
+      }
+      return s;
+    };
+    const underStep = (t: number): boolean => {
+      const i = seriesIndex.get(t);
+      if (i == null || changed.has(t)) {
+        return false;
+      }
+      const start = runStart(i);
+      let k = i + 1;
+      while (k < series.length && same(k, i)) {
+        k += 1;
+      }
+      if (
+        k >= series.length ||
+        Math.abs(series[k].value - series[i].value) >= 1.5 * stepPx
+      ) {
+        return false;
+      }
+      // A slowing curve lengthens its runs a frame at a time: a run more than
+      // one frame longer than the one before it is a stall.
+      const unchanged = k - 1 - start;
+      const before = start > 0 ? start - 1 - runStart(start - 1) : 0;
+      return unchanged <= before + 1;
+    };
+    const componentEdges = [
+      judged.from,
+      ...delivered.filter(t => changed.has(t) || underStep(t)),
+      judged.to,
+    ];
+    controlRead = {
+      moved: controlChanges.length,
+      movedWith: controlChanges.filter(t => changed.has(t) || underStep(t))
+        .length,
+      belowStep: controlChanges.filter(underStep).length,
+      longestStallMs: Math.max(
+        ...controlEdges.slice(1).map((t, i) => t - controlEdges[i]),
+      ),
+      componentStallMs: Math.max(
+        ...componentEdges.slice(1).map((t, i) => t - componentEdges[i]),
+      ),
+    };
+  }
   const failures: string[] = [];
-  if (stats.frames === 0) {
+  if (stats.frames === 0 && controlRead == null) {
     failures.push('no frame presented in the judged part');
   } else if (stats.medianFrameMs > maxMedianFrameMs) {
     failures.push(
       `median frame interval ${stats.medianFrameMs.toFixed(1)} ms > ${maxMedianFrameMs} ms (${stats.frames} frames presented)`,
     );
   }
-  if (longestStallFrames > maxStallFrames) {
+  if (controlRead != null) {
+    if (controlRead.moved < minJudgedFrames) {
+      failures.push(
+        `the control moved on ${controlRead.moved} frames in the judged part, under ${minJudgedFrames}: the compositor presented too little in this window to judge`,
+      );
+    }
+    const visible = controlRead.movedWith - controlRead.belowStep;
+    if (visible < minJudgedFrames) {
+      failures.push(
+        `the component showed a new position on ${visible} of the control's frames, under ${minJudgedFrames}: too little motion in this window to judge`,
+      );
+    }
+    if (controlRead.movedWith < controlRead.moved) {
+      failures.push(
+        `moved on ${controlRead.movedWith} of the ${controlRead.moved} frames the control moved (${((controlRead.movedWith / Math.max(1, controlRead.moved)) * 100).toFixed(0)}%)`,
+      );
+    }
+    if (controlRead.componentStallMs > controlRead.longestStallMs) {
+      failures.push(
+        `longest stall ${controlRead.componentStallMs.toFixed(1)} ms, longer than the control's ${controlRead.longestStallMs.toFixed(1)} ms`,
+      );
+    }
+  } else if (longestStallFrames > maxStallFrames) {
     failures.push(
       `longest stall ${longestStallMs.toFixed(1)} ms = ${longestStallFrames} intervals > ${maxStallFrames}`,
     );
   }
-  if (expectedFrames < minJudgedFrames) {
+  if (controlRead == null && expectedFrames < minJudgedFrames) {
     failures.push(
       `${(judged.to - judged.from).toFixed(0)} ms judged = ${expectedFrames} frames < ${minJudgedFrames}: the animation under test was not moving during the block`,
     );
@@ -534,7 +799,10 @@ export function busyWindowProof(
     1,
     Math.floor((1 - minMovedFraction) * judgedFrames + 1e-9),
   );
-  if (judgedFrames - moved - recorderSkipped > allowedMisses) {
+  if (
+    controlRead == null &&
+    judgedFrames - moved - recorderSkipped > allowedMisses
+  ) {
     failures.push(
       `${moved} of ${judgedFrames} expected frames moved${recorderSkipped > 0 ? ` (and ${recorderSkipped} the screencast skipped)` : ''} (${(movedFraction * 100).toFixed(0)}% < ${(minMovedFraction * 100).toFixed(0)}%)`,
     );
@@ -554,6 +822,9 @@ export function busyWindowProof(
     (onScreenFromMs == null
       ? ''
       : `, on screen from +${onScreenFromMs.toFixed(0)} ms (nothing moved before the block)`) +
+    (controlRead == null
+      ? ''
+      : `; against the control: moved on ${controlRead.movedWith} of its ${controlRead.moved} frames${controlRead.belowStep > 0 ? ` (${controlRead.belowStep} under one cast step a frame)` : ''}, its longest stall ${controlRead.longestStallMs.toFixed(1)} ms`) +
     notes.map(note => `; note: ${note}`).join('');
   return {
     ...stats,
@@ -573,6 +844,109 @@ export function busyWindowProof(
     longestStallFrames,
     moved,
     movedFraction,
+    control: controlRead,
+    verdict: {pass: failures.length === 0, failures},
+    summary,
+  };
+}
+
+/** One run of a pooled busy proof (see `pooledBusyProof`). */
+export interface BusyRun {
+  /** The component's frames, tracked from the run's screencast. */
+  readonly tracked: readonly TrackedFrame[];
+  /** The control's frames (`startBusyControl`), from the same screencast. */
+  readonly control: readonly TrackedFrame[];
+  /** The run's block (`blockMainThread`). */
+  readonly window: BusyWindow;
+}
+
+export interface PooledBusyProof {
+  /**
+   * Each run judged on its own against its control: read its numbers, not its
+   * verdict (one short run can hold too few frames to judge).
+   */
+  readonly runs: readonly BusyProof[];
+  /**
+   * The control's new positions over every run's judged part, and those the
+   * component moved on too.
+   */
+  readonly control: {readonly moved: number; readonly movedWith: number};
+  /** The judgment over the pool (see `pooledBusyProof`). */
+  readonly verdict: BusyVerdict;
+  /** One line with the pooled numbers, then each run's summary. */
+  readonly summary: string;
+}
+
+/**
+ * A busy proof over several runs of the same short animation, against the
+ * control. An animation that lasts a fraction of a second leaves a block only
+ * a few frames to judge: in WebKit, or on a loaded machine, the control can
+ * present fewer than `minJudgedFrames` in one run, and one run cannot decide.
+ * Pooled, the runs are judged as one long window is:
+ * - the control moved on at least `minJudgedFrames` frames over all the runs;
+ * - the component moved on every one of those frames;
+ * - in each run, its longest stall is no longer than that run's control's: a
+ *   stall belongs to its run and is never pooled.
+ * `maxMedianFrameMs`, when given, applies to each run. A main-thread
+ * animation still fails: in every run the control moves and it does not.
+ */
+export function pooledBusyProof(
+  runs: readonly BusyRun[],
+  options: Omit<
+    NonNullable<Parameters<typeof busyWindowProof>[2]>,
+    'control' | 'minMovedFraction'
+  > = {},
+): PooledBusyProof {
+  if (runs.length === 0) {
+    throw new Error('pooledBusyProof: no runs to judge');
+  }
+  const {minJudgedFrames = 4, maxMedianFrameMs = Infinity} = options;
+  const proofs = runs.map(run =>
+    busyWindowProof(run.tracked, run.window, {
+      ...options,
+      control: run.control,
+    }),
+  );
+  const reads = proofs.map(proof => proof.control as BusyControlRead);
+  const moved = reads.reduce((sum, read) => sum + read.moved, 0);
+  const movedWith = reads.reduce((sum, read) => sum + read.movedWith, 0);
+  const failures: string[] = [];
+  if (moved < minJudgedFrames) {
+    failures.push(
+      `the control moved on ${moved} frames over ${runs.length} runs, under ${minJudgedFrames}: the compositor presented too little in these windows to judge`,
+    );
+  }
+  const visible =
+    movedWith - reads.reduce((sum, read) => sum + read.belowStep, 0);
+  if (visible < minJudgedFrames) {
+    failures.push(
+      `the component showed a new position on ${visible} of the control's frames over ${runs.length} runs, under ${minJudgedFrames}: too little motion in these windows to judge`,
+    );
+  }
+  if (movedWith < moved) {
+    failures.push(
+      `moved on ${movedWith} of the ${moved} frames the control moved over ${runs.length} runs (${((movedWith / Math.max(1, moved)) * 100).toFixed(0)}%)`,
+    );
+  }
+  proofs.forEach((proof, i) => {
+    if (proof.frames > 0 && proof.medianFrameMs > maxMedianFrameMs) {
+      failures.push(
+        `run ${i + 1}: median frame interval ${proof.medianFrameMs.toFixed(1)} ms > ${maxMedianFrameMs} ms`,
+      );
+    }
+    const read = reads[i];
+    if (read.componentStallMs > read.longestStallMs) {
+      failures.push(
+        `run ${i + 1}: longest stall ${read.componentStallMs.toFixed(1)} ms, longer than the control's ${read.longestStallMs.toFixed(1)} ms`,
+      );
+    }
+  });
+  const summary =
+    `${runs.length} runs pooled: moved on ${movedWith} of the control's ${moved} frames` +
+    proofs.map((proof, i) => `; run ${i + 1}: ${proof.summary}`).join('');
+  return {
+    runs: proofs,
+    control: {moved, movedWith},
     verdict: {pass: failures.length === 0, failures},
     summary,
   };
