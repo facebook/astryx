@@ -7,8 +7,9 @@
  *   interaction harness
  * @output Interaction proofs for the month scroller's steps: a second arrow
  *   step clicked late in the first one's smooth scroll still brings the
- *   scroller to rest on the month the title names, and after the month and
- *   year wheels close a trackpad scroll still pages to the next month
+ *   scroller to rest on the month the title names; after the month and year
+ *   wheels close, a trackpad scroll still pages to the next month and Reset
+ *   from four months on still rests on today's month
  * @position Interaction tests of MonthScroller.tsx
  *   (`*.interaction.browser.spec.ts`, run by `pnpm test:interaction`)
  */
@@ -180,4 +181,44 @@ test('after the month and year wheels close, a trackpad scroll to the next month
   const next = await monthAtRest(viewport);
   expect(next).not.toBe(start);
   await expect(toggle).toHaveAccessibleName(new RegExp(next));
+});
+
+/**
+ * Reset from four months on is a far jump, mounting today's month before the
+ * scroller moves. After the month and year wheels close, whose re-assert is a
+ * steer that moved nothing, the jump still rests on today's month, the title
+ * with it.
+ */
+test('after the month and year wheels close, Reset from four months on rests on today’s month', async ({
+  page,
+}) => {
+  const viewport = await openCalendar(page);
+  const toggle = page.getByRole('button', {name: /Choose month and year/});
+  const today = await monthAtRest(viewport);
+  expect(today).not.toBe('');
+  const clickCentre = async (name: string | RegExp) => {
+    const box = await page.getByRole('button', {name}).boundingBox();
+    if (box == null) {
+      throw new Error(`no ${String(name)} button`);
+    }
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  };
+  for (let step = 0; step < 4; step++) {
+    await clickCentre('Next month');
+    await waitForRest(viewport);
+  }
+  expect(await monthAtRest(viewport)).not.toBe(today);
+  await clickCentre(/Choose month and year/);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await clickCentre(/Choose month and year/);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await waitForRest(viewport);
+
+  await clickCentre('Reset');
+  await waitForRest(viewport);
+  // Past the scroller's own settle correction too.
+  await page.waitForTimeout(600);
+  await waitForRest(viewport);
+  expect(await monthAtRest(viewport)).toBe(today);
+  await expect(toggle).toHaveAccessibleName(new RegExp(today));
 });

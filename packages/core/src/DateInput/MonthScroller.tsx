@@ -411,6 +411,11 @@ export function MonthScroller({
         // below); a jump that far is never worth animating either.
         pendingScrollRef.current = row;
         centerRowRef.current = row;
+        // The jump is a steer too. Recording it replaces a steer left behind
+        // by a scroll that moved nothing (the re-assert when the month and
+        // year wheels close), which the settle would otherwise finish,
+        // pulling the scroller back off the jump's month.
+        steeredRowRef.current = row;
         setCenterRow(row);
         return;
       }
