@@ -1649,48 +1649,105 @@ test.describe('animation state', () => {
       {translate: '0px 0px', offset: 0},
       {translate: '100px 0px', offset: 1},
     ];
+    // When a run going backward began, by the engine's own clock. It starts
+    // at its end: while it runs, its current time has come down from there
+    // by as much as the timeline has moved since, read at one instant (a
+    // performance.now() read after `ready` drifts later under load). A
+    // starved page can reach `ready` after a short run has already ended,
+    // when its current time has stopped at 0: then only its start time,
+    // which the engine set a whole run after it began, still says when. Read
+    // at the first of `ready` and its finish, before the page can cancel it.
+    await page.evaluate(() => {
+      Object.assign(window, {
+        __dateBackwardRun(animation: Animation) {
+          let begun = Number.NaN;
+          const byStart = () => {
+            if (Number.isNaN(begun) && animation.startTime != null) {
+              const end = Number(
+                animation.effect?.getComputedTiming().endTime ?? 0,
+              );
+              begun =
+                Number(animation.startTime) -
+                end / Math.abs(animation.playbackRate);
+            }
+          };
+          animation.addEventListener('finish', byStart, {once: true});
+          return () => {
+            if (Number.isNaN(begun) && animation.playState === 'running') {
+              const end = Number(
+                animation.effect?.getComputedTiming().endTime ?? 0,
+              );
+              begun =
+                Number(document.timeline.currentTime) -
+                (end - Number(animation.currentTime)) /
+                  Math.abs(animation.playbackRate);
+            }
+            byStart();
+            return performance.timeOrigin + begun;
+          };
+        },
+      });
+    });
 
     // A 300 ms delay plays last when going backward: the curve starts at once.
     let watch = await watchAnimations(box);
-    let readyAt = await box.evaluate(async (el, keyframes) => {
+    let begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 400, delay: 300});
+      const begun = (
+        window as unknown as {
+          __dateBackwardRun: (animation: Animation) => () => number;
+        }
+      ).__dateBackwardRun(animation);
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      return begun();
     }, frames);
     const [delayed] = await watch.started();
-    expect(Math.abs(delayed.from - readyAt)).toBeLessThan(50);
+    // Both dates come from the engine's own instants (its start and timeline
+    // times), so they agree to the timeline's rounding: a millisecond at most.
+    expect(Math.abs(delayed.from - begunAt)).toBeLessThanOrEqual(1);
     expect(delayed.to - delayed.from).toBeCloseTo(400, 0);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
 
     // A short one that ended before the look keeps its curve inside its life.
     watch = await watchAnimations(box);
-    readyAt = await box.evaluate(async (el, keyframes) => {
+    begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
+      const begun = (
+        window as unknown as {
+          __dateBackwardRun: (animation: Animation) => () => number;
+        }
+      ).__dateBackwardRun(animation);
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      return begun();
     }, frames);
     await page.waitForTimeout(200);
     const [ended] = await watch.started();
     expect(ended.finishedAt).not.toBeNull();
-    expect(Math.abs(ended.from - readyAt)).toBeLessThan(50);
+    expect(Math.abs(ended.from - begunAt)).toBeLessThanOrEqual(1);
     expect(ended.to).toBeLessThanOrEqual((ended.finishedAt ?? 0) + 1);
 
     // One the page cancels when it ends keeps its start.
     watch = await watchAnimations(box);
-    readyAt = await box.evaluate(async (el, keyframes) => {
+    begunAt = await box.evaluate(async (el, keyframes) => {
       const animation = el.animate(keyframes, {duration: 60});
+      // Dated before the page's own finish listener cancels it.
+      const begun = (
+        window as unknown as {
+          __dateBackwardRun: (animation: Animation) => () => number;
+        }
+      ).__dateBackwardRun(animation);
       animation.addEventListener('finish', () => animation.cancel(), {
         once: true,
       });
       animation.reverse();
       await animation.ready;
-      return performance.timeOrigin + performance.now();
+      return begun();
     }, frames);
     await page.waitForTimeout(200);
     const [cancelled] = await watch.started();
-    expect(Math.abs(cancelled.from - readyAt)).toBeLessThan(50);
+    expect(Math.abs(cancelled.from - begunAt)).toBeLessThanOrEqual(1);
     expect(cancelled.to - cancelled.from).toBeCloseTo(60, 0);
 
     // Read right after finish(), before the finish event is delivered: the
@@ -1710,7 +1767,8 @@ test.describe('animation state', () => {
       );
       const [read] = await watch.started();
       expect(read.finishedAt).not.toBeNull();
-      expect(Math.abs((read.finishedAt ?? 0) - read.to)).toBeLessThan(50);
+      // Both from the engine's own instants: within the timeline's rounding.
+      expect(Math.abs((read.finishedAt ?? 0) - read.to)).toBeLessThanOrEqual(1);
     }
 
     // Going backward, an end delay presents nothing: a run still inside it

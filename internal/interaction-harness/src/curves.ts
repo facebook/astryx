@@ -55,6 +55,8 @@ function animationRecorder(): void {
     seenAt: number;
     finishedAt: number | null;
     startedAt: number | null;
+    // Where the run began, as the engine had it when it finished.
+    finishStart: number | null;
   }[] = [];
   // Entries whose start time has not resolved yet (still pending when seen).
   let unstarted: (typeof log)[number][] = [];
@@ -98,24 +100,36 @@ function animationRecorder(): void {
       seenAt: performance.now(),
       finishedAt: null as number | null,
       startedAt: playStart(animation),
+      finishStart: null as number | null,
       ancestors,
     };
     if (entry.startedAt == null) {
       unstarted.push(entry);
     }
     animation.addEventListener('finish', event => {
-      entry.finishedAt = performance.now();
+      const end = Number(
+        (animation.effect as KeyframeEffect | null)?.getComputedTiming()
+          .endTime ?? 0,
+      );
+      const speed = Math.abs(animation.playbackRate || 1);
+      // The run as the engine has it at its finish. This listener, added as
+      // the animation was made, runs before the page's own, so its start time
+      // is still set, and the run ended where that start puts its end,
+      // through the rate. A run that ends as it starts (one reversed from
+      // rest) can finish before its start time resolves: it then began where
+      // the event's timeline time puts its start. Read later, the start time
+      // can say otherwise (WebKit resolves or moves it a frame later), and the
+      // event itself arrives late (a frame or more after a finish() call).
+      const at = (event as AnimationPlaybackEvent).timelineTime;
+      entry.finishStart =
+        playStart(animation) ?? (at == null ? null : Number(at) - end / speed);
+      entry.finishedAt =
+        entry.finishStart == null
+          ? performance.now()
+          : entry.finishStart + end / speed;
       if (entry.startedAt == null) {
         // Cancelled before a frame read its start: back from where it ended.
-        const end = Number(
-          (animation.effect as KeyframeEffect | null)?.getComputedTiming()
-            .endTime ?? 0,
-        );
-        const at = (event as AnimationPlaybackEvent).timelineTime;
-        entry.startedAt =
-          playStart(animation) ??
-          (at == null ? entry.finishedAt : Number(at)) -
-            end / Math.abs(animation.playbackRate || 1);
+        entry.startedAt = entry.finishStart ?? entry.finishedAt - end / speed;
       }
     });
     log.push(entry);
@@ -812,7 +826,8 @@ export interface ActiveAnimation {
   /**
    * Epoch ms (page clock) when the animation's curve starts and ends. A held
    * end value (see `HeldAnimation.curveEndMs`, which says when one is read)
-   * is not part of the curve.
+   * is not part of the curve. A finished run is dated from its start as the
+   * engine had it when it finished.
    */
   readonly from: number;
   readonly to: number;
@@ -821,7 +836,8 @@ export interface ActiveAnimation {
   readonly keyframes: readonly Record<string, unknown>[];
   /**
    * Epoch ms (page clock) when it finished, if it had already finished when
-   * it was reported; null while it runs.
+   * it was reported (where its start put its end, by the engine's clock, not
+   * when the finish event arrived); null while it runs.
    */
   readonly finishedAt: number | null;
 }
@@ -910,6 +926,7 @@ export async function waitForAnimation(
                   seenAt: number;
                   finishedAt: number | null;
                   startedAt: number | null;
+                  finishStart: number | null;
                   ancestors: Element[];
                 }[];
                 record: () => void;
@@ -923,22 +940,27 @@ export async function waitForAnimation(
               a: Animation,
               finishedAt: number | null,
               recordedStart: number | null,
+              finishStart: number | null = null,
             ) => {
               const effect = a.effect as KeyframeEffect | null;
               const timing = effect?.getComputedTiming();
-              // The recorded start stands in once the page has cancelled it. A
-              // run going backward began at its end: its startTime is where its
-              // current time would reach 0, a whole run later.
+              // A finished run is dated from its start as its finish recorded
+              // it: a later startTime read can say otherwise. The recorded
+              // start stands in once the page has cancelled it. A run going
+              // backward began at its end: its startTime is where its current
+              // time would reach 0, a whole run later.
               const rate = a.playbackRate;
               const speed = Math.abs(rate || 1);
               const endTime = Number(timing?.endTime ?? 0);
               const delay = Number(timing?.delay ?? 0);
               const start =
-                a.startTime == null
-                  ? recordedStart
-                  : rate < 0
-                    ? Number(a.startTime) - endTime / speed
-                    : Number(a.startTime);
+                finishStart != null
+                  ? finishStart
+                  : a.startTime == null
+                    ? recordedStart
+                    : rate < 0
+                      ? Number(a.startTime) - endTime / speed
+                      : Number(a.startTime);
               const startedAt =
                 performance.timeOrigin + Number(start ?? Number.NaN);
               const name =
@@ -1029,10 +1051,10 @@ export async function waitForAnimation(
             if (live.length > 0) {
               return [];
             }
-            // Finished: by its finish event, or by its state when the event has not
-            // been delivered yet (then at its scheduled end, through the rate's
-            // speed; a run going backward ends at its startTime, where its current
-            // time reaches 0).
+            // Finished: as its finish event recorded it (where its start then put
+            // its end), or by its state when the event has not been delivered yet
+            // (then at its scheduled end, through the rate's speed; a run going
+            // backward ends at its startTime, where its current time reaches 0).
             const finishedAt = (e: (typeof recorded)[number]) => {
               if (e.finishedAt != null) {
                 return e.finishedAt;
@@ -1051,7 +1073,14 @@ export async function waitForAnimation(
             };
             return recorded
               .filter(e => finishedAt(e) != null)
-              .map(e => describe(e.animation, finishedAt(e), e.startedAt));
+              .map(e =>
+                describe(
+                  e.animation,
+                  finishedAt(e),
+                  e.startedAt,
+                  e.finishStart,
+                ),
+              );
           },
           {minProgress: minProgressMs, since: since ?? null},
           {timeout: evaluateTimeout},
