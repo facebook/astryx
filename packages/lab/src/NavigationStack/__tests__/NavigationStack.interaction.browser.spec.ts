@@ -1,0 +1,1364 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file NavigationStack.interaction.browser.spec.ts
+ * @input The built "Lab/NavigationStack" stories on the harness's phone, real
+ *   touch input (Chromium CDP / WebKit's input command) and the interaction
+ *   harness
+ * @output Proofs that NavigationStack moves like UINavigationController on
+ *   iOS 26.2: a push follows UIKit's push spring (critically damped, 0.3 s,
+ *   starting at 8.773 widths/s) to within half a pixel, with the card
+ *   underneath at 0.3 of its speed; the back swipe tracks the finger 1:1 from
+ *   the leading edge and from the content, finishes or springs back by
+ *   UIKit's release rule, and a flick finishes from near the edge; a push
+ *   keeps advancing every frame through a blocked main thread and does no
+ *   Layout or Paint; Reduce Motion cross-fades; storyboards of a push and of
+ *   a released swipe.
+ * @position Interaction proof for lab NavigationStack (NavigationStack.tsx,
+ *   navigationTransition.ts); shape copied from the harness exemplar,
+ *   BottomSheetDetent.interaction.browser.spec.ts
+ */
+
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test';
+import {
+  animationStoryboard,
+  blockMainThread,
+  busyWindowProof,
+  castStoryboard,
+  countBetween,
+  drag,
+  flick,
+  holdAnimations,
+  markElement,
+  openStory,
+  releaseAnimations,
+  startScreencast,
+  touchDriver,
+  touchStoryboard,
+  traceRendering,
+  trackMarker,
+  waitForAnimation,
+  waitForRest,
+  withStorybook,
+  writeEvidence,
+  type TouchDriver,
+} from '@astryxdesign/interaction-harness';
+
+const storybook = withStorybook(test);
+
+/** UIKit's push spring on iOS 26.2: critically damped, response 0.3 s. */
+const OMEGA = (2 * Math.PI) / 0.3;
+/** Its starting speed, widths per second. */
+const PUSH_VELOCITY = 8.773;
+
+interface Stack {
+  driver: TouchDriver;
+  stack: Locator;
+  width: number;
+  left: number;
+  /** The bar title of the screen on top. */
+  topTitle: () => Promise<string | null>;
+}
+
+/**
+ * A page under a real mouse: no touch and no mobile viewport, so script and
+ * CSS both read a fine pointer. (The phone project's own page stays coarse
+ * for CSS whatever script is told.) Close its context when done.
+ */
+async function newFinePage(browser: Browser) {
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 402, height: 714},
+  });
+  return {context, page: await context.newPage()};
+}
+
+/**
+ * Opens a story. `standalone` makes the page a home-screen web app
+ * (`navigator.standalone`), where no browser back swipe owns the screen
+ * edge, so the stack's own edge swipe runs. `pointer: 'mouse'` needs a page
+ * from `newFinePage`, and fails before any check if the page reads coarse.
+ */
+async function openStack(
+  page: Page,
+  story: 'settings' | 'pushed' | 'carousel' | 'declines-pops',
+  {
+    standalone = false,
+    pointer = 'touch',
+  }: {standalone?: boolean; pointer?: 'touch' | 'mouse'} = {},
+) {
+  // One touch model (AST-094): touch behaviour keys on a coarse primary
+  // pointer, on every engine. Under a finger, script reads coarse whatever
+  // the engine emulates (the input is the emulated finger); under a mouse
+  // the page itself is fine (newFinePage).
+  if (pointer === 'touch') {
+    await page.addInitScript(() => {
+      const matchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query.replace(/\s/g, '') === '(pointer:coarse)'
+          ? matchMedia('(min-width: 0px)')
+          : matchMedia(query);
+    });
+  }
+  if (standalone) {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, 'standalone', {
+        configurable: true,
+        get: () => true,
+      });
+    });
+  }
+  await openStory(page, storybook(), `lab-navigationstack--${story}`);
+  if (pointer === 'mouse') {
+    expect(
+      await page.evaluate(
+        () =>
+          matchMedia('(pointer: fine)').matches &&
+          !matchMedia('(pointer: coarse)').matches,
+      ),
+      'a page under a mouse reads a fine pointer (newFinePage)',
+    ).toBe(true);
+  }
+  const driver = await touchDriver(page);
+  const stack = page.getByTestId('navigation-stack');
+  await expect(stack).toBeVisible();
+  const box = await stack.boundingBox();
+  if (box == null) {
+    throw new Error('no stack');
+  }
+  return {
+    driver,
+    stack,
+    width: box.width,
+    left: box.x,
+    topTitle: async () =>
+      page.evaluate(() => {
+        const top = document.querySelector('[data-navigation-top]');
+        const key = top?.getAttribute('data-navigation-screen');
+        const bars = [...document.querySelectorAll('h2')];
+        // The top screen's bar title is the one not inert.
+        const live = bars.find(h => h.closest('[inert]') == null);
+        return key == null ? null : (live?.textContent ?? null);
+      }),
+  } satisfies Stack;
+}
+
+/** A card's presented translateX, px (the animator drives `translate`). */
+const translateX = async (card: Locator) =>
+  card.evaluate(element => {
+    const value = getComputedStyle(element).translate;
+    return value === 'none' ? 0 : parseFloat(value);
+  });
+
+const card = (page: Page, key: string) =>
+  page.locator(`[data-navigation-screen="${key}"]`);
+
+/** One frame of `traceBars`: each screen's card and bar x, the back button. */
+interface BarFrame {
+  t: number;
+  cards: Record<string, number>;
+  bars: Record<string, number>;
+  /** Effective opacity (own times every ancestor's) of the back button. */
+  back: {platter: number; chevron: number} | null;
+  /**
+   * Each card's and bar's running `translate` animations (start time,
+   * progress and keyframes), one string per layer: `[]` when none moves it.
+   */
+  curves: {cards: Record<string, string>; bars: Record<string, string>};
+}
+
+/**
+ * Starts sampling, every frame, each card's and bar's x relative to the
+ * stack and the back button's effective opacities; the returned function
+ * stops and returns them. A layer's x is its computed `translate` (the
+ * cards and bars sit at the stack's leading edge, checked when the trace
+ * starts), so a frame reads no layout. While an animation moves a layer, its
+ * computed value is not proof of where it is: in WebKit under load the first
+ * computed read in a frame can come from an earlier time (the same element
+ * read twice in one frame gives two values, one curve and one progress), so
+ * `curves` records each layer's running animations to compare instead.
+ */
+async function traceBars(page: Page): Promise<() => Promise<BarFrame[]>> {
+  await page.evaluate(() => {
+    const w = window as unknown as {__bars: unknown[]; __barsStop: boolean};
+    w.__bars = [];
+    w.__barsStop = false;
+    const stack = document.querySelector('[data-testid="navigation-stack"]');
+    const effective = (element: Element) => {
+      let opacity = 1;
+      for (
+        let node: Element | null = element;
+        node != null && node !== document.documentElement;
+        node = node.parentElement
+      ) {
+        opacity *= Number(getComputedStyle(node).opacity);
+      }
+      return opacity;
+    };
+    const translateX = (element: Element) => {
+      const value = getComputedStyle(element).translate;
+      return value === 'none' ? 0 : parseFloat(value);
+    };
+    const read = (selector: string, attribute: string) => {
+      const out: Record<string, number> = {};
+      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+        const key = element.getAttribute(attribute);
+        if (key != null) {
+          out[key] = translateX(element);
+        }
+      }
+      return out;
+    };
+    // A layer at rest sits at the stack's edge: its box is its translate.
+    const left = stack?.getBoundingClientRect().left ?? 0;
+    for (const element of document.querySelectorAll(
+      '[data-navigation-screen], [data-navigation-bar]',
+    )) {
+      if (element.getAnimations().length > 0) {
+        continue;
+      }
+      const offset =
+        element.getBoundingClientRect().left - left - translateX(element);
+      if (Math.abs(offset) > 0.5) {
+        throw new Error(`a layer sits ${offset} px from the stack's edge`);
+      }
+    }
+    const curves = (selector: string, attribute: string) => {
+      const out: Record<string, string> = {};
+      for (const element of document.querySelectorAll(selector)) {
+        const key = element.getAttribute(attribute);
+        if (key != null) {
+          out[key] = JSON.stringify(
+            element
+              .getAnimations()
+              .filter(
+                a =>
+                  a.playState === 'running' &&
+                  (a.effect as KeyframeEffect)
+                    .getKeyframes()
+                    .some(k => k.translate != null),
+              )
+              .map(a => {
+                const effect = a.effect as KeyframeEffect;
+                return [
+                  a.startTime,
+                  effect.getComputedTiming().progress,
+                  effect.getKeyframes().map(k => k.translate ?? null),
+                ];
+              }),
+          );
+        }
+      }
+      return out;
+    };
+    const t0 = performance.now();
+    const tick = () => {
+      const button = document.querySelector('[data-navigation-back]');
+      const chevron = button?.firstElementChild ?? null;
+      w.__bars.push({
+        t: performance.now() - t0,
+        cards: read('[data-navigation-screen]', 'data-navigation-screen'),
+        bars: read('[data-navigation-bar]', 'data-navigation-bar'),
+        back:
+          button == null || chevron == null
+            ? null
+            : {platter: effective(button), chevron: effective(chevron)},
+        curves: {
+          cards: curves('[data-navigation-screen]', 'data-navigation-screen'),
+          bars: curves('[data-navigation-bar]', 'data-navigation-bar'),
+        },
+      });
+      if (!w.__barsStop) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+  return async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {__bars: unknown[]; __barsStop: boolean};
+      w.__barsStop = true;
+      return w.__bars;
+    }) as Promise<BarFrame[]>;
+}
+
+/** The first frame at which `key`'s card has left where it started. */
+const firstMove = (frames: BarFrame[], key: string) => {
+  const start = frames.find(f => f.cards[key] != null)?.cards[key];
+  return frames.find(
+    f => f.cards[key] != null && Math.abs(f.cards[key] - (start ?? 0)) > 0.5,
+  );
+};
+
+/**
+ * The time (ms) at which the screens' push or pop spring (critically damped,
+ * 0.3 s, starting at navigation.pushVelocity widths/s) reaches `progress`:
+ * the screens' own clock, read from where a card is, so a check keyed to it
+ * holds however late an engine shows the first frame.
+ */
+const screensClock = (progress: number) => {
+  const omega = (2 * Math.PI) / 0.3;
+  const at = (s: number) =>
+    1 - (1 + (omega - 8.773) * s) * Math.exp(-omega * s);
+  let lo = 0;
+  let hi = 2;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (at(mid) < progress) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return ((lo + hi) / 2) * 1000;
+};
+
+/** Critically damped from rest: progress of a spring of `response` s. */
+const crit = (response: number, ms: number) => {
+  if (ms <= 0) {
+    return 0;
+  }
+  const u = ((2 * Math.PI) / response) * (ms / 1000);
+  return 1 - (1 + u) * Math.exp(-u);
+};
+
+const rowCenter = async (page: Page, name: string) => {
+  const box = await page.getByRole('button', {name}).first().boundingBox();
+  if (box == null) {
+    throw new Error(`no row ${name}`);
+  }
+  return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+};
+
+test('a push follows UIKit’s push spring, the card underneath at 0.3 of its speed', async ({
+  page,
+}, testInfo) => {
+  const {driver, width} = await openStack(page, 'settings');
+  await driver.tap(await rowCenter(page, 'General'));
+  const top = card(page, 'screen-General');
+  const under = card(page, 'root');
+  await waitForAnimation(top);
+  await holdAnimations(page);
+
+  const times = Array.from({length: 31}, (_, i) => i * 16.667);
+  const samples: {t: number; top: number; under: number; analytic: number}[] =
+    [];
+  for (const t of times) {
+    await page.evaluate(ms => {
+      const held =
+        (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ??
+        [];
+      for (const animation of held) {
+        const end = Number(
+          animation.effect?.getComputedTiming().endTime ?? Infinity,
+        );
+        animation.currentTime = Math.min(ms, end - 0.5);
+      }
+    }, t);
+    const s = t / 1000;
+    // x(t) = (x0 + (v0 + ω·x0)·t)·e^(−ωt), from x0 = W at v0 = −8.773 W/s.
+    const analytic =
+      (width + (-PUSH_VELOCITY * width + OMEGA * width) * s) *
+      Math.exp(-OMEGA * s);
+    samples.push({
+      t: +t.toFixed(1),
+      top: await translateX(top),
+      under: await translateX(under),
+      analytic,
+    });
+  }
+  await releaseAnimations(page, {finish: true});
+  await writeEvidence(
+    'curves/navigationstack-push',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {width, samples},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+
+  for (const sample of samples) {
+    expect(
+      Math.abs(sample.top - sample.analytic),
+      JSON.stringify(sample),
+    ).toBeLessThan(0.5);
+    // The card underneath: x = −0.3 W · (1 − p), p = top / W.
+    expect(sample.under).toBeCloseTo(
+      -0.3 * width * (1 - sample.top / width),
+      0,
+    );
+  }
+  // It starts fast (UIKit's starting velocity, not from rest) and lands.
+  expect(samples[1].top).toBeLessThan(width * 0.92);
+  expect(samples.at(-1)?.top ?? Infinity).toBeLessThan(0.5);
+});
+
+test('a push’s bar: the new bar slides in with its screen, the covered one rides its parallax, the chevron fades in a beat later', async ({
+  page,
+}) => {
+  const {driver, width} = await openStack(page, 'settings');
+  const stop = await traceBars(page);
+  await driver.tap(await rowCenter(page, 'General'));
+  await page.waitForTimeout(900);
+  const frames = await stop();
+  const start = firstMove(frames, 'screen-General');
+  expect(start).toBeDefined();
+  const during = frames.filter(
+    f => f.t >= (start?.t ?? 0) && f.cards['screen-General'] > 0.5,
+  );
+  expect(during.length).toBeGreaterThan(5);
+  for (const f of during) {
+    // UIKit's bar copy is part of its screen: it moves with the card (one
+    // clock and spring; within 1 % of the width, as engines sample rects).
+    expect(
+      Math.abs(f.bars['screen-General'] - f.cards['screen-General']),
+      JSON.stringify(f),
+    ).toBeLessThan(width * 0.01);
+    expect(
+      Math.abs(f.bars.root - f.cards.root),
+      JSON.stringify(f),
+    ).toBeLessThan(width * 0.01);
+    // The glass platter is there from the first frame.
+    expect(f.back?.platter ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
+  }
+  // The chevron (springs.navigationBackButton 0.4 s) starts 60 ms after the
+  // screens start moving (navigation.backChevronPushDelayMs), on their
+  // clock: read it from where the pushed card is.
+  for (const f of during) {
+    const ms = screensClock(1 - f.cards['screen-General'] / width);
+    const expected = crit(0.4, ms - 60);
+    expect(
+      Math.abs((f.back?.chevron ?? 0) - expected),
+      JSON.stringify({ms: Math.round(ms), ...f.back, expected}),
+    ).toBeLessThan(0.1);
+  }
+});
+
+test('the back swipe from the leading edge tracks the finger and pops past half', async ({
+  page,
+}) => {
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  expect(await topTitle()).toBe('About');
+  const top = card(page, 'screen-About');
+  const y = 400;
+  const travel: {finger: number; card: number}[] = [];
+  const script = drag(
+    {x: left + 4, y},
+    {x: left + width * 0.65, y},
+    {durationMs: 600, restMs: 150},
+  );
+  await driver.play(script, {
+    onEvent: async step => {
+      const finger = step.fingers[0]?.x;
+      if (finger != null) {
+        travel.push({finger: finger - (left + 4), card: await translateX(top)});
+      }
+    },
+  });
+  await waitForRest(card(page, 'screen-General'));
+  await expect.poll(topTitle).toBe('General');
+  await expect(top).toHaveCount(0);
+
+  // The edge pan is attached to the whole stack, an element reaching beyond
+  // the edge band, so an in-band touch decides at FR19's 10 px
+  // (`spec:AST-094` FR18, DEC-22); once it has begun, the card is the
+  // finger's travel past that point: 1:1.
+  const tracking = travel.filter(t => t.card > 1 && t.finger < width * 0.6);
+  expect(tracking.length).toBeGreaterThan(5);
+  for (const t of tracking) {
+    expect(Math.abs(t.card - (t.finger - 10))).toBeLessThan(2);
+  }
+});
+
+test('a slow back swipe released short of half springs back', async ({
+  page,
+}) => {
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  const top = card(page, 'screen-About');
+  // A slow approach: little velocity at the lift, so p + 0.35·v stays short.
+  await driver.play(
+    drag(
+      {x: left + 4, y: 400},
+      {x: left + width * 0.32, y: 400},
+      {
+        durationMs: 2000,
+        hz: 60,
+      },
+    ),
+  );
+  await waitForRest(top);
+  expect(await topTitle()).toBe('About');
+  expect(Math.abs(await translateX(top))).toBeLessThan(0.5);
+});
+
+test('moving back before the lift cancels the pop', async ({page}) => {
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  const top = card(page, 'screen-About');
+  const out = [
+    ...drag(
+      {x: left + 4, y: 400},
+      {x: left + width * 0.45, y: 400},
+      {
+        durationMs: 450,
+      },
+    ),
+  ];
+  // Continue the same finger back 40 px before lifting.
+  const lift = out.pop();
+  const last = out[out.length - 1];
+  const x0 = last.fingers[0].x;
+  for (let i = 1; i <= 8; i++) {
+    out.push({t: last.t + i * 16.7, fingers: [{id: 0, x: x0 - i * 5, y: 400}]});
+  }
+  out.push({t: (lift?.t ?? last.t) + 8 * 16.7 + 4, fingers: []});
+  await driver.play(out);
+  await waitForRest(top);
+  expect(await topTitle()).toBe('About');
+});
+
+test('brought back past its start, the screen follows with resistance, then springs back as UIKit’s does', async ({
+  page,
+}) => {
+  // UIKit lab batch 62 (iOS 26.2): a back swipe scrubbed out and brought back
+  // past its start at ~310 pt/s, lifted 10.7 pt of finger after the screen
+  // crossed its start. UIKit's screen stood at −6.89 pt at the lift, reached
+  // −14.21 pt 50 ms later, was within 0.5 pt of rest ~0.23 s after the lift
+  // and never went past it.
+  const {driver, width, left} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  const top = card(page, 'screen-About');
+  const start = {x: left + 4, y: 400};
+  const far = left + width * 0.4;
+  const sampler = async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __samples: {t: number; x: number}[];
+        __liftAt: number | null;
+        __atLift: number | null;
+      };
+      w.__samples = [];
+      w.__liftAt = null;
+      w.__atLift = null;
+      const element = document.querySelector<HTMLElement>(
+        '[data-navigation-screen="screen-About"]',
+      );
+      const read = () => {
+        const x = parseFloat(
+          element == null ? '' : getComputedStyle(element).translate,
+        );
+        return Number.isFinite(x) ? x : 0;
+      };
+      // At the lift, before the stack sees it: where the last move put it.
+      for (const type of ['touchend', 'pointerup']) {
+        addEventListener(
+          type,
+          () => {
+            if (w.__liftAt == null) {
+              w.__liftAt = performance.now();
+              w.__atLift = read();
+            }
+          },
+          {capture: true},
+        );
+      }
+      const tick = () => {
+        w.__samples.push({t: performance.now(), x: read()});
+        if (w.__samples.length < 600) {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  const samples = async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __samples: {t: number; x: number}[];
+        __liftAt: number | null;
+        __atLift: number | null;
+      };
+      return {xs: w.__samples, liftAt: w.__liftAt, atLift: w.__atLift};
+    });
+  // The drag out, without its lift.
+  const out = (to: number, durationMs: number) => {
+    const frames = [...drag(start, {x: to, y: 400}, {durationMs})];
+    frames.pop();
+    return frames;
+  };
+
+  // Where the screen's start is in finger coordinates: the swipe begins
+  // after its threshold, so the screen sits that far behind the finger.
+  // A slow swipe to a quarter, held still, then lifted (it springs back).
+  await sampler();
+  const near = left + width * 0.25;
+  const hold = out(near, 900);
+  const held = hold[hold.length - 1];
+  for (let i = 1; i <= 8; i++) {
+    hold.push({t: held.t + i * 16.7, fingers: [{id: 0, x: near, y: 400}]});
+  }
+  hold.push({t: held.t + 8 * 16.7 + 4, fingers: []});
+  await driver.play(hold);
+  await waitForRest(top);
+  const calibration = await samples();
+  const offset =
+    near - Math.max(...calibration.xs.map(sample => sample.x)) - start.x;
+
+  // Batch 62's path: back past the start at ~310 px/s, lifted 10.7 px of
+  // finger after the screen crossed it.
+  await sampler();
+  const frames = out(far, 450);
+  const last = frames[frames.length - 1];
+  const from = last.fingers[0].x;
+  const liftX = start.x + offset - 10.7;
+  const steps = Math.ceil((from - liftX) / 5.2);
+  for (let i = 1; i <= steps; i++) {
+    frames.push({
+      t: last.t + i * 16.7,
+      fingers: [{id: 0, x: Math.max(liftX, from - i * 5.2), y: 400}],
+    });
+  }
+  frames.push({t: last.t + steps * 16.7 + 4, fingers: []});
+  await driver.play(frames);
+  await waitForRest(top);
+  const {xs, liftAt, atLift} = await samples();
+  const after = xs.filter(sample => sample.t > (liftAt ?? Infinity));
+  const peak = after.reduce(
+    (low, sample) => (sample.x < low.x ? sample : low),
+    {t: 0, x: Infinity},
+  );
+  const settledAt = after.find(
+    (sample, i) =>
+      sample.t > peak.t && after.slice(i).every(rest => Math.abs(rest.x) < 0.5),
+  )?.t;
+  const detail = JSON.stringify({
+    offset,
+    atLift,
+    peak: {x: peak.x, ms: peak.t - (liftAt ?? 0)},
+    settledMs: settledAt == null ? null : settledAt - (liftAt ?? 0),
+    after: after.slice(0, 24).map(sample => Math.round(sample.x * 10) / 10),
+  });
+  // Within ~1 pt of UIKit's at the lift and at the peak; settled as soon.
+  expect(atLift ?? 0, detail).toBeGreaterThan(-6.89 - 1);
+  expect(atLift ?? 0, detail).toBeLessThan(-6.89 + 1);
+  expect(peak.x, detail).toBeGreaterThan(-14.21 - 1);
+  expect(peak.x, detail).toBeLessThan(-14.21 + 1);
+  expect(peak.t - (liftAt ?? 0), detail).toBeGreaterThan(20);
+  expect(peak.t - (liftAt ?? 0), detail).toBeLessThan(85);
+  // UIKit's: within 0.5 pt of rest ~0.25 s after the lift, never past it.
+  expect((settledAt ?? Infinity) - (liftAt ?? 0), detail).toBeLessThan(340);
+  expect(Math.max(...after.map(sample => sample.x)), detail).toBeLessThan(0.5);
+  expect(Math.abs(await translateX(top))).toBeLessThan(0.5);
+});
+
+test('a fast swipe that pauses before the lift still finishes (the velocity does not decay)', async ({
+  page,
+}) => {
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  await driver.play(
+    drag(
+      {x: left + 4, y: 400},
+      {x: left + width * 0.42, y: 400},
+      {
+        durationMs: 400,
+        restMs: 300,
+      },
+    ),
+  );
+  await waitForRest(card(page, 'screen-General'));
+  await expect.poll(topTitle).toBe('General');
+});
+
+test('a flick from near the edge finishes the pop', async ({page}) => {
+  const {driver, left, topTitle} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  // ~60 px of travel at ~1200 px/s: p + 0.35·v is well past half.
+  await driver.play(flick({x: left + 6, y: 400}, {velocity: {x: 1200, y: 0}}));
+  await waitForRest(card(page, 'screen-General'));
+  await expect.poll(topTitle).toBe('General');
+});
+
+test('in a browser tab the leading screen edge stays the browser’s', async ({
+  page,
+}) => {
+  // Not a home-screen app: a swipe from the edge band is the browser's back
+  // swipe (AST-094 FR22), so the stack neither tracks nor pops.
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed');
+  const top = card(page, 'screen-About');
+  let moved = 0;
+  await driver.play(
+    drag(
+      {x: left + 4, y: 400},
+      {x: left + width * 0.7, y: 400},
+      {
+        durationMs: 400,
+        restMs: 120,
+      },
+    ),
+    {
+      onEvent: async () => {
+        moved = Math.max(moved, Math.abs(await translateX(top)));
+      },
+    },
+  );
+  await page.waitForTimeout(300);
+  expect(moved).toBe(0);
+  expect(await topTitle()).toBe('About');
+});
+
+test('a sideways drag in the content pops (iOS 26’s full-width back swipe)', async ({
+  page,
+}) => {
+  const {driver, width, left, topTitle} = await openStack(page, 'pushed');
+  await driver.play(
+    drag(
+      {x: left + width * 0.3, y: 500},
+      {x: left + width * 0.98, y: 500},
+      {
+        durationMs: 500,
+        restMs: 150,
+      },
+    ),
+  );
+  await waitForRest(card(page, 'screen-General'));
+  await expect.poll(topTitle).toBe('General');
+});
+
+test('a push keeps advancing every frame while the main thread is blocked', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver} = await openStack(page, 'settings');
+  const top = card(page, 'screen-General');
+  const cast = await startScreencast(page);
+  await driver.tap(await rowCenter(page, 'General'));
+  await markElement(top);
+  const [push] = await waitForAnimation(top, {minProgressMs: 16});
+  const block = await blockMainThread(page, 600);
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  const tracked = await trackMarker(page, castFrames);
+  const proof = busyWindowProof(
+    tracked,
+    {from: block.from, to: Math.min(block.to, push.to)},
+    // The screencast resolves whole CSS pixels at both ends of the spring's
+    // sub-pixel tail: the last frame can round one pixel away from a tail
+    // frame that is still within a pixel of rest, so "settled" is 2 px.
+    {axis: 'x', settledWithin: 2},
+  );
+  await writeEvidence(
+    'busy-main-thread/navigationstack-push',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {block, push, proof},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  const film = await castStoryboard(page, castFrames, {
+    name: 'navigationstack-push-busy-main-thread',
+    zero: block.from,
+    from: block.from - 40,
+    to: Math.min(block.to, push.to) + 40,
+    columns: 8,
+    cellScale: 0.35,
+    data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
+  });
+  await film.write(testInfo, {block, push});
+  // The harness verdict judges per presented frame against the measured
+  // cadence (a stall, the frames that moved, a window with nothing to
+  // judge); no absolute frame interval or count is asserted here.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
+  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
+  expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
+});
+
+test('the incoming bar covers the old title while the main thread is blocked', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver} = await openStack(page, 'settings');
+  // A marker at the trailing end of the root's title: the pushed screen's
+  // opaque bar slides over it on the compositor.
+  await page.locator('[data-navigation-bar="root"] h2').evaluate(title => {
+    const element = title as HTMLElement;
+    element.style.position = 'relative';
+    const chip = document.createElement('div');
+    chip.setAttribute('aria-hidden', 'true');
+    chip.style.cssText =
+      'position:absolute;top:4px;right:0;width:10px;height:10px;background:rgb(255,0,255);pointer-events:none;';
+    element.append(chip);
+  });
+  const cast = await startScreencast(page);
+  await driver.tap(await rowCenter(page, 'General'));
+  await waitForAnimation(card(page, 'screen-General'), {minProgressMs: 16});
+  const block = await blockMainThread(page, 900);
+  await page.waitForTimeout(150);
+  const frames = await cast.stop();
+  const tracked = await trackMarker(page, frames);
+  const trace = JSON.stringify(
+    tracked.map(f => [Math.round(f.t - block.from), f.box?.x ?? null]),
+  );
+  const during = tracked.filter(f => f.t > block.from && f.t < block.to - 20);
+  // Seen while blocked, then covered before the block ends.
+  expect(
+    during.some(f => f.box != null),
+    trace,
+  ).toBe(true);
+  expect(during.at(-1)?.box ?? null, trace).toBeNull();
+});
+
+test('under a mouse the back swipes stay off: Back is the bar’s button', async ({
+  browser,
+}) => {
+  // A fine pointer: touch work costs nothing and nothing swipes, even in a
+  // home-screen app.
+  const {context, page} = await newFinePage(browser);
+  try {
+    const {left, width} = await openStack(page, 'pushed', {
+      standalone: true,
+      pointer: 'mouse',
+    });
+    const top = card(page, 'screen-About');
+    const before = await top.boundingBox();
+    // A mouse drag from the edge, then one across the content.
+    for (const [from, to] of [
+      [left + 4, left + width * 0.7],
+      [left + width * 0.3, left + width * 0.95],
+    ]) {
+      await page.mouse.move(from, 400);
+      await page.mouse.down();
+      await page.mouse.move(to, 400, {steps: 30});
+      await page.mouse.up();
+    }
+    await page.waitForTimeout(400);
+    expect((await top.boundingBox())?.x).toBeCloseTo(before?.x ?? NaN, 0);
+    await page.locator('[data-navigation-back]').last().click();
+    await expect(top).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('a finger swipes back on an engine that is not iOS WebKit (one touch model)', async ({
+  page,
+}) => {
+  const {driver, left, width} = await openStack(page, 'pushed');
+  // Neither Playwright engine implements -webkit-touch-callout (iOS WebKit
+  // only): the swipe does not depend on it.
+  expect(
+    await page.evaluate(() => CSS.supports('-webkit-touch-callout', 'none')),
+  ).toBe(false);
+  await driver.play(
+    drag(
+      {x: left + width * 0.3, y: 420},
+      {x: left + width * 0.9, y: 420},
+      {durationMs: 300},
+    ),
+  );
+  await expect(card(page, 'screen-About')).toHaveCount(0);
+});
+
+test.describe('the bars ride with their screens, as UIKit’s', () => {
+  test('a programmatic pop rides the revealed bar in from its parallax and the leaving one out', async ({
+    page,
+  }) => {
+    const {driver, width} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const stop = await traceBars(page);
+    await page.locator('[data-navigation-back]').click();
+    await page.waitForTimeout(900);
+    const frames = await stop();
+    const moving = frames.filter(
+      f =>
+        f.cards['screen-General'] != null &&
+        f.cards['screen-General'] > 0.5 &&
+        f.cards.root < -0.5,
+    );
+    expect(moving.length).toBeGreaterThan(5);
+    for (const f of moving) {
+      expect(
+        Math.abs(f.bars['screen-General'] - f.cards['screen-General']),
+        JSON.stringify(f),
+      ).toBeLessThan(width * 0.01);
+      expect(
+        Math.abs(f.bars.root - f.cards.root),
+        JSON.stringify(f),
+      ).toBeLessThan(width * 0.01);
+      // The chevron fades out at once on the 0.4 s spring, on the screens'
+      // clock; the platter stays until the screen has left.
+      const ms = screensClock(f.cards['screen-General'] / width);
+      expect(f.back?.platter ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
+      expect(
+        Math.abs((f.back?.chevron ?? 0) - (1 - crit(0.4, ms))),
+        JSON.stringify({ms: Math.round(ms), ...f.back}),
+      ).toBeLessThan(0.1);
+    }
+    expect(frames.at(-1)?.back ?? null).toBeNull();
+  });
+
+  test('a back swipe holds the revealed bar still while the top one follows the finger', async ({
+    page,
+  }) => {
+    const {driver, width, left} = await openStack(page, 'pushed');
+    const stop = await traceBars(page);
+    await driver.play(
+      drag(
+        {x: left + width * 0.3, y: 420},
+        {x: left + width * 0.7, y: 420},
+        {durationMs: 1000, restMs: 300},
+      ),
+    );
+    await page.waitForTimeout(1200);
+    const frames = await stop();
+    const swiping = frames.filter(f => (f.cards['screen-About'] ?? 0) > 0.5);
+    const isTracked = (f: BarFrame) =>
+      (f.curves.cards['screen-About'] ?? '[]') === '[]' &&
+      (f.curves.bars['screen-About'] ?? '[]') === '[]';
+    expect(swiping.filter(isTracked).length).toBeGreaterThan(10);
+    for (const f of swiping) {
+      if (isTracked(f)) {
+        // The finger moves both layers: within a pixel.
+        expect(
+          Math.abs(f.bars['screen-About'] - f.cards['screen-About']),
+          JSON.stringify(f),
+        ).toBeLessThan(1);
+      } else {
+        // After the lift one animation moves both: the bar runs the card's
+        // own start time, progress and curve.
+        expect(f.curves.bars['screen-About'], JSON.stringify(f)).toBe(
+          f.curves.cards['screen-About'],
+        );
+      }
+      // UIKit's revealed title stays centred while its screen slides in.
+      expect(
+        Math.abs(f.bars['screen-General']),
+        JSON.stringify(f),
+      ).toBeLessThan(0.5);
+      // The back button does not follow a finger: full opacity throughout.
+      expect(f.back?.chevron ?? 0, JSON.stringify(f)).toBeGreaterThan(0.99);
+    }
+  });
+
+  test('each bar is opaque and stacks over the one it covers', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const bars = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-navigation-bar]')].map(bar => ({
+        key: bar.getAttribute('data-navigation-bar'),
+        background: getComputedStyle(bar).backgroundColor,
+      })),
+    );
+    expect(bars.map(bar => bar.key)).toEqual(['root', 'screen-General']);
+    for (const bar of bars) {
+      // An rgb() colour has no alpha; rgba(…, 0) would let the title show.
+      expect(bar.background, JSON.stringify(bar)).toMatch(/^rgb\(/);
+    }
+  });
+});
+
+test.describe('edge cases (review findings)', () => {
+  test('a keyboard Back returns focus to the row that pushed', async ({
+    browser,
+  }) => {
+    const {context, page} = await newFinePage(browser);
+    try {
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      const general = page.getByRole('button', {name: 'General'}).first();
+      await general.focus();
+      await page.keyboard.press('Enter');
+      await waitForRest(card(page, 'screen-General'));
+      await page.locator('[data-navigation-back]').focus();
+      await page.keyboard.press('Enter');
+      await expect(card(page, 'screen-General')).toHaveCount(0);
+      await waitForRest(card(page, 'root'));
+      // Focus is on the General row itself, not left on the page body.
+      await expect
+        .poll(async () =>
+          page.evaluate(() => {
+            const active = document.activeElement;
+            return active == null || active === document.body
+              ? 'body'
+              : (active
+                  .closest('li, button, [role="button"]')
+                  ?.textContent?.trim() ?? active.tagName);
+          }),
+        )
+        .toBe('General');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('after a keyboard push the focused title shows the focus indicator', async ({
+    browser,
+  }) => {
+    const {context, page} = await newFinePage(browser);
+    try {
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      await page.getByRole('button', {name: 'General'}).first().focus();
+      await page.keyboard.press('Enter');
+      await waitForRest(card(page, 'screen-General'));
+      const title = page.locator('[data-navigation-bar="screen-General"] h2');
+      await expect(title).toBeFocused();
+      const ring = await title.evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          visible: element.matches(':focus-visible'),
+          outline: style.outlineStyle,
+          width: parseFloat(style.outlineWidth),
+          shadow: style.boxShadow,
+        };
+      });
+      expect(ring.visible).toBe(true);
+      // An outline or a ring shadow: something shows where focus is.
+      expect(
+        (ring.outline !== 'none' && ring.width > 0) || ring.shadow !== 'none',
+        JSON.stringify(ring),
+      ).toBe(true);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('after a tap push the focused title shows no focus ring', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await waitForRest(card(page, 'screen-General'));
+    const title = page.locator('[data-navigation-bar="screen-General"] h2');
+    await expect(title).toBeFocused();
+    // Programmatic focus after pointer input keeps the pointer's modality
+    // (interaction-modality INV1): no ring.
+    expect(
+      await title.evaluate(element => element.matches(':focus-visible')),
+    ).toBe(false);
+  });
+
+  test('after a pop the screen underneath keeps its content and its bar', async ({
+    page,
+  }) => {
+    const {driver} = await openStack(page, 'pushed');
+    await page.locator('[data-navigation-back]').click();
+    await waitForRest(card(page, 'screen-General'));
+    await expect(card(page, 'screen-About')).toHaveCount(0);
+    // General is on top; the root lies under it, ready for a back swipe.
+    const root = await card(page, 'root').evaluate(
+      element => getComputedStyle(element).contentVisibility,
+    );
+    expect(root).not.toBe('hidden');
+    await expect(page.locator('[data-navigation-bar="root"]')).toHaveCount(1);
+    void driver;
+  });
+
+  test('a push during a running push slides the new screen in', async ({
+    page,
+  }) => {
+    const {driver, width} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    await page.waitForTimeout(80);
+    const stop = await traceBars(page);
+    const about = await page
+      .locator('[data-navigation-screen="screen-General"]')
+      .getByRole('button', {name: 'About'})
+      .boundingBox();
+    if (about == null) {
+      throw new Error('no About row');
+    }
+    await driver.tap({
+      x: about.x + about.width / 2,
+      y: about.y + about.height / 2,
+    });
+    await page.waitForTimeout(700);
+    const frames = await stop();
+    const first = frames.find(f => f.cards['screen-About'] != null);
+    // A lone push starts the card off screen: so does one that interrupts.
+    expect(
+      first?.cards['screen-About'] ?? 0,
+      JSON.stringify(first),
+    ).toBeGreaterThan(width * 0.5);
+  });
+
+  test('a sideways drag on a strip that can still scroll scrolls it instead of popping', async ({
+    page,
+    browserName,
+  }) => {
+    const {driver} = await openStack(page, 'carousel');
+    const strip = page.getByTestId('carousel');
+    await strip.evaluate(element => {
+      element.scrollLeft = 300;
+    });
+    const box = await strip.boundingBox();
+    if (box == null) {
+      throw new Error('no strip');
+    }
+    await driver.play(
+      drag(
+        {x: box.x + 40, y: box.y + box.height / 2},
+        {x: box.x + 200, y: box.y + box.height / 2},
+        {durationMs: 400, restMs: 100},
+      ),
+    );
+    await page.waitForTimeout(800);
+    // Desktop WebKit does not scroll for an emulated touch drag; Chromium
+    // does, so there the strip's own scroll shows too.
+    if (browserName === 'chromium') {
+      expect(await strip.evaluate(element => element.scrollLeft)).toBeLessThan(
+        250,
+      );
+    }
+    await expect(card(page, 'screen-General')).toHaveCount(1);
+    expect(await translateX(card(page, 'screen-General'))).toBe(0);
+  });
+
+  test('a released swipe the app declines springs back', async ({page}) => {
+    const {driver, width, left} = await openStack(page, 'declines-pops');
+    await driver.play(
+      drag(
+        {x: left + width * 0.2, y: 420},
+        {x: left + width * 0.8, y: 420},
+        {durationMs: 300},
+      ),
+    );
+    await page.waitForTimeout(900);
+    await expect(card(page, 'screen-General')).toHaveCount(1);
+    expect(
+      Math.abs(await translateX(card(page, 'screen-General'))),
+    ).toBeLessThan(0.5);
+  });
+
+  test('a screen contains overscroll only while it overflows', async ({
+    page,
+  }) => {
+    await openStack(page, 'settings');
+    const contain = async () =>
+      card(page, 'root').evaluate(
+        element => getComputedStyle(element).overscrollBehaviorY,
+      );
+    // Four rows in a full-height stack: nothing to scroll, so a scroll
+    // chains to the page as usual.
+    expect(await contain()).toBe('auto');
+    await page.setViewportSize({width: 400, height: 200});
+    await expect.poll(contain).toBe('contain');
+  });
+});
+
+test('a push does no Layout or Paint per frame', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'rendering traces are Chromium-only');
+  await openStack(page, 'settings');
+  const top = card(page, 'screen-General');
+  // A programmatic click: a finger's press would add the row's own press
+  // fade, which is not the push.
+  const row = page.getByRole('button', {name: 'General'}).first();
+  // The story's own first motion leaves its layers promoted for the
+  // animator's linger (half a second after it ends). Demoting one is a style
+  // pass and a Layout of its own: the root bar title's landed about 400 ms
+  // into a push started at once, at the window's edge. Start the push once
+  // none is left.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelectorAll('[style*="will-change"]').length,
+      ),
+    )
+    .toBe(0);
+  let push = {from: 0, to: 0};
+  const trace = await traceRendering(page, async () => {
+    await row.evaluate(element => (element as HTMLElement).click());
+    [push] = await waitForAnimation(top);
+    await waitForRest(top);
+  });
+  // The motion: the push spring is within a pixel of rest by ~0.4 s (the
+  // animations themselves run longer: the animator holds end states). The
+  // landing (focus moves to the new title) comes after it and may paint.
+  expect(push.to - push.from).toBeGreaterThan(380);
+  const during = countBetween(trace, push.from + 80, push.from + 380);
+  const when = trace.events
+    .filter(e => e.name === 'Layout' || e.name === 'Paint')
+    .map(e => `${e.name}@${Math.round(e.t - push.from)}`);
+  expect(during.Layout ?? 0, JSON.stringify({during, when})).toBe(0);
+  expect(during.Paint ?? 0, JSON.stringify({during, when})).toBe(0);
+});
+
+test.describe('with Reduce Motion', () => {
+  test('a push never dims the covered screen', async ({page}) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openStack(page, 'settings');
+    const dimmed = await page.evaluate(() => {
+      const w = window as unknown as {__dim: number[]; __dimStop: boolean};
+      w.__dim = [];
+      w.__dimStop = false;
+      const dim = document.querySelector(
+        '[data-navigation-screen="root"]',
+      )?.lastElementChild;
+      const tick = () => {
+        if (dim != null) {
+          w.__dim.push(Number(getComputedStyle(dim).opacity));
+        }
+        if (!w.__dimStop) {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+      return dim != null;
+    });
+    expect(dimmed).toBe(true);
+    await driver.tap(await rowCenter(page, 'General'));
+    await page.waitForTimeout(800);
+    const samples = await page.evaluate(() => {
+      const w = window as unknown as {__dim: number[]; __dimStop: boolean};
+      w.__dimStop = true;
+      return w.__dim;
+    });
+    expect(samples.length).toBeGreaterThan(10);
+    // UIKit's cross-fade has no dimming: the 10 % shade belongs to the slide.
+    expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThan(0.01);
+  });
+
+  test('under a mouse a push completes at once', async ({browser}) => {
+    const {context, page} = await newFinePage(browser);
+    try {
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await openStack(page, 'settings', {pointer: 'mouse'});
+      await page.getByRole('button', {name: 'General'}).first().click();
+      const top = card(page, 'screen-General');
+      await expect(top).toHaveCount(1);
+      // design:reduced-motion DR3: a fine pointer changes at once.
+      const first = await top.evaluate(
+        element =>
+          new Promise<{x: string; opacity: number}>(resolve =>
+            requestAnimationFrame(() =>
+              resolve({
+                x: getComputedStyle(element).translate,
+                opacity: Number(getComputedStyle(element).opacity),
+              }),
+            ),
+          ),
+      );
+      expect(first.x === 'none' || parseFloat(first.x) === 0).toBe(true);
+      expect(first.opacity).toBe(1);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('a push cross-fades in place instead of sliding', async ({page}) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openStack(page, 'settings');
+    await driver.tap(await rowCenter(page, 'General'));
+    const top = card(page, 'screen-General');
+    await waitForAnimation(top);
+    const midway = await top.evaluate(element => ({
+      x: getComputedStyle(element).translate,
+      opacity: Number(getComputedStyle(element).opacity),
+    }));
+    await waitForRest(top);
+    // No travel: the incoming screen is already where it lands, fading in.
+    expect(midway.x === 'none' || parseFloat(midway.x) === 0).toBe(true);
+    expect(midway.opacity).toBeLessThan(1);
+    expect(await translateX(top)).toBe(0);
+  });
+});
+
+test('storyboard: a push', {tag: '@storyboard'}, async ({page}, testInfo) => {
+  const {driver, width} = await openStack(page, 'settings');
+  await driver.tap(await rowCenter(page, 'General'));
+  const top = card(page, 'screen-General');
+  await waitForAnimation(top);
+  const viewport = page.viewportSize() ?? {width: 402, height: 714};
+  const {storyboard} = await animationStoryboard(page, {
+    name: 'navigationstack-push',
+    clip: {x: 0, y: 0, width: viewport.width, height: viewport.height},
+    // The spring is at rest by ~0.45 s; the animator holds end states after.
+    times: Array.from({length: 28}, (_, i) => i * 16.667),
+    measure: async () => ({
+      top: await translateX(top),
+      under: await translateX(card(page, 'root')),
+    }),
+    columns: 8,
+    cellScale: 0.35,
+  });
+  await releaseAnimations(page, {finish: true});
+  await storyboard.write(testInfo);
+  const frames = storyboard.frames.map(
+    f => f.data as {top: number; under: number},
+  );
+  expect(frames[0].top).toBeCloseTo(width, 0);
+  expect(
+    frames.every((f, i) => i === 0 || f.top <= frames[i - 1].top + 0.5),
+    JSON.stringify(frames.map(f => Math.round(f.top))),
+  ).toBe(true);
+  expect(frames.at(-1)?.top ?? Infinity).toBeLessThan(1);
+});
+
+test(
+  'storyboard: a back swipe released past half',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, width, left, topTitle} = await openStack(page, 'pushed', {
+      standalone: true,
+    });
+    const top = card(page, 'screen-About');
+    const viewport = page.viewportSize() ?? {width: 402, height: 714};
+    const storyboard = await touchStoryboard(
+      page,
+      driver,
+      drag(
+        {x: left + 4, y: 400},
+        {x: left + width * 0.65, y: 400},
+        {
+          durationMs: 300,
+          hz: 30,
+          restMs: 120,
+        },
+      ),
+      {
+        name: 'navigationstack-edge-pop',
+        clip: {x: 0, y: 0, width: viewport.width, height: viewport.height},
+        measure: async () => ({top: await translateX(top)}),
+        columns: 6,
+        cellScale: 0.4,
+      },
+    );
+    await storyboard.write(testInfo);
+    await expect.poll(topTitle).toBe('General');
+    const frames = storyboard.frames.map(f => f.data as {top: number});
+    expect(Math.max(...frames.map(f => f.top))).toBeGreaterThan(width * 0.5);
+  },
+);
