@@ -31,11 +31,17 @@ function runs(
     operation = 'capture',
     needs = {},
     cancelled = false,
+    labels = [],
   } = {},
 ) {
   const expression = (job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    // GitHub's object filter: `labels.*.name` lists the labels' names.
+    .replace(
+      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
+      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
+    );
   if (!/\b(always|cancelled|success|failure)\(/.test(expression)) {
     if (
       cancelled ||
@@ -51,7 +57,10 @@ function runs(
     'cancelled',
     `return Boolean(${expression});`,
   )(
-    {event_name: event},
+    {
+      event_name: event,
+      event: {pull_request: {labels: labels.map(name => ({name}))}},
+    },
     {operation},
     needs,
     () => true,
@@ -83,7 +92,9 @@ describe('CI baseline maintenance routing', () => {
       'release-check',
     ]);
     expect(visual.name).toBe('Stable visual regression');
-    expect(visual['runs-on']).toBe('2-core-ubuntu-arm');
+    expect(visual['runs-on']).toContain(
+      "'2-core-ubuntu-arm' || 'ubuntu-24.04-arm'",
+    );
     expect(workflow.jobs).not.toHaveProperty('baseline-publication');
     expect(workflow.on).not.toHaveProperty('schedule');
   });
@@ -106,15 +117,18 @@ describe('CI baseline maintenance routing', () => {
     expect(runs(visual, {needs})).toBe(false);
   });
 
-  it('preserves focused PR routing when the maintenance guard is skipped', () => {
+  it('preserves focused PR routing on an opted-in pull request when the maintenance guard is skipped', () => {
     const needs = dependencies(visual);
     needs['maintenance-request'].result = 'skipped';
-    expect(runs(visual, {event: 'pull_request', needs})).toBe(true);
-    needs['check-components'].outputs.has_stable_visual = 'false';
+    const optedIn = {event: 'pull_request', needs, labels: ['ci:heavy-lanes']};
+    expect(runs(visual, optedIn)).toBe(true);
+    // Without the opt-in label a pull request update runs no visual owner.
     expect(runs(visual, {event: 'pull_request', needs})).toBe(false);
+    needs['check-components'].outputs.has_stable_visual = 'false';
+    expect(runs(visual, optedIn)).toBe(false);
     needs['check-components'].outputs.has_stable_visual = 'true';
     needs['build-storybook'].result = 'failure';
-    expect(runs(visual, {event: 'pull_request', needs})).toBe(false);
+    expect(runs(visual, optedIn)).toBe(false);
     expect(runs(visual, {event: 'merge_group', needs})).toBe(false);
   });
 

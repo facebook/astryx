@@ -74,11 +74,17 @@ function runs(
     branch = releaseBranch,
     needs = dependencies(job),
     cancelled = false,
+    labels = [],
   } = {},
 ) {
   const expression = (job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    // GitHub's object filter: `labels.*.name` lists the labels' names.
+    .replace(
+      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
+      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
+    );
   // GitHub injects success() unless the expression has a status function.
   if (
     !/\b(always|cancelled|success|failure)\(/.test(expression) &&
@@ -93,7 +99,10 @@ function runs(
     'cancelled',
     `return Boolean(${expression});`,
   )(
-    {event_name: event},
+    {
+      event_name: event,
+      event: {pull_request: {labels: labels.map(name => ({name}))}},
+    },
     {operation, 'release-branch': branch},
     needs,
     () => true,
@@ -771,13 +780,17 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
     // Shard legs that run four pages or workers get four cores.
     for (const job of ['visual-scout', 'pr-a11y-shard']) {
-      expect(jobs[job]['runs-on'], job).toBe('4-core-ubuntu');
+      expect(jobs[job]['runs-on'], job).toContain(
+        "'4-core-ubuntu' || 'ubuntu-latest'",
+      );
     }
     expect(
       step('visual-scout', 'Scout this shard of the release plan').run,
     ).toContain('--concurrency 4');
     // Four workers need four cores; on two the CPU-bound specs time out.
-    expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
+    expect(jobs['a11y-contracts-shard']['runs-on']).toContain(
+      "'4-core-ubuntu' || 'ubuntu-latest'",
+    );
     expect(contracts['continue-on-error']).toBeUndefined();
     // The join fails closed: a failed shard, or an evidence set no shard
     // produced, blocks release-check through a11y-contracts.
