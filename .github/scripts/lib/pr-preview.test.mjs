@@ -814,6 +814,47 @@ describe('PR comment preview reconciliation', () => {
     expect(result.body).not.toContain('facebook.github.io/astryx/pr/');
   });
 
+  describe('the fallback report, when there is no trusted analysis', () => {
+    const failRender = () => {
+      throw new Error('malformed analysis');
+    };
+
+    it('links the branch alias under the same preview note as the report', async () => {
+      const {result} = await reconcile({
+        previewAvailable: true,
+        createIfMissing: true,
+        execute: failRender,
+      });
+      expect(result.body).toContain('trusted analysis is unavailable');
+      expect(result.body).toContain('> **Preview:** the links below open');
+      expect(result.body).toContain('View Storybook for this PR');
+    });
+
+    it('points to Vercel when the alias cannot be computed', async () => {
+      const {result} = await reconcile({
+        value: identity({headRef: `feat/${'long-branch-name-'.repeat(4)}`}),
+        previewAvailable: true,
+        createIfMissing: true,
+        execute: failRender,
+      });
+      expect(result.body).toContain('> **Preview availability:**');
+      expect(result.body).not.toContain('View Storybook for this PR');
+    });
+
+    it('says nothing about previews on a draft', async () => {
+      const {result} = await reconcile({
+        value: identity({draft: true}),
+        previewAvailable: true,
+        createIfMissing: true,
+        execute: failRender,
+      });
+      expect(result.body).toContain('trusted analysis is unavailable');
+      expect(result.body).not.toContain('Preview');
+      expect(result.body).not.toContain("Vercel's comment");
+      expect(result.body).not.toContain('View Storybook for this PR');
+    });
+  });
+
   it('says nothing about previews on a draft', async () => {
     const {result} = await reconcile({value: identity({draft: true})});
     expect(result.body).not.toContain('Preview availability');
