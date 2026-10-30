@@ -313,7 +313,12 @@ jobs:
 
   release-merge-back:
     name: release-merge-back
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    # Only a release merge-back branch has anything for this job to validate,
+    # so every other pull request skips it before the full-history checkout
+    # below (minutes on a larger runner). The step after the checkout still
+    # checks the exact branch contract, and required lint validates merge-back
+    # branches with the same trusted policy.
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name == 'pull_request' && github.base_ref == 'main' && startsWith(github.head_ref, 'chore/merge-v') && endsWith(github.head_ref, '-to-main')) }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: ${{ startsWith(github.head_ref, 'chore/merge-v') && '4-core-ubuntu' || 'ubuntu-latest' }}
     timeout-minutes: 15
