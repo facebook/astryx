@@ -412,26 +412,23 @@ test.describe('frame evidence', () => {
     const control = await startBusyControl(page);
 
     const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
-      // Back and forth until cancelled, so the animation still runs when the
-      // block starts however long a loaded runner takes to start the cast.
+      // Endless, so the animation still runs when the block starts however
+      // long a loaded runner takes to start the cast, and wrapping from 560 px
+      // back to 0 rather than turning, so every frame changes: two frames
+      // straddling a turnaround evenly would read one position.
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {
-              duration: 1600,
-              easing: 'linear',
-              iterations: Infinity,
-              direction: 'alternate',
-            },
+            {duration: 1600, easing: 'linear', iterations: Infinity},
           );
         } else {
           const start = performance.now();
           const step = (now: number) => {
-            const p = ((now - start) / 1600) % 2;
-            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            const p = ((now - start) / 1600) % 1;
+            el.style.transform = `translateY(${560 * p}px)`;
             requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
@@ -505,21 +502,19 @@ test.describe('frame evidence', () => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
+          // Endless, wrapping from 560 px back to 0 rather than turning, so
+          // every frame changes: two frames straddling a turnaround evenly
+          // would read one position.
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {
-              duration: 1600,
-              easing: 'linear',
-              iterations: Infinity,
-              direction: 'alternate',
-            },
+            {duration: 1600, easing: 'linear', iterations: Infinity},
           );
         } else if (how === 'raf') {
           const start = performance.now();
-          // The same back-and-forth on the main thread.
+          // The same endless run on the main thread.
           const step = (now: number) => {
-            const p = ((now - start) / 1600) % 2;
-            el.style.transform = `translateY(${560 * (p < 1 ? p : 2 - p)}px)`;
+            const p = ((now - start) / 1600) % 1;
+            el.style.transform = `translateY(${560 * p}px)`;
             requestAnimationFrame(step);
           };
           requestAnimationFrame(step);

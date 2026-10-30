@@ -5,9 +5,10 @@
  * @input Uses a Playwright `Page`
  * @output `blockMainThread` — a synchronous busy loop on the page's main thread
  *   that reports exactly when it ran —, `startBusyControl` — a plain
- *   compositor-only control animation recorded in the same window — and
+ *   compositor-only control animation recorded in the same window —,
  *   `busyWindowProof`, which reads frame evidence for that window, against
- *   the control when it has one.
+ *   the control when it has one, and `pooledBusyProof`, which judges several
+ *   short blocks as one.
  * @position The busy-main-thread proof: an animation that runs on the
  *   compositor keeps advancing at display rate while JavaScript holds the main
  *   thread; one driven from the main thread (rAF, style writes, layout
@@ -260,7 +261,8 @@ export interface BusyProof extends FrameStats {
   readonly onScreenFromMs: number | null;
   /**
    * The cast's position step, CSS px: the largest of 0.5, 1 and 2 that every
-   * tracked position is a multiple of (WebKit's casts are 2: see the README).
+   * change of the tracked value in the judged part is a multiple of, or 0.5
+   * when it does not change there (WebKit's casts step 2: see the README).
    */
   readonly stepPx: number;
   /** The tracked value's mean motion per screencast interval in the judged part, px. */
