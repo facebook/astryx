@@ -4,19 +4,42 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button
+ * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button, the touch
+ *   presentation resolver, the action-group tracking
+ *   (hooks/useActionGroupTracking), the group item marker
+ *   (utils/pressFeedback), its touch layer (AlertDialogTouch) and the alert
+ *   entries of the UIKit constants table
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
+ *
+ * The two actions are tracked as one group under every pointer, a finger, a
+ * pen or a mouse (`family:action-groups`), as UIKit tracks an alert's
+ * actions: the action under the pointer highlights at once, the highlight
+ * follows it from one action to the other, and the release runs the action
+ * under it (none when it is off both). Only the actions are tracked: a press
+ * on the title or the message is not part of the group. The keyboard and
+ * assistive technology keep the buttons' own click.
+ *
+ * Under a finger (a coarse primary pointer: useTouchPresentation) it also
+ * appears and leaves the way UIKit's alert does (useAlertMotion): it scales
+ * down from 1.2 and fades in with the dimming, and leaves with a fade alone,
+ * both on the compositor; the dialog stays open until the fade ends. A touch
+ * reaches nothing while it appears (keys and assistive technology still act),
+ * and no input reaches it while it leaves. One touch model on every touch
+ * device. With a mouse the theme's entrance plays and the dialog closes at
+ * once, as before.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs (props table, features, examples)
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
+ * - /packages/core/src/AlertDialog/__tests__/AlertDialog.interaction.browser.spec.ts (touch tracking)
+ * - /packages/core/src/AlertDialog/__tests__/AlertDialog.motion.interaction.browser.spec.ts (touch motion)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
-import React, {useId, useCallback} from 'react';
+import React, {useId, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Dialog} from '../Dialog';
 import {Layout} from '../Layout/Layout';
@@ -31,16 +54,57 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {alertController} from '../motion/uikit/alert';
+import {
+  PRESS_GROUP_ITEM_ATTRIBUTE,
+  pressGroupItemProps,
+} from '../utils/pressFeedback';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {useAlertDialogTouch} from './AlertDialogTouch';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
+/** Marks the actions UIKit's action layout measures (AlertDialogTouch). */
+const ACTION_ATTRIBUTE = 'data-astryx-alert-action';
+
 const styles = stylex.create({
+  // The group tracking claims a press on the actions the moment it lands, as
+  // a long press does: the browser may pinch-zoom there but never pans (Chrome
+  // on Android cancels a pointer it pans, which would cancel the group's
+  // press), and a double tap zooms nothing (`spec:AST-094` FR18: the gesture
+  // host never allows more than this). A press that slides across the
+  // actions selects none of their labels, for a mouse too (`spec:AST-094`
+  // FR41: the hold does something); the title and the message stay
+  // selectable.
+  trackingRow: {
+    touchAction: 'pinch-zoom',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+  },
+  // UIKit's alert motion drives the dialog (useAlertMotion): the theme's
+  // entrance keyframes stand down.
+  uikitMotion: {
+    animationName: 'none',
+    // The motion animator promotes the dimming while it moves through this
+    // custom property on the dialog: Mobile Safari keeps an unlayered
+    // ::backdrop's animation on the main thread at its first commit.
+    '::backdrop': {
+      willChange: 'var(--astryx-motion-will-change-backdrop, auto)',
+    },
+  },
   action: {
     maxWidth: '100%',
     minWidth: 0,
   },
   stackedAction: {
     width: '100%',
+  },
+  // A compact row: the two actions split it evenly, as UIKit's do.
+  sharedRowAction: {
+    flexGrow: 1,
+    flexBasis: 0,
   },
 });
 
@@ -106,7 +170,9 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * The width of the dialog.
-   * Numbers are treated as pixels, strings are used as-is.
+   * Numbers are treated as pixels, strings are used as-is. By default 400,
+   * and on a phone (a compact window under a coarse primary pointer) iOS's
+   * alert width, 320, in every theme; a width set here wins there too.
    * @default 400
    */
   width?: number | string;
@@ -150,7 +216,7 @@ export function AlertDialog({
   actionVariant = 'destructive',
   isActionLoading,
   onAction,
-  width = 400,
+  width: widthProp,
   xstyle,
   className,
   style,
@@ -161,18 +227,105 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
-  // Width stays delegated to Dialog: this query exists only so AlertDialog can
-  // keep narrow visual, DOM, and tab order aligned for its destructive/cancel
-  // semantics without coupling action order to pointer or hover capability.
+  // Width stays delegated to Dialog. These queries exist only so AlertDialog
+  // can keep its visual, DOM and tab order aligned for its destructive/cancel
+  // semantics. Under a finger on a compact viewport the alert takes UIKit's
+  // layout (the touch layer's useAlertActionLayout): a row, Cancel leading,
+  // when each label fits its half; a stack, Cancel at the bottom, when one
+  // does not. With a mouse the actions stack at 640px and below, the action
+  // above Cancel, and that breakpoint follows the width alone.
   const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
+  // Under a finger the alert appears and leaves the way UIKit's does (the
+  // touch layer's useAlertMotion): it stays presented while it fades out.
+  // Only under a touch presentation (a coarse primary pointer, after
+  // hydration): where the primary pointer is fine nothing of it attaches
+  // (`spec:AST-094` FR13, FR19; `component:AlertDialog` FR6, FR7).
+  const touch = useTouchPresentation();
+  const isTouch = touch.isTouch;
+  // UIKit's action layout needs both a finger and a compact viewport (the
+  // active theme's compact definition).
+  const isCompactTouch = isTouch && touch.isCompact;
+  // On a phone (a compact window under a finger), iOS's alert width in
+  // every theme (alertController.width), so the presentation's 1.2 start
+  // stays on screen; a caller's width wins, and on a wider touch screen and
+  // with a mouse it stays Dialog's 400 (`component:AlertDialog` FR9).
+  const width = widthProp ?? (isCompactTouch ? alertController.width : 400);
+  // The actions' row: the action group's element and UIKit's layout's.
+  const actionRowRef = useRef<HTMLElement>(null);
+  const {motion, actionLayout} = useAlertDialogTouch({
+    isOpen,
+    isInline: isInline === true,
+    isTouch,
+    isCompactTouch,
+    itemSelector: `[${ACTION_ATTRIBUTE}]`,
+    actionRowRef,
+    labels: [cancelLabel, actionLabel],
+  });
+  const isStacked = isCompactTouch ? actionLayout === 'stack' : isSmallScreen;
+  // The actions fill the footer: a stack, or UIKit's shared row.
+  const isFullWidth = isCompactTouch || isSmallScreen;
+  // The two actions are an action group (`family:action-groups`): a held
+  // pointer, a finger, a pen or a mouse, is tracked across them the way UIKit
+  // tracks an alert's actions. The action under it highlights, the highlight
+  // follows it from one action to the other, and the lift runs the action
+  // under it, through its own click (none off both). Only the actions are
+  // tracked: a press on the title or the message is not part of the group,
+  // so their text stays selectable. Each tracked action carries the group
+  // item marker from its first render: the document press controller leaves
+  // a pointer's press there to the tracker, the one painter, and still
+  // records the touch for the scroll brake. The inline preview is not
+  // tracked, and its actions keep the controller's press.
+  // Tracked while presented, leaving included: a press during either
+  // transition is taken and dropped (`isInert`) rather than reaching the
+  // button under it.
+  const isTracking = motion.isPresented && isInline !== true;
+  useActionGroupTracking(actionRowRef, {
+    itemSelector: `[${PRESS_GROUP_ITEM_ATTRIBUTE}]`,
+    highlightOnsetMs: alertController.actions.highlightOnsetMs,
+    highlightExpansion: alertController.actions.highlightExpansion,
+    isInert: () => !motion.acceptsTouches(),
+    isEnabled: isTracking,
+    // The row's touch-action is its own style (trackingRow); a held finger
+    // or pen selects nothing while it holds (`spec:AST-094` FR41), and the
+    // actions keep their default styles otherwise.
+    manageStyle: false,
+  });
+  // While the alert leaves (closed by the caller, still presented while it
+  // fades out under a finger), UIKit delivers no input to it: a click, Enter
+  // or an assistive-technology activation on an action, and Escape, do
+  // nothing until it is hidden. Focus stays where it is, so Dialog returns it
+  // to the opener when the fade ends.
+  const isLeaving = motion.isDriving && motion.isPresented && !isOpen;
   const handleCancel = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
+    if (!isLeaving) {
+      onOpenChange(false);
+    }
+  }, [isLeaving, onOpenChange]);
+  const handleAction = useCallback(() => {
+    if (!isLeaving) {
+      void onAction();
+    }
+  }, [isLeaving, onAction]);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (!isLeaving) {
+        onOpenChange(next);
+      }
+    },
+    [isLeaving, onOpenChange],
+  );
+  const mergedRef = useMergedRefs(ref, motion.ref);
+  // Each action carries the layout's marker; a tracked one also carries the
+  // group item marker.
+  const actionTrackingProps = {
+    [ACTION_ATTRIBUTE]: '',
+    ...(isTracking ? pressGroupItemProps : undefined),
+  };
 
   const buttonActionStyle = [
     styles.action,
-    isSmallScreen && styles.stackedAction,
+    isFullWidth && (isStacked ? styles.stackedAction : styles.sharedRowAction),
   ];
   const cancelButton = (
     <Button
@@ -181,6 +334,7 @@ export function AlertDialog({
       label={cancelLabel}
       onClick={handleCancel}
       xstyle={buttonActionStyle}
+      {...actionTrackingProps}
       // Dialog focuses [data-autofocus] itself after showModal(), because
       // React's autoFocus runs during commit while the dialog is invisible.
       // Cancel is least destructive, so it remains the autofocus target even
@@ -193,19 +347,20 @@ export function AlertDialog({
       key="action"
       variant={actionVariant}
       label={actionLabel}
-      onClick={onAction}
+      onClick={handleAction}
       isLoading={isActionLoading}
       xstyle={buttonActionStyle}
+      {...actionTrackingProps}
     />
   );
 
   return (
     <Dialog
       {...rest}
-      ref={ref}
-      isOpen={isOpen}
+      ref={mergedRef}
+      isOpen={motion.isPresented}
       isInline={isInline}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       width={width}
       purpose="form"
       // `alertdialog` is a modal role: it promises an interruption the user
@@ -217,7 +372,7 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={xstyle}
+      xstyle={[motion.isDriving && styles.uikitMotion, xstyle]}
       data-testid={testId}>
       <Layout
         content={
@@ -233,15 +388,18 @@ export function AlertDialog({
         footer={
           <LayoutFooter>
             {/* Generic Dialog footers should wrap, but their consumers own
-                action semantics and order. AlertDialog keeps this
-                destructive-above-Cancel narrow order because confirmation
-                actions have component-specific meaning here. */}
+                action semantics and order. AlertDialog keeps Cancel leading
+                in a row and the destructive action above Cancel in a stack
+                (UIKit's rule under a finger on a compact screen), because
+                confirmation actions have component-specific meaning here. */}
             <Stack
-              direction={isSmallScreen ? 'vertical' : 'horizontal'}
+              ref={actionRowRef}
+              xstyle={isTracking && styles.trackingRow}
+              direction={isStacked ? 'vertical' : 'horizontal'}
               gap={2}
-              hAlign={isSmallScreen ? 'stretch' : 'end'}
-              wrap={isSmallScreen ? 'nowrap' : 'wrap'}>
-              {isSmallScreen
+              hAlign={isFullWidth ? 'stretch' : 'end'}
+              wrap={isFullWidth ? 'nowrap' : 'wrap'}>
+              {isStacked
                 ? [actionButton, cancelButton]
                 : [cancelButton, actionButton]}
             </Stack>
