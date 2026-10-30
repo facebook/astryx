@@ -5,9 +5,10 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, CheckboxInput, and the marker or task checkbox a
- *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists)
+ *   treatment, the touch hit area (utils/touchHitArea.ts and its layer), the
+ *   travelling marker of an update's slide (List/listLayoutUpdates.ts),
+ *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
+ *   (Markdown's nested lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -22,7 +23,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -36,8 +37,18 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import {servesSwipeActions} from '../Item/Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {
+  ITEM_KEY_ATTRIBUTE,
+  isInAnimatedList,
+  keepPresentation,
+} from './listLayoutUpdates';
+import {useTouchHitArea} from '../utils/touchHitArea';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
 // =============================================================================
 // Types
@@ -129,6 +140,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
+   * The row's item key, a string or a number from the data (the shape
+   * Table's `idKey` returns): the row's identity for the list's animated
+   * layout (`animatedLayout`, `component:List` FR12). A row without one
+   * changes at once. Separate from React's `key`, which stays React's own.
+   */
+  itemKey?: string | number;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -150,6 +169,27 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
+  },
+  // A row an update slides across rows moving the other way rides above them
+  // with the surface behind it, for the length of its slide (the attribute
+  // List/listLayoutUpdates.ts writes): a UIKit cell passes its neighbours
+  // opaque and on top, and rows here have no background of their own. The
+  // surface is an inset shadow across the padding box, under the press layer
+  // and the row's content, so the row's divider and its press stay visible;
+  // a selected row keeps its own fill. It takes no pseudo-element: under a
+  // finger the row's `::after` is its hit layer (List/listRow.stylex.ts).
+  // Its z-index, 2, is above a swipeable row's raise under a finger (1,
+  // `swipeRaised`), so it rides above the swipeable rows it crosses whether
+  // it has swipe actions of its own or not.
+  travelling: {
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 2,
+    },
+    boxShadow: {
+      default: null,
+      '[data-astryx-travelling]:not([aria-selected="true"],[aria-current="true"])': `inset 0 0 0 100vmax ${colorVars['--color-background-surface']}`,
+    },
   },
   // List's edge treatments. Each reads --_item-inset-inline, the variable
   // Item derives its paddingInline from, on the row itself (custom properties
@@ -183,6 +223,26 @@ const styles = stylex.create({
       'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
     borderRadius: 0,
   },
+  // A swipeable row is a stacking context at rest (Item isolates and
+  // translates its swipe root), so its touch band's own z-index orders only
+  // inside it: under a finger the row itself rises above the rows after it,
+  // whose boxes its band reaches into. The list isolates, so it stays below
+  // a sticky header (List.tsx).
+  //
+  // StyleX keeps one zIndex per element, and this style comes after
+  // `travelling`, so it carries the travelling raise too, above its own: a
+  // row an update slides across swipeable rows (each at 1 under a finger)
+  // still rides above them, with a mouse as under a finger.
+  swipeRaised: {
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 2,
+      '@media (pointer: coarse)': {
+        default: 1,
+        '[data-astryx-travelling]': 2,
+      },
+    },
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
@@ -193,6 +253,12 @@ const styles = stylex.create({
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
+    },
+    // The touch hit layer's band starts past the divider, the edge of the box
+    // its insets are measured from (utils/touchHitArea.stylex.ts).
+    '--_hit-border-bottom': {
+      default: borderVars['--border-width'],
+      ':last-child': '0px',
     },
   },
 });
@@ -319,6 +385,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  itemKey,
   align,
   xstyle,
   className,
@@ -327,6 +394,45 @@ export function ListItem({
   ...restProps
 }: ListItemProps) {
   const ctx = use(ListContext);
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  const mergedRef = useMergedRefs(ref, rowRef);
+  // External system (`architecture:react-component-runtime` INV3): the Web
+  // Animations running on the row's parts (a swipe's travel, on the
+  // compositor), which a detached row loses. Leaving a list that animates
+  // its changes, the row writes what they present inline while it is still
+  // in the document (a parent's layout cleanup runs before React removes the
+  // row), so the removal's collapse shows it as it was on screen.
+  useIsomorphicLayoutEffect(() => {
+    const row = rowRef.current;
+    return () => {
+      if (row != null) {
+        // Only in a list under an animated layout handle, as the list was
+        // at its last commit (List/listLayoutUpdates.ts).
+        if (isInAnimatedList(row)) {
+          keepPresentation(row);
+        }
+      }
+    };
+  }, []);
+  // Under a finger, an interactive row's hit target grows toward the touch
+  // target where its neighbors leave room, with no visual or layout change
+  // (`spec:AST-094` FR42; `component:List` FR10): useTouchHitArea keeps the row's insets live, and
+  // its invisible layer (touchHitAreaStyles.layer) reads them.
+  const isTouchTarget =
+    (onClick != null || href != null || interactiveRef != null) && !isDisabled;
+  useTouchHitArea(rowRef, isTouchTarget);
+  // A row Item serves swipe actions on is a stacking context at rest, so its
+  // band's own z-index orders only inside it: under a finger, the row raises
+  // itself (styles.swipeRaised). Its root is its `<li>`, never a link.
+  const isRaisedSwipeRow =
+    isTouchTarget &&
+    servesSwipeActions({
+      swipeActions: restProps.swipeActions,
+      isDisabled,
+      isDelegate: interactiveRef != null,
+      isLinkRoot: false,
+      role: restProps.role,
+    });
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -371,7 +477,7 @@ export function ListItem({
   return (
     <Item
       as="li"
-      ref={ref}
+      ref={mergedRef}
       marker={marker}
       startContent={startContent}
       label={label}
@@ -389,8 +495,11 @@ export function ListItem({
       xstyle={
         [
           hasMarkers && styles.withCounter,
+          styles.travelling,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          isTouchTarget && touchHitAreaStyles.layer,
+          isRaisedSwipeRow && styles.swipeRaised,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
@@ -398,6 +507,9 @@ export function ListItem({
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      // The row's identity for the list's animated layout
+      // (List/listLayoutUpdates.ts).
+      {...(itemKey != null ? {[ITEM_KEY_ATTRIBUTE]: String(itemKey)} : null)}
       {...restProps}
     />
   );
