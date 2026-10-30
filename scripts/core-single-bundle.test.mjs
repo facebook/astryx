@@ -9,7 +9,8 @@
  *   reach in lazy initializers; if a barrel `index.js` is declared
  *   side-effect-free, esbuild drops its initializer call and a component such
  *   as List runs before its module is initialized ("reading 'useId' of
- *   undefined"). The barrels are declared side-effectful to keep that order.
+ *   undefined"). The barrels are declared side-effectful to keep that order,
+ *   and so hold only imports and re-exports.
  * @position Node test over Core's build output; CI builds Core before the Node
  *   tests run
  */
@@ -91,6 +92,39 @@ describe('Core in a single esbuild bundle', () => {
     },
     60_000,
   );
+
+  it('keeps every barrel to imports and re-exports, since barrels are kept whole', () => {
+    // A barrel declared side-effectful stays in every bundle that reaches it,
+    // so any value it computes is paid for by every app.
+    const ts = require('typescript');
+    const offenders = [];
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== '__tests__') walk(file);
+        } else if (/^index\.tsx?$/.test(entry.name)) {
+          const source = ts.createSourceFile(
+            file,
+            fs.readFileSync(file, 'utf8'),
+            ts.ScriptTarget.Latest,
+          );
+          for (const statement of source.statements) {
+            const allowed =
+              ts.isExportDeclaration(statement) ||
+              ts.isImportDeclaration(statement) ||
+              ts.isTypeAliasDeclaration(statement) ||
+              ts.isInterfaceDeclaration(statement) ||
+              (ts.isExpressionStatement(statement) &&
+                ts.isStringLiteral(statement.expression));
+            if (!allowed) offenders.push(path.relative(CORE, file));
+          }
+        }
+      }
+    };
+    walk(path.join(CORE, 'src'));
+    expect(offenders).toEqual([]);
+  });
 
   it('declares the barrel modules side-effectful in the published package', () => {
     const {sideEffects} = JSON.parse(
