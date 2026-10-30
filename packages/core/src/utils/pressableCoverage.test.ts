@@ -32,9 +32,14 @@ import {describe, expect, it} from 'vitest';
 
 const SRC = path.resolve(__dirname, '..');
 
-/** The utility and the controller define the model; they are not surfaces. */
+/**
+ * The utility, the list row's press layer and the controller define the
+ * model; they are not surfaces.
+ */
 const MODEL_FILES = new Set([
   'utils/interactionOverlay.stylex.ts',
+  'utils/rowPressLayer.ts',
+  'utils/controlPressLayer.ts',
   'utils/pressFeedback.ts',
   'utils/pressGesture.ts',
 ]);
@@ -63,9 +68,14 @@ const source = new Map(
   files.map(file => [path.relative(SRC, file), fs.readFileSync(file, 'utf8')]),
 );
 
-const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
+// A press arm keys on `:active` or on the attribute the controller writes, as
+// a bare attribute selector or inside `:is(…)`.
+const PRESS_ARM =
+  /':active|'(?::is\()?\[data-astryx-press=|interactionOverlayStyles\./;
+// The trailing comma is what the formatter writes when a call wraps over
+// several lines.
 const ANCESTOR_ARM =
-  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
+  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*,?\s*\)/g;
 
 function isMarked(file: string): boolean {
   return (source.get(file) ?? '').includes('usePressFeedback(');
@@ -167,8 +177,9 @@ describe('every surface that paints a press is reachable by the touch press cont
 
   it('marks nothing that does not paint a press', () => {
     // The converse: a marker with no arm would ask the controller to write an
-    // attribute nothing reads. Every marked file must paint a press itself or
-    // apply a scope an indicator reads.
+    // attribute nothing reads. Every marked file must paint a press itself,
+    // compose a styles-only module that does (its arms land on this file's
+    // elements), or apply a scope an indicator reads.
     const marked = [...source.entries()]
       .filter(([, text]) => text.includes('usePressFeedback('))
       .map(([file]) => file)
@@ -178,9 +189,15 @@ describe('every surface that paints a press is reachable by the touch press cont
         [...text.matchAll(ANCESTOR_ARM)].map(m => m[1]),
       ),
     );
+    const pressArmModules = pressArmFiles.filter(file =>
+      file.endsWith('.stylex.ts'),
+    );
     const unexplained = marked.filter(file => {
       const text = source.get(file) ?? '';
       if (PRESS_ARM.test(text)) {
+        return false;
+      }
+      if (pressArmModules.some(module => importers(module).includes(file))) {
         return false;
       }
       return ![...scopeNames].some(scope =>

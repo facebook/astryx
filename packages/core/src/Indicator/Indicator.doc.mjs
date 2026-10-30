@@ -143,6 +143,22 @@ export const docs = {
       },
       {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
     ],
+    vars: [
+      {
+        name: '--_indicator-press-image',
+        description:
+          "The touch press image for the layer over a selection mark, declared by the element that owns the press (a CheckboxInput's control, a CheckboxList or RadioList row): none at rest, and the pressed overlay token at full strength while the touch press controller presses that element under a coarse pointer. The layer reads its nearest owner's value, so a mark inside another owner's content answers only its own press.",
+        default: 'none',
+        private: true,
+      },
+      {
+        name: '--_indicator-press-release',
+        description:
+          "The release animation for the layer over a selection mark, declared by the element that owns the press: none, and the layer's opacity fade while that element's press fades under a coarse pointer.",
+        default: 'none',
+        private: true,
+      },
+    ],
   },
   examples: [
     {

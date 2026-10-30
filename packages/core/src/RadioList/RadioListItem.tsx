@@ -4,7 +4,9 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item
+ * @input Uses React use, useId, useRef, RadioListContext, Item, the press
+ *   release clocks (cellPressConsts) and the Reduce Motion fade
+ *   (reducedMotionFadeConsts)
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -26,17 +28,17 @@ import {RadioListContext} from './RadioList';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {indicatorPressOwnerStyles} from '../Indicator/indicatorPress.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 
-// The touch press's paint, declared by the shared overlay styles on the
-// element the controller writes to (`pressedAlpha`) at the press's strength,
-// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
-// that paints it. See interactionOverlay.stylex.ts.
-const pressedOverlayImage = 'var(--_press-paint-image)';
+/** The row is a cell: the circle releases on the row's deselect clock. */
+const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
 
 // The mouse press's paint, declared on the row and inherited by the layer
 // over the circle. Internal: not a theme hook.
@@ -62,6 +64,11 @@ const styles = stylex.create({
   // reads off the same scope marker as the hover tint. The controller paints
   // the innermost pressable, so a nested link or button takes the press
   // itself and the row never carries the attribute for it.
+  //
+  // The touch press is this layer's own: the pressed token at full strength
+  // while the press is on, and a release of the layer's opacity, 1 → 0, on
+  // the row's clock (a cell's deselect). Opacity runs on the compositor, so
+  // the release keeps moving while script runs.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -70,22 +77,35 @@ const styles = stylex.create({
       borderRadius: radiusVars['--radius-full'],
       pointerEvents: 'none',
       backgroundColor: `var(${ROW_PRESS}, transparent)`,
-      // The touch press, as an image layer over the colour: an image change is
-      // discrete, so no transition can delay the onset, and the strength the
-      // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
-      // what moves. Coarse pointers only, like the drop above.
+      // An image layer over the colour: an image change is discrete, so no
+      // transition can delay the onset. The owner declares the image and the
+      // release (indicatorPressOwnerStyles); the layer reads them, under a
+      // coarse pointer only.
       backgroundImage: {
         default: null,
-        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
-        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
-          {
-            default: null,
-            '@media (pointer: coarse)': pressedOverlayImage,
-          },
+        '@media (pointer: coarse)': 'var(--_indicator-press-image, none)',
       },
+      animationName: {
+        default: null,
+        '@media (pointer: coarse)': 'var(--_indicator-press-release, none)',
+      },
+      animationDuration: {
+        default: null,
+        '@media (pointer: coarse)': {
+          default: CELL_RELEASE,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.duration,
+        },
+      },
+      animationTimingFunction: {
+        default: null,
+        '@media (pointer: coarse)': {
+          default: cellPressConsts.cellReleaseEase,
+          '@media (prefers-reduced-motion: reduce)':
+            reducedMotionFadeConsts.easing,
+        },
+      },
+      animationFillMode: {default: null, '@media (pointer: coarse)': 'both'},
     },
   },
   input: {
@@ -143,11 +163,14 @@ const rowStyles = stylex.create({
     // Suppress Item's interactive hover/press background so the resting and
     // hovered row look identical by default (a theme can restyle either).
     backgroundColor: 'transparent',
-    // ...and the touch press's overlay image, for the same reason: under a
-    // finger only the radio circle paints, as under a mouse. The press's
-    // strength still lands on the row, which is where the layer over the
-    // circle reads it.
+    // ...and the touch press's overlay image and the row's press layer
+    // (Item's compositor `::before`), for the same reason: under a finger
+    // only the radio circle paints, as under a mouse. The circle's layer
+    // paints and releases that press itself.
     backgroundImage: 'none',
+    '::before': {
+      content: 'none',
+    },
   },
   // The mouse press (a finger's lives on `data-astryx-press`): the row is
   // pressed, but not through a nested link or button, which keep their own
@@ -395,6 +418,9 @@ export function RadioListItem({
           // the painting row element (Item), the same element that carries the
           // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
+          // The row owns its radio's touch press: it declares the press's
+          // image and release for the layer over the circle.
+          !isDisabled && indicatorPressOwnerStyles.owner,
           // Restore the bare default look: zero Item's padding/radius and its
           // interactive hover/press background. Applied after Item's own base
           // styles so it wins within the base layer; a `radio-list-item` theme

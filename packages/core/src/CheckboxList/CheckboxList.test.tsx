@@ -19,10 +19,28 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {CheckboxList} from './CheckboxList';
 import {CheckboxListItem} from './CheckboxListItem';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {List} from '../List/List';
+import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
+import {
+  hasPressedArm,
+  readsPressStrength,
+  rulesDeclaredFor,
+} from '../__tests__/pressState';
+import {
+  declaresIndicatorPressOwner,
+  layerPressRulesOutsideCoarse,
+  ownerPressRulesOutsideCoarse,
+  readIndicatorPressLayer,
+  readsAncestorPress,
+  readsIndicatorPress,
+} from '../__tests__/indicatorPressLayer';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
@@ -1155,5 +1173,278 @@ describe('CheckboxListItem ARIA props', () => {
         expect(checkbox).toHaveAttribute('aria-disabled', 'true');
       }
     });
+  });
+});
+
+describe('CheckboxListItem press surface', () => {
+  const hoverScopeClass = stylex.props(indicatorScope).className ?? '';
+
+  // The row owns its checkbox's press only under a coarse primary pointer (a
+  // finger); a fine-pointer page keeps main's behavior (spec:AST-017 FR59).
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A coarse primary pointer: every non-motion query matches. */
+  function withCoarsePointer() {
+    stubMatchMedia({matches: true});
+  }
+
+  /** The row's checkbox: its indicator wrapper and the control around it. */
+  function parts(row: HTMLElement) {
+    const box = row.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    const control = wrapper?.parentElement;
+    if (wrapper == null || control == null) {
+      throw new Error('the row has no checkbox to press');
+    }
+    return {wrapper, control};
+  }
+
+  function rowOf(name: string): HTMLElement {
+    const row = screen.getByRole('checkbox', {name}).closest('li');
+    if (row == null) {
+      throw new Error(`no row for ${name}`);
+    }
+    return row;
+  }
+
+  function classesOf(element: Element): string[] {
+    return element.className.split(/\s+/);
+  }
+
+  it('makes the row the one press surface, so the label and the box press the same element', () => {
+    withCoarsePointer();
+    render(
+      <CheckboxList label="Notifications" value={['email']} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" description="Rates apply" />
+      </CheckboxList>,
+    );
+    expect(hoverScopeClass).not.toBe('');
+    for (const name of ['Email', 'SMS']) {
+      const row = rowOf(name);
+      const {wrapper, control} = parts(row);
+      // The touch press paints the innermost marked element under the
+      // finger: with nothing marked inside the row, every point of it presses
+      // the row.
+      expect(row).toHaveAttribute('data-astryx-pressable');
+      expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+      expect(control).not.toHaveAttribute('data-astryx-pressable');
+      // The row declares the press's image and release, so the layer over
+      // the box paints the row's press at full strength and releases it by
+      // its own opacity on the row's deselect clock, beside the row's own
+      // press layer, both on the compositor.
+      expect(declaresIndicatorPressOwner(row)).toBe(true);
+      expect(readIndicatorPressLayer(wrapper, row)).toEqual({
+        paintsOn: true,
+        paintsFading: true,
+        releases: true,
+        releaseMs: [cellPressConsts.cellReleaseMs, 200],
+        fillsBoth: true,
+      });
+      expect(readsPressStrength(wrapper)).toBe(false);
+      // The row's own press layer (Item's cell `::before`) paints the pressed
+      // token beside the box.
+      expect(
+        rulesDeclaredFor(row).some(
+          rule =>
+            rule.slice(0, rule.indexOf('{')).includes('::before') &&
+            rule.includes('--color-overlay-pressed'),
+        ),
+      ).toBe(true);
+      // The row-owned arms, release included, stay in the coarse media key
+      // too (spec:AST-017 FR59).
+      expect(layerPressRulesOutsideCoarse(wrapper)).toEqual([]);
+      expect(ownerPressRulesOutsideCoarse(row)).toEqual([]);
+      // The box answers its own row only, never an outer row's press
+      // (architecture:component-style-authoring INV4).
+      expect(readsAncestorPress(wrapper)).toBe(false);
+      // A mouse's press and hover stay the checkbox's own.
+      expect(classesOf(control)).toContain(hoverScopeClass);
+      expect(classesOf(row)).not.toContain(hoverScopeClass);
+      expect(hasPressedArm(wrapper)).toBe(true);
+    }
+  });
+
+  it('makes a standalone row with a check handler its press surface too', () => {
+    withCoarsePointer();
+    render(
+      <List>
+        <CheckboxListItem
+          label="Accept terms"
+          isChecked={false}
+          onCheck={() => {}}
+        />
+      </List>,
+    );
+    const row = rowOf('Accept terms');
+    expect(row).toHaveAttribute('data-astryx-pressable');
+    expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+    expect(declaresIndicatorPressOwner(row)).toBe(true);
+  });
+
+  it('keeps the box its own press owner on a fine-pointer page', () => {
+    // A pen, or a finger on a touchscreen laptop, on a fine-pointer page
+    // presses the box itself, as on main (spec:AST-017 FR59): the box keeps
+    // its own press marker, so it is the innermost pressable under the pen,
+    // and the row hands its box no press paint, so nothing paints a row press
+    // that fades after the lift.
+    stubMatchMedia({matches: false});
+    render(
+      <CheckboxList label="Notifications" value={['email']} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" />
+      </CheckboxList>,
+    );
+    const row = rowOf('Email');
+    const {wrapper, control} = parts(row);
+    expect(control).toHaveAttribute('data-astryx-pressable');
+    expect(Array.from(row.querySelectorAll('[data-astryx-pressable]'))).toEqual(
+      [control],
+    );
+    // The row declares no press for its box; the box's control owns its own.
+    expect(declaresIndicatorPressOwner(row)).toBe(false);
+    expect(declaresIndicatorPressOwner(control)).toBe(true);
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('holds one touch-query listener however many rows there are, and none once they unmount', () => {
+    // A repeated row adds no touch observer of its own (spec:AST-094 FR24;
+    // architecture:react-component-runtime INV7): every row reads one shared
+    // answer, on a fine pointer and on a coarse one alike.
+    for (const coarse of [false, true]) {
+      let live = 0;
+      const count = (query: string, delta: number) => {
+        if (query.includes('pointer: coarse')) {
+          live += delta;
+        }
+      };
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('pointer: coarse') ? coarse : false,
+          media: query,
+          onchange: null,
+          addEventListener: () => count(query, 1),
+          removeEventListener: () => count(query, -1),
+          addListener: () => count(query, 1),
+          removeListener: () => count(query, -1),
+          dispatchEvent: () => false,
+        })),
+      );
+      const {unmount} = render(
+        <CheckboxList label="Many" value={['v0']} onChange={() => {}}>
+          {Array.from({length: 40}, (_, index) => (
+            <CheckboxListItem
+              key={index}
+              label={`Option ${index}`}
+              value={`v${index}`}
+            />
+          ))}
+        </CheckboxList>,
+      );
+      // The rows still answer the pointer they are on: under a finger the
+      // row owns its box's press, so the box carries no press marker.
+      const {control} = parts(rowOf('Option 3'));
+      expect(control.hasAttribute('data-astryx-pressable')).toBe(!coarse);
+      expect(live).toBe(1);
+      unmount();
+      expect(live).toBe(0);
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('leaves a row that does not respond to presses out of it', () => {
+    // A standalone row with no check handler delegates nothing, so its
+    // checkbox keeps its own press.
+    render(
+      <List>
+        <CheckboxListItem label="Completed task" isChecked />
+      </List>,
+    );
+    const row = rowOf('Completed task');
+    const {control} = parts(row);
+    expect(row).not.toHaveAttribute('data-astryx-pressable');
+    expect(control).toHaveAttribute('data-astryx-pressable');
+    expect(declaresIndicatorPressOwner(row)).toBe(false);
+    expect(declaresIndicatorPressOwner(control)).toBe(true);
+  });
+
+  it('paints no press on a disabled item', () => {
+    render(
+      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" isDisabled />
+      </CheckboxList>,
+    );
+    const row = rowOf('Email');
+    const {wrapper, control} = parts(row);
+    expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+    expect(control).not.toHaveAttribute('data-astryx-pressable');
+    expect(declaresIndicatorPressOwner(row)).toBe(false);
+    expect(readsIndicatorPress(wrapper)).toBe(false);
+    expect(hasPressedArm(wrapper)).toBe(false);
+  });
+
+  it('paints no press anywhere in a read-only group, whose values cannot change', () => {
+    render(
+      <CheckboxList
+        label="Notifications"
+        value={['email']}
+        onChange={() => {}}
+        isReadOnly>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+      </CheckboxList>,
+    );
+    for (const name of ['Email', 'SMS']) {
+      const row = rowOf(name);
+      const {wrapper} = parts(row);
+      expect(row).not.toHaveAttribute('data-astryx-pressable');
+      expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
+      expect(hasPressedArm(wrapper)).toBe(false);
+      expect(readsIndicatorPress(wrapper)).toBe(false);
+    }
+  });
+
+  it('lets a read-only row with its own click handler press, but not its box', () => {
+    // The row still responds (the consumer's handler runs), so it keeps its
+    // press; the box's value cannot change, so it paints nothing.
+    render(
+      <CheckboxList
+        label="Notifications"
+        value={['email']}
+        onChange={() => {}}
+        isReadOnly>
+        <CheckboxListItem label="Email" value="email" onClick={() => {}} />
+      </CheckboxList>,
+    );
+    const row = rowOf('Email');
+    const {wrapper, control} = parts(row);
+    expect(row).toHaveAttribute('data-astryx-pressable');
+    expect(control).not.toHaveAttribute('data-astryx-pressable');
+    expect(hasPressedArm(wrapper)).toBe(false);
+    expect(readsIndicatorPress(wrapper)).toBe(false);
+  });
+
+  it("keeps a checkbox placed in the row's content its own press surface", () => {
+    render(
+      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label="Email"
+          value="email"
+          endContent={
+            <CheckboxInput
+              label="Daily digest"
+              value={false}
+              onChange={() => {}}
+            />
+          }
+        />
+      </CheckboxList>,
+    );
+    const nested = screen.getByRole('checkbox', {name: 'Daily digest'});
+    const nestedSurface = nested.closest('[data-astryx-pressable]');
+    expect(nestedSurface).not.toBeNull();
+    expect(nestedSurface?.tagName).not.toBe('LI');
   });
 });
