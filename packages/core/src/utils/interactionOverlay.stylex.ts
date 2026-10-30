@@ -90,7 +90,6 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
-import {cellPressConsts} from './rowPressLayer.stylex';
 
 /**
  * The touch press's strength on the surface the controller painted, 0 to 1.
@@ -143,6 +142,7 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
+
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
 const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;
@@ -181,9 +181,13 @@ const pressRelease = stylex.keyframes({
  * (strength ≈ 0.2 at the midpoint), which is what a deselect crossfade reads
  * as. Not the system's `--ease-standard`: that curve is for things that move,
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
- * would read as half its clock.
+ * would read as half its clock. It is the constants table's
+ * `timing.press.highlightOutCurve`, which the list row's layer mirrors too
+ * (rowPressLayer.stylex.ts); interactionOverlay.cell.test.ts fails if either
+ * drifts. A copy, not an import: this module reaches nearly every component,
+ * and the row layer's constants stay with the rows.
  */
-const RELEASE_EASE = cellPressConsts.cellReleaseEase;
+const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 
 /**
  * The touch press's strength and its release, on the element the controller

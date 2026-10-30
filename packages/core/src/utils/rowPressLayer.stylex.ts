@@ -6,9 +6,9 @@
  * @output The list row press layer's clocks (`cellPressConsts`)
  * @position Internal to core: core's `exports` do not list this module, so
  *   none of it is public API (`architecture:public-component-api` INV12).
- *   Read by interactionOverlay.stylex.ts (the overlay's release) and
- *   rowPressLayer.ts (the row layer); interactionOverlay.exports.test.ts
- *   holds it off the published paths.
+ *   Read by rowPressLayer.ts (the row layer) only, so a component without
+ *   a press row ships none of it; interactionOverlay.exports.test.ts holds it
+ *   off the published paths.
  */
 
 import * as stylex from '@stylexjs/stylex';
