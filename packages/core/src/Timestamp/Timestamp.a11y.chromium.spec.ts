@@ -1,0 +1,102 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Timestamp.a11y.chromium.spec.ts
+ * @input Built Storybook, Chromium keyboard navigation and a delayed card chunk
+ * @output Proof of sequential copy access and focus preservation on cold loads
+ * @position Browser regressions for Timestamp's lazy details attachment
+ */
+
+import {expect, test} from '@playwright/test';
+import {
+  DEFAULT_STORYBOOK_DIR,
+  serveStorybook,
+  type StaticServer,
+} from '@astryxdesign/a11y-spec/storybook';
+
+let storybook: StaticServer;
+test.beforeAll(async () => {
+  storybook = await serveStorybook(
+    process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
+  );
+});
+test.afterAll(async () => storybook?.close());
+
+for (const moveAway of [false, true]) {
+  test(`cold card attachment ${moveAway ? 'respects newer focus' : 'preserves focus and opens details'}`, async ({
+    page,
+  }) => {
+    let release!: () => void;
+    const heldChunk = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    let intercepted = false;
+    await page.route(/TimestampHoverCard[^/]*\.js(?:\?.*)?$/, async route => {
+      intercepted = true;
+      await heldChunk;
+      await route.continue();
+    });
+    try {
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=core-timestamp--relative-format&viewMode=story`,
+      );
+      const times = page.locator('#storybook-root time');
+      await expect(times).toHaveCount(7);
+      await expect.poll(() => intercepted).toBe(true);
+      await page.keyboard.press('Tab');
+      await expect(times.first()).toBeFocused();
+      const original = await times.first().elementHandle();
+      if (original === null) {
+        throw new Error('Expected the first timestamp');
+      }
+      if (moveAway) {
+        await page.keyboard.press('Tab');
+        await expect(times.nth(1)).toBeFocused();
+      }
+      release();
+      await expect(times.first()).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(await original.evaluate(node => node.isConnected)).toBe(true);
+      const activeTime = times.nth(moveAway ? 1 : 0);
+      await expect(activeTime).toBeFocused();
+      await expect(activeTime).toHaveAttribute('aria-controls', /.+/);
+      if (moveAway) {
+        await expect(times.first()).not.toHaveAttribute('aria-controls');
+      }
+      const cardId = await activeTime.getAttribute('aria-controls');
+      const card = page.locator(`[id="${cardId}"]`);
+      await expect(card).toBeVisible();
+      await expect(activeTime).not.toHaveAttribute('aria-expanded');
+      await page.keyboard.press('Tab');
+      await expect(card.getByRole('button', {name: /^Copy /})).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
+      await expect(activeTime).toBeFocused();
+      // The copy button's own tooltip dismisses independently of the card.
+      await expect(page.getByRole('tooltip')).not.toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(card).not.toBeVisible();
+      await expect(activeTime).toBeFocused();
+    } finally {
+      release();
+    }
+  });
+}
+
+test('each timestamp owns the next copy-button tab stop', async ({page}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-timestamp--relative-format&viewMode=story`,
+  );
+  const times = page.locator('#storybook-root time');
+  await expect(times.first()).toHaveAttribute('aria-haspopup', 'dialog');
+  await page.keyboard.press('Tab');
+  for (let index = 0; index < 2; index++) {
+    await expect(times.nth(index)).toBeFocused();
+    await expect(times.nth(index)).toHaveAttribute('aria-controls', /.+/);
+    const id = await times.nth(index).getAttribute('aria-controls');
+    await page.keyboard.press('Tab');
+    await expect(
+      page.locator(`[id="${id}"]`).getByRole('button', {name: /^Copy /}),
+    ).toBeFocused();
+    await page.keyboard.press('Tab');
+  }
+  await expect(times.nth(2)).toBeFocused();
+});
