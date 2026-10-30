@@ -37,7 +37,8 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import treeListMessages from '../i18n/generated-locales/en/treeList.generated';
 import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 // =============================================================================
@@ -413,7 +414,7 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(treeListMessages);
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();

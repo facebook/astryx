@@ -7,7 +7,10 @@ import {fileURLToPath} from 'node:url';
 import {rewriteImports, swizzle} from './swizzle.mjs';
 
 // api/swizzle/ -> up 3 = packages/cli, up 4 = repo root (has packages/core).
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+const REPO = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../..',
+);
 
 describe('rewriteImports', () => {
   it('preserves the theme token subpath (StyleX module is a dedicated export)', () => {
@@ -21,7 +24,9 @@ describe('rewriteImports', () => {
   it('rewrites ../utils/mergeProps to @astryxdesign/core/utils', () => {
     const input = `import { mergeProps } from '../utils/mergeProps';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { mergeProps } from '@astryxdesign/core/utils';`);
+    expect(result).toBe(
+      `import { mergeProps } from '@astryxdesign/core/utils';`,
+    );
   });
 
   it('leaves same-level relative imports untouched', () => {
@@ -115,26 +120,136 @@ describe('swizzle() API', () => {
   });
 
   it('unknown component → AstryxError ERR_UNKNOWN_COMPONENT with suggestions', async () => {
-    await expect(swizzle('NotARealComponent99', {cwd: REPO})).rejects.toMatchObject({
+    await expect(
+      swizzle('NotARealComponent99', {cwd: REPO}),
+    ).rejects.toMatchObject({
       code: 'ERR_UNKNOWN_COMPONENT',
     });
+  });
+});
+
+describe('rewriteImports — a component reading its own English slice', () => {
+  it('reads through the public useTranslator() in the ejected copy', () => {
+    const input = `import {
+  useComponentTranslator,
+  type TranslatorFn,
+} from '../i18n/useComponentTranslator';
+import buttonMessages from '../i18n/generated-locales/en/button.generated';
+import fieldMessages from '../i18n/generated-locales/en/field.generated';
+const messages = {
+  ...buttonMessages,
+  ...fieldMessages,
+};
+export function Button() {
+  const t = useComponentTranslator(messages);
+  return <span>{t('@astryx.button.loading')}</span>;
+}
+function helper(t: TranslatorFn) {
+  return t('@astryx.field.required');
+}`;
+    const out = rewriteImports(input);
+    expect(out).toContain(
+      "import {useTranslator, type TranslatorFn} from '@astryxdesign/core/i18n';",
+    );
+    expect(out).toContain('const t = useTranslator();');
+    expect(out).not.toContain('useComponentTranslator');
+    expect(out).not.toContain('generated-locales');
+    expect(out).not.toContain('Messages');
+    expect(out).toContain('helper(t: TranslatorFn)');
+  });
+
+  it('every core component, as swept, ejects with i18n imports the public barrel exports', () => {
+    // The barrel's exported names (the public name of an `X as Y` re-export).
+    const i18nIndex = fs.readFileSync(
+      path.join(REPO, 'packages/core/src/i18n/index.ts'),
+      'utf-8',
+    );
+    const exported = new Set(
+      [...i18nIndex.matchAll(/export (?:type )?\{([^}]+)\}/g)].flatMap(m =>
+        m[1].split(',').map(n =>
+          n
+            .trim()
+            .split(/\s+as\s+/)
+            .pop(),
+        ),
+      ),
+    );
+    const srcDir = path.join(REPO, 'packages/core/src');
+    const componentDirs = fs
+      .readdirSync(srcDir, {withFileTypes: true})
+      .filter(
+        d => d.isDirectory() && d.name !== 'i18n' && !d.name.startsWith('_'),
+      )
+      .map(d => d.name);
+    let sawTranslator = false;
+    let sawCallerKeyAlias = false;
+    for (const dir of componentDirs) {
+      const files = fs
+        .readdirSync(path.join(srcDir, dir))
+        .filter(
+          f =>
+            (f.endsWith('.ts') || f.endsWith('.tsx')) &&
+            !f.includes('.test.') &&
+            !f.includes('.doc.') &&
+            !f.includes('.stories.'),
+        );
+      for (const file of files) {
+        const rewritten = rewriteImports(
+          fs.readFileSync(path.join(srcDir, dir, file), 'utf-8'),
+        );
+        const where = `${dir}/${file}`;
+        expect(rewritten, where).not.toContain('useComponentTranslator');
+        expect(rewritten, where).not.toContain('generated-locales');
+        expect(rewritten, where).not.toMatch(/i18n\/useCatalogTranslator/);
+        expect(rewritten, where).not.toMatch(
+          /import \w+ from ['"]@astryxdesign\/core\/i18n['"]/,
+        );
+        const re =
+          /import\s*\{([^}]*)\}\s*from\s+['"]@astryxdesign\/core\/i18n['"]/g;
+        let m;
+        while ((m = re.exec(rewritten)) !== null) {
+          for (const raw of m[1].split(',')) {
+            // `X as Y` imports `X`; that is the name the barrel must export.
+            const name = raw
+              .trim()
+              .replace(/^type\s+/, '')
+              .split(/\s+as\s+/)[0];
+            if (!name) continue;
+            expect(
+              exported.has(name),
+              `${where}: ${name} must be exported from the i18n barrel`,
+            ).toBe(true);
+            if (name === 'useTranslator') sawTranslator = true;
+            if (/useTranslator\s+as\s+useCatalogTranslator/.test(raw)) {
+              sawCallerKeyAlias = true;
+            }
+          }
+        }
+      }
+    }
+    expect(sawTranslator).toBe(true);
+    // PowerSearch reads caller-supplied keys through the internal
+    // whole-catalog translator; ejected, that is the public one under an alias.
+    expect(sawCallerKeyAlias).toBe(true);
   });
 });
 
 describe('swizzle rewriteImports compiles for components with .stylex imports', () => {
   it('Button: every rewritten import resolves in the core exports map', async () => {
     const corePkg = JSON.parse(
-      fs.readFileSync(
-        path.join(REPO, 'packages/core/package.json'),
-        'utf-8',
-      ),
+      fs.readFileSync(path.join(REPO, 'packages/core/package.json'), 'utf-8'),
     );
     const exportKeys = new Set(Object.keys(corePkg.exports));
 
     const buttonDir = path.join(REPO, 'packages/core/src/Button');
-    const files = fs.readdirSync(buttonDir).filter(
-      f => (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('.test.') && !f.includes('.doc.'),
-    );
+    const files = fs
+      .readdirSync(buttonDir)
+      .filter(
+        f =>
+          (f.endsWith('.ts') || f.endsWith('.tsx')) &&
+          !f.includes('.test.') &&
+          !f.includes('.doc.'),
+      );
 
     for (const file of files) {
       const content = fs.readFileSync(path.join(buttonDir, file), 'utf-8');

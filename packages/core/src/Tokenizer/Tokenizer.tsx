@@ -86,8 +86,13 @@ import {
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {composeEventHandlers, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import tokenizerMessages from '../i18n/generated-locales/en/tokenizer.generated';
+import typeaheadMessages from '../i18n/generated-locales/en/typeahead.generated';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...tokenizerMessages, ...typeaheadMessages};
 
 // Re-export status types for convenience
 export type {
@@ -764,7 +769,7 @@ export function Tokenizer<T extends SearchableItem>({
   // A caller's onClick arrives through the base props; the sheet trigger
   // composes it with its own open handler rather than letting either win.
   const {onClick: callerOnClick, ...restWithoutClick} = rest;
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const size = useSize(sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;

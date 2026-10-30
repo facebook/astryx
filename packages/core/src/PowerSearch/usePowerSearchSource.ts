@@ -15,7 +15,9 @@
 import {useMemo} from 'react';
 import type {SearchSource} from '../Typeahead/types';
 import {groupItems} from '../utils';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import {useCatalogTranslator} from '../i18n/useCatalogTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
@@ -29,14 +31,17 @@ export function usePowerSearchSource(
   config: InternalConfig,
   maxTypedResults: number,
 ): SearchSource<PowerSearchItem> {
-  const t = useTranslator();
+  // Shipped default operators (`@astryx.powersearch.*`) read the slice like
+  // every fixed string; a caller's own `i18nKey` reads the whole catalog.
+  const t = useComponentTranslator(powersearchMessages);
+  const tCaller = useCatalogTranslator();
   return useMemo(() => {
     const allItems = buildFieldItems(config);
     // Resolver stays inline — `t()` internally memoizes both catalog
     // lookups and parsed IntlMessageFormat instances, so calling it
     // per keystroke is already O(1).
     const opLabel = (op: PowerSearchOperator): string =>
-      resolveOperatorLabel(op, t);
+      resolveOperatorLabel(op, t, tCaller);
 
     return {
       search(query: string): PowerSearchItem[] {
@@ -212,7 +217,7 @@ export function usePowerSearchSource(
         return allItems;
       },
     };
-  }, [config, t, maxTypedResults]);
+  }, [config, t, tCaller, maxTypedResults]);
 }
 
 interface ValueMatch {

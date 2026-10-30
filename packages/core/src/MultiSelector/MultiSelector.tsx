@@ -105,11 +105,23 @@ import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import inputMessages from '../i18n/generated-locales/en/input.generated';
+import multiSelectorMessages from '../i18n/generated-locales/en/multiSelector.generated';
+import textInputMessages from '../i18n/generated-locales/en/textInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from '../Selector/SelectorBottomSheet';
 import {useSelectorPresentation} from '../Selector/useSelectorPresentation';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...inputMessages,
+  ...multiSelectorMessages,
+  ...spinnerMessages,
+  ...textInputMessages,
+};
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -1159,7 +1171,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         controlClassName != null ||
         controlStyle != null),
   );
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =

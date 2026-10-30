@@ -20,7 +20,8 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import inputClearButtonMessages from '../i18n/generated-locales/en/inputClearButton.generated';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -138,7 +139,7 @@ function renderInputClearButton({
 }
 
 export function InputClearButton(props: InputClearButtonProps): ReactNode {
-  const t = useTranslator();
+  const t = useComponentTranslator(inputClearButtonMessages);
   return renderInputClearButton({
     ...props,
     tooltip: t('@astryx.inputClearButton.tooltip'),
@@ -149,7 +150,7 @@ export function InputClearButton(props: InputClearButtonProps): ReactNode {
 export function InternalInputClearButton(
   props: InternalInputClearButtonProps,
 ): ReactNode {
-  const t = useTranslator();
+  const t = useComponentTranslator(inputClearButtonMessages);
   return renderInputClearButton({
     ...props,
     tooltip: t('@astryx.inputClearButton.tooltip'),

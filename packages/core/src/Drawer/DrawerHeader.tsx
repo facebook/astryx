@@ -34,7 +34,8 @@ import {Heading} from '../Heading';
 import {Icon} from '../Icon';
 import {LayoutHeader} from '../Layout';
 import {Text} from '../Text';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dialogMessages from '../i18n/generated-locales/en/dialog.generated';
 import {isRenderable, mergeProps, themeProps} from '../utils';
 
 const styles = stylex.create({
@@ -147,7 +148,7 @@ export function DrawerHeader({
   ref,
   ...rest
 }: DrawerHeaderProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dialogMessages);
   const hasSubtitle = isRenderable(subtitle);
   const hasStartContent = isRenderable(startContent);
   const hasEndContent = isRenderable(endContent);

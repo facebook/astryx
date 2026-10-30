@@ -119,10 +119,15 @@ import {
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import textInputMessages from '../i18n/generated-locales/en/textInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...textInputMessages, ...spinnerMessages};
 export type TextInputType = 'text' | 'password' | 'email';
 
 export interface TextInputProps extends Omit<
@@ -339,7 +344,7 @@ export function TextInput({
     containerClassName,
     containerStyle,
   });
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   // A disabled field keeps its tab stop but, like a natively disabled one,
   // runs no caller event handler other than focus and blur (`spec:AST-085` FR2).

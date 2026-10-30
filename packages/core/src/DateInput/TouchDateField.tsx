@@ -76,7 +76,11 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import calendarMessages from '../i18n/generated-locales/en/calendar.generated';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {useInputGroup} from '../InputGroup';
 import {useFieldInputStyling} from '../Field/fieldParts';
 import {joinAriaIDs} from '../utils/inputAria';
@@ -125,6 +129,13 @@ import {
   monthIndexOf,
 } from './monthGeometry';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...calendarMessages,
+  ...dateInputMessages,
+  ...spinnerMessages,
+};
 
 /**
  * The comfortable minimum tap target on both iOS and Android, honoured by
@@ -610,7 +621,7 @@ export function TouchDateField({
     ...controlProps
   } = rest;
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =

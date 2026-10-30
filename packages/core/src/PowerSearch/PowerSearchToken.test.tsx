@@ -101,6 +101,20 @@ describe('PowerSearchToken', () => {
     expect(screen.getByText('Status: contains')).toBeInTheDocument();
   });
 
+  it('resolves a caller-supplied i18nKey from any shipped namespace, with no provider mounted', () => {
+    // `operator.i18nKey` is public and unrestricted: a caller may name any
+    // `@astryx.*` key, not only PowerSearch's own. The whole catalog stays
+    // the fallback for it even though the token's fixed strings read a slice.
+    renderToken({
+      operator: {
+        key: 'apply',
+        i18nKey: '@astryx.table.filter.apply',
+        value: {type: 'string'},
+      },
+    });
+    expect(screen.getByText('Status: Apply')).toBeInTheDocument();
+  });
+
   it('renders the formatted value in its own element beside the label', () => {
     const {container} = renderToken({value: {type: 'string', value: 'open'}});
     const label = screen.getByText('Status: is');

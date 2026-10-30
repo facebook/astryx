@@ -94,7 +94,9 @@ import {
   headingLinksHeadingStyle,
 } from './plugins/HeadingLinksRenderer';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, type TranslatorFn} from '../i18n';
+import type {TranslatorFn} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import markdownMessages from '../i18n/generated-locales/en/markdown.generated';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
@@ -2142,7 +2144,7 @@ export function Markdown<
   'data-testid': testId,
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(markdownMessages);
   // Keep one list while it names the same values, so an inline
   // `codeLanguages={[…]}` does not re-render every block on each parent
   // render (adjusting state during render, not in an Effect).

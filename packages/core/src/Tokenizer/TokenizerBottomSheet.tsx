@@ -49,10 +49,20 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {Text} from '../Text/Text';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import textInputMessages from '../i18n/generated-locales/en/textInput.generated';
+import tokenizerMessages from '../i18n/generated-locales/en/tokenizer.generated';
+import typeaheadMessages from '../i18n/generated-locales/en/typeahead.generated';
 import {warnOnce} from '../utils/devWarning';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {colorVars, radiusVars, spacingVars} from '../theme/tokens.stylex';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...textInputMessages,
+  ...tokenizerMessages,
+  ...typeaheadMessages,
+};
 
 /**
  * Sentinel prefix for the create row's synthetic item. Kept identical to the
@@ -316,7 +326,7 @@ function TokenizerSheetContent<T extends SearchableItem>({
   onClearAll,
   onChangeQuery,
 }: TokenizerSheetContentProps<T>) {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   // Whether a checkbox row holds focus, kept by the list's own focus events,

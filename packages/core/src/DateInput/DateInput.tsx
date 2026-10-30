@@ -212,9 +212,15 @@ import {
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...dateInputMessages, ...spinnerMessages};
 export interface DateInputProps extends Omit<
   FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
@@ -533,7 +539,7 @@ function PointerDateField({
     onKeyDown: onKeyDownProp,
     ...controlProps
   } = rest;
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =

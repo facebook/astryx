@@ -40,7 +40,8 @@ import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import commandPaletteMessages from '../i18n/generated-locales/en/commandPalette.generated';
 
 export interface CommandPaletteProps<
   T extends SearchableItem = SearchableItem,
@@ -297,7 +298,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   maxHeight = 480,
   ...rest
 }: CommandPaletteProps<T>) {
-  const t = useTranslator();
+  const t = useComponentTranslator(commandPaletteMessages);
   const label = labelFromProps ?? t('@astryx.commandPalette.label');
   const emptySearchText =
     emptySearchTextFromProps ?? t('@astryx.commandPalette.emptySearch');

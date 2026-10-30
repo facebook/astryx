@@ -56,7 +56,8 @@ import {
   NavHeadingDismissContext,
 } from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import sideNavMessages from '../i18n/generated-locales/en/sideNav.generated';
 
 // =============================================================================
 // Styles
@@ -393,7 +394,7 @@ export function SideNavHeading({
   ...props
 }: SideNavHeadingProps) {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(sideNavMessages);
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);

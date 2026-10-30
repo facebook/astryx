@@ -5,7 +5,7 @@
 /**
  * @file useTableRowExpansion.tsx
  * @input React, StyleX, Icon, Table types, table context (density), i18n
- *   (useTranslator)
+ *   (useComponentTranslator)
  * @output Exports useTableRowExpansion hook + config type
  * @position Row-expansion plugin (detail panel); consumed by Table via plugins prop
  *
@@ -42,7 +42,8 @@ import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTableContext} from '../../useTableCellStyles';
-import {useTranslator} from '../../../i18n';
+import {useComponentTranslator} from '../../../i18n/useComponentTranslator';
+import tableRowExpansionMessages from '../../../i18n/generated-locales/en/tableRowExpansion.generated';
 import {rtlStyles} from '../../../utils';
 import {
   hasInteractiveAncestor,
@@ -345,7 +346,7 @@ function ExpansionChevron({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableRowExpansionMessages);
   const ctx = useTableContext();
   return (
     <button
@@ -595,7 +596,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     animatedLayout,
   } = config;
 
-  const t = useTranslator();
+  const t = useComponentTranslator(tableRowExpansionMessages);
 
   // Final rendered column count, captured in transformColumns (pipeline step
   // 1) and read in transformBodyRow for the detail panel's colSpan.

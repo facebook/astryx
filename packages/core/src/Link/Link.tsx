@@ -47,7 +47,8 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import linkMessages from '../i18n/generated-locales/en/link.generated';
 import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 /**
@@ -312,7 +313,7 @@ export function Link({
   // document controller once, so the link's output stays a pure function of
   // its props.
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(linkMessages);
   const newTabLabel = newTabLabelFromProps ?? t('@astryx.link.newTab');
   const LinkComponent = useLinkComponent(as);
   const role = useInteractiveRole({href, onClick, isDisabled});
