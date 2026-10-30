@@ -1355,6 +1355,33 @@ describe('Tokenizer', () => {
     });
   });
   describe('announcements', () => {
+    it("announces Clear all politely, in the sheet's words", async () => {
+      const onChange = vi.fn();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.tokenizer.allRemoved': 'Tout a été retiré'},
+          }}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={onChange}
+            hasClear
+          />
+        </InternationalizationProvider>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: /clear/i}));
+      expect(onChange).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({type: 'remove'}),
+      );
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Tout a été retiré');
+      });
+    });
+
     it('announces removal politely on Backspace with an empty input', async () => {
       const onChange = vi.fn();
       render(

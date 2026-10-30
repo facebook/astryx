@@ -1221,8 +1221,11 @@ export function Tokenizer<T extends SearchableItem>({
     // Report the last item as removed (convention)
     const lastItem = value[value.length - 1];
     onChange([], {item: lastItem, type: 'remove'});
+    // Focus moves to the input, so the emptied selection is announced, in
+    // the sheet's words (component:Tokenizer AR6; WCAG 4.1.3).
+    announce(t('@astryx.tokenizer.allRemoved'));
     inputRef.current?.focus();
-  }, [value, onChange, isDisabled]);
+  }, [value, onChange, isDisabled, announce, t]);
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
