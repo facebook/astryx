@@ -7,7 +7,7 @@
 
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, it, expect, vi} from 'vitest';
-import {useCallback, useLayoutEffect, useState} from 'react';
+import {useCallback} from 'react';
 import {useTruncation} from './useTruncation';
 
 function Probe({text}: {text: string}) {
@@ -94,12 +94,8 @@ describe('useTruncation', () => {
         configurable: true,
         get: () => 100,
       });
-      function Unclamping() {
-        const [maxLines, setMaxLines] = useState(1);
+      function Unclamping({maxLines}: {maxLines: number}) {
         const truncation = useTruncation({maxLines});
-        useLayoutEffect(() => {
-          setMaxLines(0);
-        }, []);
         return (
           <>
             <span ref={truncation.ref}>overflowing text</span>
@@ -110,7 +106,9 @@ describe('useTruncation', () => {
         );
       }
       try {
-        const {unmount} = render(<Unclamping />);
+        // Measuring turns off in the same task, before the first measurement.
+        const {rerender, unmount} = render(<Unclamping maxLines={1} />);
+        rerender(<Unclamping maxLines={0} />);
         await act(async () => {});
         expect(screen.getByTestId('state')).toHaveTextContent(/^false\|$/);
         unmount();
