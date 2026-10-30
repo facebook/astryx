@@ -20,8 +20,10 @@
  *   List/__tests__/ListRowPress.interaction.browser.spec.ts
  */
 
+import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
+import * as stylex from '@stylexjs/stylex';
 import {createElement} from 'react';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
@@ -30,6 +32,7 @@ import {timing} from '../motion/uikit/timing';
 import {Item} from '../Item';
 import {TreeList} from '../TreeList';
 import {durationToMs, rulesDeclaredFor} from '../__tests__/pressState';
+import {interactionOverlayStyles} from './interactionOverlay.stylex';
 import {PRESS_FADE_MS} from './pressGesture';
 import {cellPressConsts} from './rowPressLayer.stylex';
 
@@ -116,6 +119,50 @@ describe('press layer clock', () => {
   it("plays the table's release clock and curve", () => {
     expect(list.highlight.releaseMs).toBe(timing.press.highlightOutMs);
     expect(list.highlight.releaseCurve).toBe(timing.press.highlightOutCurve);
+  });
+
+  it("the shared overlay's release plays the same curve, the table's, from its own copy", () => {
+    const element = document.createElement('button');
+    element.className =
+      stylex.props(interactionOverlayStyles.pressedAlpha).className ?? '';
+    document.body.append(element);
+    const fading = rulesDeclaredFor(element).filter(rule => {
+      const selector = selectorOf(rule);
+      return selector.includes(FADING) && !selector.includes('::');
+    });
+    // StyleX writes the curve minified: compare the control points.
+    const points = (css: string) =>
+      (css.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+    expect(values(fading, 'animation-timing-function').map(points)).toEqual([
+      [...timing.press.highlightOutCurve],
+    ]);
+    element.remove();
+  });
+});
+
+describe("the row layer's constants", () => {
+  it('reach only the components that render a press row: a Card ships none of them (architecture:component-style-authoring INV6)', () => {
+    // The shared overlay reaches nearly every component (`.stylex` modules
+    // are side effects in core's package.json), so whatever it imports does
+    // too. esbuild runs in its own process: it needs a native TextEncoder.
+    const script = [
+      "import {build} from 'esbuild';",
+      'const result = await build({',
+      `  entryPoints: ${JSON.stringify([resolve(__dirname, '../Card/index.ts')])},`,
+      "  bundle: true, write: false, format: 'esm', logLevel: 'silent',",
+      "  external: ['react', 'react-dom', 'react/*', 'react-dom/*', '@stylexjs/stylex'],",
+      '});',
+      'process.stdout.write(result.outputFiles.map(file => file.text).join("\\n"));',
+    ].join('\n');
+    const bundle = execFileSync(
+      process.execPath,
+      ['--input-type=module', '-e', script],
+      {cwd: resolve(__dirname, '../../../..'), encoding: 'utf8'},
+    );
+    // The shared overlay reaches the Card…
+    expect(bundle).toContain('astryx-press-alpha');
+    // …and brings none of the row layer's constants.
+    expect(bundle).not.toContain('cellRelease');
   });
 });
 
