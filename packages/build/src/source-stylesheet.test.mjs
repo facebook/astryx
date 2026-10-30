@@ -5,8 +5,9 @@
  * @input The real Core and Lab source, their prebuilt stylesheets as
  *   scripts/build-css.mjs builds them, and a synthetic Astryx-shaped package
  * @output Proves a source build of every module prints each prebuilt
- *   stylesheet byte for byte (spec:AST-080 FR7), and covers the `@astryx`
- *   PostCSS plugin
+ *   stylesheet byte for byte (spec:AST-080 FR7), that the Turbopack loader
+ *   compiles a component to class names the prebuilt stylesheet styles, and
+ *   covers the `@astryx` PostCSS plugin
  * @position Unit and parity tests for the Turbopack half of @astryxdesign/build
  */
 
@@ -25,6 +26,7 @@ const {
   stylexOptions,
 } = require('./source-stylesheet.js');
 const astryxPostcss = require('./next-postcss.js');
+const turbopackLoader = require('./turbopack-loader.js');
 const {processStylexRules} = require('@stylexjs/babel-plugin');
 
 const repoRoot = path.resolve(
@@ -92,6 +94,35 @@ describe('a source build against the prebuilt stylesheets', () => {
     const {css} = await sourceStylesheet({cwd: app});
     expect(css).toBe(`${await prebuilt('core')}\n${await prebuilt('lab')}`);
   }, 360_000);
+
+  it('compiles a component in the Turbopack loader to classes astryx.css styles', async () => {
+    const packages = sourcePackages(app);
+    const core = packages.find(({name}) => name === '@astryxdesign/core');
+    const file = path.join(core.srcDir, 'Button/Button.tsx');
+    const code = await new Promise((resolve, reject) => {
+      turbopackLoader.call(
+        {
+          resourcePath: file,
+          getOptions: () => stylexOptions(core, packages),
+          async: () => (error, result) =>
+            error ? reject(error) : resolve(result),
+        },
+        fs.readFileSync(file, 'utf8'),
+      );
+    });
+    // Each compiled style maps a property key to the classes it applies.
+    const classes = [
+      ...code.matchAll(/\bk[A-Za-z0-9]{4,}:\s*"([^"]+)"/g),
+    ].flatMap(([, names]) => names.split(/\s+/));
+    expect(classes.length).toBeGreaterThan(20);
+    const astryxCss = fs.readFileSync(
+      path.join(repoRoot, 'packages/core/dist/astryx.css'),
+      'utf8',
+    );
+    for (const name of new Set(classes)) {
+      expect(astryxCss, name).toContain(`.${name}`);
+    }
+  });
 });
 
 describe('the @astryx PostCSS plugin', () => {

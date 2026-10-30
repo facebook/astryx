@@ -2,14 +2,16 @@
 
 /**
  * @file next.turbopack.test.mjs
- * @input __fixtures__/next-turbopack: an app with its own Babel config, mixed
+ * @input ASTRYX_TURBOPACK_E2E=1 and installed Chromium;
+ *   __fixtures__/next-turbopack: an app with its own Babel config, mixed
  *   `*.tsx` rule list and StyleX PostCSS plugin, Core linked from a workspace
  *   (with its own node_modules) and Lab installed
  * @output Proves Turbopack `next build` and `next dev` render Astryx with the
  *   prebuilt class names and source-built rules (spec:AST-080 FR7), keep the
  *   app's rules to its files in their order, let a theme override win, and
  *   declare Core's data-colour defaults in an app with Core alone
- * @position End-to-end regression for the Turbopack half of @astryxdesign/build
+ * @position Opt-in end-to-end check for the Turbopack half of @astryxdesign/build:
+ *   ASTRYX_TURBOPACK_E2E=1 pnpm exec vitest run --project node packages/build/src/next.turbopack.test.mjs
  */
 
 import {execFileSync, spawn} from 'node:child_process';
@@ -31,7 +33,6 @@ const env = {
   NODE_PATH: undefined,
 };
 const {chromium} = await import('playwright').catch(() => ({}));
-const hasChromium = fs.existsSync(chromium?.executablePath() ?? '');
 
 let root, app, html, css, ruleLog;
 const roots = [];
@@ -110,21 +111,6 @@ function built(dir) {
   return {page, css: sheets.join('\n')};
 }
 
-beforeAll(() => {
-  app = scratchApp({lab: true});
-  root = path.dirname(app);
-  // From the parent, as `next build <dir>` runs; `next dev` below runs in the app.
-  execFileSync(process.execPath, [nextBin(), 'build', 'app'], {cwd: root, env});
-  ruleLog = fs.readFileSync(path.join(app, 'rules.log'), 'utf8');
-  ({page: html, css} = built(app));
-}, 600_000);
-
-afterAll(() => {
-  for (const dir of roots) {
-    fs.rmSync(dir, {recursive: true, force: true, maxRetries: 5});
-  }
-});
-
 /** The rendered class lists, split by whether Astryx or the app made them. */
 function classLists(page) {
   const lists = [...page.matchAll(/<\w+([^>]*?) class="([^"]*)"/g)].map(
@@ -157,138 +143,161 @@ function expectStyled(page, stylesheet) {
   }
 }
 
-describe('withAstryx() under Turbopack', () => {
-  it('builds a linked Core and an installed Lab with their prebuilt class names', () => {
-    expectStyled(html, css);
-  });
+// Real Next.js builds, a dev server and Chromium take minutes of every core, so
+// the default suite skips them; ASTRYX_TURBOPACK_E2E=1 runs them (with Chromium).
+describe.runIf(process.env.ASTRYX_TURBOPACK_E2E === '1')(
+  'Turbopack end to end (ASTRYX_TURBOPACK_E2E=1)',
+  () => {
+    beforeAll(() => {
+      app = scratchApp({lab: true});
+      root = path.dirname(app);
+      // From the parent, as `next build <dir>` runs; `next dev` below runs in the app.
+      execFileSync(process.execPath, [nextBin(), 'build', 'app'], {
+        cwd: root,
+        env,
+      });
+      ruleLog = fs.readFileSync(path.join(app, 'rules.log'), 'utf8');
+      ({page: html, css} = built(app));
+    }, 600_000);
 
-  it("runs the app's mixed rule list in order, on the app's files only", () => {
-    // The app loader also throws on Astryx source, failing the build.
-    const runs = [...ruleLog.matchAll(/^(\S+) (.*)$/gm)];
-    const page = path.join(app, 'src/app/page.tsx');
-    const names = runs.filter(([, , file]) => file === page).map(run => run[1]);
-    expect([...new Set(names)]).toEqual(['a', 'stylex', 'b']);
-    expect(runs.every(run => run[2].startsWith(path.dirname(page)))).toBe(true);
-  });
+    afterAll(() => {
+      for (const dir of roots) {
+        fs.rmSync(dir, {recursive: true, force: true, maxRetries: 5});
+      }
+    });
 
-  it('emits Astryx rules in astryx-base layers, without a priority layer', () => {
-    expect(css).toContain('@layer astryx-base');
-    expect(css).not.toMatch(/@layer priority|\.astryx[a-z0-9]{5,}/);
-  });
+    describe('withAstryx() under Turbopack', () => {
+      it('builds a linked Core and an installed Lab with their prebuilt class names', () => {
+        expectStyled(html, css);
+      });
 
-  it('serves the same in next dev', async () => {
-    const port = await new Promise(resolve => {
-      const server = net.createServer().listen(0, () => {
-        const {port: free} = server.address();
-        server.close(() => resolve(free));
+      it("runs the app's mixed rule list in order, on the app's files only", () => {
+        // The app loader also throws on Astryx source, failing the build.
+        const runs = [...ruleLog.matchAll(/^(\S+) (.*)$/gm)];
+        const page = path.join(app, 'src/app/page.tsx');
+        const names = runs
+          .filter(([, , file]) => file === page)
+          .map(run => run[1]);
+        expect([...new Set(names)]).toEqual(['a', 'stylex', 'b']);
+        expect(runs.every(run => run[2].startsWith(path.dirname(page)))).toBe(
+          true,
+        );
+      });
+
+      it('emits Astryx rules in astryx-base layers, without a priority layer', () => {
+        expect(css).toContain('@layer astryx-base');
+        expect(css).not.toMatch(/@layer priority|\.astryx[a-z0-9]{5,}/);
+      });
+
+      it('serves the same in next dev', async () => {
+        const port = await new Promise(resolve => {
+          const server = net.createServer().listen(0, () => {
+            const {port: free} = server.address();
+            server.close(() => resolve(free));
+          });
+        });
+        const child = spawn(
+          process.execPath,
+          [nextBin(), 'dev', '-p', String(port)],
+          {cwd: app, env, detached: true, stdio: 'ignore'},
+        );
+        try {
+          const origin = `http://localhost:${port}`;
+          let page;
+          for (let i = 0; i < 300 && page == null; i++) {
+            const response = await fetch(origin).catch(() => null);
+            if (response?.ok) page = await response.text();
+            else await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          const hrefs = [...page.matchAll(/href="([^"]+\.css[^"]*)"/g)];
+          const sheets = await Promise.all(
+            hrefs.map(async ([, href]) => (await fetch(origin + href)).text()),
+          );
+          expectStyled(page, sheets.join('\n'));
+        } finally {
+          process.kill(-child.pid, 'SIGKILL');
+        }
+      }, 600_000);
+
+      it('lets a theme override win in either load order', async () => {
+        // A theme stylesheet registers the layer order itself (spec:AST-080 FR3).
+        const theme =
+          '@layer reset, astryx-base, astryx-theme;\n' +
+          '@layer astryx-theme { .astryx-button { background-color: rgb(0, 120, 255); } }';
+        const body = html.replace(/<link[^>]*>|<script[\s\S]*?<\/script>/g, '');
+        const browser = await chromium.launch();
+        try {
+          const page = await browser.newPage();
+          const colors = [];
+          for (const sheets of [[css], [theme, css], [css, theme]]) {
+            const styles = sheets
+              .map(sheet => `<style>${sheet}</style>`)
+              .join('');
+            await page.setContent(body.replace('</head>', `${styles}</head>`));
+            colors.push(
+              await page.$eval('.astryx-button', button =>
+                getComputedStyle(button).getPropertyValue('background-color'),
+              ),
+            );
+          }
+          // The destructive Button's source-built `--color-error`, then the override.
+          expect(colors).toEqual([
+            'rgb(227, 25, 59)',
+            'rgb(0, 120, 255)',
+            'rgb(0, 120, 255)',
+          ]);
+        } finally {
+          await browser.close();
+        }
       });
     });
-    const child = spawn(
-      process.execPath,
-      [nextBin(), 'dev', '-p', String(port)],
-      {cwd: app, env, detached: true, stdio: 'ignore'},
-    );
-    try {
-      const origin = `http://localhost:${port}`;
-      let page;
-      for (let i = 0; i < 300 && page == null; i++) {
-        const response = await fetch(origin).catch(() => null);
-        if (response?.ok) page = await response.text();
-        else await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      const hrefs = [...page.matchAll(/href="([^"]+\.css[^"]*)"/g)];
-      const sheets = await Promise.all(
-        hrefs.map(async ([, href]) => (await fetch(origin + href)).text()),
-      );
-      expectStyled(page, sheets.join('\n'));
-    } finally {
-      process.kill(-child.pid, 'SIGKILL');
-    }
-  }, 600_000);
 
-  it.skipIf(!hasChromium && !process.env.ASTRYX_REQUIRE_CHROMIUM)(
-    'lets a theme override win in either load order',
-    async () => {
-      // A theme stylesheet registers the layer order itself (spec:AST-080 FR3).
-      const theme =
-        '@layer reset, astryx-base, astryx-theme;\n' +
-        '@layer astryx-theme { .astryx-button { background-color: rgb(0, 120, 255); } }';
-      const body = html.replace(/<link[^>]*>|<script[\s\S]*?<\/script>/g, '');
-      const browser = await chromium.launch();
-      try {
-        const page = await browser.newPage();
-        const colors = [];
-        for (const sheets of [[css], [theme, css], [css, theme]]) {
-          const styles = sheets
-            .map(sheet => `<style>${sheet}</style>`)
-            .join('');
-          await page.setContent(body.replace('</head>', `${styles}</head>`));
-          colors.push(
-            await page.$eval('.astryx-button', button =>
-              getComputedStyle(button).getPropertyValue('background-color'),
-            ),
-          );
-        }
-        // The destructive Button's source-built `--color-error`, then the override.
-        expect(colors).toEqual([
-          'rgb(227, 25, 59)',
-          'rgb(0, 120, 255)',
-          'rgb(0, 120, 255)',
-        ]);
-      } finally {
-        await browser.close();
-      }
-    },
-  );
-});
+    describe('withAstryx() under Turbopack, with Core alone', () => {
+      let page, sheet;
 
-describe('withAstryx() under Turbopack, with Core alone', () => {
-  let page, sheet;
-
-  beforeAll(() => {
-    const coreOnly = scratchApp({lab: false});
-    // An app reading a Core data colour as plain CSS, as dist dataVars compile.
-    fs.writeFileSync(
-      path.join(coreOnly, 'src/app/page.tsx'),
-      [
-        "import * as stylex from '@stylexjs/stylex';",
-        "import {Text} from '@astryxdesign/core';",
-        "const styles = stylex.create({swatch: {height: 8, backgroundColor: 'var(--color-data-categorical-blue)'}});",
-        'export default function Page() {',
-        '  return <main><Text>Hello</Text><div id="swatch" {...stylex.props(styles.swatch)} /></main>;',
-        '}',
-        '',
-      ].join('\n'),
-    );
-    execFileSync(process.execPath, [nextBin(coreOnly), 'build'], {
-      cwd: coreOnly,
-      env,
-    });
-    ({page, css: sheet} = built(coreOnly));
-  }, 600_000);
-
-  it("declares Core's data-colour defaults, as astryx.css does", () => {
-    expect(sheet).toMatch(/--color-data-categorical-blue:/);
-  });
-
-  it.skipIf(!hasChromium && !process.env.ASTRYX_REQUIRE_CHROMIUM)(
-    'colours a swatch that reads one',
-    async () => {
-      const body = page.replace(/<link[^>]*>|<script[\s\S]*?<\/script>/g, '');
-      const browser = await chromium.launch();
-      try {
-        const tab = await browser.newPage();
-        await tab.setContent(
-          body.replace('</head>', `<style>${sheet}</style></head>`),
+      beforeAll(() => {
+        const coreOnly = scratchApp({lab: false});
+        // An app reading a Core data colour as plain CSS, as dist dataVars compile.
+        fs.writeFileSync(
+          path.join(coreOnly, 'src/app/page.tsx'),
+          [
+            "import * as stylex from '@stylexjs/stylex';",
+            "import {Text} from '@astryxdesign/core';",
+            "const styles = stylex.create({swatch: {height: 8, backgroundColor: 'var(--color-data-categorical-blue)'}});",
+            'export default function Page() {',
+            '  return <main><Text>Hello</Text><div id="swatch" {...stylex.props(styles.swatch)} /></main>;',
+            '}',
+            '',
+          ].join('\n'),
         );
-        expect(
-          await tab.$eval('#swatch', swatch =>
-            getComputedStyle(swatch).getPropertyValue('background-color'),
-          ),
-        ).toBe('rgb(1, 113, 227)');
-      } finally {
-        await browser.close();
-      }
-    },
-  );
-});
+        execFileSync(process.execPath, [nextBin(coreOnly), 'build'], {
+          cwd: coreOnly,
+          env,
+        });
+        ({page, css: sheet} = built(coreOnly));
+      }, 600_000);
+
+      it("declares Core's data-colour defaults, as astryx.css does", () => {
+        expect(sheet).toMatch(/--color-data-categorical-blue:/);
+      });
+
+      it('colours a swatch that reads one', async () => {
+        const body = page.replace(/<link[^>]*>|<script[\s\S]*?<\/script>/g, '');
+        const browser = await chromium.launch();
+        try {
+          const tab = await browser.newPage();
+          await tab.setContent(
+            body.replace('</head>', `<style>${sheet}</style></head>`),
+          );
+          expect(
+            await tab.$eval('#swatch', swatch =>
+              getComputedStyle(swatch).getPropertyValue('background-color'),
+            ),
+          ).toBe('rgb(1, 113, 227)');
+        } finally {
+          await browser.close();
+        }
+      });
+    });
+  },
+);
