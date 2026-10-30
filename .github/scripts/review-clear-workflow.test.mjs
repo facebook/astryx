@@ -289,15 +289,25 @@ describe('review-clear exact-head workflow', () => {
     });
   });
 
-  it('restores a cleared gate under a spec wait after exact-head changes requested', async () => {
+  it('restores a gate cleared under a spec wait and then spec-approved, on changes requested', async () => {
     const specWait = gateStatus(
       'pending',
       '⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>',
     );
     const h = harness([review('APPROVED'), review('CHANGES_REQUESTED')], {
       labels: [],
-      // GitHub lists every status the head received, newest first.
-      statuses: [specWait, clearedGate],
+      // Newest first: /approve-spec, review-clear's clear, the code wait.
+      statuses: [
+        gateStatus(
+          'success',
+          '✅ Spec approved by @cixzhang · Review complete.',
+        ),
+        specWait,
+        gateStatus(
+          'pending',
+          'Waiting on code review: core runtime change (+ spec approval)',
+        ),
+      ],
     });
 
     await run(h);

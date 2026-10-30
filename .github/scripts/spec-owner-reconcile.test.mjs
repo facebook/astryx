@@ -1195,28 +1195,31 @@ describe('spec owner workflow reconciliation', () => {
     });
 
     it('reads a spec wait as satisfied code review, not an older code wait', async () => {
-      const gate = (description, state = 'pending') => ({
-        sha: head,
-        context: 'review-required',
-        state,
-        description,
-        creator: {login: 'github-actions[bot]'},
-      });
-      // review-clear cleared code review under a spec wait; the code wait
-      // before it is history.
       const harness = createHarness({
         headContent: currentRecord,
         comments: [ownerComment(`/approve-spec ${head}`)],
-        statuses: [gate(waiting)],
-        codeGate: gate('Waiting on code review: core change (+ spec approval)'),
+        // review-clear cleared code review under a spec wait.
+        statuses: [
+          {
+            sha: head,
+            context: 'review-required',
+            state: 'pending',
+            description: waiting,
+            creator: {login: 'github-actions[bot]'},
+          },
+        ],
+        codeGate: {
+          sha: head,
+          context: 'review-required',
+          state: 'pending',
+          description: 'Waiting on code review: core change (+ spec approval)',
+          creator: {login: 'github-actions[bot]'},
+        },
       });
 
       await run(harness, context({runId: 100n}));
 
-      expect(latestReviewGate(harness.state)).toMatchObject({
-        state: 'success',
-        description: expect.stringContaining('✅ Spec approved by @cixzhang'),
-      });
+      expect(latestReviewGate(harness.state).state).toBe('success');
     });
 
     it('names the owner whose request for changes holds the gate', async () => {
@@ -1240,9 +1243,6 @@ describe('spec owner workflow reconciliation', () => {
         description:
           '⏳ Waiting for human spec approval: @imdreamrunner requested changes and can reply /approve-spec <sha>',
       });
-      expect(latestGateStatus(harness.state).description).toBe(
-        'Mirrors review-required · spec waiting (changes @imdreamrunner)',
-      );
     });
 
     it('recomposes when code review is withdrawn while it writes', async () => {

@@ -196,42 +196,51 @@ function readSpecStatus(status) {
     : {known: true, satisfied: false, text: SPEC_CHECKING_TEXT};
 }
 
-/**
- * The code half, from the newest trusted `review-required`. A spec wait is
- * written only over satisfied code review, so it reads as satisfied.
- * `{latest: false}` reads the newest status that names the code review
- * instead: who owns the gate, for review-clear. `null` when none exists.
- */
-function readCodeGate(statuses, {latest = true} = {}) {
-  const status = (statuses ?? []).find(
-    gate =>
-      gate.context === REVIEW_GATE_CONTEXT &&
-      gate.creator?.login === TRUSTED_STATUS_CREATOR &&
-      (latest ||
-        !(
-          (gate.description ?? '').startsWith(SPEC_WAITING_PREFIX) ||
-          gate.description === SPEC_CHECKING_TEXT
-        )),
-  );
-  if (!status) return null;
+function parseCodeGate(status) {
   const description = status.description ?? '';
-  if (
-    status.state !== 'success' &&
-    description.startsWith(CODE_WAITING_PREFIX)
-  ) {
+  if (status.state === 'success') {
+    // Drop a spec approval this gate already carries.
+    const code = description.replace(/^✅ Spec approved by [^·]+ · /, '');
+    return {gated: false, description: code};
+  }
+  if (description.startsWith(CODE_WAITING_PREFIX)) {
     return {
       gated: true,
       description: description.replace(/ \(\+ spec approval\)$/, ''),
     };
   }
-  if (status.state === 'success') {
-    // Drop a spec approval this gate already carries.
-    return {
-      gated: false,
-      description: description.replace(/^✅ Spec approved by [^·]+ · /, ''),
-    };
-  }
   return {gated: false, description: REVIEW_COMPLETE};
+}
+
+/**
+ * The code half of `review-required`, from the newest status carrying one
+ * (spec waits and the `Review complete.` placeholder carry none). A newer spec
+ * wait means satisfied code review; `{latest: false}` skips that, for
+ * review-clear's ownership check.
+ */
+function readCodeGate(statuses, {latest = true} = {}) {
+  const gates = (statuses ?? []).filter(
+    gate =>
+      gate.context === REVIEW_GATE_CONTEXT &&
+      gate.creator?.login === TRUSTED_STATUS_CREATOR,
+  );
+  if (gates.length === 0) return null;
+  const coded = gates.find(gate => {
+    const description = gate.description ?? '';
+    return !(
+      description.startsWith(SPEC_WAITING_PREFIX) ||
+      description === SPEC_CHECKING_TEXT ||
+      parseCodeGate(gate).description === REVIEW_COMPLETE
+    );
+  });
+  const code = coded ? parseCodeGate(coded) : null;
+  if (!latest || coded === gates[0]) {
+    return code ?? {gated: false, description: REVIEW_COMPLETE};
+  }
+  return {
+    gated: false,
+    description: code && !code.gated ? code.description : REVIEW_COMPLETE,
+  };
 }
 
 /** The one review gate: code review leads; success needs both; never red. */

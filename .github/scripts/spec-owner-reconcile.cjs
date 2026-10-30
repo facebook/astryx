@@ -338,41 +338,32 @@ async function reconcileSpecOwnerGate({
     owners: eligible,
     approvesCurrentContent,
   }) {
-    const stale = [];
-    const latestByOwner = new Map();
-    for (const review of ownerReviews) {
-      if (
-        review.state === 'APPROVED' &&
-        !approvesCurrentContent(review.commit_id)
-      ) {
-        stale.push(review.submitted_at);
-      }
-    }
+    const stale = ownerReviews
+      .filter(
+        review =>
+          review.state === 'APPROVED' &&
+          !approvesCurrentContent(review.commit_id),
+      )
+      .map(review => review.submitted_at);
+    // Comments arrive oldest first, so the last act per owner wins.
+    const lastAct = new Map();
     for (const comment of allComments) {
       const login = comment.user?.login?.toLowerCase() ?? '';
-      if (!eligible.has(login)) continue;
-      const target = parseOwnerCommandTarget(comment.body);
+      const target =
+        eligible.has(login) && parseOwnerCommandTarget(comment.body);
       if (!target) continue;
       if (target.approved && !approvesCurrentContent(target.sha)) {
         stale.push(comment.created_at);
       }
-      const previous = latestByOwner.get(login);
-      if (
-        !previous ||
-        Date.parse(comment.created_at) >= Date.parse(previous.at)
-      ) {
-        latestByOwner.set(login, {
-          approved: target.approved,
-          at: comment.created_at,
-        });
-      }
+      lastAct.set(login, {owner: login, ...target, at: comment.created_at});
     }
-    const revoked = [...latestByOwner.entries()]
-      .filter(([, act]) => act.approved === false)
-      .sort((x, y) => Date.parse(y[1].at) - Date.parse(x[1].at))[0];
+    const revokedBy =
+      [...lastAct.values()]
+        .filter(act => !act.approved)
+        .sort((x, y) => Date.parse(y.at) - Date.parse(x.at))[0] ?? null;
     return {
       staleApprovalAt: stale.filter(Boolean).sort().at(-1) ?? null,
-      revokedBy: revoked ? {owner: revoked[0], at: revoked[1].at} : null,
+      revokedBy,
     };
   }
 
