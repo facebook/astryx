@@ -29,6 +29,7 @@ import {
   DEFAULT_MIN_COLUMN_WIDTH,
 } from '../../columnUtils';
 import {observeResize} from '../../../utils/sharedResizeObserver';
+import {getNodeText} from '../../../utils/getNodeText';
 
 // =============================================================================
 // Config Type
@@ -743,10 +744,9 @@ function ResizeHandle({
     ],
   );
 
-  const ariaLabel =
-    typeof columnHeader === 'string'
-      ? `Resize column ${columnHeader}`
-      : `Resize column ${columnKey}`;
+  // Named by the column's visible text, also when its header is a node; the
+  // key is the fallback only for a header with no reachable text (AR1).
+  const ariaLabel = `Resize column ${getNodeText(columnHeader) || columnKey}`;
 
   return (
     <div
