@@ -480,6 +480,12 @@ interface Segment {
   group?: StartGroup;
   /** The spring driving it, when one does (`rebase` keeps it). */
   spring?: SpringDescription;
+  /**
+   * What its curve is made of, when that alone fixes its shape (a spring
+   * from rest or a retarget's own spring): tracks of the same plan share
+   * their keyframes (plannedTrackCount).
+   */
+  readonly plan?: string;
 }
 
 /**
@@ -761,6 +767,58 @@ let plannedTracks = 0;
  */
 export function plannedTrackCount(): number {
   return plannedTracks;
+}
+
+/** A track's keyframes and their span, by what fixes them (Segment.plan). */
+const plannedKeyframes = new Map<
+  string,
+  {readonly keyframes: Keyframe[]; readonly span: number}
+>();
+
+/** Distinct plans kept; the least recently used goes first. */
+const PLANNED_KEYFRAMES_MAX = 256;
+
+/**
+ * The times, from `begin` to `end`, at which linear interpolation between
+ * samples stays within `tolerance` of `value`: a 30 Hz grid, each interval
+ * split until the chord is within the tolerance at its quarter points, with
+ * `breaks` (jumps) kept as interval edges.
+ */
+function sampleTrack(
+  value: (t: number) => number,
+  valueBefore: (t: number) => number,
+  begin: number,
+  end: number,
+  breaks: ReadonlyArray<number>,
+  tolerance: number,
+): number[] {
+  const times: number[] = [begin];
+  const edges = [begin, ...breaks, end];
+  for (let e = 0; e + 1 < edges.length; e++) {
+    const a = edges[e];
+    const b = edges[e + 1];
+    const steps = Math.max(1, Math.ceil((b - a) / SAMPLE_GRID_MS));
+    const split = (t0: number, t1: number, depth: number) => {
+      const v0 = value(t0);
+      const v1 = t1 === b && breaks.includes(b) ? valueBefore(b) : value(t1);
+      let worst = 0;
+      for (const f of [0.25, 0.5, 0.75]) {
+        const t = t0 + (t1 - t0) * f;
+        worst = Math.max(worst, Math.abs(value(t) - (v0 + (v1 - v0) * f)));
+      }
+      if (worst > tolerance && depth < 10 && t1 - t0 > 0.25) {
+        const mid = (t0 + t1) / 2;
+        split(t0, mid, depth + 1);
+        split(mid, t1, depth + 1);
+      } else {
+        times.push(t1);
+      }
+    };
+    for (let i = 0; i < steps; i++) {
+      split(a + ((b - a) * i) / steps, a + ((b - a) * (i + 1)) / steps, 0);
+    }
+  }
+  return times;
 }
 
 /**
@@ -1065,10 +1123,6 @@ export function createAnimator(
     return segment.speed(time - segment.start);
   };
 
-  // The curve just before a jump at absolute time `time`.
-  const valueBefore = (property: MotionProperty, time: number): number =>
-    curveAt(property, time - 1e-6);
-
   // -- writing --------------------------------------------------------------
 
   const finalValue = (property: MotionProperty): number =>
@@ -1151,57 +1205,6 @@ export function createAnimator(
       // Identity leaves the element when nothing else would move it.
       releaseIdentity(channel);
     }
-  };
-
-  const sampleTimes = (
-    property: MotionProperty,
-    from: number,
-    to: number,
-    tolerance: number,
-  ): number[] => {
-    const segment = segments.get(property);
-    if (segment == null) {
-      return [];
-    }
-    const begin = Math.max(from, segment.start);
-    const end = Math.min(to, segment.start + segment.duration);
-    if (end <= begin) {
-      return [];
-    }
-    const times: number[] = [begin];
-    const value = (t: number) => curveAt(property, t);
-    const breaks = segment.jumps
-      .map(j => segment.start + j)
-      .filter(t => t > begin && t < end);
-    const edges = [begin, ...breaks, end];
-    for (let e = 0; e + 1 < edges.length; e++) {
-      const a = edges[e];
-      const b = edges[e + 1];
-      // A 30 Hz grid, each interval split until the chord is within the
-      // tolerance at its quarter points.
-      const steps = Math.max(1, Math.ceil((b - a) / SAMPLE_GRID_MS));
-      const split = (t0: number, t1: number, depth: number) => {
-        const v0 = value(t0);
-        const v1 =
-          t1 === b && breaks.includes(b) ? valueBefore(property, b) : value(t1);
-        let worst = 0;
-        for (const f of [0.25, 0.5, 0.75]) {
-          const t = t0 + (t1 - t0) * f;
-          worst = Math.max(worst, Math.abs(value(t) - (v0 + (v1 - v0) * f)));
-        }
-        if (worst > tolerance && depth < 10 && t1 - t0 > 0.25) {
-          const mid = (t0 + t1) / 2;
-          split(t0, mid, depth + 1);
-          split(mid, t1, depth + 1);
-        } else {
-          times.push(t1);
-        }
-      };
-      for (let i = 0; i < steps; i++) {
-        split(a + ((b - a) * i) / steps, a + ((b - a) * (i + 1)) / steps, 0);
-      }
-    }
-    return times;
   };
 
   /** A pseudo-element's resting value, held by a static filling animation. */
@@ -1326,58 +1329,126 @@ export function createAnimator(
     // Read where the keyframes are baked: a page moved to another screen
     // bakes its next motion for that screen.
     const devicePixel = 1 / Math.max(1, globalThis.devicePixelRatio || 1);
-    plannedTracks += 1;
-    const collect = (scale: number) => {
-      const times = new Set<number>([from, end]);
-      for (const property of moving) {
-        const tolerance =
-          SAMPLE_TOLERANCE[property] *
-          scale *
-          (property === 'x' || property === 'y' ? devicePixel : 1);
-        for (const t of sampleTimes(property, from, end, tolerance)) {
-          times.add(t);
-        }
-      }
-      return times;
-    };
-    let scale = 1;
-    let all = collect(scale);
-    while (all.size > MAX_KEYFRAMES && scale < 64) {
-      scale *= 2;
-      all = collect(scale);
-    }
-    // Jumps become two keyframes at one offset: the value just before, then
-    // the value after. A jump on the last frame (fade out, then move) too.
-    const jumpTimes = new Set<number>();
+    // The track is planned on its own clock, from 0 at `from`, so the same
+    // curves give the same keyframes whenever they start, and a track whose
+    // curves all name their plan reuses the keyframes planned for it before:
+    // a control's press plays the same springs from the same values each time.
+    const offsets = new Map<MotionProperty, number>();
     for (const property of moving) {
-      const segment = segments.get(property) as Segment;
-      for (const j of segment.jumps) {
-        const t = segment.start + j;
-        if (t > from && t <= end) {
-          jumpTimes.add(t);
-          all.add(t);
+      offsets.set(property, (segments.get(property) as Segment).start - from);
+    }
+    const offsetOf = (property: MotionProperty) =>
+      offsets.get(property) as number;
+    const length = Math.min(
+      MAX_DURATION_MS,
+      Math.max(
+        ...moving.map(p => offsetOf(p) + (segments.get(p) as Segment).duration),
+      ),
+    );
+    const key = moving.every(p => (segments.get(p) as Segment).plan != null)
+      ? `${channel} ${devicePixel} ${length} ${CHANNELS[channel]
+          .map(p =>
+            segments.has(p)
+              ? `${p}:${(segments.get(p) as Segment).plan}@${offsetOf(p)}`
+              : `${p}=${resting[p]}`,
+          )
+          .join(';')}`
+      : null;
+    let planned = key == null ? undefined : plannedKeyframes.get(key);
+    if (planned != null && key != null) {
+      // The most recently used plan is kept longest.
+      plannedKeyframes.delete(key);
+      plannedKeyframes.set(key, planned);
+    } else {
+      plannedTracks += 1;
+      const valueOn = (property: MotionProperty, t: number): number => {
+        const segment = segments.get(property);
+        if (segment == null) {
+          return resting[property];
+        }
+        if (t >= offsetOf(property) + segment.duration) {
+          return segment.target;
+        }
+        return segment.at(Math.max(0, t - offsetOf(property)));
+      };
+      const collect = (scale: number) => {
+        const times = new Set<number>([0, length]);
+        for (const property of moving) {
+          const segment = segments.get(property) as Segment;
+          const begin = Math.max(0, offsetOf(property));
+          const stop = Math.min(length, offsetOf(property) + segment.duration);
+          if (stop <= begin) {
+            continue;
+          }
+          const tolerance =
+            SAMPLE_TOLERANCE[property] *
+            scale *
+            (property === 'x' || property === 'y' ? devicePixel : 1);
+          const breaks = segment.jumps
+            .map(j => offsetOf(property) + j)
+            .filter(t => t > begin && t < stop);
+          for (const t of sampleTrack(
+            u => valueOn(property, u),
+            u => valueOn(property, u - 1e-6),
+            begin,
+            stop,
+            breaks,
+            tolerance,
+          )) {
+            times.add(t);
+          }
+        }
+        return times;
+      };
+      let scale = 1;
+      let all = collect(scale);
+      while (all.size > MAX_KEYFRAMES && scale < 64) {
+        scale *= 2;
+        all = collect(scale);
+      }
+      // Jumps become two keyframes at one offset: the value just before, then
+      // the value after. A jump on the last frame (fade out, then move) too.
+      const jumpTimes = new Set<number>();
+      for (const property of moving) {
+        const segment = segments.get(property) as Segment;
+        for (const j of segment.jumps) {
+          const t = offsetOf(property) + j;
+          if (t > 0 && t <= length) {
+            jumpTimes.add(t);
+            all.add(t);
+          }
         }
       }
-    }
-    const times = [...all].sort((a, b) => a - b);
-    const span = end - from + END_HOLD_MS;
-    const keyframes: Keyframe[] = [];
-    for (const t of times) {
-      const offset = (t - from) / span;
-      if (jumpTimes.has(t)) {
+      const times = [...all].sort((a, b) => a - b);
+      const span = length + END_HOLD_MS;
+      const keyframes: Keyframe[] = [];
+      for (const t of times) {
+        const offset = t / span;
+        if (jumpTimes.has(t)) {
+          keyframes.push({
+            offset,
+            [channel]: format(channel, p => valueOn(p, t - 1e-6)),
+          });
+        }
         keyframes.push({
           offset,
-          [channel]: format(channel, p => valueBefore(p, t)),
+          [channel]: format(channel, p =>
+            t >= length ? finalValue(p) : valueOn(p, t),
+          ),
         });
       }
-      keyframes.push({
-        offset,
-        [channel]: format(channel, p =>
-          t >= end ? finalValue(p) : curveAt(p, t),
-        ),
-      });
+      keyframes.push({offset: 1, [channel]: format(channel, finalValue)});
+      planned = {keyframes, span};
+      if (key != null) {
+        plannedKeyframes.set(key, planned);
+        if (plannedKeyframes.size > PLANNED_KEYFRAMES_MAX) {
+          plannedKeyframes.delete(
+            plannedKeyframes.keys().next().value as string,
+          );
+        }
+      }
     }
-    keyframes.push({offset: 1, [channel]: format(channel, finalValue)});
+    const {keyframes, span} = planned;
     promote(channel);
     const animation = target.animate(keyframes, {
       duration: span,
@@ -2426,6 +2497,7 @@ export function createAnimator(
       jumps: [],
       owner,
       spring: resolved,
+      plan: `spring ${JSON.stringify(toSpring(resolved))} ${from} ${to} ${velocity} ${duration}`,
     };
   };
 
