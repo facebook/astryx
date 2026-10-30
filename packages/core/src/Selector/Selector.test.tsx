@@ -9,7 +9,15 @@
  * SYNC: When Selector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {
   act,
@@ -275,6 +283,13 @@ function expectSilentBusySpinner() {
   expect(spinner).toHaveAttribute('aria-hidden', 'true');
   expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
 }
+
+// The bottom sheet is loaded on demand (SelectorBottomSheet's lazy import).
+// Loading its module is not part of an open, so the file waits for it once
+// here, and each test's open waits only for the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
 
 describe('Selector', () => {
   it('uses a bottom sheet and closes after a selection when requested', async () => {

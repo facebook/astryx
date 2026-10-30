@@ -1,0 +1,695 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file useChatKeyboard.ts
+ * @input React refs, the keyboard module (useKeyboardHeight,
+ *   claimTapFocus, refuseFocusReveal, watchRevealPan, rideKeyboard), the
+ *   keyboard layout guide (each transition's start, resting value and
+ *   curve), observeKeyboardDismiss, the animator, the keyboard's own motion
+ *   (`keyboard.spring` on iOS, Gboard's slides in Chrome on Android), the
+ *   touch query, the layout viewport's height (utils/layoutViewport.ts)
+ * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
+ *   message area out with, and the refs it puts on its dock, message area
+ *   and composer region so the composer rides the software keyboard
+ * @position ChatLayout's keyboard behavior (Chat/ChatLayout.tsx); internal
+ *
+ * Messages on iOS keeps its entry field on top of the keyboard: the field
+ * rises and falls with the keyboard on the keyboard's own spring, the
+ * transcript's scrollable area ends above the field, and a transcript at its
+ * newest message stays there. ChatLayout does the same:
+ *
+ * - Layout follows the keyboard height (spec:AST-099 FR3): the dock rests
+ *   `lift` px up from its bottom, the part of the keyboard that covers it,
+ *   and the message area's end padding grows by the same height so the
+ *   newest message can scroll above the lifted composer, with no element
+ *   added for it. ChatLayout applies `lift` through functional styles, so
+ *   the layout is right with no animation.
+ * - The ride is polish on top, timed by the keyboard layout guide: the dock
+ *   moves on the compositor (`translate`) on the curve the guide publishes
+ *   (the keyboard's own motion: `keyboard.spring` on iOS, Gboard's slides in
+ *   Chrome on Android, spec:AST-099 FR8; no motion role) from the
+ *   keyboard's own start, so it is where the keyboard is from its first
+ *   frame, and a transcript at its newest message rides with it. The layout
+ *   catches up once the ride ends, with the translate handed back in the
+ *   same frame. Under Reduce Motion nothing travels (design:reduced-motion):
+ *   the animator cross-fades on a touch screen and moves at once otherwise.
+ *   A layout that shrinks waits until no finger is scrolling the transcript:
+ *   shrinking mid-scroll (a drag that dismissed the keyboard) would put the
+ *   end of the messages inside the scrollport until the scroll caught up,
+ *   which Safari puts off while the finger is down, and the sticky dock
+ *   would leave the bottom to sit at that end.
+ * - A drag down the transcript to the composer dismisses the keyboard when
+ *   it lifts there, Messages' `interactive`
+ *   mode (keyboard/keyboardDismiss.ts; spec:AST-094 FR36, FR37): the composer
+ *   is the bar on the keyboard, so its height is the dismiss padding. It is
+ *   part of ChatLayout's behavior with no caller control
+ *   (ChatLayout.spec.md FR10), attached for every pointer (spec:AST-094 FR19,
+ *   FR43), though in a desktop browser a mouse or pen press takes focus off
+ *   the composer itself, and the dismissal only blurs the focused field:
+ *   focus moves nowhere else, not to the composer region the keyboard's Done
+ *   parks it on.
+ * - A tap on the composer's text while it is not focused focuses it without
+ *   Safari's reveal (`preventScroll`), which would otherwise scroll the
+ *   whole page up to show a field that the keyboard is about to cover, and
+ *   puts the caret where the finger lifted. The tap is the keyboard module's
+ *   tap route (claimTapFocus), attached only under a finger: its end cancels
+ *   the browser's own focus for that touch. Taps on anything else in the composer, and taps once the
+ *   text has focus, are the browser's.
+ * - Every other move into the composer's text (the keyboard's previous and
+ *   next buttons, Tab, a script moving focus from another element, a text
+ *   control tapped while another element has focus) is delivered the same
+ *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
+ *   finger and where the keyboard is measured. The keyboard's Done moves
+ *   focus to the composer region ChatLayout names, which is no tab stop and
+ *   is focusable for that park alone (spec:AST-017 FR59). A script's focus() while
+ *   nothing has focus raises no event before Safari reveals the field, so
+ *   nothing can take that move over: the composer's own focus routes pass
+ *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
+ *   covers taps on the composer's text.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatLayout.tsx and ChatLayout.doc.mjs
+ * - /packages/core/src/keyboard/README.md (consumers)
+ */
+
+import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
+import {useAnimator} from '../motion/useAnimator';
+import {
+  bringsUpKeyboard,
+  claimTapFocus,
+  findTextEntryControl,
+  getKeyboardLayoutGuide,
+  getKeyboardHeight,
+  isKeyboardMeasurable,
+  observeKeyboardDismiss,
+  refuseFocusReveal,
+  rideKeyboard,
+  subscribeKeyboardHeight,
+  useKeyboardHeight,
+  watchRevealPan,
+  type KeyboardTransition,
+} from '../keyboard';
+import {layoutViewportHeight} from '../utils/layoutViewport';
+import {TOUCH_QUERY, useTouchPresentation} from '../utils/touchPresentation';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+
+export interface UseChatKeyboardOptions {
+  /** ChatLayout's root. */
+  rootRef: RefObject<HTMLElement | null>;
+  /** The element that scrolls the transcript (the root, or an outer one). */
+  scrollRef: RefObject<HTMLElement | null>;
+  /**
+   * Whether the root scrolls itself (a sticky dock at its bottom) rather
+   * than an outer scroller (a fixed dock at the layout viewport's bottom).
+   */
+  isSelfScrolling: boolean;
+}
+
+export interface UseChatKeyboardResult {
+  /**
+   * The part of the keyboard over the dock, CSS px: the dock's offset from
+   * its bottom and the room the message area's end padding adds.
+   */
+  lift: number;
+  /** Callback ref for the dock container. */
+  dockRef: (element: HTMLElement | null) => void;
+  /** Callback ref for the message area. */
+  messagesRef: (element: HTMLElement | null) => void;
+  /** Ref for the composer region whose text taps are claimed. */
+  composerRef: RefObject<HTMLDivElement | null>;
+  /**
+   * Whether the touch presentation is on: only then is the composer region
+   * a named group, the target of Done's park (spec:AST-099 FR4); under a
+   * fine pointer it is a plain container (spec:AST-017 FR59).
+   */
+  isTouch: boolean;
+}
+
+// A transcript within this many px of its end counts as at its newest message.
+const AT_END_SLOP = 2;
+// How long the transcript must stay still after the finger lifts before a
+// layout that waited for the scroll to end shrinks.
+const SCROLL_SETTLE_MS = 150;
+
+// The lift the layout shows: a store the ride's end and keyboard reports
+// write, and render reads.
+function createLiftStore() {
+  let value = 0;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set: (next: number) => {
+      if (next !== value) {
+        value = next;
+        for (const listener of listeners) {
+          listener();
+        }
+      }
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
+
+// Controls inside the composer's text (a token's button or link, an island
+// that is not editable) keep their own taps, as ChatComposer's click-to-focus
+// leaves them.
+const OWN_TAPS =
+  '[contenteditable="false"], button, a, [role="button"], [data-astryx-token]';
+
+/**
+ * The composer's text a touch landed in, when tapping it would bring up the
+ * keyboard and it does not have focus yet: contenteditable text, or a text
+ * control (`<textarea>`, `<input>`) passed as the composer's input, whose own
+ * tap focus the browser would reveal by scrolling the page just the same
+ * (spec:AST-099 FR4). Exported for its tests.
+ */
+export function editableToClaim(target: unknown): HTMLElement | null {
+  let node = target as Node | null;
+  if (node != null && node.nodeType !== 1) {
+    node = node.parentNode;
+  }
+  const element = node as HTMLElement | null;
+  if (element == null || typeof element.closest !== 'function') {
+    return null;
+  }
+  if (isTextControl(element)) {
+    return bringsUpKeyboard(element) &&
+      element.ownerDocument.activeElement !== element
+      ? element
+      : null;
+  }
+  const editable = element.closest<HTMLElement>(
+    '[contenteditable]:not([contenteditable="false"])',
+  );
+  if (editable == null || !bringsUpKeyboard(editable)) {
+    return null;
+  }
+  const own = element.closest(OWN_TAPS);
+  if (own != null && editable.contains(own)) {
+    return null;
+  }
+  const active = editable.ownerDocument.activeElement;
+  return active === editable || editable.contains(active) ? null : editable;
+}
+
+/**
+ * The collapsed caret at (x, y): the standard `caretPositionFromPoint`
+ * (Firefox has only this one), or WebKit's `caretRangeFromPoint`.
+ */
+function caretRangeAt(doc: Document, x: number, y: number): Range | null {
+  const position = doc.caretPositionFromPoint?.(x, y);
+  if (position != null) {
+    const range = doc.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    range.collapse(true);
+    return range;
+  }
+  return doc.caretRangeFromPoint?.(x, y) ?? null;
+}
+
+function isTextControl(
+  element: Element,
+): element is HTMLTextAreaElement | HTMLInputElement {
+  return (
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLInputElement
+  );
+}
+
+/**
+ * A text control's caret for a tap at (x, y): where the standard
+ * `caretPositionFromPoint` maps the point inside the control, or after its
+ * text where the browser maps none (the composer's convention for a focus
+ * without a point). A control with no text selection is left as it is.
+ */
+function placeTextControlCaret(
+  control: HTMLTextAreaElement | HTMLInputElement,
+  x: number,
+  y: number,
+) {
+  if (control.selectionStart == null) {
+    return;
+  }
+  const position = control.ownerDocument.caretPositionFromPoint?.(x, y);
+  const offset =
+    position != null && position.offsetNode === control
+      ? position.offset
+      : control.value.length;
+  control.setSelectionRange(offset, offset);
+}
+
+/**
+ * Focuses without Safari's reveal and puts the caret under the finger.
+ * Exported for its tests.
+ */
+export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
+  editable.focus({preventScroll: true});
+  if (isTextControl(editable)) {
+    placeTextControlCaret(editable, x, y);
+    return;
+  }
+  const doc = editable.ownerDocument;
+  const range = caretRangeAt(doc, x, y);
+  if (
+    range != null &&
+    editable.isContentEditable &&
+    editable.contains(range.startContainer)
+  ) {
+    const selection = doc.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+}
+
+/**
+ * Done's park (spec:AST-099 FR4): focus rests on the composer region, which
+ * is focusable for the park alone, so a click or a tap beside the composer
+ * never focuses it (spec:AST-017 FR59). The region gives the focus stop up as
+ * soon as focus leaves it.
+ */
+function parkFocus(region: HTMLElement): void {
+  region.setAttribute('tabindex', '-1');
+  region.addEventListener(
+    'blur',
+    () => {
+      region.removeAttribute('tabindex');
+    },
+    {once: true},
+  );
+  region.focus({preventScroll: true});
+}
+
+/**
+ * Keeps ChatLayout's composer on top of the software keyboard.
+ *
+ * @example
+ * ```
+ * const keyboard = useChatKeyboard({rootRef, scrollRef, isSelfScrolling});
+ * <div ref={keyboard.messagesRef} {...stylex.props(styles.messages(keyboard.lift))}>…</div>
+ * <div ref={keyboard.dockRef} {...stylex.props(styles.dock(keyboard.lift))}>
+ *   <div ref={keyboard.composerRef}>…</div>
+ * </div>
+ * ```
+ */
+export function useChatKeyboard({
+  rootRef,
+  scrollRef,
+  isSelfScrolling,
+}: UseChatKeyboardOptions): UseChatKeyboardResult {
+  const dock = useAnimator();
+  const messages = useAnimator();
+  const composerRef = useRef<HTMLDivElement>(null);
+  const keyboardHeight = useKeyboardHeight(
+    rootRef.current?.ownerDocument.defaultView,
+  );
+  // The lift the layout shows (read in render, so styles carry it) and its
+  // mirror for the handlers below.
+  const [liftStore] = useState(createLiftStore);
+  const lift = useSyncExternalStore(
+    liftStore.subscribe,
+    liftStore.get,
+    liftStore.get,
+  );
+  const liftRef = useRef(0);
+  // Set while the guide's ride is under way: the layout waits for it. Each
+  // ride's number, so only the latest one hands its translate back.
+  const ridingRef = useRef(false);
+  const rideRef = useRef(0);
+  // Where the last ride took the dock's and the transcript's translates
+  // (null: the transcript did not ride), until the layout takes them over.
+  const dockTargetRef = useRef<number | null>(null);
+  const messagesTargetRef = useRef<number | null>(null);
+  // Whether the transcript was at its newest message, and where it was
+  // scrolled, just before the layout's last change.
+  const atEndRef = useRef(false);
+  const scrollBeforeRef = useRef(0);
+  const commitRef = useRef<() => void>(() => {});
+  // The touch presentation: under a coarse primary pointer the ride on the
+  // keyboard's own motion, the settle that waits for a scrolling finger and
+  // the composer's touch routes attach; under a fine one none of them does
+  // (spec:AST-094 FR24). The drag-to-dismiss below attaches for every pointer
+  // (FR43).
+  const touchPresentation = useTouchPresentation();
+  const isTouch = touchPresentation.isTouch;
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current;
+    const win = root?.ownerDocument.defaultView;
+    if (root == null || win == null) {
+      return undefined;
+    }
+    // A sticky dock rests at the root's bottom edge, which may sit above or
+    // below the layout viewport's; a fixed dock rests at the viewport's.
+    // While a keyboard is up the dock rises until it clears the keyboard's
+    // cover; without one it rests where the layout puts it.
+    const liftFor = (inset: number) => {
+      if (inset <= 0) {
+        return 0;
+      }
+      // In layout px, as the root's rect is, under a pinch zoom too.
+      const viewportBottom = layoutViewportHeight(win);
+      const bottom = isSelfScrolling
+        ? root.getBoundingClientRect().bottom
+        : viewportBottom;
+      return Math.max(0, bottom - (viewportBottom - inset));
+    };
+    const isAtEnd = () => {
+      const scroller = scrollRef.current;
+      return (
+        scroller != null &&
+        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <
+          AT_END_SLOP
+      );
+    };
+    // Fingers on the transcript, and a scroll that has not settled since the
+    // last one lifted: a shrinking layout waits for both.
+    let touches = 0;
+    let settled = true;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
+      settled = false;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settled = true;
+        commit();
+      }, SCROLL_SETTLE_MS);
+    };
+    const onTouches = (event: TouchEvent) => {
+      touches = event.touches.length;
+      if (touches === 0) {
+        settle();
+      }
+    };
+    const onScroll = () => {
+      if (touches === 0 && !settled) {
+        settle();
+      }
+    };
+
+    // The layout takes the keyboard height's lift once no ride is under way.
+    const commit = () => {
+      if (ridingRef.current) {
+        return;
+      }
+      const next = liftFor(getKeyboardHeight(win));
+      if (Math.abs(next - liftRef.current) < 0.5) {
+        return;
+      }
+      if (next < liftRef.current && (touches > 0 || !settled)) {
+        return;
+      }
+      atEndRef.current = isAtEnd();
+      scrollBeforeRef.current = scrollRef.current?.scrollTop ?? 0;
+      liftStore.set(next);
+    };
+    commitRef.current = commit;
+
+    // The ride plays the curve the guide publishes with each transition
+    // (INV11): the keyboard's own motion (UIKit's spring, or Gboard's slides
+    // in Chrome), values and not motion roles, since the system moves the
+    // keyboard on them whatever the page does.
+    const follow = (transition: KeyboardTransition) => {
+      // The ride: the dock goes where the guide says the keyboard will be,
+      // from the keyboard's start, relative to the layout it rests in now.
+      const target = liftRef.current - liftFor(transition.to);
+      const atEnd = isAtEnd();
+      dockTargetRef.current = target;
+      messagesTargetRef.current = atEnd ? target : null;
+      if (!transition.animated) {
+        rideRef.current += 1;
+        ridingRef.current = false;
+        dock.animator.set({y: target});
+        if (atEnd) {
+          messages.animator.set({y: target});
+        }
+        commit();
+        return;
+      }
+      // Under Reduce Motion the animator's default applies: no travel, a
+      // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
+      const shown = {y: target};
+      ridingRef.current = true;
+      rideRef.current += 1;
+      const ride = rideRef.current;
+      // On the keyboard's own motion: UIKit's spring, or Gboard's slide.
+      const rides = [
+        rideKeyboard(dock.animator, shown, transition)?.finished ??
+          Promise.resolve(true),
+      ];
+      if (atEnd) {
+        rides.push(
+          rideKeyboard(messages.animator, shown, transition)?.finished ??
+            Promise.resolve(true),
+        );
+      }
+      void Promise.all(rides)
+        .then(async done => {
+          // A newer ride took over: it commits when it ends.
+          if (!done.every(Boolean) || ride !== rideRef.current) {
+            return;
+          }
+          // Hand back only once the presented animations are over too, so a
+          // paused animation (an inspector, a test holding the clock) is
+          // never left on top of the new layout.
+          const element = dock.animator.element;
+          await Promise.all(
+            (element?.getAnimations?.() ?? []).map(async animation =>
+              animation.finished.catch(() => undefined),
+            ),
+          );
+          if (ride === rideRef.current) {
+            ridingRef.current = false;
+            commit();
+          }
+        })
+        .catch(() => undefined);
+    };
+    const passive = {passive: true} as const;
+    // Fingers count, and a finger's scroll is waited out, only where they
+    // can hold the layout: no touch-only listener under a fine pointer
+    // (spec:AST-094 FR19, FR24).
+    const followsFingers = isTouch && isKeyboardMeasurable(win);
+    const scrollTarget: EventTarget | null = !followsFingers
+      ? null
+      : isSelfScrolling
+        ? root
+        : scrollRef.current === root.ownerDocument.documentElement
+          ? win
+          : scrollRef.current;
+    if (followsFingers) {
+      root.addEventListener('touchstart', onTouches, passive);
+      root.addEventListener('touchend', onTouches, passive);
+      root.addEventListener('touchcancel', onTouches, passive);
+    }
+    scrollTarget?.addEventListener('scroll', onScroll, passive);
+    // The ride on the keyboard's own motion attaches only under a coarse
+    // primary pointer; under a fine one the layout follows the height alone.
+    const unsubscribe = isTouch
+      ? getKeyboardLayoutGuide(win).subscribe(follow)
+      : undefined;
+    // Mounted under a keyboard that is already up: take its place at once.
+    commit();
+    return () => {
+      unsubscribe?.();
+      ridingRef.current = false;
+      clearTimeout(settleTimer);
+      root.removeEventListener('touchstart', onTouches);
+      root.removeEventListener('touchend', onTouches);
+      root.removeEventListener('touchcancel', onTouches);
+      scrollTarget?.removeEventListener('scroll', onScroll);
+    };
+  }, [
+    rootRef,
+    scrollRef,
+    isSelfScrolling,
+    isTouch,
+    dock.animator,
+    messages.animator,
+    liftStore,
+  ]);
+
+  // Synchronizes the layout with the keyboard module's height (the visual
+  // viewport, read through useKeyboardHeight) when the guide had no ride for
+  // it (a resize, a rotation): `commit` measures the root against the layout
+  // viewport and sets the lift store. It acquires nothing and is idempotent:
+  // it sets the lift only when that changes by half a pixel or more, and not
+  // during a ride, so a replay or a rerender changes nothing
+  // (architecture:react-component-runtime INV3).
+  useIsomorphicLayoutEffect(() => {
+    commitRef.current();
+  }, [keyboardHeight]);
+
+  // The layout just moved by the lift's change: hand the dock's (and a
+  // transcript at its end's) translate the difference, so nothing moves on
+  // screen, and keep the newest message in view.
+  useIsomorphicLayoutEffect(() => {
+    const moved = lift - liftRef.current;
+    if (Math.abs(moved) < 0.5) {
+      return;
+    }
+    liftRef.current = lift;
+    const dockTarget = dockTargetRef.current;
+    const messagesTarget = messagesTargetRef.current;
+    dockTargetRef.current = null;
+    messagesTargetRef.current = null;
+    // A ride that ended hands its translate (its target) to the layout; a
+    // change no ride covered (a resize) is the layout's alone.
+    if (dockTarget != null) {
+      dock.animator.set({y: dockTarget + moved});
+    }
+    const scroller = scrollRef.current;
+    if (scroller == null) {
+      return;
+    }
+    // A translated transcript extends the scroller's range (WebKit counts it),
+    // so its ride translate goes before the scroll is set, or the scroll can
+    // stop past the content's end and the sticky dock rises to meet it.
+    if (messagesTarget != null) {
+      messages.animator.set({y: 0});
+    }
+    if (atEndRef.current) {
+      // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: keeping the newest message in view
+      scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
+    }
+    // The padding's change may have clamped the scroll already: measure from
+    // where it was before the layout changed.
+    const shifted = scroller.scrollTop - scrollBeforeRef.current;
+    if (messagesTarget != null && Math.abs(messagesTarget + shifted) >= 0.5) {
+      messages.animator.set({y: messagesTarget + shifted});
+    }
+  }, [lift, scrollRef, dock.animator, messages.animator]);
+
+  // Synchronizes the transcript's drags with the software keyboard: a drag
+  // lifted at the composer dismisses it (architecture:react-component-runtime
+  // INV3). Under every pointer, a finger, a pen or a mouse (spec:AST-094 FR19,
+  // FR43), wherever a keyboard is measured; it listens on the layout's own
+  // root, and on the document only while a button is down (FR24).
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current;
+    const win = root?.ownerDocument.defaultView;
+    if (root == null || win == null || !isKeyboardMeasurable(win)) {
+      return undefined;
+    }
+    return observeKeyboardDismiss(root, {
+      mode: 'interactive',
+      // From the keyboard's top edge up to the composer's.
+      dismissPadding: () => {
+        const composer = composerRef.current;
+        return composer == null
+          ? 0
+          : layoutViewportHeight(win) -
+              getKeyboardHeight(win) -
+              composer.getBoundingClientRect().top;
+      },
+    });
+  }, [rootRef]);
+
+  // A tap on the composer's text that would bring up the keyboard is the
+  // keyboard module's tap route (spec:AST-099 FR4): focused here without
+  // Safari's reveal, with the caret where the finger lifted. Only under a
+  // finger: under a fine primary pointer no touch listener is registered
+  // (architecture INV13, spec:AST-094 FR24). Only where the keyboard is
+  // measured: inside an iframe nothing changes (FR7).
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
+      return undefined;
+    }
+    return claimTapFocus(composer, {
+      claim: editableToClaim,
+      deliver: focusAtPoint,
+    });
+  }, [touchPresentation.isTouch]);
+
+  // A browser that reveals the composer itself pans the visual viewport after
+  // the keyboard's report while the composer is still riding up (Chrome 124
+  // on Android pans by the keyboard's whole height): the keyboard module's
+  // reveal-pan watch puts the pan back, so the composer rests on the keyboard
+  // and the page does not move (spec:AST-099 FR4). Synchronizes the keyboard
+  // module's reports, under a finger only (spec:AST-094 FR24).
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (
+      !isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
+      return undefined;
+    }
+    const watch = watchRevealPan(win, {
+      owns: focused => composer.contains(focused),
+    });
+    let reportedHeight = getKeyboardHeight(win);
+    const unsubscribe = subscribeKeyboardHeight(win, event => {
+      if (event.type !== 'viewport') {
+        return;
+      }
+      if (event.height !== reportedHeight) {
+        reportedHeight = event.height;
+        watch.report();
+      } else if (watch.isRevealPan(event.height)) {
+        watch.putBack();
+      }
+    });
+    return () => {
+      unsubscribe();
+      watch.stop();
+    };
+  }, [isTouch]);
+
+  // Every other move into the composer's text is the keyboard module's focus
+  // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6), and
+  // only under a finger (spec:AST-094 FR24): a desktop browser keeps its own
+  // focus (spec:AST-017 FR59). The takeover follows the touch presentation,
+  // and the pointer is read again on every blur, so a tablet that docks a
+  // mouse drops it. When the keyboard's Done ends entry, focus leaves the
+  // composer's text for nothing and moves to the composer region (FR4), a
+  // named group that is no tab stop, so the next tap or Tab starts from the
+  // composer.
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
+      return undefined;
+    }
+    return refuseFocusReveal(composer.ownerDocument, {
+      isActive: () =>
+        typeof win.matchMedia === 'function' &&
+        win.matchMedia(TOUCH_QUERY).matches,
+      claim: destination => findTextEntryControl(destination, composer),
+      park: origin => {
+        if (findTextEntryControl(origin, composer) != null) {
+          parkFocus(composer);
+        }
+      },
+    });
+  }, [touchPresentation.isTouch]);
+
+  return {
+    lift,
+    dockRef: dock.ref,
+    messagesRef: messages.ref,
+    composerRef,
+    isTouch,
+  };
+}
