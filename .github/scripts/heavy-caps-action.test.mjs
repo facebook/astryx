@@ -33,7 +33,7 @@ const BACKSTOP =
   "Queued behind the shared login's 5 oldest PRs: runs on a push once it is among them, or at the pre-merge re-run.";
 const CAPPED = 'Daily heavy-run cap reached, runs tomorrow or at pre-merge.';
 const ENGOWNERS =
-  '# Engineering owners\n# @commented-out\n\n@owner-one @Owner-Two\n';
+  '# Engineering owners\n# @commented-out\n\n@owner-one @Owner-Two # was @trailing-comment\n';
 
 function pullRequestContext(pr = {}) {
   return {
@@ -276,7 +276,7 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
       ).toEqual([]);
     }
     // A commented-out handle, or anyone else, is not an owner.
-    for (const login of ['commented-out', 'author']) {
+    for (const login of ['commented-out', 'trailing-comment', 'author']) {
       expect(
         (
           await check({
@@ -408,8 +408,10 @@ describe('per-author caps on heavy suites (spec:AST-030 FR16)', () => {
     for (const [id, job] of heavyJobs) {
       const caps = job.steps.findIndex(isCaps);
       expect(job.steps[caps - 1].uses, id).toMatch(/^actions\/checkout@/);
+      // The engineering-owner roster is read with contents: read.
       expect(job.permissions, id).toMatchObject({
         actions: 'read',
+        contents: 'read',
         'pull-requests': 'read',
       });
       expect(job.steps[caps + 1], id).toMatchObject({
