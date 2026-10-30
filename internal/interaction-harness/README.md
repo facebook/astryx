@@ -175,7 +175,9 @@ dialog's backdrop mounts the control inside the dialog with
 `startBusyControl(page, {within: dialog})`, a plain fixed box with no top-layer
 entry: in WebKit, with the popover above BottomSheet's open modal dialog, the
 sheet's dim held for 155 to 225 ms into a block while the control moved, and
-inside the dialog it moves in step with the sheet. Track it from the
+inside the dialog it moves in step with the sheet. `waitForAnimation` and
+`blockMainThread`'s `during` never count the control's own animation, so on
+a dialog they still wait for the backdrop's. Track it from the
 same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
 as `control`: the component passes when it moved on every frame the control
 moved and its longest stall is no longer than the control's. Both are read from

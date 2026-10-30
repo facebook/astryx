@@ -43,7 +43,9 @@ const CONTROL_TRAVEL = 240;
  * open modal dialog), as a plain fixed box with no top-layer entry, for a
  * proof of the dialog's `::backdrop`: in WebKit, with the popover above
  * BottomSheet's open modal dialog, the sheet's dim held for 155 to 225 ms
- * into a block while the control moved. Start it before the block: it
+ * into a block while the control moved. `waitForAnimation` and
+ * `blockMainThread`'s `during` never count the control's own animation, so
+ * they still wait for the dialog's. Start it before the block: it
  * resolves once the animation is running and past its first frame (on the
  * compositor; see `blockMainThread`). Keep the component's marker out of the
  * strip it crosses (the top `CONTROL_SIDE` px, `CONTROL_SIDE +
@@ -176,8 +178,9 @@ export interface BusyWindow {
  * holds that hand-off, and even a compositor animation freezes. To catch a
  * settle near its start, call it before the release that starts the settle and
  * await it after: the page is already waiting when the animation begins. Any
- * animation inside `during` counts, so pick an element that runs nothing
- * else meanwhile.
+ * animation inside `during` counts but the busy-window control's own
+ * (`startBusyControl`, mounted inside a dialog with `within`), so pick an
+ * element that runs nothing else meanwhile.
  *
  * An animation counts once it is no longer pending and has run at least one
  * frame (`minProgressMs` below 16 ms is raised to 16). One created in the
@@ -227,11 +230,21 @@ export async function blockMainThread(
         const frame = gate?.frame ?? window.requestAnimationFrame.bind(window);
         const later = gate?.timeout ?? window.setTimeout.bind(window);
         const deadline = performance.now() + wait;
+        // The busy-window control animates on its own, inside a dialog with
+        // `within`: it never stands for the animation under test.
+        const isControl = (a: Animation) => {
+          const target = (a.effect as KeyframeEffect | null)?.target ?? null;
+          return (
+            target instanceof Element &&
+            target.closest('[data-harness-control]') != null
+          );
+        };
         const tick = () => {
           const running = element
             .getAnimations({subtree: true})
             .some(
               a =>
+                !isControl(a) &&
                 a.playState === 'running' &&
                 !a.pending &&
                 Number(a.currentTime ?? 0) >= minProgress,

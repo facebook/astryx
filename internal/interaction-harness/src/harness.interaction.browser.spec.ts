@@ -387,6 +387,14 @@ test.describe('frame evidence', () => {
           requestAnimationFrame(step);
         }
       }, driver);
+      // A rendering update first: until one commits the cancel, the
+      // compositor keeps playing the previous run's animation into the block.
+      await page.evaluate(
+        () =>
+          new Promise<void>(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          ),
+      );
       const window = await blockMainThread(
         page,
         blockMs,
@@ -688,6 +696,31 @@ test.describe('frame evidence', () => {
       control: controlFrames,
     });
     expect(proof.verdict.failures, proof.summary).toEqual([]);
+  });
+
+  test("waitForAnimation and blockMainThread's during never count the control's own animation inside a dialog", async ({
+    page,
+  }) => {
+    await page.setContent(
+      '<dialog id="d" style="width:200px;height:200px">still</dialog>',
+    );
+    await page.evaluate(() =>
+      (document.getElementById('d') as HTMLDialogElement).showModal(),
+    );
+    const dialog = page.locator('#d');
+    const control = await startBusyControl(page, {within: dialog});
+    // The dialog animates nothing of its own: both gates keep waiting.
+    await expect(
+      blockMainThread(page, 100, {during: dialog, timeout: 600}),
+    ).rejects.toThrow(/no animation started/);
+    await expect(waitForAnimation(dialog, {timeout: 600})).rejects.toThrow();
+    // Its own animation answers both.
+    await dialog.evaluate(el =>
+      el.animate([{opacity: 1}, {opacity: 0.5}], {duration: 2000}),
+    );
+    await waitForAnimation(dialog);
+    await blockMainThread(page, 100, {during: dialog});
+    await control.remove();
   });
 
   test('a hold that starts before the block is judged from its first presented change inside it; a single change and then a freeze still fails', async ({
