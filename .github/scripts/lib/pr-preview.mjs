@@ -558,14 +558,6 @@ export async function reconcilePrComment({
 
   let body;
   if (analysisReady) {
-    let resolvedA11yPath = a11yPath;
-    if (!fs.existsSync(resolvedA11yPath)) {
-      resolvedA11yPath = path.resolve('a11y-empty.json');
-      fs.writeFileSync(
-        resolvedA11yPath,
-        '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}',
-      );
-    }
     const args = [
       generator,
       '--analysis',
@@ -573,8 +565,9 @@ export async function reconcilePrComment({
       ...(trustedBaseStats({baseStatsPath, identity, core})
         ? ['--base-stats', baseStatsPath]
         : []),
-      '--a11y',
-      resolvedA11yPath,
+      // No report means the audit did not run (it runs on main and release
+      // checks, or with the ci:heavy-lanes label); the comment says so.
+      ...(fs.existsSync(a11yPath) ? ['--a11y', a11yPath] : []),
       ...(fs.existsSync(visualPath) ? ['--visual', visualPath] : []),
       ...(storybook ? ['--storybook-url', `${previewOrigin}/storybook/`] : []),
       ...(sandbox ? ['--sandbox-url', `${previewOrigin}/sandbox/`] : []),

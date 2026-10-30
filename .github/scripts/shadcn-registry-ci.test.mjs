@@ -39,7 +39,7 @@ describe('ShadCN registry CI contract', () => {
     expect(job.steps.find(candidate => candidate.id === 'scope').uses).toBe(
       './.test-scope/.github/actions/test-scope',
     );
-    expect(job['runs-on']).toBe('4-core-ubuntu');
+    expect(job['runs-on']).toBe('ubuntu-latest');
     expect(job['timeout-minutes']).toBe(15);
 
     expect(ci.jobs.test.needs).toContain('registry-contract');
