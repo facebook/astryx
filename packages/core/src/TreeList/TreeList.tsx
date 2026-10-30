@@ -37,6 +37,7 @@ import type {
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   applyLayoutChangeTransition,
   holdLayoutExit,
@@ -513,6 +514,9 @@ export function TreeList({
   const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
   );
+  // Read once for every row: a repeated row adds no touch observer of its
+  // own (`spec:AST-094` FR24).
+  const {isTouch} = useTouchPresentation();
 
   function renderItems(
     items: TreeListItemData[],
@@ -541,14 +545,18 @@ export function TreeList({
         : ancestorsIsLast;
 
       const isExiting = exitingIds.has(item.id);
-      const renderedChildren =
-        (isExpanded || isExiting) && hasChildren
-          ? renderItems(
+      // Rendered by the row when it shows them: while expanded, while a
+      // handle's exit plays (isExiting), and, with no handle, while the
+      // touch slide carries them away after a collapse
+      // (useTreeExpansionMotion).
+      const renderChildren = hasChildren
+        ? (): ReactNode =>
+            renderItems(
               item.children ?? [],
               nestedLevel + 1,
               ancestorsIsLastForChildren,
             )
-          : undefined;
+        : undefined;
 
       return (
         <TreeListItem
@@ -573,10 +581,12 @@ export function TreeList({
           ancestorsIsLast={ancestorsIsLast}
           isExpanded={isExpanded}
           isExiting={isExiting && !isExpanded}
+          hasAnimatedLayout={animatedLayout != null}
+          isTouch={isTouch}
           onToggle={handleToggle}
           density={density}
           variant={variant}
-          renderedChildren={renderedChildren}
+          renderChildren={renderChildren}
           posInSet={index + 1}
           setSize={items.length}
           isTabbable={item.id === initialTabbableId}
