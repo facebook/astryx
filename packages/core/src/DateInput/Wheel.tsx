@@ -4,15 +4,25 @@
 
 /**
  * @file Wheel.tsx
- * @input Option list, selected value, change callback
- * @output Exports Wheel — a snap-scrolling picker column
- * @position Internal component; consumed by MonthYearWheels.tsx
+ * @input Option list, selected value and change callback
+ * @output Exports Wheel — one picker column — ScrollWheel (today's column),
+ *   and the shared types of wheelOptions.ts
+ * @position Internal component; consumed by MonthYearWheels.tsx,
+ *   TouchTimeField.tsx and TouchDateTimeField.tsx
  *
- * A wheel is a scroll container, not a custom gesture surface. Momentum,
+ * Wheel picks its column by the primary pointer (useTouchPresentation): one
+ * touch model on every touch device, iOS and Android alike. Under a finger
+ * it moves like UIPickerView in today's look: PickerWheel.tsx, the touch
+ * layer, imported here alone. Under a mouse or other fine pointer it is the snap-scrolling
+ * column below, today's Astryx wheel. A wheel draws only on a sheet, so a caller who
+ * pins the fine surface (`presentation="popover"` on its input) gets no
+ * sheet and no wheel (architecture:public-component-api INV16).
+ *
+ * The scrolling column is a scroll container, not a custom gesture surface. Momentum,
  * rubber-banding, and the settle animation are the platform's; all this adds
  * is `scroll-snap-align: center` on each option, half a viewport of padding at
  * each end so the first and last option can reach the middle, and a commit
- * when the scrolling stops.
+ * when the scrolling stops and no finger or mouse drag still holds it.
  *
  * The falloff (rows fading and tipping away from the centre) is a CSS
  * scroll-driven animation on a `view()` timeline — the browser interpolates it
@@ -21,12 +31,19 @@
  * browser that does not understand `animation-timeline` would otherwise run
  * the same keyframes on the document timeline and simply play them once.
  *
+ * Reduced motion (design:reduced-motion): the wheel's own scrolls (a step
+ * from a key or a click, the travel to the nearest enabled row) land without
+ * travel, cross-fading on a touch screen and at once otherwise. A finger's
+ * scroll and its momentum are the platform's.
+ *
  * Accessibility: this is a listbox, not a novel widget. It is one tab stop
  * with arrow/Home/End/PageUp/PageDown keys, `aria-activedescendant` tracking
  * the active row, and every row reachable by tap — none of which depends on
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/DateInput/PickerWheel.tsx (the touch column)
+ * - /packages/core/src/DateInput/wheelOptions.ts
  * - /packages/core/src/DateInput/TouchDateField.tsx
  * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
@@ -44,10 +61,20 @@ import {
   durationVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
+import {reducedMotionFade} from '../motion/reducedMotion';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {PickerWheel} from './PickerWheel';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
+import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+
+export {
+  nearestEnabledIndex,
+  type WheelOption,
+  type WheelProps,
+} from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
 
@@ -204,33 +231,9 @@ const styles = stylex.create({
   },
 });
 
-export interface WheelOption {
-  /** Stable numeric identity of the row (a month 1-12, or a year). */
-  value: number;
-  /** Row text. */
-  label: string;
-  /** Rows outside min/max stay visible but cannot be committed. */
-  isDisabled?: boolean;
-}
-
-export interface WheelProps {
-  /** Accessible name for the column, e.g. "Month". */
-  label: string;
-  /** Rows, top to bottom. */
-  options: ReadonlyArray<WheelOption>;
-  /** Committed value; must match one option's `value`. */
-  value: number;
-  /** Fired when the wheel comes to rest on a different, enabled row. */
-  onChange: (value: number) => void;
-  /**
-   * False while the wheel is hidden — scroll offsets of a display:none
-   * scroller are meaningless, so listeners and the initial scroll wait.
-   */
-  isActive?: boolean;
-}
-
 /**
- * One snap-scrolling picker column.
+ * One picker column: UIPickerView's motion in today's look under a finger, today's
+ * snap-scrolling column under a fine pointer.
  *
  * @example
  * ```
@@ -242,7 +245,29 @@ export interface WheelProps {
  * />
  * ```
  */
-export function Wheel({
+export function Wheel(props: WheelProps) {
+  // One touch model on every touch device: a finger gets UIPickerView's
+  // motion in today's look, a fine pointer today's column.
+  const {isTouch} = useTouchPresentation();
+  return isTouch ? <PickerWheel {...props} /> : <ScrollWheel {...props} />;
+}
+
+Wheel.displayName = 'Wheel';
+
+/**
+ * One snap-scrolling picker column: today's wheel, under a fine pointer.
+ *
+ * @example
+ * ```
+ * <ScrollWheel
+ *   label="Month"
+ *   options={monthOptions}
+ *   value={month}
+ *   onChange={setMonth}
+ * />
+ * ```
+ */
+export function ScrollWheel({
   label,
   options,
   value,
@@ -259,6 +284,13 @@ export function Wheel({
   // `selectedIndex` only catches up when the wheel settles.
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
 
+  // A mouse cannot drag a scroll container, so without this the wheel ignores
+  // the one gesture its shape invites. Touch is untouched — it pans natively,
+  // with momentum this could not match. See usePointerDragScroll. The drag it
+  // holds is not rest either: the settle below waits for its release, as it
+  // waits for a finger's (useScrollSettle).
+  const {isDraggingRef} = usePointerDragScroll(scrollerRef, isActive);
+
   // Row height in px, read from layout rather than assumed, so a theme that
   // retunes --date-input-touch-wheel-item-size still lands on the right row.
   const itemBlockSize = useCallback((): number => {
@@ -268,20 +300,101 @@ export function Wheel({
       : 0;
   }, []);
 
+  // What last started a scroll of the wheel: a pointer's type, or 'wheel'
+  // for a mouse wheel or trackpad. Under reduced motion the release of a
+  // touch drag cross-fades whatever the primary pointer (design:reduced-motion
+  // DR2); a key step, a row tap or a trackpad's scroll follows the primary
+  // pointer (DR2 on a coarse one, at once otherwise, DR3).
+  const lastPointerRef = useRef<string | null>(null);
+
+  // A reduced-motion dip whose rows have not landed yet: its timer and the
+  // row it lands on. While one is pending the rows stay put for it, so they
+  // never move at full opacity, and a further step retargets it.
+  const pendingFadeRef = useRef<{timer: number; top: number} | null>(null);
+  // The running dip, so a step during its fade-in starts the next one where
+  // the column is.
+  const dipRef = useRef<Animation | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingFadeRef.current != null) {
+        window.clearTimeout(pendingFadeRef.current.timer);
+        pendingFadeRef.current = null;
+      }
+    },
+    [],
+  );
+
   const scrollToIndex = useCallback(
-    (index: number, behavior: ScrollBehavior) => {
+    (
+      index: number,
+      behavior: ScrollBehavior,
+      {touchRelease = false}: {touchRelease?: boolean} = {},
+    ) => {
       const scroller = scrollerRef.current;
       const size = itemBlockSize();
       if (scroller == null || size === 0) {
         return;
       }
-      scroller.scrollTo({top: index * size, behavior});
+      const top = index * size;
+      // Under reduced motion (design:reduced-motion) the wheel's own scroll
+      // lands without travel: a dip on a touch screen or for a touch drag's
+      // release, at once otherwise.
+      const fadeTiming =
+        behavior === 'smooth'
+          ? reducedMotionFade(scroller, {touchRelease})
+          : null;
+      const pending = pendingFadeRef.current;
+      if (fadeTiming == null) {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
+        scroller.scrollTo({top, behavior});
+        return;
+      }
+      if (fadeTiming.duration === 0 || typeof scroller.animate !== 'function') {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
+        scroller.scrollTo({top, behavior: 'auto'});
+        return;
+      }
+      if (pending != null) {
+        // The dip is still fading out: its rows land here instead.
+        pending.top = top;
+        return;
+      }
+      const {duration, easing} = fadeTiming;
+      // A step while the last dip still fades back in starts this one where
+      // the column is, not at full opacity: a leaving element fades out where
+      // it is (design:reduced-motion DR2).
+      const shown = Number.parseFloat(getComputedStyle(scroller).opacity);
+      dipRef.current?.cancel();
+      dipRef.current = scroller.animate(
+        [
+          {opacity: Number.isFinite(shown) ? shown : 1, easing},
+          {opacity: 0, easing},
+          {opacity: 1},
+        ],
+        {duration, easing: 'linear'},
+      );
+      const landing = {top, timer: 0};
+      landing.timer = window.setTimeout(() => {
+        pendingFadeRef.current = null;
+        scroller.scrollTo({top: landing.top, behavior: 'auto'});
+      }, duration / 2);
+      pendingFadeRef.current = landing;
     },
     [itemBlockSize],
   );
 
-  // Commit on rest. A disabled row is bounced back to the committed one
-  // rather than silently keeping a value the wheel is not showing.
+  // Commit on rest. A wheel that stopped on a disabled row (one outside the
+  // bounds) travels on to the nearest enabled row, as UIDatePicker does, and
+  // that second rest commits it. Resting on the committed row itself is not a
+  // stop to correct: the park after the sheet opens settles there with no
+  // touch, and a committed value outside the bounds stays until a person
+  // moves the wheel.
   //
   // Declared here, above the park effect, because that effect consults the
   // `isAtRestRef` this returns before it repositions anything.
@@ -296,20 +409,30 @@ export function Wheel({
         options.length - 1,
         Math.max(0, Math.round(scroller.scrollTop / size)),
       );
-      const option = options[index];
-      if (option == null || option.isDisabled) {
-        scrollToIndex(selectedIndex, 'smooth');
+      const restIndex =
+        index === selectedIndex
+          ? index
+          : nearestEnabledIndex(options, index, selectedIndex);
+      if (restIndex !== index) {
+        scrollToIndex(restIndex, 'smooth', {
+          touchRelease: lastPointerRef.current === 'touch',
+        });
         return;
       }
-      if (option.value !== value) {
+      const option = options[index];
+      if (option != null && !option.isDisabled && option.value !== value) {
         onChange(option.value);
       }
     },
     isActive,
+    isDraggingRef,
   );
 
-  // Park the committed row under the band whenever the wheel is shown, or the
-  // value is changed from outside (the calendar scrolled to another month).
+  // Park the committed row under the band whenever the wheel is shown, at
+  // once. A value changed from outside while it is shown (a bound clamping the
+  // time after another wheel turned, the calendar scrolled to another month)
+  // turns the wheel onto its row instead, as UIDatePicker turns onto its
+  // maximum (component:DateInput FR13): it never jumps there.
   //
   // NEVER while the wheel is still moving. A scroller that is mid-gesture or
   // still carrying momentum is the user's, and repositioning it does not stop
@@ -317,8 +440,15 @@ export function Wheel({
   // as a new settle, commits the next row along, and parks again. See
   // useScrollSettle. The settle handler re-checks the position afterwards, so
   // a correction that is genuinely needed still happens, just at rest.
+  const parkedRef = useRef(false);
   useEffect(() => {
-    if (!isActive || !isAtRestRef.current) {
+    if (!isActive) {
+      parkedRef.current = false;
+      return;
+    }
+    // Nor while a reduced-motion dip is still to land its rows: they land
+    // under it, on this row.
+    if (!isAtRestRef.current || pendingFadeRef.current != null) {
       return;
     }
     const size = itemBlockSize();
@@ -327,11 +457,16 @@ export function Wheel({
       return;
     }
     if (Math.round(scroller.scrollTop / size) !== selectedIndex) {
-      scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      if (parkedRef.current) {
+        scrollToIndex(selectedIndex, 'smooth');
+      } else {
+        scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      }
     }
+    parkedRef.current = true;
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- the highlight follows a scroll position, which only exists after layout
     setActiveIndex(selectedIndex);
-  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef]);
+  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef, scrollToIndex]);
 
   // Highlight follows the finger. rAF-throttled: a scroll can fire far more
   // often than the display refreshes, and this only feeds a repaint.
@@ -374,11 +509,6 @@ export function Wheel({
   // 'all': a wheel scrolls vertically, the same axis the sheet wants, so
   // there is no way to share — it takes every touch that lands on it.
   useOwnScrollGesture(scrollerRef, 'all', {isEnabled: isActive});
-
-  // A mouse cannot drag a scroll container, so without this the wheel ignores
-  // the one gesture its shape invites. Touch is untouched — it pans natively,
-  // with momentum this could not match. See usePointerDragScroll.
-  usePointerDragScroll(scrollerRef, isActive);
 
   const moveBy = useCallback(
     (delta: number) => {
@@ -443,6 +573,16 @@ export function Wheel({
         aria-activedescendant={`${id}-${options[activeIndex]?.value}`}
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        // Read on the way down: usePointerDragScroll stops a primary mouse
+        // press from bubbling (it must not reach BottomSheet's drag), so a
+        // bubbling handler would never see a mouse and would keep the last
+        // touch.
+        onPointerDownCapture={event => {
+          lastPointerRef.current = event.pointerType;
+        }}
+        onWheel={() => {
+          lastPointerRef.current = 'wheel';
+        }}
         {...stylex.props(styles.scroller, focusOutlineStyles.focusVisible)}>
         {options.map((option, index) => (
           <div
@@ -474,4 +614,4 @@ export function Wheel({
   );
 }
 
-Wheel.displayName = 'Wheel';
+ScrollWheel.displayName = 'ScrollWheel';
