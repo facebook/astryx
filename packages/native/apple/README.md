@@ -28,6 +28,8 @@ apple/
 │   │   ├── Localization/
 │   │   ├── Icon/          # Icon, Icon.spec.md
 │   │   ├── Avatar/        # Avatar, Avatar.spec.md
+│   │   ├── Item/          # Item, Item.spec.md
+│   │   ├── List/          # List, ListItem, and their specs
 │   │   ├── Text/          # Text
 │   │   ├── Heading/       # Heading
 │   │   ├── Button/        # Button

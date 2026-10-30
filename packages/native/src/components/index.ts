@@ -18,6 +18,9 @@ import {divider} from './Divider.js';
 import {heading} from './Heading.js';
 import {hStack} from './HStack.js';
 import {icon} from './Icon.js';
+import {item} from './Item.js';
+import {list} from './List.js';
+import {listItem} from './ListItem.js';
 import {progressBar} from './ProgressBar.js';
 import {selector} from './Selector.js';
 import {switchControl} from './Switch.js';
@@ -36,6 +39,9 @@ export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [
   heading,
   hStack,
   icon,
+  item,
+  list,
+  listItem,
   progressBar,
   selector,
   switchControl,
