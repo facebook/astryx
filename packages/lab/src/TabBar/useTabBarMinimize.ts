@@ -67,7 +67,7 @@ export interface UseTabBarMinimizeOptions {
 
 export interface TabBarMinimize {
   readonly isMinimized: boolean;
-  /** Expands a minimized bar (a tap on the circle, focus on a tab). */
+  /** Expands a minimized bar (the circle activated, a tap or the keys). */
   readonly expand: () => void;
   /** The platter: shrinks to the circle about the leading cap's centre. */
   readonly platter: (element: HTMLElement | null) => void;
