@@ -349,8 +349,11 @@ inferred from an implementation pull request.
 - `scripts/check-i18n-catalog.mjs` — source/translation key, syntax, runtime
   contract, and plural validation.
 - `internal/eslint-plugin-astryx/no-hardcoded-i18n-string.js` — rejects
-  Astryx-owned user-facing literals and assembled text in JSX text, string-typed
-  props, and `announce()` arguments so every owned string is a catalog key.
+  Astryx-owned user-facing literals and assembled text in JSX children,
+  string-typed props and object fields, local bindings with text-sink names,
+  formatter returns, and `announce()` arguments so every owned string is a
+  catalog key. Sinks are recognized by name, not by data flow, and word order
+  between interpolated values is outside its reach.
 - `internal/eslint-plugin-astryx/i18n-key-format.js` — enforces the
   `@astryx.` namespace and camelCase catalog-key segments. This rule currently
   lacks its own focused test file; adding one is a verification gap.
