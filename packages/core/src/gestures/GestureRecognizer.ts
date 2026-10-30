@@ -118,7 +118,9 @@ export function isActive(state: GestureState): boolean {
   return state === 'began' || state === 'changed';
 }
 
-/** The browser behaviors `touch-action` can keep or remove. */
+/**
+ * The browser behaviors `touch-action` can keep or remove.
+ */
 export interface NativeTouchBehavior {
   readonly panX: boolean;
   readonly panY: boolean;
@@ -568,12 +570,19 @@ export abstract class GestureRecognizer {
     }
   }
 
+  /** @internal The host's hook: listeners follow whether anything is enabled. */
+  onEnabledChange: (() => void) | null = null;
+
   /**
    * UIKit's `isEnabled` setter: turning a recognizer off mid-gesture cancels
    * the gesture (an active one) or fails it (a possible one).
    */
   setEnabled(value: boolean): void {
+    const changed = this.isEnabled !== value;
     this.isEnabled = value;
+    if (changed) {
+      this.onEnabledChange?.();
+    }
     if (!value && (this.state !== 'possible' || this.isInvolved())) {
       this.cancel();
     }
