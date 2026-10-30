@@ -279,6 +279,12 @@ export interface Pager {
   goTo(index: number, options?: GoToOptions): void;
   /** Update options; a smaller count clamps the target page. */
   setOptions(options: Partial<PagerOptions>): void;
+  /**
+   * Turn the page pan on or off (the hook's `isPanEnabled`). A drag it ends
+   * settles as a cancelled drag does, and what that settle calls back waits
+   * for the next frame: no callback runs inside the caller's update.
+   */
+  setPanEnabled(enabled: boolean): void;
   /** Attach to the elements; returns a detach function. */
   attach(
     viewport: HTMLElement,
@@ -1074,8 +1080,12 @@ export function createPager(
 
   function applyOptions(update: Partial<PagerOptions>): void {
     const wasLooping = isLooping();
+    const wasChildPages = isChildPages();
     const previousOffset = offsetOf(target);
     options = {...options, ...update};
+    if (isChildPages() !== wasChildPages) {
+      syncTrackObserver();
+    }
     if (isChildPages() && viewport != null && !isDragging) {
       // The children may have changed with the options (a count, a gap).
       const offsets = measureChildOffsets();
@@ -1104,6 +1114,18 @@ export function createPager(
   }
 
   let detachAll: (() => void) | null = null;
+
+  // Children pages also move when the track's own size changes (a child
+  // added, removed or resized): the track is observed while the pages are its
+  // children, from attach or from the options change that makes them so.
+  let unobserveTrack: () => void = () => {};
+  function syncTrackObserver(): void {
+    unobserveTrack();
+    unobserveTrack =
+      isChildPages() && trackElement != null && detachAll != null
+        ? observeResize(trackElement, measure)
+        : () => {};
+  }
 
   function attach(
     nextViewport: HTMLElement,
@@ -1145,15 +1167,13 @@ export function createPager(
       };
     }
     const unobserve = observeResize(nextViewport, measure);
-    // Children pages also move when the track's own size changes (a child
-    // added, removed or resized).
-    const unobserveTrack = isChildPages()
-      ? observeResize(nextTrack, measure)
-      : () => {};
     detachAll = () => {
       unobserve();
       unobserveTrack();
-      detachTouch();
+      unobserveTrack = () => {};
+      // A drag the detach cancels settles where it rests, and its callbacks
+      // are dropped below: no callback runs from an unmount.
+      deferringCallbacks(() => detachTouch());
       dropReport();
       stopSettle();
       dropDeferred();
@@ -1161,6 +1181,7 @@ export function createPager(
       isDragging = false;
       detachAll = null;
     };
+    syncTrackObserver();
     return () => detachAll?.();
   }
 
@@ -1186,6 +1207,9 @@ export function createPager(
     nearestPage: (position: number) => clampIndex(Math.round(pageAt(position))),
     goTo,
     setOptions,
+    setPanEnabled(enabled: boolean) {
+      deferringCallbacks(() => pan.setEnabled(enabled));
+    },
     attach,
     dispose() {
       detachAll?.();
@@ -1319,9 +1343,10 @@ export function usePager({
     [pager],
   );
 
-  // Synchronizes the pan recognizer (the gesture host) with isPanEnabled.
+  // Synchronizes the pan recognizer (the gesture host) with isPanEnabled; what
+  // a drag it ends calls back waits for the next frame, after this Effect.
   useEffect(() => {
-    pager.pan.setEnabled(isPanEnabled);
+    pager.setPanEnabled(isPanEnabled);
   }, [pager, isPanEnabled]);
 
   // Synchronizes the pager, an imperative system outside React (the track's
