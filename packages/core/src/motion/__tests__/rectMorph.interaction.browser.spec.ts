@@ -204,7 +204,19 @@ async function readAcrossSwitch(page: Page, restart: boolean) {
       await morph.present(path, spring).started;
       // Partway up the present, with the box well away from both ends.
       await new Promise(resolve => setTimeout(resolve, 160));
+      // Read and switch inside a frame callback: there the timeline's time is
+      // the frame's, the time the browser samples the running animation at.
+      // In a timer task WebKit can hand out a timeline time a frame stale
+      // while the box is sampled fresher, which a loaded page shows as a
+      // step of a few px.
+      const frame = async () =>
+        new Promise<number>(resolve => requestAnimationFrame(resolve));
+      await frame();
+      const previous = read();
+      const previousAt = Number(document.timeline.currentTime);
+      await frame();
       const before = read();
+      const at = Number(document.timeline.currentTime);
       if (restart) {
         // What a morph that did not continue would do: start the path over.
         morph.reset();
@@ -214,15 +226,21 @@ async function readAcrossSwitch(page: Page, restart: boolean) {
         morph.dismiss(path, spring, {target: element});
       }
       const after = read();
+      const change = (a: typeof before, b: typeof before) =>
+        Math.max(
+          Math.abs(a.x - b.x),
+          Math.abs(a.y - b.y),
+          Math.abs(a.width - b.width),
+          Math.abs(a.height - b.height),
+        );
       return {
         before,
         after,
-        step: Math.max(
-          Math.abs(after.x - before.x),
-          Math.abs(after.y - before.y),
-          Math.abs(after.width - before.width),
-          Math.abs(after.height - before.height),
-        ),
+        step: change(after, before),
+        // The reads share a clock that WebKit counts in whole milliseconds,
+        // so they can only agree to the box's travel in one of them,
+        // measured over the frame before.
+        clockTick: change(before, previous) / Math.max(1, at - previousAt),
       };
     },
     {box: BOX, square: SQUARE, spring: SLOW, restart},
@@ -286,16 +304,28 @@ async function trackAcrossSwitch(page: Page, restart: boolean) {
     {box: BOX, spring: SLOW, restart},
   );
   await page.waitForTimeout(100);
-  const tracked = (await trackMarker(page, await cast.stop())).filter(
+  const seen = (await trackMarker(page, await cast.stop())).filter(
     frame => frame.box != null,
   );
+  // A loaded page can open the screencast on the last frame composited before
+  // the present's first, with the box at rest; its step onto the path is not
+  // the switch. The present starts 240 px below rest, so the frames from the
+  // first one off the rest position on are the present's.
+  const onPath = seen.findIndex(
+    frame => (frame.box?.y ?? 0) > BOX.y + MARKER_INSET + 1,
+  );
+  const tracked = onPath < 0 ? seen : seen.slice(onPath);
   let rising = 0;
   let falling = 0;
   let worstStep = 0;
   for (let i = 1; i < tracked.length; i++) {
     const dy = tracked[i].box!.y - tracked[i - 1].box!.y;
-    if (dy < -0.5) {rising++;}
-    if (dy > 0.5) {falling++;}
+    if (dy < -0.5) {
+      rising++;
+    }
+    if (dy > 0.5) {
+      falling++;
+    }
     worstStep = Math.max(worstStep, Math.abs(dy));
   }
   return {tracked: tracked.length, rising, falling, worstStep, ...geometry};
@@ -311,7 +341,7 @@ test('a dismissal mid-present starts from the box: reads either side of the swit
   test
     .info()
     .annotations.push({type: 'switch', description: JSON.stringify(reading)});
-  expect(reading.step).toBeLessThanOrEqual(SUBPIXEL);
+  expect(reading.step).toBeLessThanOrEqual(SUBPIXEL + reading.clockTick);
 });
 
 test('on screen, the box keeps moving through the switch without a jump', async ({
@@ -340,7 +370,7 @@ test('a restart fails both readings, so they have teeth', async ({page}) => {
     type: 'restart',
     description: JSON.stringify({read, track}),
   });
-  expect(read.step).toBeGreaterThan(SUBPIXEL);
+  expect(read.step).toBeGreaterThan(SUBPIXEL + read.clockTick);
   expect(track.worstStep).toBeGreaterThanOrEqual(track.jump / 2);
 });
 

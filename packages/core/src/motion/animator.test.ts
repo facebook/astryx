@@ -554,6 +554,107 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
     }
   });
 
+  it('a start the browser dates at the frame before the call stays when the call\u2019s task runs on a few ms', async () => {
+    // Browser start times are frame times and a task's end is a live clock:
+    // on every call they differ by up to a frame plus the task's own length.
+    // A task that runs on 5 ms after the call (a component's effect after a
+    // tap) blocks nothing, so the start stays the browser's and a sequence
+    // chained on it keeps its clock.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      clock = 1005;
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      clock = 1010;
+      animation.startTime = 1000;
+      await commitFrame(1016);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('calls made in one task start together, whichever of them a block follows', async () => {
+    // One motion's parts are often separate calls in one task (a
+    // component's effect): a block measured per call would move the
+    // earlier calls past it and leave a later one on the browser's start,
+    // splitting the parts by a frame.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const first = animator.animate({x: 300}, {spring: springs.settle});
+      clock = 1030;
+      const second = animator.animate({opacity: 0.5}, {spring: springs.settle});
+      clock = 1040;
+      for (const animation of recorded) {
+        animation.startTime = 1000;
+      }
+      await commitFrame(1040);
+      const [a, b] = await Promise.all([first.started, second.started]);
+      expect(a).toBe(b);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a block within two frames of the call keeps the browser\u2019s start', async () => {
+    // Browser start times are frame times and the task's end a live clock: a
+    // 20 ms block cannot be told apart from that quantization, so the start
+    // stays where the browser put it.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The task blocks for 20 ms; the browser dates the animation at 1000.
+      clock = 1020;
+      animation.startTime = 1000;
+      await commitFrame(1020);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
+  it('a start the browser dates by the call stays when its own task ended at once, however late the first read', async () => {
+    // WebKit under load from other tasks: the call's task ends at once, and
+    // another task holds the main thread before the first frame. Nothing in
+    // the call's task delayed it, so its start stays the browser's and the
+    // calls a sequence chains on it keep their clock (design:reduced-motion
+    // DR2's 200 ms cross-fade, a cancel fading on the previous fade's end).
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      get: () => ({currentTime: clock}),
+    });
+    try {
+      const {animator} = setup();
+      const handle = animator.animate({x: 300}, {spring: springs.settle});
+      const [animation] = live('translate');
+      // The call's task ends; then another task runs for 100 ms, and the
+      // browser commits the animation after it, dated at the call.
+      await Promise.resolve();
+      clock = 1100;
+      animation.startTime = 1000;
+      await commitFrame(1100);
+      await expect(handle.started).resolves.toBe(1000);
+      expect(animation.startTime).toBe(1000);
+    } finally {
+      Reflect.deleteProperty(document, 'timeline');
+    }
+  });
+
   it('a start read after the first frame stays the browser\u2019s', async () => {
     Object.defineProperty(document, 'timeline', {
       configurable: true,
@@ -2318,6 +2419,56 @@ describe('Reduced Motion (design:reduced-motion)', () => {
       expect(animator.get('x')).toBe(100);
       expect(animator.get('opacity')).toBe(1);
       await expect(handle.finished).resolves.toBe(true);
+    }
+  });
+
+  it('a landing later than the whole fade back in shows the element at once and settles then', async () => {
+    // A hold released long after the dip was due: the landing\u2019s timer runs
+    // more than the whole fade back in late, so the element appears at once
+    // where it landed. No fade is left for the browser to start a frame
+    // later, so the call\u2019s finished never reports an element still at 0.
+    for (const sheet of ['own', 'stylesheet'] as const) {
+      const {animator, element} = reduced();
+      stylesheet = sheet === 'stylesheet' ? {opacity: '0.6'} : {};
+      const handle = animator.animate(
+        {x: 100},
+        {spring: springs.navigationPush},
+      );
+      for (const animation of recorded) {
+        animation.paused = true;
+      }
+      await commitFrame(clock);
+      clock += fade * 2;
+      for (const animation of recorded) {
+        animation.finish();
+      }
+      const before = recorded.length;
+      let settled: boolean | undefined;
+      void handle.finished.then(value => {
+        settled = value;
+      });
+      // The next frame finds the hold finished: the landing is long due.
+      await commitFrame(clock);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(animator.get('x')).toBe(100);
+      expect(
+        recorded
+          .slice(before)
+          .filter(
+            animation =>
+              !animation.cancelled &&
+              'opacity' in (animation.keyframes[0] ?? {}),
+          ),
+      ).toHaveLength(0);
+      expect(settled).toBe(true);
+      if (sheet === 'stylesheet') {
+        // Handed back to the stylesheet at once.
+        expect(element.style.opacity).toBe('');
+      } else {
+        expect(animator.get('opacity')).toBe(1);
+      }
+      animator.dispose();
+      recorded = [];
     }
   });
 
