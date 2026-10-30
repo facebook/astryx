@@ -46,7 +46,7 @@ system_specs: [spec:AST-027/DEC-3, spec:AST-094]
 | Builder impact          | Import from `@astryxdesign/core/Drawer` or the Core root. For a visible close action, compose `<DrawerHeader title onOpenChange>` in a `Layout` header slot, as `DialogHeader` is composed in Dialog. The Content area is inset by `--spacing-4` by default; `padding={0}` gives a full-bleed Content area. Set `purpose` where Dialog would. State and content remain caller-owned; Drawer renders the caller's current children during exit. Sibling composition is current consumer guidance, and a consumer `onKeyDown` that prevents default cancels Escape dismissal.                                                                                                            |
 | Compatibility/readiness | Records shipped behavior; no public change. Drawer is a Core component imported from `@astryxdesign/core/Drawer` (DEC-3). Five implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Review checks           | Reject regional, docked, or block-axis models; claims that modality and scrim are currently independent; reintroduction of a Drawer-local Escape registry, a page-level z-index band, or a Drawer-owned close button; a dismissal policy that diverges from Dialog's `purpose`; claims that mixed-presentation or nested stacking is guaranteed beyond the shared stack's contract; a surviving `@astryxdesign/lab` export; or claims of stable API/theming compatibility that `architecture:public-component-api` has not admitted.                                                                                                                                                   |
-| Governing rules         | `family:overlay-dismissal`; `architecture:layer-runtime`; `architecture:container-padding`; `spec:AST-027/DEC-3`; `design:reduced-motion`; `component:Dialog` for `purpose`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Governing rules         | `family:overlay-dismissal`; `architecture:layer-runtime`; `architecture:container-padding`; `spec:AST-027/DEC-3`; `design:reduced-motion`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 This table is a review projection; the body below is authoritative.
 
@@ -89,10 +89,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   modal and popover hosts, runs its own exit hold, and paints its own scrim.
   `architecture:layer-runtime` INV14 has a layer use the runtime's top-layer
   mounting, presentation hold, exit copy, and backdrop tint.
-- **Reduced motion is instant on every pointer.** Under reduced motion the
-  slide and the scrim transition run for 0.01 s. That meets
-  `design:reduced-motion` DR3 for a fine pointer, but a touch user gets no
-  opacity fade, which DR2 calls for.
+- **Reduced motion keeps a 0.01 s slide on every pointer.** Under reduced
+  motion the slide and the scrim transition still run for 0.01 s. For a fine
+  pointer, `design:reduced-motion` DR1 forbids the travel and DR3 allows no
+  animated property; a touch user gets no opacity fade, which DR2 calls for.
 - **A tap during the entrance is not held.** Under a finger, a scrim tap that
   lands while the drawer is still entering closes an `info` drawer, and a tap
   or drag reaches the panel. `spec:AST-094` FR35 holds pointer input until the
@@ -170,8 +170,8 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 | FR12 | The painted root dialog emits the documented `drawer` target and `side` selector axis and applies the container-padding reset. `DrawerHeader`'s targets are owned by `component:DrawerHeader` FR5. No separate Drawer target is currently emitted for content or scrim; future target qualification remains owned by `architecture:component-theming-surface`.                                                                                                                                                                                                                        | Current source, docs, and structural target metadata             |
 | FR13 | Drawer MUST join the shared dismissal stack for its full rendered lifetime, provide logical depth to descendant layers, route platform close through the same topmost/IME decision, and preserve consumer `preventDefault()` ownership.                                                                                                                                                                                                                                                                                                                                               | Shared family contract and focused tests                         |
 | FR14 | Non-modal Drawer MUST use a manual Popover API host so cross-surface order comes from the browser top layer rather than a page-level z-index band. The reduced fallback may use `dialog.show()` only below the Popover API support floor.                                                                                                                                                                                                                                                                                                                                             | Current source, browser guard, and `spec:AST-027`                |
-| FR15 | `purpose` MUST match `component:Dialog`. `info` (default) lets Escape, platform close, and a modal scrim click request close; `form` lets Escape and platform close request close and ignores scrim clicks; `required` lets none request close, registers with the shared stack as `block` so the request does not reach a lower layer, and exposes a modal drawer as `role="alertdialog"`. Without a scrim, `form` and `info` behave the same.                                                                                                                                       | DEC-1; purpose suite; `family:overlay-dismissal` Escape behavior |
-| FR16 | The Content area pads caller content by the drawer's container inset, `--spacing-4` by default as in Dialog, and publishes the applied inset to descendants as a container publisher. Its block-end edge applies the container inset plus the home-indicator safe area while publishing the inset alone, so a bleed child subtracts only the inset and the safe area survives below it. The root dialog keeps the container-padding reset (FR12).                                                                                                                                     | `architecture:container-padding`; container padding suite        |
+| FR15 | `purpose` takes the same values and default as Dialog's prop. `info` (default) lets Escape, platform close, and a modal scrim click request close; `form` lets Escape and platform close request close and ignores scrim clicks; `required` lets none request close, registers with the shared stack as `block` so the request does not reach a lower layer, and exposes a modal drawer as `role="alertdialog"`. Without a scrim, `form` and `info` behave the same.                                                                                                                  | DEC-1; purpose suite; `family:overlay-dismissal` Escape behavior |
+| FR16 | The Content area pads caller content by the drawer's container inset, `--spacing-4` by default as in Dialog, and publishes the applied inset to descendants as a container publisher would; `architecture:container-padding` does not yet admit Drawer as one (Current-state impact). Its block-end edge applies the container inset plus the home-indicator safe area while publishing the inset alone, so a bleed child subtracts only the inset and the safe area survives below it. The root dialog keeps the container-padding reset (FR12).                                     | `architecture:container-padding`; container padding suite        |
 
 ### Allowed variation
 
@@ -301,7 +301,7 @@ block is optional during migration, so the map is deferred.
 - `architecture:component-theming-surface` owns target qualification and future
   anatomy mapping; this record covers the existing `drawer` target only.
 - `architecture:container-padding` owns the shared container inset protocol.
-  Drawer's Content area is one of its container publishers (FR16).
+  It does not yet admit Drawer's Content area as a container publisher (FR16).
 - `spec:AST-027/DEC-3` requires equivalent floating interactions to use an
   applicable native top-layer host. Modal `showModal()` and non-modal manual
   Popover hosting satisfy that cross-surface route; the documented reduced
@@ -373,6 +373,9 @@ Read from source, with no focused test yet:
 - Should an explicit `padding` prop keep adding the block-end safe area
   (DEC-2), or adopt Dialog's fullscreen rule, where an explicit value replaces
   the safe-area fallback entirely?
+- How `DrawerHeader`'s `endContentEdgeCompensation` axis values map onto
+  `endContentEdge` treatment values is carried in `component:DrawerHeader`'s
+  open questions.
 
 Regional placement, independent modality/scrim axes, and block-axis sheets
 are outside the current component boundary. Any future proposal for them requires

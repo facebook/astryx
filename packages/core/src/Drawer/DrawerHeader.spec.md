@@ -170,7 +170,10 @@ No component-local decision is recorded.
 
 ## Open questions
 
-None.
+- How do `endContentEdgeCompensation`'s `inline`, `block`, and `all` axis
+  values map onto `endContentEdge` treatment values
+  (`architecture:container-padding`), and when does the old prop enter its
+  compatibility window? Today the prop stays supported as released.
 
 ## Content boundary
 
