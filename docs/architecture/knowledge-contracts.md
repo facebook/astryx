@@ -1032,8 +1032,11 @@ label, or status supplies it.
   An approved spec change reads `✅ Spec approved by @owner` beside the code
   review result. An ENGOWNER approval satisfies every group.
 
-- **Details.** The gate's details list the changed records and the group each
-  needs, give the head's command, and say why an earlier act no longer counts.
+- **Details.** The gate's details give the head's command to copy, list the
+  changed records (id, title, authority change, and the group each needs), the
+  changed paths and the fingerprint, and say why an earlier act no longer
+  counts: the spec changed after approval, it was revoked, or the command was
+  malformed.
 - **Mirror.** `spec-owner-approval` reports the spec half with a minimal
   description while branch protection still requires it; it decides nothing
   `review-required` does not already show.

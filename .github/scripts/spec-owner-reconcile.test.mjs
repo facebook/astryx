@@ -1194,8 +1194,7 @@ describe('spec owner workflow reconciliation', () => {
           [`${head}:docs/specs/dropped/spec.md`]: 'base text\n',
           [`${oldHead}:docs/specs/dropped/spec.md`]: 'approved text\n',
         },
-        // The approved commit also changed a second record, which the head
-        // reverted to its base text.
+        // The approved commit also changed a record the head reverted.
         filesAt: {
           [oldHead]: [
             {filename: 'docs/specs/owner-ready/spec.md', status: 'added'},
@@ -1218,8 +1217,7 @@ describe('spec owner workflow reconciliation', () => {
       const harness = createHarness({
         headContent: currentRecord,
         comments: [ownerComment(`/approve-spec ${head}`)],
-        // review-clear withdraws the code approval between this job's read of
-        // review-required and its write.
+        // review-clear withdraws code approval between this job's read and write.
         onCreateStatus: (input, state) => {
           if (input.context !== 'review-required' || injected) return;
           injected = true;
