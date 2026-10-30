@@ -144,7 +144,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   and content changes without a per-element observer; the Tooltip module loads
   only when the text is truncated, and the Tooltip itself mounts only on the
   first pointer entry or focus, so until that first interaction a page of
-  clamped text mounts no closed tooltip layers.
+  clamped text mounts no closed tooltip layers; that mount is an implementation
+  gap (Current-state impact).
 
 ## Accessibility contract
 
@@ -154,9 +155,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR2 — Truncated text.** The full text stays in the element's DOM; the
   truncation Tooltip is the only tooltip, and any description it adds is
   Tooltip's. The Tooltip mounts on the first pointer entry or focus on the
-  clamped element, and that pointer entry or focus also opens it; until then the
-  element carries no tooltip description, since its full text is already in its
-  DOM.
+  clamped element, and that pointer entry or focus opens it as it would once
+  mounted, by Tooltip's own rules (Tooltip FR3–FR5); until then the element
+  carries no tooltip description, since its full text is already in its DOM.
+  This mount is an implementation gap (Current-state impact).
 
 ## Design relationships
 
@@ -193,7 +195,7 @@ record declares no anatomy-theming block rather than assign `heading` to Text.
 
 ## Decision log
 
-None recorded. The record describes shipped behavior.
+None recorded. The record describes shipped behavior, except the truncation Tooltip's mount in AR2 and PR1, which is a decided implementation gap.
 
 ## Open questions
 
