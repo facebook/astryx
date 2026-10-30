@@ -43,7 +43,7 @@ installed); rows marked † also on iOS 18 for the pre-glass delta. iPhone
 | M-S2  | Momentum coast             | A long list (Contacts, or a probe table of 500 rows): flicks released at 1000, 2500, 5000 pt/s                                                        | contentOffset(t) from release to rest; decay constant; per-millisecond vs per-frame model; the speed at which it stops | C      | `scroll.decelerationRate`                                                                                                                         |
 | M-S3  | Bounce-back spring         | Same list: drag 120 pt past the top, hold still, release; a flick into the top edge at 3000 pt/s                                                      | contentOffset(t) after release and after edge contact; spring response and damping ratio; velocity hand-off            | C      | `scroll.bounce`                                                                                                                                   |
 | M-S5  | Rubber band                | Same list on an 852 pt view: drag 100, 300, 600 pt past the top; a horizontal pager                                                                   | displayed overflow against finger overflow; confirm c = 0.55 and d = the view's size on the axis                       | C      | `scroll.rubberBand`                                                                                                                               |
-| M-PG1 | Paging                     | Photos full-screen swipes; a probe paging scroll view                                                                                                 | page chosen per release position × velocity (thresholds; at most one page?); contentOffset(t) onto the page            | B, C   | `scroll.paging`                                                                                                                                   |
+| M-PG1 | Paging                     | Photos full-screen swipes; a probe paging scroll view                                                                                                 | page chosen per release position × velocity (thresholds; at most one page?); contentOffset(t) onto the page            | B, C   | `paging` (measured; see M-PG12)                                                                                                                   |
 | M-ST1 | Scroll to top              | Settings scrolled down 500, 2000, 8000 pt; tap the status bar                                                                                         | contentOffset(t); duration against distance; curve or spring fit                                                       | B, C   | `scroll.scrollToTopRate`                                                                                                                          |
 | M-N1  | Navigation push            | Settings: tap General                                                                                                                                 | incoming leading edge x(t), outgoing x(t) (parallax fraction), dimming alpha(t); animation parameters                  | A, B   | `springs.navigationPush`                                                                                                                          |
 | M-N2  | Navigation pop             | General: back button                                                                                                                                  | same as M-N1                                                                                                           | A, B   | `springs.navigationPop`                                                                                                                           |
@@ -72,6 +72,13 @@ initial velocity's sign flipped, a curve that overshoots. Push and pop are
 not Core Animation animations on iOS 26.2: UIKit writes presentation
 modifiers every frame from the main thread.
 
+## Paging (UIScrollView `isPagingEnabled`, UIPageViewController)
+
+| ID     | What                  | App and gesture                                                                          | Extract                                                                                | Method | Feeds                          |
+| ------ | --------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------ | ------------------------------ |
+| M-PG12 | End of a settle       | Same pager: releases at rest from 10 %, 49 %, 60 % and 90 % of a page, logged at 120 fps | remaining distance and step velocity at the frame the offset lands exactly on the page | C      | `paging.integrator.restSpeed`  |
+| M-PG13 | Settle velocity floor | Same pager: steady releases from 200 to 250 pt/s in 5 pt/s steps, at 25 % of a page      | the slowest release whose `scrollViewWillEndDragging` velocity is not 0                | C      | `paging.release.velocityFloor` |
+
 ## Gestures (UIKit gesture recognizers)
 
 Thresholds the gesture system reads (`uikit/gestures.ts`). Safari on iOS runs
@@ -94,7 +101,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +117,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -251,6 +259,30 @@ match the probe.
 | M-SH21  | SheetProbe on iPad, iOS 27 `preferredPlacement` each case, RTL                                                         | present                                                                                                                             | placement geometry and motion                                                                                                                           | B, C    |
 | M-SH22  | SheetProbe iOS 26 `preferredTransition = .zoom` from a bar button                                                      | present, dismiss                                                                                                                    | morph geometry per frame                                                                                                                                | A, C    |
 
+## Date picker (UIDatePicker)
+
+Values the DateInput, DateTimeInput and TimeInput touch surfaces read from
+their own table (`uikit/datePicker.ts`). The month grid's release and arrow
+step are a paging scroll view's and the wheels' physics are UIPickerView's:
+the table only names them, and their values belong to the pager's and the
+wheel's own tables.
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the date picker's table):
+a day tap and `setDate(_:animated:)`, the title following the drag, the
+chevron's retarget and its state at a bound, the month/year toggle's fades and
+chevron turn, the month/year wheels, the compact popover's springs, the AM/PM
+column following the hour, the looping time columns, the minutes not carrying,
+the turn back onto a bound, the day clamped to the month, and the
+year-and-month mode; the AM/PM column's turn, the disabled chevron and the
+short minute lists' loop followed on Oct 24 2026; the sheet split (M-DP01:
+100 pt drags from the grid at 45° to 55°, slow and fast, logged per touch
+sample) on Oct 25 2026, decided on the first sample where either axis
+reaches the pan's hysteresis, the grid's when the horizontal travel has.
+
+| ID     | What            | App and gesture                                                                                                                        | Extract                                                                                                                                                  | Method | Feeds                                                       |
+| ------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------- |
+| M-DP02 | Trackpad paging | `.date` `.inline` on an iPad with a pointer: two-finger horizontal swipes of 10 to 60 pt, slow and fast, and swipes 50 to 300 ms apart | whether the grid follows the swipe and pages on its end, the travel and speed that turn a month, and the gap after which a swipe counts as a new gesture | C      | the wheel step and quiet time in `DateInput/MonthPager.tsx` |
+
 ## Context menu (UIContextMenuInteraction)
 
 Values the context menu reads from its own table, which lands with the
@@ -269,3 +301,17 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Picker (UIPickerView)
+
+Values the Wheel reads from its own table (`uikit/picker.ts`).
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the picker's table): the
+geometry (row pitch, cylinder, perspective, band, the band copy's
+magnification, the dimmed copies' opacity), the rubber band's dimension, the
+coast's stop speed, the velocity floor, the snap at rest, the tap spin and
+the selection tick. Measured and kept by the gesture system instead: the
+scroll view coasts with 0.25 × the pan's velocity plus 0.75 × its value one
+event earlier (four HID releases; `velocity.scrollReleaseWeight`, which a
+pan's `scrollVelocity()` reads). On UIKit, Reduce Motion with Prefer Cross-Fade changes
+nothing on a picker; the Wheel follows design:reduced-motion instead.

@@ -306,6 +306,24 @@ export const WithTimeIncrement: Story = {
 };
 
 /**
+ * `timeIncrement` also steps the touch sheet's minute wheel: every 15 minutes
+ * here.
+ */
+export const BottomSheetWithTimeIncrement: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Time slot',
+    presentation: 'bottom-sheet',
+    timeIncrement: 15,
+  },
+};
+
+/**
  * `timeOptionInterval` turns the time field into a combobox over a list of
  * preset times at that cadence. Click the time field or press Alt+ArrowDown to
  * open it; ArrowUp/ArrowDown move through the list, Enter picks, Escape closes.
