@@ -134,14 +134,17 @@ export function useTruncation(
         // tooltip, so nothing paints differently.
         if (typeof ResizeObserver !== 'undefined') {
           let registered = false;
-          unobserveRef.current = observeResize(element, () => {
+          const unobserve = observeResize(element, () => {
             if (registered) {
               checkTruncation(element);
             }
           });
           registered = true;
+          unobserveRef.current = unobserve;
+          // Skipped when this registration has ended by then (measuring
+          // turned off, or the element replaced, in the same task).
           queueMicrotask(() => {
-            if (elementRef.current === element) {
+            if (unobserveRef.current === unobserve) {
               checkTruncation(element);
             }
           });

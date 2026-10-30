@@ -7,7 +7,7 @@
 
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, it, expect, vi} from 'vitest';
-import {useCallback} from 'react';
+import {useCallback, useLayoutEffect, useState} from 'react';
 import {useTruncation} from './useTruncation';
 
 function Probe({text}: {text: string}) {
@@ -70,6 +70,58 @@ describe('useTruncation', () => {
         'a status line',
       );
       unmount();
+    });
+
+    // FR4/PR1: with measuring turned off before the first measurement runs,
+    // nothing is measured and the hook reports no truncation.
+    it('skips the first measurement when measuring turns off in the same task', async () => {
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      );
+      const proto = window.HTMLElement.prototype;
+      const scrollWidth = Object.getOwnPropertyDescriptor(proto, 'scrollWidth');
+      const offsetWidth = Object.getOwnPropertyDescriptor(proto, 'offsetWidth');
+      Object.defineProperty(proto, 'scrollWidth', {
+        configurable: true,
+        get: () => 400,
+      });
+      Object.defineProperty(proto, 'offsetWidth', {
+        configurable: true,
+        get: () => 100,
+      });
+      function Unclamping() {
+        const [maxLines, setMaxLines] = useState(1);
+        const truncation = useTruncation({maxLines});
+        useLayoutEffect(() => {
+          setMaxLines(0);
+        }, []);
+        return (
+          <>
+            <span ref={truncation.ref}>overflowing text</span>
+            <output data-testid="state">
+              {String(truncation.isTruncated)}|{truncation.fullText}
+            </output>
+          </>
+        );
+      }
+      try {
+        const {unmount} = render(<Unclamping />);
+        await act(async () => {});
+        expect(screen.getByTestId('state')).toHaveTextContent(/^false\|$/);
+        unmount();
+      } finally {
+        if (scrollWidth) {
+          Object.defineProperty(proto, 'scrollWidth', scrollWidth);
+        }
+        if (offsetWidth) {
+          Object.defineProperty(proto, 'offsetWidth', offsetWidth);
+        }
+      }
     });
 
     // The browser sends no second first-notification for an element the
