@@ -293,9 +293,11 @@ describe('List', () => {
   }
 
   const ZERO_INSET = /--_item-inset-inline:\s*0(px)?\s*;/;
+  const RING_REACH =
+    'calc(var(--focus-outline-offset)+var(--focus-outline-width))';
   const LIST_REACH = [
-    'margin-inline-start:calc(-1*var(--container-padding-inline-start,0px))',
-    'margin-inline-end:calc(-1*var(--container-padding-inline-end,0px))',
+    `margin-inline-start:calc(-1*(var(--container-padding-inline-start,0px)+${RING_REACH}))`,
+    `margin-inline-end:calc(-1*(var(--container-padding-inline-end,0px)+${RING_REACH}))`,
     'width:calc(100%+var(--container-padding-inline-start,0px)+var(--container-padding-inline-end,0px))',
   ];
   const OUTSET_ROW = [
@@ -409,6 +411,24 @@ describe('List', () => {
     for (const edge of ['padded', 'flush', 'outset', 'bleed'] as const) {
       const {ul} = renderEdge({edge});
       expect(declarationsFor(ul)).toContain('overflow-x:clip');
+      cleanup();
+    }
+  });
+
+  it('never clips a focused row’s ring: the clip edge sits the ring’s reach outside the rows, for every treatment', () => {
+    // The clip cuts at the list's padding edge. The list pads by the ring's
+    // reach (offset + width) and gives it back as margin, so rows keep their
+    // width and place while their ring paints whole (spec List FR9).
+    for (const edge of ['padded', 'flush', 'outset', 'bleed'] as const) {
+      const {ul} = renderEdge({edge});
+      const css = declarationsFor(ul);
+      expect(css).toContain(`padding-inline:${RING_REACH}`);
+      expect(css).toContain('box-sizing:content-box');
+      expect(css).toContain(
+        edge === 'outset' || edge === 'bleed'
+          ? `margin-inline-start:calc(-1*(var(--container-padding-inline-start,0px)+${RING_REACH}))`
+          : `margin-inline:calc(-1*${RING_REACH})`,
+      );
       cleanup();
     }
   });
