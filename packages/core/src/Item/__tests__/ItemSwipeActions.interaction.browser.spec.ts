@@ -119,11 +119,11 @@ async function openRow(page: Page): Promise<OpenRow> {
   };
 }
 
-/** How far the row opens: the entries' natural widths together. */
+/** How far the row opens: the entries' widths together, read as the row reads them (`offsetWidth`). */
 const openWidthOf = async (track: Locator) =>
   track.evaluate(node =>
     Array.from(node.children).reduce(
-      (width, entry) => width + entry.getBoundingClientRect().width,
+      (width, entry) => width + (entry as HTMLElement).offsetWidth,
       0,
     ),
   );
@@ -778,27 +778,33 @@ async function blockAfterLift(page: Page, ms: number) {
       });
     };
     // The release's own animations: the ones that did not exist at the lift.
-    addEventListener(
-      'touchend',
-      () => {
-        const before = new Set(document.getAnimations());
-        const watch = () => {
-          const fresh = document
-            .getAnimations()
-            .filter(animation => !before.has(animation));
-          if (fresh.length === 0) {
-            requestAnimationFrame(watch);
-            return;
-          }
-          void Promise.all(fresh.map(async animation => animation.ready)).then(
-            block,
-            block,
-          );
-        };
-        setTimeout(watch, 0);
-      },
-      {once: true, capture: true},
-    );
+    // The lift is the finger's first lift event: its pointerup comes before
+    // its touchend, and the gesture host releases on whichever it reads
+    // first (`spec:AST-094` FR43).
+    let lifted = false;
+    const onLift = () => {
+      if (lifted) {
+        return;
+      }
+      lifted = true;
+      const before = new Set(document.getAnimations());
+      const watch = () => {
+        const fresh = document
+          .getAnimations()
+          .filter(animation => !before.has(animation));
+        if (fresh.length === 0) {
+          requestAnimationFrame(watch);
+          return;
+        }
+        void Promise.all(fresh.map(async animation => animation.ready)).then(
+          block,
+          block,
+        );
+      };
+      setTimeout(watch, 0);
+    };
+    addEventListener('pointerup', onLift, {capture: true});
+    addEventListener('touchend', onLift, {capture: true});
   }, ms);
 }
 
@@ -1423,7 +1429,11 @@ test('under Reduce Motion backing out of a confirmed full swipe returns to the f
   const confirmAt = confirmPointOf(openWidth, rest.width);
   const h = swipeActions.hysteresis;
   // Out past the confirm point and held there while the confirm's fade
-  // plays out, then back short of it, held, and lifted.
+  // plays out, then back short of it, held, and lifted. The way back is
+  // 39 px, not 40, so no move lands exactly on the confirm point: the moves
+  // straddle it by half a pixel or more, and the move that backs out is the
+  // same for the row and for this test, whatever rounding each one's sum
+  // carries.
   const out = drag(
     start,
     {x: start.x - (confirmAt + h + 20), y: start.y},
@@ -1432,7 +1442,7 @@ test('under Reduce Motion backing out of a confirmed full swipe returns to the f
   const last = out[out.length - 1];
   const back = drag(
     last.fingers[0],
-    {x: start.x - (confirmAt + h - 20), y: start.y},
+    {x: start.x - (confirmAt + h - 19), y: start.y},
     {durationMs: 300, hz: 60, restMs: 300},
   ).map(frame => ({...frame, t: frame.t + last.t + 16}));
   let confirmed = false;
