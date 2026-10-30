@@ -128,8 +128,9 @@ function resolveOwnerDecision({
 
   for (const review of reviews) {
     const login = review.user?.login?.toLowerCase();
-    // An approval counts only for the current spec content; a request for
-    // changes or a dismissal withdraws whatever content it names (DEC-14).
+    // An approval counts only for the current spec content (DEC-14). A
+    // request for changes on it holds the gate; one on other content, or a
+    // dismissal, withdraws only that owner's approval.
     if (
       !login ||
       (review.state === 'APPROVED' && !approvesCurrentContent(review.commit_id))
@@ -149,7 +150,8 @@ function resolveOwnerDecision({
       approved:
         review.state === 'APPROVED'
           ? true
-          : review.state === 'CHANGES_REQUESTED'
+          : review.state === 'CHANGES_REQUESTED' &&
+              approvesCurrentContent(review.commit_id)
             ? false
             : null,
       at:
@@ -168,8 +170,9 @@ function resolveOwnerDecision({
     const target = parseOwnerCommandTarget(comment.body);
     if (target == null) continue;
     if (target.approved && !approvesCurrentContent(target.sha)) continue;
+    // `/revoke-spec` withdraws that owner's approval (DEC-14).
     consider(login, {
-      approved: target.approved,
+      approved: target.approved || null,
       at: comment.created_at,
       source: 'command',
     });

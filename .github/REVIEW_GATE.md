@@ -167,14 +167,6 @@ write-access author who is not an owner still needs an engineering owner's
 approval or the review app's exact-head approval. (Repo admins can still
 bypass.)
 
-`spec-owner-approval` must be a required status context on `main` as well. It is
-published on every PR — `success` when no knowledge records changed — so
-requiring it does not permanently strand unrelated work. **Until it is in the
-required list, a pending owner gate is advisory and does not block the merge
-button.** If the repository ever enables a merge queue, this gate also has to
-report on `merge_group` before the context is required, or queued entries stall
-waiting for a status nothing publishes.
-
 ### The mirror
 
 `spec-owner-approval` now only mirrors the spec half of `review-required`.

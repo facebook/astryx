@@ -1007,8 +1007,10 @@ label, or status supplies it.
     which content the owner reviewed;
   - a GitHub approving review, for its commit.
 
-  `/revoke-spec`, with or without a SHA, and a request for changes withdraw
-  that owner's approval until they approve again. Reactions are not approvals.
+  `/revoke-spec`, with or without a SHA, and a request for changes on other
+  spec content withdraw that owner's approval until they approve again. A
+  request for changes on the current spec content holds the gate until that
+  owner approves again. Reactions are not approvals.
   Eligibility follows the owner groups above. An ENGOWNER author may approve
   their own pull request with `/approve-spec`; an approving review by the
   author never counts.
@@ -1051,8 +1053,8 @@ review accepts or reworks a pull request's spec changes as a whole; a command
 without a SHA, because a push landing just before the comment would be approved
 unseen; a separate spec status contributors must read, because one review gate
 should carry one message; reaction approvals, because reactions raise no event
-and reading them would need a polling job; having the workflow push the `draft`-to-`current` change, because a
-workflow-identity push starts no pull-request checks and cannot write a fork's
+and reading them would need a polling job; having the workflow push the
+`draft`-to-`current` change, because a workflow-identity push starts no pull-request checks and cannot write a fork's
 branch.
 
 ## Verification

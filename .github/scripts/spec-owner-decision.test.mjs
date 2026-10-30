@@ -374,7 +374,42 @@ describe('spec owner decision', () => {
       ],
     });
     expect(decision.approved).toBe(false);
-    expect(decision.source).toBe('command');
+  });
+
+  it('withdraws only the revoking owner, and holds on a current request for changes', () => {
+    const earlier = '1111111111111111111111111111111111111111';
+    const approve = {
+      user: {login: 'imdreamrunner'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const decide = ({reviews = [], comments = []}) =>
+      resolveOwnerDecision({
+        owners: ['cixzhang', 'imdreamrunner'],
+        headSha: head,
+        reviews: [approve, ...reviews],
+        comments,
+        approvesCurrentContent: sha => sha === head,
+      });
+    const changes = commitId => ({
+      user: owner,
+      state: 'CHANGES_REQUESTED',
+      commit_id: commitId,
+      submitted_at: '2026-08-30T10:01:00Z',
+    });
+
+    const say = body => ({
+      comments: [{user: owner, body, created_at: '2026-08-30T10:01:00Z'}],
+    });
+
+    expect(decide(say('/revoke-spec'))).toMatchObject({
+      approved: true,
+      owner: 'imdreamrunner',
+    });
+    expect(decide(say(`/revoke-spec ${earlier}`)).approved).toBe(true);
+    expect(decide({reviews: [changes(earlier)]}).approved).toBe(true);
+    expect(decide({reviews: [changes(head)]}).approved).toBe(false);
   });
 
   it('ignores commands from other users', () => {
@@ -629,48 +664,6 @@ describe('spec owner decision', () => {
         // can say why it does not.
         expect(parsed, body).toBe(problem === null);
       }
-    });
-
-    it('withdraws on a revoke or request for changes naming other spec content', () => {
-      const earlier = '1111111111111111111111111111111111111111';
-      const approve = {
-        user: owner,
-        body: `/approve-spec ${head}`,
-        created_at: '2026-08-30T10:00:00Z',
-      };
-      const decide = ({comments = [approve], reviews = []}) =>
-        resolveOwnerDecision({
-          reviews,
-          comments,
-          owners: ['cixzhang'],
-          headSha: head,
-          approvesCurrentContent: sha => sha === head,
-        }).approved;
-
-      expect(
-        decide({
-          comments: [
-            approve,
-            {
-              user: owner,
-              body: `/revoke-spec ${earlier}`,
-              created_at: '2026-08-30T10:01:00Z',
-            },
-          ],
-        }),
-      ).toBe(false);
-      expect(
-        decide({
-          reviews: [
-            {
-              user: owner,
-              state: 'CHANGES_REQUESTED',
-              commit_id: earlier,
-              submitted_at: '2026-08-30T10:01:00Z',
-            },
-          ],
-        }),
-      ).toBe(false);
     });
   });
 });

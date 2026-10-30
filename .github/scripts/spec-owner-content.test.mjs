@@ -4,11 +4,11 @@ import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
+const {fingerprintSpecContent} = require('./spec-owner-content.cjs');
 const {
-  fingerprintSpecContent,
-  parseOwnerCommandTarget,
-} = require('./spec-owner-content.cjs');
-const {readCodeGate} = require('./review-signal-decision.cjs');
+  composeReviewGate,
+  readCodeGate,
+} = require('./review-signal-decision.cjs');
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const record = [
@@ -56,24 +56,17 @@ describe('spec content fingerprint (DEC-14)', () => {
   });
 });
 
-describe('owner commands', () => {
-  it.each([
-    [`/approve-spec ${head}`, {approved: true, sha: head}],
-    [`/approve-spec ${head.toUpperCase()}`, {approved: true, sha: head}],
-    ['/revoke-spec', {approved: false, sha: null}],
-    [`/revoke-spec ${head}`, {approved: false, sha: head}],
-    ['/approve-spec', null],
-    ['/spec ok', null],
-    ['/approve-spec abc1234', null],
-    [`/approve-spec ${head} please`, null],
-  ])('reads %s', (body, expected) => {
-    expect(parseOwnerCommandTarget(body)).toEqual(expected);
-  });
-});
-
 describe('one review gate', () => {
   const noCode = 'No code review required.';
   const codeWait = 'Waiting on code review: core change';
+
+  it('links a spec wait to the spec decision run', () => {
+    const url = 'https://github.com/meta/astryx/actions/runs/7/attempts/1';
+    const spec = {known: true, satisfied: false, text: '⏳ wait', url};
+    expect(
+      composeReviewGate({codeGated: false, codeDescription: noCode, spec}),
+    ).toEqual({state: 'pending', description: '⏳ wait', target_url: url});
+  });
 
   it('reads the code half back out of a composed gate', () => {
     const gate = (state, description) => [

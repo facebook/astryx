@@ -72,7 +72,7 @@ they are separately named.
   [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
   exact-main release-check execution boundary.
 - Remove required check names, branch protection, merge-queue coverage, or
-  exact-head owner approval.
+  owner approval of spec content.
 - Infer safety from file extensions, directory names, or the absence of a known
   risky path.
 - Treat tests, specifications, generated files, or changesets as proof that the
@@ -265,16 +265,17 @@ they are separately named.
   thought to exclude.
 
 - **FR15 — One review gate carries code review and spec approval.** The
-  review workflow (`review-signal.yml`) publishes `review-required`, which
-  carries both the code review and spec-owner approval
-  (`architecture:knowledge-contracts` DEC-14); no separate workflow publishes a
+  review workflow (`review-signal.yml`) and `review-clear.yml` publish
+  `review-required`, which carries both the code review and spec-owner approval
+  (`architecture:knowledge-contracts` DEC-14); no other workflow publishes a
   review or spec context. `spec-owner-approval` is published only as a mirror of
   the spec half while branch protection still requires it. The spec-owner job
   evaluates pull-request, review, and owner-command comment events, runs
   without cancel-in-progress, and publishes a terminal state for the head it
-  read, fork reviews included. Only the review-signal job keeps a
-  per-pull-request cancel group. Each job that writes `review-required` composes
-  both halves. Comments that are not owner commands start no runner, and no
+  read. It skips fork review events, whose tokens are read-only; fork approvals
+  use the owner command. Only the review-signal job keeps a per-pull-request
+  cancel group. Each writer of `review-required` composes both halves and links
+  a spec wait to the spec decision's details. Comments that are not owner commands start no runner, and no
   scheduled job reads approvals.
 
 ### Platform support

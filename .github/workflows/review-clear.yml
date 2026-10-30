@@ -190,23 +190,17 @@ jobs:
                 github.rest.repos.listCommitStatusesForRef,
                 {owner, repo, ref: headSha, per_page: 100},
               );
-              const latestGateStatus = statuses.find(
-                (status) => status.context === 'review-required',
-              );
-              const trustedStatus =
-                latestGateStatus?.creator?.login === 'github-actions[bot]';
-              const description = latestGateStatus?.description || '';
-              appClearedStatus =
-                trustedStatus &&
-                latestGateStatus.state === 'success' &&
-                description === APP_CLEARED;
+              // The code half of the one review gate, read past spec waits
+              // and spec-approval prefixes.
+              const code = decision.readCodeGate(statuses);
+              const description = code?.description || '';
+              appClearedStatus = code?.gated === false && description === APP_CLEARED;
               const statusOwnsGate =
-                trustedStatus &&
-                ((latestGateStatus.state === 'pending' &&
+                code != null &&
+                ((code.gated &&
                   (description.startsWith('Waiting on code review:') ||
                     description === 'Waiting on code review after approval withdrawal.')) ||
-                  (latestGateStatus.state === 'success' &&
-                    (description === OWNER_CLEARED || appClearedStatus)));
+                  (!code.gated && (description === OWNER_CLEARED || appClearedStatus)));
               gateOwned =
                 full.labels.some((label) => label.name === CODE) || statusOwnsGate;
             } catch (e) {
@@ -267,6 +261,7 @@ jobs:
                   context: 'review-required',
                   state: gate.state,
                   description: gate.description,
+                  target_url: gate.target_url,
                 });
               }
               return gate;

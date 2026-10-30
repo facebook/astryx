@@ -14,10 +14,7 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const crypto = require('node:crypto');
-const {
-  SPEC_MIRROR_PREFIX,
-  SPEC_WAITING_TEXT,
-} = require('./review-signal-decision.cjs');
+const {SPEC_MIRROR_PREFIX} = require('./review-signal-decision.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // Recording an approval writes these values, so they never take part in the
@@ -88,21 +85,9 @@ function parseOwnerCommandTarget(body) {
   };
 }
 
-/**
- * Status text naming who can still approve. An engineering owner satisfies
- * every group, so a missing engineering group is named alone.
- */
-function waitingDescription(missing) {
-  return missing.spec ? SPEC_WAITING_TEXT.eng : SPEC_WAITING_TEXT.design;
-}
-
 function approvedDescription(owners) {
-  const names = owners.map(name => `@${name}`);
-  const list =
-    names.length <= 1
-      ? (names[0] ?? 'an owner')
-      : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-  return `✅ Spec approved by ${list}`;
+  const names = owners.map(name => `@${name}`).join(', ');
+  return `✅ Spec approved by ${names || 'an owner'}`;
 }
 
 /**
@@ -123,7 +108,5 @@ module.exports = {
   approvedDescription,
   fingerprintSpecContent,
   mirrorDescription,
-  normalizeRecordText,
   parseOwnerCommandTarget,
-  waitingDescription,
 };

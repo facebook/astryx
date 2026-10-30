@@ -24,10 +24,10 @@ const {
   fingerprintSpecContent,
   mirrorDescription,
   parseOwnerCommandTarget,
-  waitingDescription,
 } = require('./spec-owner-content.cjs');
 const {
   REVIEW_GATE_CONTEXT,
+  SPEC_WAITING_TEXT,
   composeReviewGate,
   readCodeGate,
 } = require('./review-signal-decision.cjs');
@@ -220,11 +220,7 @@ async function reconcileSpecOwnerGate({
     return newest === null || newest.runId <= runId;
   }
 
-  /**
-   * Publish the spec decision: `spec-owner-approval` as a mirror, then the
-   * one review gate composed with the code review. `text` is what a
-   * contributor reads on the review gate.
-   */
+  /** Publish the mirror, then the review gate composed with code review. */
   // The owners whose approval decided the gate, once the decision is known.
   let approvedBy = [];
   async function setFinalStatus(headSha, state, text, missing = null) {
@@ -335,10 +331,7 @@ async function reconcileSpecOwnerGate({
     }
   }
 
-  /**
-   * What the details say about earlier owner acts: the newest approval whose
-   * spec content no longer matches, and a standing revocation.
-   */
+  /** Details notes: the newest approval of other content; a revocation. */
   function ownerActNotes({
     reviews: ownerReviews,
     comments: allComments,
@@ -469,11 +462,7 @@ async function reconcileSpecOwnerGate({
     }
   }
 
-  /**
-   * Compose the one review gate a contributor sees from the code half that
-   * review-signal published and this run's spec decision. With no code half
-   * yet, review-signal composes it when it publishes.
-   */
+  /** Compose the review gate; with no code half yet, review-signal does. */
   async function publishReviewGate(headSha, spec) {
     // The code half comes from the newest `review-required` another job
     // wrote. If one lands between that read and this write, compose again,
@@ -487,7 +476,7 @@ async function reconcileSpecOwnerGate({
     for (let attempt = 0; attempt < 3; attempt++) {
       const live = await listStatuses(headSha);
       const basis = othersNewest(live);
-      const code = readCodeGate(basis ? [basis] : []);
+      const code = readCodeGate(live.filter(status => !written.has(status.id)));
       if (!code) return;
       const gate = composeReviewGate({
         codeGated: code.gated,
@@ -788,7 +777,7 @@ async function reconcileSpecOwnerGate({
   };
   const statusText =
     ownerApprovalRequired && !approved
-      ? waitingDescription(missingGroups)
+      ? SPEC_WAITING_TEXT[missingGroups.spec ? 'eng' : 'design']
       : ownerApprovalRequired
         ? approvedDescription(approvingOwners)
         : 'Draft-only knowledge change; owner approval is not required.';

@@ -289,6 +289,28 @@ describe('review-clear exact-head workflow', () => {
     });
   });
 
+  it('restores a cleared gate under a spec wait after exact-head changes requested', async () => {
+    const specWait = gateStatus(
+      'pending',
+      '⏳ Waiting for human spec approval: an eng owner can reply /approve-spec <sha>',
+    );
+    const h = harness([review('APPROVED'), review('CHANGES_REQUESTED')], {
+      labels: [],
+      // GitHub lists every status the head received, newest first.
+      statuses: [specWait, clearedGate],
+    });
+
+    await run(h);
+
+    expect(h.calls).toContainEqual({
+      type: 'status',
+      input: expect.objectContaining({
+        state: 'pending',
+        description: 'Waiting on code review after approval withdrawal.',
+      }),
+    });
+  });
+
   it('does not mutate the label when the pending status persistently fails', async () => {
     const h = harness([review('APPROVED'), review('CHANGES_REQUESTED')], {
       labels: [],

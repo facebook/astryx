@@ -58,11 +58,8 @@
 # vars.DESIGNOWNERS) — no checkout and no execution of PR-controlled code.
 # Do not add checkout or build steps to the flag job.
 #
-# ONE REVIEW GATE: "review-required" carries code review and spec-owner
-# approval (architecture:knowledge-contracts DEC-14, spec:AST-030 FR15). The
-# spec-owner job decides the spec half and mirrors it in "spec-owner-approval";
-# every writer of "review-required" composes both. It runs the tested reconciler
-# from the trusted default branch, never PR-controlled code.
+# ONE REVIEW GATE (spec:AST-030 FR15): "review-required" carries code review and
+# the spec half the spec-owner job decides (DEC-14) from the trusted default branch.
 
 name: Review signal
 
@@ -106,10 +103,8 @@ jobs:
       || github.event_name == 'workflow_dispatch'
     name: Flag review signals
     runs-on: ubuntu-slim
-    # One group per PR for the event/single-dispatch paths; a run-scoped group
-    # for the backfill-all dispatch so it is never cancelled by an unrelated
-    # re-run. Only this job cancels: a cancelled spec-owner reconcile could
-    # leave its head without a terminal status.
+    # Per PR (run-scoped for backfill-all). Only this job cancels: a cancelled
+    # spec-owner reconcile could leave its head without a terminal status.
     concurrency:
       group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
       cancel-in-progress: true
@@ -250,6 +245,7 @@ jobs:
                   context: 'review-required',
                   state: gate.state,
                   description: gate.description,
+                  target_url: gate.target_url,
                 });
               }
               return gate;
@@ -689,11 +685,9 @@ jobs:
 
   # Spec owner gate: reconcile the spec half for one pull request.
   spec-owner:
-    # Fork review events have read-only tokens. Same-repo reviews reconcile
-    # automatically; fork approvals use the trusted issue_comment command path.
-    # The comment filter admits any owner-command shape, so the reconciler can
-    # explain a malformed one in the gate's details. The reconciler orders
-    # concurrent runs itself, so this job has no concurrency group.
+    # Fork reviews (read-only tokens) are skipped; fork approvals use the owner
+    # command. Any owner-command shape passes, so a malformed one is explained.
+    # The reconciler orders concurrent runs itself: no concurrency group.
     if: >-
       (github.event_name != 'pull_request_review' ||
        github.event.pull_request.head.repo.full_name == github.repository) &&

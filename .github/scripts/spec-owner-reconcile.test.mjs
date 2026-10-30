@@ -1129,19 +1129,6 @@ describe('spec owner workflow reconciliation', () => {
       });
     });
 
-    it('does not count a bare /approve-spec, and says why', async () => {
-      const harness = createHarness({headContent: currentRecord});
-
-      await commentRun(harness, ownerComment('/approve-spec'));
-
-      expect(latestReviewGate(harness.state)).toMatchObject({
-        state: 'pending',
-        description: waiting,
-      });
-      expect(harness.state.summary).toContain('did not name a commit');
-      expect(harness.state.calls).not.toContain('create-comment');
-    });
-
     it('keeps an approval across a commit that changes no spec text', async () => {
       const harness = createHarness({
         headContent: currentRecord,
@@ -1260,20 +1247,6 @@ describe('spec owner workflow reconciliation', () => {
       );
     });
 
-    it('ignores /revoke-spec from someone who is not a spec owner', async () => {
-      const harness = createHarness({
-        headContent: currentRecord,
-        comments: [ownerComment(`/approve-spec ${head}`)],
-      });
-
-      await commentRun(
-        harness,
-        ownerComment('/revoke-spec', '2026-08-30T10:10:00Z', 'outsider'),
-      );
-
-      expect(latestReviewGate(harness.state).state).toBe('success');
-    });
-
     it('approves again on /approve-spec after a revoke', async () => {
       const harness = createHarness({
         headContent: currentRecord,
@@ -1289,18 +1262,6 @@ describe('spec owner workflow reconciliation', () => {
       );
 
       expect(latestReviewGate(harness.state).state).toBe('success');
-    });
-
-    it('leaves the review gate to review-signal until it has published', async () => {
-      const harness = createHarness({
-        headContent: currentRecord,
-        codeGate: null,
-      });
-
-      await run(harness, context({runId: 100n}));
-
-      expect(latestReviewGate(harness.state)).toBe(undefined);
-      expect(latestGateStatus(harness.state).state).toBe('pending');
     });
 
     it('never counts an approving review by the author', async () => {

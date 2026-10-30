@@ -150,15 +150,17 @@ function newestTrusted(statuses, contextName) {
 }
 
 /**
- * The spec half of the review gate, from the newest trusted
- * `spec-owner-approval` status. With no status yet (the spec-owner job has
- * not published for this head, or the read failed) the half fails closed: the
- * gate waits, and the spec-owner job composes it when it publishes.
+ * The spec half, from the newest trusted `spec-owner-approval`. With none yet
+ * (or a failed read) it fails closed; the spec-owner job composes on publish.
  */
 function readSpecGate(statuses) {
   const status = newestTrusted(statuses, SPEC_GATE_CONTEXT);
   if (!status)
     return {known: false, satisfied: false, text: SPEC_CHECKING_TEXT};
+  return {...readSpecStatus(status), url: status.target_url};
+}
+
+function readSpecStatus(status) {
   const description = status.description ?? '';
   if (description.startsWith(SPEC_MIRROR_PREFIX)) {
     const rest = description.slice(SPEC_MIRROR_PREFIX.length);
@@ -177,20 +179,30 @@ function readSpecGate(statuses) {
       };
     }
   }
-  if (status.state === 'success') {
-    return {known: true, satisfied: true, text: null};
-  }
-  if (description.startsWith('Reconciling')) {
-    return {known: true, satisfied: false, text: SPEC_CHECKING_TEXT};
-  }
-  // An earlier gate's pending status.
-  return {known: true, satisfied: false, text: SPEC_WAITING_TEXT.eng};
+  // An earlier gate's status: success counts; anything else is re-read.
+  return status.state === 'success'
+    ? {known: true, satisfied: true, text: null}
+    : {known: true, satisfied: false, text: SPEC_CHECKING_TEXT};
 }
 
-/** The code half of the review gate, from the newest `review-required`. */
+/**
+ * The code half: the newest trusted `review-required` carrying one (a spec
+ * wait carries none, so an older status decides). `null` when none exists.
+ */
 function readCodeGate(statuses) {
-  const status = newestTrusted(statuses, REVIEW_GATE_CONTEXT);
-  if (!status) return null;
+  const gates = (statuses ?? []).filter(
+    status =>
+      status.context === REVIEW_GATE_CONTEXT &&
+      status.creator?.login === TRUSTED_STATUS_CREATOR,
+  );
+  if (gates.length === 0) return null;
+  const status =
+    gates.find(
+      gate =>
+        !(gate.description ?? '').startsWith(SPEC_WAITING_PREFIX) &&
+        gate.description !== SPEC_CHECKING_TEXT,
+    ) ?? null;
+  if (!status) return {gated: false, description: REVIEW_COMPLETE};
   const description = status.description ?? '';
   if (
     status.state !== 'success' &&
@@ -211,11 +223,7 @@ function readCodeGate(statuses) {
   return {gated: false, description: REVIEW_COMPLETE};
 }
 
-/**
- * The one review gate a contributor sees. Code review leads; the spec
- * approval shows once code review is satisfied; success needs both. A
- * missing approval is `pending`, never a failure.
- */
+/** The one review gate: code review leads; success needs both; never red. */
 function composeReviewGate({codeGated, codeDescription, spec}) {
   if (codeGated) {
     const withSpec =
@@ -231,7 +239,8 @@ function composeReviewGate({codeGated, codeDescription, spec}) {
     };
   }
   if (spec && !spec.satisfied) {
-    return {state: 'pending', description: spec.text};
+    // The spec decision's run is where the command to copy lives.
+    return {state: 'pending', description: spec.text, target_url: spec.url};
   }
   const done = codeDescription || REVIEW_COMPLETE;
   const withSpec = spec?.text ? `${spec.text} · ${done}` : done;
