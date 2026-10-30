@@ -49,10 +49,10 @@ export const LEDGER_FILENAME = 'component-scores.json';
 
 /** Where the scores live when no `--ledger` is given. */
 export const DEFAULT_LEDGER_URL =
-  'https://raw.githubusercontent.com/wiki/facebook/astryx/component-scores.json';
+  'https://raw.githubusercontent.com/wiki/meta/astryx/component-scores.json';
 
 /** The wiki repo the ledger lives in — what `--push` clones. */
-export const WIKI_REMOTE = 'https://github.com/facebook/astryx.wiki.git';
+export const WIKI_REMOTE = 'https://github.com/meta/astryx.wiki.git';
 
 /** The wiki's default branch. Not `main`. */
 export const WIKI_BRANCH = 'master';
@@ -97,7 +97,7 @@ Options
   --dry-run                 --record: print the diff and the commit message and
                             push nothing. --file-issues: print the issues,
                             create nothing.
-  --repo <owner/name>       --file-issues: default facebook/astryx.
+  --repo <owner/name>       --file-issues: default meta/astryx.
   --json                    Machine-readable output where it applies.
 `.trim();
 
@@ -489,7 +489,7 @@ export const blockList = entry =>
 const isAudited = entry => !!entry && entry.status === 'audited';
 
 /** The repo that carries audit issues. */
-export const DEFAULT_REPO = 'facebook/astryx';
+export const DEFAULT_REPO = 'meta/astryx';
 
 /** `A8` -> ``[`A8`](https://github.com/…/issues/123)`` when the BLOCK is filed. */
 export function blockLink(block, repo = DEFAULT_REPO) {
@@ -818,7 +818,7 @@ function fmtScore(n) {
  * sandbox page and the CLI cannot drift.
  */
 export const AUDIT_PROMPT = `Audit the Astryx component <Component> in <AuditMode: N|O|P|R> mode against the Component Audit Rubric:
-https://github.com/facebook/astryx/wiki/Component-Audit-Rubric
+https://github.com/meta/astryx/wiki/Component-Audit-Rubric
 
 Preserve the selected mode. Assemble the applicable authority before applying
 the rubric procedure, in this order:
