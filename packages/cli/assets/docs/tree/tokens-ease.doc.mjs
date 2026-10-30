@@ -17,14 +17,14 @@ export const docs = {
     "order": 110
   },
   "category": "foundations",
-  "description": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character. Neither knob moves finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap.",
+  "description": "Easing curves for animations and transitions. Of a theme's three `motion` knobs, `character` sets `--ease-entrance` and `--ease-move`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`; exits keep their own curve at every character. `tempo` and `reducedMotion` (`system`, its only value) leave curves alone. A duration scale's own fields win over the knobs, and explicit `tokens` win over everything. No curve here shapes motion that follows a finger or the system (dragging, momentum, the rubber band, the on-screen keyboard), and the press's clocks, hover-intent delays and gesture thresholds keep their timing whatever the character.",
   "sections": [
     {
       "title": "Easing Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character. Neither knob moves finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap."
+          "text": "Easing curves for animations and transitions. Of a theme's three `motion` knobs, `character` sets `--ease-entrance` and `--ease-move`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`; exits keep their own curve at every character. `tempo` and `reducedMotion` (`system`, its only value) leave curves alone. A duration scale's own fields win over the knobs, and explicit `tokens` win over everything. No curve here shapes motion that follows a finger or the system (dragging, momentum, the rubber band, the on-screen keyboard), and the press's clocks, hover-intent delays and gesture thresholds keep their timing whatever the character."
         },
         {
           "type": "table",

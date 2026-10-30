@@ -189,9 +189,10 @@ export const myTheme = defineTheme({
    *   reducedMotion — 'system' (the default and only value) follows each
    *     person's Reduce Motion setting.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
-   * Finger tracking, momentum, the keyboard, hover, the press's onset delay
-   * and tap flash, and busy loops never follow them; the press release fade
-   * follows tempo, up to the 200 ms Reduce Motion cap.
+   * Finger tracking, momentum, the rubber band, the on-screen keyboard,
+   * hover-intent delays, gesture thresholds, the press's onset delay, cancel
+   * distance and tap flash, and busy loops never follow them; the press
+   * release fade follows tempo, up to the 200 ms Reduce Motion cap.
    *
    * A duration scale in ms wins over tempo for the durations it sets. Each of
    * fast/medium/slow also gets a -min and -max sibling computed with `ratio`
