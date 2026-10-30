@@ -258,7 +258,7 @@ const groups = [
     exportName: 'durationDefaults',
     title: 'Duration Tokens',
     description:
-      "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it.",
+      "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it. Never scaled by it: finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap.",
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },
@@ -268,7 +268,7 @@ const groups = [
     exportName: 'easeDefaults',
     title: 'Easing Tokens',
     description:
-      "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character.",
+      "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character. Neither knob moves finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap.",
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },

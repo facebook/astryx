@@ -17,14 +17,14 @@ export const docs = {
     "order": 100
   },
   "category": "foundations",
-  "description": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it.",
+  "description": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it. Never scaled by it: finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap.",
   "sections": [
     {
       "title": "Duration Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it."
+          "text": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio. A theme's `motion.tempo` (0.75–1.5) scales every one of them; a duration scale or an explicit token wins over it. Never scaled by it: finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap."
         },
         {
           "type": "table",

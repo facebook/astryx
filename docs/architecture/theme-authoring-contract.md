@@ -206,7 +206,11 @@ it, typed as that theme's listed names.
   field: a duration-scale field or knob the child leaves unset keeps its
   base's value. Each duration's
   value before `tempo` is kept for busy-indicator loops, which never follow
-  `tempo`. `reducedMotion: 'always'` marks the theme's root, and what keys
+  `tempo`. Neither `tempo` nor `character` moves finger tracking, momentum,
+  the rubber band, the on-screen keyboard, the press model's onset delay,
+  cancel distance and tap flash, hover-intent delays, gesture thresholds,
+  busy-indicator loops, or the 200 ms Reduce Motion cap (`spec:AST-108` FR4).
+  `reducedMotion: 'always'` marks the theme's root, and what keys
   reduced motion on `prefers-reduced-motion` keys it on that mark as well
   (`spec:AST-108` FR6). An adaptation rule may set `tempo` and `character`,
   never `reducedMotion`.

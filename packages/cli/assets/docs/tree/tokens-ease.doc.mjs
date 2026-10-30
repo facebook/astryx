@@ -17,14 +17,14 @@ export const docs = {
     "order": 110
   },
   "category": "foundations",
-  "description": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character.",
+  "description": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character. Neither knob moves finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap.",
   "sections": [
     {
       "title": "Easing Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character."
+          "text": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character. Neither knob moves finger tracking, momentum, the rubber band, the on-screen keyboard, the press's onset delay, cancel distance and tap flash, hover-intent delays, gesture thresholds, the loops of busy indicators such as Spinner and Skeleton, and the 200 ms Reduce Motion cap."
         },
         {
           "type": "table",

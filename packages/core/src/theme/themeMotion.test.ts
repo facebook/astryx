@@ -239,6 +239,31 @@ describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
     expect(motion.easings['--ease-entrance']).toBe(CHARACTER_EASE.expressive);
     expect(motion.easings['--ease-standard']).toBe(STANDARD);
   });
+
+  it('resolves tokens written as references through the theme\u2019s tokens (architecture:theme-tokens INV6)', () => {
+    const motion = resolveThemeMotion({
+      tokens: {
+        '--duration-fast': '90ms',
+        '--duration-medium': 'var(--duration-fast)',
+        '--duration-slow': 'var(--duration-unknown, 700ms)',
+        '--ease-standard': 'linear',
+        '--ease-entrance': 'var(--ease-standard)',
+      },
+    });
+    expect(motion.durations['--duration-medium']).toBe('90ms');
+    expect(motion.durations['--duration-slow']).toBe('700ms');
+    expect(motion.easings['--ease-entrance']).toBe('linear');
+    expect(motion.easings['--ease-move']).toBe('linear');
+    expect(JSON.stringify(motion)).not.toContain('var(');
+  });
+
+  it('resolves a reference to the theme\u2019s own local token', () => {
+    const motion = resolveThemeMotion({
+      tokens: {'--duration-medium': 'var(--brand-beat)'},
+      localTokens: {'--brand-beat': '333ms'},
+    });
+    expect(motion.durations['--duration-medium']).toBe('333ms');
+  });
 });
 
 describe('a layer\u2019s own durations reach the busy loops under an enclosing tempo (spec:AST-108 FR4)', () => {

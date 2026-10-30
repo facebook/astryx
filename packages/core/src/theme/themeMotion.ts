@@ -34,6 +34,7 @@ import {
   type ThemeMotionKnobs,
 } from './motionKnobs';
 import {durationDefaults, easeDefaults} from './tokens.stylex';
+import {resolveTokenReferences} from './tokenReferences';
 
 export {
   TEMPO_RANGE,
@@ -167,31 +168,54 @@ export interface ThemeMotion {
 /**
  * A theme's motion values, for the animator and for server code (FR6): the
  * knobs, and the duration and easing tokens they resolve to with the theme's
- * explicit tokens applied. Pure: it reads only `theme`.
+ * explicit tokens applied. A token written as a reference (`var(--name)`)
+ * resolves through the theme's tokens, as `resolveThemeTokens` resolves it
+ * (`architecture:theme-tokens` INV6). Pure: it reads only `theme`.
  */
 export function resolveThemeMotion(theme: {
   readonly motion?: ThemeMotionConfig;
   readonly __axes?: {readonly motion?: ThemeMotionConfig};
-  readonly tokens?: Readonly<Record<string, string | undefined>>;
+  readonly tokens?: Readonly<Record<string, unknown>>;
+  readonly localTokens?: Readonly<Record<string, unknown>>;
 }): ThemeMotion {
   // A defined theme's motion is its axes': its own merged with its base's.
   const config = theme.__axes?.motion ?? theme.motion;
   const knobs = resolveMotionKnobs(config);
   const generated = config ? expandThemeMotion(config) : {};
-  const value = (name: string, fallback: string): string =>
-    theme.tokens?.[name] ?? generated[name] ?? fallback;
-  const durations: Record<string, string> = {};
-  for (const [name, fallback] of Object.entries(durationDefaults)) {
-    durations[name] = value(name, fallback);
+  // The graph the references resolve through: the defaults, the knobs'
+  // tokens, then the theme's own (a light/dark pair is not a motion value, so
+  // only plain strings take part).
+  const graph: Record<string, string> = {
+    ...durationDefaults,
+    ...easeDefaults,
+    ...generated,
+  };
+  for (const tokens of [theme.localTokens, theme.tokens]) {
+    for (const [name, value] of Object.entries(tokens ?? {})) {
+      if (typeof value === 'string') {
+        graph[name] = value;
+      }
+    }
   }
-  const standard = value('--ease-standard', easeDefaults['--ease-standard']);
+  const explicit = (name: string): boolean =>
+    typeof theme.tokens?.[name] === 'string' || name in generated;
+  const resolved = resolveTokenReferences(graph);
+  const durations: Record<string, string> = {};
+  for (const name of Object.keys(durationDefaults)) {
+    durations[name] = resolved[name];
+  }
+  const standard = resolved['--ease-standard'];
   return {
     knobs,
     durations,
     easings: {
       '--ease-standard': standard,
-      '--ease-entrance': value('--ease-entrance', standard),
-      '--ease-move': value('--ease-move', standard),
+      '--ease-entrance': explicit('--ease-entrance')
+        ? resolved['--ease-entrance']
+        : standard,
+      '--ease-move': explicit('--ease-move')
+        ? resolved['--ease-move']
+        : standard,
     },
   };
 }
