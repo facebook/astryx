@@ -1,18 +1,18 @@
 # Contributing to Astryx
 
-For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing)**.
+For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/meta/astryx/wiki/Contributing)**.
 
 Key pages:
 
 - **[Pull request intents](docs/contributing/pull-requests.md)** — choose one primary intent, its evidence bar, and the matching PR template
 - **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
-- **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
-- **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
-- **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
-- **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
-- **[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
-- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)** — how docsite blog posts are reviewed
-- **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
+- **[Design Conventions](https://github.com/meta/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
+- **[Specification Protocol](https://github.com/meta/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[Component Lifecycle](https://github.com/meta/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
+- **[API Arbitration](https://github.com/meta/astryx/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing Templates](https://github.com/meta/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
+- **[Blog Review Rubric](https://github.com/meta/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)** — how docsite blog posts are reviewed
+- **[Contributing with AI](https://github.com/meta/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
 
@@ -87,7 +87,7 @@ pnpm --version   # 11.x.x
 
 ```bash
 # Clone without downloading historical file contents up front
-git clone --filter=blob:none https://github.com/facebook/astryx.git
+git clone --filter=blob:none https://github.com/meta/astryx.git
 cd astryx
 
 # Install dependencies
@@ -370,10 +370,10 @@ with no theme.
 ## Accessibility Checklist
 
 Every new component — and any change to an interactive one — must clear the
-**[Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist)**
+**[Accessibility Checklist](https://github.com/meta/astryx/wiki/Accessibility-Checklist)**
 (wiki) before review. The checklist lives on the wiki so accessibility
 experts can refine it without a code PR; reviewers block on it (it is `A1`–`A16`
-on the [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)),
+on the [Component Audit Rubric](https://github.com/meta/astryx/wiki/Component-Audit-Rubric)),
 and it is a hard requirement for a lab → core promotion (see
 `packages/lab/README.md`).
 
@@ -820,7 +820,7 @@ minor only when the owner explicitly names it.
 
 Before the Version Packages PR merges, a patch release self-grades its complete
 generated changelogs and draft GitHub Release notes against the public [Blog Review
-Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
+Rubric](https://github.com/meta/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
 under the `update` profile and records the result on that PR. Every criterion
 must pass; failures are fixed on the PR and the complete text is re-graded. A
 minor release instead requires Cindy's explicit human editorial approval of the
@@ -841,7 +841,7 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 ## What's expected of a change
 
 The bar — what a change has to carry, and what blocks — lives on the
-**[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)**.
+**[Component Audit Rubric](https://github.com/meta/astryx/wiki/Component-Audit-Rubric)**.
 It is stated there once, so it cannot drift between this file, the reviewer
 instructions, and the wiki. Read it before you open a PR: it is the same page
 the reviewer applies to your change, and every check carries an id
@@ -849,7 +849,7 @@ the reviewer applies to your change, and every check carries an id
 
 What you will find there:
 
-- **[The bright lines that block](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#the-checks)** —
+- **[The bright lines that block](https://github.com/meta/astryx/wiki/Component-Audit-Rubric#the-checks)** —
   hardcoded colors (`T1`, `T3`) · removing a themeable surface (`T2`) · raw CSS
   where StyleX suffices (`T8`) or raw HTML where a primitive exists (`T29`) · a
   broken accessible path (`A8`) and the accessibility bright lines (`A1`, `A3`,
@@ -859,15 +859,15 @@ What you will find there:
   changeset (`X20`). Severity is set by **what breaks if it ships**, not by how
   likely the trigger is — the rubric states each rule, its exceptions, and how
   it is judged.
-- **[The bar for your kind of change](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+- **[The bar for your kind of change](https://github.com/meta/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
   a bug fix owes evidence it was broken before and is fixed now; a new feature
   runs the automatable checks plus whatever the diff touches; a new component in
   `core` gets a full audit; a new component in `lab` is deliberately lax, with
   the audit as the **promotion gate** rather than an entry fee.
-- **[Which checks your diff earns](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+- **[Which checks your diff earns](https://github.com/meta/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
   a trigger table from what you touched to the checks that fire, so a two-line
   fix is not reviewed like a new component.
-- **[Recorded component grades](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#recording-an-audit)** —
+- **[Recorded component grades](https://github.com/meta/astryx/wiki/Component-Audit-Rubric#recording-an-audit)** —
   audited components have a score and an open-blocker count in the wiki's
   `component-scores.json` ledger, which is useful context on what shape a
   component is in before you change it. Most components are unaudited, which
@@ -940,7 +940,7 @@ Storybook story for anything you added or altered.
 
 The design-system rules — StyleX usage, semantic tokens, theming, API
 conventions, accessibility — are on the wiki and indexed from the
-[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric).
+[Component Audit Rubric](https://github.com/meta/astryx/wiki/Component-Audit-Rubric).
 What this repo enforces mechanically:
 
 - TypeScript strict mode

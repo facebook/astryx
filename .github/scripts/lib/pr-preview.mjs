@@ -692,7 +692,16 @@ export async function reconcileEarlyPreviewComment({
   );
   const links = `[View Storybook for this PR](${origin}/storybook/) · [View Sandbox for this PR](${origin}/sandbox/)`;
   const marker = headMarker(headSha);
-  const legacySandboxURL = `https://${owner}.github.io/${repo}/pr/${prNumber}/sandbox/`;
+  const legacySandboxURLs = new Set([
+    `https://${owner}.github.io/${repo}/pr/${prNumber}/sandbox/`,
+    `https://facebook.github.io/astryx/pr/${prNumber}/sandbox/`,
+  ]);
+  const replaceLegacySandboxURLs = value => {
+    for (const url of legacySandboxURLs) {
+      value = value.replaceAll(url, `${origin}/sandbox/`);
+    }
+    return value;
+  };
   let body = `## PR Analysis Report\n${PR_ANALYSIS_MARKER}\n${marker}\n\n> **Previews ready:** Storybook and Sandbox were built with this PR's docsite. CI evidence will be added when available.\n\n${links}\n`;
   if (existing?.body.includes(marker)) {
     if (
@@ -712,9 +721,9 @@ export async function reconcileEarlyPreviewComment({
     ) {
       // Same-head redeploy: preserve existing CI/a11y/visual content and
       // change only the exact-head preview URLs.
-      body = existing.body
-        .replaceAll([...oldOrigins][0], origin)
-        .replaceAll(legacySandboxURL, `${origin}/sandbox/`);
+      body = replaceLegacySandboxURLs(
+        existing.body.replaceAll([...oldOrigins][0], origin),
+      );
       if (!body.includes(`${origin}/sandbox/`)) {
         body = body.replace(
           marker,
@@ -732,9 +741,10 @@ export async function reconcileEarlyPreviewComment({
 
   // Replace older same-head preview URLs without dropping CI, a11y, or visual
   // evidence in the surrounding report.
-  body = body
-    .replaceAll(legacySandboxURL, `${origin}/sandbox/`)
-    .replace(/^> \*\*Preview availability:\*\*[^\n]*\n\n/m, '');
+  body = replaceLegacySandboxURLs(body).replace(
+    /^> \*\*Preview availability:\*\*[^\n]*\n\n/m,
+    '',
+  );
 
   const {data: current} = await github.rest.pulls.get({
     owner,

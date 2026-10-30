@@ -50,7 +50,7 @@ function identity(overrides = {}) {
     headRef: 'fix-failed-ci-preview-links',
     headRepository: 'cixzhang/astryx',
     headRepositoryId: '321',
-    baseRepository: 'facebook/astryx',
+    baseRepository: 'meta/astryx',
     baseSha: BASE,
     sourceRunId: 33321033727,
     sourceRunAttempt: 1,
@@ -228,7 +228,7 @@ async function reconcile({
     github,
     core,
     context: {
-      repo: {owner: 'facebook', repo: 'astryx'},
+      repo: {owner: 'meta', repo: 'astryx'},
       serverUrl: 'https://github.com',
     },
     expectedIdentity: value,
@@ -271,7 +271,7 @@ describe('trusted PR preview identity', () => {
     };
     const resolved = await resolveWorkflowRunPullRequest({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       run,
     });
@@ -290,14 +290,14 @@ describe('trusted PR preview identity', () => {
 
     const resolved = await resolveWorkflowRunPullRequest({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       run,
     });
 
     expect(resolved).toMatchObject(value);
     expect(github.rest.pulls.list).toHaveBeenCalledWith({
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       state: 'open',
       head: 'cixzhang:fix-failed-ci-preview-links',
@@ -313,7 +313,7 @@ describe('trusted PR preview identity', () => {
     await expect(
       resolveWorkflowRunPullRequest({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         run: sourceRun(value),
       }),
@@ -334,7 +334,7 @@ describe('trusted PR preview identity', () => {
     await expect(
       resolveWorkflowRunPullRequest({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         run,
       }),
@@ -360,7 +360,7 @@ describe('trusted PR preview identity', () => {
       )(
         REQUIRE,
         {
-          repo: {owner: 'facebook', repo: 'astryx'},
+          repo: {owner: 'meta', repo: 'astryx'},
           payload: {workflow_run: sourceRun(value)},
         },
         github,
@@ -375,7 +375,7 @@ describe('trusted PR preview identity', () => {
     expect(EXECUTABLE_RESOLVE_SCRIPT).not.toBe(RESOLVE_SCRIPT);
     expect(resolve).toHaveBeenCalledWith({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       run: sourceRun(value),
     });
@@ -425,7 +425,7 @@ describe('trusted PR preview identity', () => {
           EXECUTABLE_RECONFIRM_SCRIPT,
         )(
           REQUIRE,
-          {repo: {owner: 'facebook', repo: 'astryx'}},
+          {repo: {owner: 'meta', repo: 'astryx'}},
           github,
           core,
           confirmOrStandDown,
@@ -450,7 +450,7 @@ describe('trusted PR preview identity', () => {
         github: githubFixture({value: identity({headSha: 'f'.repeat(40)})})
           .github,
         core: {info: vi.fn()},
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         expected: identity(),
       }),
@@ -470,7 +470,7 @@ describe('trusted PR preview identity', () => {
       confirmOrStandDown({
         github,
         core: {info: vi.fn()},
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         expected: value,
       }),
@@ -514,7 +514,7 @@ describe('trusted PR preview identity', () => {
     await expect(
       resolveWorkflowRunPullRequest({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         run: sourceRun(trusted),
       }),
@@ -532,7 +532,7 @@ describe('trusted PR preview identity', () => {
     await expect(
       resolveWorkflowRunPullRequest({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         run: sourceRun(trusted),
       }),
@@ -547,7 +547,7 @@ describe('trusted PR preview identity', () => {
     await expect(
       resolveWorkflowRunPullRequest({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         run,
       }),
@@ -646,7 +646,7 @@ describe('PR Comment keeps its outcome off main', () => {
     try {
       await new ASYNC_FUNCTION('context', 'github', step.with.script)(
         {
-          repo: {owner: 'facebook', repo: 'astryx'},
+          repo: {owner: 'meta', repo: 'astryx'},
           serverUrl: 'https://github.com',
           runId: 42,
         },
@@ -657,12 +657,12 @@ describe('PR Comment keeps its outcome off main', () => {
     }
     expect(createCommitStatus).toHaveBeenCalledWith(
       expect.objectContaining({
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         sha: HEAD,
         context: 'PR Comment',
         state,
-        target_url: 'https://github.com/facebook/astryx/actions/runs/42',
+        target_url: 'https://github.com/meta/astryx/actions/runs/42',
       }),
     );
   });
@@ -688,7 +688,7 @@ describe('confirmSourceRunIdentity reads the attempt the event reported', () => 
     await expect(
       confirmSourceRunIdentity({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         expected,
       }),
@@ -715,7 +715,7 @@ describe('confirmSourceRunIdentity reads the attempt the event reported', () => 
     await expect(
       confirmSourceRunIdentity({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         expected,
       }),
@@ -730,7 +730,7 @@ describe('confirmSourceRunIdentity reads the attempt the event reported', () => 
     await expect(
       confirmSourceRunIdentity({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         expected,
       }),
@@ -970,7 +970,7 @@ describe('PR comment preview reconciliation', () => {
       github: harness.github,
       core,
       context: {
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         serverUrl: 'https://github.com',
       },
       expectedIdentity: first,
@@ -998,7 +998,7 @@ describe('PR comment preview reconciliation', () => {
       github: harness.github,
       core,
       context: {
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         serverUrl: 'https://github.com',
       },
       visualPath: firstPaths.visual,
@@ -1051,7 +1051,7 @@ describe('PR comment preview reconciliation', () => {
         github,
         core: {info: vi.fn(), warning: vi.fn()},
         context: {
-          repo: {owner: 'facebook', repo: 'astryx'},
+          repo: {owner: 'meta', repo: 'astryx'},
           serverUrl: 'https://github.com',
         },
         expectedIdentity: expected,
@@ -1076,7 +1076,7 @@ describe('PR comment preview reconciliation', () => {
       github,
       core,
       context: {
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         serverUrl: 'https://github.com',
       },
       expectedIdentity: expected,
@@ -1111,7 +1111,7 @@ describe('PR comment preview reconciliation', () => {
         github,
         core: {info: vi.fn(), warning: vi.fn()},
         context: {
-          repo: {owner: 'facebook', repo: 'astryx'},
+          repo: {owner: 'meta', repo: 'astryx'},
           serverUrl: 'https://github.com',
         },
         expectedIdentity: value,
@@ -1145,7 +1145,7 @@ describe('PR comment preview reconciliation', () => {
     const paths = fixture(value);
     const {github, state} = githubFixture({value});
     const context = {
-      repo: {owner: 'facebook', repo: 'astryx'},
+      repo: {owner: 'meta', repo: 'astryx'},
       serverUrl: 'https://github.com',
     };
     const report = await reconcilePrComment({
@@ -1165,7 +1165,7 @@ describe('PR comment preview reconciliation', () => {
     expect(report.body).not.toContain('View Sandbox for this PR');
     const early = await reconcileEarlyPreviewComment({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       prNumber: value.prNumber,
       headSha: value.headSha,
@@ -1188,7 +1188,7 @@ describe('PR comment preview reconciliation', () => {
       github,
       core: {info: vi.fn(), warning: vi.fn()},
       context: {
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         serverUrl: 'https://github.com',
       },
       expectedIdentity: value,
@@ -1206,7 +1206,7 @@ describe('PR comment preview reconciliation', () => {
     let earlyLookups = 0;
     const early = await reconcileEarlyPreviewComment({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       prNumber: value.prNumber,
       headSha: value.headSha,
@@ -1225,7 +1225,7 @@ describe('PR comment preview reconciliation', () => {
     const early = () =>
       reconcileEarlyPreviewComment({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         prNumber: value.prNumber,
         headSha: value.headSha,
@@ -1244,7 +1244,7 @@ describe('PR comment preview reconciliation', () => {
       github,
       core: {info: vi.fn(), warning: vi.fn()},
       context: {
-        repo: {owner: 'facebook', repo: 'astryx'},
+        repo: {owner: 'meta', repo: 'astryx'},
         serverUrl: 'https://github.com',
       },
       expectedIdentity: value,
@@ -1272,7 +1272,7 @@ describe('PR comment preview reconciliation', () => {
     expect(result.body).toContain('Preview availability');
     const early = await reconcileEarlyPreviewComment({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       prNumber: value.prNumber,
       headSha: value.headSha,
@@ -1305,7 +1305,7 @@ describe('PR comment preview reconciliation', () => {
     });
     const result = await reconcileEarlyPreviewComment({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       prNumber: value.prNumber,
       headSha: value.headSha,
@@ -1337,7 +1337,7 @@ describe('PR comment preview reconciliation', () => {
 
     const result = await reconcileEarlyPreviewComment({
       github,
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       prNumber: value.prNumber,
       headSha: value.headSha,
@@ -1364,7 +1364,7 @@ describe('PR comment preview reconciliation', () => {
       const {github, state} = githubFixture({value});
       const result = await reconcileEarlyPreviewComment({
         github,
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         prNumber: 5697,
         headSha: HEAD,
