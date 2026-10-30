@@ -70,6 +70,40 @@ describe('PR report and deployment workflow contracts', () => {
     );
   });
 
+  it('reconciles spec-only comments without creating a preview or extra build', () => {
+    const value = workflow('pr-comment.yml');
+    const reconcile = value.slice(
+      value.indexOf('  spec-only-reconcile:'),
+      value.indexOf('  comment:'),
+    );
+    expect(reconcile).toContain('reconcilePrComment');
+    expect(reconcile).toContain('createIfMissing: false');
+    expect(reconcile).not.toContain('Setup Node and pnpm');
+    expect(value).toContain("needs.resolve.outputs.spec_only != 'true'");
+  });
+
+  it('keeps visual checks on their canonical CI Storybook artifact', () => {
+    const value = workflow('ci.yml');
+    const visual = value.slice(
+      value.indexOf('  pr-visual:'),
+      value.indexOf('  pr-rtl-shard:'),
+    );
+    expect(visual).toContain(
+      '[build-storybook, maintenance-request, visual-scout]',
+    );
+    expect(visual).toContain(
+      'name: storybook-${{ needs.build-storybook.outputs.short_hash }}',
+    );
+    expect(visual).toContain('name: visual-pr-report');
+    expect(value).toContain('name: pr-analysis');
+    expect(value).not.toContain(
+      'storybook_url=https://${REPO_OWNER}.github.io',
+    );
+    expect(value).toContain(
+      'name: sandbox-${{ steps.urls.outputs.short_hash }}',
+    );
+  });
+
   it('stages both static apps in Vercel preview and production', () => {
     const config = JSON.parse(
       fs.readFileSync(path.join(ROOT, 'apps/docsite/vercel.json'), 'utf8'),
