@@ -17,6 +17,8 @@ import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
+import {ungated} from './ci-pr-gate.mjs';
+
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
   fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
@@ -61,8 +63,10 @@ describe('native Swift routing', () => {
     expect(swift['runs-on']).toBe(
       `\${{ ${applies} && 'macos-15' || 'ubuntu-slim' }}`,
     );
-    expect(swift.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+    // Behind the pull-request gate (spec:AST-030 FR17).
+    expect(swift.if).toMatch(/^\$\{\{ \(github\.event_name != 'pull_request'/);
+    expect(ungated(swift.if)).toBe(
+      "github.event_name != 'workflow_dispatch' && always() && !cancelled()",
     );
   });
 
