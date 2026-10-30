@@ -20,8 +20,6 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 const require = createRequire(import.meta.url);
 const {
   compileRules,
-  packageModules,
-  renderPackage,
   sourcePackages,
   sourceStylesheet,
   stylexOptions,
@@ -57,23 +55,15 @@ afterAll(() => {
 describe('a source build against the prebuilt stylesheets', () => {
   let app;
   let buildCss;
-  const src = name => path.join(repoRoot, `packages/${name}/src`);
-  const coreTarget = {src: src('core'), aliases: {}};
 
-  /** A package's prebuilt rules, as scripts/build-css.mjs builds them. */
+  /** A package's prebuilt stylesheet, built from scripts/build-css.mjs's targets. */
   async function prebuilt(name) {
-    const target =
-      name === 'core'
-        ? coreTarget
-        : {
-            src: src(name),
-            aliases: {
-              '@astryxdesign/core/*': [path.join(src('core'), '*')],
-              '@astryxdesign/core': [src('core')],
-            },
-            provider: coreTarget,
-          };
-    const rules = await buildCss.collectStyleXCSS(target);
+    const {TARGETS} = buildCss;
+    const {provider} = TARGETS[name];
+    const rules = await buildCss.collectStyleXCSS({
+      ...TARGETS[name],
+      provider: provider && TARGETS[provider],
+    });
     const sheet = buildCss.composePackageStylesheet(
       '',
       processStylexRules(rules, false),
@@ -98,28 +88,10 @@ describe('a source build against the prebuilt stylesheets', () => {
     );
   });
 
-  it.each(['core', 'lab'])(
-    'compiles every %s module to its prebuilt stylesheet byte for byte',
-    async name => {
-      const packages = sourcePackages(app);
-      const pkg = packages.find(({name: n}) => n === `@astryxdesign/${name}`);
-      // Lab relies on astryx.css for the Core variable groups it reads.
-      const provided = new Set(
-        name === 'core'
-          ? []
-          : [...packageModules(packages[0], packages)].filter(file =>
-              /\.stylex\.ts$/.test(file),
-            ),
-      );
-      const options = stylexOptions(pkg, packages);
-      const rules = [];
-      for (const file of packageModules(pkg, packages, provided)) {
-        rules.push(...(await compileRules(file, options)));
-      }
-      expect(renderPackage(rules)).toBe(await prebuilt(name));
-    },
-    180_000,
-  );
+  it('prints every Core and Lab module as astryx.css and lab.css print them', async () => {
+    const {css} = await sourceStylesheet({cwd: app});
+    expect(css).toBe(`${await prebuilt('core')}\n${await prebuilt('lab')}`);
+  }, 360_000);
 });
 
 describe('the @astryx PostCSS plugin', () => {
@@ -212,5 +184,36 @@ describe('a source build across packages', () => {
     }
     // Lab names the marker after Core's source, as scripts/build-css.mjs does.
     expect(markers).toEqual([expect.any(String), markers[0]]);
+  });
+
+  it('resolves the constants another package reads from Core, as lab.css does', async () => {
+    const app = tempDir();
+    const core = 'node_modules/@astryxdesign/core';
+    const reads = (from, property) =>
+      `import * as stylex from '@stylexjs/stylex';\nimport {motion} from '${from}';\nconst s = stylex.create({root: {${property}: motion.fast}});\nexport const Box = () => stylex.props(s.root);`;
+    writeFiles(app, {
+      [`${core}/package.json`]: JSON.stringify({
+        name: '@astryxdesign/core',
+        exports: {
+          '.': {source: './src/index.ts'},
+          './motion.stylex': {source: './src/motion.stylex.ts'},
+        },
+      }),
+      [`${core}/src/motion.stylex.ts`]:
+        "import * as stylex from '@stylexjs/stylex';\nexport const motion = stylex.defineConsts({fast: '120ms'});",
+      [`${core}/src/index.ts`]: reads('./motion.stylex', 'transitionDuration'),
+      'node_modules/@astryxdesign/lab/package.json': JSON.stringify({
+        name: '@astryxdesign/lab',
+        exports: {'.': {source: './src/index.ts'}},
+      }),
+      'node_modules/@astryxdesign/lab/src/index.ts': reads(
+        '@astryxdesign/core/motion.stylex',
+        'animationDuration',
+      ),
+    });
+    const {css} = await sourceStylesheet({cwd: app});
+    // Core's block resolves the constant where Core reads it; Lab's block too.
+    expect(css).toMatch(/transition-duration:120ms/);
+    expect(css).toMatch(/animation-duration:120ms/);
   });
 });

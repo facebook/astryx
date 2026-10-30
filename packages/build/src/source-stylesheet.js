@@ -33,6 +33,15 @@ const CORE = '@astryxdesign/core';
 const STYLEX_MODULE = /\.stylex\.[cm]?[jt]sx?$/;
 
 /**
+ * Variable modules a prebuilt stylesheet compiles though none of the package's
+ * modules imports them: scripts/build-css.mjs's `stylexEntries`. Core's public
+ * `dataVars` entry is one, since an app reads its defaults as plain `var()`
+ * references (spec:AST-066 FR3). The parity test, whose reference comes from
+ * that script's own targets, fails if this list drifts from it.
+ */
+const STYLEX_ENTRIES = {[CORE]: ['theme/dataTokens.stylex.ts']};
+
+/**
  * Locate an installed package's directory by walking `node_modules` up from
  * `from`, the way Node resolves a bare specifier. Null when not installed.
  */
@@ -221,20 +230,33 @@ function resolveStyleXImport(specifier, importer, aliases) {
 }
 
 /**
- * The modules a package's prebuilt stylesheet is compiled from: every source
- * file except tests, plus the variable modules they import, minus those a
- * provider's stylesheet already emits. The parity test in
+ * The modules a package's prebuilt stylesheet is compiled from, walked as
+ * scripts/build-css.mjs walks them: every source file except tests and the
+ * package's `STYLEX_ENTRIES`, plus the variable modules they import, minus
+ * those a provider's stylesheet already emits. The provided modules the
+ * package imports are added to `imported`. The parity test in
  * source-stylesheet.test.mjs fails if this drifts from scripts/build-css.mjs.
  */
-function packageModules(pkg, packages, provided = new Set()) {
+function packageModules(
+  pkg,
+  packages,
+  provided = new Set(),
+  imported = new Set(),
+) {
   const {aliases} = stylexOptions(pkg, packages);
-  const queue = globSync('**/*.{ts,tsx}', {
-    cwd: pkg.srcDir,
-    absolute: true,
-    ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
-  })
-    .map(file => path.normalize(file))
-    .filter(file => !STYLEX_MODULE.test(file));
+  const queue = [
+    ...globSync('**/*.{ts,tsx}', {
+      cwd: pkg.srcDir,
+      absolute: true,
+      ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
+    })
+      .map(file => path.normalize(file))
+      .filter(file => !STYLEX_MODULE.test(file)),
+    // A version older than an entry has none of it to print.
+    ...(STYLEX_ENTRIES[pkg.name] ?? [])
+      .map(entry => path.join(pkg.srcDir, entry))
+      .filter(file => fs.existsSync(file)),
+  ].filter(file => !provided.has(file));
   const modules = new Set();
   while (queue.length > 0) {
     const file = queue.shift();
@@ -250,9 +272,33 @@ function packageModules(pkg, packages, provided = new Set()) {
         );
       }
       if (!provided.has(dependency)) queue.push(dependency);
+      else imported.add(dependency);
     }
   }
   return modules;
+}
+
+/** A `defineConsts` value, as StyleX collects it: no CSS of its own. */
+const isConstant = rule =>
+  rule[1]?.constKey != null && rule[1]?.constVal != null;
+
+/**
+ * Every rule of a package's prebuilt stylesheet, collected as
+ * scripts/build-css.mjs collects them: its modules' rules, plus the constants
+ * it reads from a provider's modules, which resolve where they are read.
+ */
+async function packageRules(pkg, packages, provided) {
+  const options = stylexOptions(pkg, packages);
+  const imported = new Set();
+  const modules = packageModules(pkg, packages, provided, imported);
+  const rules = [];
+  for (const file of modules) {
+    rules.push(...(await compileRules(file, options)));
+  }
+  for (const file of imported) {
+    rules.push(...(await compileRules(file, options)).filter(isConstant));
+  }
+  return {modules, rules};
 }
 
 const compiled = new Map();
@@ -306,14 +352,9 @@ async function sourceStylesheet({cwd}) {
   const blocks = [];
   let provided = new Set();
   for (const pkg of packages) {
-    const modules = packageModules(pkg, packages, provided);
+    const {modules, rules} = await packageRules(pkg, packages, provided);
     if (pkg.name === CORE) {
       provided = new Set([...modules].filter(file => STYLEX_MODULE.test(file)));
-    }
-    const options = stylexOptions(pkg, packages);
-    const rules = [];
-    for (const file of modules) {
-      rules.push(...(await compileRules(file, options)));
     }
     blocks.push(renderPackage(rules));
   }

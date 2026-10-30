@@ -7,7 +7,8 @@
  *   (with its own node_modules) and Lab installed
  * @output Proves Turbopack `next build` and `next dev` render Astryx with the
  *   prebuilt class names and source-built rules (spec:AST-080 FR7), keep the
- *   app's rules to its files in their order, and let a theme override win
+ *   app's rules to its files in their order, let a theme override win, and
+ *   declare Core's data-colour defaults in an app with Core alone
  * @position End-to-end regression for the Turbopack half of @astryxdesign/build
  */
 
@@ -33,10 +34,12 @@ const {chromium} = await import('playwright').catch(() => ({}));
 const hasChromium = fs.existsSync(chromium?.executablePath() ?? '');
 
 let root, app, html, css, ruleLog;
+const roots = [];
 
-const nextBin = () => path.join(app, 'node_modules/next/dist/bin/next');
+const nextBin = (dir = app) =>
+  path.join(dir, 'node_modules/next/dist/bin/next');
 
-function symlink(target, name, into = app) {
+function symlink(target, name, into) {
   const at = path.join(into, 'node_modules', name);
   fs.mkdirSync(path.dirname(at), {recursive: true});
   fs.symlinkSync(target, at, 'junction');
@@ -55,11 +58,13 @@ function install(name, to) {
   }
 }
 
-beforeAll(() => {
+/** A scratch copy of the fixture app, with Core linked and Lab if asked. */
+function scratchApp({lab}) {
   // Inside the repository (an ignored scratch directory), so Turbopack's
   // workspace root covers the linked package's real path.
-  root = fs.mkdtempSync(path.join(packageDir, '.astryx-next-turbopack-'));
-  app = path.join(root, 'app');
+  const dir = fs.mkdtempSync(path.join(packageDir, '.astryx-next-turbopack-'));
+  roots.push(dir);
+  const app = path.join(dir, 'app');
   fs.cpSync(path.join(packageDir, '__fixtures__/next-turbopack'), app, {
     recursive: true,
   });
@@ -70,34 +75,54 @@ beforeAll(() => {
   };
   dependencies[packageDir].push('@stylexjs/postcss-plugin', '@stylexjs/stylex');
   dependencies[repoRoot].push('@types/node');
-  for (const [root, names] of Object.entries(dependencies)) {
+  for (const [from, names] of Object.entries(dependencies)) {
     for (const name of names) {
-      symlink(fs.realpathSync(path.join(root, 'node_modules', name)), name);
+      symlink(
+        fs.realpathSync(path.join(from, 'node_modules', name)),
+        name,
+        app,
+      );
     }
   }
-  symlink(packageDir, '@astryxdesign/build');
+  symlink(packageDir, '@astryxdesign/build', app);
   // Core linked from a workspace (`file:`, `pnpm link`, a monorepo package)...
-  const core = path.join(root, 'core');
+  const core = path.join(dir, 'core');
   install('core', core);
-  symlink(core, '@astryxdesign/core');
+  symlink(core, '@astryxdesign/core', app);
   const intl = `${repoRoot}/packages/core/node_modules/intl-messageformat`;
   symlink(fs.realpathSync(intl), 'intl-messageformat', core);
   // ...and Lab as a registry install: a real directory under node_modules.
-  install('lab', path.join(app, 'node_modules/@astryxdesign/lab'));
+  if (lab) install('lab', path.join(app, 'node_modules/@astryxdesign/lab'));
+  return app;
+}
+
+/** The page a build rendered, without scripts or links, and its stylesheets. */
+function built(dir) {
+  const page = fs.readFileSync(
+    path.join(dir, '.next/server/app/index.html'),
+    'utf8',
+  );
+  const chunks = path.join(dir, '.next/static/chunks');
+  const sheets = fs
+    .readdirSync(chunks)
+    .filter(file => file.endsWith('.css'))
+    .map(file => fs.readFileSync(path.join(chunks, file), 'utf8'));
+  return {page, css: sheets.join('\n')};
+}
+
+beforeAll(() => {
+  app = scratchApp({lab: true});
+  root = path.dirname(app);
   // From the parent, as `next build <dir>` runs; `next dev` below runs in the app.
   execFileSync(process.execPath, [nextBin(), 'build', 'app'], {cwd: root, env});
   ruleLog = fs.readFileSync(path.join(app, 'rules.log'), 'utf8');
-  html = fs.readFileSync(path.join(app, '.next/server/app/index.html'), 'utf8');
-  const chunks = path.join(app, '.next/static/chunks');
-  css = fs
-    .readdirSync(chunks)
-    .filter(file => file.endsWith('.css'))
-    .map(file => fs.readFileSync(path.join(chunks, file), 'utf8'))
-    .join('\n');
+  ({page: html, css} = built(app));
 }, 600_000);
 
 afterAll(() => {
-  if (root) fs.rmSync(root, {recursive: true, force: true, maxRetries: 5});
+  for (const dir of roots) {
+    fs.rmSync(dir, {recursive: true, force: true, maxRetries: 5});
+  }
 });
 
 /** The rendered class lists, split by whether Astryx or the app made them. */
@@ -210,6 +235,57 @@ describe('withAstryx() under Turbopack', () => {
           'rgb(0, 120, 255)',
           'rgb(0, 120, 255)',
         ]);
+      } finally {
+        await browser.close();
+      }
+    },
+  );
+});
+
+describe('withAstryx() under Turbopack, with Core alone', () => {
+  let page, sheet;
+
+  beforeAll(() => {
+    const coreOnly = scratchApp({lab: false});
+    // An app reading a Core data colour as plain CSS, as dist dataVars compile.
+    fs.writeFileSync(
+      path.join(coreOnly, 'src/app/page.tsx'),
+      [
+        "import * as stylex from '@stylexjs/stylex';",
+        "import {Text} from '@astryxdesign/core';",
+        "const styles = stylex.create({swatch: {height: 8, backgroundColor: 'var(--color-data-categorical-blue)'}});",
+        'export default function Page() {',
+        '  return <main><Text>Hello</Text><div id="swatch" {...stylex.props(styles.swatch)} /></main>;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    execFileSync(process.execPath, [nextBin(coreOnly), 'build'], {
+      cwd: coreOnly,
+      env,
+    });
+    ({page, css: sheet} = built(coreOnly));
+  }, 600_000);
+
+  it("declares Core's data-colour defaults, as astryx.css does", () => {
+    expect(sheet).toMatch(/--color-data-categorical-blue:/);
+  });
+
+  it.skipIf(!hasChromium && !process.env.ASTRYX_REQUIRE_CHROMIUM)(
+    'colours a swatch that reads one',
+    async () => {
+      const body = page.replace(/<link[^>]*>|<script[\s\S]*?<\/script>/g, '');
+      const browser = await chromium.launch();
+      try {
+        const tab = await browser.newPage();
+        await tab.setContent(
+          body.replace('</head>', `<style>${sheet}</style></head>`),
+        );
+        expect(
+          await tab.$eval('#swatch', swatch =>
+            getComputedStyle(swatch).getPropertyValue('background-color'),
+          ),
+        ).toBe('rgb(1, 113, 227)');
       } finally {
         await browser.close();
       }
