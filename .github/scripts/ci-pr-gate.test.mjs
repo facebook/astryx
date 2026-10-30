@@ -13,6 +13,21 @@ import yaml from 'yaml';
 
 import {PR_CI_GATE, PR_HELD, PR_REPORT_GATE, ungated} from './ci-pr-gate.mjs';
 
+/**
+ * Whether a workflow starts when a pull request is opened or updated: any
+ * `pull_request` trigger (bare, in a list, or a map) except one that lists
+ * only `closed`. A trigger with no `types` takes GitHub's default ones.
+ */
+function startsOnPullRequest(workflow) {
+  const on = workflow.on ?? workflow[true];
+  if (on === 'pull_request') return true;
+  if (Array.isArray(on)) return on.includes('pull_request');
+  if (on == null || typeof on !== 'object' || !('pull_request' in on))
+    return false;
+  const types = on.pull_request?.types;
+  return !(types?.length && types.every(type => type === 'closed'));
+}
+
 const dir = path.resolve(import.meta.dirname, '../workflows');
 const workflows = fs
   .readdirSync(dir)
@@ -21,12 +36,7 @@ const workflows = fs
     name,
     yaml.parse(fs.readFileSync(path.join(dir, name), 'utf8')),
   ])
-  .filter(([, value]) => {
-    const pr = (value.on ?? value[true]).pull_request;
-    return (
-      pr !== undefined && !(pr?.types ?? []).every(type => type === 'closed')
-    );
-  });
+  .filter(([, value]) => startsOnPullRequest(value));
 // The jobs that report a required context (build, test, docsite-test, lint).
 const REQUIRED = {
   'ci.yml': ['build', 'docsite-test', 'test'],
@@ -110,6 +120,23 @@ const runs = event => evaluate(PR_CI_GATE, event);
 const held = event => evaluate(PR_HELD, event);
 
 describe('pull-request CI gate (spec:AST-030 FR17)', () => {
+  it('selects every workflow a pull request update starts, with or without listed types', () => {
+    expect(
+      startsOnPullRequest({on: {pull_request: {branches: ['main']}}}),
+    ).toBe(true);
+    expect(startsOnPullRequest({on: {pull_request: null}})).toBe(true);
+    expect(startsOnPullRequest({on: 'pull_request'})).toBe(true);
+    expect(startsOnPullRequest({on: ['push', 'pull_request']})).toBe(true);
+    expect(startsOnPullRequest({on: {pull_request: {types: ['opened']}}})).toBe(
+      true,
+    );
+    expect(startsOnPullRequest({on: {pull_request: {types: ['closed']}}})).toBe(
+      false,
+    );
+    expect(startsOnPullRequest({on: {push: {branches: ['main']}}})).toBe(false);
+    expect(startsOnPullRequest({on: 'push'})).toBe(false);
+  });
+
   it('finds the pull-request workflows', () => {
     expect(workflows.map(([name]) => name).sort()).toEqual([
       'ci.yml',
