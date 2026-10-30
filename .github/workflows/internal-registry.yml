@@ -14,6 +14,7 @@ name: Internal Registry
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['main']
     # Runs only when a dependency declaration or the lockfile can change what
     # the registry must serve (spec:AST-030 FR14). A merge-group entry, which
@@ -36,6 +37,7 @@ concurrency:
 
 jobs:
   dependency-check:
+    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')))
     runs-on: ubuntu-latest
     permissions:
       contents: read

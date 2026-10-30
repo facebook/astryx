@@ -6,6 +6,7 @@ name: CLI Smoke Test
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['main']
     # Runs only when something the CLI reads or the smoke scripts run can
     # change (spec:AST-030 FR14): every package (the CLI discovers Core, Lab,
@@ -37,6 +38,7 @@ concurrency:
 
 jobs:
   smoke-test:
+    if: (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')))
     runs-on: ubuntu-24.04-arm
     # PR CI's budget is 15 minutes (see ci.yml).
     timeout-minutes: 15
