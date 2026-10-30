@@ -77,6 +77,7 @@ import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   colorVars,
   spacingVars,
@@ -84,7 +85,11 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {composeEventHandlers, mergeProps} from '../utils';
+import {composeEventHandlers, isRenderable, mergeProps} from '../utils';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
@@ -378,6 +383,13 @@ const styles = stylex.create({
     position: 'relative',
     zIndex: 1,
   },
+  // A token selected by the first Delete on a touch screen: the accent fill
+  // and its text colour, as a UIKit search token's selected look (iOS 26.2:
+  // the tint fill with white text), with no animation.
+  tokenSelected: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
   token: {
     display: 'flex',
     flexShrink: 0,
@@ -601,7 +613,9 @@ function TokenizerSheetHost<T extends SearchableItem>(
  *
  * Composes BaseTypeahead for search and Token for selected items.
  * Tokens render inline before the text input. Selecting an item adds a token
- * and clears the query. Backspace on empty input removes the last token.
+ * and clears the query. Backspace on empty input removes the last token; on a
+ * touch screen the first Backspace selects it and the second removes it, as
+ * UIKit's search tokens do.
  *
  * @example
  * ```
@@ -699,6 +713,18 @@ function EndLane({
   );
 }
 
+/**
+ * Whether `target` is a token's own remove button (Token's ×, which marks
+ * itself `data-token-remove`): the one control a finger's tap with the
+ * touch keyboard down treats differently. Custom `renderToken` controls and
+ * `endContent` keep their defaults.
+ */
+function isTokenRemoveControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest('[data-token-remove]') != null
+  );
+}
+
 // The public signature names no presentation: `ComponentProps<typeof
 // Tokenizer>` and every public call resolve against `TokenizerProps`. The
 // implementation also reads the presentation options, reached only through
@@ -770,9 +796,48 @@ export function Tokenizer<T extends SearchableItem>({
   const inputId = idProp ?? generatedInputId;
   const descriptionId = useId();
   const statusMessageId = useId();
+  const selectionDescriptionId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // The last press that started inside the field: whether a finger (or a pen)
+  // made it, and whether the input already had focus when it began. A touch
+  // keyboard rises whenever this field focuses its input during a tap, so a
+  // tap on a token's own control (its remove button) must not move focus to
+  // the input unless the input had it, and the keyboard was up, already.
+  // `getInteractionModality()` says whether that press is still the latest
+  // interaction: any key press since then hands focus decisions back to the
+  // keyboard rules.
+  useInteractionModalityTracking();
+  const lastPressRef = useRef<{
+    isTouch: boolean;
+    inputHadFocus: boolean;
+    /** The token's own remove button the press landed on, if any. */
+    removeControl: Element | null;
+  } | null>(null);
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
+    lastPressRef.current = {
+      isTouch: e.pointerType === 'touch' || e.pointerType === 'pen',
+      inputHadFocus:
+        inputRef.current != null &&
+        inputRef.current.ownerDocument.activeElement === inputRef.current,
+      removeControl:
+        e.target instanceof Element
+          ? e.target.closest('[data-token-remove]')
+          : null,
+    };
+  }, []);
+  // True while the latest interaction is a touch press that began with the
+  // input unfocused (so the touch keyboard is down).
+  const isTouchPressWithKeyboardDown = useCallback(() => {
+    const press = lastPressRef.current;
+    return (
+      press != null &&
+      press.isTouch &&
+      !press.inputHadFocus &&
+      getInteractionModality() === 'pointer'
+    );
+  }, []);
   // Experimental presentation (`component:Tokenizer` DEC-3). `adaptive`
   // resolves through the policy the selection controls share; an open sheet
   // keeps its presentation until it closes, so a resolution change mid-task
@@ -1013,6 +1078,23 @@ export function Tokenizer<T extends SearchableItem>({
     [layer.id],
   );
 
+  // A finger's tap on a token's remove button while the
+  // keyboard is down keeps focus out of the field altogether: where the
+  // browser focuses a pressed button (Chrome does, on the tap's mouse
+  // compatibility events), focus entering would expand an `unfocusedInline`
+  // field, remounting the control under the finger, and focus would then drop
+  // to the page with no blur. Cancelling the press's focus, as
+  // InputClearButton does, leaves the field as it was; the tap's click still
+  // removes the token. A tap on the input itself still focuses it.
+  const handleMouseDownCapture = useCallback(
+    (e: React.MouseEvent) => {
+      if (isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown()) {
+        e.preventDefault();
+      }
+    },
+    [isTouchPressWithKeyboardDown],
+  );
+
   const handleFocusCapture = useCallback(
     (e: React.FocusEvent) => {
       const comingFromOutside = !isFocusInTokenizer(e.relatedTarget);
@@ -1027,13 +1109,26 @@ export function Tokenizer<T extends SearchableItem>({
           onFocus?.(e);
         }
         // Redirect to the input so the user doesn't have to tab through
-        // every token remove button.
-        if (e.target !== inputRef.current) {
+        // every token remove button. Not for a finger landing on a token's
+        // remove button while the keyboard is down: where the browser
+        // focuses the pressed button (Android Chrome), moving focus on to the
+        // input would raise the keyboard for a tap that only meant to remove
+        // a token.
+        if (
+          e.target !== inputRef.current &&
+          !(isTokenRemoveControl(e.target) && isTouchPressWithKeyboardDown())
+        ) {
           inputRef.current?.focus();
         }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer, onFocus],
+    [
+      isLayerMode,
+      layer,
+      isFocusInTokenizer,
+      onFocus,
+      isTouchPressWithKeyboardDown,
+    ],
   );
 
   const handleBlurCapture = useCallback(
@@ -1042,6 +1137,7 @@ export function Tokenizer<T extends SearchableItem>({
         isControlFocusedRef.current = false;
         hasReportedFocusRef.current = false;
         setIsFocusedWithin(false);
+        setSelectedId(null);
         onBlur?.(e);
         if (isLayerMode) {
           layer.hide();
@@ -1207,10 +1303,34 @@ export function Tokenizer<T extends SearchableItem>({
       if (!options?.silent) {
         announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       }
-      inputRef.current?.focus();
+      // Focus goes to the input, where typing continues, except after a tap
+      // on a token's own × that began with the keyboard down: focusing the
+      // input inside that tap would raise the touch keyboard, which removing
+      // a token never asks for. A keyboard removal, a mouse click, a tap made
+      // while the input was focused, and a custom `renderToken` control still
+      // land on the input; the sheet's own removals (`silent`) are the
+      // sheet's.
+      const pressed =
+        !options?.silent && isTouchPressWithKeyboardDown()
+          ? (lastPressRef.current?.removeControl ?? null)
+          : null;
+      if (pressed == null) {
+        inputRef.current?.focus();
+        return true;
+      }
+      // Where the browser focused the pressed × (Chrome does on a tap), that
+      // button is about to unmount with its token, and an element removed
+      // while focused drops focus without a blur: the field would stay
+      // focused-within (an `unfocusedInline` field expanded) after a tap
+      // elsewhere. Let go of that button first; focus anywhere else (Clear
+      // all, another control) stays where it is.
+      const active = pressed.ownerDocument.activeElement;
+      if (active instanceof HTMLElement && pressed.contains(active)) {
+        active.blur();
+      }
       return true;
     },
-    [value, onChange, isDisabled, announce, t],
+    [value, onChange, isDisabled, announce, t, isTouchPressWithKeyboardDown],
   );
 
   // Handle clearing all items
@@ -1224,7 +1344,23 @@ export function Tokenizer<T extends SearchableItem>({
     inputRef.current?.focus();
   }, [value, onChange, isDisabled]);
 
-  // Handle backspace on empty input — remove last token
+  // Backspace (the keyboard's Delete key) on the empty input removes the
+  // last token. On a touch screen it takes two presses, as with UIKit's
+  // search tokens (measured on iOS 26.2): the first selects the last token,
+  // the second removes it. Typing anything else while a token is selected
+  // keeps the token and goes on after it.
+  const {isTouch} = useTouchPresentation();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // A selection only lives while it names a current token.
+  const selectedItem =
+    selectedId == null ? null : (value.find(v => v.id === selectedId) ?? null);
+  // When the selected token leaves (its ×, Clear all, or the app's own
+  // change), the selection goes with it, so the same item added back later
+  // starts unselected instead of going on the next Delete. (Adjusted while
+  // rendering, as React recommends for state derived from props.)
+  if (selectedId != null && selectedItem == null) {
+    setSelectedId(null);
+  }
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (
@@ -1233,11 +1369,38 @@ export function Tokenizer<T extends SearchableItem>({
         value.length > 0
       ) {
         e.preventDefault();
-        const lastItem = value[value.length - 1];
-        handleRemove(lastItem);
+        // A custom `renderToken` draws no selected look, so it keeps the
+        // one-press removal.
+        if (isTouch && renderToken == null && selectedItem == null) {
+          const lastItem = value[value.length - 1];
+          setSelectedId(lastItem.id);
+          announce(
+            t('@astryx.tokenizer.tokenSelected', {label: lastItem.label}),
+          );
+          return;
+        }
+        setSelectedId(null);
+        handleRemove(selectedItem ?? value[value.length - 1]);
+        return;
+      }
+      if (
+        selectedItem != null &&
+        !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)
+      ) {
+        setSelectedId(null);
       }
     },
-    [value, handleRemove],
+    [value, handleRemove, isTouch, renderToken, selectedItem, announce, t],
+  );
+  // Text arriving with no key press (a paste, dictation, a keyboard
+  // suggestion) goes on after the selected token too: the selection goes,
+  // so Delete erases text again.
+  const handleChangeQuery = useCallback(
+    (query: string) => {
+      setSelectedId(null);
+      onChangeQuery?.(query);
+    },
+    [onChangeQuery],
   );
 
   // Click wrapper to focus input
@@ -1256,9 +1419,18 @@ export function Tokenizer<T extends SearchableItem>({
     }
   }, [isDisabled, isLayerMode, layer]);
 
+  // A selected token stays findable after its one-time announcement: the
+  // token itself carries the description, and so does the input, where
+  // focus is while Delete selects and removes (WCAG 2.2 4.1.2).
+  const selectionDescription =
+    selectedItem == null
+      ? null
+      : t('@astryx.tokenizer.tokenSelected', {label: selectedItem.label});
+
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
+      selectionDescription != null ? selectionDescriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
@@ -1286,7 +1458,16 @@ export function Tokenizer<T extends SearchableItem>({
         size={size}
         onRemove={isDisabled ? undefined : onRemoveItem}
         isDisabled={isDisabled}
-        xstyle={styles.token}
+        data-selected={item.id === selectedItem?.id || undefined}
+        description={
+          item.id === selectedItem?.id
+            ? (selectionDescription ?? undefined)
+            : undefined
+        }
+        xstyle={[
+          styles.token,
+          item.id === selectedItem?.id && styles.tokenSelected,
+        ]}
       />
     );
   });
@@ -1312,6 +1493,8 @@ export function Tokenizer<T extends SearchableItem>({
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
+      onPointerDownCapture={handlePointerDownCapture}
+      onMouseDownCapture={handleMouseDownCapture}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
       // Keys on the field's other controls (clear button, tokens) reach a
@@ -1396,7 +1579,7 @@ export function Tokenizer<T extends SearchableItem>({
                 .filter(Boolean)
                 .join(' ') || undefined
             }
-            onChangeQuery={onChangeQuery}
+            onChangeQuery={handleChangeQuery}
             __queryEntries={createEntries}
             debounceMs={debounceMs}
             onKeyDown={handleKeyDown}
@@ -1724,6 +1907,11 @@ export function Tokenizer<T extends SearchableItem>({
       labelTooltip={labelTooltip}
       width={width}>
       {tokenizerContent}
+      {isRenderable(selectionDescription) && (
+        <VisuallyHidden id={selectionDescriptionId}>
+          {selectionDescription}
+        </VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
