@@ -657,17 +657,27 @@ for (const {name, story, probe, hasTasks} of [
         page.locator('[data-wide-marker-surface="view"]'),
       ).toContainText(probe);
       await page.evaluate(async () => document.fonts.ready);
-      const geometry = hasTasks
-        ? await page.locator('[data-wide-marker-surface]').evaluateAll(roots =>
+      const labels = hasTasks
+        ? [
+            'Reference paragraph.',
+            'Outer task',
+            'Inner task',
+            'Task roman counter',
+            'Task roman sibling',
+          ]
+        : [
+            'Reference paragraph.',
+            'Outer bullet',
+            'Inner bullet',
+            'Mixed roman counter',
+            'Roman sibling',
+          ];
+      const geometry = await page
+        .locator('[data-wide-marker-surface]')
+        .evaluateAll(
+          (roots, labels) =>
             roots.map(surface => {
               const rtl = getComputedStyle(surface).direction === 'rtl';
-              const labels = [
-                'Reference paragraph.',
-                'Outer task',
-                'Inner task',
-                'Task roman counter',
-                'Task roman sibling',
-              ];
               const rows = new Map<
                 string,
                 {start: number; top: number; lines: number; fontSize: string}
@@ -758,8 +768,8 @@ for (const {name, story, probe, hasTasks} of [
                 }),
               };
             }),
-          )
-        : undefined;
+          labels,
+        );
       const boxes = await markerBoxes(page, `${root} ol`);
       await page.screenshot({
         path: testInfo.outputPath('mixed-surfaces.png'),
@@ -818,13 +828,12 @@ for (const {name, story, probe, hasTasks} of [
       expect(ink, 'unordered ancestors do not clip roman counters').toEqual(
         unclipped,
       );
-      if (geometry != null) {
+      {
         const markdown = geometry[0];
         for (const surface of geometry) {
-          expect(surface.checkboxes.map(input => input.checked)).toEqual([
-            false,
-            true,
-          ]);
+          expect(surface.checkboxes.map(input => input.checked)).toEqual(
+            hasTasks ? [false, true] : [],
+          );
           expect(surface.text).toHaveLength(5);
           expect(
             Math.abs(surface.measure - markdown.measure),
@@ -836,51 +845,59 @@ for (const {name, story, probe, hasTasks} of [
               text.lines,
               `${surface.surface}: ${text.label} line count`,
             ).toBe(other?.lines);
-            // RichText's source-preserving chunk import has a separate parent-
-            // anchor defect for this pure-task case. Record all three surfaces
-            // but assert Markdown's parent-text anchors below, rather than
-            // accepting the native misalignment. Other parity assertions stay strict.
+            if (!hasTasks) {
+              expect(
+                Math.abs(text.start - (other?.start ?? NaN)),
+                `${surface.surface}: ${text.label} text start / nested inset`,
+              ).toBeLessThanOrEqual(1);
+            }
+            // The inherited task-parent inset mismatch is recorded separately.
+            // This task receipt stays diagnostic for cross-renderer starts;
+            // Markdown's parent-text anchors are asserted below.
           }
         }
-        const starts = new Map(
-          markdown.text.map(line => [line.label, line.start]),
-        );
-        const direction = dir === 'rtl' ? -1 : 1;
-        expect(starts.get('Outer task')).toBe(direction * 28);
-        expect(starts.get('Inner task')).toBe(direction * 56);
-        expect(starts.get('Task roman counter')).toBe(direction * 80);
-        expect(starts.get('Task roman sibling')).toBe(direction * 80);
-        for (const overlap of overlaps) {
-          expect(
-            overlap.width * overlap.height,
-            'checkbox never covers counter ink',
-          ).toBe(0);
-        }
-        for (const [index, checkbox] of markdown.checkboxes.entries()) {
-          const label = markdown.text.find(
-            line => line.label === (index === 0 ? 'Outer task' : 'Inner task'),
+        if (hasTasks) {
+          const starts = new Map(
+            markdown.text.map(line => [line.label, line.start]),
           );
-          if (label == null) {
-            throw new Error('missing task parent text');
+          const direction = dir === 'rtl' ? -1 : 1;
+          expect(starts.get('Outer task')).toBe(direction * 28);
+          expect(starts.get('Inner task')).toBe(direction * 56);
+          expect(starts.get('Task roman counter')).toBe(direction * 80);
+          expect(starts.get('Task roman sibling')).toBe(direction * 80);
+          for (const overlap of overlaps) {
+            expect(
+              overlap.width * overlap.height,
+              'checkbox never covers counter ink',
+            ).toBe(0);
+          }
+          for (const [index, checkbox] of markdown.checkboxes.entries()) {
+            const label = markdown.text.find(
+              line =>
+                line.label === (index === 0 ? 'Outer task' : 'Inner task'),
+            );
+            if (label == null) {
+              throw new Error('missing task parent text');
+            }
+            expect(
+              checkbox.top,
+              'checkbox stays on the parent text line',
+            ).toBeLessThan(label.top + 24);
+            expect(checkbox.bottom).toBeGreaterThan(label.top);
+          }
+          const inputs = page.locator(`${root} input[type="checkbox"]`);
+          for (const input of await inputs.all()) {
+            await expect(input).toHaveAttribute('aria-readonly', 'true');
+            await input.click({force: true});
+            await input.focus();
+            await page.keyboard.press('Space');
           }
           expect(
-            checkbox.top,
-            'checkbox stays on the parent text line',
-          ).toBeLessThan(label.top + 24);
-          expect(checkbox.bottom).toBeGreaterThan(label.top);
+            await inputs.evaluateAll(elements =>
+              elements.map(element => (element as HTMLInputElement).checked),
+            ),
+          ).toEqual([false, true]);
         }
-        const inputs = page.locator(`${root} input[type="checkbox"]`);
-        for (const input of await inputs.all()) {
-          await expect(input).toHaveAttribute('aria-readonly', 'true');
-          await input.click({force: true});
-          await input.focus();
-          await page.keyboard.press('Space');
-        }
-        expect(
-          await inputs.evaluateAll(elements =>
-            elements.map(element => (element as HTMLInputElement).checked),
-          ),
-        ).toEqual([false, true]);
       }
     });
   }
