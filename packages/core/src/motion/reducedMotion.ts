@@ -26,17 +26,31 @@
  *   default: 'opacity, translate',
  *   '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': 'opacity',
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 'none',
+ *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     default: null,
+ *     '@media (pointer: coarse)': 'opacity',
+ *     '@media (not (pointer: coarse))': 'none',
+ *   },
  * },
  * transitionDuration: {
  *   default: '300ms',
  *   '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
  *     reducedMotionFadeConsts.duration,
  *   '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': '0s',
+ *   // The twin on a theme's reducedMotion: 'always' mark (spec:AST-108 FR6),
+ *   // at the same pointer split; a bare arm's twin nests '@media all'. Its
+ *   // `default: null` emits no rule, and lets StyleX's types read the twin's
+ *   // values as the property's, which a typed `xstyle` requires.
+ *   [stylex.when.ancestor('[data-astryx-reduced-motion]', reducedMotionScope)]: {
+ *     default: null,
+ *     '@media (pointer: coarse)': reducedMotionFadeConsts.duration,
+ *     '@media (not (pointer: coarse))': '0s',
+ *   },
  * },
  * ```
  *
  * reducedMotion.test.ts requires every such key in core to equal one of
- * `reducedMotionKeys`, exactly.
+ * `reducedMotionKeys`, exactly, and every Reduce Motion arm to have its twin.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/reducedMotion.stylex.ts
@@ -45,7 +59,12 @@
  */
 
 import {defaultIsCoarsePointer, defaultPrefersReducedMotion} from './animator';
-import {reducedMotionCrossFade} from './uikit/timing';
+import {resolveMotion} from './resolveMotion';
+import {themeReducesMotion} from './themeKnobs';
+import {
+  reducedMotionCrossFade,
+  registerReducedMotionCrossFade,
+} from './uikit/timing';
 
 /** Reduce Motion on a coarse primary pointer: an opacity-only cross-fade. */
 export const REDUCED_MOTION_FADE_QUERY =
@@ -65,6 +84,17 @@ export interface ReducedMotionFade {
 }
 
 /**
+ * Whether motion is reduced for `element`: the person's Reduce Motion setting,
+ * or a theme's `reducedMotion: 'always'` mark on the element or an ancestor,
+ * `<html>` included for the root theme (spec:AST-108 FR6). Code that holds an
+ * element reads it here, as the Reduce Motion styles' twins read the mark;
+ * a hook that holds none reads `useReducesMotion`.
+ */
+export function reducesMotion(element?: Element | null): boolean {
+  return defaultPrefersReducedMotion() || themeReducesMotion(element);
+}
+
+/**
  * The Reduced Motion fade for a change to `element` now, for motion the
  * animator does not drive (two titles cross-fading with Web Animations):
  * null when motion is not reduced (play the normal motion), else an
@@ -79,14 +109,20 @@ export function reducedMotionFade(
     touchRelease?: boolean;
   } = {},
 ): ReducedMotionFade | null {
-  if (!defaultPrefersReducedMotion()) {
+  if (!reducesMotion(element)) {
     return null;
   }
   const fades = options.touchRelease === true || defaultIsCoarsePointer();
   if (!fades) {
     return {duration: 0, easing: 'linear'};
   }
-  const curve = reducedMotionCrossFade.curve;
+  if (element != null) {
+    registerReducedMotionCrossFade();
+  }
+  const curve =
+    element != null
+      ? resolveMotion(element, reducedMotionCrossFade.curve)
+      : reducedMotionCrossFade.curve;
   return {
     duration: reducedMotionCrossFade.durationMs,
     easing: `cubic-bezier(${curve.join(', ')})`,
