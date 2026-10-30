@@ -398,7 +398,11 @@ competing regions and two-owner duplicates inside one dialog.
 ### DEC-4 — A current-state message replaces its owner's previous one
 
 **Reference:** `spec:AST-086/DEC-4`
-**Decider:** cixzhang, 2026-10-30
+**Decider:** vjeux (recorder), 2026-10-30
+
+Decided by current authority: `architecture:interaction-modality` INV8
+(superseded work must not change the current status or announcement) and
+`spec:AST-086` FR8; recorded as a consistency edit.
 
 FR9 joins messages written before the previous one is exposed, so two
 components speaking in the same frame are both heard. One owner's
