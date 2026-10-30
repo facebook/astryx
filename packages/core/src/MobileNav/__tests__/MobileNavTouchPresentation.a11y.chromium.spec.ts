@@ -296,9 +296,7 @@ test('a tap on the leaving drawer before the dialog closes does nothing', async 
   );
 });
 
-test('the page takes taps again once the dialog has closed', async ({
-  page,
-}) => {
+test('the page takes taps again once the dialog has closed', async ({page}) => {
   for (let attempt = 1; attempt <= CLOSE_WINDOW_ATTEMPTS; attempt++) {
     const {backdrop} = await openNav(page, {tokenDefault: true});
 
