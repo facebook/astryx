@@ -13,6 +13,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {ungated} from './ci-pr-gate.mjs';
 
 const workflow = yaml.parse(
   fs.readFileSync(new URL('../workflows/ci.yml', import.meta.url), 'utf8'),
@@ -73,17 +74,12 @@ function runs(
     branch = releaseBranch,
     needs = dependencies(job),
     cancelled = false,
-    labels = [],
   } = {},
 ) {
-  const expression = (job.if ?? 'true')
+  // The pull-request gate in front is ci-pr-gate.test.mjs's to prove.
+  const expression = ungated(job.if ?? 'true')
     .replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
-    // GitHub's object filter: `labels.*.name` lists the labels' names.
-    .replace(
-      /contains\(github\.event\.pull_request\.labels\.\*\.name, '([^']+)'\)/g,
-      "(github.event.pull_request?.labels ?? []).some(label => label.name === '$1')",
-    );
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]');
   // GitHub injects success() unless the expression has a status function.
   if (
     !/\b(always|cancelled|success|failure)\(/.test(expression) &&
@@ -103,7 +99,6 @@ function runs(
     {
       event_name: event,
       base_ref: event === 'pull_request' ? 'main' : '',
-      event: {pull_request: {labels: labels.map(name => ({name}))}},
     },
     {operation, 'release-branch': branch},
     needs,
