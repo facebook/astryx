@@ -156,6 +156,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **PR1 — Pointer query.** One coarse-pointer media query per instance decides
   the surface (the native surface's segment adds its own); the typed field adds
   no measurement.
+- **PR2 — The touch wheels draw each label three times.** Under a finger, the
+  sheet's hour, minute, second and meridiem wheels draw each shown row's label in
+  its option, on the drum, and in the band's copy, as UIPickerView's two tables
+  do, so a row crossing the band's edge shows magnified and plain at once. This is
+  an owner exception to `architecture:component-style-authoring` INV7 (content
+  renders once): with the sheet open, the bottom-sheet-with-min-max story's page
+  has 250 elements under a finger against 286 under a mouse, so `spec:AST-017`
+  FR60's open-layer allowance holds.
 
 ## Accessibility contract
 
@@ -187,6 +195,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 no other design record governs TimeInput. The control box carries `time-input`; the
 consumer anatomy names no control-box part, so this record carries no
 anatomy-theming map.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision                                                                                                                                                                                                                                                                                                                                                                                              | Intent or reason                                                                                                                       | Applies to                                                                                              | Allowed variation                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DD1 | Under a finger, the sheet's time wheels look like UIPickerView: the rows sit on a cylinder seen in perspective and dim away from one capsule band, the band's row is drawn magnified, and the hour, minute, second and meridiem columns read as one picker, one band across every column, each column placed where UIDatePicker places its own and its band labels magnified about their own centres. | A touch time sheet looks like the platform picker whose motion it follows (`spec:AST-094`), so a phone user meets a control they know. | The time wheels of TimeInput's bottom sheet under a finger (the shared `PickerWheel` and `WheelGroup`). | The rows and the band keep the default look's row height (`spec:AST-094` FR42); the rows off the band take the theme's secondary text colour and the band's fill its `--color-neutral`; the cylinder, perspective, magnification and column places are tuned in `picker.ts`, `wheelGeometry.stylex.ts` and `wheelColumns.ts` against the platform; right-to-left mirrors the columns; a fine pointer keeps the scrolling column. |
 
 ## Family and system relationships
 
