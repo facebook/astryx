@@ -1693,7 +1693,7 @@
   },
   "@astryx.tokenizer.create": {
     "defaultMessage": "Create \"{value}\"",
-    "description": "Label of the create row inside a Tokenizer's bottom sheet when `hasCreate` is set and the typed text matches no existing item. `{value}` is the typed text, e.g. `Create \"Marketing\"`."
+    "description": "Label of a Tokenizer's create row, in the inline menu and the bottom sheet, when `hasCreate` is set and the typed text matches no existing item. `{value}` is the typed text, e.g. `Create \"Marketing\"`."
   },
   "@astryx.tokenizer.add": {
     "defaultMessage": "Add",
