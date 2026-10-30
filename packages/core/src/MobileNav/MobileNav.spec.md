@@ -146,6 +146,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR10 | The dialog is named by `label`, else a string `header`, else `@astryx.mobileNav.navigation`; a caller `aria-labelledby` outranks all three. A string `header` renders as a level-2 heading; other header content renders as given.                                                                                                                                                                                                             | Current source and tests        |
 | FR11 | MobileNavToggle renders only while AppShell reports its mobile layout with mobile navigation enabled. It is an icon-only ghost Button named by default by `@astryx.mobileNav.toggle.open`, with a menu icon unless `children` replace it; it toggles the drawer, exposes `aria-expanded`, and its `aria-controls` carries AppShell's drawer id, which a MobileNav inside that AppShell applies to its dialog unless a caller `id` replaces it. | Current source, docs, and tests |
 | FR12 | MobileNav forwards its `ref`, `data-testid`, other DOM props, `className`, `style`, and `xstyle` to the dialog, except that its own `aria-label` (FR10) replaces a caller's (Current-state impact), a caller `onCancel` never runs (Current-state impact), and a caller `id` replaces its id (FR2).                                                                                                                                            | Current source and tests        |
+| FR13 | The Content region is a navigation landmark named like the dialog (FR10), so a person who moves by landmarks finds the drawer's links on a phone as they find SideNav's on a wide screen. Whatever fills it, SideNav items or a TopNav's drawer content, sits inside that one landmark.                                                                                                                                                        | Owner decision DEC-1            |
 
 ### Allowed variation
 
@@ -189,6 +190,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR2 — Focus return.** FR6.
 - **AR3 — Toggle wiring.** FR11's `aria-expanded` and `aria-controls`.
 - **AR4 — Zoom.** Pinch zoom stays available while the drawer is open.
+- **AR5 — Navigation landmark.** FR13.
 
 ## Design relationships
 
@@ -269,6 +271,7 @@ ownership.
 | FR11, AR3            | `MobileNavToggle.test.tsx`; `MobileNavReopen.test.tsx`                                                  | Closed, open, reopen                                                      | Broken expanded state or id link fails.                                                    | `audit:MobileNav/accessibility` |
 | AR4                  | `MobileNavPinchZoom.a11y.chromium.spec.ts`                                                              | Open drawer on a touch viewport                                           | Pinch zoom blocked fails.                                                                  | `audit:MobileNav/accessibility` |
 | FR9                  | `MobileNav.test.tsx` drawer cap test; `MobileNavWidth.a11y.chromium.spec.ts`                            | Default and wide `width` on a narrow viewport                             | A drawer wider than 85% of the viewport fails.                                             | `audit:MobileNav/behavior`      |
+| FR13                 | `MobileNav.test.tsx` landmark test with SideNav items and with TopNav drawer content                    | Drawer opened from SideNav's drawer mode and from a TopNav's drawer       | The drawer exposes no navigation landmark, an unnamed one, or two nested ones              | `audit:MobileNav/accessibility` |
 | Theming anatomy map  | `scripts/check-knowledge.mjs`; `themingTargets.test.ts`                                                 | Canonical parent anatomy and current target                               | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation. | `audit:MobileNav/theming`       |
 
 Read from source, with no focused test yet:
@@ -291,7 +294,18 @@ Read from source, with no focused test yet:
 
 ## Decision log
 
-No component-local decision is recorded.
+### DEC-1 — The drawer's links sit in a navigation landmark
+
+**Reference:** `component:MobileNav/DEC-1`
+
+**Decider:** `cixzhang`, pending owner review
+
+A phone user who moves by landmarks finds the navigation in the drawer, as a
+desktop user finds SideNav's. The drawer is a modal dialog, which is not a
+landmark, so its Content region carries the landmark and takes the dialog's
+name. One landmark covers whatever fills the drawer.
+
+Rejected: leaving the drawer without a landmark, so landmark navigation on a phone finds no navigation at all.
 
 ## Open questions
 
