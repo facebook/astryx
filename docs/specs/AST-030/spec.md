@@ -38,6 +38,7 @@ affects_consumer_docs: []
     ".github/scripts/change-scope.*",
     ".github/scripts/*routing*.test.mjs",
     ".github/scripts/pr-scope-touches.*",
+    ".github/scripts/workflow-paths.test.mjs",
     ".github/actions/heavy-caps/**",
     ".github/scripts/ci-pr-gate.*"
   ]
@@ -249,6 +250,21 @@ they are separately named.
   condition of FR3–FR4 also runs the full suite. `main`, release branches,
   merge-group entries and `release-check` dispatches always run the full suite,
   and release checks keep FR12's full scope.
+- **FR14 — Every workflow declares when it runs, as an allowlist.** Each
+  workflow in `.github/workflows` states the positive condition that makes it
+  relevant, and runs only when that condition holds. A workflow whose push or
+  pull-request trigger serves no required context lists the paths that make it
+  relevant on that trigger (`paths:`), and those paths name what the workflow
+  reads or runs, never everything; a merge-group entry, which cannot filter by
+  path, keeps running. A workflow that reports a required context (`build`,
+  `test`, `docsite-test`, `lint`, `spec-owner-approval`, `review-required`)
+  starts on every pull request and is never path-filtered: the trusted
+  classifier's positive surfaces (FR1–FR5) choose the work inside it, and a job
+  whose suite does not apply reports success without running it (FR7). A push
+  to `main`, a schedule, a manual dispatch, and review, comment, check and
+  deployment events are relevance conditions of their own. No workflow uses
+  `paths-ignore` or another exclusion list, which would run on any path no one
+  thought to exclude.
 
 - **FR16 — One author's pull requests share the heavy suites.** On a pull
   request, the heavy browser suites (the interaction proofs and the Build
@@ -309,6 +325,10 @@ classifier and join contract are complete. New surfaces may add lanes only throu
 FR10. New coverage joins its current surface owner; visual regression remains in
 the shared Storybook PR owner.
 
+Outside the classifier-routed workflows, the Internal Registry dependency check,
+the CLI smoke test and the hardening-issue opener run only when the paths they
+read change (FR14).
+
 ## Verification
 
 | Contract | Verification                                                                       | Representative states                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                                                |
@@ -322,6 +342,7 @@ the shared Storybook PR owner.
 | FR11     | surface owner, internal-job, and required-join contract tests                      | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                                                                                                                   | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                                  |
 | FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests        | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts                                                                                                       | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                                    |
 | FR13     | classifier, workflow contract, component-analysis and RTL-scope tests              | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build                                                                                             | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed                     |
+| FR14     | `workflow-paths.test.mjs` over every workflow                                      | path allowlist; required-context workflow                                                                                                                                                          | a `paths-ignore`, a match-all or exclusion glob, or a path filter on a workflow that reports a required context fails                                                                          |
 | FR16     | `heavy-caps-action.test.mjs` cap cases and heavy-job contract                      | fourth-oldest PR; thirteenth heavy run of the day, beside cancelled, light and other-branch runs; agent lane and its five-PR and forty-run backstops; bot; the deciding run; re-run; failed lookup | a heavy suite that runs ahead of the author's three oldest PRs, or past the daily cap, a capped job that passes, or a re-run that is held fails                                                |
 | FR17     | `ci-pr-gate.test.mjs` over every `pull_request` workflow and the shared conditions | branch here, fork with and without `ci:run`, another label, draft with the label, ready, push, merge group, dispatch                                                                               | a job that can start on a pull request without the condition, a label trigger, a required job that skips for a pull request that may not run CI, or a draft or unlabelled fork that runs fails |
 
@@ -463,6 +484,22 @@ request runs the visual, accessibility and RTL owners only with the
 
 Rejected: a full run triggered by approval, a label or a draft-to-ready change,
 which tests the pull request's head rather than the merged result.
+
+### DEC-8 — A workflow states what makes it run, never what does not
+
+**Reference:** `spec:AST-030/DEC-8`
+**Decider:** `cixzhang`, `2026-10-28`
+
+Every workflow names the positive condition that makes it relevant: the paths it
+reads or runs, the classifier surfaces inside a required context, or the event
+it answers. An exclusion list (`paths-ignore`) runs on every new directory,
+package or root file no one remembered to exclude, so unrelated changes keep
+paying for it; an allowlist misses only what its owner did not name. Required
+contexts stay unfiltered so a pull request never waits on a check that never
+starts.
+
+Rejected: `paths-ignore` lists (they run on whatever is new); path-filtering a
+required context (its check would never report).
 
 ## Open questions
 
