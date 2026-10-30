@@ -88,6 +88,7 @@ import {composeEventHandlers, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
 // Re-export status types for convenience
 export type {
@@ -756,6 +757,7 @@ export function Tokenizer<T extends SearchableItem>({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TokenizerWithPresentationProps<T>): React.JSX.Element {
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
     containerXstyle,
     containerClassName,
@@ -1397,6 +1399,10 @@ export function Tokenizer<T extends SearchableItem>({
                 .join(' ') || undefined
             }
             onChangeQuery={onChangeQuery}
+            // The resolved required state reaches the combobox, also when a
+            // FormLayout default hides the visible marker (component:FormLayout
+            // FR5, AR2).
+            aria-required={isEffectivelyRequired || undefined}
             __queryEntries={createEntries}
             debounceMs={debounceMs}
             onKeyDown={handleKeyDown}

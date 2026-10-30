@@ -28,6 +28,7 @@ import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import type * as TokenModule from '../Token';
+import {FormLayout} from '../FormLayout/FormLayout';
 
 // Every Token render, in order, by label.
 //
@@ -1522,6 +1523,41 @@ describe('Tokenizer', () => {
       expect(form.querySelector('input[type="hidden"]')).toBeNull();
       expect(form.checkValidity()).toBe(true);
     });
+  });
+});
+
+describe('Tokenizer required state (FormLayout FR5, AR2)', () => {
+  it('exposes the resolved required state on the combobox', () => {
+    const field = (props: {
+      isRequired?: boolean;
+      isOptional?: boolean;
+      label: string;
+    }) => (
+      <Tokenizer
+        {...props}
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />
+    );
+    render(
+      <>
+        {field({label: 'Plain'})}
+        {field({label: 'Explicit', isRequired: true})}
+        <FormLayout defaultOptionality="required">
+          {field({label: 'By default'})}
+          {field({label: 'Opted out', isOptional: true})}
+        </FormLayout>
+      </>,
+    );
+    const required = (name: string) =>
+      screen
+        .getByRole('combobox', {name: new RegExp(`^${name}`)})
+        .getAttribute('aria-required');
+    expect(required('Plain')).toBeNull();
+    expect(required('Explicit')).toBe('true');
+    expect(required('By default')).toBe('true');
+    expect(required('Opted out')).toBeNull();
   });
 });
 

@@ -75,6 +75,7 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -418,6 +419,7 @@ export function Typeahead<T extends SearchableItem>({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TypeaheadProps<T>) {
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
     containerXstyle,
     containerClassName,
@@ -685,6 +687,10 @@ export function Typeahead<T extends SearchableItem>({
                     .join(' ') || undefined
                 }
                 ariaLabelledBy={ariaLabelledBy}
+                // The resolved required state reaches the combobox, also when a
+                // FormLayout default hides the visible marker (component:FormLayout
+                // FR5, AR2).
+                aria-required={isEffectivelyRequired || undefined}
                 onChangeQuery={onChangeQuery}
                 onOpenChange={onOpenChange}
                 debounceMs={debounceMs}

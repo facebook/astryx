@@ -31,6 +31,7 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react';
+import {FormLayout} from '../FormLayout/FormLayout';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -691,6 +692,41 @@ describe('Typeahead', () => {
       />,
     );
     expect(screen.getByText(/Required/)).toBeInTheDocument();
+  });
+
+  it('exposes the resolved required state on the combobox (FormLayout FR5, AR2)', () => {
+    const field = (props: {
+      isRequired?: boolean;
+      isOptional?: boolean;
+      label: string;
+    }) => (
+      <Typeahead
+        {...props}
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />
+    );
+    render(
+      <>
+        {field({label: 'Plain'})}
+        {field({label: 'Explicit', isRequired: true})}
+        <FormLayout defaultOptionality="required">
+          {field({label: 'By default'})}
+          {field({label: 'Opted out', isOptional: true})}
+        </FormLayout>
+      </>,
+    );
+    const required = (name: string) =>
+      screen
+        .getByRole('combobox', {name: new RegExp(`^${name}`)})
+        .getAttribute('aria-required');
+    expect(required('Plain')).toBeNull();
+    expect(required('Explicit')).toBe('true');
+    // The form default hides the visible marker, so assistive technology
+    // must still hear the field as required.
+    expect(required('By default')).toBe('true');
+    expect(required('Opted out')).toBeNull();
   });
 
   it('renders error status message', () => {
