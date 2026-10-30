@@ -116,6 +116,24 @@ function ContextHostingHarness({
   );
 }
 
+function EagerContextHostingHarness({
+  layerStyle,
+}: {
+  layerStyle?: React.CSSProperties;
+}) {
+  const layer = useLayer({mode: 'context'});
+  return (
+    <div data-testid="host">
+      <p>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          Trigger
+        </button>
+        {layer.render(<span>Layer content</span>, {style: layerStyle})}
+      </p>
+    </div>
+  );
+}
+
 function RelocatingContextHostingHarness({unsafe}: {unsafe: boolean}) {
   const layer = useLayer({mode: 'context'});
   const renderedLayer = layer.render(<span>Layer content</span>);
@@ -660,6 +678,95 @@ describe('useLayer', () => {
           writingMode: 'vertical-rl',
         });
         expect(showSpy).toHaveBeenCalledWith({source: trigger});
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it('reads no computed style for a closed layer mounted ahead of its first show', () => {
+      const getComputedStyleSpy = vi.spyOn(window, 'getComputedStyle');
+      try {
+        const {container} = render(<EagerContextHostingHarness />);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        // Mounted closed, outside the unsafe paragraph, with no style read.
+        expect(layer.parentElement).toBe(
+          container.querySelector('[data-testid="host"]'),
+        );
+        expect(getComputedStyleSpy).not.toHaveBeenCalled();
+        expect(layer.style.direction).toBe('');
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it("applies a closed layer's deferred writing context before it opens", async () => {
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element =>
+          mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            // The marker sits in a right-to-left, vertical paragraph; the
+            // corrective host does not.
+            direction:
+              element.tagName.toLowerCase() === 'template' ? 'rtl' : 'ltr',
+            writingMode:
+              element.tagName.toLowerCase() === 'template'
+                ? 'vertical-rl'
+                : 'horizontal-tb',
+          }),
+        );
+      const atShow: {direction: string; writingMode: string}[] = [];
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        atShow.push({
+          direction: this.style.direction,
+          writingMode: this.style.writingMode,
+        });
+      });
+      const user = userEvent.setup();
+      try {
+        const {container, getByRole} = render(<EagerContextHostingHarness />);
+        expect(getComputedStyleSpy).not.toHaveBeenCalled();
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        // Present when the popover opened, and kept by the render after it.
+        expect(atShow).toEqual([
+          {direction: 'rtl', writingMode: 'vertical-rl'},
+        ]);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('rtl');
+        expect(layer.style.writingMode).toBe('vertical-rl');
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it("keeps the caller's own direction over a deferred writing context", async () => {
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element =>
+          mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            direction:
+              element.tagName.toLowerCase() === 'template' ? 'rtl' : 'ltr',
+            writingMode: 'horizontal-tb',
+          }),
+        );
+      const atShow: string[] = [];
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        atShow.push(this.style.direction);
+      });
+      const user = userEvent.setup();
+      try {
+        const {container, getByRole} = render(
+          <EagerContextHostingHarness layerStyle={{direction: 'ltr'}} />,
+        );
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        expect(atShow).toEqual(['ltr']);
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('ltr');
       } finally {
         getComputedStyleSpy.mockRestore();
       }

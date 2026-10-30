@@ -17,6 +17,8 @@
  *   fixed time, independent of frame timing, so a curve can be compared with
  *   the UIKit reference to a fraction of a pixel. A paused animation's effect
  *   is applied at its current time and `getComputedStyle` reads it.
+ *
+ * SYNC: Keep ./storyboard.ts using these for its animation filmstrips.
  */
 
 import type {Locator, Page} from '@playwright/test';
@@ -39,7 +41,14 @@ function animationRecorder(): void {
   if (w.__harnessAnimations) {
     return;
   }
-  const frame = window.requestAnimationFrame.bind(window);
+  // The page's real frames, even when a timer gate already holds its callbacks.
+  const frame = (
+    (
+      window as unknown as {
+        __harnessTimerGate?: {frame: typeof requestAnimationFrame};
+      }
+    ).__harnessTimerGate?.frame ?? window.requestAnimationFrame
+  ).bind(window);
   const seen = new WeakSet<Animation>();
   const log: {
     animation: Animation;
@@ -891,6 +900,8 @@ export async function waitForAnimation(
       evaluateTimeout =>
         locator.evaluate(
           (element, {minProgress, since: watchedFrom}) => {
+            // The harness's own read: a trace sets it apart (trace.ts HARNESS_READ).
+            console.timeStamp('harness-read');
             const w = window as unknown as {
               __harnessCurveEnd: (a: Animation) => number;
               __harnessAnimations: {
@@ -1148,7 +1159,13 @@ export async function waitForRest(
                 backdrop,
               ].join(' | ');
             };
-            const frame = requestAnimationFrame;
+            // The page's real frames, even while a timer gate holds its callbacks.
+            const frame =
+              (
+                window as unknown as {
+                  __harnessTimerGate?: {frame: typeof requestAnimationFrame};
+                }
+              ).__harnessTimerGate?.frame ?? requestAnimationFrame;
             let last = read();
             let still = 0;
             const tick = () => {
