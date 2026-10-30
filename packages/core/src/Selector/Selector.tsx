@@ -92,10 +92,11 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   FOCUS_OWNER_ATTRIBUTE,
-  focusOutlineStyles,
-} from '../utils/focusOutline.stylex';
+  focusOwnerStyles,
+} from '../internal/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
@@ -1993,7 +1994,7 @@ export function Selector<T extends SelectorOptionType>(
             // Rings for the trigger button only; the clear and status
             // buttons ring themselves (`architecture:interaction-modality`
             // INV3).
-            variant !== 'input' && focusOutlineStyles.focusWithinOwner,
+            variant !== 'input' && focusOwnerStyles.focusWithinOwner,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,

@@ -47,8 +47,8 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {
   FOCUS_OWNER_ATTRIBUTE,
-  focusOutlineProps,
-} from '../utils/focusOutline.stylex';
+  focusWithinOwnerProps,
+} from '../internal/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
@@ -486,7 +486,7 @@ export function Thumbnail({
         {...mergeProps(
           // Rings for the Open button only; the remove button rings itself
           // (`architecture:interaction-modality` INV3).
-          focusOutlineProps.focusWithinOwner(
+          focusWithinOwnerProps(
             styles.imageContainer,
             isInteractive && styles.interactive,
             isInteractive && styles.overlay,
