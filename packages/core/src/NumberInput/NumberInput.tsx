@@ -54,7 +54,7 @@ import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {joinAriaIDs} from '../utils/inputAria';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useStepperTouch} from './NumberInputTouch';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -158,6 +158,12 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
+    // No touch-action, selection or touch-target style of its own: where the
+    // primary pointer is coarse the gesture host gives the column's kept press
+    // `touch-action: manipulation` (`spec:AST-094` FR18) and its selection
+    // lock (FR41); a fine pointer keeps the browser's defaults (FR19). Each
+    // half keeps its own size: the theme's touch target is not for spin
+    // buttons.
   },
   numberStepperButton: {
     boxSizing: 'border-box',
@@ -225,6 +231,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
 import {formatEditableNumber} from './numberParser';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
@@ -523,6 +530,15 @@ function getSteppedValue({
   return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
+/** Whether the primary pointer is coarse (a phone, a tablet). */
+function isCoarsePrimaryPointer(view: Window | null): boolean {
+  return (
+    view != null &&
+    typeof view.matchMedia === 'function' &&
+    view.matchMedia(TOUCH_QUERY).matches
+  );
+}
+
 /**
  * A number input component for collecting numeric user input.
  * Commits text edits on blur or Enter and only calls onChange when the whole
@@ -586,7 +602,6 @@ export function NumberInput({
     containerClassName,
     containerStyle,
   });
-  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -607,6 +622,9 @@ export function NumberInput({
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  // The value a stepper press has stepped to, shown while the press lasts;
+  // the press commits it once, at its release (NumberInputTouch.tsx).
+  const [pressValue, setPressValue] = useState<number | null>(null);
 
   // Disabled-reason tooltip. The tooltip listeners attach to the input container (which already exists) and
   // the input stays perceivable via aria-disabled instead of the native
@@ -676,6 +694,11 @@ export function NumberInput({
   // Preserve pending text while editing. Otherwise show the formatted value
   // at rest and the raw numeric value while focused so it remains editable.
   const displayValue = useMemo(() => {
+    if (pressValue !== null) {
+      return isFocused
+        ? formatEditableNumber(pressValue, locale)
+        : (formatValue?.(pressValue) ?? String(pressValue));
+    }
     if (pendingInput !== null) {
       return pendingInput;
     }
@@ -683,7 +706,15 @@ export function NumberInput({
       return '';
     }
     return isFocused ? formatEditableNumber(value, locale) : formattedValue;
-  }, [formattedValue, isFocused, locale, pendingInput, value]);
+  }, [
+    formatValue,
+    formattedValue,
+    isFocused,
+    locale,
+    pendingInput,
+    pressValue,
+    value,
+  ]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -892,8 +923,152 @@ export function NumberInput({
     [ref, wheelListenerRef],
   );
 
-  const canIncrement = getNextValue(1) !== valueForStepping;
-  const canDecrement = getNextValue(-1) !== valueForStepping;
+  // One step from any value, for a press that steps from its own value.
+  const stepFrom = useCallback(
+    (current: number | null, direction: StepDirection) =>
+      getSteppedValue({
+        currentValue: current,
+        direction,
+        min,
+        max,
+        step,
+        isIntegerOnly,
+      }),
+    [isIntegerOnly, max, min, step],
+  );
+  // The bounds follow the value on show, a press's while it lasts.
+  const shownValue = pressValue ?? valueForStepping;
+  const canIncrement = stepFrom(shownValue, 1) !== shownValue;
+  const canDecrement = stepFrom(shownValue, -1) !== shownValue;
+
+  // Commits a stepper press's final value, once, at its release.
+  const commitValue = useCallback(
+    (next: number) => {
+      if (isDisabled || isReadOnly) {
+        return;
+      }
+      setPendingInput(null);
+      if (next !== value) {
+        onChange(next);
+      }
+    },
+    [isDisabled, isReadOnly, onChange, value],
+  );
+
+  // The kind of pointer that pressed a stepper, read when its click lands.
+  const stepperPointerTypeRef = useRef<string | null>(null);
+
+  const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    // The steppers never take focus: an editing field stays focused. The
+    // pointerdown itself is canceled, not only the mousedown below: Chrome on
+    // Android focuses a held stepper at its long press unless the touch's
+    // pointerdown is canceled (measured), and that would blur an editing
+    // field. WebKit's Linux build then sends no click after a tap, unlike
+    // iOS Safari and Chrome (measured); it is outside `spec:AST-013`'s
+    // support.
+    event.preventDefault();
+    stepperPointerTypeRef.current = event.pointerType;
+    stepperTouch.pointer.onPointerDown(event);
+  };
+
+  // iOS Safari follows the second tap of a quick double tap with a
+  // compatibility mousedown even though its pointerdown was prevented; that
+  // mousedown's default would focus the stepper and blur an editing field, so
+  // the column prevents it.
+  const handleStepperMouseDown = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+  };
+
+  // Where a stepper press leaves focus (`component:NumberInput` FR5). A mouse
+  // click moves focus to the field, so the arrow keys and the wheel keep
+  // stepping, and so do a pen and an activation with no pointer (a screen
+  // reader's) where the primary pointer is fine. A finger, and a pen or an
+  // activation with no pointer where the primary pointer is coarse, step the
+  // value without moving focus: there, focusing the field would bring up the
+  // on-screen keyboard, which a stepper never does.
+  const focusAfterPress = (
+    pointerType: string | null,
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
+    const isMouseClick = pointerType === 'mouse' && event.detail > 0;
+    const isFinePointer = !isCoarsePrimaryPointer(
+      event.currentTarget.ownerDocument.defaultView,
+    );
+    if (
+      isMouseClick ||
+      (isFinePointer && (pointerType === 'pen' || pointerType == null))
+    ) {
+      inputRef.current?.focus();
+    }
+  };
+
+  const pressStepper = (
+    direction: StepDirection,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    // Every click answers the press layer: the click after a tracked tap
+    // steps the half the press lifted on (spec:AST-094 FR11), the click after
+    // a press that stepped while held steps nothing, and any other click
+    // steps its own half.
+    const click = stepperTouch.takeClick(event.nativeEvent);
+    // An aria-disabled stepper does nothing, as a natively disabled one did
+    // (spec:AST-085 FR2).
+    if (
+      isDisabled ||
+      isReadOnly ||
+      (direction === 1 ? !canIncrement : !canDecrement)
+    ) {
+      return;
+    }
+    focusAfterPress(pointerType, event);
+    if (click === 'none') {
+      return;
+    }
+    stepValue(click === 'own' ? direction : click === 'increment' ? 1 : -1);
+  };
+
+  // A click on the column itself, not on a half (its border), steps the half
+  // the tap it follows lifted on (spec:AST-094 FR11), and nothing otherwise.
+  // It never reaches the field's click-to-focus; a press there leaves focus
+  // as one on a half does (focusAfterPress). Only a pointer presses the
+  // column itself, so a click no pointer sent moves no focus there.
+  const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.stopPropagation();
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    if (pointerType != null) {
+      focusAfterPress(pointerType, event);
+    }
+    const click = stepperTouch.takeClick(event.nativeEvent);
+    if (click === 'increment' || click === 'decrement') {
+      stepValue(click === 'increment' ? 1 : -1);
+    }
+  };
+
+  // A press on the steppers by any pointer is tracked by the press layer
+  // (NumberInputTouch.tsx); a key or assistive technology steps by the click.
+  const incrementRef = useRef<HTMLButtonElement | null>(null);
+  const decrementRef = useRef<HTMLButtonElement | null>(null);
+  const stepperColumnRef = useRef<HTMLDivElement | null>(null);
+  const stepperTouch = useStepperTouch(
+    {
+      valueForStepping,
+      stepFrom,
+      showPressValue: setPressValue,
+      commitValue,
+      isDisabled,
+      isReadOnly,
+      hasSteppers: hasNumberSteppers,
+    },
+    incrementRef,
+    decrementRef,
+    stepperColumnRef,
+  );
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -1034,25 +1209,24 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div {...stylex.props(styles.numberSteppers)}>
+        <div
+          ref={stepperColumnRef}
+          onPointerDown={handleStepperPointerDown}
+          onMouseDown={handleStepperMouseDown}
+          onPointerMove={stepperTouch.pointer.onPointerMove}
+          onPointerUp={stepperTouch.pointer.onPointerUp}
+          onPointerCancel={stepperTouch.pointer.onPointerCancel}
+          onClick={handleColumnClick}
+          {...stylex.props(styles.numberSteppers)}>
           <button
+            ref={incrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canIncrement || undefined
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canIncrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(1);
-            }}
+            onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
@@ -1067,23 +1241,14 @@ export function NumberInput({
             />
           </button>
           <button
+            ref={decrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canDecrement || undefined
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canDecrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(-1);
-            }}
+            onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,

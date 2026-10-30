@@ -4,7 +4,7 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item
+ * @input Uses React use, useId, useRef, RadioListContext, Item, useTouchHitArea
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -28,9 +28,13 @@ import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useTouchHitArea} from '../utils/touchHitArea';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -148,6 +152,10 @@ const rowStyles = stylex.create({
     // strength still lands on the row, which is where the layer over the
     // circle reads it.
     backgroundImage: 'none',
+    // ...and the row's touch press layer (Item's `cell`): no box.
+    '::before': {
+      content: 'none',
+    },
   },
   // The mouse press (a finger's lives on `data-astryx-press`): the row is
   // pressed, but not through a nested link or button, which keep their own
@@ -273,6 +281,14 @@ export function RadioListItem({
   const labelID = useId();
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
+  // Under a finger an option's target reaches the touch target through an
+  // invisible hit area that stops at half the gap to each neighbour, and the
+  // row keeps its size (spec:AST-094 FR42). A tap on the area lands on the
+  // row, which hands it to the radio.
+  const hasHitArea = !isDisabled;
+  const rowRef = useRef<HTMLElement | null>(null);
+  const mergedRowRef = useMergedRefs(ref, rowRef);
+  useTouchHitArea(rowRef, hasHitArea);
   // When the whole group is disabled with a disabledMessage, radios stay
   // focusable via aria-disabled (instead of native `disabled`) so the group's
   // reason tooltip is keyboard-discoverable. Per-item disabling is unaffected
@@ -372,7 +388,7 @@ export function RadioListItem({
 
   return (
     <Item
-      ref={ref}
+      ref={mergedRowRef}
       {...(isDisabled ? undefined : pressable)}
       startContent={mediaContent}
       // Delegate row-surface clicks (label text, description, and the empty
@@ -395,12 +411,18 @@ export function RadioListItem({
           // the painting row element (Item), the same element that carries the
           // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
+          // The row owns the strength the circle's layer reads, and its
+          // release (Item's touch layer drops the row's own under a finger:
+          // this row has no layer of its own, so it keeps the release).
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
           // Restore the bare default look: zero Item's padding/radius and its
           // interactive hover/press background. Applied after Item's own base
           // styles so it wins within the base layer; a `radio-list-item` theme
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
           !isDisabled && rowStyles.press,
+          // Item's row is positioned, so it holds the layer.
+          hasHitArea && touchHitAreaStyles.layer,
           xstyle,
         ] as StyleXStyles
       }
