@@ -783,6 +783,28 @@ describe('TextInput', () => {
       ).toBeInTheDocument();
     });
 
+    it('keeps the clear button after the busy Spinner, so it does not move when busy toggles (#8960)', () => {
+      const field = (isLoading: boolean) => (
+        <TextInput
+          label="Name"
+          value="hello"
+          onChange={() => {}}
+          hasClear
+          isLoading={isLoading}
+        />
+      );
+      const {container, rerender} = render(field(false));
+      const endControls = () =>
+        [...container.querySelectorAll('.astryx-spinner, button')].map(
+          element => (element.matches('button') ? 'clear' : 'spinner'),
+        );
+      expect(endControls()).toEqual(['clear']);
+      rerender(field(true));
+      // The Spinner joins ahead of the clear button, which stays last in the
+      // end lane, where it was.
+      expect(endControls()).toEqual(['spinner', 'clear']);
+    });
+
     it('does not show clear button when value is empty', () => {
       render(<TextInput label="Name" value="" onChange={() => {}} hasClear />);
       expect(

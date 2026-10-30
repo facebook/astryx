@@ -537,13 +537,16 @@ export function TextInput({
         aria-labelledby={inputLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
+      {/* The Spinner comes before the clear button, as in Typeahead and
+          Tokenizer, so the clear button keeps its place when busy toggles
+          (family:input-fields inline size; #8960). */}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && value !== '' && !isDisabled && !isReadOnly && (
         <InputClearButton
           label={t('@astryx.textInput.clearLabel', {label})}
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {statusIcon}
     </div>
   );
