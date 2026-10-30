@@ -475,11 +475,19 @@ export function FileInput({
   id: idProp,
   ...restProps
 }: FileInputProps) {
-  const {rest, container} = useFieldInputStyling('FileInput', restProps, {
-    containerXstyle,
-    containerClassName,
-    containerStyle,
-  });
+  const {rest: styledRest, container} = useFieldInputStyling(
+    'FileInput',
+    restProps,
+    {
+      containerXstyle,
+      containerClassName,
+      containerStyle,
+    },
+  );
+  // The trigger is the field's focusable control, so a caller's description
+  // goes there with FileInput's own, not on the aria-hidden native input
+  // (`family:input-fields` FR10.1).
+  const {'aria-describedby': callerDescribedBy, ...rest} = styledRest;
   const t = useTranslator();
   const generatedID = useId();
   const id = idProp ?? generatedID;
@@ -548,6 +556,7 @@ export function FileInput({
 
   const ariaDescribedBy =
     [
+      callerDescribedBy,
       description ? descriptionID : null,
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       // The tooltip variant renders no message box; describe the input by the

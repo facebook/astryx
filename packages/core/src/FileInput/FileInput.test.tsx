@@ -219,6 +219,28 @@ describe('FileInput', () => {
     expect(trigger).toHaveAccessibleDescription(/Required/);
   });
 
+  it("puts a caller's aria-describedby on the trigger with its own description (input-fields FR10.1)", () => {
+    render(
+      <>
+        <p id="hint">PDF only, up to 10 MB</p>
+        <FileInput
+          label="Report"
+          description="One file"
+          aria-describedby="hint"
+          isRequired
+          value={null}
+          onChange={() => {}}
+        />
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Report'});
+    expect(trigger).toHaveAccessibleDescription(/PDF only, up to 10 MB/);
+    expect(trigger).toHaveAccessibleDescription(/One file/);
+    expect(trigger).toHaveAccessibleDescription(/Required/);
+    const native = document.querySelector('input[type="file"]');
+    expect(native).not.toHaveAttribute('aria-describedby');
+  });
+
   it('places aria-describedby on the focusable button, not the hidden input (forms-6)', () => {
     render(
       <FileInput
