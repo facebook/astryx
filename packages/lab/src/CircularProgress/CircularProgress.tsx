@@ -4,7 +4,8 @@
 
 /**
  * @file CircularProgress.tsx
- * @input Uses React, useId, stylex, SVG, color/spacing/duration/ease tokens
+ * @input Uses React (useId, refs, layout effects), stylex, SVG, Web
+ *   Animations, color/spacing/duration/ease tokens
  * @output Exports CircularProgress component, CircularProgressProps, CircularProgressSize, CircularProgressVariant types
  * @position Core implementation; consumed by index.ts
  *
@@ -15,7 +16,7 @@
  * - /apps/storybook/stories/CircularProgress.stories.tsx (storybook stories)
  */
 
-import {useId, type ReactNode} from 'react';
+import {useId, useLayoutEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -54,6 +55,9 @@ export interface CircularProgressVariantMap {
 export type CircularProgressVariant = keyof CircularProgressVariantMap;
 
 export type CircularProgressSize = 'sm' | 'md' | 'lg';
+
+/** How far a turning layer's drawing reaches past the ring's box, in px. */
+const FILL_BLEED = 2;
 
 const SIZE_CONFIG = {
   sm: {diameter: 32, strokeWidth: 3},
@@ -138,26 +142,82 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
 // Indeterminate animation
 // =============================================================================
 
-const indeterminateRotation = stylex.keyframes({
+/**
+ * The indeterminate arc's cycle, as the stroked circle drew it with a dash
+ * pattern: a dash 2 units long grows to 175 and back while its start moves
+ * on by 68 units over the first half and by the rest of the 302-unit
+ * pattern over the second, each half eased in and out. Here a unit is a
+ * 302nd of a turn, so every cycle ends exactly where it started.
+ */
+// Exported for its unit test (the barrel exports the component alone).
+export const INDETERMINATE = {
+  pattern: 302,
+  shortest: 2,
+  longest: 175,
+  midway: 68,
+};
+
+// The cycle as static keyframes, so the ring turns before hydration and
+// without script. Each half of the cycle eases in and out, and the arc's
+// start and length are affine in that eased progress, so every layer's turn
+// is exact with a few keyframes: the halves' segments are pieces of the same
+// curve, split where the arc crosses half a turn (37.0564% rising, 62.9436%
+// falling), and the left half shows only past that crossing (two keyframes a
+// hundredth of a percent apart, since WebKit runs no `steps()` animation on
+// the compositor). Unit tests rebuild them from INDETERMINATE.
+const indeterminateSpinFrames = stylex.keyframes({
   '0%': {transform: 'rotate(0deg)'},
   '100%': {transform: 'rotate(360deg)'},
 });
-
-// SVG dash percentages scale with the square viewport. A 300% gap exceeds every
-// ring circumference; shifting the 2% + 300% pattern by 302% closes the loop.
-const indeterminateDash = stylex.keyframes({
+const indeterminateTailFrames = stylex.keyframes({
   '0%': {
-    strokeDasharray: '2%, 300%',
-    strokeDashoffset: '0%',
+    transform: 'rotate(0deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
   },
   '50%': {
-    strokeDasharray: '175%, 300%',
-    strokeDashoffset: '-68%',
+    transform: 'rotate(81.0596deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
   },
-  '100%': {
-    strokeDasharray: '2%, 300%',
-    strokeDashoffset: '-302%',
+  '100%': {transform: 'rotate(360deg)'},
+});
+const indeterminateCapFrames = stylex.keyframes({
+  '0%': {
+    transform: 'rotate(2.3841deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
   },
+  '50%': {
+    transform: 'rotate(208.6093deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  },
+  '100%': {transform: 'rotate(2.3841deg)'},
+});
+const indeterminateRightFrames = stylex.keyframes({
+  '0%': {
+    transform: 'rotate(2.3841deg)',
+    animationTimingFunction: 'cubic-bezier(0.434, 0, 0.6623, 0.6811)',
+  },
+  '37.0564%': {transform: 'rotate(180deg)'},
+  '62.9436%': {
+    transform: 'rotate(180deg)',
+    animationTimingFunction: 'cubic-bezier(0.3377, 0.3189, 0.566, 1)',
+  },
+  '100%': {transform: 'rotate(2.3841deg)'},
+});
+const indeterminateLeftFrames = stylex.keyframes({
+  '0%': {transform: 'rotate(180deg)', opacity: 0},
+  '37.0564%': {
+    transform: 'rotate(180deg)',
+    opacity: 0,
+    animationTimingFunction: 'cubic-bezier(0.2955, 0.605, 0.6202, 1)',
+  },
+  '37.0664%': {opacity: 1},
+  '50%': {
+    transform: 'rotate(208.6093deg)',
+    animationTimingFunction: 'cubic-bezier(0.3798, 0, 0.7045, 0.395)',
+  },
+  '62.9436%': {transform: 'rotate(180deg)', opacity: 1},
+  '62.9536%': {opacity: 0},
+  '100%': {transform: 'rotate(180deg)', opacity: 0},
 });
 
 // =============================================================================
@@ -180,38 +240,136 @@ const styles = stylex.create({
     display: 'block',
     transform: 'rotate(-90deg)',
   },
-  svgIndeterminate: {
-    display: 'block',
-    animationName: indeterminateRotation,
-    animationDuration: {
-      default: '2s',
-      '@media (prefers-reduced-motion: reduce)': '4s',
-    },
-    animationTimingFunction: 'linear',
-    animationIterationCount: 'infinite',
-  },
   track: {
     fill: 'none',
     stroke: colorVars['--color-track'],
   },
+  // The determinate fill moves on the compositor so a value change keeps
+  // moving while a script runs (a `stroke-dashoffset` transition repaints on
+  // the main thread every frame and stops). Two half-rings, each a static
+  // half-circle stroke in a layer turned by `transform` and clipped to its
+  // half of the box, draw the arc: the right half turns from 0 to 180deg over
+  // the first half of the value, the left half over the second. Two round
+  // caps close the arc's ends: one fixed at 12 o'clock, one turning with the
+  // value. The ring is drawn clockwise in either direction, as before.
+  //
+  // The theme's duration and easing still time a change: they are declared
+  // here and read back when the value changes (`transition-property: none`,
+  // so nothing transitions on its own). Under reduced motion the duration is
+  // 0 s, so a new value shows at once.
   fill: {
-    fill: 'none',
-    strokeLinecap: 'round',
-    transitionProperty: 'stroke-dashoffset',
-    transitionDuration: durationVars['--duration-medium'],
+    position: 'absolute',
+    inset: 0,
+    // Clip to the ring's box, as the stroked circle's svg did.
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    transitionProperty: 'none',
+    // Under reduced motion a new value shows at once, on every pointer (a Lab
+    // component sits outside design:reduced-motion's scope, which covers
+    // core); the keys are the shared reduced-motion queries, a fine pointer's
+    // and a coarse pointer's.
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  fillIndeterminate: {
+  fillHalf: {
+    position: 'absolute',
+    top: 0,
+    width: '50%',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  fillHalfRight: {
+    left: '50%',
+  },
+  fillHalfLeft: {
+    left: 0,
+  },
+  // A layer the size of the ring inside its half, so it turns about the
+  // ring's center.
+  fillTurn: {
+    position: 'absolute',
+    top: 0,
+    width: '200%',
+    height: '100%',
+    willChange: 'transform, opacity',
+  },
+  fillTurnRight: {
+    left: '-100%',
+  },
+  fillTurnLeft: {
+    left: 0,
+  },
+  // In the indeterminate arc the halves turn with the arc's start, so the
+  // line between them (the turned arc's 6 o'clock) falls across pixels: both
+  // clips antialiased it, and together they left a light hairline across the
+  // arc whenever it was longer than half. Here the left half reaches half a
+  // pixel past that line, over the right half's drawing, which covers it;
+  // its turning layer keeps the ring's size, so it still turns about the
+  // ring's center. (While the arc is shorter than half the left half is
+  // hidden, so the extra half pixel never shows.)
+  fillHalfLeftJoint: {
+    width: 'calc(50% + 0.5px)',
+  },
+  fillTurnLeftJoint: {
+    width: 'calc((100% - 0.5px) * 2)',
+  },
+  fillCap: {
+    position: 'absolute',
+    inset: 0,
+    willChange: 'transform, opacity',
+  },
+  // A turning layer's drawing reaches a little past the ring's box, so its
+  // antialiased outer edge is drawn whole before the layer turns (the box,
+  // not the drawing, then clips it).
+  fillShape: {
+    display: 'block',
+    fill: 'none',
+    margin: -FILL_BLEED,
+  },
+  fillCapShape: {
+    display: 'block',
     fill: 'none',
     strokeLinecap: 'round',
-    animationName: indeterminateDash,
+  },
+  // The indeterminate arc turns with CSS animations on the compositor: the
+  // whole arc spins once per `animationDuration` here...
+  // Under reduced motion both clocks run at half speed on every pointer: a
+  // continuous indicator sits outside design:reduced-motion's scope, so this
+  // keeps the ring's slower reduced-motion clocks, keyed on the two shared
+  // reduced-motion queries, a fine pointer's and a coarse pointer's.
+  indeterminateSpin: {
+    animationName: indeterminateSpinFrames,
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
+    animationDuration: {
+      default: '2s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '4s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '4s',
+    },
+  },
+  // ...while its start (this layer) and the halves and leading cap inside it
+  // run one breathing cycle per `animationDuration` here. Each keyframe sets
+  // its own segment's easing; between them the clock is linear.
+  indeterminateCycle: {
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
     animationDuration: {
       default: '1.5s',
-      '@media (prefers-reduced-motion: reduce)': '3s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '3s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '3s',
     },
-    animationTimingFunction: 'ease-in-out',
-    animationIterationCount: 'infinite',
   },
+  indeterminateTail: {animationName: indeterminateTailFrames},
+  indeterminateRight: {animationName: indeterminateRightFrames},
+  indeterminateLeft: {animationName: indeterminateLeftFrames},
+  indeterminateCap: {animationName: indeterminateCapFrames},
   children: {
     position: 'absolute',
     inset: 0,
@@ -300,6 +458,133 @@ function defaultFormatValueLabel(value: number, max: number): string {
 }
 
 /**
+ * Each half-ring's turn and the leading cap's for a filled share `p` (0–1),
+ * and which parts show. A half-ring parked at the edge of its half (the right
+ * one at 0, the left one until the value passes half) is hidden, so its
+ * antialiased end never leaves a hairline at 6 o'clock.
+ */
+function fillTurns(p: number) {
+  const turn = 360 * p;
+  return {
+    right: Math.min(Math.max(turn, 0), 180),
+    left: Math.min(Math.max(turn, 180), 360),
+    cap: turn,
+    rightShown: p > 0 ? 1 : 0,
+    leftShown: p > 0.5 ? 1 : 0,
+    caps: p > 0 ? 1 : 0,
+  };
+}
+
+/** A CSS time (`410ms`, `0.41s`, or a list's first entry) in milliseconds. */
+function parseTime(value: string): number {
+  const first = value.split(',')[0]?.trim() ?? '';
+  const amount = Number.parseFloat(first);
+  if (!Number.isFinite(amount)) {
+    return 0;
+  }
+  return first.endsWith('ms') ? amount : amount * 1000;
+}
+
+/**
+ * The theme's easing as a function of time (0–1), evaluated by the browser
+ * itself through a detached animation, so any CSS easing works.
+ */
+function easingOf(easing: string): (t: number) => number {
+  try {
+    const effect = new KeyframeEffect(null, null, {
+      duration: 1000,
+      easing,
+      fill: 'both',
+    });
+    const probe = new Animation(effect);
+    return t => {
+      probe.currentTime = t * 1000;
+      return effect.getComputedTiming().progress ?? t;
+    };
+  } catch {
+    return t => t;
+  }
+}
+
+/**
+ * Keyframes for a change from `from` to `to` (filled shares), sampled once a
+ * frame on the theme's easing, with an extra sample exactly where the arc
+ * crosses 12 or 6 o'clock so each half stops and starts on time.
+ */
+function fillKeyframes(
+  from: number,
+  to: number,
+  duration: number,
+  ease: (t: number) => number,
+) {
+  const count = Math.max(8, Math.ceil(duration / (1000 / 60)));
+  const grid = Array.from({length: count + 1}, (_, i) => i / count);
+  const at = (t: number) => from + (to - from) * ease(t);
+  // Where the eased path passes half (p = 0.5): a sample there, and one just
+  // after it, so the halves hand over on time and the left half's
+  // visibility steps rather than fades.
+  const crossings: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const a = grid[i];
+    const b = grid[i + 1];
+    const fa = at(a) - 0.5;
+    const fb = at(b) - 0.5;
+    if (fa === 0) {
+      crossings.push(a);
+    } else if (fa * fb < 0) {
+      let low = a;
+      let high = b;
+      for (let k = 0; k < 24; k++) {
+        const mid = (low + high) / 2;
+        if ((at(low) - 0.5) * (at(mid) - 0.5) <= 0) {
+          high = mid;
+        } else {
+          low = mid;
+        }
+      }
+      crossings.push((low + high) / 2);
+    }
+  }
+  const times = [
+    ...new Set([
+      ...grid,
+      ...crossings,
+      ...crossings.map(c => c + 1e-4).filter(t => t < 1),
+    ]),
+  ].sort((x, y) => x - y);
+  const frames = times.map(t => ({t, ...fillTurns(t === 1 ? to : at(t))}));
+  // The sample at a crossing sits exactly on half, where the left half reads
+  // as hidden. Give it the side the arc is leaving instead, so the left half
+  // steps at once both ways: shrinking through half, it used to fade out
+  // from the sample before, while it still drew part of the arc (a lighter
+  // band between the end cap and 6 o'clock for a frame).
+  const onHalf = new Set(crossings);
+  for (let i = 1; i < frames.length; i += 1) {
+    if (onHalf.has(frames[i].t) || (frames[i].t === 1 && to === 0.5)) {
+      frames[i].leftShown = frames[i - 1].leftShown;
+    }
+  }
+  return {
+    right: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.right}deg)`,
+      opacity: f.rightShown,
+    })),
+    left: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.left}deg)`,
+      opacity: f.leftShown,
+    })),
+    cap: frames.map(f => ({
+      offset: f.t,
+      transform: `rotate(${f.cap}deg)`,
+      opacity: f.caps,
+    })),
+    start: frames.map(f => ({offset: f.t, opacity: f.caps})),
+  };
+}
+
+/**
  * A circular/radial progress indicator that shows completion as a ring.
  *
  * In determinate mode, displays a known value as an arc fill.
@@ -348,7 +633,6 @@ export function CircularProgress({
   const safeMax = Number.isFinite(max) ? max : 0;
   const clampedValue = Math.min(Math.max(0, safeValue), safeMax);
   const percentage = safeMax > 0 ? clampedValue / safeMax : 0;
-  const dashoffset = circumference * (1 - percentage);
   const valueText = formatValueLabel(clampedValue, safeMax);
 
   const center = diameter / 2;
@@ -360,6 +644,188 @@ export function CircularProgress({
 
   const fillVariant = isDisabled ? 'disabled' : variant;
   const trackVariant = isDisabled ? 'neutral' : variant;
+
+  // A value change turns the fill's layers with Web Animations on the
+  // compositor, from wherever the arc is drawn now (mid-change, the running
+  // change's own curve says where) to the new value, on the theme's
+  // duration and easing. What renders is always the resting state, so a
+  // first render, a render without script, or a skipped animation shows the
+  // value.
+  const fillRef = useRef<HTMLSpanElement | null>(null);
+  const rightRef = useRef<HTMLSpanElement | null>(null);
+  const leftRef = useRef<HTMLSpanElement | null>(null);
+  const capRef = useRef<HTMLSpanElement | null>(null);
+  const startRef = useRef<SVGPathElement | null>(null);
+  // Where the arc is drawn: the value at rest, or, when a change is
+  // interrupted, the point its own curve has reached. A change's cleanup
+  // records it and releases the change's animations (react-component-runtime
+  // INV3), so the next change starts from there and an unmount or a switch to
+  // indeterminate leaves nothing running. While indeterminate no value is
+  // drawn (null): the ring draws its own arc, not the value it holds, so the
+  // next value draws at once instead of sweeping from that held value.
+  const drawn = useRef<number | null>(percentage);
+  useLayoutEffect(() => {
+    const from = drawn.current;
+    if (isIndeterminate) {
+      drawn.current = null;
+      return;
+    }
+    if (from === null || from === percentage) {
+      drawn.current = percentage;
+      return;
+    }
+    const fill = fillRef.current;
+    const layers = [
+      rightRef.current,
+      leftRef.current,
+      capRef.current,
+      startRef.current,
+    ];
+    drawn.current = percentage;
+    if (
+      fill == null ||
+      layers.some(layer => typeof layer?.animate !== 'function')
+    ) {
+      return;
+    }
+    const style = getComputedStyle(fill);
+    const duration = parseTime(style.transitionDuration);
+    if (duration <= 0) {
+      return;
+    }
+    const ease = easingOf(style.transitionTimingFunction);
+    const frames = fillKeyframes(from, percentage, duration, ease);
+    const timing: KeyframeAnimationOptions = {
+      duration,
+      easing: 'linear',
+      fill: 'backwards',
+    };
+    const [right, left, cap, start] = layers as [
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      SVGElement,
+    ];
+    const animations = [
+      right.animate(frames.right, timing),
+      left.animate(frames.left, timing),
+      cap.animate(frames.cap, timing),
+      start.animate(frames.start, timing),
+    ];
+    return () => {
+      const [first] = animations;
+      const progress =
+        first.playState !== 'finished'
+          ? Number(first.effect?.getComputedTiming().progress ?? 1)
+          : 1;
+      // `progress` is the change's linear time fraction; the arc is drawn on
+      // its easing, so the eased position is where it is.
+      drawn.current = from + (percentage - from) * ease(progress);
+      for (const animation of animations) {
+        animation.cancel();
+      }
+    };
+  }, [percentage, isIndeterminate]);
+  // Indeterminate: the same layers, turned by endless CSS animations on the
+  // compositor (`styles.indeterminateSpin`, `indeterminateCycle`), so the ring
+  // turns before hydration; a stroke-dash animation would repaint on the main
+  // thread and stop while a script runs. The reduced-motion clocks come from
+  // CSS too. Without its animations it rests as a quarter turn.
+  const turns = fillTurns(isIndeterminate ? 0.25 : percentage);
+  // One half of the ring's stroke, from 6 o'clock clockwise to 12 (the left
+  // half) before its layer turns; butt ends, the caps are drawn apart.
+  const bleedBox = `${-FILL_BLEED} ${-FILL_BLEED} ${diameter + 2 * FILL_BLEED} ${diameter + 2 * FILL_BLEED}`;
+  const halfRing = (
+    <svg
+      width={diameter + 2 * FILL_BLEED}
+      height={diameter + 2 * FILL_BLEED}
+      viewBox={bleedBox}
+      {...stylex.props(styles.fillShape)}>
+      <circle
+        cx={center}
+        cy={center}
+        r={radius}
+        strokeWidth={strokeWidth}
+        strokeDasharray={`${circumference / 2} ${circumference}`}
+        transform={`rotate(90 ${center} ${center})`}
+      />
+    </svg>
+  );
+  // A round cap at 12 o'clock on the ring's centerline (a zero-length stroke).
+  const capPath = `M ${center} ${strokeWidth / 2} h 0`;
+  const arc = (
+    <>
+      <span {...stylex.props(styles.fillHalf, styles.fillHalfRight)}>
+        <span
+          ref={rightRef}
+          {...stylex.props(
+            styles.fillTurn,
+            styles.fillTurnRight,
+            isIndeterminate && styles.indeterminateCycle,
+            isIndeterminate && styles.indeterminateRight,
+          )}
+          style={{
+            transform: `rotate(${turns.right}deg)`,
+            opacity: turns.rightShown,
+          }}>
+          {halfRing}
+        </span>
+      </span>
+      <span
+        {...stylex.props(
+          styles.fillHalf,
+          styles.fillHalfLeft,
+          isIndeterminate && styles.fillHalfLeftJoint,
+        )}>
+        <span
+          ref={leftRef}
+          {...stylex.props(
+            styles.fillTurn,
+            styles.fillTurnLeft,
+            isIndeterminate && styles.fillTurnLeftJoint,
+            isIndeterminate && styles.indeterminateCycle,
+            isIndeterminate && styles.indeterminateLeft,
+          )}
+          style={{
+            transform: `rotate(${turns.left}deg)`,
+            opacity: turns.leftShown,
+          }}>
+          {halfRing}
+        </span>
+      </span>
+      <svg
+        width={diameter}
+        height={diameter}
+        viewBox={`0 0 ${diameter} ${diameter}`}
+        {...stylex.props(styles.fillCap, styles.fillCapShape)}>
+        <path
+          ref={startRef}
+          d={capPath}
+          strokeWidth={strokeWidth}
+          style={{opacity: turns.caps}}
+        />
+      </svg>
+      <span
+        ref={capRef}
+        {...stylex.props(
+          styles.fillCap,
+          isIndeterminate && styles.indeterminateCycle,
+          isIndeterminate && styles.indeterminateCap,
+        )}
+        style={{
+          transform: `rotate(${turns.cap}deg)`,
+          opacity: turns.caps,
+        }}>
+        <svg
+          width={diameter + 2 * FILL_BLEED}
+          height={diameter + 2 * FILL_BLEED}
+          viewBox={bleedBox}
+          {...stylex.props(styles.fillCapShape, styles.fillShape)}>
+          <path d={capPath} strokeWidth={strokeWidth} />
+        </svg>
+      </span>
+    </>
+  );
 
   return (
     <div
@@ -392,9 +858,7 @@ export function CircularProgress({
           width={diameter}
           height={diameter}
           viewBox={`0 0 ${diameter} ${diameter}`}
-          {...stylex.props(
-            isIndeterminate ? styles.svgIndeterminate : styles.svg,
-          )}>
+          {...stylex.props(styles.svg)}>
           <circle
             {...mergeProps(
               themeProps('circular-progress-track'),
@@ -405,35 +869,35 @@ export function CircularProgress({
             r={radius}
             strokeWidth={strokeWidth}
           />
-          {isIndeterminate ? (
-            <circle
-              {...mergeProps(
-                themeProps('circular-progress-fill', {variant: fillVariant}),
-                stylex.props(
-                  styles.fillIndeterminate,
-                  variantStyles[fillVariant],
-                ),
-              )}
-              cx={center}
-              cy={center}
-              r={radius}
-              strokeWidth={strokeWidth}
-            />
-          ) : (
-            <circle
-              {...mergeProps(
-                themeProps('circular-progress-fill', {variant: fillVariant}),
-                stylex.props(styles.fill, variantStyles[fillVariant]),
-              )}
-              cx={center}
-              cy={center}
-              r={radius}
-              strokeWidth={strokeWidth}
-              strokeDasharray={circumference}
-              strokeDashoffset={dashoffset}
-            />
-          )}
         </svg>
+
+        {/*
+          The fill (see `styles.fill`); indeterminate, the same layers inside
+          a spinning layer and one for the arc's start. Its stroke color is
+          set on the theming target and inherited by every part.
+        */}
+        <span
+          ref={fillRef}
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('circular-progress-fill', {variant: fillVariant}),
+            stylex.props(styles.fill, variantStyles[fillVariant]),
+          )}>
+          {isIndeterminate ? (
+            <span {...stylex.props(styles.fillCap, styles.indeterminateSpin)}>
+              <span
+                {...stylex.props(
+                  styles.fillCap,
+                  styles.indeterminateCycle,
+                  styles.indeterminateTail,
+                )}>
+                {arc}
+              </span>
+            </span>
+          ) : (
+            arc
+          )}
+        </span>
 
         {centerContent != null && (
           <div {...stylex.props(styles.children)}>
