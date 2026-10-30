@@ -9,8 +9,9 @@
  *   bringsUpKeyboard and the KeyboardLayoutGuide type
  * @position The web's UIKeyboardLayoutGuide: where the software keyboard
  *   covers the layout viewport and how it moves, for the touch presentations
- *   that keep content above it (ChatLayout's composer). Internal to core: not
- *   exported from the package entry point
+ *   that keep content above it (ChatLayout's composer, and a Tall
+ *   BottomSheet's content through useSheetKeyboard in sheetKeyboard.ts).
+ *   Internal to core: not exported from the package entry point
  *
  * One guide per window, subscribed only while something subscribes to it. It
  * owns no listener and measures nothing: it feeds the model (keyboardModel.ts)

@@ -18,7 +18,7 @@
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
  * - /packages/core/src/BottomSheet/snapOffsets.ts
- * - /packages/core/src/keyboard/keyboardHeight.ts
+ * - /packages/core/src/keyboard/sheetKeyboard.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  * - /packages/core/src/Layout/container.stylex.ts (bottom-sheet padding chain)
  */
@@ -34,7 +34,8 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {useDevWarning, useMediaQuery} from '../hooks';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useScrollableArea} from '../hooks/useScrollableArea';
 import {
   borderVars,
@@ -68,7 +69,7 @@ import {
   resolveSnapPoints,
   type BottomSheetSnapPoint,
 } from './snapOffsets';
-import {useSheetKeyboard} from '../keyboard/keyboardHeight';
+import {useSheetKeyboard} from '../keyboard/sheetKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
 const HEIGHT_BUDGETS = {

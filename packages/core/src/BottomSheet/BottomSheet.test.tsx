@@ -25,7 +25,8 @@ import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {resetBottomSheetStackForTests} from './bottomSheetStack';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
-import {__resetRevealsAtReportForTest} from '../keyboard/keyboardHeight';
+import {__focusTakeoverCallersForTest} from '../keyboard/keyboardHeight';
+import {__resetRevealsAtReportForTest} from '../keyboard/sheetKeyboard';
 import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
 
 // A sheet has no stops unless its host asks for them, so the tests that
@@ -1798,6 +1799,50 @@ describe('BottomSheet', () => {
       expect(mostTouchListeners()).toBe(0);
     });
 
+    it('installs no focus takeover for a presented Tall sheet under a fine pointer (architecture INV13, spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('fine');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      expect(screen.getByRole('textbox', {name: 'Comment'})).toBeVisible();
+      expect(__focusTakeoverCallersForTest(document)).toBe(0);
+    });
+
+    it('installs the focus takeover for each presented Tall sheet under a coarse pointer, through the one shared listener (spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('coarse');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      render(
+        <>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a note"
+            height="tall">
+            <input aria-label="Note" />
+          </BottomSheet>
+        </>,
+      );
+      // Both sheets claim focus moves through the keyboard module's one
+      // document listener (its own test counts that listener).
+      expect(__focusTakeoverCallersForTest(document)).toBe(2);
+    });
+
     it('registers one document touch listener for two presented Tall sheets under a coarse pointer (spec:AST-094 FR24)', () => {
       mockPrimaryPointer('coarse');
       mockWindowHeight(800);
@@ -2284,6 +2329,43 @@ describe('BottomSheet', () => {
         expect(subscribe).not.toHaveBeenCalled();
         subscribe.mockRestore();
       });
+    });
+
+    it('subscribes no keyboard layout guide where the keyboard moves on Safari\u2019s schedule, whose transitions the sheet never rides (spec:AST-099 FR8)', () => {
+      // iOS Safari and Firefox for Android have no VirtualKeyboard API, so the
+      // guide reads Safari's profile there: it would watch frames after each
+      // focus for transitions on UIKit's keyboard spring, which the sheet
+      // drops. Only a slide rides (Chrome's profile).
+      mockWindowHeight(800);
+      const viewport = mockVisualViewport(800);
+      mockIOSWebKit();
+      const guide = getKeyboardLayoutGuide(window);
+      const subscribe = vi.spyOn(guide, 'subscribe');
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 660, bottom: 700}),
+      );
+      act(() => input.focus());
+      viewport.height = 500;
+      void act(() => viewport.dispatchEvent(new Event('resize')));
+      // The room follows the keyboard's report (FR3)...
+      expect(keyboardInsetOf(body)).toBe(348);
+      // ...and nothing subscribed the guide, so no frame watch runs.
+      expect(subscribe).not.toHaveBeenCalled();
+      subscribe.mockRestore();
     });
 
     it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {
