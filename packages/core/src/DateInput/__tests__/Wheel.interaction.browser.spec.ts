@@ -30,6 +30,7 @@ import {
   blockMainThread,
   busyWindowProof,
   castStoryboard,
+  CONTROL_RGB,
   compareCurve,
   countBetween,
   curveOf,
@@ -42,6 +43,7 @@ import {
   releaseAnimations,
   releaseVelocity,
   sampleCurve,
+  startBusyControl,
   startCompositorTrace,
   startScreencast,
   tap,
@@ -71,6 +73,21 @@ const HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
 const FLICK_VELOCITY = 900;
 /** The busy-main-thread proof's block: spec:AST-094 FR5's verification. */
 const BLOCK_MS = 1000;
+/**
+ * The rows the busy proof's strip markers sit on, three rows apart in three
+ * colours: two markers of one colour are nine rows apart, never both in
+ * sight, and neighbours' reaches overlap by over three rows.
+ */
+const STRIP_MARKER_ROWS = Array.from({length: 20}, (_, i) => 2 + 3 * i);
+const STRIP_MARKER_RGB = [
+  [255, 0, 255],
+  [255, 255, 0],
+  [255, 140, 0],
+] as const;
+/** How far from the band a strip marker is judged, px: inside the column. */
+const STRIP_MARKER_REACH = 92;
+/** The shortest stretch of the block one marker is judged over, ms. */
+const MIN_REACH_MS = 150;
 
 interface OpenWheel {
   driver: TouchDriver;
@@ -314,8 +331,36 @@ test('a flick coasts on UIKit’s curve onto the row it projects, and commits it
 test('the coast keeps advancing every frame while the main thread is blocked', async ({
   page,
 }, testInfo) => {
-  const {driver, minutes, strip, start} = await openWheel(page);
+  const {driver, strip, start} = await openWheel(page);
   test.skip(!driver.scriptedTimestamps, SCRIPTED_RELEASE_SKIP);
+  // Markers riding the strip itself, every few rows in three colours. They move
+  // with the coast and never turn or fade as the rows do, so their steps are
+  // the coast's own, and they are placed before the flick, so the block meets
+  // them already on screen.
+  await strip.evaluate(
+    (element, {rows, rowHeight, colours}) => {
+      rows.forEach((row, i) => {
+        const marker = document.createElement('div');
+        marker.dataset.busyMarker = String(row);
+        const [r, g, b] = colours[i % colours.length];
+        Object.assign(marker.style, {
+          position: 'absolute',
+          insetInlineStart: '8px',
+          insetBlockStart: `${row * rowHeight + (rowHeight - 16) / 2}px`,
+          inlineSize: '16px',
+          blockSize: '16px',
+          backgroundColor: `rgb(${r}, ${g}, ${b})`,
+          zIndex: '2147483647',
+          pointerEvents: 'none',
+        });
+        element.append(marker);
+      });
+    },
+    {rows: STRIP_MARKER_ROWS, rowHeight: ROW, colours: STRIP_MARKER_RGB},
+  );
+  // A compositor-only control in the page's top edge, recorded in the same
+  // frames: the coast is judged against what this machine presented.
+  const control = await startBusyControl(page);
   const {script} = flickUp(start);
   const cast = await startScreencast(page);
   // The compositor's own record of the frames it presents: a frame the
@@ -337,52 +382,51 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
     points.find(point => rest - point.offset <= distance)?.t ??
     coast.durationMs;
   // A 1 s block, as spec:AST-094 FR5's proof names, ending while the coast is
-  // still over a row from rest, so every frame of it moves at least a pixel.
+  // still over a row from rest.
   const blockTo = when(1.25 * ROW);
   const blockFrom = blockTo - BLOCK_MS;
   expect(blockFrom, 'the coast runs the whole block').toBeGreaterThan(0);
-  // The row that crosses the band halfway through the block: in sight the
-  // whole time, from about four rows below the band to four above.
-  const offsetAt = (t: number) =>
-    points.find(point => point.t >= t)?.offset ?? rest;
-  const crossing = Math.round(
-    (offsetAt(blockFrom) + offsetAt(blockTo)) / 2 / ROW,
-  );
-  const marked = minutes.getByRole('option', {
-    name: String(crossing).padStart(2, '0'),
-  });
-  // Today's rows fade toward the edges, which washes out the marker chip's
-  // colour; this one row is drawn opaque for the evidence (its coast keeps
-  // its keyframes' movement and tip, without their fade).
-  await marked.evaluate(element => {
-    for (const animation of element.getAnimations()) {
-      const effect = animation.effect;
-      if (effect instanceof KeyframeEffect) {
-        effect.setKeyframes(
-          effect.getKeyframes().map(frame => {
-            const {
-              opacity: _opacity,
-              computedOffset: _computed,
-              ...rest
-            } = frame;
-            return rest;
-          }),
-        );
-      }
-    }
-    (element as HTMLElement).style.opacity = '1';
-  });
-  await markElement(marked);
   await page.waitForTimeout(Math.max(0, coast.from + blockFrom - Date.now()));
-  const block = await blockMainThread(page, Math.round(blockTo - blockFrom));
+  const block = await blockMainThread(page, BLOCK_MS);
   await page.waitForTimeout(150);
   const presented = await compositor.stop();
   const castFrames = await cast.stop();
-  const tracked = await trackMarker(page, castFrames);
-  const proof = busyWindowProof(
-    tracked,
-    {from: block.from, to: Math.min(block.to, coast.to)},
-    {settledWithin: 1, presented},
+  const tracks: Awaited<ReturnType<typeof trackMarker>>[] = [];
+  for (const rgb of STRIP_MARKER_RGB) {
+    tracks.push(await trackMarker(page, castFrames, {rgb}));
+  }
+  const controlFrames = await trackMarker(page, castFrames, {
+    rgb: CONTROL_RGB,
+  });
+  await control.remove();
+  // Each marker is judged while it is within reach of the band, inside the
+  // column; neighbours' reaches overlap, so a marker in sight for only a
+  // sliver of the block is left out where its neighbour covers that time.
+  const end = Math.min(block.to, coast.to);
+  const at = (offset: number) =>
+    coast.from +
+    (points.find(point => point.offset >= offset)?.t ?? coast.durationMs);
+  const reaches = STRIP_MARKER_ROWS.map((row, i) => ({
+    row,
+    track: i % STRIP_MARKER_RGB.length,
+    from: Math.max(block.from, at(row * ROW - STRIP_MARKER_REACH)),
+    to: Math.min(end, at(row * ROW + STRIP_MARKER_REACH)),
+  })).filter(reach => reach.to - reach.from >= MIN_REACH_MS);
+  // Together the judged reaches cover the whole block.
+  let covered = block.from;
+  for (const reach of reaches) {
+    expect(reach.from, 'the markers cover the block').toBeLessThanOrEqual(
+      covered,
+    );
+    covered = Math.max(covered, reach.to);
+  }
+  expect(covered, 'the markers cover the block').toBeGreaterThanOrEqual(end);
+  const proofs = reaches.map(({track, from, to}) =>
+    busyWindowProof(
+      tracks[track],
+      {from, to},
+      {presented, control: controlFrames},
+    ),
   );
   await writeEvidence(
     'busy-main-thread/wheel-coast',
@@ -391,10 +435,11 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
         {
           block,
           coast,
-          proof,
-          frames: tracked.map(f => ({
+          reaches,
+          proofs,
+          frames: tracks[0].map((f, i) => ({
             t: +(f.t - block.from).toFixed(1),
-            y: f.box?.y ?? null,
+            y: tracks.map(track => track[i]?.box?.y ?? null),
           })),
         },
         null,
@@ -407,28 +452,29 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
     name: 'wheel-coast-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, coast.to) + 40,
+    to: end + 40,
     columns: 8,
     cellScale: 0.35,
-    data: t => ({y: tracked.find(f => f.t === t)?.box?.y ?? -1}),
+    data: t =>
+      Object.fromEntries(
+        tracks.map((track, i) => [
+          `y${i}`,
+          track.find(f => f.t === t)?.box?.y ?? -1,
+        ]),
+      ),
   });
   await film.write(testInfo, {block, coast});
-  // The harness's verdict: a new position on at least 90 % of the window's
-  // frame intervals, no stall over three of them, a median interval of at
-  // most 20 ms; a frozen coast shows one stall the length of the block.
-  // Frames the screencast skipped while the compositor presented them are
-  // recorder skips, not stalls (`presented`, startCompositorTrace).
-  expect(
-    proof.verdict.pass,
-    `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
-  ).toBe(true);
-  expect(proof.monotonic).toBe(true);
-  // Every frame the compositor presented while the main thread was blocked
-  // shows the coast moved. A frame the runner never drew is never presented,
-  // so a dropped frame (software compositing on a busy runner) proves nothing
-  // either way; a coast that stops shows presented frames that did not move,
-  // or none at all, which the verdict above rejects.
-  expect(proof.moved, proof.summary).toBe(proof.frames);
+  // Judged against the control: the coast moved on every frame the control
+  // moved, and its longest stall is no longer than the control's. On the
+  // coast's slowing tail it moves under one cast step a frame, so a run of
+  // unchanged frames that a single step ends counts as moved there; a frozen
+  // coast ends its run in a catch-up of many steps, or never moves while the
+  // control does.
+  for (const proof of proofs) {
+    expect(proof.verdict.failures, proof.summary).toEqual([]);
+    expect(proof.control?.moved).toBeGreaterThanOrEqual(4);
+    expect(proof.monotonic).toBe(true);
+  }
 });
 
 test('the coast does no Layout or Paint per frame', async ({
