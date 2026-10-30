@@ -21,6 +21,7 @@ import {
   collectDirectionalDecorations,
   filterStoryRoutesByPackages,
   orderD1StoryCandidates,
+  resolveD1Applicability,
   storyIdsForComponentFilters,
   unresolvedComponentFilters,
   validateStoryRtlAuditParameters,
@@ -153,6 +154,41 @@ describe('D1 story applicability', () => {
     };
     const earlier = {...later, id: 'core-example--earlier', sourceOrder: 100};
     expect(orderD1StoryCandidates([later, earlier])).toEqual([earlier, later]);
+  });
+
+  it('discloses exclusions ordered after the selected representative', () => {
+    const rationale =
+      'Reference glyphs preserve caller-supplied geometry as data.';
+    const resolved = resolveD1Applicability(
+      'lab/SVGIcon',
+      [registryFixture, defaultStory],
+      new Map([
+        [defaultStory.id, {}],
+        [registryFixture.id, {D1: {applicable: false, reason: rationale}}],
+      ]),
+    );
+
+    expect(resolved.selectedCandidate).toEqual(defaultStory);
+    expect(resolved.declaredExclusions).toEqual([
+      {
+        component: 'lab/SVGIcon',
+        storyId: registryFixture.id,
+        dimension: 'D1',
+        reason: rationale,
+      },
+    ]);
+  });
+
+  it('fails closed when one candidate has no resolved metadata', () => {
+    expect(() =>
+      resolveD1Applicability(
+        'lab/SVGIcon',
+        [defaultStory, registryFixture],
+        new Map([[defaultStory.id, {}]]),
+      ),
+    ).toThrow(
+      `${registryFixture.id} resolved rtlAudit metadata was not collected`,
+    );
   });
 
   it('keeps completion identity stable when metadata selects another candidate', () => {

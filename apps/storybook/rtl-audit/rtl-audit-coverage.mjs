@@ -5,9 +5,10 @@
  * @input Rendered DOM decorations, canonical package rosters, Storybook routes
  *   and source/export metadata, typed story-level applicability, curated targets,
  *   and D1/D5/D6/curated audit results.
- * @output Audited package/story routing, stable D1 targets and applicability,
- *   contextual decoration candidates, component-filter reconciliation, and
- *   per-component measured / verified-N-A / coverage-gap classifications.
+ * @output Audited package/story routing, stable D1 targets, applicability and
+ *   exclusion disclosure, contextual decoration candidates, component-filter
+ *   reconciliation, and per-component measured / verified-N-A / coverage-gap
+ *   classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
@@ -241,6 +242,38 @@ export function buildD1Target(comp, candidates) {
     id: orderedCandidates[0].id,
     candidates: orderedCandidates,
   };
+}
+
+/**
+ * Select the first applicable D1 story while disclosing every explicit
+ * exclusion, including exclusions ordered after the selected representative.
+ */
+export function resolveD1Applicability(
+  component,
+  candidates,
+  parametersByStoryId,
+) {
+  let selectedCandidate = null;
+  const declaredExclusions = [];
+  for (const candidate of orderD1StoryCandidates(candidates)) {
+    if (!parametersByStoryId.has(candidate.id)) {
+      throw new Error(
+        `${candidate.id} resolved rtlAudit metadata was not collected`,
+      );
+    }
+    const parameters = parametersByStoryId.get(candidate.id);
+    if (parameters.D1?.applicable === false) {
+      declaredExclusions.push({
+        component,
+        storyId: candidate.id,
+        dimension: 'D1',
+        reason: parameters.D1.reason,
+      });
+    } else if (selectedCandidate == null) {
+      selectedCandidate = candidate;
+    }
+  }
+  return {selectedCandidate, declaredExclusions};
 }
 
 /**

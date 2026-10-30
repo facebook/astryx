@@ -92,10 +92,14 @@ export const ReferenceFixture: StoryObj = {
 };
 ```
 
-The audit validates the rendered, resolved Storybook parameters. Story-level
-parameters therefore override meta-level defaults through normal Storybook
-precedence. `applicable: false` without a nonempty reason is an error, and D5
-and D6 continue scanning the same story.
+The audit validates the rendered, resolved Storybook parameters for every
+in-scope story before choosing the D1 representative. Story-level parameters
+therefore override meta-level defaults through normal Storybook precedence.
+`applicable: false` without a nonempty reason is an error, and D5 and D6
+continue scanning the same story. The JSON report and Markdown scorecard list
+every declared D1 exclusion with its component, story ID, dimension, and
+rationale—even when an earlier applicable story is selected—so a human reviewer
+can confirm the fixture is data rather than a directional control or cue.
 
 #### Interaction-revealed icons (popovers, dialogs, menus)
 

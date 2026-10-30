@@ -31,10 +31,10 @@
  *   [--shard <i>/<n> --shard-output <file>] audit every n-th planned item and
  *   write only those cards; [--merge-shards <dir>] build the report from a
  *   complete shard set without a browser (rtl-audit-shards.mjs).
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
- *   results, exact planned/completed scan counts, a component coverage
- *   rollup, and the worker pages replaced after a failed story
- *   (`pageRecoveries`). Mirrors the pr-a11y accessibility-audit harness.
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, declared D1 exclusions,
+ *   curated D2/D3/D4/D7/D8/D9 results, exact planned/completed scan counts, a
+ *   component coverage rollup, and the worker pages replaced after a failed
+ *   story (`pageRecoveries`). Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -67,6 +67,7 @@ import {
   evaluateDirectionalDecorations,
   filterStoryRoutesByPackages,
   orderD1StoryCandidates,
+  resolveD1Applicability,
   validateStoryRtlAuditParameters,
   withD1CompletionIdentity,
 } from './rtl-audit-coverage.mjs';
@@ -705,14 +706,24 @@ async function autoPositionalAndDecorations(page, port, storyId, component) {
 }
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
-async function autoD1(page, port, storyId, component, {ltrReady = false} = {}) {
+async function autoD1(
+  page,
+  port,
+  storyId,
+  component,
+  {ltrMeasurement: premeasuredLtr = null} = {},
+) {
   const card = {component, storyId, dim: 'D1', verdict: 'N-A', notes: [], icons: 0};
-  if (!ltrReady) {
+  let ltrMeasurement = premeasuredLtr;
+  if (ltrMeasurement == null) {
     await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
     await settle(page);
+    ltrMeasurement = {
+      revealed: await revealInteractionGated(page),
+      icons: await detectDirectionalIcons(page),
+    };
   }
-  const revealedL = await revealInteractionGated(page);
-  const ltr = await detectDirectionalIcons(page);
+  const {revealed: revealedL, icons: ltr} = ltrMeasurement;
   await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
   await settle(page);
   const revealedR = await revealInteractionGated(page);
@@ -787,24 +798,51 @@ async function autoD1(page, port, storyId, component, {ltrReady = false} = {}) {
 }
 
 async function autoD1ForComponent(page, port, candidates, component) {
-  const skippedStories = [];
-  for (const candidate of orderD1StoryCandidates(candidates)) {
+  const orderedCandidates = orderD1StoryCandidates(candidates);
+  const parametersByStoryId = new Map();
+  let selectedLtr = null;
+  for (const candidate of orderedCandidates) {
     await page.goto(storyUrl(port, candidate.id, false), {
       waitUntil: 'domcontentloaded',
     });
     await settle(page);
     const parameters = await readStoryRtlAuditParameters(page, candidate.id);
-    if (parameters.D1?.applicable === false) {
-      skippedStories.push({
+    parametersByStoryId.set(candidate.id, parameters);
+    if (
+      selectedLtr == null &&
+      parameters.D1?.applicable !== false
+    ) {
+      selectedLtr = {
         storyId: candidate.id,
-        reason: parameters.D1.reason,
-      });
-      continue;
+        revealed: await revealInteractionGated(page),
+        icons: await detectDirectionalIcons(page),
+      };
     }
-    const card = await autoD1(page, port, candidate.id, component, {
-      ltrReady: true,
+  }
+
+  const {selectedCandidate, declaredExclusions} = resolveD1Applicability(
+    component,
+    orderedCandidates,
+    parametersByStoryId,
+  );
+  const skippedStories = declaredExclusions.map(({storyId, reason}) => ({
+    storyId,
+    reason,
+  }));
+  if (selectedCandidate != null) {
+    if (selectedLtr?.storyId !== selectedCandidate.id) {
+      throw new Error(
+        `${component} D1 selected story did not retain its LTR measurement`,
+      );
+    }
+    const card = await autoD1(page, port, selectedCandidate.id, component, {
+      ltrMeasurement: {
+        revealed: selectedLtr.revealed,
+        icons: selectedLtr.icons,
+      },
     });
     card.skippedStories = skippedStories;
+    card.declaredD1Exclusions = declaredExclusions;
     if (skippedStories.length > 0) {
       card.notes.unshift(
         `skipped ${skippedStories.length} fixture(s) explicitly not applicable to D1`,
@@ -820,6 +858,7 @@ async function autoD1ForComponent(page, port, candidates, component) {
     notes: ['every candidate story is explicitly not applicable to D1'],
     icons: 0,
     skippedStories,
+    declaredD1Exclusions: declaredExclusions,
   };
 }
 
@@ -1451,6 +1490,14 @@ async function cleanupRuntime() {
   const surprises = autoFails;
   const pmFails = pmResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   const decorationFails = decorationResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
+  const declaredD1Exclusions = autoResults
+    .flatMap(result => result.declaredD1Exclusions ?? [])
+    .sort(
+      (left, right) =>
+        left.component.localeCompare(right.component) ||
+        left.storyId.localeCompare(right.storyId) ||
+        left.dimension.localeCompare(right.dimension),
+    );
   const report = {
     generatedAt: new Date().toISOString(),
     scope: {
@@ -1487,6 +1534,7 @@ async function cleanupRuntime() {
     // keeps its ERROR result; the record shows the stories after it ran on a
     // fresh page.
     pageRecoveries,
+    declaredD1Exclusions,
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
