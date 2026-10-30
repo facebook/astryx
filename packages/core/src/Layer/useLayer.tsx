@@ -848,8 +848,13 @@ function isPopoverOperationInFlight(doc: Document): boolean {
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
-  /** Logical writing context lost when moving outside an unsafe ancestor. */
-  portalStyle: React.CSSProperties;
+  /**
+   * Logical writing context lost when moving outside an unsafe ancestor, or
+   * null until it is read. A closed layer mounted ahead of its first show
+   * reads it in `show()`, before the layer opens: reading computed style for
+   * every closed layer on mount forces a style recalculation per layer.
+   */
+  portalStyle: React.CSSProperties | null;
 }
 
 /**
@@ -1285,11 +1290,17 @@ function useLayerImplementation(
     ensureSlideRules(sentinel.ownerDocument);
 
     const portalTarget = resolveLayerPortalTarget(inlineParent);
+    // A mount for a layer that is opening or open reads its writing context
+    // now; a closed layer's waits for its first show.
+    const opening = pendingShowRef.current || isOpenRef.current;
     const mount: ContextLayerMount = {
       portalTarget,
-      portalStyle: portalTarget
-        ? readPortalWritingContext(sentinel, portalTarget)
-        : {},
+      portalStyle:
+        portalTarget == null
+          ? {}
+          : opening
+            ? readPortalWritingContext(sentinel, portalTarget)
+            : null,
     };
     const replaced = contextMountRef.current !== null;
     contextMountRef.current = mount;
@@ -1298,6 +1309,40 @@ function useLayerImplementation(
       setMountGeneration(generation => generation + 1);
     }
   }, [mode, mountStore]);
+
+  // Reads the writing context a closed layer's mount deferred, before the
+  // layer opens. It is written on the popover at once, so the first open frame
+  // already has it (layer-runtime INV12), and published to the slot, whose
+  // render writes the same values. A value the caller's own `style` sets is
+  // already inline and wins, as it does in render.
+  const applyDeferredWritingContext = useCallback(
+    (popover: HTMLElement) => {
+      const mount = contextMountRef.current;
+      const sentinel = sentinelRef.current;
+      if (
+        mount === null ||
+        mount.portalTarget === null ||
+        mount.portalStyle !== null ||
+        sentinel === null
+      ) {
+        return;
+      }
+      const portalStyle = readPortalWritingContext(
+        sentinel,
+        mount.portalTarget,
+      );
+      if (portalStyle.direction != null && popover.style.direction === '') {
+        popover.style.direction = portalStyle.direction;
+      }
+      if (portalStyle.writingMode != null && popover.style.writingMode === '') {
+        popover.style.writingMode = portalStyle.writingMode;
+      }
+      const next: ContextLayerMount = {...mount, portalStyle};
+      contextMountRef.current = next;
+      mountStore.set(next);
+    },
+    [mountStore],
+  );
 
   const clearContextMount = useCallback(() => {
     if (mode !== 'context' || !lazyMount) {
@@ -1339,6 +1384,7 @@ function useLayerImplementation(
       }
       popover.removeAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
       popover.removeAttribute(LAYER_SCROLLS_ATTRIBUTE);
+      applyDeferredWritingContext(popover);
       showPopoverElement(popover);
       if (keepsAnchorClear) {
         keepAnchorClear(popover, triggerRef.current);
@@ -1351,6 +1397,7 @@ function useLayerImplementation(
     onShow,
     keepsAnchorClear,
     requestContextMount,
+    applyDeferredWritingContext,
     showPopoverElement,
     isCurrentContextPopover,
     wasJustDismissed,
