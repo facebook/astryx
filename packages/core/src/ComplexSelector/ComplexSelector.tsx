@@ -466,6 +466,11 @@ export interface ComplexSelectorProps<Value> extends Omit<
   'data-testid'?: string;
 }
 
+/** Keeps a click from reaching the control box's open-the-popup handler. */
+function stopPropagation(event: React.MouseEvent) {
+  event.stopPropagation();
+}
+
 /**
  * A selector shell for rich, custom selection surfaces.
  *
@@ -493,10 +498,6 @@ export interface ComplexSelectorProps<Value> extends Omit<
  * </ComplexSelector>
  * ```
  */
-function stopPropagation(event: React.MouseEvent) {
-  event.stopPropagation();
-}
-
 export function ComplexSelector<Value>({
   label,
   value,
