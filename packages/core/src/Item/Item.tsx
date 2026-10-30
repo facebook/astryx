@@ -763,17 +763,30 @@ export function Item({
           )}>
           {labelAndDescription}
         </span>
+      ) : href != null && !isLinkRoot && isDisabled ? (
+        // A disabled row's anchor has no destination, so no activation path
+        // (a screen reader's click, Enter, a link context menu) can navigate
+        // (spec:AST-085 FR2). Like a disabled Link, it keeps the link role and
+        // skips the router link component, which may require a live href.
+        <a
+          role="link"
+          aria-disabled={true}
+          tabIndex={-1}
+          {...stylex.props(
+            styles.invisibleAnchor,
+            isInline && styles.inlineContent,
+            styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </a>
       ) : href != null && !isLinkRoot ? (
         <LinkComponent
           href={href}
           target={target}
           rel={rel}
-          aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
         </LinkComponent>

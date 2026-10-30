@@ -600,12 +600,26 @@ export function TreeListItem({
       {startContent != null && (
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
-      {href != null ? (
+      {href != null && isDisabled ? (
+        // A disabled item's anchor has no destination, so neither the row's
+        // forwarded activation nor a screen reader's click can navigate
+        // (spec:AST-085 FR2). Like a disabled Link, it keeps the link role and
+        // skips the router link component.
+        <a
+          ref={linkRef}
+          role="link"
+          aria-disabled={true}
+          aria-labelledby={labelId}
+          aria-describedby={description != null ? descriptionId : undefined}
+          tabIndex={-1}
+          {...stylex.props(styles.invisibleAnchor)}>
+          {labelAndDescription}
+        </a>
+      ) : href != null ? (
         <LinkComponent
           ref={linkRef}
           href={href}
           target={target}
-          aria-disabled={isDisabled || undefined}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
           // Roving tabindex lives on the treeitem row; inner action is not a

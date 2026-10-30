@@ -879,6 +879,12 @@ describe('TreeList', () => {
       const row = link.closest<HTMLElement>('.astryx-tree-list-item')!;
       fireEvent.click(row.firstElementChild!);
       expect(onLinkClick).not.toHaveBeenCalled();
+      // No destination, so a screen reader's click or a link menu cannot
+      // navigate either (spec:AST-085 FR2).
+      expect(link).toHaveAttribute('aria-disabled', 'true');
+      for (const attribute of ['href', 'target']) {
+        expect(link).not.toHaveAttribute(attribute);
+      }
     });
 
     describe('row clicks outside the label (FR7)', () => {
