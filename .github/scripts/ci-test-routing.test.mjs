@@ -52,8 +52,7 @@ function declaredProjects() {
  * deliberate edit here.
  */
 const KNOWN_RUNNERS = new Set([
-  '2-core-ubuntu-arm',
-  '4-core-ubuntu',
+  'ubuntu-24.04-arm',
   'ubuntu-slim',
   'ubuntu-latest',
 ]);
@@ -113,7 +112,7 @@ describe.each(Object.entries(WORKFLOWS))(
     it('gives the Node suite more than one Vitest worker', () => {
       // Vitest uses one worker per CPU beyond the first: on two cores the
       // suite would run one file at a time.
-      expect(workflow.jobs['test-node']['runs-on']).toBe('4-core-ubuntu');
+      expect(workflow.jobs['test-node']['runs-on']).toBe('ubuntu-latest');
     });
 
     it('runs every declared Vitest project in some lane', () => {
@@ -483,7 +482,9 @@ describe('ci.yml RTL package sharding', () => {
       );
       expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
     }
-    expect(shard['runs-on']).toBe('4-core-ubuntu');
+    // Standard runner for pull requests; a dispatched release gate takes the
+    // paid release pool (ci-free-runners.test.mjs).
+    expect(shard['runs-on']).toContain("|| 'ubuntu-latest'");
     // Pull requests get the 15-minute PR budget; the full release roster, 30.
     expect(shard['timeout-minutes']).toBe(
       "${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}",
@@ -734,7 +735,7 @@ describe('ci.yml interaction proofs', () => {
     const labels = [...job['runs-on'].matchAll(/'([^']+)'/g)]
       .map(match => match[1])
       .filter(label => label !== 'true');
-    expect(labels).toEqual(['4-core-ubuntu', 'ubuntu-slim']);
+    expect(labels).toEqual(['ubuntu-latest', 'ubuntu-slim']);
     for (const label of labels)
       expect(KNOWN_RUNNERS.has(label), label).toBe(true);
     expect(job.needs).toEqual(

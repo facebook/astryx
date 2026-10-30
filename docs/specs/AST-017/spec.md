@@ -826,12 +826,12 @@ questions rather than restating them:
 - [`spec:AST-039` — Integration contribution descriptor system spec](../AST-039/spec.md)
   is a related draft, not authority. If promoted, it links its compatibility readers
   and removals to this lifecycle.
-- The public [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)
+- The public [Component Lifecycle](https://github.com/meta/astryx/wiki/Component-Lifecycle)
   owns whole-component Lab-to-Core readiness. Lab remains the private canary-only
   incubation boundary; this spec owns the compatibility effect of promotion.
-- The public [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
-  [Distribution](https://github.com/facebook/astryx/wiki/Distribution), and
-  [Release Process](https://github.com/facebook/astryx/wiki/Release-Process) pages
+- The public [API Conventions](https://github.com/meta/astryx/wiki/API-Conventions),
+  [Distribution](https://github.com/meta/astryx/wiki/Distribution), and
+  [Release Process](https://github.com/meta/astryx/wiki/Release-Process) pages
   are operational projections. When they discuss compatibility lifecycle, they MUST
   link here and cannot create competing rules.
 - [`.changeset/config.json`](../../../.changeset/config.json),

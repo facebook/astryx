@@ -297,7 +297,7 @@ jobs:
       needs.resolve.outputs.valid == 'true' &&
       needs.resolve.outputs.spec_only != 'true' &&
       needs.resolve.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     permissions:
       pull-requests: write
       actions: read
