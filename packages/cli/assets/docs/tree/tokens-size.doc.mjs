@@ -17,14 +17,14 @@ export const docs = {
     "order": 50
   },
   "category": "foundations",
-  "description": "Control heights for consistent sizing across buttons, inputs, and selectors.",
+  "description": "Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: how far a hit area grows under a coarse primary pointer before it stops at half the gap to a neighbour.",
   "sections": [
     {
       "title": "Size Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Control heights for consistent sizing across buttons, inputs, and selectors."
+          "text": "Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: how far a hit area grows under a coarse primary pointer before it stops at half the gap to a neighbour."
         },
         {
           "type": "table",
@@ -44,6 +44,10 @@ export const docs = {
             [
               "--size-element-lg",
               "36px"
+            ],
+            [
+              "--size-touch-target",
+              "44px"
             ]
           ]
         }

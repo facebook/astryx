@@ -94,7 +94,7 @@ of a page scroll, so many of these can be read off Safari itself.
 | M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                 | B, C   |
 | M-G14 | `UIKIT_GESTURES.velocity.scrollReleaseWeight`   | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this blend on the same samples. | C      |
 | M-G16 | `UIKIT_GESTURES.velocity.stillness`             | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                  | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
+| M-G17 | `CLICK_GUARD_WINDOW_MS` (utils/clickGuard.ts)   | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                             | C      |
 | M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                 | C      |
 | M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                     | C      |
 | M-G20 | `LongPressGestureRecognizer` taps phase         | Probe app: a UILongPressGestureRecognizer with numberOfTapsRequired 1: HID taps held 0.2, 0.5, 1, 2 s, then the press after gaps of 100 to 600 ms; record which recognize.                       | C      |
@@ -110,7 +110,8 @@ during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
 ignores the lift: the table keeps that one filter and no least-squares
-estimator (`spec:AST-100` FR2); a sheet over a scrolled list leaves the whole
+estimator (`spec:AST-100` FR2; M-G14 is the scroll-view release blend still to
+confirm, and M-G16 is Astryx’s stillness reset, not a UIKit value); a sheet over a scrolled list leaves the whole
 drag to the list (no mid-gesture handoff), so the table carries no handoff
 slop (`spec:AST-094` FR14).
 
@@ -209,6 +210,35 @@ Bookmarks sheet.
 | M-SG18 | iPad S1 (touch; pointer if available)                                                                                                       | tap, hold, drag; hover                                                                                                                                                                                                                                                                                                                                                                            | differences from iPhone                                                                                                                               | B      |
 | M-SG19 | Safari showing the segmented stories vs S1                                                                                                  | the segmented storyboards side by side                                                                                                                                                                                                                                                                                                                                                            | synced recordings (parity proof)                                                                                                                      | B      |
 
+## Stepper (UIStepper)
+
+Subject: a `UIStepper` (value 5, range 0 to 10, step 1) on a plain view of
+the lab's host app, and inside a vertical `UIScrollView` where a scroll view
+is needed. iOS 26 draws the stepper with SwiftUI (`DesignLibraryStepper`), so
+its pressed state is read from rendered frames, not view properties.
+
+Done (iOS 26.2 simulator, Oct 23–24 2026; in the stepper's own table,
+`uikit/stepper.ts`): the tap at the lift, the autorepeat delay and its
+count-based phases, the cadence across a slide between the halves, leaving
+and re-entering the frame after a repeat, bounds and wraps, the delayed
+delivery inside a scroll view, the tracking area (the frame, no margin), the
+pressed fill (one frame on, one frame off, no animation), the shape (a 94 x 32
+capsule, a 1 x 24 divider, 13 pt glyphs with 1.67 pt strokes; colours are
+theme values) and the haptics (none). NumberInput departs from three of them:
+leaving the frame pauses the cadence and coming back resumes it (never a step
+at once), the press keeps tracking within the control profile's expanded area
+(AST-094 FR11), and one steady ramp replaces the count-based phases; the area
+and the ramp's values are proposed, pending owner review (M-STP20). Its touch
+control's shape departs twice: the height follows the field size (md is
+UIKit's 32), and − and + follow the page's direction
+(`design:bidirectionality` DR3). Still open:
+
+| ID      | Scene                   | Gesture                                                                                                              | Extract                                                                                                                 | Method |
+| ------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-STP05 | stepper on a plain view | hold + with one finger, then press and hold − with a second (a device or an XCUITest: the HID path drives one touch) | which half steps, and whether the second touch is ignored                                                               | C      |
+| M-STP16 | stepper on a plain view | hold +, leave the frame at 200 ms, come back at 300 ms; again coming back at 700 ms                                  | step times: a return before the first repeat keeps the press's clock, restarts it, or steps at once                     | C      |
+| M-STP20 | NumberInput on a phone  | hold + from 0 to 50; tap + ten times; tremble on the edge while holding                                              | owner review of the proposed ramp (500 ms, then 250 ms, each interval 0.9 of the last, down to 50 ms) and tracking area | review |
+
 ## Sheets (UISheetPresentationController)
 
 Probe app "SheetProbe" on an iPhone 16 Pro (iPad Pro 11" for M-SH11 / M-SH20 /
@@ -269,3 +299,13 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Lists (UITableView, UICollectionView lists)
+
+Subject "list L": an inset-grouped `UITableView`, a plain `UITableView` and a
+`UICollectionView` list (`UICollectionViewListCell`, default background
+configuration) in a UIKit host app; Settings for the built-in check.
+
+| ID     | Scene                | Gesture                                                                                                           | Extract                                                                                                                                                                                                      | Method |
+| ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| M-LI01 | † list L (all three) | touch a cell, hold 1 s, lift; programmatic `deselectRow(at:animated: true)` and `deselectItem(at:animated: true)` | every `CAAnimation` added in the cell's subtree at highlight, unhighlight and deselect (key path, from / to, duration, timing function, fill); selected-background alpha per frame for 600 ms after the lift | A, C   |

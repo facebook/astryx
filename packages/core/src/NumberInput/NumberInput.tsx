@@ -54,7 +54,10 @@ import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {joinAriaIDs} from '../utils/inputAria';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useStepperTouch} from './NumberInputTouch';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {observeResize} from '../utils/sharedResizeObserver';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {inputDisabledFocusStyles} from '../Field/inputDisabledFocus';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -87,6 +90,24 @@ const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline}
 const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
 const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
+// A coarse primary pointer: the touch presentation resolver's TOUCH_QUERY
+// (utils/touchPresentation.ts) as a StyleX media key, so the touch control
+// paints before hydration on every touch device, iOS and Android alike.
+// Spelled as a literal: the StyleX build gives an imported at-rule key a
+// different priority than its literal, which reorders the cascade;
+// NumberInput.stepperLook.test.tsx keeps it equal to TOUCH_QUERY.
+const TOUCH = '@media (pointer: coarse)';
+// UIStepper's glyphs (motion/uikit/stepper.ts `look`): 13pt paths with
+// 1.67pt strokes, as SVG masks for the touch control's halves.
+const TOUCH_GLYPH_MINUS_MASK =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 13'%3E%3Cpath d='M0 6.5H13' stroke='black' stroke-width='1.67'/%3E%3C/svg%3E\")";
+const TOUCH_GLYPH_PLUS_MASK =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 13'%3E%3Cpath d='M0 6.5H13M6.5 0V13' stroke='black' stroke-width='1.67'/%3E%3C/svg%3E\")";
+// The narrowest Field box the touch control fits in: the control (94 px), the
+// gap and an input box that still shows a few digits. A narrower field keeps
+// the column inside its box.
+const TOUCH_CONTROL_MIN_FIELD_WIDTH = 170;
+
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
@@ -101,6 +122,19 @@ const styles = stylex.create({
   },
   wrapperWithNumberSteppers: {
     paddingInlineEnd: 0,
+  },
+  // Under a finger the steppers leave the field (numberSteppersTouch): the
+  // input box takes its own end padding back, and the Field box gives up the
+  // control's width and a gap at its inline end (fieldWithTouchSteppers), so
+  // the input box and an attached status under it end at the same edge.
+  wrapperWithTouchSteppers: {
+    paddingInlineEnd: {default: 0, [TOUCH]: padInlineEnd},
+  },
+  fieldWithTouchSteppers: {
+    paddingInlineEnd: {
+      default: 0,
+      [TOUCH]: `calc(94px + ${spacingVars['--spacing-2']})`,
+    },
   },
   input: {
     display: 'block',
@@ -158,6 +192,117 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
+    // No touch-action, selection or touch-target style of its own: where the
+    // primary pointer is coarse the gesture host gives the column's kept press
+    // `touch-action: manipulation` (`spec:AST-094` FR18) and its selection
+    // lock (FR41); a fine pointer keeps the browser's defaults (FR19). Each
+    // half keeps its own size: the theme's touch target is not for spin
+    // buttons.
+  },
+  // Every default here is a value, never null: a null default would erase the
+  // same property of a style merged before it (the column's base, an icon's
+  // own display) wherever the gate does not match. The ones the base does not
+  // set are their CSS initial values.
+  // Under a finger (TOUCH above), on iOS and Android alike, the steppers are
+  // one control beside the field, shaped like iOS 26's UIStepper
+  // (motion/uikit/stepper.ts `look`): a 94 px wide capsule of the theme's
+  // neutral fill at the field size's element height (md: UIKit's 32), − at
+  // the inline start and + at the inline end, and a 1 px divider 4 px from
+  // the top and the bottom. StyleX inlines only same-file values, so the
+  // table's numbers are spelled here; NumberInput.stepperLook.test.tsx keeps
+  // them equal.
+  numberSteppersTouch: {
+    position: {default: 'static', [TOUCH]: 'absolute'},
+    insetInlineStart: {
+      default: 'auto',
+      [TOUCH]: `calc(100% + ${borderVars['--border-width']} + ${spacingVars['--spacing-2']})`,
+    },
+    // Centred on the field at any height: pinned top and bottom, auto margins.
+    insetBlockStart: {default: 'auto', [TOUCH]: 0},
+    insetBlockEnd: {default: 'auto', [TOUCH]: 0},
+    // The increment button comes first in the DOM: a reversed row puts it at
+    // the inline end, so − is at the inline start and + at the end, mirrored
+    // in a right-to-left page (design:bidirectionality DR3).
+    flexDirection: {default: 'column', [TOUCH]: 'row-reverse'},
+    width: {
+      default: spacingVars['--spacing-4'],
+      [TOUCH]: '94px',
+    },
+    // The field's size sets the height (the component-size rules): md is
+    // UIKit's 32; touchControlSm and touchControlLg take theirs.
+    height: {default: 'auto', [TOUCH]: sizeVars['--size-element-md']},
+    marginBlockStart: {
+      default: `calc(-1 * ${padBlockStart})`,
+      [TOUCH]: 'auto',
+    },
+    marginBlockEnd: {
+      default: `calc(-1 * ${padBlockEnd})`,
+      [TOUCH]: 'auto',
+    },
+    borderInlineStartWidth: {
+      default: borderVars['--border-width'],
+      [TOUCH]: 0,
+    },
+    borderStartStartRadius: {
+      default: 0,
+      [TOUCH]: '9999px',
+    },
+    borderStartEndRadius: {
+      default: 'var(--_field-radius)',
+      [TOUCH]: '9999px',
+    },
+    borderEndStartRadius: {default: 0, [TOUCH]: '9999px'},
+    borderEndEndRadius: {
+      default: 'var(--_field-radius)',
+      [TOUCH]: '9999px',
+    },
+    backgroundColor: {
+      default: 'transparent',
+      [TOUCH]: colorVars['--color-neutral'],
+    },
+    // Forced colors repaint that fill as Canvas: an outline keeps the
+    // control's edge. Defaults are CSS initial values, so no base is erased.
+    outlineStyle: {
+      default: 'none',
+      [TOUCH]: {default: 'none', '@media (forced-colors: active)': 'solid'},
+    },
+    outlineWidth: {
+      default: 'medium',
+      [TOUCH]: {default: 'medium', '@media (forced-colors: active)': '1px'},
+    },
+    outlineColor: {
+      default: 'currentColor',
+      [TOUCH]: {
+        default: 'currentColor',
+        '@media (forced-colors: active)': 'CanvasText',
+      },
+    },
+    '::after': {
+      content: {default: 'none', [TOUCH]: '""'},
+      position: 'absolute',
+      insetBlockStart: '4px',
+      insetBlockEnd: '4px',
+      insetInlineStart: 'calc(50% - 0.5px)',
+      width: '1px',
+      // Forced colors repaint backgrounds as Canvas: the divider, drawn as
+      // one, opts out and takes the text colour.
+      backgroundColor: {
+        default: colorVars['--color-track'],
+        '@media (forced-colors: active)': 'CanvasText',
+      },
+      forcedColorAdjust: {
+        default: 'auto',
+        '@media (forced-colors: active)': 'none',
+      },
+      pointerEvents: 'none',
+    },
+  },
+  // The touch control at the sm and lg field sizes (md: numberSteppersTouch).
+  touchControlSm: {
+    height: {default: 'auto', [TOUCH]: sizeVars['--size-element-sm']},
+  },
+  touchControlLg: {
+    height: {default: 'auto', [TOUCH]: sizeVars['--size-element-lg']},
   },
   numberStepperButton: {
     boxSizing: 'border-box',
@@ -178,6 +323,79 @@ const styles = stylex.create({
     },
     outline: 'none',
   },
+  // Each half of the touch control: transparent over the capsule, so the
+  // press paint darkens just that half, with the glyph in the primary icon
+  // colour.
+  numberStepperButtonTouch: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      [TOUCH]: 'transparent',
+    },
+    color: {
+      default: colorVars['--color-icon-secondary'],
+      [TOUCH]: colorVars['--color-icon-primary'],
+    },
+  },
+  // UIKit draws a disabled half's glyph in the divider's colour.
+  numberStepperButtonDisabledTouch: {
+    color: {
+      default: colorVars['--color-icon-disabled'],
+      [TOUCH]: colorVars['--color-track'],
+    },
+    '::before': {
+      backgroundColor: {
+        default: 'currentColor',
+        '@media (forced-colors: active)': 'GrayText',
+      },
+    },
+  },
+  decrementButtonTouch: {
+    borderBlockStartWidth: {
+      default: borderVars['--border-width'],
+      [TOUCH]: 0,
+    },
+  },
+  // The column's chevrons, hidden under a finger for the touch control's
+  // glyphs. Set on the icon itself; its default is the icon's own display
+  // (inline-flex), so nothing of the icon's base style is erased.
+  chevronNotTouch: {
+    display: {default: 'inline-flex', [TOUCH]: 'none'},
+  },
+  // UIKit's glyphs, drawn under a finger only, as each half's own decoration
+  // (the half's label names it, so no element of its own): the 13pt vector
+  // glyph as a mask over the half's glyph colour, so its 1.67pt strokes keep
+  // their weight at every pixel ratio (a box that thin snaps to whole device
+  // pixels).
+  touchGlyph: {
+    position: {default: 'static', [TOUCH]: 'relative'},
+    '::before': {
+      content: {default: 'none', [TOUCH]: '""'},
+      position: 'absolute',
+      insetBlockStart: 'calc(50% - 6.5px)',
+      insetInlineStart: 'calc(50% - 6.5px)',
+      width: '13px',
+      height: '13px',
+      // Forced colors repaint backgrounds as Canvas: the glyph, drawn as one,
+      // opts out and takes the text colour (GrayText at a bound).
+      backgroundColor: {
+        default: 'currentColor',
+        '@media (forced-colors: active)': 'CanvasText',
+      },
+      forcedColorAdjust: {
+        default: 'auto',
+        '@media (forced-colors: active)': 'none',
+      },
+      maskRepeat: 'no-repeat',
+      maskSize: '13px 13px',
+      pointerEvents: 'none',
+    },
+  },
+  touchGlyphMinus: {
+    '::before': {maskImage: TOUCH_GLYPH_MINUS_MASK},
+  },
+  touchGlyphPlus: {
+    '::before': {maskImage: TOUCH_GLYPH_PLUS_MASK},
+  },
   numberStepperButtonDisabled: {
     color: colorVars['--color-icon-disabled'],
     cursor: 'default',
@@ -190,6 +408,22 @@ const styles = stylex.create({
   },
   incrementIcon: {
     transform: 'rotate(180deg)',
+  },
+  // The touch control's outer corners, on each half, so a pressed half's
+  // paint keeps the capsule's shape on its own. − is at the inline start and
+  // + at the inline end in either direction (numberSteppersTouch), so logical
+  // corners mirror with the page; 9999px is clamped to half the height.
+  incrementTouchCorners: {
+    borderStartStartRadius: {default: 0, [TOUCH]: 0},
+    borderEndStartRadius: {default: 0, [TOUCH]: 0},
+    borderStartEndRadius: {default: 0, [TOUCH]: '9999px'},
+    borderEndEndRadius: {default: 0, [TOUCH]: '9999px'},
+  },
+  decrementTouchCorners: {
+    borderStartStartRadius: {default: 0, [TOUCH]: '9999px'},
+    borderEndStartRadius: {default: 0, [TOUCH]: '9999px'},
+    borderStartEndRadius: {default: 0, [TOUCH]: 0},
+    borderEndEndRadius: {default: 0, [TOUCH]: 0},
   },
 });
 
@@ -225,6 +459,8 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
 import {formatEditableNumber} from './numberParser';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {isPrimaryClick} from '../utils/primaryClick';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
@@ -523,6 +759,15 @@ function getSteppedValue({
   return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
+/** Whether the primary pointer is coarse (a phone, a tablet). */
+function isCoarsePrimaryPointer(view: Window | null): boolean {
+  return (
+    view != null &&
+    typeof view.matchMedia === 'function' &&
+    view.matchMedia(TOUCH_QUERY).matches
+  );
+}
+
 /**
  * A number input component for collecting numeric user input.
  * Commits text edits on blur or Enter and only calls onChange when the whole
@@ -581,12 +826,15 @@ export function NumberInput({
   'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: NumberInputProps) {
-  const {rest, container} = useFieldInputStyling('NumberInput', restProps, {
-    containerXstyle,
-    containerClassName,
-    containerStyle,
-  });
-  const pressable = usePressFeedback();
+  const {rest, container, hasFieldBox} = useFieldInputStyling(
+    'NumberInput',
+    restProps,
+    {
+      containerXstyle,
+      containerClassName,
+      containerStyle,
+    },
+  );
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -607,6 +855,9 @@ export function NumberInput({
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  // The value a stepper press has stepped to, shown while the press lasts;
+  // the press commits it once, at its release (NumberInputTouch.tsx).
+  const [pressValue, setPressValue] = useState<number | null>(null);
 
   // Disabled-reason tooltip. The tooltip listeners attach to the input container (which already exists) and
   // the input stays perceivable via aria-disabled instead of the native
@@ -676,6 +927,11 @@ export function NumberInput({
   // Preserve pending text while editing. Otherwise show the formatted value
   // at rest and the raw numeric value while focused so it remains editable.
   const displayValue = useMemo(() => {
+    if (pressValue !== null) {
+      return isFocused
+        ? formatEditableNumber(pressValue, locale)
+        : (formatValue?.(pressValue) ?? String(pressValue));
+    }
     if (pendingInput !== null) {
       return pendingInput;
     }
@@ -683,7 +939,15 @@ export function NumberInput({
       return '';
     }
     return isFocused ? formatEditableNumber(value, locale) : formattedValue;
-  }, [formattedValue, isFocused, locale, pendingInput, value]);
+  }, [
+    formatValue,
+    formattedValue,
+    isFocused,
+    locale,
+    pendingInput,
+    pressValue,
+    value,
+  ]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -892,8 +1156,185 @@ export function NumberInput({
     [ref, wheelListenerRef],
   );
 
-  const canIncrement = getNextValue(1) !== valueForStepping;
-  const canDecrement = getNextValue(-1) !== valueForStepping;
+  // One step from any value, for a press that steps from its own value.
+  const stepFrom = useCallback(
+    (current: number | null, direction: StepDirection) =>
+      getSteppedValue({
+        currentValue: current,
+        direction,
+        min,
+        max,
+        step,
+        isIntegerOnly,
+      }),
+    [isIntegerOnly, max, min, step],
+  );
+  // The bounds follow the value on show, a press's while it lasts.
+  const shownValue = pressValue ?? valueForStepping;
+  const canIncrement = stepFrom(shownValue, 1) !== shownValue;
+  const canDecrement = stepFrom(shownValue, -1) !== shownValue;
+
+  // Commits a stepper press's final value, once, at its release.
+  const commitValue = useCallback(
+    (next: number) => {
+      if (isDisabled || isReadOnly) {
+        return;
+      }
+      setPendingInput(null);
+      if (next !== value) {
+        onChange(next);
+      }
+    },
+    [isDisabled, isReadOnly, onChange, value],
+  );
+
+  // The kind of pointer that pressed a stepper, read when its click lands.
+  const stepperPointerTypeRef = useRef<string | null>(null);
+
+  const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    // The steppers never take focus: an editing field stays focused. The
+    // pointerdown itself is canceled, not only the mousedown below: Chrome on
+    // Android focuses a held stepper at its long press unless the touch's
+    // pointerdown is canceled (measured), and that would blur an editing
+    // field. WebKit's Linux build then sends no click after a tap, unlike
+    // iOS Safari and Chrome (measured); it is outside `spec:AST-013`'s
+    // support.
+    event.preventDefault();
+    // Only a primary click presses a stepper: a right click, a pen's barrel
+    // button and a macOS ctrl-click start no press (`spec:AST-094` FR43), so
+    // they name no pointer for the click after them.
+    stepperPointerTypeRef.current = isPrimaryClick(event)
+      ? event.pointerType
+      : null;
+  };
+
+  // iOS Safari follows the second tap of a quick double tap with a
+  // compatibility mousedown even though its pointerdown was prevented; that
+  // mousedown's default would focus the stepper and blur an editing field, so
+  // the column prevents it.
+  const handleStepperMouseDown = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+  };
+
+  // Where a stepper press leaves focus (`component:NumberInput` FR5). A mouse
+  // click moves focus to the field, so the arrow keys and the wheel keep
+  // stepping, and so do a pen and an activation with no pointer (a screen
+  // reader's) where the primary pointer is fine. A finger, and a pen or an
+  // activation with no pointer where the primary pointer is coarse, step the
+  // value without moving focus: there, focusing the field would bring up the
+  // on-screen keyboard, which a stepper never does.
+  const focusAfterPress = (
+    pointerType: string | null,
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
+    const isMouseClick = pointerType === 'mouse' && event.detail > 0;
+    const isFinePointer = !isCoarsePrimaryPointer(
+      event.currentTarget.ownerDocument.defaultView,
+    );
+    if (
+      isMouseClick ||
+      (isFinePointer && (pointerType === 'pen' || pointerType == null))
+    ) {
+      inputRef.current?.focus();
+    }
+  };
+
+  const pressStepper = (
+    direction: StepDirection,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    // Every click answers the press layer: the click after a tracked tap
+    // steps the half the press lifted on (spec:AST-094 FR11), the click after
+    // a press that stepped while held steps nothing, and any other click
+    // steps its own half.
+    const click = stepperTouch.takeClick(event.nativeEvent);
+    // An aria-disabled stepper does nothing, as a natively disabled one did
+    // (spec:AST-085 FR2).
+    if (
+      isDisabled ||
+      isReadOnly ||
+      (direction === 1 ? !canIncrement : !canDecrement)
+    ) {
+      return;
+    }
+    focusAfterPress(pointerType, event);
+    if (click === 'none') {
+      return;
+    }
+    stepValue(click === 'own' ? direction : click === 'increment' ? 1 : -1);
+  };
+
+  // A click on the column itself, not on a half (its border), steps the half
+  // the tap it follows lifted on (spec:AST-094 FR11), and nothing otherwise.
+  // It never reaches the field's click-to-focus; a press there leaves focus
+  // as one on a half does (focusAfterPress). Only a pointer presses the
+  // column itself, so a click no pointer sent moves no focus there.
+  const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.stopPropagation();
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    if (pointerType != null) {
+      focusAfterPress(pointerType, event);
+    }
+    const click = stepperTouch.takeClick(event.nativeEvent);
+    if (click === 'increment' || click === 'decrement') {
+      stepValue(click === 'increment' ? 1 : -1);
+    }
+  };
+
+  // A press on the steppers by any pointer is tracked by the press layer
+  // (NumberInputTouch.tsx); a key or assistive technology steps by the click.
+  const incrementRef = useRef<HTMLButtonElement | null>(null);
+  const decrementRef = useRef<HTMLButtonElement | null>(null);
+  const stepperColumnRef = useRef<HTMLDivElement | null>(null);
+  const stepperTouch = useStepperTouch(
+    {
+      valueForStepping,
+      stepFrom,
+      showPressValue: setPressValue,
+      commitValue,
+      isDisabled,
+      isReadOnly,
+      hasSteppers: hasNumberSteppers,
+    },
+    incrementRef,
+    decrementRef,
+    stepperColumnRef,
+  );
+  // The touch control needs a Field box to give up its width (none renders in
+  // an InputGroup or a horizontal-labels FormLayout) and one wide enough for
+  // it: a numeric width is known now; under a finger, any other width is
+  // measured, through the shared resize observer.
+  const {isTouch} = useTouchPresentation();
+  const fieldRef = useRef<HTMLDivElement | null>(null);
+  const [isMeasuredTooNarrow, setIsMeasuredTooNarrow] = useState(false);
+  const canHaveTouchControl =
+    hasNumberSteppers &&
+    !inputGroup &&
+    hasFieldBox &&
+    !(typeof width === 'number' && width < TOUCH_CONTROL_MIN_FIELD_WIDTH);
+  const measuresField = canHaveTouchControl && isTouch;
+  const hasTouchControl =
+    canHaveTouchControl && !(measuresField && isMeasuredTooNarrow);
+  useIsomorphicLayoutEffect(() => {
+    const field = fieldRef.current;
+    if (!measuresField || field == null) {
+      return undefined;
+    }
+    // The shared observer (one per document) answers once as it subscribes,
+    // then on every resize. A box with no width is not laid out yet.
+    return observeResize(field, () => {
+      const fieldWidth = field.getBoundingClientRect().width;
+      setIsMeasuredTooNarrow(
+        fieldWidth > 0 && fieldWidth < TOUCH_CONTROL_MIN_FIELD_WIDTH,
+      );
+    });
+  }, [measuresField]);
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -946,7 +1387,10 @@ export function NumberInput({
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
-          hasNumberSteppers && styles.wrapperWithNumberSteppers,
+          hasNumberSteppers &&
+            (hasTouchControl
+              ? styles.wrapperWithTouchSteppers
+              : styles.wrapperWithNumberSteppers),
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           isDisabled && inputDisabledFocusStyles.ring,
@@ -1034,64 +1478,79 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div {...stylex.props(styles.numberSteppers)}>
+        <div
+          ref={stepperColumnRef}
+          onPointerDown={handleStepperPointerDown}
+          onMouseDown={handleStepperMouseDown}
+          onClick={handleColumnClick}
+          {...stylex.props(
+            styles.numberSteppers,
+            hasTouchControl && styles.numberSteppersTouch,
+            hasTouchControl && size === 'sm' && styles.touchControlSm,
+            hasTouchControl && size === 'lg' && styles.touchControlLg,
+          )}>
           <button
+            ref={incrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canIncrement || undefined
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canIncrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(1);
-            }}
+            onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
+              hasTouchControl && styles.numberStepperButtonTouch,
+              hasTouchControl && styles.touchGlyph,
+              hasTouchControl && styles.touchGlyphPlus,
               interactionOverlayStyles.backgroundImage,
+              hasTouchControl && styles.incrementTouchCorners,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
+              (isDisabled || isReadOnly || !canIncrement) &&
+                hasTouchControl &&
+                styles.numberStepperButtonDisabledTouch,
             )}>
             <Icon
               icon="numberInput:stepperDown"
               size="xsm"
               color="inherit"
-              xstyle={styles.incrementIcon}
+              xstyle={[
+                styles.incrementIcon,
+                hasTouchControl && styles.chevronNotTouch,
+              ]}
             />
           </button>
           <button
+            ref={decrementRef}
             type="button"
             tabIndex={-1}
-            {...pressable}
             aria-disabled={
               isDisabled || isReadOnly || !canDecrement || undefined
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              // An aria-disabled stepper does nothing, as a natively disabled
-              // one did (spec:AST-085 FR2).
-              if (isDisabled || isReadOnly || !canDecrement) {
-                return;
-              }
-              inputRef.current?.focus();
-              stepValue(-1);
-            }}
+            onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
+              hasTouchControl && styles.numberStepperButtonTouch,
+              hasTouchControl && styles.touchGlyph,
+              hasTouchControl && styles.touchGlyphMinus,
               interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
+              hasTouchControl && styles.decrementButtonTouch,
+              hasTouchControl && styles.decrementTouchCorners,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
+              (isDisabled || isReadOnly || !canDecrement) &&
+                hasTouchControl &&
+                styles.numberStepperButtonDisabledTouch,
             )}>
-            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
+            <Icon
+              icon="numberInput:stepperDown"
+              size="xsm"
+              color="inherit"
+              xstyle={hasTouchControl ? styles.chevronNotTouch : undefined}
+            />
           </button>
         </div>
       )}
@@ -1111,6 +1570,11 @@ export function NumberInput({
   return (
     <Field
       {...container}
+      ref={fieldRef}
+      xstyle={[
+        hasTouchControl && styles.fieldWithTouchSteppers,
+        'xstyle' in container ? container.xstyle : undefined,
+      ]}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
