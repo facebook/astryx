@@ -274,7 +274,8 @@ function moveFocusTo(id: string) {
   // A target that already takes focus (a link, a button) keeps its place in
   // the Tab order; only one that refuses focus is made focusable by script.
   target.focus({preventScroll: true});
-  if (document.activeElement !== target) {
+  // A caller's own tabindex is never overwritten.
+  if (document.activeElement !== target && !target.hasAttribute('tabindex')) {
     target.setAttribute('tabindex', '-1');
     target.focus({preventScroll: true});
   }

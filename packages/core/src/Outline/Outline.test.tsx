@@ -596,6 +596,26 @@ describe('Outline navigate callbacks', () => {
     cleanup();
   });
 
+  it("keeps a target's own tabindex when it cannot take focus", async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings(['intro', 'api']);
+    // A target with its own tab stop that refuses focus right now, as a
+    // hidden panel does in a browser. The test DOM focuses hidden elements,
+    // so the refusal is simulated.
+    const panel = document.createElement('div');
+    panel.id = 'install';
+    panel.setAttribute('tabindex', '0');
+    vi.spyOn(panel, 'focus').mockImplementation(() => {});
+    document.body.appendChild(panel);
+    render(<Outline items={items} />);
+
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    expect(panel).toHaveAttribute('tabindex', '0');
+
+    panel.remove();
+    cleanup();
+  });
+
   it('focuses a target that is already focusable without taking it out of the Tab order', async () => {
     const user = userEvent.setup();
     const cleanup = mountHeadings(['intro', 'api']);
