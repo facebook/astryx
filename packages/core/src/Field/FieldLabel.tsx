@@ -286,7 +286,7 @@ export function FieldLabel({
       )}
       {labelTooltip && (
         <Tooltip content={labelTooltip} placement="above">
-          <Icon icon="info" size="sm" color="inherit" />
+          <Icon icon="info" size="sm" color="inherit" label={labelTooltip} />
         </Tooltip>
       )}
     </>
