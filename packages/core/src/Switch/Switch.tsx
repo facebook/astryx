@@ -679,7 +679,11 @@ export function Switch({
         // than the field wrapper via `...rest`.
         aria-labelledby={ariaLabelledByProp}
         aria-describedby={ariaDescribedBy}
-        aria-invalid={status?.type === 'error' ? true : undefined}
+        // Chromium reports an unchecked native-required checkbox invalid before
+        // any interaction; the invalid state follows status instead.
+        aria-invalid={
+          status?.type === 'error' ? true : isRequired ? false : undefined
+        }
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,

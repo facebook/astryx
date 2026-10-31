@@ -76,6 +76,9 @@ Approved implementations:
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
 - `packages/core/src/NumberInput/numberParser.ts` — reads typed and pasted
   numbers under the field's locale
+- `packages/core/src/utils/timeFormat.ts` — time-of-day text for TimeInput and
+  DateTimeInput: the locale's hour cycle, digits, separator, and day periods,
+  formatted and parsed back
 - `packages/core/src/i18n/useCollator.ts`
 - `packages/charts/src/formatters.ts`
 
@@ -184,6 +187,28 @@ function useSortedNames(names: string[]) {
   );
 }
 ```
+
+### `@astryx/no-internal-barrel-import`
+
+Reports a relative import, inside a package's own shipped source, that
+resolves to a folder's index file (a barrel) instead of the module that defines
+what it imports: `import {List} from '../List'` rather than
+`import {List} from '../List/List'`. A barrel pulls every sibling export into
+the importer's module graph, so a lazily imported module that goes through one
+drags unrelated code, and in a single-file bundle import cycles, along with it.
+It checks `import`, `export … from` and literal `import()`; type-only imports
+and exports are erased by the compiler and allowed. Public consumers keep
+importing from the package entry (`@astryxdesign/core`), which this rule never
+reads.
+
+The repo config turns it on for `packages/*/src`, outside tests, stories and
+test helpers, at the strict-mode severity (an error in CI). Barrel imports that
+existed when the rule arrived are listed by file in
+`no-internal-barrel-import.baseline.json` and stay allowed until a codemod
+removes them; remove an entry when you fix its import, and never add one.
+`node internal/eslint-plugin-astryx/no-internal-barrel-import.baseline.mjs`
+rewrites the list from the source (`--check` verifies it), for example after
+merging `main` into this rule's own branch or after a codemod.
 
 ### `@astryx/no-core-internal-import`
 

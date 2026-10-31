@@ -41,7 +41,7 @@ describe('stable and canary publication authority', () => {
     expect(gateInputs['release-version']).toBeDefined();
     expect(gateInputs['plan-digest']).toBeDefined();
     const gate = step(
-      ci.jobs['check-scope'],
+      ci.jobs['release-authority'],
       'Validate active release authority',
     ).run;
     expect(gate).toContain('--release-version "$RELEASE_VERSION"');
@@ -82,6 +82,33 @@ describe('stable and canary publication authority', () => {
     const publish = step(stable, 'Publish changed packages').run;
     expect(publish).toContain('--tag latest');
     expect(publish).not.toContain('--tag canary');
+  });
+
+  it('reports stable success only after registry propagation is verified', () => {
+    const publishStep = step(stable, 'Publish changed packages');
+    expect(publishStep.env.RELEASE_VERSION).toBe(
+      "${{ inputs['release-version'] }}",
+    );
+    const publish = publishStep.run;
+    const verify = publish.indexOf('node scripts/npm/verify-published.mjs');
+    const success = publish.indexOf(
+      'Published $published package(s); registry verification passed.',
+    );
+    expect(verify).toBeGreaterThan(0);
+    expect(publish).toContain('--version "$RELEASE_VERSION"');
+    expect(publish).toContain('--tag latest');
+    expect(success).toBeGreaterThan(verify);
+    expect(publish.indexOf('if [ "$DRY_RUN" = "true" ]')).toBeLessThan(verify);
+  });
+
+  it('never cancels a canary that has started publishing', () => {
+    // A cancelled canary can leave a partial package set on npm; pending runs
+    // still coalesce under a non-cancelling group.
+    expect(canary.concurrency).toEqual({
+      group: 'npm-release-canary',
+      'cancel-in-progress': false,
+    });
+    expect(canary.concurrency.group).not.toBe(stable.concurrency.group);
   });
 
   it('publishes canaries only while main is strictly ahead of stable', () => {
