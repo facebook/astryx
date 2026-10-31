@@ -596,11 +596,12 @@ async function reconcileSpecOwnerGate({
     state: 'pending',
     description: `Reconciling exact head ${initialHead.slice(0, 7)}.`,
   });
-  if (await restoreNewerStatus(initialHead)) return;
   // The spec half is unknown until this run decides it, so the review gate
   // waits meanwhile: a run that fails part-way (after a /revoke-spec, say)
-  // leaves it pending, never an earlier success.
+  // leaves it pending, never an earlier success. Written before the yield
+  // check, like the mirror, so a newer run's decision is restored over it.
   await publishReviewGate(initialHead, readSpecGate([]));
+  if (await restoreNewerStatus(initialHead)) return;
 
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();
   const snapshot = await fetchSnapshot();

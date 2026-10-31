@@ -702,6 +702,31 @@ describe('spec owner workflow reconciliation', () => {
     });
   });
 
+  it('restores a newer decision that lands just before the waiting write', async () => {
+    let landed = false;
+    const harness = createHarness({
+      onCreateStatus: (input, state) => {
+        if (landed || input.context !== 'review-required') return;
+        landed = true;
+        // A newer run decides success just before this run's waiting write.
+        state.statuses.unshift(
+          trustedStatus({
+            runId: 101n,
+            state: 'success',
+            description: 'Mirrors review-required \u00b7 spec ok (@cixzhang)',
+          }),
+        );
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'success',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+  });
+
   it('keeps the review gate waiting when a run fails part-way', async () => {
     // An approved head: the gate succeeded on the earlier run.
     const harness = createHarness({
