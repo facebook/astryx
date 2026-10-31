@@ -16,7 +16,15 @@
  * - /packages/cli/assets/templates/blocks/components/Text/ (showcase blocks)
  */
 
-import {lazy, Suspense, useEffect, useRef, type ReactNode} from 'react';
+import {
+  lazy,
+  Suspense,
+  use,
+  useCallback,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   TextType,
@@ -47,6 +55,7 @@ import {
   truncationTooltipStyles,
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
+import {TextFocusOwnerContext} from './TextFocusOwnerContext';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -231,7 +240,6 @@ const CONTROL_SELECTOR = [
   '[role="switch"]',
   '[role="checkbox"]',
   '[role="radio"]',
-  '[data-pressable-container]',
 ].join(', ');
 
 /**
@@ -306,29 +314,32 @@ export function Text({
   // Ref for the text element (used as tooltip anchor)
   const textRef = useRef<HTMLElement>(null);
 
-  // Keep the merged ref stable across rerenders.
-  const mergedRef = useMergedRefs(ref, truncation.ref, textRef);
-
   // A truncated Text is a tab stop so its tooltip opens from the keyboard
-  // (FR4), unless it sits inside a control that already takes focus (a link,
-  // a button, a menu item, a clickable card): a focusable span nested in a
-  // control would add a second, unnamed tab stop inside it. The check runs
-  // when the tooltip turns on, after ancestors such as a clickable card have
-  // marked themselves, and a caller's own tabIndex wins.
-  const callerTabIndex = props.tabIndex;
-  useEffect(() => {
-    const element = textRef.current;
-    if (!tooltipEnabled || element == null || callerTabIndex != null) {
-      return;
+  // (FR4), unless it sits inside a control that already takes focus: one that
+  // wraps it in the DOM (a link, a button, a menu item), found from its
+  // ancestors when the element attaches, or one that provides
+  // TextFocusOwnerContext (a clickable card). A focusable span nested in a
+  // control would add a second, unnamed tab stop inside it. The stop renders
+  // as a prop, so it is in the DOM before the tooltip attaches its focus
+  // trigger, and a caller's own tabIndex still wins.
+  const isInsideFocusOwner = use(TextFocusOwnerContext);
+  const [isInsideControl, setIsInsideControl] = useState(false);
+  const controlRef = useCallback((element: HTMLElement | null) => {
+    if (element != null) {
+      setIsInsideControl(
+        element.parentElement?.closest(CONTROL_SELECTOR) != null,
+      );
     }
-    if (element.parentElement?.closest(CONTROL_SELECTOR) != null) {
-      return;
-    }
-    element.tabIndex = 0;
-    return () => {
-      element.removeAttribute('tabindex');
-    };
-  }, [tooltipEnabled, callerTabIndex]);
+  }, []);
+  const isTabStop = tooltipEnabled && !isInsideControl && !isInsideFocusOwner;
+
+  // Keep the merged ref stable across rerenders.
+  const mergedRef = useMergedRefs(
+    ref,
+    truncation.ref,
+    textRef,
+    maxLines > 0 && hasTruncateTooltip !== false ? controlRef : undefined,
+  );
 
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
@@ -368,6 +379,7 @@ export function Text({
           className,
           {...style, ...inlineStyle},
         )}
+        tabIndex={isTabStop ? 0 : undefined}
         {...props}>
         {children}
       </Component>

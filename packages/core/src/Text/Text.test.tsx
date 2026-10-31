@@ -371,6 +371,11 @@ describe('truncated text shows one tooltip, not two', () => {
               Inside a clickable card, wider than the space it has
             </Text>
           </ClickableCard>
+          <div data-pressable-container="true">
+            <Text type="body" maxLines={1}>
+              Inside a marked overlay, wider than the space it has
+            </Text>
+          </div>
           <main tabIndex={-1}>
             <Text type="body" maxLines={1}>
               Inside a focusable region, wider than the space it has
@@ -396,6 +401,13 @@ describe('truncated text shows one tooltip, not two', () => {
           'Inside a clickable card, wider than the space it has',
         ),
       ).not.toHaveAttribute('tabindex');
+      // An Overlay marks its container as pressable even when nothing there
+      // takes focus; that alone does not make it a control.
+      expect(
+        screen.getByText(
+          'Inside a marked overlay, wider than the space it has',
+        ),
+      ).toHaveAttribute('tabindex', '0');
       // A focusable region (a main landmark, a scroll container) is not a
       // control, so a Text inside it is still a tab stop.
       expect(
@@ -403,6 +415,29 @@ describe('truncated text shows one tooltip, not two', () => {
           'Inside a focusable region, wider than the space it has',
         ),
       ).toHaveAttribute('tabindex', '0');
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps a caller's tabIndex passed after the text is truncated", async () => {
+    const restore = withOverflow();
+    try {
+      const text = 'A label far wider than the space it has been given';
+      const {rerender} = render(
+        <Text type="body" maxLines={1}>
+          {text}
+        </Text>,
+      );
+      await waitFor(() =>
+        expect(screen.getByText(text)).toHaveAttribute('tabindex', '0'),
+      );
+      rerender(
+        <Text type="body" maxLines={1} tabIndex={-1}>
+          {text}
+        </Text>,
+      );
+      expect(screen.getByText(text)).toHaveAttribute('tabindex', '-1');
     } finally {
       restore();
     }
