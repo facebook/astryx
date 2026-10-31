@@ -2293,6 +2293,67 @@ describe('DateTimeInput', () => {
     });
   });
 
+  describe('calendar while the popover is closed', () => {
+    const calendarGrid = () => document.querySelector('[role="grid"]');
+
+    it('renders no calendar until the popover opens, and none after it closes', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-01-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+      const toggle = getButton('Open calendar');
+      expect(calendarGrid()).toBeNull();
+
+      fireEvent.click(toggle);
+      expect(calendarGrid()).not.toBeNull();
+
+      fireEvent.click(toggle);
+      expect(calendarGrid()).toBeNull();
+    });
+
+    it('opens on the month of a date typed while closed', () => {
+      function Controlled() {
+        const [value, setValue] = useState<ISODateTimeString | undefined>(
+          '2026-01-15T10:00' as ISODateTimeString,
+        );
+        return (
+          <DateTimeInput label="Meeting" value={value} onChange={setValue} />
+        );
+      }
+      render(<Controlled />);
+      const dateInput = screen.getAllByRole('combobox')[0];
+
+      fireEvent.change(dateInput, {target: {value: 'March 5, 2027'}});
+      fireEvent.keyDown(dateInput, {key: 'ArrowDown'});
+
+      expect(calendarGrid()).toHaveAccessibleName('March 2027');
+    });
+
+    it('moves focus into the calendar on each open from the toggle', async () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-01-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+      const toggle = getButton('Open calendar');
+
+      for (let i = 0; i < 2; i++) {
+        fireEvent.click(toggle);
+        // The first calendar control takes focus, not the dialog surface.
+        await waitFor(() => {
+          expect(getButton('Previous month')).toHaveFocus();
+        });
+        fireEvent.click(toggle);
+        expect(calendarGrid()).toBeNull();
+      }
+    });
+  });
+
   describe('weekStartsOn', () => {
     // The calendar popover renders in the top layer; jsdom keeps the content in
     // the DOM but role queries skip it, so read the columnheaders directly.

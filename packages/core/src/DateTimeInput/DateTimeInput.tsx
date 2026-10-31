@@ -1937,17 +1937,21 @@ function PointerDateTimeField({
 
       {!usesNativePicker &&
         popover.render(
-          <Calendar
-            handleRef={calendarRef}
-            mode="single"
-            value={valueParts.date ?? null}
-            onChange={(d: ISODateString) => handleDateChange(d, 'calendar')}
-            min={calendarMin}
-            max={calendarMax}
-            dateConstraints={dateConstraints}
-            numberOfMonths={numberOfMonths}
-            weekStartsOn={weekStartsOn}
-          />,
+          // Mounted only while open, like the time list below; the calendar
+          // opens on the current value.
+          !popover.isOpen ? null : (
+            <Calendar
+              handleRef={calendarRef}
+              mode="single"
+              value={valueParts.date ?? null}
+              onChange={(d: ISODateString) => handleDateChange(d, 'calendar')}
+              min={calendarMin}
+              max={calendarMax}
+              dateConstraints={dateConstraints}
+              numberOfMonths={numberOfMonths}
+              weekStartsOn={weekStartsOn}
+            />
+          ),
           {placement: 'below', alignment: 'start'},
         )}
 

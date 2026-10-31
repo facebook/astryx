@@ -633,15 +633,19 @@ describe('DateInput', () => {
       }
 
       render(<ControlledDateInput />);
-      await user.click(getButton('Open calendar'));
+      const toggle = getButton('Open calendar');
+      await user.click(toggle);
       await user.click(getButton(/January 15, 2026/));
+      // The calendar mounts only while open; reopen it to read the selection.
+      await user.click(toggle);
       expect(
         screen.getAllByRole('gridcell', {selected: true, hidden: true}),
       ).toHaveLength(1);
+      await user.click(toggle);
 
       await user.click(getButton('Clear Date'));
       expect(screen.getByRole('combobox')).toHaveValue('');
-      await user.click(getButton('Open calendar'));
+      await user.click(toggle);
 
       expect(
         screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
@@ -1152,6 +1156,53 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Mar 10, 2026')).toBeInTheDocument();
     });
   });
+  describe('calendar while the popover is closed', () => {
+    const calendarGrid = () => document.querySelector('[role="grid"]');
+
+    it('renders no calendar until the popover opens, and none after it closes', () => {
+      render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      const toggle = getButton('Open calendar');
+      expect(calendarGrid()).toBeNull();
+
+      fireEvent.click(toggle);
+      expect(calendarGrid()).not.toBeNull();
+
+      fireEvent.click(toggle);
+      expect(calendarGrid()).toBeNull();
+    });
+
+    it('opens on the month of a date typed while closed', () => {
+      function Controlled() {
+        const [value, setValue] = useState<ISODateString | undefined>(
+          '2026-01-25',
+        );
+        return <DateInput label="Date" value={value} onChange={setValue} />;
+      }
+      render(<Controlled />);
+      const input = screen.getByRole('combobox');
+
+      fireEvent.change(input, {target: {value: 'March 5, 2027'}});
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+
+      expect(calendarGrid()).toHaveAccessibleName('March 2027');
+    });
+
+    it('moves focus into the calendar on each open from the toggle', async () => {
+      render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      const toggle = getButton('Open calendar');
+
+      for (let i = 0; i < 2; i++) {
+        fireEvent.click(toggle);
+        // The first calendar control takes focus, not the dialog surface.
+        await waitFor(() => {
+          expect(getButton('Previous month')).toHaveFocus();
+        });
+        fireEvent.click(toggle);
+        expect(calendarGrid()).toBeNull();
+      }
+    });
+  });
+
   describe('weekStartsOn', () => {
     // The calendar popover renders in the top layer; jsdom keeps the content in
     // the DOM but role queries skip it, so read the columnheaders directly.

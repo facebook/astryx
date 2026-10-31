@@ -63,6 +63,7 @@ import {
   isImeKeyEvent,
   mergeProps,
 } from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {TrailingKeyDownContext} from './trailingKeyDown';
 import {
   type FieldInputBaseProps,
@@ -416,6 +417,7 @@ export function Typeahead<T extends SearchableItem>({
   controlStyle,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: TypeaheadProps<T>) {
   const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
@@ -428,6 +430,7 @@ export function Typeahead<T extends SearchableItem>({
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;
   const inputLabelId = useId();
+  const fieldLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
@@ -609,6 +612,13 @@ export function Typeahead<T extends SearchableItem>({
     inputGroup,
   );
 
+  // A caller aria-labelledby names the input together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const inputLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelId, ariaLabelledByProp)
+      : ariaLabelledBy;
+
   const sizeStyle = wrapperSizeStyles[size];
 
   const typeaheadContent = (
@@ -684,7 +694,7 @@ export function Typeahead<T extends SearchableItem>({
                     .filter(Boolean)
                     .join(' ') || undefined
                 }
-                ariaLabelledBy={ariaLabelledBy}
+                ariaLabelledBy={inputLabelledBy}
                 onChangeQuery={onChangeQuery}
                 onOpenChange={onOpenChange}
                 debounceMs={debounceMs}
@@ -735,6 +745,7 @@ export function Typeahead<T extends SearchableItem>({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelId : undefined}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

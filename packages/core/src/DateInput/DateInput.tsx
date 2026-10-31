@@ -948,17 +948,21 @@ function PointerDateField({
       {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {statusIcon}
       {popover.render(
-        <Calendar
-          handleRef={calendarRef}
-          mode="single"
-          value={optimisticValue ?? null}
-          onChange={handleDateSelect}
-          min={min}
-          max={max}
-          dateConstraints={dateConstraints}
-          numberOfMonths={numberOfMonths}
-          weekStartsOn={weekStartsOn}
-        />,
+        // The layer renders its children open or closed, so mount the
+        // calendar only while it is open; it opens on the current value.
+        !popover.isOpen ? null : (
+          <Calendar
+            handleRef={calendarRef}
+            mode="single"
+            value={optimisticValue ?? null}
+            onChange={handleDateSelect}
+            min={min}
+            max={max}
+            dateConstraints={dateConstraints}
+            numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
+          />
+        ),
         {placement: 'below', alignment: 'start'},
       )}
       {showsDisabledMessage &&
