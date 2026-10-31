@@ -271,10 +271,13 @@ function moveFocusTo(id: string) {
   if (target == null) {
     return;
   }
-  if (!target.hasAttribute('tabindex')) {
-    target.setAttribute('tabindex', '-1');
-  }
+  // A target that already takes focus (a link, a button) keeps its place in
+  // the Tab order; only one that refuses focus is made focusable by script.
   target.focus({preventScroll: true});
+  if (document.activeElement !== target) {
+    target.setAttribute('tabindex', '-1');
+    target.focus({preventScroll: true});
+  }
 }
 
 // =============================================================================

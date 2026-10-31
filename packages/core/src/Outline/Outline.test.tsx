@@ -596,6 +596,25 @@ describe('Outline navigate callbacks', () => {
     cleanup();
   });
 
+  it('focuses a target that is already focusable without taking it out of the Tab order', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings(['intro', 'api']);
+    // The "install" item points at a link, which is focusable on its own.
+    const link = document.createElement('a');
+    link.id = 'install';
+    link.href = '#install-details';
+    link.textContent = 'Install details';
+    document.body.appendChild(link);
+    render(<Outline items={items} />);
+
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    expect(link).toHaveFocus();
+    expect(link).not.toHaveAttribute('tabindex');
+
+    link.remove();
+    cleanup();
+  });
+
   it('fires onNavigateStart on click and onNavigateEnd when the scroll settles', async () => {
     const user = userEvent.setup();
     const cleanup = mountHeadings();
