@@ -33,15 +33,15 @@ system_specs: [spec:AST-057, spec:AST-103]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `ListItem` with `label`, `description`, `startContent`, `endContent`, `onClick`, `interactiveRef`, `href`, `target`, `rel`, `align`, `isDisabled`, `isSelected`, `swipeActions`, `swipeBehavior`, `xstyle`, `className`, `style`, and `ref`; target `list-item`. `itemKey` (`spec:AST-103` DEC-4) is specified but not shipped. |
-| Behavior                | One `<li>` row rendered by `component:Item`, which receives every row prop. Inside a List the row takes the list's density, dividers, edge treatment, and marker; outside a List it uses Item's defaults and draws no marker.                                                                                                   |
-| End-user impact         | Each list entry reads as one list item, with the list's bullet, number, or task checkbox before it and the same interaction Item gives any row.                                                                                                                                                                                 |
-| Builder impact          | None.                                                                                                                                                                                                                                                                                                                           |
-| Compatibility/readiness | Records shipped behavior; no public change. Two implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                         |
-| Review checks           | Reject a row that is not an `<li>`, a ListItem-level edge, density, or divider prop, a marker drawn outside a marked List, or a dropped Item prop.                                                                                                                                                                              |
-| Governing rules         | `component:Item` (`align` for start and end content); `component:List`; `family:navigation-destinations`; `spec:AST-057`; `spec:AST-103`; `architecture:component-theming-surface`; `architecture:component-style-authoring` INV7.                                                                                              |
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract         | `ListItem` with `label`, `description`, `startContent`, `endContent`, `onClick`, `interactiveRef`, `href`, `target`, `rel`, `align`, `isDisabled`, `isSelected`, `swipeActions`, `swipeBehavior`, `xstyle`, `className`, `style`, and `ref`; the row carries `component:List`'s `list-item` target. `itemKey` (`spec:AST-103` DEC-4) is specified but not shipped. |
+| Behavior                | One `<li>` row rendered by `component:Item`, which receives every row prop. Inside a List the row takes the list's density, dividers, edge treatment, and marker; outside a List it uses Item's defaults and draws no marker.                                                                                                                                      |
+| End-user impact         | Each list entry reads as one list item, with the list's bullet, number, or task checkbox before it and the same interaction Item gives any row.                                                                                                                                                                                                                    |
+| Builder impact          | None.                                                                                                                                                                                                                                                                                                                                                              |
+| Compatibility/readiness | Records shipped behavior; no public change. Two implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                                                            |
+| Review checks           | Reject a row that is not an `<li>`, a ListItem-level edge, density, or divider prop, a marker drawn outside a marked List, or a dropped Item prop.                                                                                                                                                                                                                 |
+| Governing rules         | `component:Item` (`align` for start and end content); `component:List`; `family:navigation-destinations`; `spec:AST-057`; `spec:AST-103`; `architecture:component-theming-surface`; `architecture:component-style-authoring` INV7.                                                                                                                                 |
 
 This table is a review projection; the body below is authoritative.
 
@@ -49,7 +49,7 @@ This table is a review projection; the body below is authoritative.
 
 ListItem is the row a List renders for each entry. It owns turning a row into
 a list item: the `<li>` element, what it reads from its List, the marker drawn
-before it, and its `list-item` target. Everything a row does as a row comes
+before it, and how it applies `component:List`'s `list-item` target. Everything a row does as a row comes
 from `component:Item`. Consumer usage lives in `ListItem.doc.mjs`.
 
 ## Compatibility and migration
@@ -82,7 +82,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Reading density, dividers, edge treatment, and marker from the enclosing
   List, and the defaults outside one (FR2, FR3).
 - Drawing the marker or a task item's read-only checkbox (FR4).
-- The `list-item` target (FR5).
+- Applying `component:List`'s `list-item` target to the row (FR5).
 
 **Does not own / non-goals**
 
@@ -112,7 +112,7 @@ No component-local concept beyond the consumer props; row props are
 | FR2 | Inside a List, the row takes the list's `density`, its `hasDividers` setting, which draws a divider between rows with no extra element and square corners, and its `edge` treatment.                                                                                                                                                                                                                                                                    | Current source and tests |
 | FR3 | Outside a List, the row uses `balanced` density, no dividers, the `padded` treatment, and no marker, keeping Item's inline inset.                                                                                                                                                                                                                                                                                                                       | Current source and tests |
 | FR4 | In a List whose `listStyle` is `disc`, `circle`, or `decimal`, the row draws that marker before its content: a disc or circle shape, or a counter number. A task state set for the row draws a read-only, labelled checkbox in the marker's place. Each marker and the task checkbox sit on the label's first line. A List whose `listStyle` is `none` draws neither. Other markers, set internally for Markdown's nested lists, are uncontracted here. | Current source and tests |
-| FR5 | The row carries the `list-item` target, merged with the caller's `className` and `style`; `xstyle` applies after ListItem's own styles.                                                                                                                                                                                                                                                                                                                 | Current source           |
+| FR5 | The row carries `component:List`'s `list-item` target, merged with the caller's `className` and `style`; `xstyle` applies after ListItem's own styles.                                                                                                                                                                                                                                                                                                  | Current source           |
 
 ### Allowed variation
 
@@ -167,8 +167,9 @@ migration, so the map is deferred.
 - `component:List` owns the edge treatment and its row geometry and inset;
   its record leaves the density, divider, and marker-style settings
   uncontracted, and FR2 and FR4 here cover what a row does with them.
-- `architecture:component-theming-surface` owns target qualification; FR5 owns
-  the `list-item` target.
+- `architecture:component-theming-surface` owns target qualification;
+  `component:List` owns the `list-item` target, and FR5 covers how the row
+  applies it.
 
 ## Verification map
 
