@@ -3,7 +3,7 @@
 /**
  * @file Item.test.tsx
  * @input Uses vitest, @testing-library/react, Item component
- * @output Unit tests for Item
+ * @output Unit tests for Item, including flat marker DOM and numbered-row scope
  * @position Testing; validates Item component implementation
  *
  * SYNC: When Item component changes, update tests to match new behavior
@@ -31,6 +31,7 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {List, ListItem} from '../List';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -479,6 +480,12 @@ describe('Item', () => {
     expect(root?.querySelector('[data-testid="marker"]')).toBeInTheDocument();
     expect(root?.querySelector('[data-testid="start"]')).toBeInTheDocument();
     expect(root?.querySelector('[data-testid="end"]')).toBeInTheDocument();
+    // A bullet or caller-owned marker needs no extra formatting group: marker,
+    // start, primary and end retain the released flat row structure.
+    expect(root?.children).toHaveLength(4);
+    expect(button?.parentElement).toBe(root);
+    expect(screen.getByTestId('start').parentElement?.parentElement).toBe(root);
+    expect(screen.getByTestId('end').parentElement?.parentElement).toBe(root);
     expect(
       button?.querySelector('[data-testid="marker"]'),
     ).not.toBeInTheDocument();
@@ -590,6 +597,38 @@ describe('Item', () => {
       />,
     );
     expect(hasStrut()).toBe(false);
+  });
+
+  it('groups only the numbered composing row, not marked Items in its slots', () => {
+    render(
+      <List listStyle="decimal">
+        <ListItem
+          data-testid="numbered-row"
+          label="Numbered"
+          startContent={<span data-testid="numbered-start">S</span>}
+          endContent={
+            <Item
+              data-testid="nested-row"
+              label="Nested item"
+              marker={<span>•</span>}
+              startContent={<span data-testid="nested-start">S</span>}
+              endContent={<span>E</span>}
+            />
+          }
+        />
+      </List>,
+    );
+    const numbered = screen.getByTestId('numbered-row');
+    expect(numbered.children).toHaveLength(2);
+    const group = numbered.children[1];
+    expect(
+      screen.getByTestId('numbered-start').parentElement?.parentElement,
+    ).toBe(group);
+    const nested = screen.getByTestId('nested-row');
+    expect(nested.children).toHaveLength(4);
+    expect(
+      screen.getByTestId('nested-start').parentElement?.parentElement,
+    ).toBe(nested);
   });
 
   // ===========================================================================

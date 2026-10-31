@@ -73,8 +73,9 @@ they are separately named.
 - Define compatibility semantics or release-pair delta classes. Those belong to
   [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
   exact-main release-check execution boundary.
-- Remove required check names, branch protection, merge-queue coverage, or
-  exact-head owner approval.
+- Remove required check names (other than retiring the `spec-owner-approval`
+  mirror, FR15), branch protection, merge-queue coverage, or owner approval of
+  spec content.
 - Infer safety from file extensions, directory names, or the absence of a known
   risky path.
 - Treat tests, specifications, generated files, or changesets as proof that the
@@ -92,7 +93,7 @@ they are separately named.
 
   | Surface             | Positive path ownership                                                                                                            | Current check owners                                                                                                                                 |
   | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and exact-head spec-owner approval                                                                                              |
+  | `knowledge`         | canonical system, family, design, theme, component, and module records                                                             | knowledge validation and spec-owner approval of the current spec content                                                                             |
   | `docsite`           | the docsite application                                                                                                            | docsite generation and tests                                                                                                                         |
   | `node-tooling`      | admitted operational Node tooling whose consumers are covered by Node contract tests                                               | Node Vitest, repository guardrails, and ESLint                                                                                                       |
   | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                          | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
@@ -257,7 +258,8 @@ they are separately named.
   relevant on that trigger (`paths:`), and those paths name what the workflow
   reads or runs, never everything; a merge-group entry, which cannot filter by
   path, keeps running. A workflow that reports a required context (`build`,
-  `test`, `docsite-test`, `lint`, `spec-owner-approval`, `review-required`)
+  `test`, `docsite-test`, `lint`, `review-required`, and the
+  `spec-owner-approval` mirror while it is required, FR15)
   starts on every pull request and is never path-filtered: the trusted
   classifier's positive surfaces (FR1–FR5) choose the work inside it, and a job
   whose suite does not apply reports success without running it (FR7). A push
@@ -266,6 +268,19 @@ they are separately named.
   `paths-ignore` or another exclusion list, which would run on any path no one
   thought to exclude.
 
+- **FR15 — One review gate carries code review and spec approval.** The
+  review workflow (`review-signal.yml`) and `review-clear.yml` publish
+  `review-required`, which carries both the code review and spec-owner approval
+  (`architecture:knowledge-contracts` DEC-14); no other workflow publishes a
+  review or spec context. `spec-owner-approval` is published only as a mirror of
+  the spec half while branch protection still requires it. The spec-owner job
+  evaluates pull-request, review, and owner-command comment events, runs
+  without cancel-in-progress, and publishes a terminal state for the head it
+  read. It skips fork review events, whose tokens are read-only; fork approvals
+  use the owner command. Only the review-signal job keeps a per-pull-request
+  cancel group. Each writer of `review-required` composes both halves and links
+  a spec wait to the spec decision's details. Comments that are not owner
+  commands start no runner, and no scheduled job reads approvals.
 - **FR16 — One author's pull requests share the heavy suites.** On a pull
   request, the heavy browser suites (the interaction proofs and the Build
   package's browser and fixture-contrast contracts) run only when the pull
@@ -343,6 +358,7 @@ read change (FR14).
 | FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests        | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts                                                                                                       | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                                    |
 | FR13     | classifier, workflow contract, component-analysis and RTL-scope tests              | component change; shared module; Changeset beside code; infrastructure path; incomplete list; no build                                                                                             | an infrastructure path is scoped, a file-system guard test is skipped, a reverse dependent leaves visual/RTL or enters PR accessibility, or a full-suite event is narrowed                     |
 | FR14     | `workflow-paths.test.mjs` over every workflow                                      | path allowlist; required-context workflow                                                                                                                                                          | a `paths-ignore`, a match-all or exclusion glob, or a path filter on a workflow that reports a required context fails                                                                          |
+| FR15     | workflow contract and reconciler tests                                             | ENGOWNER spec PR; owner command; other comment; fork review; non-spec PR                                                                                                                           | `review-required` succeeds while spec approval is missing, another workflow publishes a review context, a fork review starts the spec checks, or a non-command comment starts a runner         |
 | FR16     | `heavy-caps-action.test.mjs` cap cases and heavy-job contract                      | fourth-oldest PR; thirteenth heavy run of the day, beside cancelled, light and other-branch runs; agent lane and its five-PR and forty-run backstops; bot; the deciding run; re-run; failed lookup | a heavy suite that runs ahead of the author's three oldest PRs, or past the daily cap, a capped job that passes, or a re-run that is held fails                                                |
 | FR17     | `ci-pr-gate.test.mjs` over every `pull_request` workflow and the shared conditions | branch here, fork with and without `ci:run`, another label, draft with the label, ready, push, merge group, dispatch                                                                               | a job that can start on a pull request without the condition, a label trigger, a required job that skips for a pull request that may not run CI, or a draft or unlabelled fork that runs fails |
 
@@ -500,6 +516,20 @@ starts.
 
 Rejected: `paths-ignore` lists (they run on whatever is new); path-filtering a
 required context (its check would never report).
+
+### DEC-9 — Spec-owner approval runs in the review workflow
+
+**Reference:** `spec:AST-030/DEC-9`
+**Decider:** `cixzhang`, `2026-10-28`
+
+The spec-owner gate and the review gate read the same pull-request events, so
+they run in one workflow, and a contributor reads one review gate:
+`review-required` names whichever review is still missing, code first.
+`spec-owner-approval` remains a mirror until branch protection stops requiring
+it, so the merge rules change only when an administrator removes it.
+
+Rejected: keeping a separate spec-owner workflow, which split one review state
+across two workflows and two visible gates.
 
 ## Open questions
 
