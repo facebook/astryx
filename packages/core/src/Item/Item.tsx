@@ -55,6 +55,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useClickableContainer} from '../hooks/useClickableContainer';
+import {TextFocusOwnerContext} from '../Text/TextFocusOwnerContext';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -920,21 +921,27 @@ export function Item({
       )}
       role={role}
       onClick={rootOnClick}>
-      <ItemDescriptionContext
-        value={hasRenderableDescription ? descriptionID : null}>
-        {isRenderable(marker) && marker}
-        {isRenderable(marker) && columnMarker === marker ? (
-          <span
-            {...stylex.props(
-              styles.markerContent,
-              align === 'first-line' && styles.markerContentFirstLine,
-            )}>
-            {content}
-          </span>
-        ) : (
-          content
-        )}
-      </ItemDescriptionContext>
+      {/* An interactive item takes focus through its own control (the row, or
+          the delegate a CheckboxListItem or RadioListItem passes as
+          interactiveRef), so a truncated Text inside adds no tab stop. A
+          non-interactive item leaves the surrounding value alone. */}
+      <MaybeTextFocusOwner isOwner={isInteractive}>
+        <ItemDescriptionContext
+          value={hasRenderableDescription ? descriptionID : null}>
+          {isRenderable(marker) && marker}
+          {isRenderable(marker) && columnMarker === marker ? (
+            <span
+              {...stylex.props(
+                styles.markerContent,
+                align === 'first-line' && styles.markerContentFirstLine,
+              )}>
+              {content}
+            </span>
+          ) : (
+            content
+          )}
+        </ItemDescriptionContext>
+      </MaybeTextFocusOwner>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
         // the row had before the split. Suspense and lazy add no element, and
@@ -954,3 +961,17 @@ export function Item({
 }
 
 Item.displayName = 'Item';
+
+function MaybeTextFocusOwner({
+  isOwner,
+  children,
+}: {
+  isOwner: boolean;
+  children: ReactNode;
+}) {
+  return isOwner ? (
+    <TextFocusOwnerContext value={true}>{children}</TextFocusOwnerContext>
+  ) : (
+    children
+  );
+}

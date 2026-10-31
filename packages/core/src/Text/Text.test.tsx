@@ -7,6 +7,11 @@
 
 import {render, screen, waitFor} from '@testing-library/react';
 import {ClickableCard} from '../ClickableCard/ClickableCard';
+import {SelectableCard} from '../SelectableCard/SelectableCard';
+import {CheckboxList} from '../CheckboxList/CheckboxList';
+import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
+import {RadioList} from '../RadioList/RadioList';
+import {RadioListItem} from '../RadioList/RadioListItem';
 import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
@@ -307,6 +312,11 @@ describe('Text custom colors', () => {
 // A truncated Text rendered its own Tooltip AND set `title` with the same
 // string, so the browser drew a second, unstyled tooltip on top of ours.
 describe('truncated text shows one tooltip, not two', () => {
+  // The truncation tooltip repeats the full text once it mounts; find the
+  // Text element itself.
+  const textElement = (text: string) =>
+    screen.getByText(text, {ignore: '[role="tooltip"], [role="tooltip"] *'});
+
   function withOverflow() {
     const proto = window.HTMLElement.prototype;
     const original = {
@@ -339,7 +349,7 @@ describe('truncated text shows one tooltip, not two', () => {
           A label far wider than the space it has been given
         </Text>,
       );
-      const text = screen.getByText(
+      const text = textElement(
         'A label far wider than the space it has been given',
       );
       await waitFor(() => expect(text).toHaveAttribute('tabindex', '0'));
@@ -387,34 +397,82 @@ describe('truncated text shows one tooltip, not two', () => {
       // the nested ones have been measured as truncated too.
       await waitFor(() =>
         expect(
-          screen.getByText('Standalone, wider than the space it has'),
+          textElement('Standalone, wider than the space it has'),
         ).toHaveAttribute('tabindex', '0'),
       );
       expect(
-        screen.getByText('Inside a link, wider than the space it has'),
+        textElement('Inside a link, wider than the space it has'),
       ).not.toHaveAttribute('tabindex');
       expect(
-        screen.getByText('Inside a menu item, wider than the space it has'),
+        textElement('Inside a menu item, wider than the space it has'),
       ).not.toHaveAttribute('tabindex');
       expect(
-        screen.getByText(
-          'Inside a clickable card, wider than the space it has',
-        ),
+        textElement('Inside a clickable card, wider than the space it has'),
       ).not.toHaveAttribute('tabindex');
       // An Overlay marks its container as pressable even when nothing there
       // takes focus; that alone does not make it a control.
       expect(
-        screen.getByText(
-          'Inside a marked overlay, wider than the space it has',
-        ),
+        textElement('Inside a marked overlay, wider than the space it has'),
       ).toHaveAttribute('tabindex', '0');
       // A focusable region (a main landmark, a scroll container) is not a
       // control, so a Text inside it is still a tab stop.
       expect(
-        screen.getByText(
-          'Inside a focusable region, wider than the space it has',
-        ),
+        textElement('Inside a focusable region, wider than the space it has'),
       ).toHaveAttribute('tabindex', '0');
+    } finally {
+      restore();
+    }
+  });
+
+  it('adds no tab stop inside a card or list option whose own control takes focus', async () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <>
+          <SelectableCard label="Plan" isSelected={false} onChange={() => {}}>
+            <Text type="body" maxLines={1}>
+              In a selectable card, wider than the space it has
+            </Text>
+          </SelectableCard>
+          <CheckboxList label="Toppings" value={[]} onChange={() => {}}>
+            <CheckboxListItem
+              label="Cheese"
+              value="cheese"
+              description={
+                <Text type="body" maxLines={1}>
+                  In a checkbox option, wider than the space it has
+                </Text>
+              }
+            />
+          </CheckboxList>
+          <RadioList label="Size" value="" onChange={() => {}}>
+            <RadioListItem
+              label="Large"
+              value="large"
+              description={
+                <Text type="body" maxLines={1}>
+                  In a radio option, wider than the space it has
+                </Text>
+              }
+            />
+          </RadioList>
+          <Text type="body" maxLines={1}>
+            Standalone beside them, wider than the space it has
+          </Text>
+        </>,
+      );
+      await waitFor(() =>
+        expect(
+          textElement('Standalone beside them, wider than the space it has'),
+        ).toHaveAttribute('tabindex', '0'),
+      );
+      for (const text of [
+        'In a selectable card, wider than the space it has',
+        'In a checkbox option, wider than the space it has',
+        'In a radio option, wider than the space it has',
+      ]) {
+        expect(textElement(text)).not.toHaveAttribute('tabindex');
+      }
     } finally {
       restore();
     }
@@ -430,14 +488,14 @@ describe('truncated text shows one tooltip, not two', () => {
         </Text>,
       );
       await waitFor(() =>
-        expect(screen.getByText(text)).toHaveAttribute('tabindex', '0'),
+        expect(textElement(text)).toHaveAttribute('tabindex', '0'),
       );
       rerender(
         <Text type="body" maxLines={1} tabIndex={-1}>
           {text}
         </Text>,
       );
-      expect(screen.getByText(text)).toHaveAttribute('tabindex', '-1');
+      expect(textElement(text)).toHaveAttribute('tabindex', '-1');
     } finally {
       restore();
     }
@@ -452,7 +510,7 @@ describe('truncated text shows one tooltip, not two', () => {
         </Text>,
       );
       expect(
-        screen.getByText('A label far wider than the space it has been given'),
+        textElement('A label far wider than the space it has been given'),
       ).not.toHaveAttribute('title');
     } finally {
       restore();
