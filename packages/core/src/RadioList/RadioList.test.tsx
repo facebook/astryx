@@ -518,6 +518,32 @@ describe('RadioList', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('does not run a caller onClick from the keyboard while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" onClick={onClick} />
+          <RadioListItem label="Pro" value="pro" onClick={onClick} />
+        </RadioList>,
+      );
+      await user.tab();
+      expect(
+        screen.getByRole('radio', {name: 'Free', hidden: true}),
+      ).toHaveFocus();
+      // Space activates the focused radio.
+      await user.keyboard(' ');
+      expect(onClick).not.toHaveBeenCalled();
+      // An arrow key moves onto the next radio, and the browser clicks it.
+      await user.keyboard('{ArrowDown}');
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('still runs a caller onClick on an enabled radio', () => {
       const onClick = vi.fn();
       render(
