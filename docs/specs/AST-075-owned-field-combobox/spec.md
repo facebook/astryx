@@ -79,11 +79,11 @@ the behavior from hooks; every such field behaves and announces the same way.
 - **FR6 — Pointer.** Moving the pointer over an option MUST make it active
   without moving DOM focus. Pressing an option MUST pick it, and the field MUST
   keep focus through the press.
-- **FR7 — Result count.** When the options change for a new query, the number
-  of options, or that there are none, MUST be announced politely through the
-  shared announcer rather than a live region per field, as the field's
-  current-state message (`spec:AST-086` FR9), so a newer count replaces one not
-  yet spoken.
+- **FR7 — Result count.** When the options change for a new query, the number of
+  options, or that there are none, MUST be announced politely through the shared
+  announcer rather than a live region per field, through the field's own
+  `useAnnounce({hasReplace: true})` instance (`spec:AST-086` FR9), so a newer
+  count replaces one not yet spoken.
 - **FR8 — The hooks are discoverable as hooks.** Each public hook that
   implements this contract MUST be returned by `astryx hook <name>` and
   `astryx search` with its parameters, its return fields, and the requirements
@@ -110,9 +110,9 @@ the behavior from hooks; every such field behaves and announces the same way.
   option, opens and closes, and handles the keys for Selector and CommandPalette.
   For a single-line `input` the caller renders, over any option type with a
   string `value`, its `getFieldProps`, `getListboxProps`, and `getOptionProps`
-  carry FR1–FR6. It does not yet take a multi-line field (DEC-3), and the
-  caller announces the result count through `useAnnounce` with its
-  `currentState` field (FR7), as DEC-2 describes.
+  carry FR1–FR6. It does not yet take a multi-line field (DEC-3), and the caller
+  announces the result count through its own `useAnnounce({hasReplace: true})`
+  instance (FR7), as DEC-2 describes.
 - `useMultiCombobox` (exported from `@astryxdesign/core/MultiSelector`) does the
   same for MultiSelector's own control. It takes MultiSelector's option type,
   leaves the ARIA wiring to the caller, and does not guard keys during an
