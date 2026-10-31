@@ -499,6 +499,36 @@ describe('RadioList', () => {
       fireEvent.click(pro);
       expect(onChange).not.toHaveBeenCalled();
     });
+
+    it('does not run a caller onClick while focusable-disabled', () => {
+      const onClick = vi.fn();
+      render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" onClick={onClick} />
+          <RadioListItem label="Pro" value="pro" onClick={onClick} />
+        </RadioList>,
+      );
+      fireEvent.click(screen.getByRole('radio', {name: 'Pro', hidden: true}));
+      fireEvent.click(screen.getByRole('radio', {name: 'Free', hidden: true}));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('still runs a caller onClick on an enabled radio', () => {
+      const onClick = vi.fn();
+      render(
+        <RadioList label="Plan" value="free" onChange={() => {}}>
+          <RadioListItem label="Free" value="free" />
+          <RadioListItem label="Pro" value="pro" onClick={onClick} />
+        </RadioList>,
+      );
+      fireEvent.click(screen.getByRole('radio', {name: 'Pro'}));
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
   });
   describe('form participation', () => {
     it('submits the selected value under htmlName', () => {
