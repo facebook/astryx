@@ -5,7 +5,7 @@
  * Tests for Text component
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {ClickableCard} from '../ClickableCard/ClickableCard';
 import {Dialog} from '../Dialog/Dialog';
 import {SelectableCard} from '../SelectableCard/SelectableCard';
@@ -545,6 +545,41 @@ describe('truncated text shows one tooltip, not two', () => {
       ]) {
         expect(textElement(text)).not.toHaveAttribute('tabindex');
       }
+    } finally {
+      restore();
+    }
+  });
+
+  it('becomes a tab stop when the content hiding it is revealed', async () => {
+    const restore = withOverflow();
+    try {
+      const {container} = render(
+        <>
+          <div data-testid="scrim" inert>
+            <div aria-hidden="true" data-testid="panel">
+              <Text type="body" maxLines={1}>
+                Revealed later, wider than the space it has
+              </Text>
+            </div>
+          </div>
+          <Text type="body" maxLines={1}>
+            Measured beside it, wider than the space it has
+          </Text>
+        </>,
+      );
+      await waitFor(() =>
+        expect(
+          textElement('Measured beside it, wider than the space it has'),
+        ).toHaveAttribute('tabindex', '0'),
+      );
+      const text = textElement('Revealed later, wider than the space it has');
+      expect(text).not.toHaveAttribute('tabindex');
+      const scrim = container.querySelector('[data-testid="scrim"]')!;
+      const panel = container.querySelector('[data-testid="panel"]')!;
+      act(() => scrim.removeAttribute('inert'));
+      await waitFor(() => expect(text).not.toHaveAttribute('tabindex'));
+      act(() => panel.removeAttribute('aria-hidden'));
+      await waitFor(() => expect(text).toHaveAttribute('tabindex', '0'));
     } finally {
       restore();
     }

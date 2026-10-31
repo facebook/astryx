@@ -330,12 +330,37 @@ export function Text({
   const isInsideFocusOwner = use(TextFocusOwnerContext);
   const [isExcludedByAncestor, setIsExcludedByAncestor] = useState(false);
   const controlRef = useCallback((element: HTMLElement | null) => {
-    if (element != null) {
-      setIsExcludedByAncestor(
-        element.closest(HIDDEN_SELECTOR) != null ||
-          element.parentElement?.closest(CONTROL_SELECTOR) != null,
-      );
+    if (element == null) {
+      return;
     }
+    const isInsideControl =
+      element.parentElement?.closest(CONTROL_SELECTOR) != null;
+    const update = () =>
+      setIsExcludedByAncestor(
+        isInsideControl || element.closest(HIDDEN_SELECTOR) != null,
+      );
+    update();
+    // Content revealed later (a closed Overlay's inert scrim, a collapsed
+    // drawer) gets its stop when the hiding attribute goes away.
+    const hiddenAncestors: Element[] = [];
+    for (
+      let node = element.closest(HIDDEN_SELECTOR);
+      node != null;
+      node = node.parentElement?.closest(HIDDEN_SELECTOR) ?? null
+    ) {
+      hiddenAncestors.push(node);
+    }
+    if (hiddenAncestors.length === 0) {
+      return;
+    }
+    const observer = new MutationObserver(update);
+    for (const node of hiddenAncestors) {
+      observer.observe(node, {
+        attributes: true,
+        attributeFilter: ['aria-hidden', 'inert'],
+      });
+    }
+    return () => observer.disconnect();
   }, []);
   const isTabStop =
     tooltipEnabled && !isExcludedByAncestor && !isInsideFocusOwner;
