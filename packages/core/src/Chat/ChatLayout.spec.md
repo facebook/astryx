@@ -243,7 +243,15 @@ The `chat-layout` target itself is declared on the Chat family document
 | FR7      | `ChatLayout.test.tsx` density cases; `themingTargets.test.ts`                                                                                | compact; balanced; spacious                         | Dropping the reflected attribute makes the theming axis unselectable                              | `audit:ChatLayout/§2` |
 | FR8      | `useChatNewMessages.test.tsx`, `useChatStreamScroll.test.tsx`                                                                                | first fill; streaming growth                        | Losing the published refs stops auto-scroll from observing content growth                         | `audit:ChatLayout/§7` |
 | AR1, AR2 | `ChatLayoutScrollButton.test.tsx` and `ChatLayout.test.tsx` tab-order cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts` in real Chromium | hidden at rest; visible; re-hidden after activation | Reverting to `opacity`-only hiding puts an invisible control back in the tab order                | `audit:ChatLayout/§1` |
-| PR2      | Source review of `useChatNewMessages`                                                                                                        | mounted list                                        | A per-instance `ResizeObserver` replaces the pooled one                                           | `audit:ChatLayout/§7` |
+
+Read from source, with no focused test yet:
+
+- FR5: `null`, `undefined`, and `false` children selecting the empty state.
+- FR7: the dock, message-area, dock-inner, and blur geometry for each density.
+- FR9: `ref`, DOM props, `className`, `style`, and `xstyle` on the root.
+- AR3: the catalog strings; AR4: no landmark or name on caller regions.
+- PR1–PR2: no layout measurement of the component's own, and the pooled
+  observer.
 
 ## Decision log
 
