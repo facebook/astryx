@@ -33,15 +33,15 @@ system_specs: [spec:AST-002, spec:AST-029]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `ChatComposerTokenElement` with a required `token` (structured `{value, label, variant?, icon?}` or custom `{value, render}`), `ref`, `xstyle`, `className`, `style`, and neutral span props. |
-| Behavior                | A structured token renders Badge content; a custom token renders caller content. Both retain the serialized value marker and stay non-editable when placed inside a contenteditable composer. |
-| End-user impact         | Token labels and caller content remain visible without becoming editable text.                                                                                                                |
-| Builder impact          | None.                                                                                                                                                                                         |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                   |
-| Review checks           | Reject a token wrapper that loses its serialized value, becomes editable, drops accepted span props, or changes the structured/custom rendering split.                                        |
-| Governing rules         | `architecture:public-component-api/INV1, INV5–INV6, INV8–INV9, INV12`; `architecture:component-test-sufficiency/INV1–INV8, INV10–INV11`; `spec:AST-029/FR3–FR5, FR7`.                         |
+| Area                    | Contract                                                                                                                                                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `ChatComposerTokenElement` with a required `token`: structured, which is `value` plus Badge props, of which only `label`, `variant`, and `icon` render and the rest are accepted and ignored; or custom `{value, render}`, `ref`, `xstyle`, `className`, `style`, and neutral span props. |
+| Behavior                | A structured token renders Badge content; a custom token renders caller content. Both retain the serialized value marker and stay non-editable when placed inside a contenteditable composer.                                                                                             |
+| End-user impact         | Token labels and caller content remain visible without becoming editable text.                                                                                                                                                                                                            |
+| Builder impact          | None.                                                                                                                                                                                                                                                                                     |
+| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                                                                                                               |
+| Review checks           | Reject a token wrapper that loses its serialized value, becomes editable, drops accepted span props, or changes the structured/custom rendering split.                                                                                                                                    |
+| Governing rules         | `architecture:public-component-api/INV1, INV5–INV6, INV8–INV9, INV12`; `architecture:component-test-sufficiency/INV1–INV8, INV10–INV11`; `spec:AST-029/FR3–FR5, FR7`.                                                                                                                     |
 
 This table is a review projection; the body below is authoritative.
 
@@ -137,14 +137,15 @@ target. Badge theming remains owned by Badge, and custom content remains caller 
 
 ## Verification map
 
-| Contract        | Verification                                                  | Representative states                        | Mutation or failure expectation                                                                 | Audit section                             |
-| --------------- | ------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| FR1–FR3         | `ChatComposerTokenElement.test.tsx`; direct Storybook stories | structured and custom tokens                 | A marker/value disappears, the wrapper becomes editable, or the wrong rendering branch appears. | `audit:ChatComposerTokenElement/behavior` |
-| FR4             | focused ref and DOM-passthrough test; public typecheck        | ref, ARIA/data props, styling seams          | An accepted input is dropped or an owned serialization marker is replaced.                      | `audit:ChatComposerTokenElement/api`      |
-| rendered states | direct Storybook stories                                      | Badge and custom content in supported themes | An unreachable story fails the story checks.                                                    | `audit:ChatComposerTokenElement/rendered` |
+| Contract         | Verification                                                  | Representative states                        | Mutation or failure expectation                                                                 | Audit section                             |
+| ---------------- | ------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| FR1–FR3, AR2–AR3 | `ChatComposerTokenElement.test.tsx`; direct Storybook stories | structured and custom tokens                 | A marker/value disappears, the wrapper becomes editable, or the wrong rendering branch appears. | `audit:ChatComposerTokenElement/behavior` |
+| FR4              | focused ref and DOM-passthrough test; public typecheck        | ref, ARIA/data props, styling seams          | An accepted input is dropped or an owned serialization marker is replaced.                      | `audit:ChatComposerTokenElement/api`      |
+| rendered states  | direct Storybook stories                                      | Badge and custom content in supported themes | An unreachable story fails the story checks.                                                    | `audit:ChatComposerTokenElement/rendered` |
 
 Read from source, with no focused test yet:
 
+- AR1: the wrapper adding no role or accessible name of its own.
 - FR1: `contentEditable` staying `false` when a caller passes it.
 - FR2: `variant` and `icon` reaching the Badge.
 - FR4: `className`, `style`, and `xstyle` composing on the span.
