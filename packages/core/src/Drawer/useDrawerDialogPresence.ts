@@ -5,7 +5,7 @@
 /**
  * @file useDrawerDialogPresence.ts
  * @input Controlled open state, modal mode, dialog ref, and rendered-state setter
- * @output Coordinates native top-layer presence, exit timing, focus restoration, and unmount cleanup
+ * @output Coordinates native top-layer presence, the touch entrance's input hold, exit timing, focus restoration, and unmount cleanup
  * @position Drawer-internal hook; consumed only by Drawer.tsx
  *
  * The drawer has two independent notions of presence:
@@ -19,8 +19,13 @@
  * for the now-non-top-layer `position: fixed` panel and it paints back inside
  * the page for one frame.
  *
+ * Under a finger a tap or a drag that lands while the drawer is still sliding
+ * in reaches nothing (spec:AST-094 FR35, through the Layer module's input
+ * hold); keys and assistive technology stay live, and a mouse is unchanged.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/Drawer/Drawer.test.tsx
+ * - /packages/core/src/Drawer/__tests__/DrawerTouchEntrance.interaction.browser.spec.ts
  * - /.github/scripts/modal-close-visibility.js
  */
 
@@ -32,6 +37,7 @@ import {
   type SetStateAction,
 } from 'react';
 import {flushSync} from 'react-dom';
+import {holdEntranceInput} from '../Layer/holdEntranceInput';
 
 /** Slack past the computed transition before the backstop gives up waiting. */
 const EXIT_BACKSTOP_BUFFER_MS = 50;
@@ -139,7 +145,11 @@ export function useDrawerDialogPresence({
         // contract as Dialog).
         dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus();
       }
-      return;
+      // Under a finger a tap or a drag that lands while the drawer is still
+      // sliding in reaches nothing; keys and assistive technology stay live
+      // (spec:AST-094 FR35). Released when the slide-in ends, or by this
+      // effect's cleanup on a close or unmount.
+      return holdEntranceInput(dialog) ?? undefined;
     }
 
     if (!isDrawerHostOpen(dialog, isModal)) {
