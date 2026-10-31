@@ -38,6 +38,7 @@ const RELATIVE_TIME_INFRA_FILE =
   'packages/core/src/Timestamp/formatRelativeTime.ts';
 const NUMBER_PARSER_INFRA_FILE =
   'packages/core/src/NumberInput/numberParser.ts';
+const TIME_FORMAT_INFRA_FILE = 'packages/core/src/utils/timeFormat.ts';
 const NUMBER_PARSER_TEST_ORACLE_FILE =
   'packages/core/src/NumberInput/numberParser.test.ts';
 const NUMBER_PARSER_DOCBLOCK_ORACLE_FILE =
@@ -137,6 +138,10 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `new Intl.NumberFormat(locale).formatToParts(12345.6);`,
       filename: NUMBER_PARSER_INFRA_FILE,
+    },
+    {
+      code: `new Intl.DateTimeFormat(locale, {hour: 'numeric'}).resolvedOptions();`,
+      filename: TIME_FORMAT_INFRA_FILE,
     },
     // -- Named test-oracle files retain meaningful explicit-locale fixtures. --
     {
@@ -268,6 +273,11 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `new Intl.NumberFormat().formatToParts(1);`,
       filename: NUMBER_PARSER_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `new Intl.DateTimeFormat(undefined, {hour: 'numeric'});`,
+      filename: TIME_FORMAT_INFRA_FILE,
       errors: [ambientIntlInImplementation],
     },
     {

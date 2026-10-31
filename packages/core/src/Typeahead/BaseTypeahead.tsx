@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead; focus bootstraps a replaced search source
+ * @output Exports BaseTypeahead; empty feedback belongs to the current settled query
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -153,10 +153,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * When disabled with a reason, keeps the input focusable via `aria-disabled`
    * (instead of the native `disabled` attribute) and `readOnly` so an
    * associated disabled-reason tooltip stays discoverable by keyboard and
-   * assistive technology. Query and text mutation are blocked, but an
-   * already-open highlighted option can still be selected with Enter after a
-   * transition into this state. Consumers (Typeahead) own the tooltip and
-   * wrapper.
+   * assistive technology. Query and text mutation, opening the list, and a
+   * pick by Enter or a press are blocked, also from a list that was open
+   * before this state applied; Escape or Tab still closes it. Consumers
+   * (Typeahead) own the tooltip and wrapper.
    * @default false
    */
   isFocusableDisabled?: boolean;
@@ -531,14 +531,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  // `isLoading` starts with the request, after debouncing. Until then the
+  // cached empty answer belongs to the old query, not the text now typed.
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('');
+  const isSearchPending = isLoading || query !== lastSearchedQuery;
 
-  // Only the WORDS move here, not the timing. An empty query still reports
-  // nothing — a focus-opened menu that bootstrapped to nothing is not a
-  // search that failed — and a search still in flight reports nothing, which
-  // matters because the row is in the DOM before the spinner clears.
+  // An empty query reports nothing: an empty focus bootstrap is not a failed
+  // search. A newer query stays silent through debounce and pending work;
+  // only its settled empty row supplies the words to announce.
   useAnnounceRenderedText(
     emptyStateRef,
-    results.length === 0 && hasSearched && query.length > 0 && !isLoading,
+    results.length === 0 && hasSearched && query.length > 0 && !isSearchPending,
     query,
   );
 
@@ -565,7 +568,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Without a wrapper that took the indicator over, this input announces each
   // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
   // a live region (family:input-fields FR7).
-  useBusyAnnouncement(
+  const settleBusyAnnouncement = useBusyAnnouncement(
     isLoading && busyLane == null,
     t('@astryx.typeahead.loading'),
     inputRef,
@@ -684,11 +687,25 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Show the layer, deferring past the active click if a pointer is down.
   // Without this, popover="auto" light-dismiss immediately closes the
   // dropdown when it opens between pointerdown and pointerup/click.
+  // Read at show time, so a search or bootstrap that settles after the field
+  // became disabled does not open the list (spec:AST-085 FR2).
+  const isDisabledRef = useRef(isDisabled);
+  useIsomorphicLayoutEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
   const showLayer = useCallback(() => {
+    if (isDisabledRef.current) {
+      return;
+    }
     if (pointerActiveRef.current) {
       document.addEventListener(
         'click',
-        () => requestAnimationFrame(() => popover.show()),
+        () =>
+          requestAnimationFrame(() => {
+            if (!isDisabledRef.current) {
+              popover.show();
+            }
+          }),
         {once: true},
       );
     } else {
@@ -715,6 +732,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
+      setLastSearchedQuery(searchQuery);
       setLoading(true);
       setHasSearched(true);
       try {
@@ -735,6 +753,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         // Announce the outcome only for an active query (not the initial
         // focus-open), so screen-reader users hear result counts / no-results.
+        if (searchQuery.length > 0) {
+          // This query's outcome is announced now (a count) or from the
+          // rendered row (an empty result); a busy start not yet announced
+          // would follow it, so it is dropped (spec:AST-086 FR8).
+          settleBusyAnnouncement();
+        }
         if (searchQuery.length > 0 && shown.length > 0) {
           announce(t('@astryx.typeahead.resultCount', {count: shown.length}));
         }
@@ -759,6 +783,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       announce,
       __queryEntries,
       setLoading,
+      settleBusyAnnouncement,
       t,
     ],
   );
@@ -904,6 +929,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
+      // A disabled field changes nothing, also from a list that was open
+      // before it became disabled (spec:AST-085 FR2).
+      if (isDisabled) {
+        return;
+      }
       // Bump generation to invalidate any in-flight async searches
       searchGenRef.current++;
       if (searchTimeoutRef.current) {
@@ -922,7 +952,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource, setLoading],
+    [isDisabled, onChange, popover, searchSource, setLoading],
   );
 
   // Shared by handleFocus and handleClick: bootstrap entries if none are
@@ -973,7 +1003,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // dropdown never reopens until the user clicks away and back (#6845). See
   // wasAlreadyFocusedRef above for how the two cases are told apart.
   const handleClick = useCallback(() => {
-    if (!wasAlreadyFocusedRef.current || popover.isOpen) {
+    if (isDisabled || !wasAlreadyFocusedRef.current || popover.isOpen) {
       return;
     }
     if (
@@ -986,6 +1016,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     }
     openIfEligible();
   }, [
+    isDisabled,
     popover.isOpen,
     hasEntriesOnFocus,
     query.length,
@@ -1036,6 +1067,24 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // into the freshly-cleared field -- producing a second, spurious
       // selection on the next real Enter.
       if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+
+      // A focusable-disabled field opens no list and picks nothing; it only
+      // lets a list that was open before it became disabled close
+      // (spec:AST-085 FR2).
+      if (isDisabled) {
+        // Enter on a list that is still open picks nothing, and must not
+        // submit an enclosing form either, as it would not while enabled.
+        if (popover.isOpen && e.key === 'Enter') {
+          e.preventDefault();
+        }
+        if (popover.isOpen && (e.key === 'Escape' || e.key === 'Tab')) {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+          }
+          popover.hide();
+        }
         return;
       }
 
@@ -1112,6 +1161,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       }
     },
     [
+      isDisabled,
       popover,
       results,
       highlightedIndex,
@@ -1207,8 +1257,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
-        // attribute. Query and text mutation are blocked, but an already-open
-        // highlighted option can still be selected with Enter after transition.
+        // attribute. Query and text mutation, opening and picking are blocked
+        // by the handlers above (spec:AST-085 FR2).
         disabled={isDisabled && !isFocusableDisabled}
         readOnly={isFocusableDisabled || undefined}
         autoFocus={hasAutoFocus}
@@ -1243,7 +1293,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          {results.length === 0 && hasSearched ? (
+          {results.length === 0 && hasSearched && !isSearchPending ? (
             <div
               ref={emptyStateRef}
               role="option"
@@ -1269,7 +1319,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                     aria-selected={isSelected}
                     tabIndex={-1}
                     onClick={() => handleSelect(item)}
-                    onMouseEnter={() => highlightOnHover(index)}
+                    // Highlight follows pointer movement, not pointer
+                    // presence: a menu that opens or reflows under a resting
+                    // pointer keeps its keyboard highlight, so Enter acts on
+                    // the option the user was shown, not the one that
+                    // happened to appear under the cursor.
+                    onMouseMove={() => highlightOnHover(index)}
                     {...stylex.props(
                       styles.item,
                       itemSizeStyles[size],

@@ -289,7 +289,7 @@ describe('astryx integration check', () => {
       'invalid_cli_command',
     );
     expect(validate.notes).toEqual([
-      {code: 'invalid_cli_command', message: expect.any(String)},
+      {code: 'invalid_cli_command', message: expect.any(String), next: true},
     ]);
     expect(envelope.data.failed).toBe(false);
     expect(json.status).toBe(0);
@@ -300,6 +300,39 @@ describe('astryx integration check', () => {
         .split('\n')
         .filter(line => line.startsWith('note (invalid_cli_command): ')),
     ).toHaveLength(1);
+  });
+
+  it('--next counts next notes as warnings, and --strict --next fails on them', async () => {
+    writePackage({
+      id: 'acme-next-fixture',
+      extraManifest: ", cliCommand: ' acme astryx\\n'",
+    });
+
+    const plain = JSON.parse(
+      (await runCli(['--json', 'integration', 'check'], tmpDir)).stdout,
+    ).data;
+    expect(plain).toMatchObject({next: false, upcoming: 1, warnings: 0});
+
+    const next = await runCli(['--json', 'integration', 'check', '--next'], tmpDir);
+    const nextData = JSON.parse(next.stdout).data;
+    expect(nextData).toMatchObject({next: true, upcoming: 1, warnings: 1, failed: false});
+    expect(nextData.checks[0].warnings).toBe(1);
+    expect(next.status).toBe(0);
+
+    const strict = await runCli(
+      ['--json', 'integration', 'check', '--strict', '--next'],
+      tmpDir,
+    );
+    const strictData = JSON.parse(strict.stdout).data;
+    expect(strictData.failed).toBe(true);
+    expect(strictData.failures).toContainEqual(
+      expect.objectContaining({check: 'validate', code: 'invalid_cli_command'}),
+    );
+    expect(strict.status).toBe(1);
+
+    const text = await runCli(['integration', 'check', '--next'], tmpDir);
+    expect(text.stdout).toContain('note (invalid_cli_command): [next minor] ');
+    expect(text.stdout).toContain('(next)');
   });
 
   it('takes no package name: one passed is an error, not a check of the current folder', async () => {
@@ -470,9 +503,9 @@ describe('a command written with a runner', () => {
     const doctor = await runCli(['doctor', 'integration', 'validate'], tmpDir);
     expect(doctor.status).toBe(0);
     expect(doctor.stdout).toContain(
-      'note (runner_command): docs/acme-setup.doc.mjs:',
+      'note (runner_command): [next minor] docs/acme-setup.doc.mjs:',
     );
-    expect(doctor.stdout).toContain('Write `astryx doctor`');
+    expect(doctor.stdout).toContain('Write the token `{@command doctor}`');
 
     const strict = await runCli(
       ['--json', 'integration', 'check', '--strict'],

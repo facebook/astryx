@@ -1724,6 +1724,69 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
 
+  it('warns, without failing, when a doc section sets before or after on a CLI range that rejects them', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const issues = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.filter(
+        (/** @type {{code: string}} */ issue) =>
+          issue.code === 'section_position_needs_cli',
+      );
+    // A placed guide's section counts too: an older CLI rejects the field in
+    // any doc and hides the package's topics.
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{id: 'overview', title: 'Overview', after: 'nothing', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await issues()).toEqual([
+      expect.objectContaining({severity: 'warning'}),
+    ]);
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await issues()).toEqual([]);
+  }, 120_000);
+
+  it('warns when a package whose docs write doc tokens has a CLI range that prints them raw', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const write = (/** @type {string} */ name, /** @type {string} */ text) =>
+      fs.writeFileSync(
+        path.join(tmpDir, 'docs', `${name}.doc.mjs`),
+        `export default {type: 'generic', name: '${name}', title: 'Notes', description: 'Notes.', sections: [{title: 'Run', content: [{type: 'prose', text: ${JSON.stringify(text)}}]}]};\n`,
+      );
+    const found = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.filter(
+        (/** @type {{code: string}} */ issue) => issue.code === 'doc_tokens_need_cli',
+      );
+    // An escaped token is shown as written by every release.
+    write('escaped', 'Write {@@pm install x} for an install.');
+    expect(await found()).toEqual([]);
+    write('tokens', 'Run {@command doctor} first.');
+    expect((await found()).map((/** @type {any} */ issue) => issue.severity)).toEqual(['warning']);
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await found()).toHaveLength(1);
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await found()).toEqual([]);
+  }, 120_000);
+
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
     writePackage({
       manifest: "export default {templates: './templates'};\n",
@@ -2062,10 +2125,13 @@ describe('integrationPackCheck', () => {
     ).toThrow(/without a files array/);
   });
 
-  it('reports npm missing from PATH as pack_failed', async () => {
+  it('reports pack_failed when no npm can be found', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     const originalPath = process.env.PATH;
+    const originalExecPath = process.execPath;
     process.env.PATH = '';
+    // A Node with no npm beside it, and no npm on the PATH.
+    process.execPath = path.join(tmpDir, 'no-npm', 'bin', 'node');
     try {
       const result = await integrationPackCheck({cwd: tmpDir});
       expect(result.data.packable).toBe(false);
@@ -2077,6 +2143,7 @@ describe('integrationPackCheck', () => {
       );
     } finally {
       process.env.PATH = originalPath;
+      process.execPath = originalExecPath;
     }
   });
 

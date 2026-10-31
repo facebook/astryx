@@ -40,12 +40,14 @@ import {
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {useFieldInputStyling} from '../Field/fieldParts';
 import {joinAriaIDs} from '../utils/inputAria';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
+import {formatLocaleTime} from '../utils/timeFormat';
 import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
@@ -56,8 +58,6 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {themeProps} from '../utils/themeProps';
 import {
   clampTime,
-  formatDisplayTime12h,
-  formatDisplayTime24h,
   formatISOTime,
   getInputARIA,
   isTimeInRange,
@@ -237,6 +237,7 @@ export function TouchTimeField({
     ...controlProps
   } = rest;
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
@@ -254,6 +255,15 @@ export function TouchTimeField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8). A change made in the open modal sheet starts it while
+  // the sheet is open, so it is announced from inside the sheet.
+  useBusyAnnouncement(
+    isBusy,
+    t('@astryx.spinner.loading'),
+    isSheetOpen ? sheetBodyRef : inputRef,
+  );
   const isEffectivelyDisabled = isDisabled || isLoading;
 
   const showsDisabledMessage = isDisabled && !!disabledMessage;
@@ -292,10 +302,8 @@ export function TouchTimeField({
     [changeAction, isEffectivelyDisabled, onChange, setOptimisticValue],
   );
 
-  const formatDisplayTime =
-    hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
   const displayValue = optimisticValue
-    ? formatDisplayTime(optimisticValue, hasSeconds)
+    ? formatLocaleTime(optimisticValue, locale, hourFormat, hasSeconds)
     : '';
 
   const fallbackTime = useMemo(() => {
@@ -449,6 +457,7 @@ export function TouchTimeField({
       ref={el => {
         disabledMessageTooltip.ref(el);
       }}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('time-input', {
           size,
@@ -516,7 +525,7 @@ export function TouchTimeField({
         }
         {...stylex.props(styles.input)}
       />
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && optimisticValue && !isEffectivelyDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}
@@ -531,7 +540,7 @@ export function TouchTimeField({
         height="hug"
         // sheetBody owns the inset, including the band under the grab handle.
         padding={0}>
-        <div {...stylex.props(styles.sheetBody)}>
+        <div ref={sheetBodyRef} {...stylex.props(styles.sheetBody)}>
           <div {...stylex.props(styles.wheels)}>
             <Wheel
               label={t('@astryx.dateTimeInput.hourWheel')}

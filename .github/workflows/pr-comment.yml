@@ -297,7 +297,7 @@ jobs:
       needs.resolve.outputs.valid == 'true' &&
       needs.resolve.outputs.spec_only != 'true' &&
       needs.resolve.outputs.tooling_only != 'true'
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     permissions:
       pull-requests: write
       actions: read
@@ -389,6 +389,16 @@ jobs:
         with:
           name: pr-analysis
           path: pr-analysis
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download base size stats from the CI run
+        if: steps.identity.outputs.valid == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-size-base
+          path: pr-size-base
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true

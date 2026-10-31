@@ -225,6 +225,7 @@ describe('collectDocInputs problems', () => {
       components: async () => [],
       templates: async () => [],
       themes: async () => [],
+      iconSets: async () => ({sets: []}),
       docs: async () => ({entries: () => []}),
       ...overrides,
     });

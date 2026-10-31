@@ -41,15 +41,18 @@ import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
-import {Spinner} from '../Spinner';
-import {useTooltip} from '../Tooltip';
-import {mergeProps, rtlStyles} from '../utils';
+import {Spinner} from '../Spinner/Spinner';
+import {useTooltip} from '../Tooltip/useTooltip';
+import {mergeProps} from '../utils/mergeProps';
+import {rtlStyles} from '../utils/rtlStyles';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {useTranslator} from '../i18n/useTranslator';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import {useIndicator} from '../Indicator';
+import {useIndicator} from '../Indicator/useIndicator';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -371,6 +374,10 @@ export function CheckboxInput({
   // `opacity: 0`, and only the indicator's own element can shape the outline
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
+  const t = useTranslator();
+  // The busy Spinner sits in the decorative, aria-hidden indicator, so this
+  // control announces its busy start itself (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), indicatorRef);
   const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
   const isIndeterminate = optimisticValue === 'indeterminate';

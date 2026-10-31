@@ -377,7 +377,9 @@ describe('CommandPaletteInput popup context', () => {
       </CommandPaletteContext>,
     );
 
-    const spinner = screen.getByRole('status');
+    // The Spinner is decorative (spec:AST-086 FR8), so find it by its class.
+    const spinner = document.querySelector('.astryx-spinner') as HTMLElement;
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
     const trailingContent = screen.getByTestId('trailing-content');
     expect(trailingContent.parentElement?.firstElementChild).toContainElement(
       spinner,
