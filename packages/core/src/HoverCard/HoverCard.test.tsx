@@ -1084,6 +1084,28 @@ describe('HoverCard', () => {
       });
     });
 
+    it('stays shut on a tap of a trigger inside a clickable row, and the row gets the tap', async () => {
+      const onOpenChange = vi.fn();
+      const onRowClick = vi.fn();
+      render(
+        // The mark useClickableContainer puts on a row it makes clickable.
+        <div data-pressable-container="true" onClick={onRowClick}>
+          <HoverCard
+            content={<span>Card content</span>}
+            onOpenChange={onOpenChange}
+            delay={0}>
+            Ruby Cheung
+          </HoverCard>
+        </div>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+      expect(onRowClick).toHaveBeenCalledTimes(1);
+    });
+
     it('stays shut on a tap when the trigger performs an action', async () => {
       const onOpenChange = vi.fn();
       render(

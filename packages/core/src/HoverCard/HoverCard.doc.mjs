@@ -104,7 +104,7 @@ export const docs = {
           name: 'touchTrigger',
           type: "'auto' | 'tap' | 'none'",
           description:
-            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens. none never opens on touch. A tap-opened card is dismissed by a tap outside it.',
+            'What a tap does where there is no hover. auto opens on tap unless the tap already performs an action, either the trigger itself (a button, link, or form control) or a control it sits inside (a link, an option, a clickable row or card), whose tap belongs to that control. tap always opens. none never opens on touch. A tap-opened card is dismissed by a tap outside it.',
           default: "'auto'",
         },
         {
@@ -289,7 +289,7 @@ export const docsZh = {
           name: 'touchTrigger',
           type: "'auto' | 'tap' | 'none'",
           description:
-            '在没有悬停的触摸设备上，轻点的行为。auto：轻点即打开，除非触发元素本身会执行操作（按钮、链接、表单控件），此时轻点归该控件所有。tap：始终轻点打开。none：触摸永不打开。轻点打开的卡片可通过点击卡片外部关闭。',
+            '在没有悬停的触摸设备上，轻点的行为。auto：轻点即打开，除非这次轻点已会执行操作——触发元素本身的（按钮、链接、表单控件），或其所在控件的（链接、选项、可点击的行或卡片），此时轻点归该控件所有。tap：始终轻点打开。none：触摸永不打开。轻点打开的卡片可通过点击卡片外部关闭。',
           default: "'auto'",
         },
         {
@@ -439,7 +439,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
         touchTrigger:
-          'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
+          'Tap behavior where there is no hover. auto = tap opens unless the trigger, or a control it sits in, acts (button/link/control/clickable row or card); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
         isEnabled: 'Enable/disable hover + focus triggers.',
         label:
           'Accessible name for the popup. With label: named role="dialog"; without: role="group".',

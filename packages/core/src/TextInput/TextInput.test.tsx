@@ -18,6 +18,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {TestIcon} from '../__tests__/TestIcon';
 import {declaredValue} from '../__tests__/stylexDeclarations';
 import {InputGroup} from '../InputGroup';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {TextInput} from './TextInput';
 
 // jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
@@ -925,6 +926,33 @@ describe('TextInput', () => {
       fireEvent.mouseLeave(container);
       await waitFor(() => {
         expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on a tap', async () => {
+      __resetInteractionModalityForTest();
+      render(
+        <TextInput
+          label="Owner"
+          value=""
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const container = screen.getByRole('textbox')
+        .parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      // A finger's tap on the field, in the order a browser dispatches it. The
+      // field takes no tap while disabled, so the reason is what the tap opens.
+      fireEvent.pointerEnter(container, {pointerType: 'touch'});
+      fireEvent.pointerDown(container, {pointerType: 'touch'});
+      fireEvent.pointerUp(container, {pointerType: 'touch'});
+      fireEvent.mouseEnter(container);
+      fireEvent.click(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
       });
     });
 
