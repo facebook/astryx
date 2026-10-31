@@ -157,6 +157,7 @@ jobs:
       - name: Publish changed packages
         env:
           DRY_RUN: ${{ inputs.dry-run }}
+          RELEASE_VERSION: ${{ inputs['release-version'] }}
         run: |
           set -eu
           published=0
@@ -181,7 +182,14 @@ jobs:
             pnpm publish "./$pkg_dir" --tag latest --provenance --access public --no-git-checks
             published=$((published + 1))
           done
-          echo "Published $published package(s)."
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run complete; no packages were published."
+          else
+            node scripts/npm/verify-published.mjs \
+              --version "$RELEASE_VERSION" \
+              --tag latest
+            echo "Published $published package(s); registry verification passed."
+          fi
 
   # Canary publish — runs on every push to main. The @canary dist-tag always
   # points to the latest main commit:
@@ -190,12 +198,15 @@ jobs:
     name: Publish canary to npm
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    # Dedicated group, cancel-in-progress so a newer main push supersedes an
-    # in-flight canary. Independent of the stable group, so this can never
-    # cancel or starve a stable dispatch.
+    # Dedicated group, independent of the stable group, so this can never
+    # cancel or starve a stable dispatch. Never cancel in progress: a canary
+    # that has started may already have published some packages, and
+    # cancelling it mid-loop leaves a partial canary set on npm. Bursts still
+    # coalesce: while one canary runs, a newer push waits as the single pending
+    # run, and a later push replaces that pending run before it starts.
     concurrency:
       group: npm-release-canary
-      cancel-in-progress: true
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write # required for npm OIDC trusted publishing + provenance
