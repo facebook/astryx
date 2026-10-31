@@ -1517,6 +1517,7 @@ export function Step({
 
     const otDescriptionNode = isRenderable(description) ? (
       <span
+        id={descriptionID}
         {...mergeProps(
           descriptionThemeProps,
           stylex.props(styles.description),
@@ -1625,7 +1626,9 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
-              aria-describedby={descriptionNode ? descriptionID : undefined}
+              aria-describedby={
+                isRenderable(description) ? descriptionID : undefined
+              }
               aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
@@ -1719,7 +1722,9 @@ export function Step({
             type="button"
             onClick={handleClick}
             aria-label={stepAriaLabel}
-            aria-describedby={descriptionNode ? descriptionID : undefined}
+            aria-describedby={
+              isRenderable(description) ? descriptionID : undefined
+            }
             aria-disabled={isDisabled || undefined}
             {...pressable}
             {...stylex.props(
@@ -1781,7 +1786,9 @@ export function Step({
               type="button"
               onClick={handleClick}
               aria-label={stepAriaLabel}
-              aria-describedby={descriptionNode ? descriptionID : undefined}
+              aria-describedby={
+                isRenderable(description) ? descriptionID : undefined
+              }
               aria-disabled={isDisabled || undefined}
               {...pressable}
               {...stylex.props(
@@ -1851,7 +1858,9 @@ export function Step({
           type="button"
           onClick={handleClick}
           aria-label={stepAriaLabel}
-          aria-describedby={descriptionNode ? descriptionID : undefined}
+          aria-describedby={
+            isRenderable(description) ? descriptionID : undefined
+          }
           aria-disabled={isDisabled || undefined}
           {...stylex.props(
             styles.buttonReset,

@@ -146,8 +146,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   hidden word (Current-state
   impact).
 - **AR3 — Clickable name.** FR2's button name includes the step number, label,
-  and status word. Implementation gap: a clickable step's description, optional
-  cue, and `endContent` are not exposed (Current-state impact).
+  and status word, and the step's description describes it. Implementation gap:
+  a clickable step's optional cue and `endContent` are not exposed
+  (Current-state impact).
 - **AR4 — Keyboard.** Clickable steps, disabled ones included, are reached with
   Tab in document order; enabled ones activate with Enter or Space.
 
