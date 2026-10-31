@@ -198,12 +198,15 @@ jobs:
     name: Publish canary to npm
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    # Dedicated group, cancel-in-progress so a newer main push supersedes an
-    # in-flight canary. Independent of the stable group, so this can never
-    # cancel or starve a stable dispatch.
+    # Dedicated group, independent of the stable group, so this can never
+    # cancel or starve a stable dispatch. Never cancel in progress: a canary
+    # that has started may already have published some packages, and
+    # cancelling it mid-loop leaves a partial canary set on npm. Bursts still
+    # coalesce: while one canary runs, a newer push waits as the single pending
+    # run, and a later push replaces that pending run before it starts.
     concurrency:
       group: npm-release-canary
-      cancel-in-progress: true
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write # required for npm OIDC trusted publishing + provenance

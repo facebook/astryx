@@ -59,6 +59,7 @@ import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useTranslator} from '../i18n';
 // =============================================================================
 // Types
 // =============================================================================
@@ -513,6 +514,7 @@ export function Slider({ref, ...props}: SliderProps) {
     'aria-describedby': ariaDescribedByProp,
     ...restWithRange
   } = props;
+  const t = useTranslator();
   const {minStepsBetweenThumbs: _minSteps, ...restProps} =
     restWithRange as typeof restWithRange & {minStepsBetweenThumbs?: number};
   const {rest, container} = useFieldInputStyling('Slider', restProps, {
@@ -983,8 +985,8 @@ export function Slider({ref, ...props}: SliderProps) {
     // name from the visible label element via aria-labelledby.
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? 'Minimum value'
-        : 'Maximum value'
+        ? t('@astryx.slider.minimumThumb')
+        : t('@astryx.slider.maximumThumb')
       : undefined;
 
     // ARIA bounds must agree with the movement clamping in updateValue: in

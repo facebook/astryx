@@ -651,9 +651,10 @@ function DropdownMenuBottomSheet({
     }
   }
   // The closed sheet renders nothing, so load its rows at rest: the first
-  // open shows the actions at once.
+  // open shows the actions at once. The preload's result says whether they
+  // loaded; after a failure the first open loads them.
   useEffect(() => {
-    preloadMenuBottomSheetActionList();
+    void preloadMenuBottomSheetActionList();
   }, []);
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
