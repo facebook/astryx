@@ -144,14 +144,11 @@ it. Closing the gap means choosing between falling back to the default name,
 rejecting the value, or treating an empty label as a caller error — a public
 API and compatibility decision that belongs to the owner. See OQ7.
 
-**FR3a — the clipped focus ring.** The composed Button declares a focus ring
-as an `outline` at a positive `outline-offset`, so it is painted entirely
-outside the button's border box. The button fills the pill exactly (measured
-32x32 in 32x32 collapsed, 149x32 in 149x32 labelled), and the pill clips with
-`overflow: hidden`, which it needs to keep the collapse/expand animation inside
-its own rounded shape. There is therefore no room for the ring on any side and
-none of it is painted: captured frames of the focused control are byte-identical
-to the resting control in both configurations and both color modes.
+**FR3a — the clipped focus ring.** The composed Button draws its focus ring as
+an `outline` at a positive `outline-offset`, outside its border box. The button
+fills the pill, and the pill clips with `overflow: hidden` to keep the
+collapse/expand animation inside its rounded shape, so none of the ring is
+painted.
 
 Keyboard access itself is intact — the control takes focus and activates — so
 this is a visibility defect, not a reachability one. The remedy is a production
@@ -251,7 +248,6 @@ scroll affordance today, so these rows record the gap rather than a requirement.
 | FR6            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` placement and probe-theme reach tests                                                                                                                                                                                                         | visible, collapsed, neutral and probe  | moving the target back to the centring row leaves the pill unchanged under the probe theme                 | `audit:ChatLayoutScrollButton/theming`    |
 | FR6a           | source: `themeProps()` is called with no state argument, and `Chat.doc.mjs` declares the target with no `visualProps`/`states`                                                                                                                                                                      | visible/hidden; collapsed/expanded     | adding either axis is new public theming surface, so no test may assert its shape before the owner decides | `audit:ChatLayoutScrollButton/theming`    |
 | hover, pressed | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` interaction pass — each frame asserts the pseudo-class matched and that the captured bytes differ from a rest frame of the same page                                                                                                          | collapsed and labelled, light and dark | a frame captured after release, or with the pointer elsewhere, fails its own engagement assertion          | `audit:ChatLayoutScrollButton/design`     |
-| FR7            | source declaration plus `holdMotionStill` capture conditions                                                                                                                                                                                                                                        | any transition                         | removing the reduced-motion branch restores animation for readers who asked for none                       | `audit:ChatLayoutScrollButton/a11y`       |
 | FR8            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` measured target box                                                                                                                                                                                                                           | visible, collapsed                     | a smaller resolved size drops the control below the AA minimum                                             | `audit:ChatLayoutScrollButton/a11y`       |
 | FR9            | `ChatLayoutScrollButton.test.tsx` passthrough case                                                                                                                                                                                                                                                  | any                                    | dropping `...rest` silently discards `data-*`, `id`, and ARIA the caller set                               | `audit:ChatLayoutScrollButton/public-api` |
 
