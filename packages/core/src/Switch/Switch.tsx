@@ -762,8 +762,12 @@ export function Switch({
         style,
       )}
       {...rest}
-      // Native `disabled` suppressed clicks on the switch (spec:AST-085 FR2).
-      onClick={isDisabled ? undefined : rest.onClick}>
+      // Native `disabled` suppressed clicks and key events on the switch; the
+      // switch is no longer natively disabled, so withhold the caller's
+      // handlers while disabled (spec:AST-085 FR2).
+      onClick={isDisabled ? undefined : rest.onClick}
+      onKeyDown={isDisabled ? undefined : rest.onKeyDown}
+      onKeyUp={isDisabled ? undefined : rest.onKeyUp}>
       <div
         ref={el => {
           // Interaction (hover/focus) listeners for the disabled-message
