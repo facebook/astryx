@@ -153,7 +153,25 @@ jobs:
             }
 
             let hadError = false;
-            for (const listed of prs) {
+            const isBackfill = prs.length > 1 ||
+              (context.eventName === 'workflow_dispatch' &&
+                !(context.payload.inputs.pr || '').trim());
+            for (const [index, listed] of prs.entries()) {
+              if (isBackfill) {
+                // A backfill makes several calls per PR on the job token's
+                // hourly budget. Stop with headroom left for PR events
+                // (reading /rate_limit costs nothing).
+                const {data: limits} = await github.rest.rateLimit.get();
+                const {remaining, limit, reset} = limits.resources.core;
+                if (remaining < Math.min(1500, Math.floor(limit / 3))) {
+                  core.setFailed(
+                    `Backfill stopped before PR #${listed.number} (${prs.length - index} left): ` +
+                      `${remaining} of ${limit} API requests remain until ` +
+                      `${new Date(reset * 1000).toISOString()}; re-run after the reset.`,
+                  );
+                  return;
+                }
+              }
               try {
                 // The list endpoint omits changed_files, which the file check
                 // below needs, so a backfill reads each PR in full.

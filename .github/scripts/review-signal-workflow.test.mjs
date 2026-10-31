@@ -35,6 +35,7 @@ async function runSignal({
   reviews = [],
   reviewApp = '',
   permission = 'write',
+  rateRemaining = 5000,
   // The spec-owner job's decision for a PR that changes no spec record.
   specStatuses = [
     {
@@ -111,6 +112,15 @@ async function runSignal({
       issues: {
         addLabels: mutations.addLabels,
         removeLabel: mutations.removeLabel,
+      },
+      rateLimit: {
+        get: vi.fn(async () => ({
+          data: {
+            resources: {
+              core: {remaining: rateRemaining, limit: 5000, reset: 1793412000},
+            },
+          },
+        })),
       },
       checks: {
         listForRef: async () => ({data: {check_runs: []}}),
@@ -217,6 +227,21 @@ describe('review-signal trusted helper ref', () => {
       }
     },
   );
+
+  it('stops a backfill before the token runs low, and says so', async () => {
+    const h = await runSignal({
+      eventName: 'workflow_dispatch',
+      backfill: true,
+      rateRemaining: 1000,
+    });
+    expect(h.core.setFailed).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining(
+        'Backfill stopped before PR #42 (1 left): 1000 of 5000',
+      ),
+    );
+    expect(h.github.rest.pulls.get).not.toHaveBeenCalled();
+    expect(h.mutations.createCommitStatus).not.toHaveBeenCalled();
+  });
 
   it.each(['workflow_dispatch', 'pull_request_target'])(
     'fails closed if the helper is missing at the workflow SHA for %s',
