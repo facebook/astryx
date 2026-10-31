@@ -16,7 +16,15 @@
  * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import {use, useMemo, useRef, type ReactNode, type RefObject} from 'react';
+import {
+  use,
+  useMemo,
+  useRef,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils/mergeProps';
@@ -108,6 +116,12 @@ const styles = stylex.create({
     },
   },
 });
+
+/**
+ * The pointers whose tap opens the label's help (`touchTrigger="tap"`): a
+ * finger and a pen, the same ones the shared touch trigger answers.
+ */
+const TAP_POINTER_TYPES = new Set(['touch', 'pen']);
 
 export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
   /** Ref forwarded to the root element */
@@ -256,6 +270,20 @@ export function FieldLabel({
   // a ref-shaped object, since FieldLabel points at the control by id rather
   // than holding a ref to it.
   const descriptionRef = useRef<HTMLSpanElement>(null);
+  // A tap on the info icon asks for the help, so it stops there: it does not
+  // go on to activate the label's control, as a press anywhere else on the
+  // label would (focus the field, toggle a switch). A mouse click on the icon
+  // keeps that native activation, and hover shows the help.
+  const iconPressIsTapRef = useRef(false);
+  const handleIconPointerDown = (event: PointerEvent<Element>) => {
+    iconPressIsTapRef.current = TAP_POINTER_TYPES.has(event.pointerType);
+  };
+  const handleIconClick = (event: MouseEvent<Element>) => {
+    if (iconPressIsTapRef.current) {
+      event.preventDefault();
+    }
+    iconPressIsTapRef.current = false;
+  };
   const controlRef = useMemo<RefObject<HTMLElement | null>>(
     () => ({
       get current() {
@@ -285,8 +313,16 @@ export function FieldLabel({
         </span>
       )}
       {labelTooltip && (
-        <Tooltip content={labelTooltip} placement="above">
-          <Icon icon="info" size="sm" color="inherit" />
+        // The icon's one job is to reveal the help, so a tap on it always opens
+        // the help (`touchTrigger="tap"`), although it sits inside a `<label>`.
+        <Tooltip content={labelTooltip} placement="above" touchTrigger="tap">
+          <Icon
+            icon="info"
+            size="sm"
+            color="inherit"
+            onPointerDown={handleIconPointerDown}
+            onClick={handleIconClick}
+          />
         </Tooltip>
       )}
     </>
