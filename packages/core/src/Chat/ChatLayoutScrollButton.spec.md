@@ -108,7 +108,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | `label` — omitted   | `undefined`                 | Icon-only; the translated default becomes the accessible name        | always                                    | this is the default | `component:ChatLayoutScrollButton`  | stable    | —                                                 |
 | `label` — non-empty | any non-empty string        | Visible text, which is also the accessible name                      | always                                    | —                   | `component:ChatLayoutScrollButton`  | stable    | —                                                 |
 | `label` — empty     | `''`                        | Icon-only with an empty accessible name — see FR1a                   | always                                    | —                   | `component:ChatLayoutScrollButton`  | stable    | no fallback is applied; the control is unnamed    |
-| `onClick`           | `() => void`                | Activation callback; receives no event                               | always                                    | required            | `component:ChatLayoutScrollButton`  | stable    | required; no default action                       |
+| `onClick`           | `() => void`                | Activation callback; its type declares no arguments                  | always                                    | required            | `component:ChatLayoutScrollButton`  | stable    | required; no default action                       |
 | root `div`          | `BaseProps<HTMLDivElement>` | `ref`, `xstyle`, `className`, `style`, and remaining DOM passthrough | always                                    | none                | `architecture:public-component-api` | stable    | `onClick` is omitted from the inherited DOM props |
 
 Consumer syntax and prop defaults remain in `ChatLayoutScrollButton.doc.mjs`.
@@ -127,7 +127,7 @@ Consumer syntax and prop defaults remain in `ChatLayoutScrollButton.doc.mjs`.
 | FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.                                                                                  | `architecture:component-theming-surface/INV4`                                  |
 | FR6a | The target reflects neither the visible nor the expanded state that drives its paint. Implementation gap: a theme cannot address either state; whether the target should reflect them is OQ1 (Current-state impact). | Current source                                                                 |
 | FR7  | The transition between states MUST collapse to `0s` under `prefers-reduced-motion: reduce`.                                                                                                                          | Current source                                                                 |
-| FR8  | The collapsed control MUST fit a 24x24 CSS-px square.                                                                                                                                                                | WCAG 2.2 SC 2.5.8 (AA)                                                         |
+| FR8  | The collapsed control MUST be at least 24 by 24 CSS pixels.                                                                                                                                                          | WCAG 2.2 SC 2.5.8 (AA)                                                         |
 | FR9  | Consumer `ref`, styles, and remaining DOM props MUST reach the component's outer element.                                                                                                                            | Current source and tests; `architecture:public-component-api/INV5, INV6, INV8` |
 
 **FR1a — the empty-label naming gap.** `label=''` is permitted by the public
@@ -178,7 +178,7 @@ the owner. See OQ1.
 | State                     | Required invariant                                                                                           | Allowed variation                 |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------- |
 | hidden                    | paints nothing, refuses focus, keeps its layout box (FR2)                                                    | transition duration               |
-| visible, label omitted    | named from the default, focusable, fits a 24px square, no visible text (FR1, FR3, FR4, FR8)                  | resolved pill size                |
+| visible, label omitted    | named from the default, focusable, at least 24 by 24 CSS pixels, no visible text (FR1, FR3, FR4, FR8)        | resolved pill size                |
 | visible, non-empty label  | the label is both the visible text and the accessible name (FR1, FR4)                                        | expanded width up to the ceiling  |
 | visible, empty label      | **fails FR1** — icon-only with an empty accessible name (FR1a)                                               | none; this is a recorded defect   |
 | visible, hovered          | the pointer paints a state distinct from rest                                                                | the overlay the theme resolves    |
@@ -205,8 +205,8 @@ the owner. See OQ1.
 - **AR3a — Focus is visible.** A focused control MUST paint a focus indicator
   (WCAG 2.2 SC 2.4.7). The ring is declared but clipped away; recorded as FR3a
   rather than resolved here.
-- **AR3 — Target size.** The collapsed control MUST fit a 24x24 CSS-px square
-  (WCAG 2.2 SC 2.5.8 AA) (FR8).
+- **AR3 — Target size.** The collapsed control MUST be at least 24 by 24 CSS
+  pixels (WCAG 2.2 SC 2.5.8 AA) (FR8).
 - **AR4 — Reduced motion.** The state transition MUST collapse to `0s` under
   `prefers-reduced-motion: reduce` (FR7).
 - **AR5 — Translated strings.** The default accessible name MUST resolve through
