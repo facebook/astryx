@@ -731,18 +731,13 @@ describe('ci.yml interaction proofs', () => {
   const step = name => job.steps.find(candidate => candidate.name === name);
 
   it('runs the interaction config in Chromium against the exact PR head', () => {
-    // Four cores when the proofs apply, a slim runner when it passes without work.
-    const labels = [...job['runs-on'].matchAll(/'([^']+)'/g)]
-      .map(match => match[1])
-      .filter(label => label !== 'true');
-    expect(labels).toEqual(['ubuntu-latest', 'ubuntu-slim']);
-    for (const label of labels)
-      expect(KNOWN_RUNNERS.has(label), label).toBe(true);
-    expect(job.needs).toEqual(
-      expect.arrayContaining(['check-scope', 'build-storybook']),
-    );
-    const checkout = job.steps.find(candidate =>
-      candidate.uses?.startsWith('actions/checkout@'),
+    // One fixed runner: out of scope, every step after the scope step skips.
+    expect(KNOWN_RUNNERS.has(job['runs-on']), job['runs-on']).toBe(true);
+    expect(job.needs).toEqual(['build-storybook']);
+    const checkout = job.steps.find(
+      candidate =>
+        candidate.uses?.startsWith('actions/checkout@') &&
+        candidate.with?.path === undefined,
     );
     expect(checkout?.with?.ref).toBe(
       '${{ github.event.pull_request.head.sha }}',
@@ -757,11 +752,8 @@ describe('ci.yml interaction proofs', () => {
   });
 
   it('runs whenever the harness, its config, a component or a story changes', () => {
-    const scope = workflow.jobs['interaction-scope'].steps.find(
-      candidate =>
-        candidate.name === 'Decide whether the interaction proofs apply',
-    ).run;
-    expect(scope).toContain('.github/scripts/pr-scope-touches.sh');
+    const scope = job.steps.find(candidate => candidate.id === 'scope').with
+      .paths;
     for (const path of [
       'internal/interaction-harness/',
       'internal/a11y-spec/',
@@ -774,8 +766,6 @@ describe('ci.yml interaction proofs', () => {
     ]) {
       expect(scope).toContain(path);
     }
-    // Unknown scope (exit 2) runs the proofs; only "out of scope" skips them.
-    expect(scope).toContain('if [ "$scope" = 1 ]; then');
   });
 });
 

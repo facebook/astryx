@@ -116,7 +116,16 @@ describe('Node-tooling CI routing', () => {
       'node .github/scripts/theme-layer-cascade.js',
       'ASTRYX_STYLEX_BROWSER=1 vitest run scripts/stylex-module-resolution.browser.test.mjs --project node --maxWorkers=1',
     ]);
-    expect(ci.jobs['fixture-contrast'].if).toContain(TOOLING_FALSE);
+    // The vibe-tests fixtures share test-build's Playwright runner, and its
+    // Node-tooling skip.
+    expect(ci.jobs['fixture-contrast']).toBeUndefined();
+    for (const name of [
+      'Verify canonical setup compositions',
+      'Verify guest fixture contrast',
+    ]) {
+      expect(step(ci.jobs['test-build'], name)).toBeDefined();
+    }
+    expect(ci.jobs['test-build'].if).toContain(TOOLING_FALSE);
     // The merge-base size build is heavy build work and stays off the
     // Node-tooling, docsite, and spec lanes.
     expect(ci.jobs['size-base'].if).toContain(BROAD_ONLY);
@@ -154,7 +163,6 @@ describe('Node-tooling CI routing', () => {
       expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
     }
 
-    expect(ci.jobs['build-sandbox'].if).toContain(TOOLING_FALSE);
     for (const candidate of [
       ...ci.jobs['build-storybook'].steps,
       ...ci.jobs.typecheck.steps,
@@ -184,11 +192,7 @@ describe('Node-tooling CI routing', () => {
       'test-native-swift',
       'pr-interaction',
     ]);
-    expect(ci.jobs.build.needs).toEqual([
-      'build-storybook',
-      'build-sandbox',
-      'typecheck',
-    ]);
+    expect(ci.jobs.build.needs).toEqual(['build-storybook', 'typecheck']);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
     expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
@@ -208,11 +212,32 @@ describe('Node-tooling CI routing', () => {
       ci.jobs.build,
       'Assert parallel builds succeeded',
     ).run;
-    expect(buildJoin).toContain('needs.build-storybook.result');
-    expect(buildJoin).toContain('needs.build-sandbox.result');
+    expect(buildJoin).toContain(
+      '[ "${{ needs.build-storybook.result }}" = "success" ] || exit 1',
+    );
+    expect(buildJoin).not.toContain('build-sandbox');
     expect(buildJoin).toContain(
       '[ "${{ needs.typecheck.result }}" = "success" ] || exit 1',
     );
+  });
+
+  it('builds no Sandbox and builds Storybook once per pull-request run', () => {
+    // Vercel builds the Sandbox preview; nothing downloaded CI's copy.
+    expect(ci.jobs['build-sandbox']).toBeUndefined();
+    expect(ci.jobs['build-storybook'].outputs).not.toHaveProperty(
+      'sandbox_url',
+    );
+    const storybookBuilders = Object.entries(ci.jobs).flatMap(([name, job]) =>
+      (job.steps ?? [])
+        .filter(s =>
+          /storybook build|build-packages-and-storybook/.test(s.run ?? ''),
+        )
+        .filter(
+          s => !/^github\.event_name == 'workflow_dispatch'/.test(s.if ?? ''),
+        )
+        .map(() => name),
+    );
+    expect(storybookBuilders).toEqual(['build-storybook']);
   });
 
   it('keeps removed preview publication out of the tooling lane', () => {
