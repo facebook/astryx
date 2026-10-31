@@ -32,7 +32,8 @@ import {
   useClickableContainer,
 } from '../hooks/useClickableContainer';
 import {Icon} from '../Icon';
-import {mergeProps} from '../utils';
+import {mergeProps} from '../utils/mergeProps';
+import {useFocusAcrossSwap} from '../utils/useFocusAcrossSwap';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -417,6 +418,10 @@ export function TreeListItem({
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
   const linkRef = useRef<HTMLAnchorElement>(null);
+  // Disabling the item swaps the router link for a plain anchor, so React
+  // replaces it; focus on the inner link (after a pointer click) follows the
+  // swap instead of falling to the page (spec:AST-085 FR4).
+  const anchorRef = useFocusAcrossSwap<HTMLAnchorElement>(linkRef);
   const isInteractive = onClick != null || href != null;
 
   const handleToggle = useMemo(
@@ -603,10 +608,9 @@ export function TreeListItem({
         // A disabled item's anchor has no destination, so neither the row's
         // forwarded activation nor a screen reader's click can navigate
         // (spec:AST-085 FR2). Like a disabled Link, it keeps the link role and
-        // skips the router link component. Focus stays on the treeitem row
-        // (roving tabindex), so the swap moves no focus.
+        // skips the router link component.
         <DisabledAnchor
-          ref={linkRef}
+          ref={anchorRef}
           role="link"
           aria-disabled={true}
           aria-labelledby={labelId}
@@ -617,7 +621,7 @@ export function TreeListItem({
         </DisabledAnchor>
       ) : href != null ? (
         <LinkComponent
-          ref={linkRef}
+          ref={anchorRef}
           href={href}
           target={target}
           aria-labelledby={labelId}

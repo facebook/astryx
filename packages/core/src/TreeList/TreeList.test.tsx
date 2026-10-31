@@ -861,6 +861,26 @@ describe('TreeList', () => {
       });
     });
 
+    it("keeps focus on an item's inner link when the item becomes disabled (spec:AST-085 FR4)", () => {
+      const tree = (isDisabled: boolean) => [
+        {
+          id: 'docs',
+          label: 'Docs',
+          isExpanded: true,
+          children: [
+            {id: 'report', label: 'Report', href: '/report', isDisabled},
+          ],
+        },
+      ];
+      const {rerender} = render(<TreeList items={tree(false)} />);
+      // A pointer click leaves focus on the inner link.
+      screen.getByRole('link', {name: 'Report', hidden: true}).focus();
+      rerender(<TreeList items={tree(true)} />);
+      const disabled = screen.getByRole('link', {name: 'Report', hidden: true});
+      expect(disabled).not.toHaveAttribute('href');
+      expect(disabled).toHaveFocus();
+    });
+
     it('does not follow a disabled link row', () => {
       const items = [
         {
