@@ -9,7 +9,15 @@
  * SYNC: When Selector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {
   act,
@@ -61,6 +69,15 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 }
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
+// The bottom-sheet presentation renders BottomSheet through React.lazy. Its
+// first import transforms the BottomSheet module tree, which on a loaded
+// runner takes longer than a query's 1 s wait, so the first sheet test timed
+// out before the dialog existed. Load the module once up front: lazy() then
+// resolves from the module cache and every sheet test waits only on the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
+
 beforeEach(() => {
   // The live regions are a document-level singleton; start each test clean.
   __resetLiveRegionsForTest();
@@ -275,6 +292,13 @@ function expectSilentBusySpinner() {
   expect(spinner).toHaveAttribute('aria-hidden', 'true');
   expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
 }
+
+// The bottom sheet is loaded on demand (SelectorBottomSheet's lazy import).
+// Loading its module is not part of an open, so the file waits for it once
+// here, and each test's open waits only for the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
 
 describe('Selector', () => {
   it('uses a bottom sheet and closes after a selection when requested', async () => {
@@ -4268,6 +4292,71 @@ describe('Selector popup theme target', () => {
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
     );
+  });
+});
+
+describe('Selector light dismiss focus (spec:Popover AR4)', () => {
+  function closeByLightDismiss() {
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+  }
+
+  it('leaves focus on the field a press moved it to', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="below"
+        />
+        <input aria-label="Notes" />
+      </>,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The press on another field focuses it before the browser's light
+    // dismiss closes the list.
+    const notes = screen.getByRole('textbox', {name: 'Notes'});
+    act(() => {
+      notes.focus();
+    });
+    closeByLightDismiss();
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(notes).toHaveFocus();
+  });
+
+  it('returns focus to the trigger when the press lands on nothing focusable', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="below"
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    act(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    closeByLightDismiss();
+
+    expect(trigger).toHaveFocus();
   });
 });
 

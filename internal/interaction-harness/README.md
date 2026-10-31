@@ -148,14 +148,62 @@ later in WebKit on a loaded machine). When the cast saw the element at rest
 before the block (wait for `cast.frameCount()` to pass 0 before starting the
 animation), judging starts at its first presented change: the judged part still
 ends with the block and still needs four intervals, and `onScreenFromMs` and the
-summary report when it came. An element already moving is judged from the
-block's start. WebKit's casts are 2 px quantized: the frames come at the
+summary report when it came. So is an element that moved, then held from
+before the block until its first presented change inside it: WebKit presents
+a just-started compositor animation late (a sheet's release held on screen for
+130 to 300 ms while its timeline ran), and its cast reaches Node about 0.7 s
+late on a loaded runner, too late to wait on before blocking. Only a hold that
+starts before the block, on two frames at least, is excused, and every frame
+after its first change is judged, so a freeze later in the block still fails.
+Any other element already moving is judged from the block's start. WebKit's
+casts are 2 px quantized: the frames come at the
 viewport's size, but the page in them is captured at half resolution, so
 positions move in 2 CSS px steps (Chromium's in 1). With under two steps of
 motion per frame, a frame delivered a few ms early shows no step and reads as
 not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
 two steps per frame, which never fails it. Move a proof's element at least two
 steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
+
+On a two-core runner the software compositor and the screencast share the core
+the block spins on, so every compositor animation presents fewer frames there:
+Lightbox's double-tap zoom, pinned to two cores, missed a display-rate bound in
+7 of 10 runs while it moved on every frame the compositor presented. Judge such
+a proof against a control instead of a rate: `startBusyControl(page)` shows a
+small `CONTROL_RGB` box in the top layer (a manual popover, so above a modal
+dialog opened before it; `raise()` after one opened later) whose transform
+moves it along the top edge for as long as the page runs. A proof of a
+dialog's backdrop mounts the control inside the dialog with
+`startBusyControl(page, {within: dialog})`, a plain fixed box with no top-layer
+entry: in WebKit, with the popover above BottomSheet's open modal dialog, the
+sheet's dim held for 155 to 225 ms into a block while the control moved, and
+inside the dialog it moves in step with the sheet. `waitForAnimation` and
+`blockMainThread`'s `during` never count the control's own animation, so on
+a dialog they still wait for the backdrop's. Track it from the
+same screencast (`trackMarker(page, frames, {rgb: CONTROL_RGB})`) and pass it
+as `control`: the component passes when it moved on every frame the control
+moved and its longest stall is no longer than the control's. Both are read from
+the same screencast frames, so a compositor animation misses none. A window in
+which the control moved on fewer than four frames fails, since the machine
+presented too little to judge. A run of frames with no new position counts as
+moved when the change that ends it is a single cast step: the component moves
+under one step a frame there, as on an easing tail, which the cast cannot show
+on every frame. The run must also read as a slowing curve, at most one frame
+longer than the component's run before it. A freeze ends in a catch-up of more
+than one step, a stall in a frame-counted animation is longer than its runs
+before it, and a run that no change ends stays a miss. The component still has
+to show a new position on at least four of the control's frames. The cast step (`stepPx`)
+is read from the value's changes in the judged part, so a position the page
+commits off the grid once the block ends does not shrink it.
+A main-thread animation still fails: the control moves and it does not.
+
+An animation that lasts a fraction of a second, such as a 0.2 s fade, leaves a
+block only a few frames to judge: in WebKit, or on a loaded machine, the control
+can present fewer than four, and one run cannot decide. Play it several times
+and judge the runs pooled (`pooledBusyProof(runs)`, each run with its own
+tracked frames, control and window): the control must move on at least four
+frames over all the runs, the component on every one of them, and in each run
+its longest stall may be no longer than that run's control's, since a stall
+belongs to its run.
 
 On a loaded machine Chromium's screencast can skip frames the compositor
 still presents. `startCompositorTrace(page)`, started with the screencast and

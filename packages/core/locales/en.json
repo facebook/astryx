@@ -1567,6 +1567,10 @@
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
   },
+  "@astryx.textArea.counter": {
+    "defaultMessage": "{count, number}/{limit, number}",
+    "description": "Visible character counter at the bottom of a TextArea that has a character limit, for example `62/2,000`. `{count}` is the characters typed so far and `{limit}` the limit; keep both numbers and reorder or change the separator if your language needs to."
+  },
   "@astryx.textArea.charactersRemaining": {
     "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
     "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
@@ -1642,6 +1646,10 @@
   "@astryx.multiSelector.selectionCount": {
     "defaultMessage": "{count, number} of {total, number} selected",
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
+  },
+  "@astryx.multiSelector.selectedCount": {
+    "defaultMessage": "{count, plural, one {# selected} other {# selected}}",
+    "description": "Visible text on a closed MultiSelector's trigger when it shows a count of the chosen options (`triggerDisplay=\"count\"`), for example `2 selected`. `{count}` is the number of chosen options; use a plural form if your language needs one."
   },
   "@astryx.multiSelector.createOption": {
     "defaultMessage": "Create \"{query}\"",

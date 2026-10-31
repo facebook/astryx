@@ -30,7 +30,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import React from 'react';
+import React, {useRef} from 'react';
 import {readFileSync} from 'node:fs';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {Button} from '../Button';
@@ -600,6 +600,173 @@ describe('ToastViewport keyboard reach + focus', () => {
     // Focus lands on the dismiss button of the newest toast.
     const dismiss = screen.getByRole('button', {name: 'Dismiss notification'});
     expect(document.activeElement).toBe(dismiss);
+  });
+
+  it('moves focus to the neighbour when a control inside a toast raises its repeat and dismisses it', () => {
+    function OfflineFlow() {
+      const toast = useToast();
+      const dismissOfflineRef = useRef<(() => void) | null>(null);
+      const showOffline = (body: string) => {
+        dismissOfflineRef.current = toast({
+          uniqueID: 'offline',
+          isAutoHide: false,
+          body,
+          endContent: (
+            <button
+              type="button"
+              onClick={() => {
+                // A retry reports the state again, then closes the toast it
+                // was pressed in.
+                const dismissPressed = dismissOfflineRef.current;
+                showOffline('Still offline');
+                dismissPressed?.();
+              }}>
+              Retry
+            </button>
+          ),
+        });
+      };
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              toast({isAutoHide: false, body: 'Alpha'});
+              toast({isAutoHide: false, body: 'Bravo'});
+            }}>
+            Show two
+          </button>
+          <button type="button" onClick={() => showOffline('Offline')}>
+            Show offline
+          </button>
+        </>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={2}>
+        <OfflineFlow />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show two'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('Show offline'));
+    });
+    // Alpha waits hidden; Bravo and Offline show.
+    const retry = within(getToastWrapperByText('Offline')).getByRole('button', {
+      name: 'Retry',
+    });
+    retry.focus();
+    act(() => {
+      fireEvent.click(retry);
+    });
+    // Toast.spec.md FR10: focus moves to a control in a remaining toast, the
+    // neighbour of the dismissed one, not to the hidden oldest toast or the
+    // region.
+    expect(
+      getToastWrapperByText('Bravo').contains(document.activeElement),
+    ).toBe(true);
+  });
+
+  it('moves focus into the replacement when a control inside the only toast raises its repeat and dismisses it', () => {
+    function OfflineFlow() {
+      const toast = useToast();
+      const dismissOfflineRef = useRef<(() => void) | null>(null);
+      const showOffline = (body: string) => {
+        dismissOfflineRef.current = toast({
+          uniqueID: 'offline',
+          isAutoHide: false,
+          body,
+          endContent: (
+            <button
+              type="button"
+              onClick={() => {
+                const dismissPressed = dismissOfflineRef.current;
+                showOffline('Still offline');
+                dismissPressed?.();
+              }}>
+              Retry
+            </button>
+          ),
+        });
+      };
+      return (
+        <button type="button" onClick={() => showOffline('Offline')}>
+          Show offline
+        </button>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false}>
+        <OfflineFlow />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show offline'));
+    });
+    const retry = within(getToastWrapperByText('Offline')).getByRole('button', {
+      name: 'Retry',
+    });
+    retry.focus();
+    act(() => {
+      fireEvent.click(retry);
+    });
+    // FR10: the replacement is the remaining toast, so focus goes into it.
+    expect(
+      getToastWrapperByText('Still offline').contains(document.activeElement),
+    ).toBe(true);
+  });
+
+  it('moves focus to a toast that shows when a control inside a toast raises two toasts at the cap and dismisses its own', () => {
+    function UploadFlow() {
+      const toast = useToast();
+      const dismissSavedRef = useRef<(() => void) | null>(null);
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            dismissSavedRef.current = toast({
+              isAutoHide: false,
+              body: 'Saved',
+              endContent: (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast({isAutoHide: false, body: 'Uploading'});
+                    toast({isAutoHide: false, body: 'Uploaded'});
+                    dismissSavedRef.current?.();
+                  }}>
+                  Upload
+                </button>
+              ),
+            });
+          }}>
+          Save
+        </button>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={1}>
+        <UploadFlow />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+    const upload = within(getToastWrapperByText('Saved')).getByRole('button', {
+      name: 'Upload',
+    });
+    upload.focus();
+    act(() => {
+      fireEvent.click(upload);
+    });
+    // FR10: with one visible place, "Uploaded" shows and "Uploading" waits
+    // hidden, so focus goes to "Uploaded", not to the hidden toast or the
+    // region.
+    expect(
+      getToastWrapperByText('Uploaded').contains(document.activeElement),
+    ).toBe(true);
   });
 
   it('dismissing a focused toast moves focus to a remaining toast, not body', () => {
@@ -2060,6 +2227,413 @@ describe('toast announcements via singleton live regions', () => {
     const viewport = screen.getByRole('region', {name: 'Notifications'});
     expect(within(viewport).getByText('Kept')).toBeInTheDocument();
     expect(within(viewport).queryByText('Dropped')).not.toBeInTheDocument();
+  });
+
+  it('drops an ignored-collision toast while its namesake is still leaving', () => {
+    renderViewport(
+      <>
+        <ShowToastButton
+          options={{
+            uniqueID: 'offline',
+            collisionBehavior: 'ignore',
+            isAutoHide: false,
+            body: 'You are offline',
+          }}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{
+            uniqueID: 'offline',
+            collisionBehavior: 'ignore',
+            isAutoHide: false,
+            body: 'Still offline',
+          }}
+          triggerLabel="Show 2"
+        />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    const first = getToastWrapperByText('You are offline');
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // Toast.spec.md FR8: a leaving toast still holds its uniqueID, so the
+    // ignored namesake is neither shown nor announced.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Still offline')).toBeNull();
+    act(() => {
+      completeExit(first.dataset.toastId ?? '');
+    });
+    expect(document.querySelectorAll('[data-toast-id]')).toHaveLength(0);
+  });
+
+  it('lets a leaving toast finish its exit when a new toast arrives with no cap', () => {
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={0}>
+        <ShowToastButton
+          options={{isAutoHide: false, body: 'Saved'}}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{isAutoHide: false, body: 'Uploaded'}}
+          triggerLabel="Show 2"
+        />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    const first = getToastWrapperByText('Saved');
+    const firstId = first.dataset.toastId ?? '';
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // maxVisible={0} shows every toast (Toast.spec.md FR7), so the closing
+    // toast keeps its row and collapses (FR5) while the new one arrives.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(getToastWrapperByText('Saved').dataset.toastId).toBe(firstId);
+    expect(screen.getByText('Uploaded')).toBeInTheDocument();
+    act(() => {
+      completeExit(firstId);
+    });
+    expect(screen.queryByText('Saved')).toBeNull();
+    expect(screen.getByText('Uploaded')).toBeInTheDocument();
+  });
+
+  it('drops a second ignore toast with the same uniqueID raised in the same handler', () => {
+    function ShowTwoIgnored() {
+      const toast = useToast();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            toast({
+              uniqueID: 'offline',
+              collisionBehavior: 'ignore',
+              isAutoHide: false,
+              body: 'You are offline',
+            });
+            toast({
+              uniqueID: 'offline',
+              collisionBehavior: 'ignore',
+              isAutoHide: false,
+              body: 'Still offline',
+            });
+          }}>
+          Show twice
+        </button>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false}>
+        <ShowTwoIgnored />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show twice'));
+    });
+    // Toast.spec.md FR8 and ORD1: the ignored namesake is neither shown nor
+    // announced, even before the first toast renders.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenLastCalledWith('You are offline', 'polite');
+    const rows = [...document.querySelectorAll('[data-toast-id]')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('You are offline');
+  });
+
+  it('leaves no row behind when a new toast takes the last visible slot from a leaving one', () => {
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={1}>
+        <ShowToastButton
+          options={{isAutoHide: false, body: 'Saved'}}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{isAutoHide: false, body: 'Uploaded'}}
+          triggerLabel="Show 2"
+        />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    const first = getToastWrapperByText('Saved');
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // A new toast arrives at once; with one visible slot it takes the place of
+    // the leaving toast, which can no longer finish its exit on screen.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    const second = getToastWrapperByText('Uploaded');
+    act(() => {
+      fireEvent.click(
+        within(second).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      completeExit(second.dataset.toastId ?? '');
+    });
+    // Nothing is left: no row comes back, and the landmark is gone.
+    expect(document.querySelectorAll('[data-toast-id]')).toHaveLength(0);
+    expect(screen.queryByRole('region', {name: 'Notifications'})).toBeNull();
+  });
+
+  it('reports the namesake once when one handler shows a repeat and dismisses the namesake', () => {
+    const onHide = vi.fn();
+    function RepeatAndDismiss() {
+      const toast = useToast();
+      const dismissFirstRef = useRef<(() => void) | null>(null);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              dismissFirstRef.current = toast({
+                uniqueID: 'offline',
+                isAutoHide: false,
+                body: 'Offline',
+                onHide,
+              });
+            }}>
+            Show first
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              toast({
+                uniqueID: 'offline',
+                isAutoHide: false,
+                body: 'Still offline',
+              });
+              dismissFirstRef.current?.();
+            }}>
+            Repeat and dismiss
+          </button>
+        </>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false}>
+        <RepeatAndDismiss />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show first'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('Repeat and dismiss'));
+    });
+    // As on `main`: the repeat replaces its namesake in place, and the
+    // namesake's dismissal reports it once.
+    expect(onHide).toHaveBeenCalledTimes(1);
+    const rows = [...document.querySelectorAll('[data-toast-id]')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Still offline');
+  });
+
+  it('leaves no row behind when one handler raises a toast at the cap and dismisses the one it pushed out', () => {
+    const onHide = vi.fn();
+    function UndoFlow() {
+      const toast = useToast();
+      const dismissDeletedRef = useRef<(() => void) | null>(null);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              dismissDeletedRef.current = toast({
+                isAutoHide: false,
+                body: 'Deleted',
+                onHide,
+              });
+            }}>
+            Delete
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // An undo shows its confirmation, then dismisses its own toast.
+              toast({isAutoHide: false, body: 'Restored'});
+              dismissDeletedRef.current?.();
+            }}>
+            Undo
+          </button>
+        </>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={1}>
+        <UndoFlow />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('Undo'));
+    });
+    expect(onHide).toHaveBeenCalledTimes(1);
+    const restored = getToastWrapperByText('Restored');
+    act(() => {
+      fireEvent.click(
+        within(restored).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      completeExit(restored.dataset.toastId ?? '');
+    });
+    // Nothing is left: no row comes back, and the landmark is gone.
+    expect(document.querySelectorAll('[data-toast-id]')).toHaveLength(0);
+    expect(screen.queryByRole('region', {name: 'Notifications'})).toBeNull();
+  });
+
+  it('reports a leaving toast once when it is dismissed again after a new toast pushed it out of view', () => {
+    const onHide = vi.fn();
+    function ShowPushDismiss() {
+      const toast = useToast();
+      const dismissFirstRef = useRef<(() => void) | null>(null);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              dismissFirstRef.current = toast({
+                isAutoHide: false,
+                body: 'Saved',
+                onHide,
+              });
+            }}>
+            Show first
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              toast({isAutoHide: false, body: 'Uploaded'});
+            }}>
+            Show second
+          </button>
+          <button type="button" onClick={() => dismissFirstRef.current?.()}>
+            Dismiss first
+          </button>
+        </>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={1}>
+        <ShowPushDismiss />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show first'));
+    });
+    // It starts leaving, and reports it.
+    act(() => {
+      fireEvent.click(screen.getByText('Dismiss first'));
+    });
+    expect(onHide).toHaveBeenCalledTimes(1);
+    // A new toast takes the only visible slot: the leaving one leaves the list.
+    act(() => {
+      fireEvent.click(screen.getByText('Show second'));
+    });
+    // Its dismissal again reports nothing more.
+    act(() => {
+      fireEvent.click(screen.getByText('Dismiss first'));
+    });
+    expect(onHide).toHaveBeenCalledTimes(1);
+    const rows = [...document.querySelectorAll('[data-toast-id]')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Uploaded');
+  });
+
+  it('reports nothing for a toast replaced before it rendered, however often one handler dismisses it', () => {
+    const onHide = vi.fn();
+    function ShowReplaceDismiss() {
+      const toast = useToast();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            const dismissFirst = toast({
+              uniqueID: 'offline',
+              isAutoHide: false,
+              body: 'Offline',
+              onHide,
+            });
+            toast({
+              uniqueID: 'offline',
+              isAutoHide: false,
+              body: 'Still offline',
+            });
+            dismissFirst();
+            dismissFirst();
+          }}>
+          Show, replace and dismiss
+        </button>
+      );
+    }
+    render(
+      <ToastViewport isTopLayer={false}>
+        <ShowReplaceDismiss />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show, replace and dismiss'));
+    });
+    // Toast.spec.md FR3: a toast replaced through uniqueID is not dismissed
+    // and reports no onHide.
+    expect(onHide).not.toHaveBeenCalled();
+    const rows = [...document.querySelectorAll('[data-toast-id]')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Still offline');
+  });
+
+  it('replaces a leaving namesake in place under overwrite and announces it again', () => {
+    renderViewport(
+      <>
+        <ShowToastButton
+          options={{uniqueID: 'upload', isAutoHide: false, body: 'Upload 30%'}}
+          triggerLabel="Show 1"
+        />
+        <ShowToastButton
+          options={{uniqueID: 'upload', isAutoHide: false, body: 'Upload 31%'}}
+          triggerLabel="Show 2"
+        />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    const first = getToastWrapperByText('Upload 30%');
+    act(() => {
+      fireEvent.click(
+        within(first).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // Toast.spec.md FR8: an overwrite replaces its namesake in place even
+    // while it is leaving, and is announced again.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(announceSpy).toHaveBeenLastCalledWith('Upload 31%', 'polite');
+    expect(screen.queryByText('Upload 30%')).toBeNull();
+    const rows = [...document.querySelectorAll('[data-toast-id]')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Upload 31%');
   });
 });
 
