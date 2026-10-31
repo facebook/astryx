@@ -64,6 +64,12 @@ ruleTester.run('no-internal-barrel-import', rule, {
       filename: importer,
       options: [{baseline: {[fromCwd]: ['../List']}}],
     },
+    // Baseline keys are relative to `root`, wherever ESLint runs from.
+    {
+      code: `import {List} from '../List';`,
+      filename: importer,
+      options: [{baseline: {'src/Menu/Menu.tsx': ['../List']}, root}],
+    },
     // A computed dynamic import is not a literal path.
     {code: `const m = import(name);`, filename: importer},
   ],
@@ -98,6 +104,17 @@ ruleTester.run('no-internal-barrel-import', rule, {
       code: `import {x} from '..';`,
       filename: importer,
       errors: [{message: message('..')}],
+    },
+    // Naming the index file still reaches the barrel.
+    {
+      code: `import {List} from '../List/index';`,
+      filename: importer,
+      errors: [{message: message('../List/index')}],
+    },
+    {
+      code: `const lazy = () => import('../List/index.ts');`,
+      filename: importer,
+      errors: [{message: message('../List/index.ts')}],
     },
     // The baseline allows only the listed file and specifier.
     {

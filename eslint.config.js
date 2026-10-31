@@ -43,8 +43,11 @@ const internalBarrelBaseline = JSON.parse(
     'utf8',
   ),
 );
-// Tests, stories and test helpers never ship, so they may import barrels.
-const INTERNAL_BARREL_TEST_FILES = [
+// Tests, stories and test helpers never ship, so they may import barrels; a
+// barrel itself (a folder's or a package's index) is the public surface and
+// may re-export from other barrels (`architecture:public-component-api`).
+const INTERNAL_BARREL_EXEMPT_FILES = [
+  '**/index.*',
   '**/*.test.*',
   '**/*.spec.*',
   '**/*.stories.*',
@@ -897,14 +900,14 @@ export default defineConfig(
   // lint, while main stays green). Type-only imports are erased and allowed.
   {
     files: ['packages/*/src/**/*.{ts,tsx,mts,cts,js,jsx,mjs}'],
-    ignores: INTERNAL_BARREL_TEST_FILES,
+    ignores: INTERNAL_BARREL_EXEMPT_FILES,
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
     rules: {
       '@astryx/no-internal-barrel-import': [
         reactSeverity,
-        {baseline: internalBarrelBaseline},
+        {baseline: internalBarrelBaseline, root: import.meta.dirname},
       ],
     },
   },

@@ -16,10 +16,13 @@
  * `index.{ts,tsx,js,jsx,mjs}` and no same-named module file. Type-only
  * imports and exports are left alone, since the compiler erases them.
  *
- * Options: `{baseline: {[repoRelativeFile]: string[]}}` lists barrel imports
- * that already existed when the rule was introduced. Those stay allowed, file
- * by file and specifier by specifier, so the rule catches new barrel imports
- * without failing on the existing ones; the list only shrinks.
+ * Options: `{baseline: {[repoRelativeFile]: string[]}, root: string}`.
+ * `baseline` lists barrel imports that already existed when the rule was
+ * introduced; those stay allowed, file by file and specifier by specifier, so
+ * the rule catches new barrel imports without failing on the existing ones.
+ * The list only shrinks. Its keys are relative to `root`, the repository root
+ * (default: the directory ESLint runs from), so linting from a package
+ * directory finds the same entries.
  */
 
 import fs from 'node:fs';
@@ -69,6 +72,15 @@ export function resolvesToBarrel(importer, specifier) {
     return false;
   }
   const target = path.resolve(path.dirname(importer), specifier);
+  // Naming the index itself ('../List/index', '../List/index.ts') still
+  // reaches the barrel.
+  const base = path.basename(target);
+  if (
+    (base === 'index' && MODULE_EXTENSIONS.some(e => isFile(target + e))) ||
+    (INDEX_FILES.includes(base) && isFile(target))
+  ) {
+    return true;
+  }
   if (isFile(target)) {
     return false;
   }
@@ -110,6 +122,7 @@ const rule = {
             type: 'object',
             additionalProperties: {type: 'array', items: {type: 'string'}},
           },
+          root: {type: 'string'},
         },
         additionalProperties: false,
       },
@@ -122,10 +135,8 @@ const rule = {
   create(context) {
     const filename = context.filename;
     const baseline = context.options[0]?.baseline ?? {};
-    const relative = path
-      .relative(context.cwd, filename)
-      .split(path.sep)
-      .join('/');
+    const root = context.options[0]?.root ?? context.cwd;
+    const relative = path.relative(root, filename).split(path.sep).join('/');
     const allowed = new Set(baseline[relative] ?? []);
 
     function check(node, source) {
