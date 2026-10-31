@@ -256,6 +256,43 @@ describe('Token accessibility', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps aria-labelledby and aria-describedby on a disabled link token', () => {
+    render(
+      <>
+        <span id="dl-label">Docs section</span>
+        <span id="dl-hint">Unavailable offline</span>
+        <Token
+          label="Docs"
+          href="/docs"
+          isDisabled
+          aria-labelledby="dl-label"
+          aria-describedby="dl-hint"
+        />
+      </>,
+    );
+    const link = screen.getByRole('link', {name: 'Docs section'});
+    expect(link).toHaveAccessibleDescription('Unavailable offline');
+  });
+
+  it("passes aria-labelledby and aria-describedby to a clickable token's button (public-component-api INV5)", () => {
+    render(
+      <>
+        <span id="field-label">Fruit</span>
+        <span id="field-hint">Pick one</span>
+        <Token
+          label="Apple"
+          onClick={() => {}}
+          aria-labelledby="field-label"
+          aria-describedby="field-hint"
+          data-testid="token"
+        />
+      </>,
+    );
+    const button = screen.getByRole('button', {name: 'Fruit'});
+    expect(button).toHaveAccessibleDescription('Pick one');
+    expect(screen.getByTestId('token')).not.toHaveAttribute('aria-labelledby');
+  });
+
   it('reflects the disabled state on the token target in every structure (theming-surface INV6)', () => {
     render(
       <>

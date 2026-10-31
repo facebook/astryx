@@ -299,6 +299,8 @@ export function Token({
   className,
   style,
   'data-testid': testId,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
   ref,
   ...rest
 }: TokenProps) {
@@ -342,6 +344,14 @@ export function Token({
     </>
   );
 
+  // Naming inputs reach the element that owns the token's action: the inner
+  // button of a clickable token, otherwise the root
+  // (architecture:public-component-api INV5).
+  const labellingProps = {
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+  };
+
   const sharedProps = {
     'data-testid': testId,
     ...(isLabelHidden ? {'aria-label': label} : {}),
@@ -380,6 +390,7 @@ export function Token({
           style,
         )}
         {...rest}
+        {...labellingProps}
         {...disabledInteractionProps(rest.onKeyDown)}
         {...sharedProps}>
         {content}
@@ -413,6 +424,7 @@ export function Token({
             style,
           )}
           {...rest}
+          {...labellingProps}
           {...(isDisabled ? {'aria-disabled': true} : {})}
           {...sharedProps}>
           {content}
@@ -466,6 +478,7 @@ export function Token({
           style,
         )}
         {...rest}
+        {...labellingProps}
         {...sharedProps}
       />
     );
@@ -509,6 +522,7 @@ export function Token({
         <button
           type="button"
           onClick={effectiveOnClick}
+          {...labellingProps}
           aria-disabled={isDisabled || undefined}
           {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.invisibleButton)}>
@@ -546,6 +560,7 @@ export function Token({
         style,
       )}
       {...rest}
+      {...labellingProps}
       {...sharedProps}>
       {content}
     </span>
