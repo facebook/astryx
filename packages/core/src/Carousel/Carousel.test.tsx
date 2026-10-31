@@ -8,9 +8,12 @@ import {Carousel, type CarouselHandle} from './Carousel';
 
 // Mock ResizeObserver (not available in jsdom)
 class MockResizeObserver {
+  /** The shared observer, so a test can deliver a resize. */
+  static last: MockResizeObserver | null = null;
   callback: ResizeObserverCallback;
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
+    MockResizeObserver.last = this;
   }
   observe() {}
   unobserve() {}
@@ -107,6 +110,50 @@ describe('Carousel', () => {
       // Fitting again: leaves the tab order.
       setOverflow(scroller, false);
       expect(scroller).toHaveAttribute('tabindex', '-1');
+    });
+
+    // The content can come to overflow, or stop, with the scroll area
+    // keeping its size: the tab stop follows it.
+    it('follows its content: slides added or removed, or a slide that grows, move the tab stop', async () => {
+      const slides = (count: number) =>
+        Array.from({length: count}, (_, i) => <div key={i}>Slide {i}</div>);
+      const view = render(<Carousel aria-label="Photos">{slides(1)}</Carousel>);
+      const scroller = getScroller();
+      // A 200 px scroll area; 150 px of content per slide, plus what a slide
+      // grows by.
+      let grown = 0;
+      Object.defineProperty(scroller, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'scrollWidth', {
+        configurable: true,
+        get: () => scroller.children.length * 150 + grown,
+      });
+      expect(scroller).toHaveAttribute('tabindex', '-1');
+
+      view.rerender(<Carousel aria-label="Photos">{slides(2)}</Carousel>);
+      await act(async () => {});
+      expect(scroller).toHaveAttribute('tabindex', '0');
+
+      view.rerender(<Carousel aria-label="Photos">{slides(1)}</Carousel>);
+      await act(async () => {});
+      expect(scroller).toHaveAttribute('tabindex', '-1');
+
+      // The one slide's content grows past the scroll area.
+      grown = 100;
+      const observer = MockResizeObserver.last;
+      act(() => {
+        observer?.callback(
+          [
+            {
+              target: scroller.firstElementChild,
+            } as unknown as ResizeObserverEntry,
+          ],
+          observer,
+        );
+      });
+      expect(scroller).toHaveAttribute('tabindex', '0');
     });
   });
 
