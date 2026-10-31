@@ -320,7 +320,8 @@ FR6): no spring reads the motion knobs yet. Until they land, that part of FR6
 is current authority but not enforcement.
 
 `reducedMotion: 'always'` is accepted but unshipped (`spec:AST-108` FR6,
-INV15): `motion` takes only `reducedMotion: 'system'`, and nothing marks a
+INV15): the public `motion` type has no `reducedMotion` field, every theme
+follows each person's setting as `'system'` does, and nothing marks a
 theme's root, until component styles, the animator, script readers of
 `prefers-reduced-motion`, and motion-keyed adaptation rules key reduced motion
 on the mark. Until then, that part of INV15 and FR6 is current authority but

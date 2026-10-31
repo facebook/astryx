@@ -5,7 +5,7 @@
  * @input vitest, the theme motion knobs, defineTheme and expandMotionScale
  * @output Checks `spec:AST-108` FR1, FR2, FR5 and FR6's resolver: today's
  *   tokens at the defaults, each tempo bound and the clamp, each character's
- *   curves with exits unchanged, `reducedMotion`, a `MotionScaleConfig` that
+ *   curves with exits unchanged, `reducedMotion` kept internal, a `MotionScaleConfig` that
  *   renders exactly as before and wins over `tempo`, explicit tokens winning
  *   over both, adaptation rules setting the knobs, and `resolveThemeMotion`
  * @position Testing; validates themeMotion.ts and its use in defineTheme
@@ -22,6 +22,7 @@ import {
   expandThemeMotion,
   resolveMotionKnobs,
   resolveThemeMotion,
+  type ThemeMotionKnobs,
 } from './themeMotion';
 import {durationDefaults, easeDefaults} from './tokens.stylex';
 
@@ -54,11 +55,11 @@ describe('the motion knobs (spec:AST-108 FR1)', () => {
     });
   });
 
-  it('take reducedMotion system, its only value', () => {
-    expect(resolveMotionKnobs({reducedMotion: 'system'}).reducedMotion).toBe(
-      'system',
-    );
+  it('resolve reducedMotion to system, which no theme sets until always ships', () => {
     expect(resolveMotionKnobs({}).reducedMotion).toBe('system');
+    // @ts-expect-error reducedMotion is not part of the public motion type.
+    const knobs: ThemeMotionKnobs = {reducedMotion: 'system'};
+    expect(resolveMotionKnobs(knobs).reducedMotion).toBe('system');
   });
 });
 
@@ -68,7 +69,6 @@ describe('the CSS motion tokens (spec:AST-108 FR2)', () => {
     const explicit = expandThemeMotion({
       tempo: 1,
       character: 'standard',
-      reducedMotion: 'system',
     });
     expect(durationsMs(explicit)).toEqual(TODAY_MS);
     expect(explicit['--ease-entrance']).toBe(STANDARD);
@@ -223,7 +223,7 @@ describe('existing motion configuration (spec:AST-108 FR5)', () => {
 describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
   it('returns the knobs, durations and easings with explicit tokens applied', () => {
     const motion = resolveThemeMotion({
-      motion: {tempo: 1.2, character: 'expressive', reducedMotion: 'system'},
+      motion: {tempo: 1.2, character: 'expressive'},
       tokens: {'--duration-fast': '200ms'},
     });
     expect(motion.knobs).toEqual({
@@ -493,11 +493,7 @@ describe('an extending theme inherits motion field by field (spec:AST-108 FR5)',
       tokens: {'--radius-element': '6px'},
     });
     expect(child.tokens['--duration-slow-min']).toBe('525ms');
-    for (const knob of [
-      {character: 'expressive' as const},
-      {tempo: 1.2},
-      {reducedMotion: 'system' as const},
-    ]) {
+    for (const knob of [{character: 'expressive' as const}, {tempo: 1.2}]) {
       const grandchild = defineTheme({
         name: 'KnobGrandchild',
         extends: child,

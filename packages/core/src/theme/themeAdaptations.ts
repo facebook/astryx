@@ -138,7 +138,7 @@ export interface ThemeAdaptationValue {
    * Motion axis overrides, completed from root metadata: scale fields, or the
    * `tempo` and `character` knobs (spec:AST-108 FR5).
    */
-  motion?: Partial<MotionScaleConfig> & Omit<ThemeMotionKnobs, 'reducedMotion'>;
+  motion?: Partial<MotionScaleConfig> & ThemeMotionKnobs;
   /** Portable semantic-token writes. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /** Replacements for exact theme-local names enrolled by the root lineage. */
@@ -578,7 +578,8 @@ function completeMotion(
   rule: Partial<MotionScaleConfig> & ThemeMotionKnobs,
   path: string,
 ): ThemeMotionConfig {
-  if (rule.reducedMotion !== undefined) {
+  // Not a public field, but a plain-JS caller may still pass it.
+  if ((rule as {reducedMotion?: unknown}).reducedMotion !== undefined) {
     throw new Error(
       `${path}.reducedMotion is a theme-wide setting: set it on the theme's own ` +
         `motion, not in an adaptation rule.`,

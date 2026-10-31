@@ -181,13 +181,13 @@ export const myTheme = defineTheme({
   radius: {base: 4, multiplier: 1},
 
   /**
-   * Motion. Three knobs set how its CSS feels (touch springs don't read them
+   * Motion. Two knobs set how its CSS feels (touch springs don't read them
    * yet):
    *   tempo — 1 is Astryx's own; 0.75 the quickest, 1.5 the slowest.
    *   character — 'crisp' | 'standard' | 'expressive': the entrance and move
-   *     curves. Exits and fades never overshoot.
-   *   reducedMotion — 'system' (the default and only value) follows each
-   *     person's Reduce Motion setting.
+   *     curves (--ease-entrance, --ease-move). --ease-exit, the curve for
+   *     something leaving, is the same at every character; exits and fades
+   *     never overshoot.
    *   e.g. motion: {tempo: 0.85, character: 'crisp'}
    * Finger tracking, momentum, the rubber band, the on-screen keyboard,
    * hover-intent delays, gesture thresholds, the press's onset delay, cancel
@@ -231,7 +231,8 @@ export const myTheme = defineTheme({
   //   --radius-*       none · inner · element · container · page · chat · full
   //   --shadow-*       low/med/high + inset-{hover,selected,success,warning,error}
   //   --duration-*     {fast,medium,slow} × {-min, base, -max}
-  //   --ease-*         standard (arriving, state) · exit (leaving)
+  //   --ease-*         standard (state) · entrance (arriving) · move (on
+  //                    screen) · exit (leaving)
   //   --font-family-*  body · heading · code
   //   --font-size-*    4xs … 5xl
   //   --font-weight-*  normal · medium · semibold · bold

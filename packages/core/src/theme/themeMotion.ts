@@ -2,8 +2,8 @@
 
 /**
  * @file themeMotion.ts
- * @input A theme's motion configuration: the three knobs (`tempo`,
- *   `character`, `reducedMotion`), the existing `MotionScaleConfig`, or both
+ * @input A theme's motion configuration: the knobs (`tempo`, `character`),
+ *   the existing `MotionScaleConfig`, or both
  * @output The resolved knobs, the motion tokens they generate, and
  *   `resolveThemeMotion`, the internal resolver the animator and server code
  *   read (`spec:AST-108` FR1, FR2, FR5, FR6)
@@ -11,9 +11,9 @@
  *   no import-time work, safe on the server.
  *
  * `tempo` scales every motion duration token, clamped to 0.75–1.5.
- * `character` picks the entrance and move curves. `reducedMotion` takes only
- * `'system'`, which follows each person's setting. No spring reads the knobs
- * yet. With the defaults (tempo 1, `'standard'`, `'system'`) every token is
+ * `character` picks the entrance and move curves. Every theme follows each
+ * person's Reduce Motion setting (`reducedMotion` resolves to `'system'`).
+ * No spring reads the knobs yet. With the defaults (tempo 1, `'standard'`, `'system'`) every token is
  * today's.
  *
  * A `MotionScaleConfig` keeps generating its duration tokens, and its fields
