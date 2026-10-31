@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/lab",
-  "version": "0.7.6",
+  "version": "0.1.9",
   "private": true,
   "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
