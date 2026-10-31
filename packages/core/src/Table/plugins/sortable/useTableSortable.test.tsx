@@ -7,7 +7,7 @@
  * @position Testing; validates sortable plugin implementation
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
@@ -15,6 +15,11 @@ import {Table} from '../../Table';
 import {InternationalizationProvider} from '../../../i18n';
 import type {TableColumn} from '../../types';
 import {useTableSortable, type TableSortState} from './useTableSortable';
+import {warmTableContextMenu} from '../../__tests__/warmTableContextMenu';
+
+// Cells load their context menu lazily; resolve it once so menus open
+// synchronously below.
+beforeAll(warmTableContextMenu);
 
 // =============================================================================
 // Test Data

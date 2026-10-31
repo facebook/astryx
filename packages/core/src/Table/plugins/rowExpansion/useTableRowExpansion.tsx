@@ -40,7 +40,7 @@ import {panelDividerFor} from '../../rowDivider';
 import {useTheme, useThemeName} from '../../../theme/useTheme';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
-import {resolveContextActions} from '../../tableContextMenu';
+import {resolveContextActions} from '../../tableContextActions';
 import {useTableContext} from '../../useTableCellStyles';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
