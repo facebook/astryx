@@ -27,6 +27,7 @@
 import React, {
   lazy,
   Suspense,
+  use,
   useCallback,
   useEffect,
   useId,
@@ -51,6 +52,7 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {TokenizerClearAllMessageContext} from './TokenizerClearAllMessageContext';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useAdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {useIsHydrating} from '../hooks/useIsHydrating';
@@ -85,6 +87,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {composeEventHandlers, mergeProps} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
@@ -754,6 +757,7 @@ export function Tokenizer<T extends SearchableItem>({
   experimental,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: TokenizerWithPresentationProps<T>): React.JSX.Element {
   const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
@@ -768,8 +772,15 @@ export function Tokenizer<T extends SearchableItem>({
   const size = useSize(sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;
+  const fieldLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  // A caller aria-labelledby names the input together with the field's own
+  // label, which it would otherwise replace.
+  const fieldLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelId, ariaLabelledByProp)
+      : undefined;
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -1111,12 +1122,12 @@ export function Tokenizer<T extends SearchableItem>({
       return [
         {
           id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-          label: `Create "${trimmed}"`,
+          label: t('@astryx.tokenizer.create', {value: trimmed}),
           auxiliaryData: {__createdValue: trimmed},
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds, selectedLabels],
+    [hasCreate, selectedIds, selectedLabels, t],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -1214,15 +1225,27 @@ export function Tokenizer<T extends SearchableItem>({
   );
 
   // Handle clearing all items
-  const handleClearAll = useCallback(() => {
-    if (isDisabled || value.length === 0) {
-      return;
-    }
-    // Report the last item as removed (convention)
-    const lastItem = value[value.length - 1];
-    onChange([], {item: lastItem, type: 'remove'});
-    inputRef.current?.focus();
-  }, [value, onChange, isDisabled]);
+  // A composing component that words its own Clear all (PowerSearch) provides
+  // its words; otherwise the field's own (component:Tokenizer AR7).
+  const clearAllMessage =
+    use(TokenizerClearAllMessageContext) ?? t('@astryx.tokenizer.allRemoved');
+  const handleClearAll = useCallback(
+    (options?: {silent?: boolean}) => {
+      if (isDisabled || value.length === 0) {
+        return;
+      }
+      // Report the last item as removed (convention)
+      const lastItem = value[value.length - 1];
+      onChange([], {item: lastItem, type: 'remove'});
+      // Focus moves to the input, so the emptied selection is announced, in
+      // the sheet's words (WCAG 4.1.3). The sheet announces its own Clear all.
+      if (!options?.silent) {
+        announce(clearAllMessage);
+      }
+      inputRef.current?.focus();
+    },
+    [value, onChange, isDisabled, announce, clearAllMessage],
+  );
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
@@ -1391,6 +1414,7 @@ export function Tokenizer<T extends SearchableItem>({
             isFocusableDisabled={showsDisabledMessage}
             hasAutoFocus={hasAutoFocus}
             inputId={inputId}
+            ariaLabelledBy={fieldLabelledBy}
             ariaDescribedBy={
               [ariaDescribedByProp, ariaDescribedBy]
                 .filter(Boolean)
@@ -1457,6 +1481,7 @@ export function Tokenizer<T extends SearchableItem>({
           ref={triggerMergedRef}
           type="button"
           id={inputId}
+          aria-labelledby={fieldLabelledBy}
           aria-haspopup="dialog"
           aria-expanded={isSheetOpen}
           aria-disabled={isDisabled || undefined}
@@ -1625,7 +1650,7 @@ export function Tokenizer<T extends SearchableItem>({
               emptySearchText={emptySearchText}
               onAdd={handleAdd}
               onRemove={handleRemove}
-              onClearAll={handleClearAll}
+              onClearAll={() => handleClearAll({silent: true})}
               onChangeQuery={handleSheetQueryChange}
             />
           )}
@@ -1707,6 +1732,7 @@ export function Tokenizer<T extends SearchableItem>({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelId : undefined}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
