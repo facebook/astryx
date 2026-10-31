@@ -231,7 +231,7 @@ Read from source, with no focused test yet:
 - FR3: the visual slot order.
 - FR7: a caller `aria-label` or `aria-labelledby` not overriding the naming.
 - FR6: a name that renders no text leaving the fallback name.
-- AR2–AR3: no slot inspection, and no keyboard model of the component's own.
+- AR3: no keyboard model of the component's own.
 
 ## Decision log
 
