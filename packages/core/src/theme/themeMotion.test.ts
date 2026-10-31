@@ -181,6 +181,29 @@ describe('existing motion configuration (spec:AST-108 FR5)', () => {
     expect(reset.tokens['--ease-entrance']).toBe(STANDARD);
   });
 
+  it('a partial duration scale beside a knob is refused, not dropped', () => {
+    for (const motion of [
+      {fast: 100, tempo: 1.2},
+      {fast: 100, medium: 250, slow: 700, tempo: 1},
+      {easing: 'linear', character: 'standard' as const},
+    ]) {
+      expect(() => defineTheme({name: 'Partial', motion})).toThrow(
+        /must supply `fast`, `medium`, and `ratio`/,
+      );
+    }
+    // A field the child leaves out may come from its base.
+    const base = defineTheme({
+      name: 'ScaleBase',
+      motion: {fast: 175, medium: 410, ratio: 0.75},
+    });
+    const child = defineTheme({
+      name: 'ScaleChild',
+      extends: base,
+      motion: {fast: 100, tempo: 1.2},
+    });
+    expect(child.tokens['--duration-fast']).toBe('100ms');
+  });
+
   it('a theme with no motion writes no motion token, so it renders as before', () => {
     const plain = defineTheme({name: 'Plain'});
     expect(

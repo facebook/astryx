@@ -117,6 +117,7 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
+import type {MotionScaleConfig} from './expandMotionScale';
 import type {ThemeMotionConfig} from './themeMotion';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
@@ -700,6 +701,36 @@ function inheritedScaleTokens(
 }
 
 /**
+ * Refuses a duration scale that is missing `fast`, `medium` or `ratio` after
+ * inheritance. The scale applies only when all three are present, so a partial
+ * one beside a knob (`{fast: 100, tempo: 1.2}`) would otherwise be dropped
+ * silently, though its fields win over `tempo` (spec:AST-108 FR5). Adaptation
+ * rules refuse the same in `completeMotion`.
+ */
+function assertCompleteMotionScale(
+  motion: ThemeMotionConfig,
+  themeName: string,
+): void {
+  const scale = motion as Partial<MotionScaleConfig>;
+  const writesScale =
+    scale.fast !== undefined ||
+    scale.medium !== undefined ||
+    scale.ratio !== undefined ||
+    scale.slow !== undefined ||
+    scale.easing !== undefined;
+  if (
+    writesScale &&
+    (scale.fast === undefined ||
+      scale.medium === undefined ||
+      scale.ratio === undefined)
+  ) {
+    throw new Error(
+      `defineTheme("${themeName}"): \`motion\` sets a duration scale field, so it must supply \`fast\`, \`medium\`, and \`ratio\` unless each missing field is inherited from \`extends\`.`,
+    );
+  }
+}
+
+/**
  * Create an Astryx theme.
  *
  * Pass only the tokens you want to override — everything else
@@ -746,6 +777,9 @@ export function defineTheme<
     input.motion != null && baseMotion != null
       ? {...baseMotion, ...input.motion}
       : input.motion;
+  if (motion != null) {
+    assertCompleteMotionScale(motion, input.name);
+  }
   const inheritedScale =
     input.motion != null && base != null && baseMotion != null
       ? inheritedScaleTokens(base, baseMotion, input.motion)
