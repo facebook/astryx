@@ -28,6 +28,7 @@ import {
   act,
   within,
   cleanup,
+  renderHook,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
@@ -1460,5 +1461,48 @@ describe('Popover focus region (DEC-9)', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(trigger).toHaveFocus();
     });
+  });
+});
+
+describe('usePopover trigger ref', () => {
+  // The layer object changes whenever onShow or onHide does. A trigger ref
+  // that changed with it made React detach and reattach the trigger on every
+  // render of a caller that passes inline callbacks.
+  it('stays the same function when onShow and onHide change across renders', () => {
+    const {result, rerender} = renderHook(
+      ({onShow, onHide}: {onShow: () => void; onHide: () => void}) =>
+        usePopover({onShow, onHide}),
+      {initialProps: {onShow: () => {}, onHide: () => {}}},
+    );
+    const first = result.current.triggerRef;
+
+    rerender({onShow: () => {}, onHide: () => {}});
+
+    expect(result.current.triggerRef).toBe(first);
+  });
+
+  it('leaves the trigger style alone on a render with new callbacks', () => {
+    function Trigger({count}: {count: number}) {
+      const popover = usePopover({onShow: () => {}, onHide: () => {}});
+      return (
+        <button type="button" ref={popover.triggerRef}>
+          Open {count}
+        </button>
+      );
+    }
+    const {rerender} = render(<Trigger count={0} />);
+    const trigger = screen.getByRole('button', {name: /^Open/});
+    const anchorName = trigger.style.getPropertyValue('anchor-name');
+    expect(anchorName).toMatch(/^--astryx-layer-/);
+    const records: MutationRecord[] = [];
+    const observer = new MutationObserver(found => records.push(...found));
+    observer.observe(trigger, {attributes: true, attributeFilter: ['style']});
+
+    rerender(<Trigger count={1} />);
+    records.push(...observer.takeRecords());
+    observer.disconnect();
+
+    expect(records).toHaveLength(0);
+    expect(trigger.style.getPropertyValue('anchor-name')).toBe(anchorName);
   });
 });

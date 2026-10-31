@@ -792,13 +792,15 @@ function DropdownMenuBottomSheet({
       {currentTitle}
     </Heading>
   );
+  // A stable ref: an inline one re-runs on every render (null, then the element).
+  const sheetTriggerRef = useCallback((el: HTMLElement | null) => {
+    buttonRef.current = el;
+  }, []);
   return (
     <>
       {renderTrigger != null ? (
         renderTrigger({
-          ref: el => {
-            buttonRef.current = el;
-          },
+          ref: sheetTriggerRef,
           id: triggerId,
           onClick: handleSheetTriggerClick,
           onClickCapture: () => {},
@@ -1591,11 +1593,35 @@ function DropdownMenuPopover({
       </>
     );
 
-  const triggerProps: DropdownMenuTriggerProps = {
-    ref: el => {
+  // Stable trigger refs. An inline ref is a new function every render, so React
+  // re-runs it on every commit (null, then the element), and each run moved the
+  // popover's anchor off the trigger and back: two inline-style writes on the
+  // trigger per render of the menu.
+  const popoverTriggerRef = popover.triggerRef;
+  const triggerRef = useCallback(
+    (el: HTMLElement | null) => {
       buttonRef.current = el;
-      popover.triggerRef(el);
+      popoverTriggerRef(el);
     },
+    [popoverTriggerRef],
+  );
+  const consumerButtonRef = button.ref;
+  const buttonTriggerRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      triggerRef(el);
+      if (typeof consumerButtonRef === 'function') {
+        consumerButtonRef(el);
+      } else if (consumerButtonRef) {
+        /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
+        consumerButtonRef.current = el;
+        /* eslint-enable react-compiler/react-compiler */
+      }
+    },
+    [triggerRef, consumerButtonRef],
+  );
+
+  const triggerProps: DropdownMenuTriggerProps = {
+    ref: triggerRef,
     id: triggerId,
     onClick: handleButtonClick,
     onClickCapture: handleTriggerClickCapture,
@@ -1618,18 +1644,7 @@ function DropdownMenuPopover({
       ) : (
         <Button
           {...button}
-          ref={el => {
-            buttonRef.current = el;
-            popover.triggerRef(el);
-            const consumerRef = button.ref;
-            if (typeof consumerRef === 'function') {
-              consumerRef(el);
-            } else if (consumerRef) {
-              /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
-              consumerRef.current = el;
-              /* eslint-enable react-compiler/react-compiler */
-            }
-          }}
+          ref={buttonTriggerRef}
           xstyle={[
             styles.triggerPressable,
             isOpen && styles.triggerOpen,
