@@ -141,7 +141,11 @@ describe('docsite-test', () => {
     const outputDir = config.match(/outputDir:\s*'([^']+)'/)?.[1];
     expect(outputDir).toBe('../../test-results/docsite');
     const upload = step('Upload docsite browser evidence');
-    expect(upload.if).toBe(`always() && ${ACTIVE}`);
+    // A held fork run (the ci:run step failed, so scope never ran) uploads
+    // nothing, instead of failing a second time on missing evidence.
+    expect(upload.if).toBe(
+      `always() && steps.scope.outcome == 'success' && ${ACTIVE}`,
+    );
     expect(upload.with['if-no-files-found']).toBe('error');
     expect(path.resolve(root, upload.with.path)).toBe(
       path.resolve(path.dirname(configPath), outputDir),

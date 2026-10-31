@@ -455,7 +455,7 @@ jobs:
           exit "$(cat docsite-data.exit)"
 
       - name: Upload docsite browser evidence
-        if: always() && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
+        if: always() && steps.scope.outcome == 'success' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: docsite-browser-evidence
