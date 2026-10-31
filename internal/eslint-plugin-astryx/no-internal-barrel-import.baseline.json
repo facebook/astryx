@@ -1,11 +1,4 @@
 {
-  "packages/core/src/AlertDialog/AlertDialog.tsx": [
-    "../Button",
-    "../Dialog",
-    "../Stack",
-    "../i18n",
-    "../utils"
-  ],
   "packages/core/src/AppShell/AppShell.tsx": ["../i18n", "../utils"],
   "packages/core/src/AspectRatio/AspectRatio.tsx": ["../utils"],
   "packages/core/src/Avatar/Avatar.tsx": ["../i18n", "../utils"],
@@ -29,17 +22,9 @@
     "../utils"
   ],
   "packages/core/src/Blockquote/Blockquote.tsx": ["../utils"],
-  "packages/core/src/BottomSheet/BottomSheet.tsx": ["../utils"],
-  "packages/core/src/BottomSheet/BottomSheetPanel.tsx": ["../utils"],
   "packages/core/src/BottomSheet/BottomSheetSwitcher.tsx": ["../utils"],
   "packages/core/src/Breadcrumbs/BreadcrumbItem.tsx": ["../Icon", "../utils"],
   "packages/core/src/Breadcrumbs/Breadcrumbs.tsx": ["../i18n", "../utils"],
-  "packages/core/src/Button/Button.tsx": [
-    "../Spinner",
-    "../VisuallyHidden",
-    "../i18n",
-    "../utils"
-  ],
   "packages/core/src/ButtonGroup/ButtonGroup.tsx": ["../utils"],
   "packages/core/src/Calendar/Calendar.tsx": [
     "../Button",
@@ -121,13 +106,6 @@
   ],
   "packages/core/src/Chat/useSpeechRecognition.ts": ["../i18n"],
   "packages/core/src/Chat/useTriggerMenu.tsx": ["../i18n", "../utils"],
-  "packages/core/src/CheckboxInput/CheckboxInput.tsx": [
-    "../Indicator",
-    "../Spinner",
-    "../Tooltip",
-    "../i18n",
-    "../utils"
-  ],
   "packages/core/src/CheckboxList/CheckboxList.tsx": ["../Tooltip", "../utils"],
   "packages/core/src/CheckboxList/CheckboxListItem.tsx": ["../i18n"],
   "packages/core/src/Citation/Citation.tsx": ["../Icon", "../i18n", "../utils"],
@@ -279,14 +257,6 @@
     "../i18n",
     "../utils"
   ],
-  "packages/core/src/Dialog/Dialog.tsx": ["../utils"],
-  "packages/core/src/Dialog/DialogHeader.tsx": [
-    "../Button",
-    "../Icon",
-    "../i18n",
-    "../utils"
-  ],
-  "packages/core/src/Divider/Divider.tsx": ["../utils"],
   "packages/core/src/Drawer/Drawer.tsx": [
     "../Layer",
     "../Layout",
@@ -336,29 +306,8 @@
     "../i18n",
     "../utils"
   ],
-  "packages/core/src/DropdownMenu/MenuBottomSheetActionList.tsx": [
-    "../Divider",
-    "../Heading",
-    "../Icon",
-    "../List",
-    "../utils"
-  ],
   "packages/core/src/DropdownMenu/renderDropdownItems.tsx": ["../utils"],
-  "packages/core/src/EmptyState/EmptyState.tsx": ["../utils"],
   "packages/core/src/Field/Field.tsx": ["../VisuallyHidden", "../utils"],
-  "packages/core/src/Field/FieldLabel.tsx": [
-    "../Icon",
-    "../Tooltip",
-    "../i18n",
-    "../utils"
-  ],
-  "packages/core/src/Field/InputClearButton.tsx": [
-    "../Button",
-    "../Icon",
-    "../i18n"
-  ],
-  "packages/core/src/Field/PanelSearchInput.tsx": ["../Icon", "../utils"],
-  "packages/core/src/FieldStatus/FieldStatus.tsx": ["../Icon", "../utils"],
   "packages/core/src/FileInput/FileInput.tsx": [
     "../Field",
     "../Icon",
@@ -371,20 +320,9 @@
   "packages/core/src/FormLayout/FormLayout.tsx": ["../utils"],
   "packages/core/src/Grid/Grid.tsx": ["../utils"],
   "packages/core/src/Grid/GridSpan.tsx": ["../utils"],
-  "packages/core/src/Heading/Heading.tsx": ["../utils"],
-  "packages/core/src/Icon/Icon.tsx": ["../utils"],
-  "packages/core/src/Indicator/CheckIndicator.tsx": ["../utils"],
-  "packages/core/src/Indicator/CheckboxIndicator.tsx": ["../utils"],
-  "packages/core/src/Indicator/RadioIndicator.tsx": ["../utils"],
   "packages/core/src/InputGroup/InputGroup.tsx": ["../Field", "../utils"],
   "packages/core/src/InputGroup/InputGroupText.tsx": ["../utils"],
-  "packages/core/src/Item/Item.tsx": ["../utils"],
-  "packages/core/src/Item/ItemSwipeLayer.tsx": ["../utils"],
   "packages/core/src/Kbd/Kbd.tsx": ["../i18n", "../utils"],
-  "packages/core/src/Layout/Layout.tsx": ["../utils"],
-  "packages/core/src/Layout/LayoutContent.tsx": ["../utils"],
-  "packages/core/src/Layout/LayoutFooter.tsx": ["../utils"],
-  "packages/core/src/Layout/LayoutHeader.tsx": ["../utils"],
   "packages/core/src/Layout/LayoutPanel.tsx": ["../utils"],
   "packages/core/src/Lightbox/Lightbox.tsx": [
     "../Icon",
@@ -398,12 +336,6 @@
     "../Tooltip",
     "../VisuallyHidden",
     "../i18n",
-    "../utils"
-  ],
-  "packages/core/src/List/List.tsx": ["../utils"],
-  "packages/core/src/List/ListItem.tsx": [
-    "../CheckboxInput",
-    "../Item",
     "../utils"
   ],
   "packages/core/src/Markdown/Markdown.fr23.bench.ts": ["./plugins"],
@@ -576,9 +508,6 @@
     "../VisuallyHidden",
     "../utils"
   ],
-  "packages/core/src/Spinner/Spinner.tsx": ["../i18n", "../utils"],
-  "packages/core/src/Stack/Stack.tsx": ["../utils"],
-  "packages/core/src/Stack/StackItem.tsx": ["../utils"],
   "packages/core/src/StatusDot/StatusDot.tsx": ["../utils"],
   "packages/core/src/Stepper/Step.tsx": [
     "../Icon",
@@ -667,7 +596,6 @@
     "../../../utils"
   ],
   "packages/core/src/Table/tableContextMenu.tsx": ["../ContextMenu", "../Icon"],
-  "packages/core/src/Text/Text.tsx": ["../utils"],
   "packages/core/src/TextArea/TextArea.tsx": [
     "../Field",
     "../Icon",
@@ -718,12 +646,6 @@
     "../i18n",
     "../utils"
   ],
-  "packages/core/src/Timestamp/TimestampHoverCard.tsx": [
-    "../HoverCard",
-    "../Icon",
-    "../IconButton",
-    "../i18n"
-  ],
   "packages/core/src/Toast/Toast.tsx": [
     "../Button",
     "../Icon",
@@ -746,11 +668,6 @@
     "../VisuallyHidden",
     "../i18n",
     "../utils"
-  ],
-  "packages/core/src/Tokenizer/TokenizerBottomSheet.tsx": [
-    "../Icon",
-    "../Spinner",
-    "../i18n"
   ],
   "packages/core/src/Toolbar/Toolbar.tsx": ["../utils"],
   "packages/core/src/TopNav/TopNav.tsx": ["../i18n", "../utils"],
@@ -795,7 +712,6 @@
     "../i18n"
   ],
   "packages/core/src/hooks/useKeyboardHint.tsx": ["../Kbd", "../i18n"],
-  "packages/core/src/theme/defineTheme.ts": ["./domainTokens"],
   "packages/lab/src/Comments/CommentComposer.tsx": ["../EmojiPicker"],
   "packages/lab/src/Schedule/Schedule.tsx": ["./plugins"]
 }
