@@ -68,6 +68,7 @@ import {useTranslator} from '../i18n';
 import type {TranslatorFn} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useListFormatter} from '../i18n/useListFormatter';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 function formatFileSize(bytes: number, t: TranslatorFn): string {
   if (bytes < 1024) {
@@ -492,6 +493,7 @@ export function FileInput({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const formatList = useListFormatter();
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
@@ -583,7 +585,9 @@ export function FileInput({
       );
 
       if (errors.length > 0) {
-        setValidationError(errors[0]);
+        // Every rejected file is identified, in one status message
+        // (WCAG 3.3.1), joined as a list in the active locale.
+        setValidationError(formatList(errors));
       } else {
         setValidationError(null);
       }
@@ -628,6 +632,7 @@ export function FileInput({
       setOptimisticValue,
       announce,
       t,
+      formatList,
     ],
   );
 
