@@ -2168,9 +2168,12 @@ test.describe('holding', () => {
     const [first] = await holdAnimations(page, box);
     const [later] = await holdAnimations(page, page.locator('#early'));
     const samples = await sampleCurve(box, [0, 15_000, 30_000]);
-    expect(
-      samples.map(sample => Math.round(sample.transform.translateX)),
-    ).toEqual([0, 75, 150]);
+    // Unrounded: at 0.005 px a ms, sampling from an origin shifted by the
+    // start gap (over 100 ms) moves a sample by 0.5 px or more, while a seek
+    // lands within the engines' time rounding of the requested time.
+    [0, 75, 150].forEach((x, i) =>
+      expect(samples[i].transform.translateX).toBeCloseTo(x, 1),
+    );
     // A later hold's earlier start has a negative offset, the difference of
     // the two starts; the origin stays.
     expect(first.offsetMs).toBe(0);
