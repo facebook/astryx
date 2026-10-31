@@ -206,6 +206,9 @@ test helpers, at the strict-mode severity (an error in CI). Barrel imports that
 existed when the rule arrived are listed by file in
 `no-internal-barrel-import.baseline.json` and stay allowed until a codemod
 removes them; remove an entry when you fix its import, and never add one.
+`node internal/eslint-plugin-astryx/no-internal-barrel-import.baseline.mjs`
+rewrites the list from the source (`--check` verifies it), for example after
+merging `main` into this rule's own branch or after a codemod.
 
 ### `@astryx/no-core-internal-import`
 

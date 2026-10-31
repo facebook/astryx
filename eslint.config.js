@@ -875,21 +875,6 @@ export default defineConfig(
       'no-restricted-syntax': 'off',
     },
   },
-  // richtext — the pre-existing backlog, held at `warn` while it is worked
-  // off. Must come last so it overrides the blocks above.
-  //
-  // The package was outside these rules until now, so turning them on finds
-  // drift that predates this scope change: four props missing `ref` and six
-  // smaller API-shape items. Failing CI on work nobody has had the chance to
-  // do would mean either reverting the scope or
-  // landing a very large mixed change, so each one stays visible as a warning
-  // and is tracked separately. Everything the package is ALREADY clean on —
-  // the token and DOM rules, `no-classname-clobber`, `no-physical-properties`,
-  // `disabled-cursor`, the rest of the React set — is enforced at full
-  // strength, so new drift is an error from today.
-  //
-  // Remove an entry here as its backlog closes; the file is clean when the
-  // block is empty.
   // Inside a package's own shipped source, import the module that defines a
   // name, not a folder's index (a barrel): a lazily imported module that goes
   // through a barrel pulls every sibling export into its graph, which broke
@@ -911,6 +896,21 @@ export default defineConfig(
       ],
     },
   },
+  // richtext — the pre-existing backlog, held at `warn` while it is worked
+  // off. Must come last so it overrides the blocks above.
+  //
+  // The package was outside these rules until now, so turning them on finds
+  // drift that predates this scope change: four props missing `ref` and six
+  // smaller API-shape items. Failing CI on work nobody has had the chance to
+  // do would mean either reverting the scope or
+  // landing a very large mixed change, so each one stays visible as a warning
+  // and is tracked separately. Everything the package is ALREADY clean on —
+  // the token and DOM rules, `no-classname-clobber`, `no-physical-properties`,
+  // `disabled-cursor`, the rest of the React set — is enforced at full
+  // strength, so new drift is an error from today.
+  //
+  // Remove an entry here as its backlog closes; the file is clean when the
+  // block is empty.
   {
     files: ['packages/richtext/src/**/*.{ts,tsx}'],
     rules: {
