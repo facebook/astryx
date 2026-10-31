@@ -48,7 +48,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {isRenderable, mergeProps} from '../utils';
+import {isRenderable} from '../utils/isRenderable';
+import {mergeProps} from '../utils/mergeProps';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {ItemMarkerColumnsContext} from './ItemMarkerColumnsContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
