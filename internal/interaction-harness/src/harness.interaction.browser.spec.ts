@@ -1955,18 +1955,22 @@ test.describe('holding', () => {
   }) => {
     await fixture(page);
     const box = page.locator('#box');
-    await box.evaluate(el => {
+    // Each run lasts long enough for the hold to reach it while it runs: on a
+    // loaded runner the hold read the page as late as 2.4 s after the run was
+    // made, past the end of a 1 s run.
+    const RUN_MS = 10_000;
+    await box.evaluate((el, duration) => {
       el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'cubic-bezier(0.42, 0, 1, 1)'},
+        {duration, easing: 'cubic-bezier(0.42, 0, 1, 1)'},
       );
-    });
+    }, RUN_MS);
     const [held] = await holdAnimations(page, box);
-    // The keyframe offset 0.5 is progress, not 500 ms of time: the run starts
+    // The keyframe offset 0.5 is progress, not half the time: the run starts
     // where the eased progress reaches 0.5.
     const ease = cubicBezier(0.42, 0, 1, 1);
     let lo = 0;
@@ -1979,38 +1983,38 @@ test.describe('holding', () => {
         hi = mid;
       }
     }
-    expect(held.curveEndMs).toBeCloseTo(lo * 1000, 0);
-    expect(held.curveEndMs).toBeGreaterThan(600);
+    expect(held.curveEndMs).toBeCloseTo(lo * RUN_MS, 0);
+    expect(held.curveEndMs).toBeGreaterThan(0.6 * RUN_MS);
     await releaseAnimations(page, {finish: true});
 
     // Played in reverse, the held run is where the motion starts: the curve
     // runs to the full end.
-    await box.evaluate(el => {
+    await box.evaluate((el, duration) => {
       el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'linear', direction: 'reverse'},
+        {duration, easing: 'linear', direction: 'reverse'},
       );
-    });
+    }, RUN_MS);
     const [reversed] = await holdAnimations(page, box);
-    expect(reversed.curveEndMs).toBeCloseTo(1000, 0);
+    expect(reversed.curveEndMs).toBeCloseTo(RUN_MS, 0);
     await releaseAnimations(page, {finish: true});
 
     // One reversed by `reverse()` (a negative playback rate) is reported as
     // starting when it did, running its whole curve, and is refused by a
     // hold, which seeks curves forward only.
     const watch = await watchAnimations(box);
-    const begunAt = await box.evaluate(async el => {
+    const begunAt = await box.evaluate(async (el, duration) => {
       const animation = el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'linear'},
+        {duration, easing: 'linear'},
       );
       animation.reverse();
       await animation.ready;
@@ -2023,11 +2027,11 @@ test.describe('holding', () => {
         Number(document.timeline.currentTime) -
         (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
       );
-    });
+    }, RUN_MS);
     const [running] = await watch.started();
     // Both from the engine's own instants: within the timeline's rounding.
     expect(Math.abs(running.from - begunAt)).toBeLessThanOrEqual(1);
-    expect(running.to - running.from).toBeCloseTo(1000, -1);
+    expect(running.to - running.from).toBeCloseTo(RUN_MS, -1);
     await expect(holdAnimations(page, box)).rejects.toThrow(/runs backward/);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
 
@@ -2045,22 +2049,25 @@ test.describe('holding', () => {
         {translate: '100px 0px', offset: 0.8},
       ],
     ]) {
-      await box.evaluate((el, frames) => {
-        el.animate(frames, {duration: 1000, easing: 'linear'});
-      }, keyframes);
+      await box.evaluate(
+        (el, {frames, duration}) => {
+          el.animate(frames, {duration, easing: 'linear'});
+        },
+        {frames: keyframes, duration: RUN_MS},
+      );
       const [moving] = await holdAnimations(page, box);
-      expect(moving.curveEndMs).toBeCloseTo(1000, 0);
+      expect(moving.curveEndMs).toBeCloseTo(RUN_MS, 0);
       await releaseAnimations(page, {finish: true});
     }
 
-    await box.evaluate(el => {
+    await box.evaluate((el, duration) => {
       el.animate([{rotate: 'x 0deg'}, {rotate: 'x 60deg'}], {
-        duration: 300,
+        duration,
         easing: 'linear',
       });
-    });
+    }, RUN_MS);
     await holdAnimations(page, box);
-    const [end] = await sampleCurve(box, [300]);
+    const [end] = await sampleCurve(box, [RUN_MS]);
     // About x, nothing turns in the plane: no z rotation, and y shrinks by
     // cos 60°.
     expect(end.transform.rotate).toBeCloseTo(0, 1);
