@@ -506,6 +506,7 @@
   "packages/core/src/Slider/Slider.tsx": [
     "../Tooltip",
     "../VisuallyHidden",
+    "../i18n",
     "../utils"
   ],
   "packages/core/src/StatusDot/StatusDot.tsx": ["../utils"],

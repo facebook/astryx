@@ -28,6 +28,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+/**
+ * Where the repo config turns the rule on: shipped package source. Tests,
+ * stories and test helpers never ship, so they may import barrels; a barrel
+ * itself (a folder's or a package's index) is the public surface and may
+ * re-export from other barrels (`architecture:public-component-api`). Shared
+ * with the baseline script so both lint the same files.
+ */
+export const scope = {
+  files: ['packages/*/src/**/*.{ts,tsx,mts,cts,js,jsx,mjs}'],
+  ignores: [
+    '**/index.*',
+    '**/*.test.*',
+    '**/*.spec.*',
+    '**/*.stories.*',
+    '**/*.testing.*',
+    '**/*.render-testing.*',
+    '**/__tests__/**',
+    '**/__fixtures__/**',
+    '**/dist/**',
+  ],
+};
+
 const MODULE_EXTENSIONS = [
   '.ts',
   '.tsx',

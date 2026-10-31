@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {ESLint} from 'eslint';
+import {scope} from './no-internal-barrel-import.js';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const baselineFile = path.join(
@@ -27,10 +28,13 @@ const ruleId = '@astryx/no-internal-barrel-import';
 // import in scope is reported once.
 const eslint = new ESLint({
   cwd: root,
+  // Some packages' sources are ignored by the repo config entirely.
+  errorOnUnmatchedPattern: false,
   ruleFilter: ({ruleId: id}) => id === ruleId,
   overrideConfig: [
     {
-      files: ['packages/*/src/**/*.{ts,tsx,mts,cts,js,jsx,mjs}'],
+      files: scope.files,
+      ignores: scope.ignores,
       rules: {[ruleId]: ['error', {baseline: {}, root}]},
     },
   ],

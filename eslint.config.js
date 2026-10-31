@@ -9,6 +9,7 @@ import tseslint from 'typescript-eslint';
 import eslintReact from '@eslint-react/eslint-plugin';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import astryxPlugin from './internal/eslint-plugin-astryx/index.js';
+import {scope as internalBarrelScope} from './internal/eslint-plugin-astryx/no-internal-barrel-import.js';
 
 /* global process */
 
@@ -43,20 +44,6 @@ const internalBarrelBaseline = JSON.parse(
     'utf8',
   ),
 );
-// Tests, stories and test helpers never ship, so they may import barrels; a
-// barrel itself (a folder's or a package's index) is the public surface and
-// may re-export from other barrels (`architecture:public-component-api`).
-const INTERNAL_BARREL_EXEMPT_FILES = [
-  '**/index.*',
-  '**/*.test.*',
-  '**/*.spec.*',
-  '**/*.stories.*',
-  '**/*.testing.*',
-  '**/*.render-testing.*',
-  '**/__tests__/**',
-  '**/__fixtures__/**',
-  '**/dist/**',
-];
 
 // The internal plugin is plain untyped JS (kept out of the lint/type surface),
 // so its inferred shape doesn't satisfy ESLint's strict `Plugin` type. One
@@ -884,8 +871,8 @@ export default defineConfig(
   // reported (an error in strict mode, so a pull request that adds one fails
   // lint, while main stays green). Type-only imports are erased and allowed.
   {
-    files: ['packages/*/src/**/*.{ts,tsx,mts,cts,js,jsx,mjs}'],
-    ignores: INTERNAL_BARREL_EXEMPT_FILES,
+    files: internalBarrelScope.files,
+    ignores: internalBarrelScope.ignores,
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
