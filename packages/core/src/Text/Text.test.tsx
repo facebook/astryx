@@ -514,6 +514,42 @@ describe('truncated text shows one tooltip, not two', () => {
     }
   });
 
+  it('adds no tab stop to truncated text hidden from assistive technology', async () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <>
+          <div aria-hidden="true">
+            <Text type="body" maxLines={1}>
+              Under aria-hidden, wider than the space it has
+            </Text>
+          </div>
+          <div inert>
+            <Text type="body" maxLines={1}>
+              Under inert, wider than the space it has
+            </Text>
+          </div>
+          <Text type="body" maxLines={1}>
+            Visible beside them, wider than the space it has
+          </Text>
+        </>,
+      );
+      await waitFor(() =>
+        expect(
+          textElement('Visible beside them, wider than the space it has'),
+        ).toHaveAttribute('tabindex', '0'),
+      );
+      for (const text of [
+        'Under aria-hidden, wider than the space it has',
+        'Under inert, wider than the space it has',
+      ]) {
+        expect(textElement(text)).not.toHaveAttribute('tabindex');
+      }
+    } finally {
+      restore();
+    }
+  });
+
   it("keeps a caller's tabIndex passed after the text is truncated", async () => {
     const restore = withOverflow();
     try {

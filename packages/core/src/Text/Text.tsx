@@ -218,6 +218,9 @@ export function resolveStyleColor(color: TextColor): BuiltinTextColor {
 // one leaves keyboard focus to it. Only interactive elements and widget roles:
 // a focusable region such as a main landmark or a scroll container is not a
 // control, so a Text inside it still becomes a tab stop.
+// Text inside (or itself) hidden from assistive technology takes no stop.
+const HIDDEN_SELECTOR = '[aria-hidden="true"], [inert]';
+
 const CONTROL_SELECTOR = [
   'a[href]',
   'area[href]',
@@ -319,19 +322,23 @@ export function Text({
   // wraps it in the DOM (a link, a button, a menu item), found from its
   // ancestors when the element attaches, or one that provides
   // TextFocusOwnerContext (a clickable card). A focusable span nested in a
-  // control would add a second, unnamed tab stop inside it. The stop renders
+  // control would add a second, unnamed tab stop inside it. Text hidden from
+  // assistive technology (`aria-hidden`, `inert`) adds none either: focus
+  // would land on content a screen reader cannot perceive. The stop renders
   // as a prop, so it is in the DOM before the tooltip attaches its focus
   // trigger, and a caller's own tabIndex still wins.
   const isInsideFocusOwner = use(TextFocusOwnerContext);
-  const [isInsideControl, setIsInsideControl] = useState(false);
+  const [isExcludedByAncestor, setIsExcludedByAncestor] = useState(false);
   const controlRef = useCallback((element: HTMLElement | null) => {
     if (element != null) {
-      setIsInsideControl(
-        element.parentElement?.closest(CONTROL_SELECTOR) != null,
+      setIsExcludedByAncestor(
+        element.closest(HIDDEN_SELECTOR) != null ||
+          element.parentElement?.closest(CONTROL_SELECTOR) != null,
       );
     }
   }, []);
-  const isTabStop = tooltipEnabled && !isInsideControl && !isInsideFocusOwner;
+  const isTabStop =
+    tooltipEnabled && !isExcludedByAncestor && !isInsideFocusOwner;
 
   // Keep the merged ref stable across rerenders.
   const mergedRef = useMergedRefs(
