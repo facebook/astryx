@@ -2283,16 +2283,19 @@ describe('Typeahead disabledMessage', () => {
   it('picks nothing from a list opened before the field became disabled, and lets it close', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
+    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
     const field = (isDisabled: boolean) => (
-      <Typeahead
-        label="Assignee"
-        searchSource={fruitSource}
-        value={null}
-        onChange={onChange}
-        hasEntriesOnFocus
-        isDisabled={isDisabled}
-        disabledMessage="You need the Editor role"
-      />
+      <form onSubmit={onSubmit}>
+        <Typeahead
+          label="Assignee"
+          searchSource={fruitSource}
+          value={null}
+          onChange={onChange}
+          hasEntriesOnFocus
+          isDisabled={isDisabled}
+          disabledMessage="You need the Editor role"
+        />
+      </form>
     );
     const {rerender} = render(field(false));
     const input = screen.getByRole('combobox');
@@ -2305,6 +2308,8 @@ describe('Typeahead disabledMessage', () => {
     await user.keyboard('{Enter}');
     fireEvent.click(screen.getAllByRole('option', {hidden: true})[0]);
     expect(onChange).not.toHaveBeenCalled();
+    // Enter on the still-open list does not submit the form.
+    expect(onSubmit).not.toHaveBeenCalled();
     await user.keyboard('{Escape}');
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });

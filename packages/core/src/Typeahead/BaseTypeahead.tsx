@@ -1056,6 +1056,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // lets a list that was open before it became disabled close
       // (spec:AST-085 FR2).
       if (isDisabled) {
+        // Enter on a list that is still open picks nothing, and must not
+        // submit an enclosing form either, as it would not while enabled.
+        if (popover.isOpen && e.key === 'Enter') {
+          e.preventDefault();
+        }
         if (popover.isOpen && (e.key === 'Escape' || e.key === 'Tab')) {
           if (e.key === 'Escape') {
             e.preventDefault();
