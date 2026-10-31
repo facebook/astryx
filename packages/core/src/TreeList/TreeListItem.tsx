@@ -383,6 +383,9 @@ export interface TreeListItemInternalProps {
 // Component
 // =============================================================================
 
+/** A plain anchor, for a disabled item whose link has no destination. */
+const DisabledAnchor = 'a';
+
 export function TreeListItem({
   id,
   label,
@@ -604,8 +607,9 @@ export function TreeListItem({
         // A disabled item's anchor has no destination, so neither the row's
         // forwarded activation nor a screen reader's click can navigate
         // (spec:AST-085 FR2). Like a disabled Link, it keeps the link role and
-        // skips the router link component.
-        <a
+        // skips the router link component. Focus stays on the treeitem row
+        // (roving tabindex), so the swap moves no focus.
+        <DisabledAnchor
           ref={linkRef}
           role="link"
           aria-disabled={true}
@@ -614,7 +618,7 @@ export function TreeListItem({
           tabIndex={-1}
           {...stylex.props(styles.invisibleAnchor)}>
           {labelAndDescription}
-        </a>
+        </DisabledAnchor>
       ) : href != null ? (
         <LinkComponent
           ref={linkRef}
