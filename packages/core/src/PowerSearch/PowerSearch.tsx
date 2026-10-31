@@ -30,6 +30,7 @@ import {
   type TokenizerHandle,
   type TokenizerOverflowBehavior,
 } from '../Tokenizer';
+import {TokenizerClearAllMessageContext} from '../Tokenizer/TokenizerClearAllMessageContext';
 import {TypeaheadItem} from '../Typeahead/TypeaheadItem';
 import {Token} from '../Token';
 import {Avatar} from '../Avatar';
@@ -1099,37 +1100,42 @@ export function PowerSearch({
           popover.triggerRef as React.Ref<HTMLDivElement>,
         )}
         {...themeProps('power-search')}>
-        <Tokenizer
-          handleRef={tokenizerRef}
-          label={label}
-          isLabelHidden={isLabelHidden}
-          searchSource={searchSource}
-          value={tokenizerValue}
-          onChange={handleTokenizerChange}
-          renderToken={renderToken}
-          renderItem={renderItem}
-          maxMenuItems={MAX_BROWSE_MENU_ITEMS}
-          menuWidth={menuWidth}
-          placeholder={filters.length === 0 ? placeholder : ''}
-          hasAutoFocus={hasAutoFocus}
-          hasClear={hasClear && !isReadOnly}
-          startIcon={startIcon}
-          endContent={combinedEndContent}
-          isDisabled={isDisabled}
-          disabledMessage={disabledMessage}
-          size={size}
-          tokenOverflowBehavior={tokenOverflowBehavior}
-          hasEntriesOnFocus
-          debounceMs={0}
-          status={status}
-          statusVariant={statusVariant}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          containerXstyle={xstyle}
-          containerClassName={className}
-          containerStyle={style}
-          data-testid={testId}
-        />
+        {/* The field's Clear all announces PowerSearch's own words
+            (component:PowerSearch; component:Tokenizer AR7). */}
+        <TokenizerClearAllMessageContext
+          value={t('@astryx.powersearch.allFiltersRemoved')}>
+          <Tokenizer
+            handleRef={tokenizerRef}
+            label={label}
+            isLabelHidden={isLabelHidden}
+            searchSource={searchSource}
+            value={tokenizerValue}
+            onChange={handleTokenizerChange}
+            renderToken={renderToken}
+            renderItem={renderItem}
+            maxMenuItems={MAX_BROWSE_MENU_ITEMS}
+            menuWidth={menuWidth}
+            placeholder={filters.length === 0 ? placeholder : ''}
+            hasAutoFocus={hasAutoFocus}
+            hasClear={hasClear && !isReadOnly}
+            startIcon={startIcon}
+            endContent={combinedEndContent}
+            isDisabled={isDisabled}
+            disabledMessage={disabledMessage}
+            size={size}
+            tokenOverflowBehavior={tokenOverflowBehavior}
+            hasEntriesOnFocus
+            debounceMs={0}
+            status={status}
+            statusVariant={statusVariant}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            containerXstyle={xstyle}
+            containerClassName={className}
+            containerStyle={style}
+            data-testid={testId}
+          />
+        </TokenizerClearAllMessageContext>
       </div>
       {popover.render(popoverContent, {
         placement: 'below',
