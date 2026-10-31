@@ -256,6 +256,24 @@ describe('Token accessibility', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps aria-labelledby and aria-describedby on a disabled link token', () => {
+    render(
+      <>
+        <span id="dl-label">Docs section</span>
+        <span id="dl-hint">Unavailable offline</span>
+        <Token
+          label="Docs"
+          href="/docs"
+          isDisabled
+          aria-labelledby="dl-label"
+          aria-describedby="dl-hint"
+        />
+      </>,
+    );
+    const link = screen.getByRole('link', {name: 'Docs section'});
+    expect(link).toHaveAccessibleDescription('Unavailable offline');
+  });
+
   it("passes aria-labelledby and aria-describedby to a clickable token's button (public-component-api INV5)", () => {
     render(
       <>

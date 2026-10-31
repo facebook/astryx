@@ -390,6 +390,7 @@ export function Token({
           style,
         )}
         {...rest}
+        {...labellingProps}
         {...disabledInteractionProps(rest.onKeyDown)}
         {...sharedProps}>
         {content}
