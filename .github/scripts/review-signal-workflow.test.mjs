@@ -36,6 +36,8 @@ async function runSignal({
   reviewApp = '',
   permission = 'write',
   rateRemaining = 5000,
+  batch = '',
+  draft = false,
   // The spec-owner job's decision for a PR that changes no spec record.
   specStatuses = [
     {
@@ -52,6 +54,7 @@ async function runSignal({
     base: {sha: baseSha, ref: 'main'},
     head: {sha: HEAD, ref: 'feature'},
     changed_files: 1,
+    draft,
     labels: [{name: 'needs:code-review'}, {name: 'community'}],
   };
   const mutations = {
@@ -145,7 +148,7 @@ async function runSignal({
       eventName,
       payload:
         eventName === 'workflow_dispatch'
-          ? {inputs: {pr: backfill ? '' : '42'}}
+          ? {inputs: {pr: backfill ? '' : '42', batch}}
           : {pull_request: pr},
     },
     core,
@@ -227,6 +230,37 @@ describe('review-signal trusted helper ref', () => {
       }
     },
   );
+
+  it.each([
+    ['its batch', {batch: '1/2'}, true],
+    ['another batch', {batch: '2/2'}, false],
+    ['a draft', {draft: true}, false],
+  ])(
+    'a backfill flags a PR in %s only when it should',
+    async (_name, options, flagged) => {
+      const h = await runSignal({
+        eventName: 'workflow_dispatch',
+        backfill: true,
+        ...options,
+      });
+      expect(h.core.setFailed).not.toHaveBeenCalled();
+      expect(h.mutations.createCommitStatus).toHaveBeenCalledTimes(
+        flagged ? 1 : 0,
+      );
+    },
+  );
+
+  it('refuses a malformed batch before reading any PR', async () => {
+    const h = await runSignal({
+      eventName: 'workflow_dispatch',
+      backfill: true,
+      batch: '3/2',
+    });
+    expect(h.core.setFailed).toHaveBeenCalledExactlyOnceWith(
+      'batch must be k/n with 1 <= k <= n; got "3/2".',
+    );
+    expect(h.github.rest.pulls.get).not.toHaveBeenCalled();
+  });
 
   it('stops a backfill before the token runs low, and says so', async () => {
     const h = await runSignal({
