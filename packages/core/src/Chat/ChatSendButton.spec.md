@@ -46,7 +46,7 @@ system_specs: [spec:AST-002, spec:AST-020, spec:AST-029, spec:AST-032]
 | End-user impact         | People receive a translated, state-appropriate send or stop action whose availability follows composer readiness.                                                                                                                       |
 | Builder impact          | None.                                                                                                                                                                                                                                   |
 | Compatibility/readiness | Records shipped behavior; no public change. One implementation gap, listed under Current-state impact.                                                                                                                                  |
-| Review checks           | Reject lost send/stop routing, consumer events that replace the state action, a disabled stop action, unlabelled icon-only output, dropped root inputs, or send fallback drift from the explicit-then-shared order.                     |
+| Review checks           | Reject lost send/stop routing, consumer events that replace the state action, a disabled stop action, unlabelled icon-only output, dropped root inputs, or a lost explicit-first send icon or `arrowUp` fallback.                       |
 | Governing rules         | `spec:AST-032` FR2–FR3; `architecture:public-component-api` INV5–INV8; `architecture:interaction-modality`; `architecture:component-test-sufficiency`; `spec:AST-020`; `spec:AST-029`.                                                  |
 
 This table is a review projection; the body below is authoritative.
@@ -148,7 +148,9 @@ observable semantic surface without duplicating the prop table.
 - **ORD3 — Resolve availability.** Stop remains enabled. Send uses explicit
   `isDisabled`, then inverse composer readiness, then disabled outside context.
 - **ORD4 — Resolve artwork.** In send, explicit `sendIcon` wins, then shared
-  `arrowUp`; in stop, explicit `stopIcon` wins, then shared `stop`.
+  `arrowUp`; in stop, explicit `stopIcon` wins, then shared `stop`. The
+  component-icon slot stage `spec:AST-032` FR2 requires is not offered yet
+  (FR3).
 - **ORD5 — Compose root.** Apply component-owned Button semantics and the
   `chat-send-button` target while preserving supported consumer root inputs.
 
@@ -206,13 +208,18 @@ co-located on that painting element.
 | Contract                  | Verification                                                                                                         | Representative states                                                                                                    | Mutation or failure expectation                                                                                                                  | Audit section                        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
 | FR1, FR2, AR1-AR4         | `ChatSendButton.test.tsx`, `ChatSendButton.a11y.chromium.spec.ts`, and `ChatComposer.test.tsx`                       | Enabled/disabled send, stop with and without handler, context stop, keyboard/pointer, light/dark interaction states      | Label, disabled, native activation, state routing, or interaction paint drift fails focused or exact-head browser evidence.                      | `audit:ChatSendButton/accessibility` |
-| FR3                       | `ChatSendButton.test.tsx`                                                                                            | Explicit and shared-fallback send icon                                                                                   | Losing the two-stage precedence fails focused tests.                                                                                             | `audit:ChatSendButton/theming`       |
+| FR3                       | `ChatSendButton.test.tsx`                                                                                            | Explicit and shared-fallback send icon                                                                                   | Losing explicit-first precedence or the `arrowUp` fallback fails focused tests; the `spec:AST-032` slot stage is not tested here.                | `audit:ChatSendButton/theming`       |
 | FR4                       | `ChatSendButton.test.tsx`                                                                                            | Explicit and fallback stop icon                                                                                          | Losing explicit precedence or registry resolution fails focused assertions.                                                                      | `audit:ChatSendButton/behavior`      |
 | FR5, FR6                  | `ChatSendButton.test.tsx` callback composition, ordering, size, root passthrough, disabled-click, and keyboard tests | Send, stop, `sm`/`md`, ref/class/data/ARIA, Enter/Space                                                                  | Consumer events replacing state actions, cancellation reordering, lost root inputs, or modality drift fails focused tests.                       | `audit:ChatSendButton/api`           |
 | FR7                       | `themingTargets.test.ts` and `ChatSendButton.a11y.chromium.spec.ts`                                                  | Send and stop themes                                                                                                     | Target removal, movement off paint, or undocumented target drift fails tests or browser evidence.                                                | `audit:ChatSendButton/theming`       |
 | RTL relation              | RTL shared-fixture route plus refreshed verified-N/A source receipts for ChatSendButton and ChatComposer             | Send and stop                                                                                                            | Directional artwork, physical positioning, or transform invalidates the checked-in receipts.                                                     | `audit:ChatSendButton/i18n-rtl`      |
 | Browser matrix            | `ChatSendButton.a11y.chromium.spec.ts` browser states                                                                | Light/dark send and stop rest/hover/focus/press, disabled rest/hover, `sm`/`md`, 320px coarse pointer, D7 contrast pairs | A stale build, decoy selector, missing state, changed disabled paint, absent interaction pixels, failed contrast, or geometry miss fails closed. | `audit:ChatSendButton/visual`        |
 | Documentation and surface | Consumer docs, export checks, Storybook, and `check:knowledge`                                                       | Props, public subpath, states, contract                                                                                  | Missing or stale docs, exports, relationships, or required structure fails validation.                                                           | `audit:ChatSendButton/docs`          |
+
+Read from source, with no focused test yet:
+
+- FR5: explicit props winning over ChatComposer context.
+- FR6: `style` and `xstyle` reaching the root.
 
 ## Decision log
 
