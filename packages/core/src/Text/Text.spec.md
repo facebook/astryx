@@ -37,7 +37,7 @@ system_specs: [spec:AST-009]
 | Behavior                | `type` sets size, weight, and default color from the theme; theme-added types and colors fall back to the body and primary baselines; truncated text offers its full content in a Tooltip. |
 | End-user impact         | Readers get consistent type across the product; clamped text keeps its full content available on hover and in the DOM.                                                                     |
 | Builder impact          | None; the record describes shipped behavior.                                                                                                                                               |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. One implementation gap is listed under Current-state impact.                                                    |
+| Compatibility/readiness | No API or default changes; a truncated Text with its tooltip gains `tabindex="0"` (FR4). One implementation gap is listed under Current-state impact.                                                    |
 | Review checks           | Reject a theme-added type or color that renders unstyled, a native `title` beside the truncation Tooltip, or measurement when the tooltip is off.                                          |
 | Governing rules         | `architecture:component-theming-surface/INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV8`.                                                                                   |
 
@@ -53,8 +53,8 @@ the truncation behavior of that element. Heading is documented beside Text in
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: records shipped behavior; no public prop, default, DOM,
-  or styling output changes
+- Compatibility class: no public prop, default, or styling change; DOM output
+  adds `tabindex="0"` to a truncated Text with its tooltip (FR4)
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 

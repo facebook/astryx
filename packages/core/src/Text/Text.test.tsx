@@ -6,6 +6,7 @@
  */
 
 import {render, screen, waitFor} from '@testing-library/react';
+import {ClickableCard} from '../ClickableCard/ClickableCard';
 import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
@@ -365,6 +366,11 @@ describe('truncated text shows one tooltip, not two', () => {
           <Text type="body" maxLines={1}>
             Standalone, wider than the space it has
           </Text>
+          <ClickableCard label="Card" onClick={() => {}}>
+            <Text type="body" maxLines={1}>
+              Inside a clickable card, wider than the space it has
+            </Text>
+          </ClickableCard>
           <main tabIndex={-1}>
             <Text type="body" maxLines={1}>
               Inside a focusable region, wider than the space it has
@@ -384,6 +390,11 @@ describe('truncated text shows one tooltip, not two', () => {
       ).not.toHaveAttribute('tabindex');
       expect(
         screen.getByText('Inside a menu item, wider than the space it has'),
+      ).not.toHaveAttribute('tabindex');
+      expect(
+        screen.getByText(
+          'Inside a clickable card, wider than the space it has',
+        ),
       ).not.toHaveAttribute('tabindex');
       // A focusable region (a main landmark, a scroll container) is not a
       // control, so a Text inside it is still a tab stop.
