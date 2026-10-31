@@ -86,7 +86,14 @@ let detachers: (() => void)[];
 /** jsdom computes no layout: give a scroller its metrics. */
 function scrollable(
   element: HTMLElement,
-  metrics: {scrollTop?: number; scrollHeight?: number; clientHeight?: number},
+  metrics: {
+    scrollTop?: number;
+    scrollHeight?: number;
+    clientHeight?: number;
+    scrollLeft?: number;
+    scrollWidth?: number;
+    clientWidth?: number;
+  },
 ): void {
   for (const [key, value] of Object.entries(metrics)) {
     Object.defineProperty(element, key, {configurable: true, value});
@@ -1170,6 +1177,48 @@ describe('GestureHost', () => {
         row,
         [{...finger, x: 160, y: 35}],
         [{...finger, x: 160, y: 35}],
+        48,
+        false,
+      );
+      expect(consumer.events).toEqual([
+        'began:1',
+        'moved:1',
+        'moved:1',
+        'moved:1',
+      ]);
+    } finally {
+      restore();
+    }
+  });
+
+  it('keeps a vertical drag under pan-x when Chromium stops asking after one unconsumed move', () => {
+    // The case above turned 90°: a row of a sideways list, dragged down.
+    const restore = touchActionFromData();
+    try {
+      const {list, row} = mount(
+        '<div id="list" style="overflow-x: auto"><div id="row" data-touch-action="pan-x pinch-zoom"></div></div>',
+      );
+      scrollable(list, {scrollLeft: 0, scrollWidth: 1000, clientWidth: 400});
+      const consumer = new RecordingConsumer();
+      detachers.push(host.attachConsumer(row, consumer));
+      const finger = {id: 1, x: 30, y: 100};
+      touch('touchstart', row, [finger], [finger], 0);
+      // The first move goes unconsumed; Chromium sends the rest uncancelable
+      // although pan-x keeps it from panning vertically.
+      touch('touchmove', row, [{...finger, y: 120}], [{...finger, y: 120}], 16);
+      touch(
+        'touchmove',
+        row,
+        [{...finger, x: 33, y: 140}],
+        [{...finger, x: 33, y: 140}],
+        32,
+        false,
+      );
+      touch(
+        'touchmove',
+        row,
+        [{...finger, x: 35, y: 160}],
+        [{...finger, x: 35, y: 160}],
         48,
         false,
       );
