@@ -61,9 +61,13 @@ import {
 import {
   DropdownMenuContext,
   DropdownMenuRootOpenContext,
+  DropdownMenuSurfaceContext,
   type DropdownMenuContextValue,
+  type DropdownMenuSurfaceHost,
+  type DropdownMenuSurfaceValue,
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
@@ -76,6 +80,7 @@ import {moveRegionsTab} from './menuRegionStops';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
+import {menuTouchActionStyles} from './menuTouchAction.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {
   useAdaptivePresentation,
@@ -85,7 +90,9 @@ import {
 import {
   MenuBottomSheet,
   MenuBottomSheetActionList,
+  preloadMenuBottomSheetActionList,
 } from './lazyMenuBottomSheet';
+import {menuBottomSheetStyles} from './menuBottomSheet.stylex';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -112,6 +119,15 @@ const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBloc
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
+// A sub-menu's drilled-in view with a header or footer renders in the surface
+// host that follows the menu (marked `data-astryx-submenu-host`), as the frame
+// marked `data-astryx-submenu-regions="view"` (hidden while a deeper view
+// shows). While one shows, the menu and its header and footer step aside. The
+// rule reads that from the DOM, so no state mirrors which view shows; it names
+// the host by its marker rather than a universal selector.
+const STEPS_ASIDE_FOR_VIEW =
+  ':has(~ [data-astryx-submenu-host] > [data-astryx-submenu-regions="view"]:not([hidden]))';
+
 const styles = stylex.create({
   triggerOpen: {
     backgroundImage: MENU_TRIGGER_OPEN_BACKGROUND,
@@ -125,7 +141,12 @@ const styles = stylex.create({
   },
   dropdown: {
     boxSizing: 'border-box',
-    display: 'flex',
+    display: {
+      default: 'flex',
+      // A sub-menu's drilled-in view with a header or footer shows in its
+      // place (see `stepsAsideForView`).
+      [STEPS_ASIDE_FOR_VIEW]: 'none',
+    },
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     // Pointer opens focus this container so subsequent arrow keys and Escape
@@ -175,21 +196,25 @@ const styles = stylex.create({
     flexShrink: 1,
     minBlockSize: 0,
   },
+  // Where a sub-menu with a header or footer renders its surface: beside the
+  // menu, never inside it. It owns no box, so the popover's layout is
+  // unchanged.
+  surfaceHost: {
+    display: 'contents',
+  },
+  // While a sub-menu's drilled-in view with its own header or footer shows
+  // in the surface host, the header and footer step aside for it, as the menu
+  // does (see `dropdown`). Derived from the DOM by the rule itself: the view
+  // is the frame in the host that is not hidden.
+  stepsAsideForView: {
+    display: {
+      default: null,
+      [STEPS_ASIDE_FOR_VIEW]: 'none',
+    },
+  },
   region: {
     flexShrink: 0,
     padding: spacingVars['--spacing-1'],
-  },
-  // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
-  // every one-finger move: a slide over its rows stays a slide. One that
-  // scrolls lets the browser pan it vertically and cancel the press when it
-  // does. Both leave a two-finger pinch to the browser, so the page stays
-  // zoomable over an open menu; `pinch-zoom` admits no one-finger pan.
-  touchPinchZoom: {
-    touchAction: 'pinch-zoom',
-  },
-  touchPanYPinchZoom: {
-    touchAction: 'pan-y pinch-zoom',
-    overscrollBehavior: 'contain',
   },
   // The menu's lower block cap rides on the layer box too, so the layer's
   // flip decision sees the same height the menu paints.
@@ -597,6 +622,11 @@ function DropdownMenuBottomSheet({
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
   const backLabel = t('@astryx.dropdownMenu.back');
   const buttonRef = useRef<HTMLElement>(null);
+  // The caller's `button.ref` rides along with the sheet's own trigger ref.
+  const triggerRef = useMergedRefs<HTMLButtonElement>(
+    buttonRef as React.Ref<HTMLButtonElement>,
+    button.ref,
+  );
   const triggerId = useId();
   const sheetId = useId();
   const actionListRef = useRef<HTMLDivElement>(null);
@@ -620,6 +650,12 @@ function DropdownMenuBottomSheet({
       setSubmenuPath([]);
     }
   }
+  // The closed sheet renders nothing, so load its rows at rest: the first
+  // open shows the actions at once. The preload's result says whether they
+  // loaded; after a failure the first open loads them.
+  useEffect(() => {
+    void preloadMenuBottomSheetActionList();
+  }, []);
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
   const currentTitle = currentSubmenu?.label ?? button.label;
@@ -739,6 +775,23 @@ function DropdownMenuBottomSheet({
     setOpen(!isOpen);
   };
 
+  // The root view's heading stands alone; a sub-menu's sits in a row with its
+  // back button.
+  const viewHeading = (
+    <Heading
+      ref={viewHeadingRef}
+      level={3}
+      tabIndex={-1}
+      xstyle={[
+        bottomSheetStyles.viewHeading,
+        submenuPath.length === 0 && [
+          bottomSheetStyles.rootHeading,
+          menuBottomSheetStyles.headingAlone,
+        ],
+      ]}>
+      {currentTitle}
+    </Heading>
+  );
   return (
     <>
       {renderTrigger != null ? (
@@ -760,7 +813,7 @@ function DropdownMenuBottomSheet({
       ) : (
         <Button
           {...button}
-          ref={buttonRef as React.Ref<HTMLButtonElement>}
+          ref={triggerRef}
           xstyle={[
             isOpen && styles.triggerOpen,
             button.xstyle,
@@ -798,12 +851,16 @@ function DropdownMenuBottomSheet({
           {...rest}
           {...mergeProps(
             themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-            stylex.props(bottomSheetStyles.content, xstyle),
+            stylex.props(
+              bottomSheetStyles.content,
+              menuBottomSheetStyles.content,
+              xstyle,
+            ),
             className,
             style,
           )}>
-          <div {...stylex.props(bottomSheetStyles.header)}>
-            {submenuPath.length > 0 && (
+          {submenuPath.length > 0 ? (
+            <div {...stylex.props(bottomSheetStyles.header)}>
               <Button
                 label={backLabel}
                 variant="ghost"
@@ -818,18 +875,11 @@ function DropdownMenuBottomSheet({
                 isIconOnly
                 onClick={() => setSubmenuPath(path => path.slice(0, -1))}
               />
-            )}
-            <Heading
-              ref={viewHeadingRef}
-              level={3}
-              tabIndex={-1}
-              xstyle={[
-                bottomSheetStyles.viewHeading,
-                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
-              ]}>
-              {currentTitle}
-            </Heading>
-          </div>
+              {viewHeading}
+            </div>
+          ) : (
+            viewHeading
+          )}
           {isRenderable(header) && (
             <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
           )}
@@ -1455,11 +1505,38 @@ function DropdownMenuPopover({
 
   // The drill-in view stack for sub-menus on a phone.
   const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // The surface host is owned through a ref. State keeps only a key that
+  // changes whenever a host element attaches, the host included when it
+  // moves (a header or footer coming or going), so sub-menus re-render into
+  // the element that is mounted.
+  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
+  const [surfaceHostKey, setSurfaceHostKey] = useState(0);
+  const attachSurfaceHost = useCallback((node: HTMLDivElement | null) => {
+    surfaceHostRef.current = node;
+    if (node != null) {
+      setSurfaceHostKey(key => key + 1);
+    }
+  }, []);
+  const surfaceHost = useMemo<DropdownMenuSurfaceHost>(
+    () => ({
+      getElement: () => (surfaceHostKey > 0 ? surfaceHostRef.current : null),
+    }),
+    [surfaceHostKey],
+  );
   const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize, drillIn, menuLabel}),
     [closeMenu, menuSize, drillIn, menuLabel],
+  );
+  // What a sub-menu with a header or footer needs, on an internal context.
+  const surfaceValue = useMemo<DropdownMenuSurfaceValue>(
+    () => ({
+      host: surfaceHost,
+      ownerId: menuId,
+      menuMaxHeight: resolvedMaxHeight ?? undefined,
+    }),
+    [surfaceHost, menuId, resolvedMaxHeight],
   );
 
   // Resolve menu content: data-driven items become components
@@ -1469,7 +1546,17 @@ function DropdownMenuPopover({
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
   // The header and footer sit beside the menu inside the popover, never inside
-  // the role="menu" element: a menu holds only its rows.
+  // the role="menu" element: a menu holds only its rows. The surface host
+  // follows the menu, so a sub-menu with a header or footer renders beside the
+  // menu too; while such a sub-menu's drilled-in view shows there, the menu and
+  // the regions step aside (STEPS_ASIDE_FOR_VIEW).
+  const surfaceHostElement = (
+    <div
+      ref={attachSurfaceHost}
+      data-astryx-submenu-host=""
+      {...stylex.props(styles.surfaceHost)}
+    />
+  );
   const renderWithRegions = (menu: ReactNode): ReactNode =>
     hasRegions ? (
       <div
@@ -1482,7 +1569,7 @@ function DropdownMenuPopover({
           <div
             ref={headerRef}
             onKeyDown={handleRegionKeyDown}
-            {...stylex.props(styles.region)}>
+            {...stylex.props(styles.region, styles.stepsAsideForView)}>
             {header}
           </div>
         )}
@@ -1491,13 +1578,17 @@ function DropdownMenuPopover({
           <div
             ref={footerRef}
             onKeyDown={handleRegionKeyDown}
-            {...stylex.props(styles.region)}>
+            {...stylex.props(styles.region, styles.stepsAsideForView)}>
             {footer}
           </div>
         )}
+        {surfaceHostElement}
       </div>
     ) : (
-      menu
+      <>
+        {menu}
+        {surfaceHostElement}
+      </>
     );
 
   const triggerProps: DropdownMenuTriggerProps = {
@@ -1620,7 +1711,9 @@ function DropdownMenuPopover({
                 styles.dropdown,
                 resolvedMaxHeight != null &&
                   dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-                hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
+                hasOverflow
+                  ? menuTouchActionStyles.scrolls
+                  : menuTouchActionStyles.fits,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
                 // Between a header and a footer the menu is a Tab stop, so
@@ -1636,9 +1729,11 @@ function DropdownMenuPopover({
             )}>
             <MenuRegionsContext value={hasRegions}>
               <DropdownMenuContext value={contextValue}>
-                <DropdownMenuRootOpenContext value={isOpen}>
-                  {menuContent}
-                </DropdownMenuRootOpenContext>
+                <DropdownMenuSurfaceContext value={surfaceValue}>
+                  <DropdownMenuRootOpenContext value={isOpen}>
+                    {menuContent}
+                  </DropdownMenuRootOpenContext>
+                </DropdownMenuSurfaceContext>
               </DropdownMenuContext>
             </MenuRegionsContext>
           </div>,

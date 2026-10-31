@@ -12,6 +12,11 @@ import {
   it,
   vi,
 } from 'vitest';
+const announce = vi.hoisted(() => vi.fn());
+vi.mock('@astryxdesign/core/hooks', async importOriginal => ({
+  ...(await importOriginal<typeof import('@astryxdesign/core/hooks')>()),
+  useAnnounce: () => announce,
+}));
 // The full emoji set renders slowly in jsdom; the composer only needs a few.
 vi.mock('../EmojiPicker/emojiData', () => ({
   EMOJI_GROUPS: [
@@ -25,7 +30,7 @@ vi.mock('../EmojiPicker/emojiData', () => ({
   ],
 }));
 
-import {CommentComposer} from './CommentComposer';
+import {CommentComposer, CommentComposerBase} from './CommentComposer';
 
 const originalMatches = HTMLElement.prototype.matches;
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -70,6 +75,7 @@ class ResizeObserverStub {
 }
 
 beforeEach(() => {
+  announce.mockClear();
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   Element.prototype.scrollIntoView = () => {};
 });
@@ -77,6 +83,17 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
 });
+
+/** The composer's failure Banner, which carries no live role. */
+function composerErrorBanner(): HTMLElement {
+  const banner = document.querySelector<HTMLElement>(
+    '[data-composer-error="banner"]',
+  );
+  if (banner == null) {
+    throw new Error('Composer error Banner not found');
+  }
+  return banner;
+}
 
 async function settle() {
   await act(() => new Promise<void>(resolve => setTimeout(resolve, 0)));
@@ -99,6 +116,34 @@ describe('CommentComposer', () => {
     );
     fireEvent.click(screen.getByRole('button', {name: /send/i}));
     expect(onSubmit).toHaveBeenCalledWith('Looks good');
+  });
+
+  it('keeps Cancel in the tab order but inert while submitting (AST-085 FR1, FR2)', () => {
+    const onCancel = vi.fn();
+    render(
+      <CommentComposerBase
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        placeholder="Edit comment"
+        onCancel={onCancel}
+        context={{kind: 'edit', commentId: 'c1'}}
+        contextLabel="Editing comment"
+        highlightColor="yellow"
+        triggers={[]}
+        agentCommands={[]}
+        hasEmojiPicker={false}
+        isSubmitting
+      />,
+    );
+    const cancel = screen.getByText('Cancel').closest('a, button')!;
+    expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    expect(cancel).not.toHaveAttribute('tabindex', '-1');
+    act(() => (cancel as HTMLElement).focus());
+    expect(cancel).toHaveFocus();
+    fireEvent.click(cancel);
+    fireEvent.keyDown(cancel, {key: 'Enter'});
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('shows the placeholder as the input’s name, and keeps Post focusable while submitting', () => {
@@ -185,6 +230,60 @@ describe('CommentComposer', () => {
     );
   });
 
+  it('keeps the image picker free of native disabled and refuses files while busy (AST-085 FR1, FR2)', async () => {
+    const onUploadImages = vi.fn();
+    render(
+      <CommentComposer
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        onUploadImages={onUploadImages}
+        isSubmitting
+      />,
+    );
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    expect(input).not.toHaveAttribute('disabled');
+    const file = new File(['png'], 'chart.png', {type: 'image/png'});
+    await act(async () => {
+      fireEvent.change(input, {target: {files: [file]}});
+      await Promise.resolve();
+    });
+    expect(onUploadImages).not.toHaveBeenCalled();
+  });
+
+  it('does not open the image chooser from the error banner while busy', async () => {
+    const onUploadImages = vi.fn();
+    const props = {
+      value: 'Draft',
+      onChange: () => {},
+      onSubmit: () => {},
+      onUploadImages,
+    };
+    const view = render(<CommentComposer {...props} />);
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    const openChooser = vi.spyOn(input, 'click').mockImplementation(() => {});
+    await act(async () => {
+      fireEvent.change(input, {
+        target: {
+          files: [new File(['%PDF'], 'doc.pdf', {type: 'application/pdf'})],
+        },
+      });
+    });
+    view.rerender(<CommentComposer {...props} isSubmitting />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).not.toHaveBeenCalled();
+
+    view.rerender(<CommentComposer {...props} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses files that are not images', async () => {
     const onUploadImages = vi.fn();
     render(
@@ -207,9 +306,41 @@ describe('CommentComposer', () => {
       });
     });
     expect(onUploadImages).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toContain(
-      'Only image files can be added',
+    const banner = composerErrorBanner();
+    expect(banner.textContent).toContain('Only image files can be added');
+    // The Banner has no live role: it is announced once through the channel.
+    expect(banner).not.toHaveAttribute('role');
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(
+      expect.stringContaining('Only image files can be added'),
+      'assertive',
     );
+  });
+
+  it('announces a second refusal with the same words again', async () => {
+    render(
+      <CommentComposer
+        value=""
+        onChange={() => {}}
+        onSubmit={() => {}}
+        onUploadImages={vi.fn()}
+      />,
+    );
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    for (const name of ['first.pdf', 'second.pdf']) {
+      await act(async () => {
+        fireEvent.change(input, {
+          target: {
+            files: [new File(['%PDF'], name, {type: 'application/pdf'})],
+          },
+        });
+      });
+    }
+    // Each refusal is its own occasion (AST-086 FR6), though the words match.
+    expect(announce).toHaveBeenCalledTimes(2);
   });
 
   it('shows an error with Retry, and a quoted passage the viewer can remove', () => {
@@ -227,8 +358,9 @@ describe('CommentComposer', () => {
         highlightColor="green"
       />,
     );
-    const alert = screen.getByRole('alert');
-    fireEvent.click(within(alert).getByRole('button', {name: 'Retry'}));
+    fireEvent.click(
+      within(composerErrorBanner()).getByRole('button', {name: 'Retry'}),
+    );
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(
       document

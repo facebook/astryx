@@ -14,15 +14,14 @@ import {buildOutline} from '../components/docs/docOutline';
  * Every topic page the site had before the CLI's docs were split into
  * docs-tree namespaces, with its sidebar group. A split changes how agents
  * read a topic, never where a reader finds it: each slug keeps one page in the
- * same group. The CLI's integration guides were split earlier, from the CLI
- * Integrations and Writing docs pages; those two pages are back too.
+ * same group. The CLI Integrations and Writing docs pages are the exception:
+ * their guides moved under Authoring, the one home for integration authors,
+ * so their slugs redirect into the Authoring page (tested below).
  */
 const PAGES_BEFORE_THE_SPLITS: Record<string, 'guide' | 'foundations'> = {
   authoring: 'guide',
   'browser-support': 'guide',
   'cli-component-lookups': 'guide',
-  'cli-integrations': 'guide',
-  'cli-writing-docs': 'guide',
   color: 'foundations',
   elevation: 'foundations',
   'getting-started': 'guide',
@@ -92,7 +91,9 @@ describe('route resolution', () => {
     // The Guide section as it was before the CLI integration guide and the
     // other topics were split into short guides. `styling-overview` and
     // `cli-host-entry` are topics added since; `global` is the Global mode
-    // page.
+    // page; `authoring` holds what CLI Integrations and Writing docs did;
+    // `use-integrations` is the guide for apps that install one;
+    // `cli-experimental-render-pages` is the experimental render guide.
     const sidebarGuides = docTopics
       .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
       .map(d => d.topic)
@@ -102,11 +103,13 @@ describe('route resolution', () => {
         'authoring',
         'browser-support',
         'cli-component-lookups',
+        'cli-experimental-icon-set-files',
+        'cli-experimental-icon-sets',
+        'cli-experimental-render-pages',
         'cli-host-entry',
-        'cli-integrations',
-        'cli-writing-docs',
         'global',
         'internationalization',
+        'is-my-code-good',
         'layout',
         'migration',
         'principles',
@@ -114,23 +117,38 @@ describe('route resolution', () => {
         'styling-libraries',
         'styling-overview',
         'theme',
+        'use-integrations',
         'working-with-ai',
       ].sort(),
     );
   });
 
-  it('opens every CLI integration guide at its section on a full page', () => {
+  it('opens every authoring guide at its section on the Authoring page, from its old slug too', () => {
+    expect(pageBySlug.get('authoring')?.category).toBe('guide');
+    let guides = 0;
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('cli/integrations/')) continue;
+      if (!route.startsWith('authoring/')) {
+        continue;
+      }
+      guides++;
       const slug = route.replaceAll('/', '-');
       expect(pageBySlug.has(slug), slug).toBe(false);
-      expect(docRedirects[slug], slug).toMatch(
-        /^\/docs\/cli-(integrations|writing-docs)(#|$)/,
-      );
+      expect(docRedirects[slug], slug).toMatch(/^\/docs\/authoring(#|$)/);
+      // The guide's slug from when it sat under cli/integrations.
+      const old = `cli-integrations-${slug.slice('authoring-'.length)}`;
+      expect(pageBySlug.has(old), old).toBe(false);
+      expect(docRedirects[old], old).toBe(docRedirects[slug]);
     }
-    expect(docRedirects['cli-integrations-overview']).toBe(
-      '/docs/cli-integrations',
+    expect(guides).toBeGreaterThan(40);
+    for (const old of ['cli-integrations', 'cli-integrations-overview']) {
+      expect(pageBySlug.has(old), old).toBe(false);
+      expect(docRedirects[old], old).toBe('/docs/authoring');
+    }
+    expect(pageBySlug.has('cli-writing-docs')).toBe(false);
+    expect(docRedirects['cli-writing-docs']).toBe(
+      docRedirects['authoring-building-blocks-docs'],
     );
+    expect(docRedirects['cli-writing-docs']).toMatch(/^\/docs\/authoring#/);
   });
 
   it('shows global mode as one page under Guide, with its older slugs redirecting to it', () => {
@@ -140,7 +158,9 @@ describe('route resolution', () => {
     expect(docRedirects['cli-global']).toBe('/docs/global');
     expect(docRedirects['cli-install-once']).toBe('/docs/global');
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('global/')) continue;
+      if (!route.startsWith('global/')) {
+        continue;
+      }
       const slug = route.replaceAll('/', '-');
       expect(docRedirects[slug], slug).toMatch(/^\/docs\/global#/);
     }
@@ -153,7 +173,8 @@ describe('route resolution', () => {
     );
     expect(section).toBeDefined();
     const text = JSON.stringify(section);
-    expect(text).toContain('npm i -g @astryxdesign/cli');
+    // A `{@pm}` step, which the docsite renders for npm.
+    expect(text).toContain('npm install -g @astryxdesign/cli');
     // Its link to the global mode page renders as a command that opens it.
     expect(text).toContain('`npx @astryxdesign/cli docs global`');
     expect(linkifyCode('npx @astryxdesign/cli docs global')).toBe(

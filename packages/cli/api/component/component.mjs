@@ -12,6 +12,10 @@
  * Every leaf is also re-exported for direct scripting use.
  */
 
+import {
+  docPackageManager,
+  runWithDocPackageManager,
+} from '../../foundation/env/package-manager.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {
@@ -258,13 +262,16 @@ async function componentBatch(selectors, options, coreDir) {
  * )>}
  */
 export async function component(name, options = {}) {
+  const cwd = options.cwd ?? process.cwd();
   // Every read resolves the links in the doc text it returns (spec:AST-047
-  // FR9); a batch's results are each a read of their own.
-  return /** @type {any} */ (
-    await linkComponentResponse(
-      await componentRead(name, options),
-      options.cwd ?? process.cwd(),
-    )
+  // FR9); a batch's results are each a read of their own. Doc tokens render
+  // for the project in `cwd`.
+  return runWithDocPackageManager(
+    docPackageManager(cwd),
+    async () =>
+      /** @type {any} */ (
+        await linkComponentResponse(await componentRead(name, options), cwd)
+      ),
   );
 }
 
@@ -293,7 +300,7 @@ async function componentRead(name, options = {}) {
   const selectorList = Array.isArray(name) ? name : null;
   const noName = selectorList == null && !name;
 
-  // Default detail level mirrors the CLI (see commands/component/index.mjs):
+  // Default detail level mirrors the CLI (see commands/component.mjs):
   // single-component views default to 'full', list-style views (--list,
   // --category, or no name) default to 'brief' (scannable name lists).
   // An explicit array remains a batch even when it is empty or a caller also
@@ -461,8 +468,22 @@ async function componentRead(name, options = {}) {
         return componentDetailBlocks(dirName, cwd, owner.package);
       }
       const loaded = await loadComponentDoc(owner.docPath, docOpts);
-      // A family member an integration lists under its own name reads as that
-      // member, the way a Core sub-component does below.
+      // A family member reads as that member, scoped the way the unscoped
+      // lookup scopes it: an integration member by its own entry, a Core
+      // sub-component (HStack in the Stack doc) by scopeSubComponent.
+      const sub =
+        scoped.kind === 'core'
+          ? scopeSubComponent(loaded, dirName, coreDir)
+          : null;
+      if (sub) {
+        if (props) {
+          return componentDetailProps(
+            {props: sub.matchingComponent.props},
+            owner.package,
+          );
+        }
+        return componentDetail(sub.scoped, owner, dirName, coreDir);
+      }
       const docs =
         scoped.kind === 'integration'
           ? scopeIntegrationMember(loaded, owner, dirName)

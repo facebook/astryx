@@ -20,6 +20,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
+import {FormLayout} from '../FormLayout';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 import {Theme} from '../theme/Theme';
@@ -204,6 +205,26 @@ describe('FileInput', () => {
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
+  it('conveys required state under FormLayout defaultOptionality="required" unless isOptional (FormLayout FR5)', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <FileInput label="Resume" value={null} onChange={() => {}} />
+        <FileInput
+          label="Cover letter"
+          isOptional
+          value={null}
+          onChange={() => {}}
+        />
+      </FormLayout>,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Resume'}),
+    ).toHaveAccessibleDescription(/Required/);
+    expect(
+      screen.getByRole('button', {name: /Cover letter/}),
+    ).not.toHaveAccessibleDescription(/Required/);
+  });
+
   it('combines required with the description in the accessible description', () => {
     render(
       <FileInput
@@ -243,12 +264,35 @@ describe('FileInput', () => {
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
-  it('sets disabled attribute when isDisabled is true', () => {
+  it('keeps a disabled input focusable and out of form submission', async () => {
+    const user = userEvent.setup();
     render(
-      <FileInput label="Upload" isDisabled value={null} onChange={() => {}} />,
+      <form>
+        <FileInput
+          label="Upload"
+          isRequired
+          isDisabled
+          value={null}
+          onChange={() => {}}
+        />
+      </form>,
     );
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).toBeDisabled();
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const trigger = screen.getByRole('button', {name: 'Upload'});
+    expect(input).not.toHaveAttribute('disabled');
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    const openPicker = vi.spyOn(input, 'click');
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(openPicker).not.toHaveBeenCalled();
+    expect(input.form).toBeNull();
+    expect(trigger.closest('form')!.checkValidity()).toBe(true);
+    // A label click activates the hidden input directly; it is canceled so
+    // the picker never opens (fireEvent returns false when prevented).
+    expect(fireEvent.click(input)).toBe(false);
   });
 
   it('sets aria-invalid when status type is error', () => {
@@ -488,6 +532,84 @@ describe('FileInput', () => {
   });
 
   describe('validation', () => {
+    it.each([
+      {maxSize: 0, expected: '0 B'},
+      {maxSize: 1023, expected: '1023 B'},
+      {maxSize: 1024, expected: '1.0 KB'},
+      {maxSize: 1048575, expected: '1024.0 KB'},
+      {maxSize: 1048576, expected: '1.0 MB'},
+      {maxSize: 1572864, expected: '1.5 MB'},
+    ])(
+      'preserves the English size boundary at $maxSize bytes',
+      ({maxSize, expected}) => {
+        render(
+          <FileInput
+            label="Upload"
+            value={null}
+            onChange={() => {}}
+            maxSize={maxSize}
+          />,
+        );
+        fireEvent.change(fileInputEl(), {
+          target: {files: [createFile('big.txt', maxSize + 1)]},
+        });
+        expect(
+          screen.getByText(`"big.txt" exceeds ${expected} limit`),
+        ).toBeInTheDocument();
+      },
+    );
+
+    it.each([
+      {
+        maxSize: 512,
+        sizeKey: 'bytes',
+        message: '{size, number} octets',
+        expected: '512 octets',
+      },
+      {
+        maxSize: 1536,
+        sizeKey: 'kilobytes',
+        message: '{size, number, ::.0} ko',
+        expected: '1,5 ko',
+      },
+      {
+        maxSize: 1572864,
+        sizeKey: 'megabytes',
+        message: '{size, number, ::.0} Mo',
+        expected: '1,5 Mo',
+      },
+    ])(
+      'localizes the $sizeKey size in validation feedback',
+      ({maxSize, sizeKey, message, expected}) => {
+        const handleChange = vi.fn();
+        render(
+          <InternationalizationProvider
+            locale="fr"
+            overrides={{
+              fr: {
+                '@astryx.fileInput.errorMaxSize':
+                  '{maxSize} maximum pour {fileName}',
+                [`@astryx.fileInput.fileSize.${sizeKey}`]: message,
+              },
+            }}>
+            <FileInput
+              label="Upload"
+              value={null}
+              onChange={handleChange}
+              maxSize={maxSize}
+            />
+          </InternationalizationProvider>,
+        );
+        fireEvent.change(fileInputEl(), {
+          target: {files: [createFile('big.txt', maxSize + 1)]},
+        });
+        expect(
+          screen.getByText(`${expected} maximum pour big.txt`),
+        ).toBeInTheDocument();
+        expect(handleChange).toHaveBeenCalledWith(null);
+      },
+    );
+
     it('rejects files exceeding maxSize', () => {
       const handleChange = vi.fn();
       render(
@@ -625,6 +747,30 @@ describe('FileInput', () => {
       render(<FileInput label="Upload" value={file} onChange={handleChange} />);
       await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
       expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('returns focus to the trigger, not the aria-hidden native input, after a keyboard clear', () => {
+      const file = createFile('test.txt', 100);
+      render(<FileInput label="Upload" value={file} onChange={() => {}} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Clear Upload'}), {
+        detail: 0,
+      });
+      expect(screen.getByRole('button', {name: /^Upload/})).toHaveFocus();
+    });
+
+    it('returns focus to the trigger, not the aria-hidden native input, after a pointer clear', async () => {
+      const raf = vi
+        .spyOn(window, 'requestAnimationFrame')
+        .mockImplementation(cb => {
+          cb(0);
+          return 0;
+        });
+      const user = userEvent.setup();
+      const file = createFile('test.txt', 100);
+      render(<FileInput label="Upload" value={file} onChange={() => {}} />);
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+      expect(screen.getByRole('button', {name: /^Upload/})).toHaveFocus();
+      raf.mockRestore();
     });
 
     it('calls onChange and changeAction with null when clear is clicked', async () => {
@@ -1095,7 +1241,7 @@ describe('FileInput', () => {
       expect(clickSpy).not.toHaveBeenCalled();
     });
 
-    it('keeps the trigger non-focusable when disabled without a reason', () => {
+    it('keeps the trigger focusable when disabled without a reason', () => {
       render(
         <FileInput
           label="Resume"
@@ -1105,8 +1251,8 @@ describe('FileInput', () => {
         />,
       );
       const trigger = screen.getByRole('button');
-      expect(trigger).toHaveAttribute('tabindex', '-1');
-      expect(trigger).not.toHaveAttribute('aria-disabled');
+      expect(trigger).toHaveAttribute('tabindex', '0');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
   });
 });

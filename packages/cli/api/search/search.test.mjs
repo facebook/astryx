@@ -117,16 +117,16 @@ describe('search leaf — docs at the grain a reader reads them', () => {
         .find(result => result.section === 'which-codemods-run');
       expect(hit).toMatchObject({
         domain: 'doc',
-        name: expect.stringMatching(/^cli\/integrations\/(?:.+\/)?codemods$/),
+        name: expect.stringMatching(/^authoring\/(?:.+\/)?codemods$/),
         title: expect.stringMatching(/ › Codemods › Choose when a codemod runs$/),
       });
       expect(hit.parent).toBe(`astryx docs ${hit.name} --index`);
       expect(hit.command).toBe(`astryx docs ${hit.name} which-codemods-run`);
       const block = await search('token-ref', {cwd});
       expect(block.data.results[0]).toMatchObject({
-        name: 'authoring',
+        name: 'authoring/field-reference',
         section: 'reference-doc',
-        command: 'astryx docs authoring reference-doc',
+        command: 'astryx docs authoring/field-reference reference-doc',
       });
       const fn = await search('assertResponse', {cwd, type: 'doc'});
       expect(fn.data.results[0]).toMatchObject({
@@ -148,13 +148,13 @@ describe('search leaf — docs at the grain a reader reads them', () => {
       // keywords and the title the guides declare. A namespace's own
       // keywords count, and a plural name is the name.
       for (const [query, route] of [
-        ['make an integration', /^cli\/integrations$/],
-        ['build an integration', /^cli\/integrations$/],
-        ['create an integration', /^cli\/integrations$/],
-        ['integration', /^cli\/integrations$/],
-        ['publish an integration', /^cli\/integrations$/],
+        ['make an integration', /^authoring$/],
+        ['build an integration', /^authoring$/],
+        ['create an integration', /^authoring$/],
+        ['integration', /^authoring$/],
+        ['publish an integration', /^authoring$/],
         // The troubleshooting guide, wherever the tree places it.
-        ['troubleshoot integration', /^cli\/integrations\/(?:.+\/)?troubleshooting$/],
+        ['troubleshoot integration', /^authoring\/(?:.+\/)?troubleshooting$/],
       ]) {
         const r = await search(query, {cwd, type: 'doc'});
         const names = r.data.results.slice(0, 3).map(result => result.name);
@@ -167,7 +167,7 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'gives a top-level namespace hit the topic list as its parent',
     async () => {
-      for (const [query, route] of [['unorganized', 'unorganized'], ['Astryx CLI', 'cli']]) {
+      for (const [query, route] of [['foundations', 'foundations'], ['Astryx CLI', 'cli']]) {
         const r = await search(query, {cwd, type: 'doc'});
         expect(r.data.results).toContainEqual(
           expect.objectContaining({
@@ -185,7 +185,7 @@ describe('search leaf — docs at the grain a reader reads them', () => {
     'points a topic hit at its index, never a whole-topic read',
     async () => {
       // A guide the tree places, read from the tree rather than named.
-      const {data: integrations} = await docs('cli/integrations');
+      const {data: integrations} = await docs('authoring');
       const guide = integrations.slots
         .flatMap(slot => slot.children)
         .find(child => child.kind === 'generic').route;
@@ -440,9 +440,9 @@ describe('search leaf — a candidate that matches every word outranks a partial
     const tokens = await search('tokens', {cwd});
     expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
     for (const [query, route] of [
-      ['codemods', /^cli\/integrations\/(?:.+\/)?codemods$/],
-      ['quick start', /^cli\/integrations\/(?:.+\/)?quick-start$/],
-      ['test in an app', /^cli\/integrations\/(?:.+\/)?test-in-an-app$/],
+      ['codemods', /^authoring\/(?:.+\/)?codemods$/],
+      ['quick start', /^authoring\/(?:.+\/)?quick-start$/],
+      ['test in an app', /^authoring\/(?:.+\/)?test-in-an-app$/],
     ]) {
       const r = await search(query, {cwd, type: 'doc'});
       // The guide is among the hits that share the top score: two guides

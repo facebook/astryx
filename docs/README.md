@@ -54,16 +54,9 @@ Every knowledge record declares `authority: draft | current | archived`.
   accept current `.github/DESIGNOWNERS` members. Legacy v1 `owners` metadata is
   descriptive and does not grant approval rights.
 - Pull requests that create, change, or archive a `current` record wait on the
-  `spec-owner-approval` status for their exact current head. Draft-only records
-  pass that status after validation without an owner review.
-- Any ENGOWNER can approve another author's current-record PR through GitHub
-  review. A DESIGNOWNER may do the same for current design or theme records and
-  normative design assets. When an eligible approver is also the PR author, they
-  comment `/approve-spec <full-head-sha>`. Any new commit invalidates that
-  approval.
-- A configured review app may relay an eligible owner's exact-head decision;
-  the gate counts it as that owner's command. `.github/REVIEW_GATE.md`
-  describes the relay.
+  review gate, `review-required`, until an owner approves their content with
+  `/approve-spec <full-sha>` or a review (`architecture:knowledge-contracts`
+  DEC-14). Draft-only records need no owner approval.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative
@@ -110,6 +103,18 @@ or stale claim routes. Routing requires the reviewed head, verifies the supplied
 base authority commit is its `origin/main` merge base, includes only
 `authority: current` records, and returns only the matched claims; draft records
 and nonmatching routes are omitted.
+
+An optional `path-applicability:v1` JSON block lists the repository paths a
+record governs when no placement, path field, name, or inherited link reaches
+them: `{"paths": ["apps/docsite/**"]}`. Patterns are repository-relative globs:
+`**` is a whole segment spanning any depth, `*` matches within one segment, and
+`?` matches one character. Like `review-applicability:v1`, it is an
+independently versioned overlay, so opting in does not migrate a record kind.
+A pattern must start with a literal path segment. Validation rejects
+malformed, unsafe, repeated, whole-repository, and no-match patterns. A match only locates the record for a path; claim scope and
+precedence are unchanged. `pnpm check:knowledge` also fails when a current record
+is reached from no tracked path that is not itself a record
+(`architecture:knowledge-contracts` INV25 and INV26).
 
 New record kinds should prefer one typed relationship list over parallel fields.
 If `system-spec` receives a future schema revision, replace its legacy

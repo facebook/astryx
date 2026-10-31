@@ -14,7 +14,7 @@ export const docs = {
   name: 'cli',
   title: 'Astryx CLI',
   summary:
-    'Commands, programmatic APIs, integration authoring, and output contracts.',
+    'Commands, programmatic APIs, and output contracts. Building an integration is under {@link namespace:authoring}.',
   keywords: ['cli', 'commands', 'api', 'reference'],
   slots: {
     guides: {title: 'Guides', accepts: {kinds: ['generic', 'namespace']}},

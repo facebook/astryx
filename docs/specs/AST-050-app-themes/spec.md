@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [theme, cli/integrations, cli]
+affects_consumer_docs: [theme, authoring, cli]
 ---
 
 # App themes system spec

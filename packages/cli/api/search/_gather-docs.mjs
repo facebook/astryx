@@ -7,6 +7,7 @@
 
 import {
   guideEntry,
+  sectionPackageOf,
   loadDocsCatalog,
   lowerTopic,
   projectTree,
@@ -18,6 +19,7 @@ import {
   sectionSummary,
 } from '../../foundation/discovery/docs-section-key.mjs';
 import {sectionProse, codeTerms, headings, plain} from './_doc-text.mjs';
+import {loadAuthoringSelfDocs} from '../../foundation/discovery/authoring-self-docs.mjs';
 
 /** @typedef {import('./_lexical.mjs').Candidate} Candidate */
 
@@ -38,6 +40,13 @@ import {sectionProse, codeTerms, headings, plain} from './_doc-text.mjs';
 export async function gatherDocs(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
+  // Experimental docs (spec:AST-017 FR27) are never search results: they are
+  // read on their own routes, so search answers as it would without them.
+  const hidden = new Set(
+    (await loadAuthoringSelfDocs()).loaded
+      .filter(({doc}) => isExperimentalDoc(doc))
+      .map(({doc}) => doc.name),
+  );
   let catalog;
   try {
     catalog = await loadDocsCatalog(cwd);
@@ -62,8 +71,18 @@ export async function gatherDocs(cwd) {
       // A topic that cannot be loaded is reported by the commands that own
       // integration issues; search just cannot index it.
     }
-    const doc = lowered?.doc ?? null;
-    // A flat topic lives in the Unorganized level; its hits say so, and name
+    const read = lowered?.doc ?? null;
+    if (isExperimentalDoc(read)) continue;
+    const doc =
+      read && hidden.size > 0 && Array.isArray(read.sections)
+        ? {
+            ...read,
+            sections: read.sections.filter(
+              (/** @type {any} */ section) => !hidden.has(section.id),
+            ),
+          }
+        : read;
+    // A flat topic lives in its topic level; its hits say so, and name
     // the package each section came from.
     const home = tree?.get(entry.name);
     const placed = home?.ref?.flatTopic === entry.name ? home : null;
@@ -101,12 +120,21 @@ export async function gatherDocs(cwd) {
   for (const node of tree.nodes.values()) {
     // A flat topic is indexed above, as a topic.
     if (node.ref?.flatTopic) continue;
+    if (isExperimentalNode(tree, node)) continue;
     // A tree hit names where it lives: its ancestors' titles, then its own.
     const path = [...tree.ancestors(node).map(a => a.title), node.title];
     if (node.kind === 'generic') {
+      // A guide an integration replaced or extended names the package that
+      // wrote it, and each section the package that wrote that section, as
+      // reads do (INV28).
+      const entry = guideEntry(node);
       let doc = null;
+      /** @type {((key: string) => string) | undefined} */
+      let sectionPackage;
       try {
-        doc = (await lowerTopic(catalog, guideEntry(node))).doc;
+        const lowered = await lowerTopic(catalog, entry);
+        doc = lowered.doc;
+        sectionPackage = sectionPackageOf(entry, lowered);
       } catch {
         // As above: the owning commands report it.
       }
@@ -118,7 +146,8 @@ export async function gatherDocs(cwd) {
           node.summary,
           path.join(' › '),
           node.parent == null ? undefined : `astryx docs ${node.parent}`,
-          node.provider,
+          entry.package,
+          sectionPackage,
         ),
       );
       continue;
@@ -166,6 +195,26 @@ export async function gatherDocs(cwd) {
 }
 
 /**
+ * Is this doc an experimental surface's (spec:AST-017 FR21)?
+ * @param {any} doc
+ */
+function isExperimentalDoc(doc) {
+  return doc?.stability === 'experimental';
+}
+
+/**
+ * Does this tree node document an experimental surface: a typed doc marked
+ * experimental, or anything under an experimental namespace?
+ * @param {any} tree
+ * @param {any} node
+ */
+function isExperimentalNode(tree, node) {
+  return [...tree.ancestors(node), node].some((/** @type {any} */ each) =>
+    isExperimentalDoc(each.ref?.selfDoc),
+  );
+}
+
+/**
  * The candidates one topic yields: the topic itself, and one per section when
  * it has more than one. A topic's command lists its sections, and a section's
  * command reads only that section, so a hit never costs a whole-topic read.
@@ -176,7 +225,7 @@ export async function gatherDocs(cwd) {
  * @param {string} [path] - where the topic lives in the docs tree, as titles
  *   joined by ` › `; a flat topic is its own title
  * @param {string} [parent] - the command that opens the level above the
- *   topic: its namespace, or the Unorganized level for a flat topic
+ *   topic: its namespace, or the topic level for a flat topic
  * @param {string} [pkg] - the npm package that authored the topic
  * @param {(key: string) => string} [sectionPackage] - the npm package a
  *   section came from: an extension's section names the extension's package
@@ -197,7 +246,7 @@ function topicCandidates(
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
   // A placed guide also answers to its last route segment's words:
-  // `quick start` is cli/integrations/quick-start.
+  // `quick start` is authoring/quick-start.
   const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [

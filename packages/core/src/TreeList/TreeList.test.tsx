@@ -861,6 +861,26 @@ describe('TreeList', () => {
       });
     });
 
+    it("keeps focus on an item's inner link when the item becomes disabled (spec:AST-085 FR4)", () => {
+      const tree = (isDisabled: boolean) => [
+        {
+          id: 'docs',
+          label: 'Docs',
+          isExpanded: true,
+          children: [
+            {id: 'report', label: 'Report', href: '/report', isDisabled},
+          ],
+        },
+      ];
+      const {rerender} = render(<TreeList items={tree(false)} />);
+      // A pointer click leaves focus on the inner link.
+      screen.getByRole('link', {name: 'Report', hidden: true}).focus();
+      rerender(<TreeList items={tree(true)} />);
+      const disabled = screen.getByRole('link', {name: 'Report', hidden: true});
+      expect(disabled).not.toHaveAttribute('href');
+      expect(disabled).toHaveFocus();
+    });
+
     it('does not follow a disabled link row', () => {
       const items = [
         {
@@ -879,6 +899,12 @@ describe('TreeList', () => {
       const row = link.closest<HTMLElement>('.astryx-tree-list-item')!;
       fireEvent.click(row.firstElementChild!);
       expect(onLinkClick).not.toHaveBeenCalled();
+      // No destination, so a screen reader's click or a link menu cannot
+      // navigate either (spec:AST-085 FR2).
+      expect(link).toHaveAttribute('aria-disabled', 'true');
+      for (const attribute of ['href', 'target']) {
+        expect(link).not.toHaveAttribute(attribute);
+      }
     });
 
     describe('row clicks outside the label (FR7)', () => {
@@ -940,6 +966,34 @@ describe('TreeList', () => {
         fireEvent.click(rowSurfaceOf('Folder'));
         fireEvent.click(rowOf('Folder'));
         expect(screen.queryByText('File')).not.toBeInTheDocument();
+      });
+
+      it("exposes a disabled row's toggle and action as aria-disabled and keeps them inert", () => {
+        const onClick = vi.fn();
+        const {container} = render(
+          <TreeList
+            items={underRoot([
+              {id: 'run', label: 'Run', onClick, isDisabled: true},
+              {...folder, isDisabled: true},
+            ])}
+          />,
+        );
+        // spec:AST-085 FR1/FR2: no native disabled anywhere, and a click
+        // dispatched straight on the inner controls does nothing.
+        expect(container.querySelector('[disabled]')).toBeNull();
+        const toggle = container.querySelector<HTMLElement>(
+          '[data-tree-toggle][aria-disabled="true"]',
+        )!;
+        expect(toggle).not.toBeNull();
+        toggle.click();
+        fireEvent.keyDown(toggle, {key: 'Enter'});
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+        const action = Array.from(container.querySelectorAll('button')).find(
+          button => button.textContent?.includes('Run'),
+        )!;
+        expect(action).toHaveAttribute('aria-disabled', 'true');
+        action.click();
+        expect(onClick).not.toHaveBeenCalled();
       });
 
       it('leaves a role-based control in start or end content to itself', () => {

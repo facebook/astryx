@@ -235,39 +235,51 @@ export function isWeightsFile(file) {
   );
 }
 
+/** The ranking coefficients the picker reads. */
+const PICKER_THETA = [
+  'g',
+  'grank',
+  'gmargin',
+  'seen',
+  'lex',
+  'sscore',
+  'scov',
+  'srank',
+  'inkit',
+  'kitpos',
+  'mention',
+  'show',
+];
+
 /**
  * Whether a parsed block picker file has the shape the picker reads: a
- * vocabulary weight per word, a bias per block, sparse rows of
- * [block index, weight] pairs, and five combiner numbers.
+ * vocabulary with an idf per entry, two signed byte matrices of vocabulary x
+ * dims (base64) with their scales, the lexical weight, the known blocks, and
+ * the ranking coefficients.
  * @param {any} w
  * @returns {w is import('./blocks/blocks.mjs').BlockPickerWeights}
  */
 function isBlockPickerWeights(w) {
-  const n = Array.isArray(w?.classes) ? w.classes.length : 0;
+  const n = Array.isArray(w?.vocab) ? w.vocab.length : 0;
+  const size = (/** @type {unknown} */ s) =>
+    typeof s === 'string' ? Buffer.from(s, 'base64').length : -1;
   return (
     n > 0 &&
-    w.classes.every((/** @type {unknown} */ c) => typeof c === 'string') &&
-    Array.isArray(w.bias) &&
-    w.bias.length === n &&
-    w.bias.every((/** @type {unknown} */ b) => Number.isFinite(b)) &&
-    !!w.vocab &&
-    typeof w.vocab === 'object' &&
-    Object.values(w.vocab).every(v => Number.isFinite(v)) &&
-    !!w.words &&
-    typeof w.words === 'object' &&
-    Object.values(w.words).every(
-      row =>
-        Array.isArray(row) &&
-        row.length % 2 === 0 &&
-        row.every(
-          (/** @type {number} */ x, /** @type {number} */ i) =>
-            Number.isFinite(x) &&
-            (i % 2 === 1 || (Number.isInteger(x) && x >= 0 && x < n)),
-        ),
-    ) &&
-    Array.isArray(w.theta) &&
-    w.theta.length === 5 &&
-    w.theta.every((/** @type {unknown} */ x) => Number.isFinite(x))
+    w.vocab.every((/** @type {unknown} */ t) => typeof t === 'string') &&
+    Array.isArray(w.idf) &&
+    w.idf.length === n &&
+    w.idf.every((/** @type {unknown} */ x) => Number.isFinite(x)) &&
+    Number.isInteger(w.dims) &&
+    w.dims > 0 &&
+    size(w.request) === n * w.dims &&
+    size(w.doc) === n * w.dims &&
+    Number.isFinite(w.requestScale) &&
+    Number.isFinite(w.docScale) &&
+    Number.isFinite(w.lexical) &&
+    Array.isArray(w.known) &&
+    w.known.every((/** @type {unknown} */ b) => typeof b === 'string') &&
+    !!w.theta &&
+    PICKER_THETA.every(k => Number.isFinite(w.theta[k]))
   );
 }
 

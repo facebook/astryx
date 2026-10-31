@@ -621,6 +621,36 @@ describe('resolveSpecsForFile', () => {
     expect(ids(result.records)).not.toContain('spec:AST-020');
   });
 
+  it("routes a path matched by a record's path-applicability pattern", () => {
+    const root = popoverFixture();
+    writeRecord(
+      root,
+      'docs/specs/AST-033/spec.md',
+      {
+        kind: 'system-spec',
+        id: 'spec:AST-033',
+        affects_architecture: [],
+        affects_families: [],
+        affects_consumer_docs: [],
+      },
+      '\n<!-- path-applicability:v1 -->\n\n```json\n{"paths": ["apps/docsite/**"]}\n```\n',
+    );
+    const index = loadKnowledgeIndex(root);
+    const result = resolveSpecsForFile(
+      index,
+      'apps/docsite/src/content/blog/posts/release.md',
+    );
+    expect(result.records).toEqual([
+      expect.objectContaining({
+        id: 'spec:AST-033',
+        routes: [{via: 'path-applicability', detail: 'apps/docsite/**'}],
+      }),
+    ]);
+    expect(
+      resolveSpecsForFile(index, 'apps/docsite-legacy/index.md').records,
+    ).toEqual([]);
+  });
+
   it('reports a path no record reaches instead of guessing', () => {
     const index = loadKnowledgeIndex(popoverFixture());
     const result = resolveSpecsForFile(

@@ -13,7 +13,14 @@
  * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -25,6 +32,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {BusyStartSettleContext} from './busyStartSettle';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -36,6 +44,7 @@ import {
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -190,6 +199,25 @@ export function CommandPaletteInput({
   const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
+  // The search Spinner is decorative; the input announces each busy start,
+  // including the load on opening or clearing the query. Inside the palette's
+  // native modal it does so from a region in the dialog (spec:AST-086 FR8, FR3).
+  const settleBusyAnnouncement = useBusyAnnouncement(
+    ctx?.isBusy === true,
+    t('@astryx.commandPalette.loading'),
+    inputRef,
+  );
+  // Keeps the palette holding this input's settle function, so the palette can
+  // drop a busy start not yet announced when a search's outcome is about to be
+  // announced (spec:AST-086 FR8).
+  const registerSettle = use(BusyStartSettleContext);
+  useEffect(() => {
+    if (registerSettle == null) {
+      return;
+    }
+    registerSettle(settleBusyAnnouncement);
+    return () => registerSettle(null);
+  }, [registerSettle, settleBusyAnnouncement]);
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
   // Text-entry controls match :focus-visible after pointer focus in Chromium.
@@ -335,7 +363,7 @@ export function CommandPaletteInput({
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
-              <Spinner size="sm" />
+              <Spinner size="sm" aria-hidden="true" />
             </span>
           )}
           {hasEndContent && endContent}

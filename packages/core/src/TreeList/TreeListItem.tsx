@@ -32,12 +32,14 @@ import {
   useClickableContainer,
 } from '../hooks/useClickableContainer';
 import {Icon} from '../Icon';
-import {mergeProps} from '../utils';
+import {mergeProps} from '../utils/mergeProps';
+import {useFocusAcrossSwap} from '../utils/useFocusAcrossSwap';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 // =============================================================================
 // Styles
@@ -226,8 +228,6 @@ const styles = stylex.create({
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
     display: 'flex',
@@ -242,8 +242,6 @@ const styles = stylex.create({
     },
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronSvg: {
     display: 'flex',
@@ -350,6 +348,12 @@ export interface TreeListItemInternalProps {
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
+  /**
+   * The row collapsed and its child group is playing its exit: the group
+   * stays rendered (the exit makes it inert) until it ends, and its rows
+   * leave the tree's keyboard order at once.
+   */
+  isExiting?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -376,6 +380,9 @@ export interface TreeListItemInternalProps {
 // Component
 // =============================================================================
 
+/** A plain anchor, for a disabled item whose link has no destination. */
+const DisabledAnchor = 'a';
+
 export function TreeListItem({
   id,
   label,
@@ -396,6 +403,7 @@ export function TreeListItem({
   isLast,
   ancestorsIsLast,
   isExpanded,
+  isExiting = false,
   onToggle,
   density,
   variant,
@@ -410,6 +418,10 @@ export function TreeListItem({
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
   const linkRef = useRef<HTMLAnchorElement>(null);
+  // Disabling the item swaps the router link for a plain anchor, so React
+  // replaces it; focus on the inner link (after a pointer click) follows the
+  // swap instead of falling to the page (spec:AST-085 FR4).
+  const anchorRef = useFocusAcrossSwap<HTMLAnchorElement>(linkRef);
   const isInteractive = onClick != null || href != null;
 
   const handleToggle = useMemo(
@@ -552,11 +564,13 @@ export function TreeListItem({
         // Stable identity for TreeList's activateItem selector — do not
         // remove without also updating TreeList.tsx.
         data-tree-toggle=""
-        disabled={isDisabled}
+        // Disabled stays focusable (spec:AST-085 FR1) but inert (FR2).
+        aria-disabled={isDisabled || undefined}
         // Roving tabindex lives on the treeitem row; the chevron toggle is not
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
+        {...(isDisabled ? disabledInteractionProps() : null)}
         {...mergeProps(
           // Stable theme target for the expand/collapse control. `data-tree-toggle`
           // stays as the functional activation hook; this adds a themeable
@@ -590,12 +604,26 @@ export function TreeListItem({
       {startContent != null && (
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
-      {href != null ? (
+      {href != null && isDisabled ? (
+        // A disabled item's anchor has no destination, so neither the row's
+        // forwarded activation nor a screen reader's click can navigate
+        // (spec:AST-085 FR2). Like a disabled Link, it keeps the link role and
+        // skips the router link component.
+        <DisabledAnchor
+          ref={anchorRef}
+          role="link"
+          aria-disabled={true}
+          aria-labelledby={labelId}
+          aria-describedby={description != null ? descriptionId : undefined}
+          tabIndex={-1}
+          {...stylex.props(styles.invisibleAnchor)}>
+          {labelAndDescription}
+        </DisabledAnchor>
+      ) : href != null ? (
         <LinkComponent
-          ref={linkRef}
+          ref={anchorRef}
           href={href}
           target={target}
-          aria-disabled={isDisabled || undefined}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
           // Roving tabindex lives on the treeitem row; inner action is not a
@@ -608,7 +636,8 @@ export function TreeListItem({
         <button
           type="button"
           onClick={onClick}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
           // Roving tabindex lives on the treeitem row; inner action is not a
@@ -699,8 +728,11 @@ export function TreeListItem({
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>
-      {isExpanded && renderedChildren != null && (
-        <ul role="group" {...stylex.props(styles.childGroup)}>
+      {(isExpanded || isExiting) && renderedChildren != null && (
+        <ul
+          role="group"
+          data-tree-exiting={isExiting ? '' : undefined}
+          {...stylex.props(styles.childGroup)}>
           {renderedChildren}
         </ul>
       )}

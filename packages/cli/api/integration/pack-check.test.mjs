@@ -580,6 +580,24 @@ describe('a theme module that loads its own styles', () => {
     expect(cli.status, cli.stderr).toBe(0);
   });
 
+  it('says a rebuild cannot fix exports that name the theme after its folder once its source renames it', async () => {
+    writePackage({
+      files: ['astryx.integration.mjs', 'themes'],
+      themeExports: true,
+    });
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+      "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'sea'});\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues.map(issue => issue.message)).toEqual([
+      `Theme "ocean" module is themes/ocean/ocean.js, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.js instead and rebuilding never updates ocean.js. Fix: point the package export that serves it at themes/ocean/sea.js after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+      `Theme "ocean" stylesheet is themes/ocean/ocean.css, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.css instead and rebuilding never updates ocean.css. Fix: point the package export that serves it at themes/ocean/sea.css after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+    ]);
+  });
+
   it('compares a partial export set with the module named after the theme', async () => {
     writeRenamedOcean();
     setThemeExports({'./themes/ocean': './themes/ocean/deep-sea.js'});
@@ -1706,6 +1724,69 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
 
+  it('warns, without failing, when a doc section sets before or after on a CLI range that rejects them', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const issues = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.filter(
+        (/** @type {{code: string}} */ issue) =>
+          issue.code === 'section_position_needs_cli',
+      );
+    // A placed guide's section counts too: an older CLI rejects the field in
+    // any doc and hides the package's topics.
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{id: 'overview', title: 'Overview', after: 'nothing', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await issues()).toEqual([
+      expect.objectContaining({severity: 'warning'}),
+    ]);
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await issues()).toEqual([]);
+  }, 120_000);
+
+  it('warns when a package whose docs write doc tokens has a CLI range that prints them raw', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const write = (/** @type {string} */ name, /** @type {string} */ text) =>
+      fs.writeFileSync(
+        path.join(tmpDir, 'docs', `${name}.doc.mjs`),
+        `export default {type: 'generic', name: '${name}', title: 'Notes', description: 'Notes.', sections: [{title: 'Run', content: [{type: 'prose', text: ${JSON.stringify(text)}}]}]};\n`,
+      );
+    const found = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.filter(
+        (/** @type {{code: string}} */ issue) => issue.code === 'doc_tokens_need_cli',
+      );
+    // An escaped token is shown as written by every release.
+    write('escaped', 'Write {@@pm install x} for an install.');
+    expect(await found()).toEqual([]);
+    write('tokens', 'Run {@command doctor} first.');
+    expect((await found()).map((/** @type {any} */ issue) => issue.severity)).toEqual(['warning']);
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await found()).toHaveLength(1);
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await found()).toEqual([]);
+  }, 120_000);
+
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
     writePackage({
       manifest: "export default {templates: './templates'};\n",
@@ -1919,6 +2000,57 @@ describe('integrationPackCheck', () => {
     expect(sourceWarnings[0].message).toContain('stray.tsx');
   });
 
+  it('says npm pack skips a symlinked root instead of asking for a "files" entry', async () => {
+    writePackage({
+      manifest:
+        "export default {themes: './themes', components: './components'};\n",
+    });
+    const real = path.join(tmpDir, 'real-components');
+    fs.mkdirSync(real, {recursive: true});
+    fs.writeFileSync(
+      path.join(real, 'Card.doc.mjs'),
+      "export default {type: 'component', name: 'Card', displayName: 'Card', usage: {description: 'Card.'}, props: []};\n",
+    );
+    fs.writeFileSync(
+      path.join(real, 'Card.tsx'),
+      'export function Card() { return null; }\n',
+    );
+    fs.symlinkSync('real-components', path.join(tmpDir, 'components'));
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    const codes = result.data.issues.map(issue => issue.code);
+    expect(codes).toContain('symlinked_root');
+    const notPacked = result.data.issues.find(
+      issue => issue.code === 'root_not_packed',
+    );
+    expect(notPacked?.message).toBe(
+      'Declared components root "components" has 0 of 2 expected files in the pack list. It is reached through the symlink "components", and npm pack does not follow a symlinked folder. Fix: replace the link with the folder itself, or point "components" at the folder it links to.',
+    );
+  });
+
+  it('names packed files by their path in the package, never the scratch copy', async () => {
+    writePackage({
+      manifest:
+        "export default {themes: './themes', docs: './docs/a.doc.mjs'};\n",
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'a.doc.mjs'), '');
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    const messages = result.data.issues.map(issue => issue.message);
+    expect(messages.join('\n')).not.toContain(
+      path.join(tmpDir, '.astryx-pack-check-'),
+    );
+    expect(messages).toContain(
+      'Packed: Declared docs root is a file, not a folder: docs/a.doc.mjs. Fix: point "docs" in the manifest at the folder that holds them.',
+    );
+    // The root's own issue covers it: no empty-root error, no raw errno.
+    const codes = result.data.issues.map(issue => issue.code);
+    expect(codes).not.toContain('empty_contribution_root');
+    expect(codes).not.toContain('local_discovery_failed');
+    expect(codes).not.toContain('packed_discovery_failed');
+  });
+
   it('fails on a package.json npm cannot pack, which validate only warns about', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     const packageFile = path.join(tmpDir, 'package.json');
@@ -1969,6 +2101,20 @@ describe('integrationPackCheck', () => {
     ).toEqual([]);
   });
 
+  it("reads npm 8's scoped tarball name as the file npm writes", () => {
+    const entry = {entryCount: 1, size: 1, unpackedSize: 1, files: []};
+    expect(
+      parseNpmPackOutput(
+        JSON.stringify([{...entry, filename: '@acme/kit-1.0.0.tgz'}]),
+      ).filename,
+    ).toBe('acme-kit-1.0.0.tgz');
+    expect(
+      parseNpmPackOutput(
+        JSON.stringify([{...entry, filename: 'acme-kit-1.0.0.tgz'}]),
+      ).filename,
+    ).toBe('acme-kit-1.0.0.tgz');
+  });
+
   it('rejects malformed npm pack output without a raw TypeError', () => {
     expect(() =>
       parseNpmPackOutput(
@@ -1979,10 +2125,13 @@ describe('integrationPackCheck', () => {
     ).toThrow(/without a files array/);
   });
 
-  it('reports npm missing from PATH as pack_failed', async () => {
+  it('reports pack_failed when no npm can be found', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     const originalPath = process.env.PATH;
+    const originalExecPath = process.execPath;
     process.env.PATH = '';
+    // A Node with no npm beside it, and no npm on the PATH.
+    process.execPath = path.join(tmpDir, 'no-npm', 'bin', 'node');
     try {
       const result = await integrationPackCheck({cwd: tmpDir});
       expect(result.data.packable).toBe(false);
@@ -1994,6 +2143,7 @@ describe('integrationPackCheck', () => {
       );
     } finally {
       process.env.PATH = originalPath;
+      process.execPath = originalExecPath;
     }
   });
 

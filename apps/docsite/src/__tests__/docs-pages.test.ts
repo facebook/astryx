@@ -118,9 +118,9 @@ describe('a flat topic split into a docs-tree namespace', () => {
     const read = async () => ({
       type: 'docs.node',
       data: {
-        route: 'unorganized',
+        route: 'foundations',
         kind: 'namespace',
-        title: 'Unorganized',
+        title: 'Foundations',
         content: [],
         slots: [
           {
@@ -130,7 +130,7 @@ describe('a flat topic split into a docs-tree namespace', () => {
         ],
       },
     });
-    expect(await namespacePage(read, 'unorganized')).toBeNull();
+    expect(await namespacePage(read, 'foundations')).toBeNull();
   });
 });
 
@@ -298,8 +298,8 @@ describe('CLI commands on docsite pages', () => {
     ]);
   });
 
-  it('shows the CLI Integrations page a command that runs before any install', () => {
-    const page = docTopics.find(topic => topic.topic === 'cli-integrations');
+  it('shows the Authoring page a command that runs before any install', () => {
+    const page = docTopics.find(topic => topic.topic === 'authoring');
     const section = page?.sections.find(
       each => each.title === 'Verify the packed import',
     );

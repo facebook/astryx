@@ -16,23 +16,25 @@ import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {formatCliCommand, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {formatCliCommand, getCliInvocation, quoteCommandArgument} from '../../foundation/env/package-manager.mjs';
 import {hasRecordedProject} from '../../foundation/env/cli-command.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {answeredBy, runChoice} from '../../foundation/release/run-context.mjs';
-import {addCliCommand} from '../../foundation/release/notices.mjs';
-import {projectRootOf} from '../../foundation/release/choose.mjs';
-import {readReleaseFacts} from '../../foundation/release/project.mjs';
+import {cliInstallAdvice, installFolder} from '../../foundation/release/notices.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
-import {emit, section, text, records} from './formatters/index.mjs';
+import {section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
-import {doc as manifestDoc} from './commands/manifest.doc.mjs';
-import {isAstryxInitialized, isAstryxPromptInReach} from '../../foundation/agent-docs/agent-docs.mjs';
+import {markReportsResult} from './lib/define-command.mjs';
+import {
+  agentDocsTargetDir,
+  assertAgentDocsTarget,
+  isAstryxInitialized,
+  isAstryxPromptInReach,
+} from '../../foundation/agent-docs/agent-docs.mjs';
 import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {setupNudge} from '../../foundation/agent-docs/agent-doc-state.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
@@ -91,6 +93,13 @@ export const JSON_SUPPORTED = new Set([
   'blog',
   'discover',
   'search',
+  'experimental icon',
+  'experimental icon add',
+  'experimental icon map',
+  'experimental icon use',
+  'experimental icon new-set',
+  'experimental icon new-definition',
+  'experimental render',
   'build',
   'swizzle',
   'gap-report',
@@ -292,7 +301,7 @@ function captureInvocation(actionCommand, root) {
  */
 const commands = [
   {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
-  {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
+  {name: 'component', path: './commands/component.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'blog', path: './commands/blog.mjs', register: 'registerBlog'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
@@ -300,13 +309,24 @@ const commands = [
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
-  {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+  {name: 'theme', path: './commands/theme.mjs', register: 'registerTheme'},
   {name: 'integration', path: './commands/integration.mjs', register: 'registerIntegration'},
-  {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
+  {name: 'hook', path: './commands/hook.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
+  // Experimental commands (spec:AST-017 FR27): last, so every stable command
+  // keeps its place in help.
+  {
+    name: 'experimental',
+    path: './commands/experimental/index.mjs',
+    register: 'registerExperimental',
+  },
+  // Registered after every other command: the manifest lists the commands in
+  // registration order.
+  {name: 'manifest', path: './commands/manifest.mjs', register: 'registerManifest'},
+  {name: 'postinstall', path: './commands/postinstall.mjs', register: 'registerPostinstall'},
 ];
 
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
@@ -635,6 +655,19 @@ export async function createProgram() {
       if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
       if (inOwnSourceCheckout(cwd)) return; // developing Astryx itself, not an app
       if (isAstryxPromptInReach(cwd)) return; // already set up — stay quiet
+      // Where init writes the docs, by init's own rule: the project root, which
+      // can sit above a nested package such as functions/. Inside a git
+      // repository the walk above already reaches it (the root never lies
+      // above the repository root), so this changes nothing there; outside a
+      // repository the walk checks only cwd, and this finds the root.
+      if (isAstryxInitialized(agentDocsTargetDir(cwd))) return;
+      // In the home folder, or at the top of a settings folder in it, init
+      // writes no agent docs, so naming it would repeat on every command.
+      try {
+        assertAgentDocsTarget(agentDocsTargetDir(cwd));
+      } catch {
+        return;
+      }
       // Same wording as the core/cli postinstall nudges. getCliInvocation()
       // renders the correct form for THIS project — an integration's cliCommand,
       // scoped `npx @astryxdesign/cli` one-off, or `<pm> astryx` when installed —
@@ -642,13 +675,32 @@ export async function createProgram() {
       // A project with no CLI of its own, answered by another release than its
       // Core's: add the CLI at Core's version first, as the daily hint says,
       // then run that CLI's init (spec AST-081 FR2).
-      const choice = runChoice(cwd);
-      if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
-        const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
+      // A folder that belongs to no project spec:AST-040 FR9 defines gets no
+      // reminder, as outside a project.
+      const target = installFolder(cwd);
+      if (target == null) return;
+      // From a folder inside the project whose package.json is not the
+      // project's, init runs from the project's folder. Only `cd` comes
+      // before it, so the command is the picker's for that folder, never the
+      // bare `astryx` name a package runner would fetch from the registry
+      // (spec AST-081 FR5).
+      if (target.moved) {
         console.error(
-          setupNudge(getCliInvocation(root, {installed: true}), {before: addCliCommand(root, choice.coreVersion)}).trimEnd(),
+          setupNudge(getCliInvocation(target.dir), {before: `cd ${quoteCommandArgument(target.dir)}`}).trimEnd(),
         );
         return;
+      }
+      const choice = runChoice(cwd);
+      if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
+        // The daily hint's comparison and command: add the CLI at Core's
+        // version, then run that CLI's init.
+        const add = cliInstallAdvice({cwd, core: choice.coreVersion});
+        if (add?.command) {
+          console.error(
+            setupNudge(getCliInvocation(add.root, {installed: true}), {before: add.command}).trimEnd(),
+          );
+          return;
+        }
       }
       console.error(setupNudge(getCliInvocation(cwd)).trimEnd());
     } catch {
@@ -659,7 +711,7 @@ export async function createProgram() {
   for (const cmd of commands) {
     try {
       const mod = await import(cmd.path);
-      mod[cmd.register](program);
+      mod[cmd.register](program, {jsonSupported: JSON_SUPPORTED, version: pkg.version});
     } catch (e) {
       // Command fails to load but CLI still works
       const reason = /** @type {any} */ (e).message;
@@ -678,84 +730,6 @@ export async function createProgram() {
       markReportsResult(stub);
     }
   }
-
-  // Capability manifest — a single, self-describing view of the whole CLI so
-  // agents can discover every command, argument, flag, and response type without
-  // scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
-  // `xds --json` embeds the same payload under data.manifest for convenience.
-  // Intentionally CLI-special — no `api/manifest`. It introspects the live
-  // Commander `program`, so extracting it to `api/` would create the `api → cli`
-  // cycle from #4302. `buildManifest(program)` lives in lib/; see its header.
-  const manifestCommand = program
-    .command('manifest')
-    .description('Print the full CLI capability manifest (use with --json)')
-    .action(() => {
-      const manifest = buildManifest(program, {
-        jsonSupported: JSON_SUPPORTED,
-        version: pkg.version,
-      });
-      // The manifest IS a result set: one entry per command the CLI ships.
-      debug.recordCommandResult(
-        debug.resultSet({
-          count: manifest.commands.length,
-          resultKind: 'command',
-        }),
-      );
-      if (program.opts().json) {
-        process.__xdsJsonHandled = true;
-        console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest, meta: {answeredBy: answeredBy()}}, null, 2));
-        return;
-      }
-      // Human-readable summary as greppable records (agents should use --json).
-      // One record per command: name, whether it supports --json, and the
-      // description. Field names are the manifest entry's own keys.
-      emit(
-        section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
-        records(
-          manifest.commands.map(c => ({
-            name: c.name,
-            json: c.json ? 'yes' : '',
-            description: c.description || '',
-          })),
-          {fields: ['name', 'json', 'description']},
-        ),
-        text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
-      );
-    });
-  addDocHelp(manifestCommand, manifestDoc);
-  markReportsResult(manifestCommand);
-
-  // Hidden command used by package.json postinstall scripts
-  const postinstallCommand = program
-    .command('postinstall', {hidden: true})
-    .action(() => {
-      // Prints the welcome box. Nothing is looked up.
-      debug.recordCommandResult(debug.NO_RESULT_SET);
-      const r = getCliInvocation();
-      const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
-      const W = 49; // inner width of the box
-      const line = (/** @type {string} */ s) => `  │ ${pad(s, W)}│`;
-      console.log(`
-  ╭${'─'.repeat(W + 2)}╮
-${line('')}
-${line('  Design system installed!')}
-${line('')}
-${line('  Get started:')}
-${line(`    ${r} init          Setup + AI agent docs`)}
-${line(`    ${r} --help        See all commands`)}
-${line('')}
-${line('  Or run directly:')}
-${line(`    ${r} init           Setup + AI agent docs`)}
-${line(`    ${r} component     Browse component docs`)}
-${line(`    ${r} hook          Browse hook docs`)}
-${line(`    ${r} docs          Design system reference`)}
-${line(`    ${r} swizzle       Customize a component`)}
-${line(`    ${r} template      Add a page template`)}
-${line('')}
-  ╰${'─'.repeat(W + 2)}╯
-`);
-    });
-  markReportsResult(postinstallCommand);
 
   // Install the JSON shim AFTER all commands are registered so we can
   // patch outputHelp on every command (root + subcommands). The shim

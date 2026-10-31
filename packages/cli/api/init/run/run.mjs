@@ -4,10 +4,12 @@
  * @file init.run leaf — non-interactive project setup + feature installer.
  *
  * `run(options, ctx)` is the default / `--features` / `--all` path behind
- * `astryx init`. It installs the AGENTS.md/CLAUDE.md agent-docs cheat sheet,
- * points at the theme + page-building workflows, and (optionally) scaffolds a
- * starter template — with NO prompts, so it behaves identically for humans,
- * agents, CI, and piped I/O. It performs the side effects and returns an
+ * `astryx init`. It installs the agent-docs cheat sheet at the project root so
+ * every agent reads it (AGENTS.md, a copy in the project's Claude Code file, and
+ * a GEMINI.md import), points at the theme + page-building workflows, and
+ * (optionally) scaffolds a starter template — with NO prompts, so it behaves
+ * identically for humans, agents, CI, and piped I/O. It performs the side
+ * effects and returns an
  * `init.run` receipt. Hard errors (unknown feature/template) throw AstryxError
  * with a stable code. Human output is emitted through the shared `logger`
  * (silent by default) so the CLI keeps its exact plain output and a
@@ -21,8 +23,11 @@ import {PathSafetyError, assertWithin} from '../../../foundation/fs/path-safety.
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {
+  AgentDocsHomeError,
+  assertAgentDocsTarget,
   installAgentDocs,
   renderAgentDocsBlock,
+  agentDocsTargetDir,
 } from '../../../foundation/agent-docs/agent-docs.mjs';
 import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
@@ -65,6 +70,24 @@ export function getNextSteps(invocation) {
 }
 
 /**
+ * Whether two paths name one folder, links resolved.
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+function sameFolder(a, b) {
+  /** @param {string} p */
+  const real = p => {
+    try {
+      return fs.realpathSync(p);
+    } catch {
+      return path.resolve(p);
+    }
+  };
+  return real(a) === real(b);
+}
+
+/**
  * Install the agent-docs block; records the outcome (or soft error) on `data`.
  * Mirrors the CLI's historical soft-error policy: a PathSafetyError surfaces its
  * precise message and flags a non-zero exit; any other failure prints the
@@ -92,14 +115,46 @@ async function applyAgents(cwd, options, invocation, data) {
         ? options.agentDocsPath
         : [options.agentDocsPath]
       : undefined;
-    const renderedBlock = await renderAgentDocsBlock(cwd);
-    const written = installAgentDocs(cwd, {
+    // The docs belong at the project root, not in the subfolder init ran in;
+    // with no project above, they go where init ran, as before. Explicit
+    // --agent-docs-path entries stay relative to where init ran.
+    const root = agentDocsTargetDir(cwd);
+    const targetDir = paths ? cwd : root;
+    // With explicit paths, installAgentDocs checks each file's own folder.
+    if (!paths) assertAgentDocsTarget(targetDir);
+    const renderedBlock = await renderAgentDocsBlock(root);
+    /** @type {string[]} */
+    const skipped = [];
+    const files = installAgentDocs(targetDir, {
       agent: options.agent,
       paths,
       renderedBlock,
+      onSkipped: (rel, reason) => skipped.push(`${rel} (${reason})`),
+      // Below the project root, 0.7.1 wrote in the folder init ran in, so a
+      // project-root file that escapes the project is skipped and reported,
+      // not refused.
+      refuseEscapes: sameFolder(targetDir, cwd),
     });
+    // Each file is reported from where init ran, as before.
+    const written =
+      path.resolve(targetDir) === path.resolve(cwd)
+        ? files
+        : files.map(rel =>
+            path.relative(cwd, path.join(targetDir, rel)).split(path.sep).join('/'),
+          );
     data.docsWritten = written;
     logger.log(`[ok] AI agent docs installed -> ${written.join(', ')}`);
+    // A file 0.7.1 did not write (GEMINI.md, or a project-root file when init
+    // runs below the root) that resolves outside the project is left as it
+    // is, reported in docsError with one note; the exit code stays 0. A file
+    // 0.7.1 wrote whose path escapes the project still fails the run (below).
+    if (skipped.length > 0) {
+      const message =
+        `Left as ${skipped.length === 1 ? 'it is' : 'they are'}: ${skipped.join('; ')}. ` +
+        'To have init write the Astryx block there, make it a regular file inside the project, or copy the block from AGENTS.md by hand.';
+      logger.warn(`Note: ${message}`);
+      data.docsError = {kind: 'install-failed', message};
+    }
   } catch (err) {
     // PathSafetyError carries a precise, user-actionable message — surface it
     // (and flag exit 1) instead of the generic "could not install" warning so
@@ -107,6 +162,14 @@ async function applyAgents(cwd, options, invocation, data) {
     if (err instanceof PathSafetyError) {
       logger.error(`Error: ${err.message}`);
       data.docsError = {kind: 'path-safety', message: err.message};
+      return;
+    }
+    // The home folder, and a settings folder in it outside a project, are
+    // refused: nothing is written, the reason is printed as a note, and the
+    // exit code stays 0.
+    if (err instanceof AgentDocsHomeError) {
+      logger.warn(`Note: ${err.message}`);
+      data.docsError = {kind: 'install-failed', message: err.message};
       return;
     }
     logger.error(

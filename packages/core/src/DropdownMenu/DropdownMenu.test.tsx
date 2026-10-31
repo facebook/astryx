@@ -34,6 +34,7 @@ import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -126,6 +127,47 @@ describe('DropdownMenu', () => {
     ).not.toBeInTheDocument();
   });
 
+  it("forwards the button's ref object to the popover trigger", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
+  it("forwards the button's ref object to the bottom-sheet trigger", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
+  it("forwards the button's callback ref to the bottom-sheet trigger", () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions', ref}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project', onClick: vi.fn()}]}
+      />,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('button', {name: /Project actions/}),
+    );
+  });
+
   it('renders data-driven actions in a bottom sheet when requested', async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
@@ -175,16 +217,48 @@ describe('DropdownMenu', () => {
 
     const heading = screen.getByRole('heading', {name: 'Project actions'});
     expect(heading).toHaveStyle({marginInlineStart: 'var(--spacing-3)'});
-    expect(heading.closest('.astryx-section')).toHaveStyle({
-      paddingInlineStart: 'var(--spacing-1)',
-      paddingInlineEnd: 'var(--spacing-1)',
+    // The menu's content element takes the sheet's content padding itself,
+    // with no wrapper: 16px above the first row, 4px at the sides.
+    const content = heading.closest('.astryx-dropdown-menu');
+    expect(content?.parentElement?.closest('.astryx-section')).toBeNull();
+    expect(content).toHaveStyle({
+      paddingTop: 'var(--spacing-4)',
+      paddingInline: 'var(--spacing-1)',
     });
+    // The root heading stands alone, with no row wrapper.
+    expect(heading.parentElement).toBe(content);
     expect(
       screen.getByRole('button', {name: 'Edit project'}).closest('li'),
     ).toHaveStyle({
       paddingInline: 'var(--_item-inset-inline)',
       '--_item-inset-inline': 'var(--spacing-3)',
     });
+  });
+
+  it('renders nothing of the sheet at rest and keeps it through its exit', async () => {
+    await warmMenuBottomSheet();
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project'}]}
+      />,
+    );
+    expect(document.querySelector('dialog')).toBeNull();
+
+    await user.click(screen.getByRole('button', {name: /Project actions/}));
+    const dialog = document.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+
+    await user.keyboard('{Escape}');
+    // Closed, the sheet stays until its dialog has closed (its exit).
+    expect(document.querySelector('dialog')).toBe(dialog);
+    act(() => {
+      dialog?.removeAttribute('open');
+      dialog?.dispatchEvent(new Event('close'));
+    });
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   it('keeps bottom-sheet section groups inside semantic list items', async () => {
@@ -341,7 +415,7 @@ describe('DropdownMenu', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -1746,6 +1820,49 @@ describe('DropdownMenuGroup (compound mode)', () => {
       screen.getByRole('group', {name: 'T', hidden: true}),
     );
   });
+
+  it('forwards host attributes to the group while keeping its role and heading name', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup
+          title="Version history"
+          id="history-group"
+          data-testid="history"
+          data-analytics-id="menu-history"
+          aria-describedby="history-hint"
+          aria-labelledby="elsewhere"
+          // @ts-expect-error role is component-owned
+          role="presentation">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    const group = screen.getByTestId('history');
+    expect(group).toHaveAttribute('data-analytics-id', 'menu-history');
+    expect(group).toHaveAttribute('id', 'history-group');
+    expect(group).toHaveAttribute('aria-describedby', 'history-hint');
+    expect(group).toHaveAttribute('role', 'group');
+    // The visible title keeps naming the group.
+    expect(
+      screen.getByRole('group', {name: 'Version history', hidden: true}),
+    ).toBe(group);
+  });
+
+  it('an untitled group takes a caller-supplied accessible name', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <span id="recent-label">Recent</span>
+        <DropdownMenuGroup aria-labelledby="recent-label" data-testid="recent">
+          <DropdownMenuItem label="Only" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    const group = screen.getByTestId('recent');
+    expect(group).toHaveAttribute('aria-labelledby', 'recent-label');
+    expect(screen.getByRole('group', {name: 'Recent', hidden: true})).toBe(
+      group,
+    );
+  });
 });
 
 describe('DropdownMenu dividers', () => {
@@ -2262,11 +2379,37 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
     // focus-driven highlight follows the pointer instead of leaving two.
     // Focus must be scroll-free: scrolling the focused item into view moves
     // the next item under the stationary pointer, which re-highlights and
-    // scrolls again — a runaway auto-scroll loop.
+    // scrolls again — a runaway auto-scroll loop. And it is the mouse's focus,
+    // so it asks the browser not to match :focus-visible.
     const focusSpy = vi.spyOn(del, 'focus');
     fireEvent.pointerMove(del, {pointerType: 'mouse'});
     expect(del).toHaveFocus();
     expect(edit).not.toHaveFocus();
+    expect(focusSpy).toHaveBeenCalledWith({
+      preventScroll: true,
+      focusVisible: false,
+    });
+  });
+
+  it('after a keyboard open, focus that follows the mouse keeps the keyboard indicator (the last input)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{ArrowDown}');
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    await waitFor(() => expect(edit).toHaveFocus());
+
+    // No pointer press since the key: the browser keeps deciding the
+    // indicator, as for any focus the keyboard moved.
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    const focusSpy = vi.spyOn(del, 'focus');
+    fireEvent.pointerMove(del, {pointerType: 'mouse'});
+    expect(del).toHaveFocus();
     expect(focusSpy).toHaveBeenCalledWith({preventScroll: true});
   });
 

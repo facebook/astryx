@@ -150,7 +150,7 @@ describe('PR report and deployment workflow contracts', () => {
       value.indexOf('  pr-rtl-shard:'),
     );
     expect(visual).toContain(
-      '[build-storybook, check-components, maintenance-request, visual-scout]',
+      '[build-storybook, maintenance-request, visual-scout]',
     );
     expect(visual).toContain(
       'name: storybook-${{ needs.build-storybook.outputs.short_hash }}',
@@ -160,9 +160,8 @@ describe('PR report and deployment workflow contracts', () => {
     expect(value).not.toContain(
       'storybook_url=https://${REPO_OWNER}.github.io',
     );
-    expect(value).toContain(
-      'name: sandbox-${{ steps.urls.outputs.short_hash }}',
-    );
+    // Vercel builds the Sandbox preview; CI uploads no Sandbox of its own.
+    expect(value).not.toContain('name: sandbox-');
   });
 
   it('stages both static apps in Vercel preview and production', () => {
@@ -253,7 +252,7 @@ describe('PR report and deployment workflow contracts', () => {
     expect(workflow('vibe-screenshots.yml')).not.toContain('gh-pages');
     const main = workflow('deploy.yml');
     expect(main).toContain('name: Main');
-    expect(main).toContain('pnpm vitest run --project ui');
+    expect(main).toContain('pnpm test:ui');
     expect(main).not.toContain('deploy-storybook');
     expect(main).not.toContain('gh-pages');
   });
