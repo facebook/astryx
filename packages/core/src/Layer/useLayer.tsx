@@ -627,8 +627,9 @@ function failsAnchor(layer: HTMLElement, anchor: HTMLElement): boolean {
  * every show and remount, and while the layer is open whenever its size, its
  * content's size, its anchor's size or the viewport changes; each of those
  * reads lands before the next frame paints. A same-size anchor that moves on
- * screen, in layout or because something scrolled, is read after paint, from
- * the anchor-move observer (FR8). Scroll events are not read: during one the
+ * screen, in layout or because something scrolled, is reported after paint by
+ * the anchor-move observer and read in the next frame, before it paints (FR8).
+ * Scroll events are not read: during one the
  * anchor has moved but the layer anchored to it not yet, so the read would
  * compare a moved anchor with a stale layer. Once switched, a layer keeps its
  * anchor-clear list until it next opens, so it never jumps back over its
@@ -779,9 +780,16 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
  * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
  * resizing (ResizeObserver, before paint), the viewport resizing (before
  * paint), and the anchor moving on screen without resizing, in layout or by a
- * scroll (`observeMove`, after paint). Each calls `keepAnchorClear` for this layer and anchor while
- * `isCurrent` says they are still the live pair. Returns the function that
- * removes every observer and listener it added.
+ * scroll (`observeMove`, reported after paint). Each calls `keepAnchorClear`
+ * for this layer and anchor while `isCurrent` says they are still the live
+ * pair. A move is read in the next animation frame, not in the task that
+ * reports it: placing the layer afresh there, right after the frame that
+ * scrolled its anchor, lets Chromium lay it out for one more frame against
+ * the anchor's position before the scroll, over the anchor, so the second
+ * painted frame would still cover it. Read in the next frame, before it
+ * paints, the fresh placement uses the moved anchor. Reports in one frame
+ * share one read. Returns the function that removes every observer and
+ * listener it added.
  */
 function observeAnchorClearance(
   layer: HTMLElement,
@@ -806,11 +814,24 @@ function observeAnchorClearance(
     }
     observer.observe(anchor);
   }
-  const stopObservingMove = observeMove(anchor, reread);
+  let moveFrame: number | null = null;
+  const stopObservingMove = observeMove(anchor, () => {
+    if (moveFrame !== null) {
+      return;
+    }
+    moveFrame = view.requestAnimationFrame(() => {
+      moveFrame = null;
+      reread();
+    });
+  });
   view.addEventListener('resize', reread);
   return () => {
     observer?.disconnect();
     stopObservingMove();
+    if (moveFrame !== null) {
+      view.cancelAnimationFrame(moveFrame);
+      moveFrame = null;
+    }
     view.removeEventListener('resize', reread);
   };
 }

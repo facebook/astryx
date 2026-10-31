@@ -2233,6 +2233,16 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
 
   const TRIGGER = rect(300, 400, 30, 100);
 
+  /** Let the next animation frame run, as the browser does before it paints. */
+  async function nextFrame() {
+    await act(
+      async () =>
+        new Promise<void>(resolve => {
+          requestAnimationFrame(() => resolve());
+        }),
+    );
+  }
+
   /** Give the document a 720px-tall viewport for the duration of a test. */
   function viewport720() {
     return vi
@@ -2540,10 +2550,74 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     placeBoxes(TRIGGER, rect(16, 350, 688, 300));
     const before = observers.length;
     act(() => move?.callback([{intersectionRatio: 0.4}]));
-    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
-    // Re-armed on the new rect.
+    // Re-armed on the new rect at once; read in the next frame.
     expect(move?.disconnected).toBe(true);
     expect(observers.length).toBe(before + 1);
+    await nextFrame();
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    vi.unstubAllGlobals();
+  });
+
+  it('reads a move its observer reports after paint in the next frame, before that frame paints, never in the reporting task', async () => {
+    // Placing a layer afresh in the task right after the frame that scrolled
+    // its anchor lets Chromium lay it out for one more frame against the
+    // anchor's position before the scroll, over the anchor (spec:AST-059 FR8:
+    // clear from the second painted frame). The read waits for the next
+    // frame, before it paints, and several reports in one frame share it.
+    const observers: {
+      callback: (entries: {intersectionRatio: number}[]) => void;
+      options: IntersectionObserverInit;
+    }[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(
+          callback: (entries: {intersectionRatio: number}[]) => void,
+          options: IntersectionObserverInit,
+        ) {
+          observers.push({callback, options});
+        }
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      },
+    );
+    const latestMove = () =>
+      observers.filter(o => o.options?.rootMargin != null).at(-1);
+    const user = userEvent.setup();
+    const spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    act(() => latestMove()?.callback([{intersectionRatio: 1}]));
+    await nextFrame();
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+
+    // A scroll carries the trigger under the layer; the observer reports it
+    // after the frame that painted the move, twice before the next frame.
+    spy.mockRestore();
+    const reads = vi.fn();
+    const covering = rect(16, 350, 688, 300);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (!this.hasAttribute('popover')) {
+          return TRIGGER;
+        }
+        reads();
+        return covering;
+      },
+    );
+    act(() => {
+      latestMove()?.callback([{intersectionRatio: 0.4}]);
+      latestMove()?.callback([{intersectionRatio: 0.6}]);
+    });
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+    expect(reads).not.toHaveBeenCalled();
+
+    // The next frame reads it once, switches it, and places it afresh.
+    await nextFrame();
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    expect(reads).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 
@@ -2595,9 +2669,10 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     spy = placeBoxes(TRIGGER, rect(16, 350, 688, 300));
     let armed = moves().length;
     act(() => latest().callback([{intersectionRatio: 0.7}]));
-    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
     expect(moves().length).toBe(armed + 1);
     expect(latest().options.threshold).toBe(0.7);
+    await nextFrame();
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
 
     // A first report of 0 for a trigger that moved since the observer read
     // its rectangle re-arms at once on the new rectangle.
