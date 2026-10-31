@@ -2658,6 +2658,150 @@ describe('toast timer lifecycle (#3589)', () => {
     expect(onHide).toHaveBeenCalledTimes(1);
   });
 
+  // spec:Toast FR2/AR3: each pause condition is held on its own, so one
+  // ending never resumes the timer while another still holds.
+  function showPausableToast(onHide: () => void) {
+    renderViewport(
+      <ShowToastButton
+        options={{
+          body: 'Held',
+          autoHideDuration: 3000,
+          endContent: <Button label="Undo" />,
+          onHide,
+        }}
+        triggerLabel="Show held"
+      />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show held'));
+    });
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    const card = within(viewport).getByText('Held').closest('[role="status"]');
+    if (!(card instanceof HTMLElement)) {
+      throw new Error('toast card not found');
+    }
+    return {card, action: within(card).getByRole('button', {name: 'Undo'})};
+  }
+
+  it('keeps the timer paused while focus is inside after the pointer leaves', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      const {card, action} = showPausableToast(onHide);
+      act(() => {
+        fireEvent.mouseEnter(card);
+      });
+      act(() => {
+        action.focus();
+      });
+      act(() => {
+        fireEvent.mouseLeave(card);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+      // Focus leaving the card releases the last hold.
+      act(() => {
+        action.blur();
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the timer paused while the pointer is over it after the window regains focus', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      const {card} = showPausableToast(onHide);
+      act(() => {
+        fireEvent.blur(window);
+      });
+      act(() => {
+        fireEvent.mouseEnter(card);
+      });
+      act(() => {
+        fireEvent.focus(window);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+      act(() => {
+        fireEvent.mouseLeave(card);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('releases the focus hold when the focused control is removed', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      const {card, action} = showPausableToast(onHide);
+      act(() => {
+        fireEvent.mouseEnter(card);
+      });
+      act(() => {
+        action.focus();
+      });
+      // A control that unmounts while focused fires no blur.
+      act(() => {
+        action.remove();
+      });
+      act(() => {
+        fireEvent.mouseLeave(card);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the timer paused while focus moves between controls inside the card', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      const {card, action} = showPausableToast(onHide);
+      const dismiss = within(card)
+        .getAllByRole('button')
+        .find(button => button !== action);
+      if (!dismiss) {
+        throw new Error('dismiss button not found');
+      }
+      act(() => {
+        action.focus();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      act(() => {
+        dismiss.focus();
+      });
+      // Moving between the card's own controls neither restarts nor resumes
+      // the timer.
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps a window-blur pause alive when another toast arrives', () => {
     vi.useFakeTimers();
     try {

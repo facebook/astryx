@@ -35,6 +35,7 @@ async function runSignal({
   reviews = [],
   reviewApp = '',
   permission = 'write',
+  rateRemaining = 5000,
   // The spec-owner job's decision for a PR that changes no spec record.
   specStatuses = [
     {
@@ -88,7 +89,8 @@ async function runSignal({
     rest: {
       pulls: {
         get: vi.fn(async () => ({data: pr})),
-        list: vi.fn(async () => ({data: [pr]})),
+        // Like GitHub's list endpoint, the listed PR omits changed_files.
+        list: vi.fn(async () => ({data: [{...pr, changed_files: undefined}]})),
         listFiles: vi.fn(async () => ({
           data: [{filename: 'README.md', status: 'modified'}],
         })),
@@ -110,6 +112,15 @@ async function runSignal({
       issues: {
         addLabels: mutations.addLabels,
         removeLabel: mutations.removeLabel,
+      },
+      rateLimit: {
+        get: vi.fn(async () => ({
+          data: {
+            resources: {
+              core: {remaining: rateRemaining, limit: 5000, reset: 1793412000},
+            },
+          },
+        })),
       },
       checks: {
         listForRef: async () => ({data: {check_runs: []}}),
@@ -206,14 +217,31 @@ describe('review-signal trusted helper ref', () => {
         description: 'Waiting on code review: community contribution',
       });
       if (options.eventName === 'workflow_dispatch') {
-        expect(
-          h.github.rest.pulls[options.backfill ? 'list' : 'get'],
-        ).toHaveBeenCalledOnce();
+        // A backfill lists the open PRs, then reads each in full.
+        if (options.backfill) {
+          expect(h.github.rest.pulls.list).toHaveBeenCalledOnce();
+        }
+        expect(h.github.rest.pulls.get).toHaveBeenCalledOnce();
       } else {
         expect(h.github.rest.pulls.get).not.toHaveBeenCalled();
       }
     },
   );
+
+  it('stops a backfill before the token runs low, and says so', async () => {
+    const h = await runSignal({
+      eventName: 'workflow_dispatch',
+      backfill: true,
+      rateRemaining: 1000,
+    });
+    expect(h.core.setFailed).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining(
+        'Backfill stopped before PR #42 (1 left): 1000 of 5000',
+      ),
+    );
+    expect(h.github.rest.pulls.get).not.toHaveBeenCalled();
+    expect(h.mutations.createCommitStatus).not.toHaveBeenCalled();
+  });
 
   it.each(['workflow_dispatch', 'pull_request_target'])(
     'fails closed if the helper is missing at the workflow SHA for %s',

@@ -15,7 +15,6 @@
  */
 
 import {
-  isValidElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -28,6 +27,7 @@ import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {getNodeText} from '../utils/getNodeText';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
@@ -171,29 +171,6 @@ const styles = stylex.create({
     overflow: 'visible',
   },
 });
-
-// Flatten a toast's rendered content (title, description, etc.) to the plain
-// text that should be spoken by a screen reader. Only text is announced —
-// interactive endContent is deliberately excluded (it is reachable via F6).
-function getNodeText(node: ReactNode): string {
-  if (node == null || typeof node === 'boolean') {
-    return '';
-  }
-  if (typeof node === 'string') {
-    return node;
-  }
-  if (typeof node === 'number') {
-    return String(node);
-  }
-  if (Array.isArray(node)) {
-    return node.map(getNodeText).filter(Boolean).join(' ');
-  }
-  if (isValidElement(node)) {
-    const {children} = node.props as {children?: ReactNode};
-    return getNodeText(children);
-  }
-  return '';
-}
 
 export interface ToastViewportProps {
   position?: ToastPosition;
@@ -438,6 +415,7 @@ export function ToastViewport({
       ) {
         return;
       }
+      // Only text is announced; interactive endContent is reachable via F6.
       const text = getNodeText(entry.options.body);
       if (text) {
         // Error toasts map to the assertive region (role="alert"); everything

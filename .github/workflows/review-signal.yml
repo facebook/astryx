@@ -153,12 +153,37 @@ jobs:
             }
 
             let hadError = false;
-            for (const pr of prs) {
+            const isBackfill = prs.length > 1 ||
+              (context.eventName === 'workflow_dispatch' &&
+                !(context.payload.inputs.pr || '').trim());
+            for (const [index, listed] of prs.entries()) {
+              if (isBackfill) {
+                // A backfill makes several calls per PR on the job token's
+                // hourly budget. Stop with headroom left for PR events
+                // (reading /rate_limit costs nothing).
+                const {data: limits} = await github.rest.rateLimit.get();
+                const {remaining, limit, reset} = limits.resources.core;
+                if (remaining < Math.min(1500, Math.floor(limit / 3))) {
+                  core.setFailed(
+                    `Backfill stopped before PR #${listed.number} (${prs.length - index} left): ` +
+                      `${remaining} of ${limit} API requests remain until ` +
+                      `${new Date(reset * 1000).toISOString()}; re-run after the reset.`,
+                  );
+                  return;
+                }
+              }
               try {
+                // The list endpoint omits changed_files, which the file check
+                // below needs, so a backfill reads each PR in full.
+                const pr = listed.changed_files == null
+                  ? (await github.rest.pulls.get({
+                      owner, repo, pull_number: listed.number,
+                    })).data
+                  : listed;
                 await flagOne(pr);
               } catch (e) {
                 hadError = true;
-                core.warning(`Failed to flag PR #${pr.number}: ${e.message}`);
+                core.warning(`Failed to flag PR #${listed.number}: ${e.message}`);
               }
             }
             if (hadError) core.setFailed('One or more PRs failed to flag; see warnings.');

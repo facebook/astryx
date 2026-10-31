@@ -85,6 +85,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {composeEventHandlers, mergeProps} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
@@ -754,6 +755,7 @@ export function Tokenizer<T extends SearchableItem>({
   experimental,
   id: idProp,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: TokenizerWithPresentationProps<T>): React.JSX.Element {
   const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
@@ -768,8 +770,15 @@ export function Tokenizer<T extends SearchableItem>({
   const size = useSize(sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;
+  const fieldLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  // A caller aria-labelledby names the input together with the field's own
+  // label, which it would otherwise replace.
+  const fieldLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelId, ariaLabelledByProp)
+      : undefined;
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -1391,6 +1400,7 @@ export function Tokenizer<T extends SearchableItem>({
             isFocusableDisabled={showsDisabledMessage}
             hasAutoFocus={hasAutoFocus}
             inputId={inputId}
+            ariaLabelledBy={fieldLabelledBy}
             ariaDescribedBy={
               [ariaDescribedByProp, ariaDescribedBy]
                 .filter(Boolean)
@@ -1457,6 +1467,7 @@ export function Tokenizer<T extends SearchableItem>({
           ref={triggerMergedRef}
           type="button"
           id={inputId}
+          aria-labelledby={fieldLabelledBy}
           aria-haspopup="dialog"
           aria-expanded={isSheetOpen}
           aria-disabled={isDisabled || undefined}
@@ -1707,6 +1718,7 @@ export function Tokenizer<T extends SearchableItem>({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelId : undefined}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
