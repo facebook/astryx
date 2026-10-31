@@ -40,7 +40,7 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > `Chart,ChartLegend` routing smoke scope so package discovery and curated aliases
 > cannot skip their own check; without the label, `main`'s `release-check` covers
 > the harness after merge (spec:AST-030 FR12). The
-> full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
+> full unfiltered sweep runs in that release-check.
 > Omit `--filter` to run it locally. The blocking accessibility audit consumes the
 > same package-qualified owner-to-story routes and fails if any selected owner
 > resolves to zero stories.
@@ -294,8 +294,8 @@ without inventing a curated measurement.
 - **coverage gap**: every dimension returned N-A and no reason is recorded.
 
 Coverage gaps are findings. This rule applies to the existing full-library
-weekly sweep, to main and release checks, and to every new or changed component
-in a labelled PR's CI. A component with no
+release-check sweep on main and before each release, and to every new or changed
+component in a labelled PR's CI. A component with no
 story is also a gap when it is named by `--filter`; it cannot disappear from the
 report merely because there was nothing to render.
 

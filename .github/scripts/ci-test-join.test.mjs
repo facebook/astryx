@@ -17,7 +17,6 @@ const broad = {
   TEST_UI_RESULT: 'success',
   TEST_NODE_RESULT: 'success',
   TEST_BUILD_RESULT: 'success',
-  REGISTRY_CONTRACT_RESULT: 'success',
   TEST_NATIVE_SWIFT_RESULT: 'success',
   PR_INTERACTION_RESULT: 'success',
 };
@@ -50,7 +49,6 @@ describe('pull-request test join', () => {
       ['TEST_UI_RESULT', 'failure'],
       ['TEST_NODE_RESULT', 'cancelled'],
       ['TEST_BUILD_RESULT', 'skipped'],
-      ['REGISTRY_CONTRACT_RESULT', 'failure'],
       ['TEST_NATIVE_SWIFT_RESULT', 'failure'],
       ['TEST_NATIVE_SWIFT_RESULT', 'skipped'],
       ['PR_INTERACTION_RESULT', 'failure'],

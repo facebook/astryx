@@ -31,6 +31,7 @@ import {
   within,
 } from '@testing-library/react';
 import React, {useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {readFileSync} from 'node:fs';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {Button} from '../Button';
@@ -840,6 +841,84 @@ describe('ToastViewport keyboard reach + focus', () => {
     });
 
     // No toasts left — focus returns to the element focused before F6.
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('restores focus after a toast reached with Tab rather than F6 is dismissed', () => {
+    renderViewport(
+      <ShowToastButton options={INFO_A} triggerLabel="Trigger A" />,
+    );
+    const trigger = screen.getByText('Trigger A');
+    trigger.focus();
+    act(() => {
+      fireEvent.click(trigger);
+    });
+    const dismiss = screen.getByRole('button', {name: 'Dismiss notification'});
+    // Tab (or a click) moves focus straight to the toast's control.
+    act(() => {
+      dismiss.focus();
+    });
+    const toastId = document
+      .querySelector('[data-toast-id]')!
+      .getAttribute('data-toast-id')!;
+
+    act(() => {
+      fireEvent.click(dismiss);
+    });
+    act(() => {
+      completeExit(toastId);
+    });
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('keeps the return target while focus visits portaled toast content', () => {
+    renderViewport(
+      <ShowToastButton
+        options={{
+          body: 'With a portal',
+          isAutoHide: false,
+          renderContent: ({body, dismiss}) => (
+            <div>
+              {body}
+              {createPortal(
+                <button type="button">Portaled</button>,
+                document.body,
+              )}
+              <Button label="Close" onClick={dismiss} />
+            </div>
+          ),
+        }}
+        triggerLabel="Trigger P"
+      />,
+    );
+    const trigger = screen.getByText('Trigger P');
+    trigger.focus();
+    act(() => {
+      fireEvent.click(trigger);
+    });
+    act(() => {
+      fireEvent.keyDown(document, {key: 'F6'});
+    });
+    // Focus visits the toast's portaled control, then comes back.
+    act(() => {
+      screen.getByRole('button', {name: 'Portaled'}).focus();
+    });
+    const close = screen.getByRole('button', {name: 'Close'});
+    act(() => {
+      close.focus();
+    });
+    const toastId = document
+      .querySelector('[data-toast-id]')!
+      .getAttribute('data-toast-id')!;
+
+    act(() => {
+      fireEvent.click(close);
+    });
+    act(() => {
+      completeExit(toastId);
+    });
+
     expect(document.activeElement).toBe(trigger);
   });
 });

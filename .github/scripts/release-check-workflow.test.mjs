@@ -24,6 +24,7 @@ const packageJson = JSON.parse(
 );
 const releaseJobs = [
   'release-authority',
+  'test-registry-e2e',
   'build-storybook',
   'typecheck',
   'visual-scout',
@@ -448,6 +449,7 @@ describe('exact main and release branch completion', () => {
     ).resolves.toBeUndefined();
     expect(jobs['release-check'].needs).toEqual([
       'release-authority',
+      'test-registry-e2e',
       'build-storybook',
       'typecheck',
       'pr-visual',

@@ -218,10 +218,6 @@ function claimsWhileMoving(recognizer: GestureRecognizer): boolean {
 }
 
 /**
- * Run `task` in the next frame, before it paints: a read there styles what
- * the frame must style anyway, and its writes are what the frame shows.
- */
-/**
  * A CSS-wide keyword, which names no touch-action of its own: the value in
  * force resolves it (`initial` and `unset` to `auto`, `inherit` to the
  * parent's).
@@ -238,6 +234,10 @@ const CSS_WIDE_KEYWORDS: ReadonlySet<string> = new Set([
   'revert-layer',
 ]);
 
+/**
+ * Run `task` in the next frame, before it paints: a read there styles what
+ * the frame must style anyway, and its writes are what the frame shows.
+ */
 function inNextFrame(view: Window | null, task: () => void): void {
   if (view != null && typeof view.requestAnimationFrame === 'function') {
     view.requestAnimationFrame(task);
@@ -328,7 +328,6 @@ export class GestureHost {
   private readonly touchIds = new Map<number, number>();
   /** Touch.identifier → the element the finger landed on. */
   private readonly touchTargets = new Map<number, EventTarget>();
-  /** Finger targets with listeners of their own, and how many fingers each. */
   /**
    * Finger targets with listeners of their own: how many fingers each, and
    * how many of those a recognizer could claim while they move (only those
@@ -374,20 +373,20 @@ export class GestureHost {
   private readonly claimedLifts: PlacedContact[] = [];
   /** Fingers still waiting for their pointerdown, by arena id. */
   private readonly unpairedTouches = new Map<number, PlacedContact>();
-  /** The last position fed per contact, so one channel's echo is dropped. */
   /** The elements each held contact turned selection off on. */
   private readonly heldSelectionBy = new Map<number, HTMLElement[]>();
   private readonly isPrimaryPointerCoarse: () => boolean;
   private readonly coarseQuery: MediaQueryList | null;
   private isWatchingPointer = false;
   private readonly onPointerKindChange = (): void => this.refreshAll();
+  /** The last position fed per contact, so one channel's echo is dropped. */
   private readonly lastFed = new Map<number, TouchSample>();
   /** When a finger was last down or lifted, and where it landed. */
   private lastTouch: {readonly target: Node; readonly time: number} | null =
     null;
-  /** The last scroll a finger drove, and when. */
   /** Scrollers a recognizer is scrolling itself this frame (ownScroll). */
   private readonly ownedScrolls = new Set<Node>();
+  /** The last scroll a finger drove, and when. */
   private lastScroll: {readonly scroller: Node; readonly time: number} | null =
     null;
   private nextId = 1;

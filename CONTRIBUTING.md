@@ -386,9 +386,9 @@ Two repo-side rules worth restating here:
   one is a review reject.
 - CI is the enforcement layer, not a replacement for the checklist: the
   `pr-a11y` job in `ci.yml` runs an axe audit after merges to `main` and
-  before each release (and on a pull request labelled `ci:heavy-lanes`), a
-  weekly workflow scans the full component surface, and the
-  `useAnnounce` lint rule rejects hand-wired `aria-live` regions. axe only
+  before each release (and on a pull request labelled `ci:heavy-lanes`), at
+  full scope across the component surface, and the `useAnnounce` lint rule
+  rejects hand-wired `aria-live` regions. axe only
   catches static, DOM-level issues — keyboard behavior, focus management, and
   announcement timing are exactly what the checklist and the component's unit
   tests cover.
@@ -617,7 +617,7 @@ the changed components like `pr-a11y`. It is soft-gated — findings show in the
 summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
 (the `--` matters: `pnpm -F` is itself `--filter`). The report classifies every
 scoped component as **measured**, **verified N-A**, or a **coverage gap**; an
-unexplained all-N-A result is not a clean RTL result. The weekly unfiltered run
+unexplained all-N-A result is not a clean RTL result. The release-check's unfiltered run
 applies the same contract to the full existing roster, while a labelled PR
 applies it to new and changed components. See `apps/storybook/rtl-audit/README.md`.
 

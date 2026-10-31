@@ -19,7 +19,6 @@ describe('spec-only workflow contract', () => {
       '.github/actions/test-scope/action.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -46,7 +45,6 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -123,13 +121,7 @@ describe('spec-only workflow contract', () => {
       const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
-    const unrelatedJobs = [
-      'test-ui',
-      'test-node',
-      'registry-contract',
-      'test',
-      'build-storybook',
-    ];
+    const unrelatedJobs = ['test-ui', 'test-node', 'test', 'build-storybook'];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
         "steps.scope.outputs.spec_only != 'true'",
@@ -150,10 +142,7 @@ describe('spec-only workflow contract', () => {
     expect(lint).toContain('.github/scripts/change-scope.cjs');
     expect(lint).not.toContain('node scripts/check-knowledge.mjs');
 
-    for (const workflow of [
-      '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
-    ]) {
+    for (const workflow of ['.github/workflows/cli-smoke-test.yml']) {
       const source = read(workflow);
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
@@ -396,6 +385,27 @@ describe('spec-only workflow contract', () => {
         ),
       );
     expect(writers.sort()).toEqual(['review-clear.yml', 'review-signal.yml']);
+  });
+});
+
+describe('test-deps scope (Internal Registry)', () => {
+  it('starts on a pull request only for dependency changes, and never reclassifies', () => {
+    const source = read('.github/workflows/internal-registry.yml');
+    const trigger = source.slice(
+      source.indexOf('  pull_request:'),
+      source.indexOf('  merge_group:'),
+    );
+    for (const path of [
+      "'pnpm-lock.yaml'",
+      "'pnpm-workspace.yaml'",
+      "'**/package.json'",
+      "'.github/workflows/internal-registry.yml'",
+    ]) {
+      expect(trigger, path).toContain(`- ${path}`);
+    }
+    expect(source).toContain('  test-deps:');
+    // The trigger decides its scope: no spec-only skip inside the job.
+    expect(source).not.toContain('steps.scope');
   });
 });
 

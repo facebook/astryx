@@ -471,7 +471,6 @@ export class GestureArena {
     }
   }
 
-  /** Cancel an active recognizer, or fail a possible one. */
   /**
    * Runs `body`, code outside input that stops recognizers (an Effect that
    * turns one off or detaches it), without resolving what those stops
@@ -504,6 +503,7 @@ export class GestureArena {
       : this.clock.now();
   }
 
+  /** Cancel an active recognizer, or fail a possible one. */
   stop(recognizer: GestureRecognizer): void {
     // A cancel from code between events happens at the last event's time:
     // wall time would run deadlines ahead of input still queued (FR16).
