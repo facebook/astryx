@@ -28,7 +28,7 @@ architecture:
     architecture:knowledge-contracts,
   ]
 contributing: []
-system_specs: [spec:AST-029]
+system_specs: [spec:AST-029, spec:AST-027]
 ---
 
 # ChatDictationButton component contract
@@ -41,7 +41,7 @@ system_specs: [spec:AST-029]
 | Behavior                | An icon-only microphone Button that toggles dictation. While listening it shows five volume-reactive bars instead of the microphone; unsupported dictation renders nothing, or a disabled Button when kept visible.                                               |
 | End-user impact         | Voice input is one labelled button that says whether it starts or stops dictation; browsers without speech recognition see no action that cannot run.                                                                                                             |
 | Builder impact          | None.                                                                                                                                                                                                                                                             |
-| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap, listed under Current-state impact.                                                                                                                                                            |
+| Compatibility/readiness | Records shipped behavior; no public change. Two implementation gaps, listed under Current-state impact.                                                                                                                                                           |
 | Review checks           | Reject an enabled unsupported action, a missing or stale start/stop name, bars exposed to assistive technology, or clipping color that a theme cannot retint.                                                                                                     |
 | Governing rules         | `architecture:public-component-api`; `architecture:theme-tokens` INV3; `architecture:component-style-authoring` INV7; `design:reduced-motion`.                                                                                                                    |
 
@@ -70,6 +70,11 @@ Consumer migration instructions belong in consumer docs and release notes.
   and five bar `span` elements that no theme target paints.
   `architecture:component-style-authoring` INV7 renders one element per
   semantic role or themable part.
+
+- **The bars set a z-index without isolation.** The bar container carries
+  `z-index: 1` and the wrapper does not isolate it, so the bars take part in
+  the page's stacking order. `spec:AST-027` FR1 keeps z-index local and lists
+  this case as a containment gap.
 
 ## Ownership boundary
 
@@ -179,9 +184,10 @@ migration, so the map is deferred.
 Read from source, with no focused test yet:
 
 - FR1: the ghost variant and the microphone icon.
-- FR2: no icon while listening, and the bars scaling with `bands`.
+- FR2: no icon while listening, the bars scaling with `bands`, and the
+  caller's `label` while listening.
 - FR4: the plain accent below the clipping threshold.
-- FR5: `className`, `style`, and `xstyle` composing on the wrapper, the
+- FR5: ARIA props reaching the wrapper, `className`, `style`, and `xstyle` composing on the wrapper, the
   `chat-dictation-button` target, and `sm` sizing.
 - FR6: the reduced-motion transition removal.
 
