@@ -54,6 +54,7 @@ describe('docsite-test', () => {
       'Build the docsite',
       'test-docsite (start the data tests)',
       'test-docsite-e2e (browser contracts)',
+      'Verify the hidden production registry gate',
     ]) {
       expect(step(name).if, name).toBe(ACTIVE);
       expect(step(name)['continue-on-error'], name).toBeUndefined();

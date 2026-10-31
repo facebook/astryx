@@ -751,7 +751,7 @@ jobs:
   # (spec:AST-026 FR10, draft): every item through the pinned client. It runs
   # for an explicit release check until the production registry launches; the
   # network-free production gate runs on every pull request that can change
-  # the registry: with the Node unit tests, and in docsite-data for a
+  # the registry: with the Node unit tests, and in docsite-test for a
   # docsite-only change.
   test-registry-e2e:
     name: test-registry-e2e (${{ matrix.leg }})
