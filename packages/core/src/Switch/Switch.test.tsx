@@ -429,7 +429,9 @@ describe('Switch', () => {
           continue;
         }
         for (const node of record.addedNodes) {
-          if (node.textContent) {written.push(node.textContent);}
+          if (node.textContent) {
+            written.push(node.textContent);
+          }
         }
       }
     });
@@ -561,6 +563,24 @@ describe('Switch', () => {
       />,
     );
     expect(screen.getByRole('switch')).toBeRequired();
+  });
+
+  it('keeps a required switch valid until status shows an error', () => {
+    const {rerender} = render(
+      <Switch label="Accept" value={false} onChange={() => {}} isRequired />,
+    );
+    // Native required alone makes Chromium report the switch invalid.
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'false');
+    rerender(
+      <Switch
+        label="Accept"
+        value={false}
+        onChange={() => {}}
+        isRequired
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
   });
 
   describe('disabledMessage', () => {

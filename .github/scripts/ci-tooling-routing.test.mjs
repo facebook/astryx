@@ -194,7 +194,6 @@ describe('Node-tooling CI routing', () => {
       'test-ui',
       'test-node',
       'test-build',
-      'registry-contract',
       'test-native-swift',
       'pr-interaction',
     ]);
@@ -219,7 +218,6 @@ describe('Node-tooling CI routing', () => {
       TEST_UI_RESULT: '${{ needs.test-ui.result }}',
       TEST_NODE_RESULT: '${{ needs.test-node.result }}',
       TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
-      REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
       TEST_NATIVE_SWIFT_RESULT: '${{ needs.test-native-swift.result }}',
       PR_INTERACTION_RESULT: '${{ needs.pr-interaction.result }}',
     });

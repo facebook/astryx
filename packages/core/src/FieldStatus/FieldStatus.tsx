@@ -20,7 +20,7 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {mergeProps} from '../utils/mergeProps';
 import {
   colorVars,
   radiusVars,
@@ -31,7 +31,7 @@ import {
 import type {InputStatusType} from '../Field/types';
 import {useEntryAnimation} from '../hooks/useEntryAnimation';
 import {themeProps} from '../utils/themeProps';
-import {Icon} from '../Icon';
+import {Icon} from '../Icon/Icon';
 import type {IconName} from '../Icon';
 import type {FieldStatusVariantMap} from './index';
 import {useFieldStatusAnnouncement} from './useFieldStatusAnnouncement';
