@@ -791,6 +791,14 @@
     "defaultMessage": "Open menu",
     "description": "Screen-reader-only label on the `⋯` overflow-menu button embedded in a SideNav section heading. Same string as `topNav.heading.openMenu` — translations may share."
   },
+  "@astryx.slider.minimumThumb": {
+    "defaultMessage": "Minimum value",
+    "description": "Accessible name of the lower thumb of a range Slider (two thumbs), announced together with the Slider's own label, for example \"Price range, Minimum value, 20\". Never shown on screen."
+  },
+  "@astryx.slider.maximumThumb": {
+    "defaultMessage": "Maximum value",
+    "description": "Accessible name of the upper thumb of a range Slider (two thumbs), announced together with the Slider's own label, for example \"Price range, Maximum value, 80\". Never shown on screen."
+  },
   "@astryx.tabList.label": {
     "defaultMessage": "Tabs",
     "description": "Screen-reader-only fallback name for a horizontal tab bar. Plural noun; \"Tabs\" here = UI tab panels, not browser tabs or the Tab key."
@@ -802,6 +810,10 @@
   "@astryx.table.noData": {
     "defaultMessage": "No data",
     "description": "Fallback empty-state text in the table body when there are zero rows. Neutral tone (not error-y); consumers commonly override with something specific like \"No results\"."
+  },
+  "@astryx.table.columnResize.resizeColumn": {
+    "defaultMessage": "Resize column {label}",
+    "description": "Accessible name for a Table column-resize handle (a vertical separator between header cells). `label` is the column header's visible text, or the column key when the header has no text."
   },
   "@astryx.table.filter.allPlaceholder": {
     "defaultMessage": "All",
@@ -1009,11 +1021,11 @@
   },
   "@astryx.dateTimeInput.timeHint12h": {
     "defaultMessage": "e.g., 2:30 PM",
-    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 12-hour format. Gives an example of expected input format."
+    "description": "Placeholder hint shown in the TimeInput and DateTimeInput time fields when focused and empty with 12-hour format. Gives an example of expected input format; write the example time as your locale writes 12-hour time."
   },
   "@astryx.dateTimeInput.timeHint24h": {
     "defaultMessage": "e.g., 14:30",
-    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 24-hour format. Gives an example of expected input format."
+    "description": "Placeholder hint shown in the TimeInput and DateTimeInput time fields when focused and empty with 24-hour format. Gives an example of expected input format; write the example time as your locale writes 24-hour time."
   },
   "@astryx.dateTimeInput.timeSuffix": {
     "defaultMessage": "{label} time",
@@ -1567,6 +1579,10 @@
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
   },
+  "@astryx.textArea.counter": {
+    "defaultMessage": "{count, number}/{limit, number}",
+    "description": "Visible character counter at the bottom of a TextArea that has a character limit, for example `62/2,000`. `{count}` is the characters typed so far and `{limit}` the limit; keep both numbers and reorder or change the separator if your language needs to."
+  },
   "@astryx.textArea.charactersRemaining": {
     "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
     "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
@@ -1643,6 +1659,10 @@
     "defaultMessage": "{count, number} of {total, number} selected",
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
   },
+  "@astryx.multiSelector.selectedCount": {
+    "defaultMessage": "{count, plural, one {# selected} other {# selected}}",
+    "description": "Visible text on a closed MultiSelector's trigger when it shows a count of the chosen options (`triggerDisplay=\"count\"`), for example `2 selected`. `{count}` is the number of chosen options; use a plural form if your language needs one."
+  },
   "@astryx.multiSelector.createOption": {
     "defaultMessage": "Create \"{query}\"",
     "description": "Label of the first row in a MultiSelector's search panel when `hasCreate` is set and the typed text matches no option. Picking it reports a creation to the caller. `{query}` is the trimmed text the person typed, shown in quotes."
@@ -1693,7 +1713,7 @@
   },
   "@astryx.tokenizer.create": {
     "defaultMessage": "Create \"{value}\"",
-    "description": "Label of the create row inside a Tokenizer's bottom sheet when `hasCreate` is set and the typed text matches no existing item. `{value}` is the typed text, e.g. `Create \"Marketing\"`."
+    "description": "Label of a Tokenizer's create row, in the inline menu and the bottom sheet, when `hasCreate` is set and the typed text matches no existing item. `{value}` is the typed text, e.g. `Create \"Marketing\"`."
   },
   "@astryx.tokenizer.add": {
     "defaultMessage": "Add",
@@ -2150,6 +2170,10 @@
   "@astryx.comments.resolvedBy": {
     "defaultMessage": "Resolved by {name}",
     "description": "Tooltip of the Resolved text on a comment thread in a lab Comments panel. `name` is the person who resolved it."
+  },
+  "@astryx.comments.errorAnnouncement": {
+    "defaultMessage": "{title} {description}",
+    "description": "Screen-reader announcement for an error Banner in a lab Comments panel that has a title and a description, read once when the Banner appears. `title` is the Banner's title (for example `Couldn't send this comment.`) and `description` its description (for example `Retrying didn't work.`). Reorder or punctuate as the language needs."
   },
   "@astryx.comments.retryFailed": {
     "defaultMessage": "Retrying didn't work.",

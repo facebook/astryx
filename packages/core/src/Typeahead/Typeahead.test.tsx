@@ -2822,3 +2822,43 @@ describe('Typeahead consumer key handler target', () => {
     expect(onKeyDown).toHaveBeenCalledOnce();
   });
 });
+
+describe('Typeahead caller aria-labelledby', () => {
+  it('names the input by its label and a caller aria-labelledby', () => {
+    render(
+      <>
+        <span id="billing-heading">Billing</span>
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          aria-labelledby="billing-heading"
+        />
+      </>,
+    );
+    expect(
+      screen.getByRole('combobox', {name: 'Fruit Billing'}),
+    ).toBeInTheDocument();
+  });
+
+  it('names a grouped input by the group, its label, and a caller aria-labelledby', () => {
+    render(
+      <>
+        <span id="billing-heading">Billing</span>
+        <InputGroup label="Contact">
+          <Typeahead
+            label="Fruit"
+            searchSource={fruitSource}
+            value={null}
+            onChange={() => {}}
+            aria-labelledby="billing-heading"
+          />
+        </InputGroup>
+      </>,
+    );
+    expect(
+      screen.getByRole('combobox', {name: 'Contact Fruit Billing'}),
+    ).toBeInTheDocument();
+  });
+});
