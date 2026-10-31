@@ -932,9 +932,10 @@ Storybook story for anything you added or altered.
   since pushing a branch here needs write access. Maintainers who work from a
   fork either push their branches here or apply `ci:run` themselves.
 - **Heavy browser suites are shared per author.** They run for an author's
-  three oldest open pull requests, up to twelve such runs a day. A pull request
-  past either limit shows a failing check that says why, and runs in full at
-  its pre-merge re-run.
+  fifteen oldest open pull requests, up to a hundred such runs a day. A pull
+  request past either limit shows a failing check that says why, and runs in
+  full at its pre-merge re-run. Engineering owners listed in `.github/ENGOWNERS`
+  are not limited.
 
 ## Code Style
 
