@@ -44,6 +44,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
@@ -57,6 +58,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 // =============================================================================
 // Types
 // =============================================================================
@@ -507,6 +509,7 @@ export function Slider({ref, ...props}: SliderProps) {
     onFocus,
     onBlur,
     id: idProp,
+    'aria-labelledby': ariaLabelledByProp,
     'aria-describedby': ariaDescribedByProp,
     ...restWithRange
   } = props;
@@ -589,7 +592,9 @@ export function Slider({ref, ...props}: SliderProps) {
   // role="slider" in WAI-ARIA 1.2, so the thumb instead points its
   // aria-describedby at a visually hidden "Required" span — mirroring the
   // Field label's visible indicator (where isOptional takes precedence).
-  const conveysRequired = isRequired && !isOptional;
+  // A surrounding FormLayout's defaultOptionality="required" makes an unmarked
+  // field required too (FormLayout FR5).
+  const conveysRequired = useResolvedRequired({isRequired, isOptional});
 
   // Build aria-describedby
   const describedByParts: string[] = [];
@@ -1015,7 +1020,10 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
-        aria-labelledby={!isRange ? labelID : undefined}
+        // A caller aria-labelledby names the control together with its label.
+        aria-labelledby={
+          !isRange ? joinAriaIDs(labelID, ariaLabelledByProp) : undefined
+        }
         aria-describedby={
           [!isRange ? ariaDescribedByProp : undefined, ariaDescribedBy]
             .filter(Boolean)
@@ -1167,7 +1175,10 @@ export function Slider({ref, ...props}: SliderProps) {
             disabledMessageTooltip.ref,
           )}
           {...(isRange
-            ? {role: 'group', 'aria-labelledby': labelID}
+            ? {
+                role: 'group',
+                'aria-labelledby': joinAriaIDs(labelID, ariaLabelledByProp),
+              }
             : undefined)}
           onPointerDown={after(handlePointerDown, onPointerDown)}
           onPointerMove={after(handlePointerMove, onPointerMove)}

@@ -9,7 +9,15 @@
  * SYNC: When MultiSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {
   act,
   render,
@@ -65,6 +73,15 @@ function politeRegion(): HTMLElement | null {
 }
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
+// The bottom-sheet presentation renders BottomSheet through React.lazy. Its
+// first import transforms the BottomSheet module tree, which on a loaded
+// runner takes longer than a query's 1 s wait, so the first sheet test timed
+// out before the dialog existed. Load the module once up front: lazy() then
+// resolves from the module cache and every sheet test waits only on the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
+
 beforeEach(() => {
   __resetInteractionModalityForTest();
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -1386,6 +1403,58 @@ describe('MultiSelector', () => {
 
     const listbox = screen.getByRole('listbox', h);
     expect(within(listbox).getByText('Add a fruit first')).toBeInTheDocument();
+  });
+
+  describe('count trigger text', () => {
+    it('shows the default count in the catalog message', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          triggerDisplay="count"
+        />,
+      );
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+    });
+
+    it('translates the default count, with plural forms, under another locale', () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectedCount':
+                '{count, number} {count, plural, one {sélectionné} other {sélectionnés}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={['Apple', 'Banana']}
+            onChange={() => {}}
+            triggerDisplay="count"
+          />
+        </InternationalizationProvider>,
+      );
+      expect(screen.getByText('2 sélectionnés')).toBeInTheDocument();
+      expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+    });
+
+    it('still lets formatValue replace the count text', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          triggerDisplay="count"
+          formatValue={items => `${items.length} fruits`}
+        />,
+      );
+      expect(screen.getByText('2 fruits')).toBeInTheDocument();
+    });
   });
 
   describe('result announcements', () => {
@@ -3434,6 +3503,47 @@ describe('MultiSelector trigger render prop', () => {
     // No field chrome: exactly one button, and no Field label element.
     expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(screen.queryByText('Labels')).toBeNull();
+  });
+
+  // spec:AST-055 AR3: a light dismiss returns focus to the caller's control,
+  // even when the press that closed the list focused another field.
+  it('returns focus to the caller control after a light dismiss onto another field', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Pick labels
+            </button>
+          )}
+        />
+        <input aria-label="Notes" />
+      </>,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    await user.click(opener);
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+
+    act(() => {
+      screen.getByRole('textbox', {name: 'Notes'}).focus();
+    });
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveFocus();
   });
 
   it('opens against the caller control and names the listbox by label', async () => {

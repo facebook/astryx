@@ -37,7 +37,7 @@ concurrency:
 jobs:
   # Build Storybook once and audit the full story index
   audit:
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
     outputs:

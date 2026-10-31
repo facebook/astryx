@@ -35,6 +35,15 @@ async function runSignal({
   reviews = [],
   reviewApp = '',
   permission = 'write',
+  // The spec-owner job's decision for a PR that changes no spec record.
+  specStatuses = [
+    {
+      context: 'spec-owner-approval',
+      state: 'success',
+      description: 'Mirrors review-required · spec ok',
+      creator: {login: 'github-actions[bot]'},
+    },
+  ],
 } = {}) {
   const pr = {
     number: 42,
@@ -89,6 +98,10 @@ async function runSignal({
       repos: {
         getContent,
         createCommitStatus: mutations.createCommitStatus,
+        listCommitStatusesForRef: vi.fn(async () => ({
+          data:
+            typeof specStatuses === 'function' ? specStatuses() : specStatuses,
+        })),
         getCollaboratorPermissionLevel: vi.fn(async () => {
           if (permission instanceof Error) throw permission;
           return {data: {permission}};
@@ -116,7 +129,7 @@ async function runSignal({
   await execute(
     github,
     {
-      repo: {owner: 'facebook', repo: 'astryx'},
+      repo: {owner: 'meta', repo: 'astryx'},
       sha: WORKFLOW_SHA,
       eventName,
       payload:
@@ -145,7 +158,7 @@ function expectTrustedHelperRead(getContent) {
       .filter(input => input.path === HELPER_PATH),
   ).toEqual([
     {
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       ref: WORKFLOW_SHA,
       path: HELPER_PATH,
@@ -185,7 +198,7 @@ describe('review-signal trusted helper ref', () => {
       expect(h.core.setFailed).not.toHaveBeenCalled();
       expect(h.core.warning).not.toHaveBeenCalled();
       expect(h.mutations.createCommitStatus).toHaveBeenCalledExactlyOnceWith({
-        owner: 'facebook',
+        owner: 'meta',
         repo: 'astryx',
         sha: HEAD,
         context: 'review-required',
@@ -367,7 +380,7 @@ describe('review-signal review-app approval for write-access authors', () => {
     expect(
       github.rest.repos.getCollaboratorPermissionLevel,
     ).toHaveBeenCalledWith({
-      owner: 'facebook',
+      owner: 'meta',
       repo: 'astryx',
       username: 'contributor',
     });

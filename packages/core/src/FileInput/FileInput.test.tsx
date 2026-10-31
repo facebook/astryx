@@ -20,6 +20,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
+import {FormLayout} from '../FormLayout';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 import {Theme} from '../theme/Theme';
@@ -202,6 +203,26 @@ describe('FileInput', () => {
     // aria-required is not a supported property of role="button" in
     // WAI-ARIA 1.2 (AT does not announce it), so it must never appear.
     expect(trigger).not.toHaveAttribute('aria-required');
+  });
+
+  it('conveys required state under FormLayout defaultOptionality="required" unless isOptional (FormLayout FR5)', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <FileInput label="Resume" value={null} onChange={() => {}} />
+        <FileInput
+          label="Cover letter"
+          isOptional
+          value={null}
+          onChange={() => {}}
+        />
+      </FormLayout>,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Resume'}),
+    ).toHaveAccessibleDescription(/Required/);
+    expect(
+      screen.getByRole('button', {name: /Cover letter/}),
+    ).not.toHaveAccessibleDescription(/Required/);
   });
 
   it('combines required with the description in the accessible description', () => {
@@ -726,6 +747,30 @@ describe('FileInput', () => {
       render(<FileInput label="Upload" value={file} onChange={handleChange} />);
       await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
       expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('returns focus to the trigger, not the aria-hidden native input, after a keyboard clear', () => {
+      const file = createFile('test.txt', 100);
+      render(<FileInput label="Upload" value={file} onChange={() => {}} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Clear Upload'}), {
+        detail: 0,
+      });
+      expect(screen.getByRole('button', {name: /^Upload/})).toHaveFocus();
+    });
+
+    it('returns focus to the trigger, not the aria-hidden native input, after a pointer clear', async () => {
+      const raf = vi
+        .spyOn(window, 'requestAnimationFrame')
+        .mockImplementation(cb => {
+          cb(0);
+          return 0;
+        });
+      const user = userEvent.setup();
+      const file = createFile('test.txt', 100);
+      render(<FileInput label="Upload" value={file} onChange={() => {}} />);
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+      expect(screen.getByRole('button', {name: /^Upload/})).toHaveFocus();
+      raf.mockRestore();
     });
 
     it('calls onChange and changeAction with null when clear is clicked', async () => {

@@ -17,7 +17,12 @@ import {
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  colorVars,
+  sizeVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {inputWrapperStyles} from '@astryxdesign/core/Field';
 import {MobileTokenizer, type MobileTokenizerChange} from './MobileTokenizer';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 
@@ -479,7 +484,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     const forced = stylex.create({
       trigger: {
         borderColor: {
-          default: colorVars['--color-border'],
+          default: colorVars['--color-border-emphasized'],
           '@media (forced-colors: active)': 'GrayText',
         },
         color: {default: null, '@media (forced-colors: active)': 'GrayText'},
@@ -676,6 +681,45 @@ describe('MobileTokenizer Core-sheet parity', () => {
       });
     } finally {
       shown.mockRestore();
+    }
+  });
+
+  it("draws the closed trigger as the inline Tokenizer field's box: the shared input wrapper (1px emphasized border, element radius, surface), the md block size, the 3px token-row inset and gap — no 44px touch height (FR16)", () => {
+    const atoms = (className: string | undefined) =>
+      (className ?? '')
+        .split(' ')
+        .filter(name => name !== '' && !name.includes('__'));
+    const inset = `calc(${spacingVars['--spacing-1']} - 1px)`;
+    const own = stylex.create({
+      box: {
+        minHeight: sizeVars['--size-element-md'],
+        paddingBlock: inset,
+        paddingInline: inset,
+        gap: spacingVars['--spacing-1'],
+        rowGap: inset,
+        flexWrap: 'wrap',
+      },
+      touch: {minHeight: 44},
+    });
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0], ITEMS[1]]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tags'});
+    // The very classes Core's inline field and sheet trigger compose: the
+    // shared box with the field's own wrap, inset and size on top (later
+    // wins per property, as in the component).
+    for (const name of atoms(
+      stylex.props(inputWrapperStyles.base, own.box).className,
+    )) {
+      expect(trigger).toHaveClass(name);
+    }
+    for (const name of atoms(stylex.props(own.touch).className)) {
+      expect(trigger).not.toHaveClass(name);
     }
   });
 

@@ -905,7 +905,7 @@ export interface MultiSelectorProps<
    * Not called when nothing is selected — the placeholder shows instead — and
    * not called for triggerDisplay 'badges', which renders Badge elements
    * rather than text.
-   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   * @default the translated `@astryx.multiSelector.selectedCount` message ("2 selected") for 'count', "A, B, C, +N" for 'labels'
    */
   formatValue?: (items: MultiSelectorSelectedItem[]) => string;
 
@@ -1450,6 +1450,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     triggerRef,
+    isFocusReturnAlways: hasExternalTrigger,
     popoverOptions: {
       hasLightDismiss: true,
       hasCloseButton: false,
@@ -1890,7 +1891,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         return (
           <span {...stylex.props(styles.triggerText)}>
             {formatValue?.(selectedItems) ??
-              `${optimisticValue.length} selected`}
+              t('@astryx.multiSelector.selectedCount', {
+                count: optimisticValue.length,
+              })}
           </span>
         );
 
@@ -1933,6 +1936,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     placeholder,
     formatValue,
     maxBadges,
+    t,
   ]);
 
   // Render search input

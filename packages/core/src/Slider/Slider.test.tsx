@@ -337,6 +337,18 @@ describe('Slider', () => {
     expect(slider).not.toHaveAttribute('aria-required');
   });
 
+  it('conveys required state under FormLayout defaultOptionality="required" unless isOptional (FormLayout FR5)', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <Slider label="Volume" value={50} />
+        <Slider label="Balance" value={50} isOptional />
+      </FormLayout>,
+    );
+    const [volume, balance] = screen.getAllByRole('slider');
+    expect(volume).toHaveAccessibleDescription(/Required/);
+    expect(balance).not.toHaveAccessibleDescription(/Required/);
+  });
+
   it('conveys required state on both thumbs of a range slider', () => {
     render(
       <Slider
