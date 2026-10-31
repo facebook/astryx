@@ -202,10 +202,10 @@ Dispositions for ChatLayout's five anatomy parts. This record carries no
 | Anatomy part            | Disposition                                                                                                                                                                                   |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Message area            | `none` — reachability-gap: an internal element with no `themeProps` call. `chat-layout` sits on the scrolling root, so a theme cannot reach the transcript column's own padding or width cap. |
-| Frosted glass dock      | `none` — reachability-gap: the dock, its inner column, and the backdrop-filter blur layer paint the component's most distinctive surface and carry no target.                                 |
+| Frosted glass dock      | `none` — unsettled: the dock, its inner column, and the blur layer paint the signature surface and carry no target; see OQ2.                                                                  |
 | Scroll-to-bottom button | `delegatesTo` the `chat-layout-scroll-button` target, whose canonical owner in the current inventory is `component:Chat`.                                                                     |
 | Composer                | `delegatesTo` the `chat-composer` target, whose canonical owner in the current inventory is `component:Chat`.                                                                                 |
-| Empty state             | `none` — reachability-gap: the empty-state box only centres caller content and carries no target.                                                                                             |
+| Empty state             | `none` — intentional: the empty-state box only centres caller content, which is layout plumbing.                                                                                              |
 
 The `chat-layout` target itself is declared on the Chat family document
 (`Chat.doc.mjs`) rather than on `ChatLayout.doc.mjs`.
@@ -231,7 +231,7 @@ The `chat-layout` target itself is declared on the Chat family document
 | FR1, FR2 | `ChatLayout.test.tsx` self-scroll layout contract                                                                                            | self-scroll, short and long transcript              | Restoring `min-height: 100%` on the message area re-adds the dock's height and the root overflows | `audit:ChatLayout/§4` |
 | FR3, FR4 | `ChatLayout.test.tsx` dock positioning                                                                                                       | no `scrollRef`; external `scrollRef`                | Swapping sticky and fixed detaches the dock from the element that actually scrolls                | `audit:ChatLayout/§4` |
 | FR5      | `ChatLayout.test.tsx` empty-state cases; `useChatNewMessages.test.tsx` conditional list case                                                 | empty array; populated children                     | Treating populated children as empty hides the transcript                                         | `audit:ChatLayout/§4` |
-| FR6      | `ChatLayout.test.tsx` scroll-button cases                                                                                                    | custom node                                         | A custom node that does not replace the default fails                                             | `audit:ChatLayout/§4` |
+| FR6      | `ChatLayout.test.tsx` scroll-button cases                                                                                                    | custom node                                         | Rendering the default in place of a supplied node fails                                           | `audit:ChatLayout/§4` |
 | FR7      | `ChatLayout.test.tsx` density cases; `themingTargets.test.ts`                                                                                | compact; balanced; spacious                         | Dropping the reflected attribute makes the theming axis unselectable                              | `audit:ChatLayout/§2` |
 | FR8      | `useChatNewMessages.test.tsx`, `useChatStreamScroll.test.tsx`                                                                                | first fill; streaming growth                        | Losing the published refs stops auto-scroll from observing content growth                         | `audit:ChatLayout/§7` |
 | AR1, AR2 | `ChatLayoutScrollButton.test.tsx` and `ChatLayout.test.tsx` tab-order cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts` in real Chromium | hidden at rest; visible; re-hidden after activation | Reverting to `opacity`-only hiding puts an invisible control back in the tab order                | `audit:ChatLayout/§1` |
@@ -239,8 +239,9 @@ The `chat-layout` target itself is declared on the Chat family document
 Read from source, with no focused test yet:
 
 - FR5: `null` and `undefined` children selecting the empty state.
-- FR6: `null` rendering nothing and an omitted `scrollButton` selecting the
-  wired default.
+- FR6: `null` rendering nothing, an omitted `scrollButton` selecting the wired
+  default, and the default not rendering beside a supplied node.
+- FR8: the published scroll container.
 - FR7: the dock, message-area, dock-inner, and blur geometry for each density.
 - FR9: `ref`, DOM props, `className`, `style`, and `xstyle` on the root.
 - AR3: the catalog strings; AR4: no landmark or name on caller regions.
