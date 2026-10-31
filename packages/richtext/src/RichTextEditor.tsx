@@ -4,7 +4,7 @@
 
 /**
  * @file RichTextEditor.tsx
- * @input Uses React, useId, Lexical (lexical + @lexical/react, composed through
+ * @input Uses React, useId, a declared DOM boundary, Lexical (lexical + @lexical/react, composed through
  *   LexicalExtensionComposer), Field, VisuallyHidden, useInputStatusIcon,
  *   mergeProps, design tokens
  * @output Exports an accessibly labelled RichTextEditor component with a flush
@@ -679,7 +679,7 @@ export const RichTextEditor = function RichTextEditor({
               !!statusIcon && styles.editorBodyWithStatus,
               size === 'lg' && editorBodySizeStyles.lg,
             )}>
-            <div {...stylex.props(styles.editorRoot)}>
+            <div {...stylex.props(styles.editorRoot)} dir={rest.dir}>
               <RichTextPlugin
                 contentEditable={
                   <EditorContentEditable
@@ -1051,6 +1051,8 @@ function EditorContentEditable({
       dynamicStyles.contentEditableMinHeight(minHeight),
     ),
     ...rest,
+    // Private layer/integration protocol; this DOM is reconciled by Lexical.
+    'data-astryx-layer-portal-boundary': 'external',
   };
   if (placeholderText) {
     return (

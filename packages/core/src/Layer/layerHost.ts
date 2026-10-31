@@ -2,13 +2,26 @@
 
 /**
  * @file layerHost.ts
- * @input Uses the layer's intended inline parent element
- * @output Exports resolveLayerPortalTarget, the corrective portal target
+ * @input Uses the intended inline parent and integration-managed DOM boundaries
+ * @output Exports the corrective portal resolver and internal integration boundary props
  * @position Layer utility; used by useLayer to place the popover in the DOM
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/layerHost.test.ts
  */
+
+const LAYER_PORTAL_BOUNDARY_ATTRIBUTE = 'data-astryx-layer-portal-boundary';
+const EXTERNAL_DOM = 'external';
+const LAYER_DOM = 'layer';
+
+/** @internal Excludes an integration-managed DOM tree from corrective portal targets. */
+export const __layerPortalBoundaryProps = {
+  [LAYER_PORTAL_BOUNDARY_ATTRIBUTE]: EXTERNAL_DOM,
+} as const;
+
+export const layerPortalRootProps = {
+  [LAYER_PORTAL_BOUNDARY_ATTRIBUTE]: LAYER_DOM,
+} as const;
 
 /**
  * Ancestors a layer must not be hosted inside.
@@ -102,9 +115,8 @@ const UNSAFE_HOSTS = new Set([
 /**
  * Return the corrective portal target for a layer's intended inline parent.
  *
- * A null result means the inline parent and all of its ancestors are safe, so
- * the layer should stay at its JSX position. Otherwise the result is the
- * nearest element outside every unsafe ancestor around that position.
+ * A null result means the layer stays inline. A corrective portal escapes
+ * unsafe ancestors and explicitly marked integration-managed DOM.
  *
  * Walking up from the actual render position (rather than the trigger, or
  * portaling to `document.body`) keeps the two things a layer inherits there:
@@ -132,13 +144,26 @@ export function resolveLayerPortalTarget(
   }
 
   let outermostUnsafe: HTMLElement | null = null;
+  let isTargetLayerOwned = false;
   let node: HTMLElement | null = inlineParent;
   while (node) {
     const tagName = node.tagName.toLowerCase();
     if (tagName === 'dialog') {
       break;
     }
+    const boundary = node.getAttribute(LAYER_PORTAL_BOUNDARY_ATTRIBUTE);
+    if (boundary === LAYER_DOM) {
+      isTargetLayerOwned = true;
+    }
     if (UNSAFE_HOSTS.has(tagName)) {
+      outermostUnsafe = node;
+      // Escaping this ancestor also leaves any nearer layer-owned scope.
+      isTargetLayerOwned = false;
+    } else if (
+      outermostUnsafe !== null &&
+      boundary === EXTERNAL_DOM &&
+      !isTargetLayerOwned
+    ) {
       outermostUnsafe = node;
     }
     node = node.parentElement;
