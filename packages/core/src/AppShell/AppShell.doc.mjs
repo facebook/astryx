@@ -96,7 +96,7 @@ export const docs = {
         name: 'Main content',
         required: true,
         description:
-          'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto.',
+          'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto. With adaptive it scrolls internally with a mouse or trackpad and with the page on a touch device.',
       },
       {
         name: 'Mobile nav drawer',
@@ -141,7 +141,7 @@ export const docs = {
       // coincidence. The legal values live in the description instead (#1645).
       type: 'ReactNode',
       description:
-        "Mobile navigation configuration. Accepts false (disable), a config object (tune auto behavior), or ReactNode (full custom drawer). The config object is {hasToggle?: boolean, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void, content?: ReactNode, breakpoint?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none', defaultIsMobile?: boolean}; breakpoint defaults to 'md', resolves through the nearest Theme's widthBreakpoints, and switches to the wider layout at equality. 'none' is always non-mobile and ignores defaultIsMobile.",
+        "Mobile navigation configuration. Accepts false (disable), a config object (tune auto behavior), or ReactNode (full custom drawer). The config object is {hasToggle?: boolean, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void, content?: ReactNode, breakpoint?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none', defaultIsMobile?: boolean}; breakpoint defaults to 'md', resolves through the nearest Theme's widthBreakpoints, and switches to the wider layout at equality. 'none' is always non-mobile and ignores defaultIsMobile for the layout; with height=\"adaptive\", defaultIsMobile also seeds the server render's touch assumption (the page scrolls), whatever the breakpoint.",
       slotElements: [{__element: 'MobileNav', props: {}}],
     },
     {
@@ -158,9 +158,9 @@ export const docs = {
     },
     {
       name: 'height',
-      type: "'fill' | 'auto'",
+      type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav.",
+        "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav; 'adaptive' is 'fill' with a mouse or trackpad and 'auto' where the primary pointer is touch, so phones keep the browser's own page behaviors (scroll to top from the status bar, a toolbar that minimizes as you scroll). The root reports which element scrolls in `data-scroll-owner`: `content` (the main region) or `document` (the page).",
       default: "'fill'",
     },
     {
@@ -280,7 +280,7 @@ export const docsZh = {
       name: 'mobileNav',
       type: 'ReactNode',
       description:
-        "移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。配置对象为 {hasToggle?, isOpen?, onOpenChange?, content?, breakpoint?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none', defaultIsMobile?}；breakpoint 默认为 'md'，从最近 Theme 的 widthBreakpoints 解析，并在等于断点时切换到较宽布局；'none' 始终使用非移动端布局并忽略 defaultIsMobile。",
+        "移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。配置对象为 {hasToggle?, isOpen?, onOpenChange?, content?, breakpoint?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none', defaultIsMobile?}；breakpoint 默认为 'md'，从最近 Theme 的 widthBreakpoints 解析，并在等于断点时切换到较宽布局；'none' 始终使用非移动端布局，布局上忽略 defaultIsMobile；当 height=\"adaptive\" 时，defaultIsMobile 还决定服务端渲染是否假定触摸输入（由页面滚动），与断点无关。",
     },
     {
       name: 'banner',
@@ -289,9 +289,9 @@ export const docsZh = {
     },
     {
       name: 'height',
-      type: "'fill' | 'auto'",
+      type: "'fill' | 'auto' | 'adaptive'",
       description:
-        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位。",
+        "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位；'adaptive' 在使用鼠标或触控板时等同 'fill'，在主要指针为触控的设备上等同 'auto'，让手机保留浏览器自身的页面行为（点按状态栏回到顶部、滚动时工具栏收起）。根元素通过 `data-scroll-owner` 标明滚动的元素：`content`（主内容区）或 `document`（页面）。",
       default: "'fill'",
     },
     {
@@ -370,10 +370,10 @@ export const docsDense = {
     topNav: 'top nav slot, typically TopNav',
     sideNav: 'side nav slot, typically SideNav',
     mobileNav:
-      'mobile nav config: false | ReactNode | config with theme-resolved sm|md|lg|xl|2xl|none breakpoint (exclusive upper edge); none is always non-mobile and ignores defaultIsMobile',
+      'mobile nav config: false | ReactNode | config with theme-resolved sm|md|lg|xl|2xl|none breakpoint (exclusive upper edge); none is always non-mobile and ignores defaultIsMobile for the layout; with adaptive height defaultIsMobile also seeds the SSR touch assumption',
     banner: 'slot for system-wide announcements above topNav',
     height:
-      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav',
+      'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav; adaptive=fill w/ mouse, auto on touch (page scroll); root data-scroll-owner=content|document',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:

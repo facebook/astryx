@@ -66,6 +66,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -174,8 +175,10 @@ export interface MobileNavConfig {
   /**
    * SSR hint: whether the initial render should assume mobile layout.
    * Seeds the breakpoint state so the server-rendered HTML matches
-   * the client on mobile devices, avoiding a layout flash. Ignored when
-   * `breakpoint` is `none`, which is always non-mobile.
+   * the client on mobile devices, avoiding a layout flash. The breakpoint
+   * seed is ignored when `breakpoint` is `none`, which is always non-mobile.
+   * With `height="adaptive"` it also seeds the touch-pointer assumption of
+   * the server render (the page scrolls), whatever the breakpoint.
    *
    * Derive from the User-Agent header or a device-detection cookie
    * in a server component, then pass down.
@@ -223,9 +226,16 @@ export interface AppShellProps extends BaseProps<HTMLDivElement> {
    * Height behavior:
    * - `fill`: Shell fills viewport, content scrolls internally (default)
    * - `auto`: Shell grows with content, page scrolls as a whole
+   * - `adaptive`: `fill` with a mouse or trackpad, `auto` where the primary
+   *   pointer is touch, so phones keep the browser's own page behaviors
+   *   (scroll to top from the status bar, a toolbar that minimizes as you
+   *   scroll)
+   *
+   * The root reports which element scrolls in `data-scroll-owner`:
+   * `content` (the main region) or `document` (the page).
    * @default 'fill'
    */
-  height?: 'fill' | 'auto';
+  height?: 'fill' | 'auto' | 'adaptive';
 
   /**
    * Mobile navigation configuration.
@@ -456,6 +466,11 @@ const styles = stylex.create({
     flex: 1,
     overflow: 'auto',
   },
+  // `adaptive` with a fine pointer: the side region's wrapper stays mounted
+  // but generates no box.
+  sideNavInFill: {
+    display: 'contents',
+  },
 });
 
 // =============================================================================
@@ -467,7 +482,7 @@ const styles = stylex.create({
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
- * Supports two height modes (`fill` and `auto`), responsive side nav
+ * Supports three height modes (`fill`, `auto` and `adaptive`), responsive side nav
  * collapse, and mobile overlay with backdrop.
  *
  * @example
@@ -615,8 +630,21 @@ export function AppShell({
     document.getElementById(MAIN_CONTENT_ID)?.focus();
   }, []);
 
-  const isFill = height === 'fill';
-  const isAuto = height === 'auto';
+  // `adaptive` resolves through the shared touch resolver: the page scrolls
+  // under a finger (a coarse primary pointer). The browser attaches its page
+  // behaviors to the document's own scroll (the toolbar or address bar that
+  // minimizes as the page scrolls, the pull at the top; on iOS, scroll to top
+  // from a status-bar tap), and a scroll region inside a viewport-high shell
+  // gets none of them. The SSR hint for mobile layout also seeds it, so a
+  // server-rendered phone page starts out scrolling the page.
+  const {isTouch} = useTouchPresentation({
+    isTouch: mobileNavConfig?.defaultIsMobile ?? false,
+  });
+  // A `height` outside the union keeps the recorded `auto` minimum height,
+  // with no sticky regions, as before `adaptive` existed.
+  const isFill = height === 'fill' || (height === 'adaptive' && !isTouch);
+  const isAuto = height === 'auto' || (height === 'adaptive' && isTouch);
+  const scrollsDocument = !isFill;
 
   // Nav style derived values
   const hasBanner = isRenderable(banner);
@@ -938,9 +966,16 @@ export function AppShell({
     </LayoutPanel>
   ) : undefined;
 
+  // Under `adaptive` the wrapper stays in both pointer states and only its
+  // style changes, so a pointer change never remounts the side region (a
+  // collapsed SideNav stays collapsed). With a fine pointer it generates no
+  // box, and the panel lays out as in `fill`.
   const sideNavContent =
-    sideNavPanel != null && isAuto ? (
-      <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+    sideNavPanel != null && (isAuto || height === 'adaptive') ? (
+      <div
+        {...stylex.props(isAuto ? styles.sideNavSticky : styles.sideNavInFill)}>
+        {sideNavPanel}
+      </div>
     ) : (
       sideNavPanel
     );
@@ -1028,6 +1063,7 @@ export function AppShell({
         {...rest}
         ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
+        data-scroll-owner={scrollsDocument ? 'document' : 'content'}
         {...mergeProps(
           themeProps('app-shell', {variant}),
           stylex.props(
@@ -1055,7 +1091,7 @@ export function AppShell({
         </a>
 
         <Layout
-          height={height}
+          height={isFill ? 'fill' : 'auto'}
           padding={0}
           header={
             <>
