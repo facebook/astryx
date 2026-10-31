@@ -1725,7 +1725,7 @@
   },
   "@astryx.tokenizer.allRemoved": {
     "defaultMessage": "All items removed",
-    "description": "Polite screen-reader announcement after a confirmed Clear all in a Tokenizer's bottom sheet has removed every selected item. Live-region text, never shown on screen."
+    "description": "Polite screen-reader announcement after a Tokenizer's Clear all has removed every selected item: the inline Clear all button, or a confirmed Clear all in the bottom sheet. Live-region text, never shown on screen."
   },
   "@astryx.tokenizer.selectedCount": {
     "defaultMessage": "{count, number} selected",

@@ -18,4 +18,4 @@ import {createContext} from 'react';
 export const TokenizerClearAllMessageContext = createContext<string | null>(
   null,
 );
-TokenizerClearAllMessageContext.displayName = "TokenizerClearAllMessageContext";
+TokenizerClearAllMessageContext.displayName = 'TokenizerClearAllMessageContext';

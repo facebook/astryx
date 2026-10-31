@@ -1065,7 +1065,10 @@ export function PowerSearch({
   const announce = useAnnounce();
   // PowerSearch words its Clear all as its record does; the field announces
   // these words instead of Tokenizer's (component:Tokenizer AR7).
-  const clearAllMessage = t('@astryx.powersearch.allFiltersRemoved');
+  const clearAllMessage = useMemo(
+    () => t('@astryx.powersearch.allFiltersRemoved'),
+    [t],
+  );
   const announcedResultCountRef = useRef(resultCountText);
   useEffect(() => {
     if (resultCountText === announcedResultCountRef.current) {
