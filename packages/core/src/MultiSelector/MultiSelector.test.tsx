@@ -9,7 +9,15 @@
  * SYNC: When MultiSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {
   act,
   render,
@@ -65,6 +73,15 @@ function politeRegion(): HTMLElement | null {
 }
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
+// The bottom-sheet presentation renders BottomSheet through React.lazy. Its
+// first import transforms the BottomSheet module tree, which on a loaded
+// runner takes longer than a query's 1 s wait, so the first sheet test timed
+// out before the dialog existed. Load the module once up front: lazy() then
+// resolves from the module cache and every sheet test waits only on the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
+
 beforeEach(() => {
   __resetInteractionModalityForTest();
   HTMLDialogElement.prototype.showModal = vi.fn(function (
