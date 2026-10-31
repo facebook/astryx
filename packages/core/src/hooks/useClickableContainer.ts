@@ -24,6 +24,16 @@ import {useCallback, useEffect, type RefObject, type MouseEvent} from 'react';
 import {isSafeUrl} from '../utils/safeUrl';
 
 /**
+ * The attribute this hook sets on the container it makes clickable. A click
+ * inside a nested marked container belongs to that container (see
+ * INTERACTIVE_SELECTORS), and a hover layer reads the same mark: a tap inside
+ * a clickable row or card already has somewhere to go, so the layer stays shut.
+ *
+ * SYNC: /packages/core/src/Layer/useTouchTrigger.ts (tapHasDestination)
+ */
+export const PRESSABLE_CONTAINER_ATTRIBUTE = 'data-pressable-container';
+
+/**
  * Canonical list of interactive element selectors — native controls plus
  * role-based interactive elements. Clicks on these (or their descendants)
  * should NOT bubble to a clickable container's click handler.
@@ -52,7 +62,7 @@ export const INTERACTIVE_SELECTORS = [
   '[role="listbox"]',
   '[role="slider"]',
   '[role="spinbutton"]',
-  '[data-pressable-container]',
+  `[${PRESSABLE_CONTAINER_ATTRIBUTE}]`,
 ].join(',');
 
 const NON_INTERACTIVE_SELECTORS = '[aria-readonly="true"]';
@@ -160,13 +170,20 @@ export function useClickableContainer({
   target,
   disabled = false,
 }: UseClickableContainerOptions): ClickableContainerResult {
-  // Mark container as pressable for the interactive selector check
+  // Mark container as pressable for the interactive selector check. The value
+  // says whether it takes a tap right now: "true" while clickable, "disabled"
+  // while not, so a layer on a disabled container (a disabled field's reason)
+  // still opens on a tap (see `tapHasDestination`). Either value counts for
+  // the nested-control check.
   useEffect(() => {
     const el = containerRef.current;
     if (el) {
-      el.setAttribute('data-pressable-container', 'true');
+      el.setAttribute(
+        PRESSABLE_CONTAINER_ATTRIBUTE,
+        disabled ? 'disabled' : 'true',
+      );
     }
-  }, [containerRef]);
+  }, [containerRef, disabled]);
 
   const onClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
