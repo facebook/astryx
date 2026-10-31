@@ -1,2 +1,5 @@
 Results for "icon set" (<n>)
+Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components....
+Export a compatible icon definition from a public package path, then import that path from the template.
 More in packages you could add: pnpm exec astryx discover 'icon set'
+This lets you swap the icon set (e.g.

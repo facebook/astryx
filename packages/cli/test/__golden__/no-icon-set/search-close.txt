@@ -1,1 +1,2 @@
 Results for "close" (<n>)
+This lets you swap the icon set (e.g.

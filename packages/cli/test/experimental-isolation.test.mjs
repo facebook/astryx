@@ -20,11 +20,12 @@
  * would follow every docs edit. Each query's goldens hold the response's
  * envelope (its keys, the data keys, the meta skeleton), the text's heading
  * with its counts masked, and, over every match (not the first page), every
- * sentence that names an experimental surface, in the results and in the
- * lines around them. One golden holds the fields each domain's results carry
- * and the line labels of its text records, over every match of every query,
- * so a docs edit that makes a query match another kind of result rewrites
- * none of them. Each match is asserted to be no experimental surface, its
+ * sentence that names an experimental surface, in the JSON and in every line
+ * of the text. One golden holds the fields each domain's results carry and
+ * the line labels of its text records: from one item of each domain found by
+ * its name, and over every match of every query, so a docs edit that makes a
+ * query match another kind of result, or none of a domain, rewrites none of
+ * them. Each match is asserted to be no experimental surface, its
  * name none of the routes the `cli` listings mark experimental; and with an
  * icon set installed, search is compared at run time with the same search
  * without one.
@@ -426,6 +427,18 @@ const SEARCH_QUERIES = [
   'icon set',
 ];
 
+/**
+ * One item of each search domain, found by its name: their fields and labels
+ * follow no prose.
+ */
+const SEARCH_DOMAIN_NAMES = {
+  component: 'Button',
+  doc: 'theme',
+  hook: 'useTypeahead',
+  template: 'settings-dialog',
+  theme: 'stone',
+};
+
 /** @type {Map<string, string[]>} */
 const experimentalRoutesIn = new Map();
 
@@ -481,6 +494,28 @@ function recordLabel(line, column) {
   return match != null && match[1].length + 1 + match[2].length === column
     ? match[1]
     : null;
+}
+
+/**
+ * The text records of a search's text output: each one's domain and name,
+ * and the labels of its lines.
+ * @param {string} text
+ */
+function textRecords(text) {
+  const column = (/^name:( +)\S/mu.exec(text)?.[1].length ?? 0) + 5;
+  /** @type {{domain: string, name: string, labels: string[]}[]} */
+  const records = [];
+  for (const line of text.split('\n')) {
+    const label = recordLabel(line, column);
+    if (label === 'name') {
+      records.push({domain: '', name: line.slice(column).trim(), labels: []});
+    }
+    const record = records.at(-1);
+    if (label == null || record == null) continue;
+    record.labels.push(label);
+    if (label === 'domain') record.domain = line.slice(column).trim();
+  }
+  return records;
 }
 
 /**
@@ -556,18 +591,13 @@ function searchEveryMatch(query, cwd) {
         recordLabel(line, column) == null &&
         !described.has(line.trim()),
     );
-  // Each text record's domain and the labels of its lines.
-  /** @type {{domain: string, labels: string[]}[]} */
-  const records = [];
-  for (const line of blocks.join('\n\n').split('\n')) {
-    const label = recordLabel(line, column);
-    if (label === 'name') records.push({domain: '', labels: []});
-    const record = records.at(-1);
-    if (label == null || record == null) continue;
-    record.labels.push(label);
-    if (label === 'domain') record.domain = line.slice(column).trim();
-  }
-  return {body, added, blocks, outside, records};
+  return {
+    body,
+    added,
+    blocks,
+    outside,
+    records: textRecords(blocks.join('\n\n')),
+  };
 }
 
 /**
@@ -611,18 +641,18 @@ function searchOutput(query, cwd) {
  * `astryx search` as a golden: what icon sets could change in search that
  * does not follow prose. The envelope: its keys, the data keys, the meta
  * skeleton, and any sentence around the results that names an experimental
- * surface. The text's heading, read from the output with its counts masked,
- * and any sentence in the other lines around the records that names an
- * experimental surface. Over every match, every sentence that names an
- * experimental surface. The fields and line labels of the results are held
- * per domain over every query ({@link SEARCH_QUERIES}), and the counts and
- * the ranking are left out, since search ranks and counts by prose: a docs
- * edit elsewhere rewrites none of it.
+ * surface. The text's heading, read from the output with its counts masked.
+ * Over every match, every sentence that names an experimental surface, in the
+ * results and in every line of the text but FR18's addition. The fields and
+ * line labels of the results are held per domain
+ * ({@link SEARCH_DOMAIN_NAMES}), and the counts and the ranking are left out,
+ * since search ranks and counts by prose: a docs edit elsewhere rewrites none
+ * of it.
  * @param {string} query
  * @param {string} cwd
  */
 function searchGolden(query, cwd) {
-  const {body, outside} = searchEveryMatch(query, cwd);
+  const {body, blocks, outside} = searchEveryMatch(query, cwd);
   /** @type {any[]} */
   const results = body.data.results;
   const mentions = [
@@ -632,7 +662,12 @@ function searchGolden(query, cwd) {
   // that names an experimental surface, shows without following prose.
   const {query: asked, results: _results, ...rest} = body.data;
   const around = {...body, data: rest};
-  const [heading = '', ...others] = outside;
+  const [heading = ''] = outside;
+  // Every line of the text, records included, but the heading.
+  const lines = blocks
+    .join('\n\n')
+    .split('\n')
+    .filter(line => line !== heading);
   return {
     json: asGolden({
       envelope: Object.keys(body),
@@ -646,7 +681,7 @@ function searchGolden(query, cwd) {
       heading.replace(/\(\d+( of \d+)?\)$/u, (_, of) =>
         of ? '(<n> of <n>)' : '(<n>)',
       ),
-      ...leakMentions(others),
+      ...leakMentions(lines),
     ].join('\n'),
   };
 }
@@ -919,14 +954,39 @@ describe('with no icon set, stable output is unchanged', () => {
     );
   });
 
-  // Per domain, not per query: a docs edit that makes a query match another
-  // kind of result rewrites nothing, and a field or label that any result
-  // gains shows.
-  it('search: the fields and the text labels of each domain, over every match of every query', async () => {
+  // Per domain, not per query: each domain from one item found by its name,
+  // so a docs edit that makes a query match another kind of result, or none
+  // of a domain, rewrites nothing, and over every match of every query, so a
+  // field or label that any result gains shows.
+  it('search: the fields and the text labels of each domain, from an item of each found by its name and over every match of every query', async () => {
     /** @type {Record<string, Set<string>>} */
     const fields = {};
     /** @type {Record<string, Set<string>>} */
     const labels = {};
+    for (const [domain, name] of Object.entries(SEARCH_DOMAIN_NAMES)) {
+      const args = ['search', name, '--type', domain, '--limit', EVERY_MATCH];
+      const json = searchRun([...args, '--json'], project);
+      expect(json.status).toBe(0);
+      const named = JSON.parse(json.stdout).data.results.filter(
+        (/** @type {any} */ result) =>
+          result.domain === domain && result.name === name,
+      );
+      expect(
+        named.length,
+        `the ${domain} ${name}, by its name`,
+      ).toBeGreaterThan(0);
+      fields[domain] ??= new Set();
+      for (const result of named) {
+        for (const key of Object.keys(result)) fields[domain].add(key);
+      }
+      const text = searchRun(args, project);
+      expect(text.status).toBe(0);
+      labels[domain] ??= new Set();
+      for (const record of textRecords(text.stdout)) {
+        if (record.domain !== domain || record.name !== name) continue;
+        for (const label of record.labels) labels[domain].add(label);
+      }
+    }
     for (const query of SEARCH_QUERIES) {
       const {body, records} = searchEveryMatch(query, project);
       for (const result of body.data.results) {

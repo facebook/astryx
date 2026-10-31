@@ -1,2 +1,3 @@
 Results for "experimental" (<n>)
+Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components....
 More in packages you could add: pnpm exec astryx discover experimental

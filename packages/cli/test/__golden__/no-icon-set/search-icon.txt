@@ -1,1 +1,3 @@
 Results for "icon" (<n>)
+Export a compatible icon definition from a public package path, then import that path from the template.
+This lets you swap the icon set (e.g.
