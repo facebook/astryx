@@ -20,6 +20,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
+import {FormLayout} from '../FormLayout';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 import {Theme} from '../theme/Theme';
@@ -202,6 +203,26 @@ describe('FileInput', () => {
     // aria-required is not a supported property of role="button" in
     // WAI-ARIA 1.2 (AT does not announce it), so it must never appear.
     expect(trigger).not.toHaveAttribute('aria-required');
+  });
+
+  it('conveys required state under FormLayout defaultOptionality="required" unless isOptional (FormLayout FR5)', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <FileInput label="Resume" value={null} onChange={() => {}} />
+        <FileInput
+          label="Cover letter"
+          isOptional
+          value={null}
+          onChange={() => {}}
+        />
+      </FormLayout>,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Resume'}),
+    ).toHaveAccessibleDescription(/Required/);
+    expect(
+      screen.getByRole('button', {name: /Cover letter/}),
+    ).not.toHaveAccessibleDescription(/Required/);
   });
 
   it('combines required with the description in the accessible description', () => {
