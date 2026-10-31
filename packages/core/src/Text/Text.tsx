@@ -57,7 +57,6 @@ import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -213,6 +212,34 @@ export function resolveStyleColor(color: TextColor): BuiltinTextColor {
   return 'primary';
 }
 
+// Controls that already take focus or act as one item; a truncated Text inside
+// one leaves keyboard focus to it. Only interactive elements and widget roles:
+// a focusable region such as a main landmark or a scroll container is not a
+// control, so a Text inside it still becomes a tab stop.
+const CONTROL_SELECTOR = [
+  'a[href]',
+  'area[href]',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]',
+  '[role="option"]',
+  '[role="tab"]',
+  '[role="treeitem"]',
+  '[role="gridcell"]',
+  '[role="row"]',
+  '[role="switch"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+].join(', ');
+
 /**
  * Semantic text component. Renders text with type-based styling from the theme.
  *
@@ -228,25 +255,6 @@ export function resolveStyleColor(color: TextColor): BuiltinTextColor {
  * <Text type="body" maxLines={2}>Clamped text</Text>
  * ```
  */
-// Elements that already take focus or act as one control; a truncated Text
-// inside one leaves keyboard focus to it.
-const CONTROL_SELECTOR = [
-  FOCUSABLE_SELECTOR,
-  '[tabindex]',
-  '[role="button"]',
-  '[role="link"]',
-  '[role="menuitem"]',
-  '[role="menuitemcheckbox"]',
-  '[role="menuitemradio"]',
-  '[role="option"]',
-  '[role="tab"]',
-  '[role="treeitem"]',
-  '[role="gridcell"]',
-  '[role="row"]',
-  '[role="switch"]',
-  '[role="checkbox"]',
-  '[role="radio"]',
-].join(', ');
 
 export function Text({
   type = 'body',

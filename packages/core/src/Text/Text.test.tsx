@@ -347,7 +347,7 @@ describe('truncated text shows one tooltip, not two', () => {
     }
   });
 
-  it('leaves focus to the control it sits in (a link, a menu item)', async () => {
+  it('leaves focus to the control it sits in (a link, a menu item), not to a focusable region', async () => {
     const restore = withOverflow();
     try {
       render(
@@ -365,6 +365,11 @@ describe('truncated text shows one tooltip, not two', () => {
           <Text type="body" maxLines={1}>
             Standalone, wider than the space it has
           </Text>
+          <main tabIndex={-1}>
+            <Text type="body" maxLines={1}>
+              Inside a focusable region, wider than the space it has
+            </Text>
+          </main>
         </>,
       );
       // A standalone sibling measured in the same pass becomes a tab stop, so
@@ -380,6 +385,13 @@ describe('truncated text shows one tooltip, not two', () => {
       expect(
         screen.getByText('Inside a menu item, wider than the space it has'),
       ).not.toHaveAttribute('tabindex');
+      // A focusable region (a main landmark, a scroll container) is not a
+      // control, so a Text inside it is still a tab stop.
+      expect(
+        screen.getByText(
+          'Inside a focusable region, wider than the space it has',
+        ),
+      ).toHaveAttribute('tabindex', '0');
     } finally {
       restore();
     }
