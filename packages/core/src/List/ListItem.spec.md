@@ -41,7 +41,7 @@ system_specs: [spec:AST-057, spec:AST-103]
 | Builder impact          | None.                                                                                                                                                                                                                                                                                                                           |
 | Compatibility/readiness | Records shipped behavior; no public change. Two implementation gaps, listed under Current-state impact.                                                                                                                                                                                                                         |
 | Review checks           | Reject a row that is not an `<li>`, a ListItem-level edge, density, or divider prop, a marker drawn outside a marked List, or a dropped Item prop.                                                                                                                                                                              |
-| Governing rules         | `component:Item` (alignment); `component:List`; `family:navigation-destinations`; `spec:AST-057`; `spec:AST-103`; `architecture:component-theming-surface`; `architecture:component-style-authoring` INV7.                                                                                                                      |
+| Governing rules         | `component:Item` (`align` for start and end content); `component:List`; `family:navigation-destinations`; `spec:AST-057`; `spec:AST-103`; `architecture:component-theming-surface`; `architecture:component-style-authoring` INV7.                                                                                              |
 
 This table is a review projection; the body below is authoritative.
 
@@ -86,7 +86,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Does not own / non-goals**
 
-- Alignment — owned by `component:Item`; swipe actions — owned by
+- `align`, the start and end content's alignment — owned by `component:Item`; swipe actions — owned by
   `spec:AST-057`; link destinations — owned by
   `family:navigation-destinations`, of which ListItem is a member.
 - Item's label, description, slots, invisible button, delegated activation,
@@ -106,13 +106,13 @@ No component-local concept beyond the consumer props; row props are
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                              | Basis                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1 | ListItem renders `component:Item` as an `<li>` and passes `label`, `description`, `startContent`, `endContent`, `onClick`, `interactiveRef`, `href`, `target`, `rel`, `align`, `isDisabled`, `isSelected`, `swipeActions`, `swipeBehavior`, and `ref` to it unchanged, with other DOM and data props reaching the row.                                                                 | Current source and tests |
-| FR2 | Inside a List, the row takes the list's `density`, its `hasDividers` setting, which draws a divider between rows with no extra element and square corners, and its `edge` treatment.                                                                                                                                                                                                   | Current source and tests |
-| FR3 | Outside a List, the row uses `balanced` density, no dividers, the `padded` treatment, and no marker, keeping Item's inline inset.                                                                                                                                                                                                                                                      | Current source and tests |
-| FR4 | In a List whose `listStyle` is `disc`, `circle`, or `decimal`, the row draws that marker before its content: a disc or circle shape, or a counter number. A task state set for the row draws a read-only, labelled checkbox in the marker's place. A List whose `listStyle` is `none` draws neither. Other markers, set internally for Markdown's nested lists, are uncontracted here. | Current source and tests |
-| FR5 | The row carries the `list-item` target, merged with the caller's `className` and `style`; `xstyle` applies after ListItem's own styles.                                                                                                                                                                                                                                                | Current source           |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                               | Basis                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | ListItem renders `component:Item` as an `<li>` and passes `label`, `description`, `startContent`, `endContent`, `onClick`, `interactiveRef`, `href`, `target`, `rel`, `align`, `isDisabled`, `isSelected`, `swipeActions`, `swipeBehavior`, and `ref` to it unchanged, with other DOM and data props reaching the row.                                                                                                                                  | Current source and tests |
+| FR2 | Inside a List, the row takes the list's `density`, its `hasDividers` setting, which draws a divider between rows with no extra element and square corners, and its `edge` treatment.                                                                                                                                                                                                                                                                    | Current source and tests |
+| FR3 | Outside a List, the row uses `balanced` density, no dividers, the `padded` treatment, and no marker, keeping Item's inline inset.                                                                                                                                                                                                                                                                                                                       | Current source and tests |
+| FR4 | In a List whose `listStyle` is `disc`, `circle`, or `decimal`, the row draws that marker before its content: a disc or circle shape, or a counter number. A task state set for the row draws a read-only, labelled checkbox in the marker's place. Each marker and the task checkbox sit on the label's first line. A List whose `listStyle` is `none` draws neither. Other markers, set internally for Markdown's nested lists, are uncontracted here. | Current source and tests |
+| FR5 | The row carries the `list-item` target, merged with the caller's `className` and `style`; `xstyle` applies after ListItem's own styles.                                                                                                                                                                                                                                                                                                                 | Current source           |
 
 ### Allowed variation
 
@@ -160,7 +160,8 @@ migration, so the map is deferred.
 
 ## Family and system relationships
 
-- `component:Item` owns the row's alignment; its other row behavior is
+- `component:Item` owns `align`, the start and end content's alignment; its
+  other row behavior is
   uncontracted. `spec:AST-057` owns swipe actions and
   `family:navigation-destinations` owns link destinations.
 - `component:List` owns the edge treatment and its row geometry and inset;
@@ -183,6 +184,7 @@ Read from source, with no focused test yet:
 
 - FR1: `interactiveRef`, `rel`, and `ref` reaching the Item row.
 - FR2: the divider border and square corners.
+- FR4: each marker and the task checkbox sitting on the label's first line.
 - FR3: `balanced` density, no dividers, and no marker outside a List.
 - FR4: the shape of each bullet marker (the disc's fill, the circle's ring),
   and the number marker and its counter.
