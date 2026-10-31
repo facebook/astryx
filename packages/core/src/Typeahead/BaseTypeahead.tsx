@@ -153,10 +153,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * When disabled with a reason, keeps the input focusable via `aria-disabled`
    * (instead of the native `disabled` attribute) and `readOnly` so an
    * associated disabled-reason tooltip stays discoverable by keyboard and
-   * assistive technology. Query and text mutation are blocked, but an
-   * already-open highlighted option can still be selected with Enter after a
-   * transition into this state. Consumers (Typeahead) own the tooltip and
-   * wrapper.
+   * assistive technology. Query and text mutation, opening the list, and a
+   * pick by Enter or a press are blocked, also from a list that was open
+   * before this state applied; Escape or Tab still closes it. Consumers
+   * (Typeahead) own the tooltip and wrapper.
    * @default false
    */
   isFocusableDisabled?: boolean;
@@ -1057,7 +1057,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // (spec:AST-085 FR2).
       if (isDisabled) {
         if (popover.isOpen && (e.key === 'Escape' || e.key === 'Tab')) {
-          if (e.key === 'Escape') {e.preventDefault();}
+          if (e.key === 'Escape') {
+            e.preventDefault();
+          }
           popover.hide();
         }
         return;
@@ -1232,8 +1234,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
-        // attribute. Query and text mutation are blocked, but an already-open
-        // highlighted option can still be selected with Enter after transition.
+        // attribute. Query and text mutation, opening and picking are blocked
+        // by the handlers above (spec:AST-085 FR2).
         disabled={isDisabled && !isFocusableDisabled}
         readOnly={isFocusableDisabled || undefined}
         autoFocus={hasAutoFocus}

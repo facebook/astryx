@@ -175,7 +175,7 @@ export const docs = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable. It blocks text entry, but when applied after results are already open, Enter can still select the highlighted option.',
+        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable. It blocks text entry, opening the results and picking a result, also from results that were open before it applied; Escape or Tab still closes them.',
       default: 'false',
     },
     {
@@ -467,7 +467,7 @@ export const docsDense = {
     emptySearchText: 'Content when the query matched nothing. ReactNode.',
     isDisabled: 'Whether input disabled.',
     isFocusableDisabled:
-      'Keeps disabled input focusable and blocks text entry; an already-open highlight can still be selected with Enter.',
+      'Keeps disabled input focusable; blocks text entry, opening and picking, also from an already-open list (Escape/Tab close it).',
     hasAutoFocus: 'Auto-focus on mount.',
     debounceMs: 'Search debounce ms. 0 for sync.',
     size: 'Dropdown option padding size.',
