@@ -228,9 +228,12 @@ No component-local design decision is recorded.
 Read from source, with no focused test yet:
 
 - FR1: start, end, and centre alignment by sender.
+- FR2: a system message still rendering its children.
 - FR3: the visual slot order.
 - FR7: a caller `aria-label` or `aria-labelledby` not overriding the naming.
 - FR6: a name that renders no text leaving the fallback name.
+- PR1–PR2: no listener or Effect, and a context value that changes only with
+  sender or density.
 - AR3: no keyboard model of the component's own.
 
 ## Decision log
