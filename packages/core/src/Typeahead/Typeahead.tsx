@@ -76,6 +76,7 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -420,6 +421,7 @@ export function Typeahead<T extends SearchableItem>({
   'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: TypeaheadProps<T>) {
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
     containerXstyle,
     containerClassName,
@@ -715,6 +717,14 @@ export function Typeahead<T extends SearchableItem>({
                     .join(' ') || undefined
                 }
                 ariaLabelledBy={inputLabelledBy}
+                // The resolved required state reaches the combobox, also when a
+                // FormLayout default hides the visible marker (component:FormLayout
+                // FR5, AR2).
+                aria-required={isEffectivelyRequired || rest['aria-required']}
+                // An error status is exposed on the combobox as on every other field
+                // (WCAG 4.1.2; spec:AST-020 FR9). Without one, a caller's own
+                // aria-required / aria-invalid still applies.
+                aria-invalid={status?.type === 'error' || rest['aria-invalid']}
                 onChangeQuery={onChangeQuery}
                 onOpenChange={onOpenChange}
                 debounceMs={debounceMs}
