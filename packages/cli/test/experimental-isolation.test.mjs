@@ -15,6 +15,13 @@
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
+ * Search ranks and counts by prose, so a golden of its counts and ranking
+ * would follow every docs edit. Its goldens hold, over every match (not the
+ * first page), the fields results carry, the text's line labels, and every
+ * sentence that names an experimental surface; each match is asserted to be no
+ * experimental surface; and with an icon set installed, search is compared at
+ * run time with the same search without one.
+ *
  * Updating the goldens has two phases.
  *
  * While main lacks the icon-set feature (before the feature lands), the
@@ -396,26 +403,32 @@ function textShape(text, keep = []) {
   return out.join('\n');
 }
 
+/** More matches than any query has: search lists every match, not a page. */
+const EVERY_MATCH = '100000';
+
 /**
- * `astryx search` as a golden: the count, and each result's identity and
- * order, with the sentences that name an experimental surface (the stable
- * icons topic names "the icon set" a theme swaps). No result is experimental,
- * an icon, or an icon definition.
+ * `astryx search` over every match, with FR18's one stable addition taken out:
+ * the JSON body and the text's result blocks. Every match, not the first page:
+ * a leak ranked past it would show only in a count. Each match is asserted to
+ * be no experimental surface: no `stability`, no icon or icon-definition
+ * domain, and no identity that names one.
  * @param {string} query
  * @param {string} cwd
  */
-function searchGolden(query, cwd) {
-  const json = astryx(['search', ...query.split(' '), '--json'], cwd);
+function searchEveryMatch(query, cwd) {
+  const args = ['search', ...query.split(' '), '--limit', EVERY_MATCH];
+  const json = astryx([...args, '--json'], cwd);
   expect(json.status).toBe(0);
   const body = JSON.parse(json.stdout);
+  expect(body.data.results).toHaveLength(body.data.matchCount);
   // The one stable addition FR18 makes: the field reference's `stability`
   // field, named by its value. Main has no such field; nothing else may be
   // added.
-  const added = body.data.results.filter(isStableAddition);
+  const added = body.data.results.filter(isStableAddition).length;
   body.data.results = body.data.results.filter(
     (/** @type {any} */ result) => !isStableAddition(result),
   );
-  body.data.matchCount -= added.length;
+  body.data.matchCount -= added;
   for (const result of body.data.results) {
     expect(result).not.toHaveProperty('stability');
     expect(['icon', 'icon-set', 'icon-definition']).not.toContain(
@@ -425,11 +438,8 @@ function searchGolden(query, cwd) {
       [result.name, result.command, result.route, result.parent].join(' '),
     ).not.toMatch(/experimental|icon-definitions|icon-sets?\b/u);
   }
-  body.data.results = body.data.results.map((/** @type {any} */ result) => ({
-    ...skeleton(result),
-    mentions: leakMentions(result),
-  }));
-  const text = astryx(['search', ...query.split(' ')], cwd);
+  const text = astryx(args, cwd);
+  expect(text.status).toBe(0);
   // The same addition left out of the text: its block, and its count.
   const blocks = text.stdout
     .split('\n\n')
@@ -440,6 +450,24 @@ function searchGolden(query, cwd) {
           /^section: +authored-doc-graph-fields$/mu.test(block)
         ),
     );
+  return {body, added, blocks};
+}
+
+/**
+ * `astryx search` in full, over every match: the count, and each result's
+ * identity and order, with the sentences that name an experimental surface
+ * (the stable icons topic names "the icon set" a theme swaps). Search ranks and
+ * counts by prose, so this follows every docs edit: it is compared with
+ * another run at run time, never held in a file.
+ * @param {string} query
+ * @param {string} cwd
+ */
+function searchOutput(query, cwd) {
+  const {body, added, blocks} = searchEveryMatch(query, cwd);
+  body.data.results = body.data.results.map((/** @type {any} */ result) => ({
+    ...skeleton(result),
+    mentions: leakMentions(result),
+  }));
   return {
     json: asGolden(body),
     // Each result's identity lines and the count; descriptions are prose.
@@ -449,8 +477,8 @@ function searchGolden(query, cwd) {
         /^(Results for .*\()(\d+)((?: of (\d+))?\))$/mu,
         (_, head, shown, tail, total) =>
           total
-            ? `${head}${Number(shown)}${tail.replace(total, String(Number(total) - added.length))}`
-            : `${head}${Number(shown) - added.length}${tail}`,
+            ? `${head}${Number(shown)}${tail.replace(total, String(Number(total) - added))}`
+            : `${head}${Number(shown) - added}${tail}`,
       )
       .split('\n')
       .filter(line =>
@@ -459,6 +487,43 @@ function searchGolden(query, cwd) {
         ),
       )
       .join('\n'),
+  };
+}
+
+/**
+ * `astryx search` as a golden: what icon sets could change in search that
+ * does not follow prose. Over every match: the fields results carry, the line
+ * labels of the text, and every sentence that names an experimental surface.
+ * The counts and the ranking are left out, since search ranks and counts by
+ * prose: a docs edit elsewhere rewrites none of it.
+ * @param {string} query
+ * @param {string} cwd
+ */
+function searchGolden(query, cwd) {
+  const {body, blocks} = searchEveryMatch(query, cwd);
+  /** @type {any[]} */
+  const results = body.data.results;
+  const fields = [
+    ...new Set(results.flatMap(result => Object.keys(result))),
+  ].sort();
+  const mentions = [
+    ...new Set(results.flatMap(result => leakMentions(result))),
+  ].sort();
+  const labels = [
+    ...new Set(
+      blocks.flatMap(block =>
+        block
+          .split('\n')
+          .map(line => /^([a-z]+):\s+\S/u.exec(line)?.[1])
+          .filter(label => label != null),
+      ),
+    ),
+  ].sort();
+  return {
+    json: asGolden({query: body.data.query, fields, mentions}),
+    text: [`Results for "${query}"`, ...labels.map(label => `${label}:`)].join(
+      '\n',
+    ),
   };
 }
 
@@ -1005,14 +1070,10 @@ describe.skipIf(REGENERATING)(
     // `astryx search` joins it only at promotion (spec:AST-084 FR11).
     it.each(['delete', 'close', 'trash can', 'experimental', 'icon set'])(
       'search %s equals the output without icon sets, text and JSON',
-      async query => {
-        const slug = query.replace(/\s+/g, '-');
-        const {json, text} = searchGolden(query, withSet);
-        await expect(json).toMatchFileSnapshot(
-          path.join(GOLDEN, `search-${slug}.json`),
-        );
-        await expect(text).toMatchFileSnapshot(
-          path.join(GOLDEN, `search-${slug}.txt`),
+      query => {
+        // The same docs and CLI on both sides, so only the set could differ.
+        expect(searchOutput(query, withSet)).toEqual(
+          searchOutput(query, project),
         );
       },
     );
