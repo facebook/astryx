@@ -36,9 +36,9 @@ const reactSeverity = isStrictMode ? 'error' : 'warn';
 // by repo-relative file. The list only shrinks.
 const internalBarrelBaseline = JSON.parse(
   readFileSync(
-    new URL(
-      './internal/eslint-plugin-astryx/no-internal-barrel-import.baseline.json',
-      import.meta.url,
+    path.join(
+      import.meta.dirname,
+      'internal/eslint-plugin-astryx/no-internal-barrel-import.baseline.json',
     ),
     'utf8',
   ),

@@ -72,12 +72,13 @@ export function resolvesToBarrel(importer, specifier) {
     return false;
   }
   const target = path.resolve(path.dirname(importer), specifier);
-  // Naming the index itself ('../List/index', '../List/index.ts') still
-  // reaches the barrel.
+  // Naming the index itself still reaches the barrel: '../List/index',
+  // '../List/index.ts', or '../List/index.js', which TypeScript resolves to
+  // index.ts.
   const base = path.basename(target);
   if (
-    (base === 'index' && MODULE_EXTENSIONS.some(e => isFile(target + e))) ||
-    (INDEX_FILES.includes(base) && isFile(target))
+    (base === 'index' || INDEX_FILES.includes(base)) &&
+    INDEX_FILES.some(index => isFile(path.join(path.dirname(target), index)))
   ) {
     return true;
   }

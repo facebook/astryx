@@ -70,6 +70,8 @@ ruleTester.run('no-internal-barrel-import', rule, {
       filename: importer,
       options: [{baseline: {'src/Menu/Menu.tsx': ['../List']}, root}],
     },
+    // A `.js` specifier for an ordinary module is not a barrel.
+    {code: `import {List} from '../List/List.js';`, filename: importer},
     // A computed dynamic import is not a literal path.
     {code: `const m = import(name);`, filename: importer},
   ],
@@ -110,6 +112,12 @@ ruleTester.run('no-internal-barrel-import', rule, {
       code: `import {List} from '../List/index';`,
       filename: importer,
       errors: [{message: message('../List/index')}],
+    },
+    // A `.js` specifier TypeScript maps onto index.ts.
+    {
+      code: `import {List} from '../List/index.js';`,
+      filename: importer,
+      errors: [{message: message('../List/index.js')}],
     },
     {
       code: `const lazy = () => import('../List/index.ts');`,
