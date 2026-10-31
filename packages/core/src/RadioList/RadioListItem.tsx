@@ -326,6 +326,12 @@ export function RadioListItem({
         // from submission, matching a natively disabled control.
         form={keepsFocusableForMessage ? '' : undefined}
         required={context.isRequired}
+        // Chromium reports an unanswered native-required radio invalid before
+        // any interaction; the invalid state follows the group's status
+        // instead (RadioList FR6).
+        aria-invalid={
+          context.isRequired ? context.status?.type === 'error' : undefined
+        }
         onChange={() => {
           if (isDisabled) {
             return;

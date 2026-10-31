@@ -1221,6 +1221,46 @@ describe('Popover', () => {
       fireEvent.keyDown(secondDocument, {key: 'Escape'});
       expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
     });
+
+    it('re-measures its overflow when its own window resizes', () => {
+      const {trigger, surface} = renderInSecondDocument();
+      const secondWindow = secondDocument.defaultView!;
+      const frames: FrameRequestCallback[] = [];
+      const requestFrame = vi
+        .spyOn(secondWindow, 'requestAnimationFrame')
+        .mockImplementation(callback => {
+          frames.push(callback);
+          return frames.length;
+        });
+      const runFrames = () =>
+        act(() => frames.splice(0).forEach(callback => callback(0)));
+      fireEvent.click(trigger, {detail: 1});
+      runFrames();
+      expect(surface.className).not.toContain(
+        'Popover__styles.surfaceScrollable',
+      );
+
+      // The window the Popover renders in gets too short for its content.
+      const {prototype} = secondWindow.HTMLElement;
+      const sizes = [
+        vi.spyOn(prototype, 'clientHeight', 'get').mockReturnValue(100),
+        vi.spyOn(prototype, 'scrollHeight', 'get').mockReturnValue(200),
+        vi.spyOn(prototype, 'clientWidth', 'get').mockReturnValue(200),
+        vi.spyOn(prototype, 'scrollWidth', 'get').mockReturnValue(200),
+      ];
+      try {
+        act(() => {
+          secondWindow.dispatchEvent(new secondWindow.Event('resize'));
+        });
+        runFrames();
+        expect(surface.className).toContain(
+          'Popover__styles.surfaceScrollable',
+        );
+      } finally {
+        sizes.forEach(size => size.mockRestore());
+        requestFrame.mockRestore();
+      }
+    });
   });
 
   describe('surface padding', () => {

@@ -371,9 +371,11 @@ presentation.
   once the confirmation has closed, since a message sent while the
   confirmation covers the sheet is not heard — `spec:AST-086/FR14`), the
   search's busy start, and how each search
-  ended — the result count for a non-empty query, or the empty state's text
-  when it shows — are announced once per occasion from inside the sheet
-  through `useAnnounce`, which `spec:AST-086/FR14` routes into the persistent
+  ended — the result count for a non-empty query, or the empty state's text when
+  it shows, both from the search's own `useAnnounce({hasReplace: true})`
+  instance (`spec:AST-086/FR9`, FR13), so a newer one replaces one not yet
+  spoken — are announced once per occasion from inside the sheet through
+  `useAnnounce`, which `spec:AST-086/FR14` routes into the persistent
   polite container of the sheet's own dialog while it is open, because the
   shared page-body channel is not exposed behind a native modal; the
   container follows FR3, FR5, and FR6 of that record (WCAG 2.2 SC 4.1.3
