@@ -2228,6 +2228,126 @@ describe('Typeahead disabledMessage', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('opens no list and picks nothing while focusable-disabled (spec:AST-085 FR2)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Assignee"
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        hasEntriesOnFocus
+        isDisabled
+        disabledMessage="You need the Editor role"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.click(input);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('option', {hidden: true})).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not reopen on a click into the still-focused input once disabled', async () => {
+    const user = userEvent.setup();
+    const field = (isDisabled: boolean) => (
+      <Typeahead
+        label="Assignee"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        isDisabled={isDisabled}
+        disabledMessage={isDisabled ? 'You need the Editor role' : undefined}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    // A pick closes the list and leaves focus in the input.
+    await user.click(screen.getAllByRole('option', {hidden: true})[0]);
+    await waitFor(() =>
+      expect(input).toHaveAttribute('aria-expanded', 'false'),
+    );
+    rerender(field(true));
+    const disabled = screen.getByRole('combobox');
+    await user.click(disabled);
+    await user.click(disabled);
+    expect(disabled).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('picks nothing from a list opened before the field became disabled, and lets it close', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
+    const field = (isDisabled: boolean) => (
+      <form onSubmit={onSubmit}>
+        <Typeahead
+          label="Assignee"
+          searchSource={fruitSource}
+          value={null}
+          onChange={onChange}
+          hasEntriesOnFocus
+          isDisabled={isDisabled}
+          disabledMessage="You need the Editor role"
+        />
+      </form>
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    await user.keyboard('{ArrowDown}');
+
+    rerender(field(true));
+    // The open list stays in the DOM (hidden from the accessibility tree).
+    await user.keyboard('{Enter}');
+    fireEvent.click(screen.getAllByRole('option', {hidden: true})[0]);
+    expect(onChange).not.toHaveBeenCalled();
+    // Enter on the still-open list does not submit the form.
+    expect(onSubmit).not.toHaveBeenCalled();
+    await user.keyboard('{Escape}');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not open a list for a search that settles after the field became disabled', async () => {
+    let resolveSearch: (items: SearchableItem[]) => void = () => {};
+    const pendingSource: SearchSource = {
+      search: async () =>
+        new Promise(resolve => {
+          resolveSearch = resolve;
+        }),
+      bootstrap: () => [],
+    };
+    const user = userEvent.setup();
+    const field = (isDisabled: boolean) => (
+      <Typeahead
+        label="Assignee"
+        searchSource={pendingSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        isDisabled={isDisabled}
+        disabledMessage={isDisabled ? 'You need the Editor role' : undefined}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'ap');
+    rerender(field(true));
+    await act(async () => {
+      resolveSearch(fruits);
+    });
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('remains natively disabled when disabled without a reason', () => {
     render(
       <Typeahead

@@ -19,7 +19,6 @@ describe('spec-only workflow contract', () => {
       '.github/actions/test-scope/action.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -46,7 +45,6 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -123,13 +121,7 @@ describe('spec-only workflow contract', () => {
       const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
-    const unrelatedJobs = [
-      'test-ui',
-      'test-node',
-      'registry-contract',
-      'test',
-      'build-storybook',
-    ];
+    const unrelatedJobs = ['test-ui', 'test-node', 'test', 'build-storybook'];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
         "steps.scope.outputs.spec_only != 'true'",
@@ -150,10 +142,7 @@ describe('spec-only workflow contract', () => {
     expect(lint).toContain('.github/scripts/change-scope.cjs');
     expect(lint).not.toContain('node scripts/check-knowledge.mjs');
 
-    for (const workflow of [
-      '.github/workflows/cli-smoke-test.yml',
-      '.github/workflows/internal-registry.yml',
-    ]) {
+    for (const workflow of ['.github/workflows/cli-smoke-test.yml']) {
       const source = read(workflow);
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
@@ -185,42 +174,31 @@ describe('spec-only workflow contract', () => {
       expect(from, start).toBeGreaterThanOrEqual(0);
       return ci.slice(from, ci.indexOf(`\n  ${end}:`, from));
     };
-    // docsite-test validates spec records itself; the heavy generation lives
-    // in docsite-data, which the spec-only lane never starts.
-    const docsiteJob = block('docsite-test', 'docsite-data');
-    const dataJob = block('docsite-data', 'docsite-browser');
+    // docsite-test validates spec records itself and gates its docsite build
+    // and tests off for the spec-only lane.
+    const docsiteJob = block('docsite-test', 'test-ui');
 
     const checkout = docsiteJob.indexOf('- uses: actions/checkout@v7');
     const setup = docsiteJob.indexOf('- uses: ./.github/actions/setup');
     const validate = docsiteJob.indexOf('- name: Validate spec records');
-
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
     // It validates on the spec-only lane, and whenever its own scope step
     // could not decide, so an undecided lane never skips validation.
-    expect(docsiteJob.slice(setup, validate)).toContain(
+    expect(docsiteJob.slice(validate, validate + 200)).toContain(
       "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
     );
-    expect(docsiteJob).not.toContain('- name: Build core package');
-    expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
 
-    const setupStep = dataJob.slice(
-      dataJob.indexOf('- uses: ./.github/actions/setup'),
+    const heavy = docsiteJob.slice(
+      docsiteJob.indexOf('- name: Install Playwright'),
+      docsiteJob.indexOf('- name: test-docsite (data test results)'),
     );
-    expect(setupStep.slice(0, 200)).toContain(
-      "steps.scope.outputs.spec_only != 'true'",
-    );
-    const build = dataJob.indexOf('- name: Build core package');
-    const generate = dataJob.indexOf('- name: Generate and test docsite data');
-    expect(build).toBeGreaterThanOrEqual(0);
-    expect(generate).toBeGreaterThan(build);
-    expect(dataJob.slice(build, generate)).toContain(
-      "if: steps.scope.outputs.spec_only != 'true'",
-    );
-    expect(dataJob.slice(generate)).toContain(
-      "if: steps.scope.outputs.spec_only != 'true'",
-    );
+    const heavySteps = heavy.split('\n      - name: ');
+    expect(heavySteps.length).toBe(5);
+    for (const step of heavySteps) {
+      expect(step).toContain("if: steps.scope.outputs.spec_only != 'true'");
+    }
   });
 
   it('skips every Storybook build command for spec-only changes', () => {
@@ -244,7 +222,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}", PR_REPORT_GATE)}`,
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') }}", PR_REPORT_GATE)}`,
     );
     const action = read('.github/actions/test-scope/action.yml');
     expect(action).toContain(
@@ -407,6 +385,27 @@ describe('spec-only workflow contract', () => {
         ),
       );
     expect(writers.sort()).toEqual(['review-clear.yml', 'review-signal.yml']);
+  });
+});
+
+describe('test-deps scope (Internal Registry)', () => {
+  it('starts on a pull request only for dependency changes, and never reclassifies', () => {
+    const source = read('.github/workflows/internal-registry.yml');
+    const trigger = source.slice(
+      source.indexOf('  pull_request:'),
+      source.indexOf('  merge_group:'),
+    );
+    for (const path of [
+      "'pnpm-lock.yaml'",
+      "'pnpm-workspace.yaml'",
+      "'**/package.json'",
+      "'.github/workflows/internal-registry.yml'",
+    ]) {
+      expect(trigger, path).toContain(`- ${path}`);
+    }
+    expect(source).toContain('  test-deps:');
+    // The trigger decides its scope: no spec-only skip inside the job.
+    expect(source).not.toContain('steps.scope');
   });
 });
 

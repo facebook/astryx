@@ -161,11 +161,12 @@ describe('Node-tooling CI routing', () => {
       step(ci.jobs['docsite-test'], 'Skip docsite work for Node tooling').if,
     ).toContain(TOOLING_TRUE);
     for (const name of [
-      'Build core package',
-      'Build canary component packages',
-      'Generate and test docsite data',
+      'Build docsite workspace dependencies',
+      'Build the docsite',
+      'test-docsite (start the data tests)',
+      'test-docsite-e2e (browser contracts)',
     ]) {
-      expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
+      expect(step(ci.jobs['docsite-test'], name).if).toContain(TOOLING_FALSE);
     }
 
     for (const candidate of [
@@ -194,7 +195,6 @@ describe('Node-tooling CI routing', () => {
       'test-ui',
       'test-node',
       'test-build',
-      'registry-contract',
       'test-native-swift',
       'pr-interaction',
     ]);
@@ -219,7 +219,6 @@ describe('Node-tooling CI routing', () => {
       TEST_UI_RESULT: '${{ needs.test-ui.result }}',
       TEST_NODE_RESULT: '${{ needs.test-node.result }}',
       TEST_BUILD_RESULT: '${{ needs.test-build.result }}',
-      REGISTRY_CONTRACT_RESULT: '${{ needs.registry-contract.result }}',
       TEST_NATIVE_SWIFT_RESULT: '${{ needs.test-native-swift.result }}',
       PR_INTERACTION_RESULT: '${{ needs.pr-interaction.result }}',
     });

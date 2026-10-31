@@ -2022,18 +2022,22 @@ test.describe('holding', () => {
   }) => {
     await fixture(page);
     const box = page.locator('#box');
-    await box.evaluate(el => {
+    // Each run lasts long enough for the hold to reach it while it runs: on a
+    // loaded runner the hold read the page as late as 2.4 s after the run was
+    // made, past the end of a 1 s run.
+    const RUN_MS = 10_000;
+    await box.evaluate((el, duration) => {
       el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'cubic-bezier(0.42, 0, 1, 1)'},
+        {duration, easing: 'cubic-bezier(0.42, 0, 1, 1)'},
       );
-    });
+    }, RUN_MS);
     const [held] = await holdAnimations(page, box);
-    // The keyframe offset 0.5 is progress, not 500 ms of time: the run starts
+    // The keyframe offset 0.5 is progress, not half the time: the run starts
     // where the eased progress reaches 0.5.
     const ease = cubicBezier(0.42, 0, 1, 1);
     let lo = 0;
@@ -2046,38 +2050,38 @@ test.describe('holding', () => {
         hi = mid;
       }
     }
-    expect(held.curveEndMs).toBeCloseTo(lo * 1000, 0);
-    expect(held.curveEndMs).toBeGreaterThan(600);
+    expect(held.curveEndMs).toBeCloseTo(lo * RUN_MS, 0);
+    expect(held.curveEndMs).toBeGreaterThan(0.6 * RUN_MS);
     await releaseAnimations(page, {finish: true});
 
     // Played in reverse, the held run is where the motion starts: the curve
     // runs to the full end.
-    await box.evaluate(el => {
+    await box.evaluate((el, duration) => {
       el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'linear', direction: 'reverse'},
+        {duration, easing: 'linear', direction: 'reverse'},
       );
-    });
+    }, RUN_MS);
     const [reversed] = await holdAnimations(page, box);
-    expect(reversed.curveEndMs).toBeCloseTo(1000, 0);
+    expect(reversed.curveEndMs).toBeCloseTo(RUN_MS, 0);
     await releaseAnimations(page, {finish: true});
 
     // One reversed by `reverse()` (a negative playback rate) is reported as
     // starting when it did, running its whole curve, and is refused by a
     // hold, which seeks curves forward only.
     const watch = await watchAnimations(box);
-    const begunAt = await box.evaluate(async el => {
+    const begunAt = await box.evaluate(async (el, duration) => {
       const animation = el.animate(
         [
           {translate: '0px 0px', offset: 0},
           {translate: '100px 0px', offset: 0.5},
           {translate: '100px 0px', offset: 1},
         ],
-        {duration: 1000, easing: 'linear'},
+        {duration, easing: 'linear'},
       );
       animation.reverse();
       await animation.ready;
@@ -2090,11 +2094,11 @@ test.describe('holding', () => {
         Number(document.timeline.currentTime) -
         (end - Number(animation.currentTime)) / Math.abs(animation.playbackRate)
       );
-    });
+    }, RUN_MS);
     const [running] = await watch.started();
     // Both from the engine's own instants: within the timeline's rounding.
     expect(Math.abs(running.from - begunAt)).toBeLessThanOrEqual(1);
-    expect(running.to - running.from).toBeCloseTo(1000, -1);
+    expect(running.to - running.from).toBeCloseTo(RUN_MS, -1);
     await expect(holdAnimations(page, box)).rejects.toThrow(/runs backward/);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
 
@@ -2112,22 +2116,25 @@ test.describe('holding', () => {
         {translate: '100px 0px', offset: 0.8},
       ],
     ]) {
-      await box.evaluate((el, frames) => {
-        el.animate(frames, {duration: 1000, easing: 'linear'});
-      }, keyframes);
+      await box.evaluate(
+        (el, {frames, duration}) => {
+          el.animate(frames, {duration, easing: 'linear'});
+        },
+        {frames: keyframes, duration: RUN_MS},
+      );
       const [moving] = await holdAnimations(page, box);
-      expect(moving.curveEndMs).toBeCloseTo(1000, 0);
+      expect(moving.curveEndMs).toBeCloseTo(RUN_MS, 0);
       await releaseAnimations(page, {finish: true});
     }
 
-    await box.evaluate(el => {
+    await box.evaluate((el, duration) => {
       el.animate([{rotate: 'x 0deg'}, {rotate: 'x 60deg'}], {
-        duration: 300,
+        duration,
         easing: 'linear',
       });
-    });
+    }, RUN_MS);
     await holdAnimations(page, box);
-    const [end] = await sampleCurve(box, [300]);
+    const [end] = await sampleCurve(box, [RUN_MS]);
     // About x, nothing turns in the plane: no z rotation, and y shrinks by
     // cos 60°.
     expect(end.transform.rotate).toBeCloseTo(0, 1);
@@ -2161,6 +2168,88 @@ test.describe('holding', () => {
     );
     expect(held.heldAtMs).not.toBeNull();
     expect(Math.abs(after - (held.heldAtMs ?? 0))).toBeLessThan(0.5);
+    await releaseAnimations(page);
+  });
+
+  test('a run held while its resume is still pending keeps its place through its playback rate: a seek to the hold leaves it where it was held', async ({
+    page,
+  }) => {
+    await fixture(page);
+    // #box runs at rate 1; a second run at rate 2 was paused 400 ms into its
+    // curve and is resumed by the hold's own first read of the timeline, so
+    // its resume is still pending (no start time yet) when the hold takes it.
+    // It covers its 400 ms of curve in 200 ms of timeline. Both run long
+    // enough for the hold to reach them on a loaded runner, where a hold can
+    // read the page seconds after the runs were made.
+    await page.evaluate(async () => {
+      const frames = [
+        {transform: 'translateX(0px)'},
+        {transform: 'translateX(300px)'},
+      ];
+      document
+        .getElementById('box')
+        ?.animate(frames, {duration: 60_000, easing: 'linear'});
+      const other = document.createElement('div');
+      other.id = 'faster';
+      other.style.cssText =
+        'position:absolute;left:0;top:300px;width:40px;height:40px;background:#c63';
+      document.body.append(other);
+      const faster = other.animate(frames, {
+        duration: 60_000,
+        easing: 'linear',
+      });
+      faster.playbackRate = 2;
+      faster.pause();
+      faster.currentTime = 400;
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      // The hold reads the timeline's time once, just before it lists the
+      // page's animations: resumed there, the run is pending when listed. No
+      // other read of the timeline's time comes between (the animation
+      // recorder reads the clock and the animations, never the timeline).
+      // The read is caught on the prototype that defines it, which lives as
+      // long as the page: a property set on the timeline object itself is
+      // lost when the engine collects and recreates its wrapper.
+      let owner: object | null = Object.getPrototypeOf(document.timeline);
+      while (
+        owner != null &&
+        Object.getOwnPropertyDescriptor(owner, 'currentTime') == null
+      ) {
+        owner = Object.getPrototypeOf(owner);
+      }
+      const real =
+        owner == null
+          ? undefined
+          : Object.getOwnPropertyDescriptor(owner, 'currentTime');
+      if (owner == null || real?.get == null) {
+        throw new Error('no currentTime getter on the timeline');
+      }
+      const prototype = owner;
+      const read = real.get;
+      Object.defineProperty(prototype, 'currentTime', {
+        configurable: true,
+        get(this: AnimationTimeline) {
+          Object.defineProperty(prototype, 'currentTime', real);
+          faster.play();
+          return read.call(this);
+        },
+      });
+    });
+    const held = await holdAnimations(page);
+    expect(held.map(a => a.target)).toEqual(['div#box', 'div#faster']);
+    const [box, faster] = held;
+    expect(faster.heldAtMs).toBe(400);
+    // The moment of the hold, from #box's own place: a seek there leaves
+    // every held run where the hold read it.
+    await seekAnimations(page, (box.heldAtMs ?? 0) + box.offsetMs);
+    const at = await page.evaluate(() =>
+      ['box', 'faster'].map(id =>
+        Number(document.getElementById(id)?.getAnimations()[0]?.currentTime),
+      ),
+    );
+    expect(Math.abs(at[0] - (box.heldAtMs ?? 0))).toBeLessThanOrEqual(1);
+    expect(Math.abs(at[1] - 400)).toBeLessThanOrEqual(1);
     await releaseAnimations(page);
   });
 
@@ -2205,40 +2294,47 @@ test.describe('holding', () => {
     page,
   }) => {
     await fixture(page);
-    // #early starts 100 ms before #box's 600 ms linear move to 300 px.
-    await page.evaluate(
-      () =>
-        new Promise<void>(resolve => {
-          const early = document.createElement('div');
-          early.id = 'early';
-          document.body.append(early);
-          early.animate([{opacity: 0}, {opacity: 1}], {duration: 2000});
-          setTimeout(() => {
-            document
-              .getElementById('box')
-              ?.animate(
-                [
-                  {transform: 'translateX(0px)'},
-                  {transform: 'translateX(300px)'},
-                ],
-                {duration: 600, easing: 'linear'},
-              );
-            resolve();
-          }, 100);
-        }),
-    );
+    // #early starts before #box's 60 s linear move to 300 px. Each start time
+    // resolves at the first frame after its animation is made, which a
+    // starved page can hold back past any timer, so #box is made 100 ms after
+    // #early's start has resolved, and the gap is read from the two starts.
+    // Both run long enough for the holds to reach them on a loaded runner,
+    // where a hold read the page as late as 10 s after the runs were made.
+    const startGap = await page.evaluate(async () => {
+      const early = document.createElement('div');
+      early.id = 'early';
+      document.body.append(early);
+      const fade = early.animate([{opacity: 0}, {opacity: 1}], {
+        duration: 120_000,
+      });
+      await fade.ready;
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const move = document
+        .getElementById('box')
+        ?.animate(
+          [{transform: 'translateX(0px)'}, {transform: 'translateX(300px)'}],
+          {duration: 60_000, easing: 'linear'},
+        );
+      await move?.ready;
+      return Number(fade.startTime) - Number(move?.startTime);
+    });
     const box = page.locator('#box');
     await waitForAnimation(box);
     // The later-started element is held first.
     const [first] = await holdAnimations(page, box);
     const [later] = await holdAnimations(page, page.locator('#early'));
-    const samples = await sampleCurve(box, [0, 150, 300]);
-    expect(
-      samples.map(sample => Math.round(sample.transform.translateX)),
-    ).toEqual([0, 75, 150]);
-    // A later hold's earlier start has a negative offset; the origin stays.
+    const samples = await sampleCurve(box, [0, 15_000, 30_000]);
+    // Unrounded: at 0.005 px a ms, sampling from an origin shifted by the
+    // start gap (over 100 ms) moves a sample by 0.5 px or more, while a seek
+    // lands within the engines' time rounding of the requested time.
+    [0, 75, 150].forEach((x, i) =>
+      expect(samples[i].transform.translateX).toBeCloseTo(x, 1),
+    );
+    // A later hold's earlier start has a negative offset, the difference of
+    // the two starts; the origin stays.
     expect(first.offsetMs).toBe(0);
-    expect(later.offsetMs).toBeLessThan(-50);
+    expect(startGap).toBeLessThan(-50);
+    expect(later.offsetMs).toBeCloseTo(startGap, 0);
     await releaseAnimations(page);
   });
 
