@@ -51,7 +51,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Adds canonical axis-aware scroll behavior to structure owned by the caller. An axis is effective only when its computed overflow is scroll-capable and geometry exceeds the shared 1px tolerance. Both viewport and content boxes are observed.',
+      'Adds canonical axis-aware scroll behavior to structure owned by the caller. An axis is effective only when its computed overflow is scroll-capable and geometry exceeds the shared 1px tolerance. Both viewport and content boxes are observed. An element can be its own content box: compose both getters onto it, and its direct children are observed as well.',
     bestPractices: [
       {
         guidance: true,
@@ -102,7 +102,8 @@ export const docsDense = {
   returnDescriptions: {
     getViewportProps:
       'safe viewport prop/ref/xstyle composition with behavior-owned overflow, accessibility, and chaining.',
-    getContentProps: 'safe observed content-box prop/ref composition.',
+    getContentProps:
+      'safe observed content-box prop/ref composition; may share the viewport element, whose direct children are then observed.',
     state: 'inline/block isScrollable, atStart, and atEnd state.',
   },
   usage: {
