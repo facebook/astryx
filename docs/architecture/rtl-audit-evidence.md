@@ -25,6 +25,7 @@ verified_by:
   [
     .github/scripts/rtl-audit-coarse-hit.browser.test.mjs,
     .github/scripts/rtl-audit-coverage.test.mjs,
+    .github/scripts/rtl-scorecard-failures.test.mjs,
     .github/scripts/rtl-scorecard-summary.test.mjs,
     .github/scripts/rtl-join.test.mjs,
     .github/scripts/rtl-report-completion.test.mjs,
