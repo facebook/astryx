@@ -30,7 +30,7 @@ system_specs: [spec:AST-009]
 
 | Area                    | Contract                                                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | `label`, `children` (the value), optional `icon`, root `BaseProps`, and a `ref`.                                                           |
+| Public contract         | `label` (a string), `children` (the value), optional `icon`, root `BaseProps`, and a `ref`.                                                |
 | Behavior                | One label and value pair, rendered as a `dt` and `dd` either side by side in the list's grid or stacked inside a wrapper.                  |
 | End-user impact         | People read each fact's label next to or above its value, and assistive technology pairs them.                                             |
 | Builder impact          | None; the record describes shipped behavior.                                                                                               |
@@ -76,7 +76,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 | Concept | Closed values or states | Meaning                                  | Availability by variant/orientation/state | Default      | Owner                    | Stability | Invalid-value behavior |
 | ------- | ----------------------- | ---------------------------------------- | ----------------------------------------- | ------------ | ------------------------ | --------- | ---------------------- |
-| Label   | ReactNode               | The entry's key.                         | Always                                    | —            | caller                   | Stable    | —                      |
+| Label   | string                  | The entry's key.                         | Always                                    | —            | caller                   | Stable    | —                      |
 | Value   | ReactNode (`children`)  | The entry's value.                       | Always                                    | —            | caller                   | Stable    | —                      |
 | Icon    | ReactNode; unset        | Content shown before the label.          | Always                                    | unset        | caller                   | Stable    | —                      |
 | Layout  | side by side; stacked   | Set by the parent list, not by the item. | Always                                    | side by side | `component:MetadataList` | Stable    | —                      |
@@ -92,7 +92,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Allowed variation
 
-- **AV1 — Content.** Any ReactNode may be the label, icon, or value.
+- **AV1 — Content.** Any string may be the label; any ReactNode may be the
+  icon or value.
 
 ### Representative states
 
@@ -120,10 +121,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement          | Representation authority | Hierarchy role | Component contract |
-| ---------------- | --------------------------- | ------------------------ | -------------- | ------------------ |
-| Label            | Secondary-color medium key. | Current source and docs  | Supporting     | FR1–FR3            |
-| Metadata         | Primary-color value.        | Current source and docs  | Prominent      | FR1–FR3            |
+| Anatomy or state | Design requirement   | Representation authority | Hierarchy role | Component contract |
+| ---------------- | -------------------- | ------------------------ | -------------- | ------------------ |
+| Label            | string               | Current source and docs  | Supporting     | FR1–FR3            |
+| Metadata         | Primary-color value. | Current source and docs  | Prominent      | FR1–FR3            |
 
 Theming: the `dt` (side by side) or the wrapper (stacked) carries the
 `metadata-list-item` target, which `MetadataList.doc.mjs` declares and
@@ -141,13 +142,13 @@ its own, so no anatomy-theming block is declared here.
 
 ## Verification map
 
-| Contract | Verification                                                             | Representative states           | Mutation or failure expectation                                                                                                                                                                                                  | Audit section                   |
-| -------- | ------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1      | `MetadataList.test.tsx` item, label-width, and pass-through-target tests | Side by side                    | A missing label or value, a `dt` or `dd` that is not a direct child of the `dl`, or props, ref, or click handling that leave the `dt`, fails. Gap: the `-label` and `-value` test ids and the 24px minimum height have no check. | `audit:MetadataListItem/layout` |
-| FR2      | `MetadataList.test.tsx` stacked and stacked pass-through tests           | Stacked                         | A missing wrapper, `dt`, or `dd`, or props that leave the wrapper, fails. Gap: the stacked gap has no check.                                                                                                                     | `audit:MetadataListItem/layout` |
-| FR3      | `MetadataList.test.tsx` icon test                                        | With icon                       | A missing icon fails. Gap: label and value type and color and the icon gap have no automated check.                                                                                                                              | `audit:MetadataListItem/design` |
-| FR4      | `MetadataList.test.tsx` pass-through tests                               | `aria-label`, `id`, data; click | A dropped attribute or handler fails. Gap: no test covers `className`, `style`, or the `xstyle` merge order.                                                                                                                     | `audit:MetadataListItem/api`    |
-| AR1, PR1 | `MetadataList.test.tsx` role queries                                     | Term and definition             | A missing `term` or `definition` role in the DOM fails. Gap: no accessibility-tree check proves the pairing (`spec:AST-009` FR3).                                                                                                | `audit:MetadataListItem/a11y`   |
+| Contract | Verification                                                             | Representative states           | Mutation or failure expectation                                                                                                                                                                                                                        | Audit section                   |
+| -------- | ------------------------------------------------------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| FR1      | `MetadataList.test.tsx` item, label-width, and pass-through-target tests | Side by side                    | A missing label or value, a `dt` or `dd` that is not a direct child of the `dl`, wrong `-label` and `-value` test ids, or props or click handling that leave the `dt`, fails. Gap: no test attaches a `ref`, and the 24px minimum height has no check. | `audit:MetadataListItem/layout` |
+| FR2      | `MetadataList.test.tsx` stacked and stacked pass-through tests           | Stacked                         | A missing wrapper, `dt`, or `dd`, or props that leave the wrapper, fails. Gap: the stacked gap has no check.                                                                                                                                           | `audit:MetadataListItem/layout` |
+| FR3      | `MetadataList.test.tsx` icon test                                        | With icon                       | A missing icon fails. Gap: label and value type and color and the icon gap have no automated check.                                                                                                                                                    | `audit:MetadataListItem/design` |
+| FR4      | `MetadataList.test.tsx` pass-through tests                               | `aria-label`, `id`, data; click | A dropped attribute or handler fails. Gap: no test covers `className`, `style`, or the `xstyle` merge order.                                                                                                                                           | `audit:MetadataListItem/api`    |
+| AR1, PR1 | `MetadataList.test.tsx` role queries                                     | Term and definition             | A missing `term` or `definition` role in the DOM fails. Gap: no accessibility-tree check proves the pairing (`spec:AST-009` FR3).                                                                                                                      | `audit:MetadataListItem/a11y`   |
 
 ## Decision log
 
