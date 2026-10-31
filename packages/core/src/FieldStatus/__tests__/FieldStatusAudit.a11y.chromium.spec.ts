@@ -103,28 +103,65 @@ async function settle(page: Page) {
 
 async function observe(page: Page) {
   return page.evaluate((expectedCases: string[]) => {
-    function luminance(color: string): number | null {
+    type Rgba = {r: number; g: number; b: number; a: number};
+    function parseColor(color: string): Rgba | null {
       const match = color.match(/rgba?\(([^)]+)\)/);
       if (!match) {
         return null;
       }
-      const [r, g, b] = match[1]
+      const [r, g, b, a = 1] = match[1]
         .split(/[\s,/]+/)
         .filter(Boolean)
-        .slice(0, 3)
-        .map(Number)
-        .map(channel => {
-          const c = channel / 255;
-          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-        });
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        .map(Number);
+      return {r, g, b, a};
     }
-    function contrast(fg: string, bg: string): number | null {
-      const a = luminance(fg);
-      const b = luminance(bg);
-      if (a == null || b == null) {
+    function over(top: Rgba, bottom: Rgba): Rgba {
+      return {
+        r: top.r * top.a + bottom.r * (1 - top.a),
+        g: top.g * top.a + bottom.g * (1 - top.a),
+        b: top.b * top.a + bottom.b * (1 - top.a),
+        a: 1,
+      };
+    }
+    // The painted backdrop behind an element: its own fill composited over
+    // every translucent ancestor fill down to the first opaque one (or the
+    // white canvas when none is opaque).
+    function backdrop(element: Element): Rgba {
+      const layers: Rgba[] = [];
+      for (
+        let node: Element | null = element;
+        node != null;
+        node = node.parentElement
+      ) {
+        const color = parseColor(getComputedStyle(node).backgroundColor);
+        if (color != null && color.a > 0) {
+          layers.push(color);
+          if (color.a >= 1) {
+            break;
+          }
+        }
+      }
+      let result: Rgba = {r: 255, g: 255, b: 255, a: 1};
+      for (const layer of layers.reverse()) {
+        result = over(layer, result);
+      }
+      return result;
+    }
+    function luminance({r, g, b}: Rgba): number {
+      const [lr, lg, lb] = [r, g, b].map(channel => {
+        const c = channel / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+    }
+    function contrast(element: Element): number | null {
+      const fg = parseColor(getComputedStyle(element).color);
+      if (fg == null) {
         return null;
       }
+      const bg = backdrop(element);
+      const a = luminance(over(fg, bg));
+      const b = luminance(bg);
       const [hi, lo] = a > b ? [a, b] : [b, a];
       return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
     }
@@ -183,7 +220,11 @@ async function observe(page: Page) {
         outlineStyle: style.outlineStyle,
         color: style.color,
         backgroundColor: style.backgroundColor,
-        contrast: contrast(style.color, style.backgroundColor),
+        contrast: contrast(box),
+        compositedBackground: (() => {
+          const bg = backdrop(box);
+          return `rgb(${Math.round(bg.r)}, ${Math.round(bg.g)}, ${Math.round(bg.b)})`;
+        })(),
         fontSize: style.fontSize,
         geometry: {
           x: Math.round(rect.x * 10) / 10,
