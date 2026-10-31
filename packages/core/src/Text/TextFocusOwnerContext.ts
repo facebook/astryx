@@ -4,7 +4,7 @@
 
 /**
  * @file TextFocusOwnerContext.ts
- * @input Uses React
+ * @input Uses createLayerScopedContext
  * @output Exports TextFocusOwnerContext
  * @position Text internals; provided by components whose own control takes
  *   focus for their whole surface (ClickableCard), read by Text
@@ -14,7 +14,7 @@
  * - /packages/core/src/ClickableCard/ClickableCard.tsx (provides it)
  */
 
-import {createContext} from 'react';
+import {createLayerScopedContext} from '../Layer/layerScopedContext';
 
 /**
  * True inside a component whose own control already takes keyboard focus for
@@ -22,7 +22,9 @@ import {createContext} from 'react';
  * covers the card). A truncated Text inside one adds no tab stop of its own,
  * so the card keeps a single stop and a single focus ring. Controls that wrap
  * the Text in the DOM (a link, a button, a menu item) are found from the
- * Text's ancestors instead.
+ * Text's ancestors instead. It is layer-scoped: a Dialog, Popover or other
+ * layer opened from such a component starts again at false, so its content
+ * gets its own tab stops.
  */
-export const TextFocusOwnerContext = createContext(false);
+export const TextFocusOwnerContext = createLayerScopedContext(false);
 TextFocusOwnerContext.displayName = 'TextFocusOwnerContext';

@@ -7,6 +7,7 @@
 
 import {render, screen, waitFor} from '@testing-library/react';
 import {ClickableCard} from '../ClickableCard/ClickableCard';
+import {Dialog} from '../Dialog/Dialog';
 import {SelectableCard} from '../SelectableCard/SelectableCard';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
@@ -474,6 +475,41 @@ describe('truncated text shows one tooltip, not two', () => {
         expect(textElement(text)).not.toHaveAttribute('tabindex');
       }
     } finally {
+      restore();
+    }
+  });
+
+  it('gives a truncated Text in a dialog opened from a clickable card its own tab stop', async () => {
+    const restore = withOverflow();
+    // jsdom has no showModal; open the dialog the way Dialog's own tests do.
+    const proto = HTMLDialogElement.prototype;
+    const originalShowModal = proto.showModal;
+    proto.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    try {
+      render(
+        <ClickableCard label="Card" onClick={() => {}}>
+          <Text type="body" maxLines={1}>
+            Card title, wider than the space it has
+          </Text>
+          <Dialog isOpen onOpenChange={() => {}}>
+            <Text type="body" maxLines={1}>
+              In a dialog from the card, wider than the space it has
+            </Text>
+          </Dialog>
+        </ClickableCard>,
+      );
+      await waitFor(() =>
+        expect(
+          textElement('In a dialog from the card, wider than the space it has'),
+        ).toHaveAttribute('tabindex', '0'),
+      );
+      expect(
+        textElement('Card title, wider than the space it has'),
+      ).not.toHaveAttribute('tabindex');
+    } finally {
+      proto.showModal = originalShowModal;
       restore();
     }
   });
