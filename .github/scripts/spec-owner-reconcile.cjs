@@ -470,8 +470,9 @@ async function reconcileSpecOwnerGate({
         codeDescription: code.description,
         spec,
       });
-      // The details link names the spec decision run (a newer one on yield).
-      const targetUrl = gate.target_url ?? runUrl;
+      // The details link names the spec decision run: a newer one on yield,
+      // whether the gate it restores waits or succeeds.
+      const targetUrl = gate.target_url ?? spec?.url ?? runUrl;
       const current = live.find(
         status => status.context === REVIEW_GATE_CONTEXT,
       );
@@ -595,6 +596,11 @@ async function reconcileSpecOwnerGate({
     state: 'pending',
     description: `Reconciling exact head ${initialHead.slice(0, 7)}.`,
   });
+  // The spec half is unknown until this run decides it, so the review gate
+  // waits meanwhile: a run that fails part-way (after a /revoke-spec, say)
+  // leaves it pending, never an earlier success. Written before the yield
+  // check, like the mirror, so a newer run's decision is restored over it.
+  await publishReviewGate(initialHead, readSpecGate([]));
   if (await restoreNewerStatus(initialHead)) return;
 
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();

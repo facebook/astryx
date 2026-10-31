@@ -683,6 +683,76 @@ describe('spec owner workflow reconciliation', () => {
     });
   });
 
+  it('keeps the newer run\u2019s link when it yields to a newer success', async () => {
+    const harness = createHarness({
+      statuses: [
+        trustedStatus({
+          runId: 101n,
+          state: 'success',
+          description: 'Mirrors review-required \u00b7 spec ok (@cixzhang)',
+        }),
+      ],
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'success',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+  });
+
+  it('restores a newer decision that lands just before the waiting write', async () => {
+    let landed = false;
+    const harness = createHarness({
+      onCreateStatus: (input, state) => {
+        if (landed || input.context !== 'review-required') return;
+        landed = true;
+        // A newer run decides success just before this run's waiting write.
+        state.statuses.unshift(
+          trustedStatus({
+            runId: 101n,
+            state: 'success',
+            description: 'Mirrors review-required \u00b7 spec ok (@cixzhang)',
+          }),
+        );
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'success',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+  });
+
+  it('keeps the review gate waiting when a run fails part-way', async () => {
+    // An approved head: the gate succeeded on the earlier run.
+    const harness = createHarness({
+      statuses: [
+        {
+          sha: head,
+          context: 'review-required',
+          state: 'success',
+          description:
+            '\u2705 Spec approved by @cixzhang \u00b7 No code review required.',
+          creator: {login: 'github-actions[bot]'},
+        },
+      ],
+    });
+    harness.github.rest.pulls.listFiles = async () => {
+      throw new Error('listFiles failed');
+    };
+
+    await expect(run(harness, context({runId: 100n}))).rejects.toThrow();
+
+    expect(latestReviewGate(harness.state)).toMatchObject({
+      state: 'pending',
+      description: '\u23f3 Checking for spec changes\u2026',
+    });
+  });
+
   it('leads with code review, and relinks the same text to a newer run', async () => {
     const harness = createHarness({
       headContent: 'kind: architecture\nauthority: current\n',
