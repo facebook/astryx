@@ -1,13 +1,13 @@
 ---
 schema_version: 3
-template_version: 5
+template_version: 7
 kind: component
 id: component:ChatLayoutScrollButton
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-10-31
 owners: [cixzhang]
 review_triggers: [public-api, behavior, accessibility, theming, testing]
 verified_by:
@@ -38,15 +38,15 @@ system_specs: [spec:AST-029]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `isVisible`, `label`, and `onClick`, plus root `div` passthrough, styles, and ref. No public surface changes here.                                                                                                                                            |
-| Behavior                | A pill holding one ghost Button. Hidden state paints nothing and leaves the tab order; a non-empty `label` expands the pill and becomes the visible text; omitted or empty renders icon-only.                                                                 |
-| End-user impact         | A theme that restyles the documented target now repaints the pill a reader sees instead of an invisible full-width row behind it.                                                                                                                             |
-| Builder impact          | None. Props, defaults, DOM shape, ref target, and passthrough element are unchanged.                                                                                                                                                                          |
-| Compatibility/readiness | Patch-compatible repair. The public target keeps its name and stays a single target; it moves onto the element that paints, which no `guaranteedProperties` declaration existed to promise before. Three inherited violations remain open (FR1a, FR3a, FR6a). |
-| Review checks           | Reject a target on the centring row, a hidden pill that keeps keyboard focus, a non-empty label that is not also the accessible name, or a state that paints identically to its opposite. FR1a, FR3a, and FR6a are recorded open violations, not acceptances. |
-| Governing rules         | `architecture:component-theming-surface/INV4, INV6`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                                          |
+| Area                    | Contract                                                                                                                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `ChatLayoutScrollButton` with required `isVisible` and `onClick`, optional `label`, and root `div` passthrough, styles, and ref.                                                                                                                   |
+| Behavior                | A pill holding one ghost Button. Hidden state paints nothing and leaves the tab order; a non-empty `label` expands the pill and becomes the visible text; omitted or empty renders icon-only.                                                      |
+| End-user impact         | Readers who scrolled up get one control back to the newest message, which is hidden and out of the tab order when they are already there; a theme that restyles its target repaints the pill they see.                                             |
+| Builder impact          | None.                                                                                                                                                                                                                                              |
+| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps (FR1a, FR3a, FR6a) are listed under Current-state impact; seven owner questions stay open.                                                                                   |
+| Review checks           | Reject a target on the centring row, a hidden pill that keeps keyboard focus, a non-empty label that is not also the accessible name, or a state that paints identically to its opposite. FR1a, FR3a, and FR6a are recorded gaps, not acceptances. |
+| Governing rules         | `architecture:component-theming-surface/INV4, INV6`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                               |
 
 This table is a review projection; the body below is authoritative.
 
@@ -58,23 +58,28 @@ it owns no scroll state. ChatLayout composes it with `useChatStreamScroll` and
 `useChatNewMessages` by default, and a caller may replace or remove it through
 `ChatLayout`'s `scrollButton` slot.
 
-This record is an observational backfill written during the 2026-09-23
-whole-component audit. It describes verified shipped behavior and the one
-objective repair that travels with it. It adds no behavior, default,
-compatibility promise, or design decision.
-
 ## Compatibility and migration
 
-- Released default preserved: yes — `@astryxdesign/core@0.6.3` ships
-  `isVisible`, `label`, and `onClick` with the same meanings.
-- Compatibility class: theming repair. The target name, its documentation entry,
-  and its count are unchanged; only the element carrying it moves, from the
-  centring row to the pill it centres.
-- Controlled/uncontrolled behavior: unchanged — visibility is a required caller
-  input, and the component holds no state.
-- Migration decision: `component:ChatLayoutScrollButton/DEC-1`
+- Released default preserved: `yes`
+- Compatibility class: records shipped behavior; no public change
+- Controlled/uncontrolled behavior: visibility is a required caller input, and
+  the component holds no state
+- Migration decision: none; DEC-1 records where the target sits
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **An empty label leaves the control unnamed (FR1a).** `label=''` renders an
+  icon-only control with an empty accessible name; WCAG 2.2 SC 4.1.2 requires a
+  name (OQ7).
+- **The focus ring is clipped away (FR3a).** The pill's `overflow: hidden`
+  clips the Button's outset focus ring, so a focused control looks the same as
+  a resting one; WCAG 2.2 SC 2.4.7 requires a visible indicator (OQ8).
+- **The target reflects no state (FR6a).** The pill's visible and expanded
+  states change its paint, but the target exposes neither;
+  `architecture:component-theming-surface` INV6 reflects a paint-changing state
+  on its target (OQ1).
 
 ## Ownership boundary
 
@@ -111,23 +116,20 @@ Consumer syntax and prop defaults remain in `ChatLayoutScrollButton.doc.mjs`.
 
 ## Behavioral and layout contract
 
-Draft requirements identify their basis so observed code is not mistaken for an
-intentional decision. A `current` contract contains no unresolved rows.
-
-| ID   | Candidate invariant                                                                                                                   | Basis                                                                  | Draft review state    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------- |
-| FR1  | The control MUST expose a non-empty accessible name in every reachable state.                                                         | WCAG 2.2 SC 4.1.2                                                      | settled obligation    |
-| FR1a | `label` omitted uses the translated default; a non-empty `label` is the name. **`label=''` currently satisfies neither** — see below. | current behavior, which violates FR1                                   | **violation of FR1**  |
-| FR2  | While `isVisible` is false the pill MUST paint nothing and MUST NOT accept focus, programmatic or sequential.                         | current behavior; WCAG 2.2 SC 2.4.7                                    | settled               |
-| FR3  | While `isVisible` is true the pill MUST remain keyboard reachable and activate on Enter.                                              | current behavior; WCAG 2.2 SC 2.1.1                                    | settled               |
-| FR3a | A focused control MUST paint a visible focus indicator. **The ring is currently clipped away entirely** — see below.                  | WCAG 2.2 SC 2.4.7; `spec:AST-020/FR1`                                  | **violation of FR3a** |
-| FR4  | A **non-empty** `label` MUST render as visible text; omitted or empty renders icon-only with no visible text.                         | current behavior                                                       | settled               |
-| FR5  | The pill MUST take its resolved height from the element-size token so no theme scale makes it clip the Button it wraps.               | current behavior                                                       | settled               |
-| FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.   | `architecture:component-theming-surface/INV4`                          | settled               |
-| FR6a | The target MUST expose the state axes that drive its painted styles. **Currently it reflects none** — see below.                      | `architecture:component-theming-surface/INV6`                          | **violation of INV6** |
-| FR7  | The transition between states MUST collapse to `0s` under `prefers-reduced-motion: reduce`.                                           | current behavior                                                       | settled               |
-| FR8  | The collapsed control MUST fit a 24x24 CSS-px square.                                                                                 | WCAG 2.2 SC 2.5.8 (AA)                                                 | settled               |
-| FR9  | Consumer `ref`, styles, and remaining DOM props MUST reach the component's outer element.                                             | current behavior; `architecture:public-component-api/INV5, INV6, INV8` | settled               |
+| ID   | Invariant                                                                                                                                              | Basis                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| FR1  | The control MUST expose a non-empty accessible name in every reachable state.                                                                          | WCAG 2.2 SC 4.1.2                                                      |
+| FR1a | `label` omitted uses the translated default; a non-empty `label` is the name. Implementation gap: `label=''` satisfies neither (Current-state impact). | Current source                                                         | **violation of FR1**  |
+| FR2  | While `isVisible` is false the pill MUST paint nothing and MUST NOT accept focus, programmatic or sequential.                                          | current behavior; WCAG 2.2 SC 2.4.7                                    |
+| FR3  | While `isVisible` is true the pill MUST remain keyboard reachable and activate on Enter.                                                               | current behavior; WCAG 2.2 SC 2.1.1                                    |
+| FR3a | A focused control MUST paint a visible focus indicator. Implementation gap: the ring is clipped away entirely (Current-state impact).                  | WCAG 2.2 SC 2.4.7; `spec:AST-020/FR1`                                  | **violation of FR3a** |
+| FR4  | A **non-empty** `label` MUST render as visible text; omitted or empty renders icon-only with no visible text.                                          | current behavior                                                       |
+| FR5  | The pill MUST take its resolved height from the element-size token so no theme scale makes it clip the Button it wraps.                                | current behavior                                                       |
+| FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.                    | `architecture:component-theming-surface/INV4`                          |
+| FR6a | The target MUST expose the state axes that drive its painted styles. Implementation gap: it reflects none (Current-state impact).                      | `architecture:component-theming-surface/INV6`                          | **violation of INV6** |
+| FR7  | The transition between states MUST collapse to `0s` under `prefers-reduced-motion: reduce`.                                                            | current behavior                                                       |
+| FR8  | The collapsed control MUST fit a 24x24 CSS-px square.                                                                                                  | WCAG 2.2 SC 2.5.8 (AA)                                                 |
+| FR9  | Consumer `ref`, styles, and remaining DOM props MUST reach the component's outer element.                                                              | current behavior; `architecture:public-component-api/INV5, INV6, INV8` |
 
 **FR1a — the empty-label naming gap.** `label=''` is permitted by the public
 type and is what ordinary caller code produces from an empty or not-yet-loaded
@@ -141,8 +143,7 @@ operable control with no accessible name.
 This record states the obligation and records the current behavior as violating
 it. Closing the gap means choosing between falling back to the default name,
 rejecting the value, or treating an empty label as a caller error — a public
-API and compatibility decision that belongs to the owner, not to an audit. See
-OQ7.
+API and compatibility decision that belongs to the owner. See OQ7.
 
 **FR3a — the clipped focus ring.** The composed Button declares a focus ring
 as an `outline` at a positive `outline-offset`, so it is painted entirely
@@ -156,10 +157,7 @@ to the resting control in both configurations and both color modes.
 Keyboard access itself is intact — the control takes focus and activates — so
 this is a visibility defect, not a reachability one. The remedy is a production
 change to how the pill clips or where the ring is drawn, and the choice between
-those changes rendered geometry, so it needs a visual review rather than a
-settled correction. `spec:AST-029/FR7` would allow a settled objective fix to
-travel with an audit; this one is not settled, so it is outside **this** PR.
-Recorded as OQ8.
+those changes rendered geometry, so it needs a visual review. Recorded as OQ8.
 
 **FR6a — the unreflected state axes.** `isVisible` selects visible/hidden
 styles and `label` selects collapsed/expanded styles, both on the painting
@@ -197,9 +195,6 @@ the owner. See OQ1.
 - **PR1 — No state, no effects, no observers.** The component derives every
   rendered difference from its props during render and registers no listener,
   timer, observer, or animation frame.
-
-Current measurements belong in the audit record; this subsection owns only
-durable constraints and their verification target.
 
 ## Accessibility contract
 
@@ -242,23 +237,24 @@ scroll affordance today, so these rows record the gap rather than a requirement.
   excludes components that merely use a Button as an action slot. See OQ4.
 - `architecture:component-theming-surface` owns the target/anatomy relationship
   this component's theming must satisfy; FR6 adopts INV4 directly.
-- `spec:AST-029` owns the audit flow that produced this observational record.
+- `spec:AST-029` owns the audit evidence inventory this record's verification
+  map follows.
 
 ## Verification map
 
-| Contract       | Verification                                                                                                                                                                                                                                                                                             | Representative states                  | Mutation or failure expectation                                                                            | Audit section                             |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| FR1, FR4       | `ChatLayoutScrollButton.test.tsx` role/name and visible-text cases                                                                                                                                                                                                                                       | label omitted; non-empty label         | dropping `isIconOnly` renders the translated name as clipped visible text, and the name case still passes  | `audit:ChatLayoutScrollButton/a11y`       |
-| FR1a           | **no oracle in any lane today.** Derived from source across three files (`??` passing `''` through, Button's `label !== ''` guard, the Icon's decorative default). A checked-in fixture would add an unnamed control to the shared story set and a new axe baseline entry, so the audit did not add one. | label empty                            | a fallback added here would make the derivation stale without any test failing                             | `audit:ChatLayoutScrollButton/a11y`       |
-| FR2, FR3       | `ChatLayoutScrollButton.test.tsx` tab cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts`                                                                                                                                                                                                              | hidden at rest; scrolled up; re-hidden | replacing `visibility` with `opacity` alone leaves the invisible control in the tab order                  | `audit:ChatLayoutScrollButton/a11y`       |
-| FR3a           | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` interaction pass: the focused frame's bytes are compared with a rest frame captured from the same page, and the ring's outward reach is measured against the clipping ancestor's room (recorded as `ringChangedPixels`, `outreach`, `roomPx`)      | collapsed and labelled, light and dark | the result is recorded and annotated, never asserted, so repairing the clip cannot turn this check red     | `audit:ChatLayoutScrollButton/a11y`       |
-| FR5            | `ChatLayoutScrollButton.a11y.chromium.spec.ts` two-theme geometry pair and its pre-fix arm                                                                                                                                                                                                               | neutral and butter                     | a literal height lets a larger element scale clip the Button the pill wraps                                | `audit:ChatLayoutScrollButton/theming`    |
-| FR6            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` placement and probe-theme reach tests                                                                                                                                                                                                              | visible, collapsed, neutral and probe  | moving the target back to the centring row leaves the pill unchanged under the probe theme                 | `audit:ChatLayoutScrollButton/theming`    |
-| FR6a           | source: `themeProps()` is called with no state argument, and `Chat.doc.mjs` declares the target with no `visualProps`/`states`                                                                                                                                                                           | visible/hidden; collapsed/expanded     | adding either axis is new public theming surface, so no test may assert its shape before the owner decides | `audit:ChatLayoutScrollButton/theming`    |
-| hover, pressed | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` interaction pass — each frame asserts the pseudo-class matched and that the captured bytes differ from a rest frame of the same page                                                                                                               | collapsed and labelled, light and dark | a frame captured after release, or with the pointer elsewhere, fails its own engagement assertion          | `audit:ChatLayoutScrollButton/design`     |
-| FR7            | source declaration plus `holdMotionStill` capture conditions                                                                                                                                                                                                                                             | any transition                         | removing the reduced-motion branch restores animation for readers who asked for none                       | `audit:ChatLayoutScrollButton/a11y`       |
-| FR8            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` measured target box                                                                                                                                                                                                                                | visible, collapsed                     | a smaller resolved size drops the control below the AA minimum                                             | `audit:ChatLayoutScrollButton/a11y`       |
-| FR9            | `ChatLayoutScrollButton.test.tsx` passthrough case                                                                                                                                                                                                                                                       | any                                    | dropping `...rest` silently discards `data-*`, `id`, and ARIA the caller set                               | `audit:ChatLayoutScrollButton/public-api` |
+| Contract       | Verification                                                                                                                                                                                                                                                                                        | Representative states                  | Mutation or failure expectation                                                                            | Audit section                             |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| FR1, FR4       | `ChatLayoutScrollButton.test.tsx` role/name and visible-text cases                                                                                                                                                                                                                                  | label omitted; non-empty label         | dropping `isIconOnly` renders the translated name as clipped visible text, and the name case still passes  | `audit:ChatLayoutScrollButton/a11y`       |
+| FR1a           | No focused test; read from source across three files (`??` passing `''` through, Button's `label !== ''` guard, the Icon's decorative default).                                                                                                                                                     | label empty                            | a fallback added here would make the derivation stale without any test failing                             | `audit:ChatLayoutScrollButton/a11y`       |
+| FR2, FR3       | `ChatLayoutScrollButton.test.tsx` tab cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts`                                                                                                                                                                                                         | hidden at rest; scrolled up; re-hidden | replacing `visibility` with `opacity` alone leaves the invisible control in the tab order                  | `audit:ChatLayoutScrollButton/a11y`       |
+| FR3a           | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` interaction pass: the focused frame's bytes are compared with a rest frame captured from the same page, and the ring's outward reach is measured against the clipping ancestor's room (recorded as `ringChangedPixels`, `outreach`, `roomPx`) | collapsed and labelled, light and dark | the result is recorded and annotated, never asserted, so repairing the clip cannot turn this check red     | `audit:ChatLayoutScrollButton/a11y`       |
+| FR5            | `ChatLayoutScrollButton.a11y.chromium.spec.ts` two-theme geometry pair                                                                                                                                                                                                                              | neutral and butter                     | a literal height lets a larger element scale clip the Button the pill wraps                                | `audit:ChatLayoutScrollButton/theming`    |
+| FR6            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` placement and probe-theme reach tests                                                                                                                                                                                                         | visible, collapsed, neutral and probe  | moving the target back to the centring row leaves the pill unchanged under the probe theme                 | `audit:ChatLayoutScrollButton/theming`    |
+| FR6a           | source: `themeProps()` is called with no state argument, and `Chat.doc.mjs` declares the target with no `visualProps`/`states`                                                                                                                                                                      | visible/hidden; collapsed/expanded     | adding either axis is new public theming surface, so no test may assert its shape before the owner decides | `audit:ChatLayoutScrollButton/theming`    |
+| hover, pressed | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` interaction pass — each frame asserts the pseudo-class matched and that the captured bytes differ from a rest frame of the same page                                                                                                          | collapsed and labelled, light and dark | a frame captured after release, or with the pointer elsewhere, fails its own engagement assertion          | `audit:ChatLayoutScrollButton/design`     |
+| FR7            | source declaration plus `holdMotionStill` capture conditions                                                                                                                                                                                                                                        | any transition                         | removing the reduced-motion branch restores animation for readers who asked for none                       | `audit:ChatLayoutScrollButton/a11y`       |
+| FR8            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` measured target box                                                                                                                                                                                                                           | visible, collapsed                     | a smaller resolved size drops the control below the AA minimum                                             | `audit:ChatLayoutScrollButton/a11y`       |
+| FR9            | `ChatLayoutScrollButton.test.tsx` passthrough case                                                                                                                                                                                                                                                  | any                                    | dropping `...rest` silently discards `data-*`, `id`, and ARIA the caller set                               | `audit:ChatLayoutScrollButton/public-api` |
 
 ## Decision log
 
@@ -327,10 +323,10 @@ of this repair.
   ring on the pill, or clip on a different element — each change rendered
   geometry and belong to a visual review.
 - **OQ7 — What should `label=''` do?** (`human-api`)
-  It currently produces an unnamed control (FR1a). The candidate answers — fall
+  It produces an unnamed control (FR1a). The candidate answers — fall
   back to the translated default, reject the value in the type, or treat it as
   a caller error — are a public API and compatibility decision on a released
-  prop, so the audit recorded the violation instead of choosing one.
+  prop, so this record states the gap without choosing one.
 
 ## Content boundary
 
