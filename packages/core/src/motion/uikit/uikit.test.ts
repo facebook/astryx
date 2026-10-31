@@ -68,6 +68,19 @@ function leavesOf(file: string): Leaf[] {
   // of them is checked where it is declared.
   const exported = new Set<string>();
   lines.forEach((line, index) => {
+    // A sourced constant (`const NAME = value;` under an `@source` doc), which
+    // a group and the table both compose: a row of its own, so a leaf that
+    // only names it is checked here. Plain constants, unlike a destructured
+    // binding, leave a bundle that reads one group free of the others.
+    const constant = /^const (\w+) = /.exec(line);
+    if (constant != null) {
+      const doc = docAbove(lines, index);
+      if (/^@source /m.test(doc)) {
+        exported.add(constant[1]);
+        rows.push({file, key: constant[1], doc});
+      }
+      return;
+    }
     const match = /^export const (\w+) = \{/.exec(line);
     if (match == null) {
       return;
