@@ -46,7 +46,7 @@ system_specs: [spec:AST-025, spec:AST-029]
 | Behavior                | The root is a flex column; the message area grows and never shrinks; the dock is sticky when the root scrolls and fixed when `scrollRef` names an outer scroller.                         |
 | End-user impact         | A chat transcript scrolls under a composer that stays reachable, auto-follows streaming output, and offers a scroll-to-bottom affordance when the reader has moved away from the bottom.  |
 | Builder impact          | None.                                                                                                                                                                                     |
-| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap, listed under Current-state impact; two owner questions stay open.                                                     |
+| Compatibility/readiness | Records shipped behavior; no public change. Two owner questions stay open.                                                                                                                |
 | Review checks           | Reject any row that states unshipped behavior, promises a default this component does not apply, or resolves OQ1 or OQ2 without an owner decision.                                        |
 | Governing rules         | `architecture:public-component-api/INV1, INV5–INV6, INV8`; `architecture:component-style-authoring/INV1–INV3, INV5`; `architecture:theme-tokens/INV3`; `spec:AST-025/FR12` (not adopted). |
 
@@ -70,14 +70,6 @@ Consumer usage, prop syntax, and examples belong in `ChatLayout.doc.mjs`.
 - Controlled/uncontrolled behavior: not applicable; the component holds no
   controllable value.
 - Migration decision: none.
-
-## Current-state impact
-
-- **Painted parts have no theme target.** The message area, the frosted dock
-  with its inner column and blur layer, and the empty-state box paint or size
-  the layout but carry no target; `chat-layout` sits on the scrolling root, so a
-  theme cannot reach them. `architecture:component-theming-surface` INV4 gives
-  each themable part a target (OQ2).
 
 ## Ownership boundary
 
@@ -238,15 +230,17 @@ The `chat-layout` target itself is declared on the Chat family document
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------- |
 | FR1, FR2 | `ChatLayout.test.tsx` self-scroll layout contract                                                                                            | self-scroll, short and long transcript              | Restoring `min-height: 100%` on the message area re-adds the dock's height and the root overflows | `audit:ChatLayout/§4` |
 | FR3, FR4 | `ChatLayout.test.tsx` dock positioning                                                                                                       | no `scrollRef`; external `scrollRef`                | Swapping sticky and fixed detaches the dock from the element that actually scrolls                | `audit:ChatLayout/§4` |
-| FR5      | `ChatLayout.test.tsx` empty-state cases                                                                                                      | empty array; populated children                     | Treating populated children as empty hides the transcript                                         | `audit:ChatLayout/§4` |
-| FR6      | `ChatLayout.test.tsx` scroll-button cases                                                                                                    | default; custom node; `null`                        | Collapsing `null` into the default renders an affordance the caller removed                       | `audit:ChatLayout/§4` |
+| FR5      | `ChatLayout.test.tsx` empty-state cases; `useChatNewMessages.test.tsx` conditional list case                                                 | empty array; populated children                     | Treating populated children as empty hides the transcript                                         | `audit:ChatLayout/§4` |
+| FR6      | `ChatLayout.test.tsx` scroll-button cases                                                                                                    | custom node                                         | Collapsing `null` into the default renders an affordance the caller removed                       | `audit:ChatLayout/§4` |
 | FR7      | `ChatLayout.test.tsx` density cases; `themingTargets.test.ts`                                                                                | compact; balanced; spacious                         | Dropping the reflected attribute makes the theming axis unselectable                              | `audit:ChatLayout/§2` |
 | FR8      | `useChatNewMessages.test.tsx`, `useChatStreamScroll.test.tsx`                                                                                | first fill; streaming growth                        | Losing the published refs stops auto-scroll from observing content growth                         | `audit:ChatLayout/§7` |
 | AR1, AR2 | `ChatLayoutScrollButton.test.tsx` and `ChatLayout.test.tsx` tab-order cases; `ChatLayoutScrollButton.a11y.chromium.spec.ts` in real Chromium | hidden at rest; visible; re-hidden after activation | Reverting to `opacity`-only hiding puts an invisible control back in the tab order                | `audit:ChatLayout/§1` |
 
 Read from source, with no focused test yet:
 
-- FR5: `null`, `undefined`, and `false` children selecting the empty state.
+- FR5: `null` and `undefined` children selecting the empty state.
+- FR6: `null` rendering nothing and an omitted `scrollButton` selecting the
+  wired default.
 - FR7: the dock, message-area, dock-inner, and blur geometry for each density.
 - FR9: `ref`, DOM props, `className`, `style`, and `xstyle` on the root.
 - AR3: the catalog strings; AR4: no landmark or name on caller regions.
