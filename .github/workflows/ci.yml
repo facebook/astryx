@@ -957,6 +957,9 @@ jobs:
         if: needs.native-swift-runner.outputs.applies == 'true'
         run: bash .github/scripts/native-swift.sh
 
+  # Public registry contract. Generation proves schema, dependency, route-lock,
+  # alias, and release-gating invariants; the final step drives every canonical
+  # item through the exact pinned ShadCN client and compiles every written source.
   registry-contract:
     name: registry-contract (${{ matrix.leg }})
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft && (github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run'))) && (github.event_name != 'workflow_dispatch') }}
@@ -1434,9 +1437,10 @@ jobs:
 
   # Join gate that keeps the historical `build` check name: anything keyed on
   # "build" being green (branch protection, tooling, habit) keeps working, and
-  # it fails when build-storybook or typecheck fails. A skipped
-  # build-storybook (a spec-only or release-bump pull request) skips this
-  # gate too.
+  # it fails when build-storybook or typecheck fails. On a pull request
+  # outside its scope, build-storybook skips its own work and passes, so this
+  # gate passes. A skipped build-storybook job (a draft) skips this gate too;
+  # a fork pull request without `ci:run` still reports here.
   build:
     needs: [build-storybook, typecheck]
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' && !cancelled() && (needs.build-storybook.result != 'skipped' || github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.full_name == github.repository || contains(github.event.pull_request.labels.*.name, 'ci:run')))) }}

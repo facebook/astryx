@@ -44,10 +44,14 @@ describe('docsite browser required-check projection', () => {
       expect(ungated(job.if)).toBe("github.event_name != 'workflow_dispatch'");
       const scopeAt = job.steps.findIndex(step => step.id === 'scope');
       expect(scopeAt).toBe(1);
+      // Exact conditions: an extra skip on any step (for example a
+      // docsite-only one) fails here. Only the evidence upload also runs
+      // after a failed step.
       for (const step of job.steps.slice(scopeAt + 1)) {
-        expect(step.if, step.name ?? step.uses).toMatch(
-          new RegExp(`(^|&& )${ACTIVE.replace(/[.()|]/g, '\\$&')}$`),
-        );
+        const expected = step.name?.startsWith('Upload ')
+          ? `always() && ${ACTIVE}`
+          : ACTIVE;
+        expect(step.if, step.name ?? step.uses).toBe(expected);
       }
     }
     expect(guard.if).toBe(ACTIVE);
