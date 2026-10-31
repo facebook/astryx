@@ -267,10 +267,17 @@ describe('Token accessibility', () => {
           data-testid="clickable"
         />
         <Token label="Link" href="/docs" isDisabled data-testid="link" />
+        <Token
+          label="Link with remove"
+          href="/docs"
+          onRemove={() => {}}
+          isDisabled
+          data-testid="link-and-remove"
+        />
         <Token label="Enabled" href="/docs" data-testid="enabled" />
       </>,
     );
-    for (const id of ['static', 'clickable', 'link']) {
+    for (const id of ['static', 'clickable', 'link', 'link-and-remove']) {
       expect(screen.getByTestId(id), id).toHaveAttribute(
         'data-disabled',
         'disabled',
