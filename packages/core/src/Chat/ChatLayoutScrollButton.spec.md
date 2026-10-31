@@ -44,9 +44,9 @@ system_specs: [spec:AST-029]
 | Behavior                | A pill holding one ghost Button. Hidden state paints nothing and leaves the tab order; a non-empty `label` expands the pill and becomes the visible text; omitted or empty renders icon-only.                                                      |
 | End-user impact         | Readers who scrolled up get one control back to the newest message, which is hidden and out of the tab order when they are already there; a theme that restyles its target repaints the pill they see.                                             |
 | Builder impact          | None.                                                                                                                                                                                                                                              |
-| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps (FR1a, FR3a, FR6a) are listed under Current-state impact; seven owner questions stay open.                                                                                   |
+| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps (FR1a, FR3a, FR6a) are listed under Current-state impact; eight owner questions stay open.                                                                                   |
 | Review checks           | Reject a target on the centring row, a hidden pill that keeps keyboard focus, a non-empty label that is not also the accessible name, or a state that paints identically to its opposite. FR1a, FR3a, and FR6a are recorded gaps, not acceptances. |
-| Governing rules         | `architecture:component-theming-surface/INV4, INV6`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                               |
+| Governing rules         | `architecture:component-theming-surface/INV4`; `architecture:component-style-authoring/INV1, INV5`; `architecture:public-component-api/INV5, INV6, INV8`; WCAG 2.2 SC 2.4.7 and SC 2.5.8 (AA).                                                     |
 
 This table is a review projection; the body below is authoritative.
 
@@ -76,10 +76,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **The focus ring is clipped away (FR3a).** The pill's `overflow: hidden`
   clips the Button's outset focus ring, so a focused control looks the same as
   a resting one; WCAG 2.2 SC 2.4.7 requires a visible indicator (OQ8).
-- **The target reflects no state (FR6a).** The pill's visible and expanded
-  states change its paint, but the target exposes neither;
-  `architecture:component-theming-surface` INV6 reflects a paint-changing state
-  on its target (OQ1).
+- **A theme cannot address the pill's states (FR6a).** The pill's visible and
+  expanded states change its paint, but the target exposes neither, so a theme
+  can restyle the pill only as a whole (OQ1).
 
 ## Ownership boundary
 
@@ -116,20 +115,20 @@ Consumer syntax and prop defaults remain in `ChatLayoutScrollButton.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID   | Invariant                                                                                                                                              | Basis                                                                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| FR1  | The control MUST expose a non-empty accessible name in every reachable state.                                                                          | WCAG 2.2 SC 4.1.2                                                              |
-| FR1a | `label` omitted uses the translated default; a non-empty `label` is the name. Implementation gap: `label=''` satisfies neither (Current-state impact). | Current source                                                                 | **violation of FR1**  |
-| FR2  | While `isVisible` is false the pill MUST paint nothing and MUST NOT accept focus, programmatic or sequential.                                          | Current source and tests; WCAG 2.2 SC 2.4.7                                    |
-| FR3  | While `isVisible` is true the pill MUST remain keyboard reachable and activate on Enter.                                                               | Current source and tests; WCAG 2.2 SC 2.1.1                                    |
-| FR3a | A focused control MUST paint a visible focus indicator. Implementation gap: the ring is clipped away entirely (Current-state impact).                  | WCAG 2.2 SC 2.4.7; `spec:AST-020/FR1`                                          | **violation of FR3a** |
-| FR4  | A **non-empty** `label` MUST render as visible text; omitted or empty renders icon-only with no visible text.                                          | Current source and tests                                                       |
-| FR5  | The pill MUST take its resolved height from the element-size token so no theme scale makes it clip the Button it wraps.                                | Current source and tests                                                       |
-| FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.                    | `architecture:component-theming-surface/INV4`                                  |
-| FR6a | The target MUST expose the state axes that drive its painted styles. Implementation gap: it reflects none (Current-state impact).                      | `architecture:component-theming-surface/INV6`                                  | **violation of INV6** |
-| FR7  | The transition between states MUST collapse to `0s` under `prefers-reduced-motion: reduce`.                                                            | Current source and tests                                                       |
-| FR8  | The collapsed control MUST fit a 24x24 CSS-px square.                                                                                                  | WCAG 2.2 SC 2.5.8 (AA)                                                         |
-| FR9  | Consumer `ref`, styles, and remaining DOM props MUST reach the component's outer element.                                                              | Current source and tests; `architecture:public-component-api/INV5, INV6, INV8` |
+| ID   | Invariant                                                                                                                                                                                                            | Basis                                                                          |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| FR1  | The control MUST expose a non-empty accessible name in every reachable state.                                                                                                                                        | WCAG 2.2 SC 4.1.2                                                              |
+| FR1a | `label` omitted uses the translated default; a non-empty `label` is the name. Implementation gap: `label=''` satisfies neither (Current-state impact).                                                               | Current source                                                                 |
+| FR2  | While `isVisible` is false the pill MUST paint nothing and MUST NOT accept focus, programmatic or sequential.                                                                                                        | Current source and tests; WCAG 2.2 SC 2.4.7                                    |
+| FR3  | While `isVisible` is true the pill MUST remain keyboard reachable and activate on Enter.                                                                                                                             | Current source and tests; WCAG 2.2 SC 2.1.1                                    |
+| FR3a | A focused control MUST paint a visible focus indicator. Implementation gap: the ring is clipped away entirely (Current-state impact).                                                                                | WCAG 2.2 SC 2.4.7; `spec:AST-020/FR1`                                          |
+| FR4  | A **non-empty** `label` MUST render as visible text; omitted or empty renders icon-only with no visible text.                                                                                                        | Current source and tests                                                       |
+| FR5  | The pill MUST take its resolved height from the element-size token so no theme scale makes it clip the Button it wraps.                                                                                              | Current source and tests                                                       |
+| FR6  | The public theming target MUST sit on the pill — the element painting fill, elevation, and radius — not on the row that centres it.                                                                                  | `architecture:component-theming-surface/INV4`                                  |
+| FR6a | The target reflects neither the visible nor the expanded state that drives its paint. Implementation gap: a theme cannot address either state; whether the target should reflect them is OQ1 (Current-state impact). | Current source                                                                 |
+| FR7  | The transition between states MUST collapse to `0s` under `prefers-reduced-motion: reduce`.                                                                                                                          | Current source                                                                 |
+| FR8  | The collapsed control MUST fit a 24x24 CSS-px square.                                                                                                                                                                | WCAG 2.2 SC 2.5.8 (AA)                                                         |
+| FR9  | Consumer `ref`, styles, and remaining DOM props MUST reach the component's outer element.                                                                                                                            | Current source and tests; `architecture:public-component-api/INV5, INV6, INV8` |
 
 **FR1a — the empty-label naming gap.** `label=''` is permitted by the public
 type and is what ordinary caller code produces from an empty or not-yet-loaded
@@ -256,6 +255,12 @@ scroll affordance today, so these rows record the gap rather than a requirement.
 | FR8            | `ChatLayoutScrollButtonSurface.a11y.chromium.spec.ts` measured target box                                                                                                                                                                                                                           | visible, collapsed                     | a smaller resolved size drops the control below the AA minimum                                             | `audit:ChatLayoutScrollButton/a11y`       |
 | FR9            | `ChatLayoutScrollButton.test.tsx` passthrough case                                                                                                                                                                                                                                                  | any                                    | dropping `...rest` silently discards `data-*`, `id`, and ARIA the caller set                               | `audit:ChatLayoutScrollButton/public-api` |
 
+Read from source, with no focused test yet:
+
+- FR1a: `label=''` producing an empty accessible name.
+- FR6a: the target reflecting no state.
+- FR7: the transition collapsing to `0s` under reduced motion.
+
 ## Decision log
 
 ### DEC-1 — The public theming target rides the pill, not the row that centres it
@@ -263,28 +268,15 @@ scroll affordance today, so these rows record the gap rather than a requirement.
 **Reference:** `component:ChatLayoutScrollButton/DEC-1`
 **Decider:** `cixzhang`, `2026-09-23`
 
-`architecture:component-theming-surface/INV4` requires a target to sit on a
-stable visible element that paints theme-controlled output. The component
-renders two elements: a full-width row that centres the pill and holds the gap
-below it, and the pill itself, which paints the fill, elevation, and radius. The
-target sat on the row, so a theme that styled the documented name painted a band
-across the chat dock while the pill kept the surface the theme asked to replace.
+The component renders two elements: a full-width row that centres the pill and
+holds the gap below it, and the pill, which paints the fill, elevation, and
+radius. The public target sits on the pill, the element a theme restyles, as
+`architecture:component-theming-surface/INV4` requires. Consumer `ref`, styles,
+and DOM props stay on the outer row (FR9).
 
-The name, the documentation entry, and the target count are unchanged, and no
-`guaranteedProperties` declaration existed to promise the old element, so this
-repairs a reachability gap rather than removing a compatibility path.
+Rejected: a second target for the pill — new theming surface for one painted part.
 
-Rejected: adding a second target for the pill. That is new public theming
-surface for a component that needs exactly one, and it would leave the
-non-painting target in place.
-
-Rejected: moving consumer passthrough to the pill alongside the target.
-`ref`, `xstyle`, `className`, `style`, and the remaining DOM props keep
-landing on the outer element, which is the element the released type, the
-existing passthrough test, and `architecture:public-component-api/INV5, INV8`
-name as the contract's owner. Relocating them would change where a caller's
-`id`, `data-*`, and ref resolve, which is a compatibility decision and not part
-of this repair.
+Rejected: moving consumer passthrough to the pill — it changes where a caller's `id` and ref resolve.
 
 ## Open questions
 
