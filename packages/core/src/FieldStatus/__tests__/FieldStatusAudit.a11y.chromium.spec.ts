@@ -358,6 +358,14 @@ for (const item of cases) {
     for (const box of observed.boxes) {
       const id = box.auditCase ?? 'unknown';
       const [variant] = id.split('-');
+      // Only the empty fixtures may measure no text line; everywhere else a
+      // missing line means the text was not found, so the line-based checks
+      // below cannot pass vacuously.
+      const isEmpty = id.endsWith('-empty');
+      check(
+        isEmpty ? box.lines === 0 : box.lines > 0,
+        `${id}: ${box.lines} text lines`,
+      );
       check(box.variant === variant, `${id}: data-variant ${box.variant}`);
       check(
         box.role == null && box.ariaLive == null && box.ariaHidden == null,
@@ -368,7 +376,7 @@ for (const item of cases) {
         check(box.iconHidden === true, `${id}: status glyph exposed to AT`);
         check(box.iconBeforeText === true, `${id}: glyph not before text`);
         // An empty message has no text line to align to.
-        if (box.lines > 0) {
+        if (!isEmpty) {
           check(
             box.iconOnFirstLine === true,
             `${id}: glyph not aligned to first line`,
