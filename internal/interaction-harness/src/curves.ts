@@ -416,11 +416,14 @@ export async function holdAnimations(
       );
     }
     // Each animation's start on the document timeline, read before the pause
-    // clears it (a pending play has no start time yet: it starts now).
+    // clears it. A pending play has no start time yet: it starts now, as far
+    // back as its current time reaches through its playback rate (at rate 2,
+    // a run covers its curve in half the timeline), as seeking reads it.
     const starts = all.map(animation =>
       animation.startTime != null
         ? Number(animation.startTime)
-        : now - Number(animation.currentTime ?? 0),
+        : now -
+          Number(animation.currentTime ?? 0) / (animation.playbackRate || 1),
     );
     const held = all.map(animation => {
       animation.pause();

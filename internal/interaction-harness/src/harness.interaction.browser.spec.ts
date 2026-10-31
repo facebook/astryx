@@ -2097,6 +2097,59 @@ test.describe('holding', () => {
     await releaseAnimations(page);
   });
 
+  test('a run held while its resume is still pending keeps its place through its playback rate: a seek to the hold leaves it where it was held', async ({
+    page,
+  }) => {
+    await fixture(page);
+    // #box runs at rate 1; a second run at rate 2 was paused 400 ms into its
+    // curve and is resumed just as the hold reads the page, so its resume is
+    // pending (no start time yet) when the hold takes it. It covers its
+    // 400 ms of curve in 200 ms of timeline.
+    await page.evaluate(async () => {
+      const frames = [
+        {transform: 'translateX(0px)'},
+        {transform: 'translateX(300px)'},
+      ];
+      document
+        .getElementById('box')
+        ?.animate(frames, {duration: 2000, easing: 'linear'});
+      const other = document.createElement('div');
+      other.id = 'faster';
+      other.style.cssText =
+        'position:absolute;left:0;top:300px;width:40px;height:40px;background:#c63';
+      document.body.append(other);
+      const faster = other.animate(frames, {duration: 2000, easing: 'linear'});
+      faster.playbackRate = 2;
+      faster.pause();
+      faster.currentTime = 400;
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      // Resumed inside the hold's own read of the page's animations.
+      const getAnimations = document.getAnimations;
+      document.getAnimations = function (this: Document) {
+        document.getAnimations = getAnimations;
+        faster.play();
+        return getAnimations.call(this);
+      };
+    });
+    const held = await holdAnimations(page);
+    expect(held.map(a => a.target)).toEqual(['div#box', 'div#faster']);
+    const [box, faster] = held;
+    expect(faster.heldAtMs).toBe(400);
+    // The moment of the hold, from #box's own place: a seek there leaves
+    // every held run where the hold read it.
+    await seekAnimations(page, (box.heldAtMs ?? 0) + box.offsetMs);
+    const at = await page.evaluate(() =>
+      ['box', 'faster'].map(id =>
+        Number(document.getElementById(id)?.getAnimations()[0]?.currentTime),
+      ),
+    );
+    expect(Math.abs(at[0] - (box.heldAtMs ?? 0))).toBeLessThanOrEqual(1);
+    expect(Math.abs(at[1] - 400)).toBeLessThanOrEqual(1);
+    await releaseAnimations(page);
+  });
+
   test('a second hold adds to the held set, and releasing resumes both', async ({
     page,
   }) => {
