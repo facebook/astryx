@@ -16,6 +16,8 @@ import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
+import {ungated} from './ci-pr-gate.mjs';
+
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const load = relative => yaml.parse(read(relative));
@@ -100,7 +102,7 @@ describe('Node-tooling CI routing', () => {
       /^pnpm test:ui\b/.test(candidate.run ?? ''),
     );
     expect(uiSuite.if).toContain(TOOLING_FALSE);
-    expect(ci.jobs['test-build'].if).toBe(
+    expect(ungated(ci.jobs['test-build'].if)).toBe(
       "github.event_name != 'workflow_dispatch'",
     );
     expect(
@@ -167,9 +169,6 @@ describe('Node-tooling CI routing', () => {
       expect(step(ci.jobs['docsite-test'], name).if).toContain(TOOLING_FALSE);
     }
 
-    expect(step(ci.jobs['build-sandbox'], 'Build Sandbox').if).toContain(
-      TOOLING_FALSE,
-    );
     for (const candidate of [
       ...ci.jobs['build-storybook'].steps,
       ...ci.jobs.typecheck.steps,
@@ -200,18 +199,21 @@ describe('Node-tooling CI routing', () => {
       'test-native-swift',
       'pr-interaction',
     ]);
-    expect(ci.jobs.build.needs).toEqual([
-      'build-storybook',
-      'build-sandbox',
-      'typecheck',
-    ]);
+    expect(ci.jobs.build.needs).toEqual(['build-storybook', 'typecheck']);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
     expect(ci.jobs.test.permissions).toEqual({
       contents: 'read',
       'pull-requests': 'read',
     });
+    // A release-branch pull request is spec-only, but its join still runs to
+    // require the release bump's own validation.
+    expect(testJoin.if).toBe(
+      "steps.scope.outputs.spec_only != 'true' || steps.scope.outputs.release_bump == 'true'",
+    );
     expect(testJoin.env).toMatchObject({
+      RELEASE_BUMP: '${{ steps.scope.outputs.release_bump }}',
+      RELEASE_BUMP_RESULT: '${{ needs.release-bump.result }}',
       DOCSITE_ONLY: '${{ steps.scope.outputs.docsite_only }}',
       SPEC_ONLY: '${{ steps.scope.outputs.spec_only }}',
       TOOLING_ONLY: '${{ steps.scope.outputs.tooling_only }}',
@@ -226,11 +228,32 @@ describe('Node-tooling CI routing', () => {
       ci.jobs.build,
       'Assert parallel builds succeeded',
     ).run;
-    expect(buildJoin).toContain('needs.build-storybook.result');
-    expect(buildJoin).toContain('needs.build-sandbox.result');
+    expect(buildJoin).toContain(
+      '[ "${{ needs.build-storybook.result }}" = "success" ] || exit 1',
+    );
+    expect(buildJoin).not.toContain('build-sandbox');
     expect(buildJoin).toContain(
       '[ "${{ needs.typecheck.result }}" = "success" ] || exit 1',
     );
+  });
+
+  it('builds no Sandbox and builds Storybook once per pull-request run', () => {
+    // Vercel builds the Sandbox preview; nothing downloaded CI's copy.
+    expect(ci.jobs['build-sandbox']).toBeUndefined();
+    expect(ci.jobs['build-storybook'].outputs).not.toHaveProperty(
+      'sandbox_url',
+    );
+    const storybookBuilders = Object.entries(ci.jobs).flatMap(([name, job]) =>
+      (job.steps ?? [])
+        .filter(s =>
+          /storybook build|build-packages-and-storybook/.test(s.run ?? ''),
+        )
+        .filter(
+          s => !/^github\.event_name == 'workflow_dispatch'/.test(s.if ?? ''),
+        )
+        .map(() => name),
+    );
+    expect(storybookBuilders).toEqual(['build-storybook']);
   });
 
   it('keeps removed preview publication out of the tooling lane', () => {

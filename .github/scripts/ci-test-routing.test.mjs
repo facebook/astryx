@@ -23,7 +23,9 @@
  * the commands are checked with each script expanded to its body.
  */
 
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
@@ -52,8 +54,7 @@ function declaredProjects() {
  * deliberate edit here.
  */
 const KNOWN_RUNNERS = new Set([
-  '2-core-ubuntu-arm',
-  '4-core-ubuntu',
+  'ubuntu-24.04-arm',
   'ubuntu-slim',
   'ubuntu-latest',
 ]);
@@ -113,7 +114,7 @@ describe.each(Object.entries(WORKFLOWS))(
     it('gives the Node suite more than one Vitest worker', () => {
       // Vitest uses one worker per CPU beyond the first: on two cores the
       // suite would run one file at a time.
-      expect(workflow.jobs['test-node']['runs-on']).toBe('4-core-ubuntu');
+      expect(workflow.jobs['test-node']['runs-on']).toBe('ubuntu-latest');
     });
 
     it('runs every declared Vitest project in some lane', () => {
@@ -412,9 +413,28 @@ describe('ci.yml RTL package sharding', () => {
     for (const job of Object.values(workflow.jobs)) {
       expect(JSON.stringify(job)).not.toContain('needs.check-components');
     }
-    for (const job of [shard, join, workflow.jobs['pr-rtl-merge']]) {
+    // Every job that reads the step's audit outputs asks for them: without
+    // `component-audit`, those outputs are missing and the job would skip its
+    // audits while reporting success.
+    const auditOutput =
+      /steps\.scope\.outputs\.(has_components|has_rtl_components|has_rtl_harness|force_full_component_audits|changed_files_path)/;
+    const readers = Object.entries(workflow.jobs).filter(([, job]) =>
+      auditOutput.test(JSON.stringify(job)),
+    );
+    expect(readers.map(([name]) => name).sort()).toEqual(
+      [
+        'pr-a11y-guards',
+        'pr-a11y-specs',
+        'pr-rtl',
+        'pr-rtl-merge',
+        'pr-rtl-shard',
+        'pr-visual',
+        'visual-scout',
+      ].sort(),
+    );
+    for (const [name, job] of readers) {
       const scope = job.steps.find(step => step.id === 'scope');
-      expect(scope.with['component-audit']).toBe('true');
+      expect(scope.with?.['component-audit'], name).toBe('true');
     }
     expect(runLines(shard)).toContain(
       '--force-full "${{ steps.scope.outputs.force_full_component_audits }}"',
@@ -498,7 +518,9 @@ describe('ci.yml RTL package sharding', () => {
       );
       expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
     }
-    expect(shard['runs-on']).toBe('4-core-ubuntu');
+    // Standard runner for pull requests; a dispatched release gate takes the
+    // paid release pool (ci-free-runners.test.mjs).
+    expect(shard['runs-on']).toContain("|| 'ubuntu-latest'");
     // Pull requests get the 15-minute PR budget; the full release roster, 30.
     expect(shard['timeout-minutes']).toBe(
       "${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}",
@@ -757,7 +779,7 @@ describe('ci.yml interaction proofs', () => {
     const checkout = job.steps.find(
       candidate =>
         candidate.uses?.startsWith('actions/checkout@') &&
-        candidate.with?.path !== '.test-scope',
+        candidate.with?.path === undefined,
     );
     expect(checkout?.with?.ref).toBe(
       '${{ github.event.pull_request.head.sha }}',
@@ -872,6 +894,73 @@ describe('heavy lanes outside their component scope (spec:AST-030 FR9)', () => {
       expect(download.if).toContain(gate);
     },
   );
+
+  it('installs nothing for the visual jobs outside their visual scope', () => {
+    const scout = workflow.jobs['visual-scout'].steps.find(
+      step => step.name === 'Setup Node and pnpm',
+    );
+    expect(scout.if).toBe(
+      "steps.visual-scope.outputs.has_stable_visual == 'true' && steps.visual-scope.outputs.broad_stable_visual == 'true'",
+    );
+    for (const name of ['Setup Node and pnpm', 'Install Playwright']) {
+      const step = workflow.jobs['pr-visual'].steps.find(
+        candidate => candidate.name === name,
+      );
+      expect(step.if, name).toBe(
+        "github.event_name != 'pull_request' || steps.visual-scope.outputs.has_stable_visual == 'true'",
+      );
+    }
+  });
+
+  it('gives the full visual plan when the file list is unreadable or there is no pull request', () => {
+    const decide = (job, {event, files, specialized = 'false'}) => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'visual-scope-'));
+      try {
+        const output = path.join(dir, 'output');
+        const filesPath = path.join(dir, 'files');
+        fs.writeFileSync(output, '');
+        fs.writeFileSync(filesPath, files);
+        const step = workflow.jobs[job].steps.find(
+          candidate => candidate.name === 'Decide stable visual scope',
+        );
+        const result = spawnSync(
+          'bash',
+          ['-e', '-c', step.run.replaceAll('${{ github.event_name }}', event)],
+          {
+            cwd: path.resolve(import.meta.dirname, '../..'),
+            env: {
+              ...process.env,
+              GITHUB_OUTPUT: output,
+              FILES_PATH: filesPath,
+              SCOPED: 'false',
+              SPECIALIZED: specialized,
+            },
+            encoding: 'utf8',
+          },
+        );
+        expect(result.status, result.stderr).toBe(0);
+        return fs.readFileSync(output, 'utf8');
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    };
+    const full = 'has_stable_visual=true\nbroad_stable_visual=true\n';
+    for (const job of ['visual-scout', 'pr-visual']) {
+      expect(decide(job, {event: 'pull_request', files: ''}), job).toBe(full);
+      expect(
+        decide(job, {event: 'workflow_dispatch', files: 'docs/x.md\n'}),
+        job,
+      ).toBe(full);
+      expect(
+        decide(job, {
+          event: 'pull_request',
+          files: 'packages/core/src/Button/Button.tsx\n',
+          specialized: 'true',
+        }),
+        job,
+      ).toBe('has_stable_visual=false\nbroad_stable_visual=false\n');
+    }
+  });
 
   it('reports no stable visual work on a specialized lane', () => {
     for (const name of ['visual-scout', 'pr-visual']) {

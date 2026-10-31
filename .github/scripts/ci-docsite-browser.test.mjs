@@ -14,6 +14,7 @@ import path from 'node:path';
 import {spawn, spawnSync} from 'node:child_process';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const {jobs} = yaml.parse(
@@ -30,7 +31,18 @@ describe('docsite-test', () => {
     expect(jobs['docsite-browser']).toBeUndefined();
     expect(owner.needs).toBeUndefined();
     expect(owner['continue-on-error']).toBeUndefined();
-    expect(owner.steps.findIndex(s => s.id === 'scope')).toBe(1);
+    // A required context keeps only the draft skip in its condition; an
+    // outside contributor's run stops at the first step with the reason.
+    expect(owner.if).toBe(
+      gated(
+        "${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') }}",
+        PR_REPORT_GATE,
+      ),
+    );
+    expect(owner.steps[0].name).toBe(
+      'Require a branch in this repository or the ci:run label',
+    );
+    expect(owner.steps.findIndex(s => s.id === 'scope')).toBe(2);
 
     const builds = owner.steps.filter(s =>
       /pnpm -F @astryxdesign\/docsite build/.test(s.run ?? ''),

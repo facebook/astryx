@@ -905,7 +905,7 @@ export interface MultiSelectorProps<
    * Not called when nothing is selected — the placeholder shows instead — and
    * not called for triggerDisplay 'badges', which renders Badge elements
    * rather than text.
-   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   * @default the translated `@astryx.multiSelector.selectedCount` message ("2 selected") for 'count', "A, B, C, +N" for 'labels'
    */
   formatValue?: (items: MultiSelectorSelectedItem[]) => string;
 
@@ -1450,6 +1450,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     triggerRef,
+    isFocusReturnAlways: hasExternalTrigger,
     popoverOptions: {
       hasLightDismiss: true,
       hasCloseButton: false,
@@ -1546,21 +1547,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Announce the filtered result count from the query-change handler (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
-  // not re-speak on unrelated re-renders. Reuses the announce instance shared
-  // with the selection-count announcements above.
+  // not re-speak on unrelated re-renders. The count, the create row and the
+  // empty panel's message state one thing, how the search ended, so they go
+  // through the search's own `hasReplace` announcer: one the next keystroke
+  // replaces before it is exposed is withdrawn rather than joined
+  // (`spec:AST-086` FR9, FR13), and keystrokes arriving within one frame,
+  // from a scanner, dictation or automation, say only the last query's.
+  // Selection changes keep the plain announcer above, so they still join.
+  const announceSearch = useAnnounce({hasReplace: true});
   const handleSearchChange = useCallback(
     (nextQuery: string) => {
       setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
-        announce('');
+        announceSearch('');
         return;
       }
       // While isLoading the panel deliberately shows nothing, so announcing a
       // result would put a claim in the one channel the screen has gone quiet
       // for.
       if (isLoading) {
-        announce('');
+        announceSearch('');
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
@@ -1570,7 +1577,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           // The create row is the one result on screen, so the panel is not
           // empty and the rendered-message route below stays silent; say the
           // row.
-          announce(
+          announceSearch(
             t('@astryx.multiSelector.createOption', {query: nextCreateQuery}),
           );
           return;
@@ -1581,9 +1588,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // keystroke — an async load landing with nothing that matches.
         return;
       }
-      announce(t('@astryx.multiSelector.resultCount', {count}));
+      announceSearch(t('@astryx.multiSelector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, getCreateQuery, t],
+    [announceSearch, isLoading, selectableItems, getCreateQuery, t],
   );
 
   // The panel's empty message is role="presentation" — role="listbox" permits
@@ -1608,7 +1615,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const realItemCount = sortedItems.length - leadingCount;
   const isPanelEmpty =
     surface.isOpen && !isLoading && realItemCount === 0 && !hasCreateRow;
-  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
+  // Through the search's announcer: the empty panel is how the search ended,
+  // so it and the count replace each other while not yet exposed
+  // (`spec:AST-086` FR13).
+  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery, {
+    announce: announceSearch,
+  });
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1890,7 +1902,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         return (
           <span {...stylex.props(styles.triggerText)}>
             {formatValue?.(selectedItems) ??
-              `${optimisticValue.length} selected`}
+              t('@astryx.multiSelector.selectedCount', {
+                count: optimisticValue.length,
+              })}
           </span>
         );
 
@@ -1933,6 +1947,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     placeholder,
     formatValue,
     maxBadges,
+    t,
   ]);
 
   // Render search input

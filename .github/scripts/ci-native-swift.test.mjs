@@ -17,6 +17,8 @@ import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
 
+import {ungated} from './ci-pr-gate.mjs';
+
 const root = path.resolve(import.meta.dirname, '../..');
 const ci = yaml.parse(
   fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
@@ -28,6 +30,20 @@ const step = (job, name) =>
 const applies = "needs.native-swift-runner.outputs.applies == 'true'";
 
 describe('native Swift routing', () => {
+  it('runs the macOS build on a merge-queue entry, where there is no PR file list', () => {
+    const scope = runner.steps.find(candidate => candidate.id === 'scope');
+    const action = yaml.parse(
+      fs.readFileSync(
+        path.join(root, '.github/actions/test-scope/action.yml'),
+        'utf8',
+      ),
+    );
+    const outside =
+      scope.with?.['outside-pull-request'] ??
+      action.inputs['outside-pull-request'].default;
+    expect(outside).toBe('run');
+  });
+
   it('is joined by test', () => {
     expect(ci.jobs.test.needs).toContain('test-native-swift');
     expect(
@@ -47,8 +63,10 @@ describe('native Swift routing', () => {
     expect(swift['runs-on']).toBe(
       `\${{ ${applies} && 'macos-15' || 'ubuntu-slim' }}`,
     );
-    expect(swift.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+    // Behind the pull-request gate (spec:AST-030 FR17).
+    expect(swift.if).toMatch(/^\$\{\{ \(github\.event_name != 'pull_request'/);
+    expect(ungated(swift.if)).toBe(
+      "github.event_name != 'workflow_dispatch' && always() && !cancelled()",
     );
   });
 

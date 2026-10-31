@@ -65,7 +65,9 @@ async function decide({
   files = [],
   inputs = {},
   headFiles = [],
+  headError,
   missingBase = [],
+  baseOverrides = {},
 } = {}) {
   const outputs = {};
   const messages = {info: [], warning: [], notice: [], failed: []};
@@ -95,6 +97,13 @@ async function decide({
             (CLASSIFIER_FILES.has(file) || file === AUDIT_FILE)
           ) {
             if (missingBase.includes(file)) throw notFound();
+            if (file in baseOverrides) {
+              return {
+                data: {
+                  content: Buffer.from(baseOverrides[file]).toString('base64'),
+                },
+              };
+            }
             return {
               data: {
                 content: fs
@@ -102,6 +111,9 @@ async function decide({
                   .toString('base64'),
               },
             };
+          }
+          if (ref === HEAD_SHA && headError) {
+            throw Object.assign(new Error('Server Error'), {status: headError});
           }
           if (ref === HEAD_SHA && headFiles.includes(file)) {
             return {data: {content: ''}};
@@ -146,7 +158,7 @@ describe('per-job scope step', () => {
     expect(Object.keys(action.outputs).sort()).toEqual(
       [
         'applies',
-        'changed_files',
+        'changed_files_path',
         'decided',
         'docsite_only',
         'force_full_component_audits',
@@ -291,6 +303,20 @@ describe('per-job scope step', () => {
     expect(outputs.decided).toBe('true');
   });
 
+  it('classifies a rename by both names, so a rename into specs is not spec-only', async () => {
+    const {outputs} = await decide({
+      files: [
+        {
+          filename: 'docs/specs/AST-030/spec.md',
+          previous_filename: 'packages/core/src/Button/Button.tsx',
+          status: 'renamed',
+        },
+      ],
+    });
+    expect(outputs.spec_only).toBe('false');
+    expect(outputs.applies).toBe('true');
+  });
+
   describe('requires-head-file', () => {
     const inputs = {
       paths: INTERACTION_PATHS,
@@ -304,6 +330,31 @@ describe('per-job scope step', () => {
       });
       expect(outputs.applies).toBe('false');
       expect(messages.notice).toHaveLength(1);
+    });
+
+    it('still applies to a pull request that renames the file away, with no notice', async () => {
+      const {outputs, messages} = await decide({
+        files: [
+          {
+            filename: 'playwright.old-interaction.config.ts',
+            previous_filename: 'playwright.interaction.config.ts',
+            status: 'renamed',
+          },
+        ],
+        inputs,
+      });
+      expect(outputs.applies).toBe('true');
+      expect(messages.notice).toHaveLength(0);
+    });
+
+    it('still applies when the head lookup fails for another reason', async () => {
+      const {outputs, messages} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+        headError: 500,
+      });
+      expect(outputs.applies).toBe('true');
+      expect(messages.notice).toHaveLength(0);
     });
 
     it('applies when the head has the file', async () => {
@@ -354,8 +405,11 @@ describe('per-job scope step', () => {
         has_components: 'true',
         has_rtl_components: 'true',
         force_full_component_audits: 'false',
-        changed_files: 'packages/core/src/Button/Button.tsx',
       });
+      // The list goes through a file: it can outgrow an environment variable.
+      expect(fs.readFileSync(outputs.changed_files_path, 'utf8')).toBe(
+        'packages/core/src/Button/Button.tsx\n',
+      );
       expect(contentCalls).toContainEqual({file: AUDIT_FILE, ref: BASE_SHA});
     });
 
@@ -393,6 +447,23 @@ describe('per-job scope step', () => {
       });
       expect(outputs.force_full_component_audits).toBe('true');
       expect(messages.warning).toHaveLength(1);
+    });
+
+    it('runs every audit in full when the audit classifier fails', async () => {
+      const {outputs, messages} = await decide({
+        files: changed('packages/core/src/Button/Button.tsx'),
+        inputs,
+        baseOverrides: {[AUDIT_FILE]: 'process.exit(3);\n'},
+      });
+      expect(outputs).toMatchObject({
+        has_components: 'true',
+        has_rtl_components: 'true',
+        has_rtl_harness: 'true',
+        force_full_component_audits: 'true',
+      });
+      expect(messages.warning).toEqual([
+        expect.stringContaining('Component audit scope could not be decided'),
+      ]);
     });
   });
 });

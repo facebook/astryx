@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
+import {PR_REPORT_GATE, gated} from './ci-pr-gate.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -122,12 +123,21 @@ describe('spec-only workflow contract', () => {
       const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
-    const unrelatedJobs = ['test-ui', 'test-node', 'test', 'build-storybook'];
+    const unrelatedJobs = [
+      'test-ui',
+      'test-node',
+      'registry-contract',
+      'test',
+      'build-storybook',
+    ];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
         "steps.scope.outputs.spec_only != 'true'",
       );
     }
+    // No job reads a scope job any more.
+    expect(ci).not.toContain('needs.check-scope');
+    expect(ci).not.toContain('needs.check-components');
     expect(jobBlock('build')).toContain(
       "needs.build-storybook.result != 'skipped'",
     );
@@ -148,7 +158,10 @@ describe('spec-only workflow contract', () => {
       expect(source, workflow).toContain(
         "if: steps.scope.outputs.spec_only == 'true'",
       );
+      // Steps live under `jobs:`; a trigger's path list above it uses the
+      // same indentation and is not a step.
       const expensiveSteps = source
+        .slice(source.indexOf('\njobs:'))
         .split(/\n      - /)
         .slice(1)
         .filter(step =>
@@ -202,7 +215,9 @@ describe('spec-only workflow contract', () => {
   it('skips every Storybook build command for spec-only changes', () => {
     const ci = read('.github/workflows/ci.yml');
     const jobStart = ci.indexOf('  build-storybook:');
-    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    // The job ends where the next top-level job begins.
+    const jobEnd =
+      jobStart + 1 + ci.slice(jobStart + 1).search(/\n {2}[a-z0-9-]+:\n/);
     const buildJob = ci.slice(jobStart, jobEnd);
     const steps = buildJob.split(/\n      - name: /).slice(1);
     const commandSteps = steps.filter(step =>
@@ -218,7 +233,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') }}",
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') }}", PR_REPORT_GATE)}`,
     );
     const action = read('.github/actions/test-scope/action.yml');
     expect(action).toContain(
@@ -244,7 +259,7 @@ describe('spec-only workflow contract', () => {
   });
 
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
     expect(workflow).toContain(
       'ref: ${{ github.event.repository.default_branch }}',
@@ -252,17 +267,19 @@ describe('spec-only workflow contract', () => {
     expect(workflow).toContain(
       'reconcileSpecOwnerGate({github, context, core})',
     );
-    expect(workflow).not.toContain('concurrency:');
-    const reconcileCondition = workflow
-      .slice(
-        workflow.indexOf('    if: >-', workflow.indexOf('  reconcile:')),
-        workflow.indexOf('    runs-on:', workflow.indexOf('  reconcile:')),
-      )
+    const specJob = workflow.slice(workflow.indexOf('  spec-owner:'));
+    // A cancelled reconcile could leave its head without a terminal status,
+    // so the spec-owner job never joins a cancel group (AST-030 FR15).
+    expect(specJob).not.toContain('concurrency:');
+    expect(specJob).not.toContain('cancel-in-progress');
+    expect(workflow).not.toMatch(/^concurrency:/m);
+    const reconcileCondition = specJob
+      .slice(specJob.indexOf('    if: >-'), specJob.indexOf('    name:'))
       .replace(/^    if: >-\s*/, '')
       .replace(/\s+/g, ' ')
       .trim();
     expect(reconcileCondition).toBe(
-      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec'))))",
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec')))) && (github.event_name != 'workflow_dispatch' || github.event.inputs.pr != '')",
     );
     expect(workflow).toContain('pull_request_review:');
     expect(workflow).toContain('issue_comment:');
@@ -299,26 +316,20 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).not.toContain(
       '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
     );
-    // Only a DESIGNOWNER author self-attests, and only the design group
-    // reads that attestation.
-    expect(reconciler).toContain('designOwners.includes(actor)');
-    expect(reconciler).not.toContain('allOwners.has(actor)');
-    expect(reconciler).toContain(
-      'readyAttestations,\n        owners: designApprovers',
-    );
+    // Every group approves through commands and reviews; no self-attestation.
+    expect(reconciler).not.toContain('spec-owner-ready');
     expect(reconciler).toContain('isSettled(initialPr)');
     expect(reconciler).toContain('isPublishable(headSha)');
     expect(reconciler).toContain('specDecision.approved');
     expect(reconciler).toContain('designDecision.approved');
     expect(reconciler).toContain('themeDecision.approved');
     expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
-    expect(reconciler).toContain('expectedHeadOid: $oid');
-    expect(reconciler).toContain('mergeMethod: SQUASH');
-    expect(reconciler).toContain('disablePullRequestAutoMerge');
+    // The gate decides approval only; merging stays with the merge queue.
+    expect(reconciler).not.toContain('enablePullRequestAutoMerge');
   });
 
   it('derives the comment trigger from the parser\u2019s own prefixes', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const workflow = read('.github/workflows/review-signal.yml');
     const {OWNER_COMMAND_PREFIXES} = require(
       path.join(root, '.github/scripts/spec-owner-decision.cjs'),
     );
@@ -335,38 +346,6 @@ describe('spec-only workflow contract', () => {
     for (const prefix of triggerPrefixes) {
       expect(prefix.trimEnd(), prefix).toBe(prefix);
     }
-  });
-
-  it('accepts relayed owner decisions only from the configured review app', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain(
-      'repository_dispatch:\n    types: [spec-owner-decision]',
-    );
-    expect(workflow).toContain(
-      'SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}',
-    );
-    expect(reconciler).toContain('appLogin: env.SPEC_DECISION_APP');
-  });
-
-  it('offers a backfill dispatch that publishes status without landing', () => {
-    const workflow = read('.github/workflows/spec-owner-gate.yml');
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-
-    expect(workflow).toContain('backfill:');
-    expect(workflow).toContain('type: boolean');
-    expect(reconciler).toContain("context.eventName === 'workflow_dispatch'");
-    expect(reconciler).toContain('backfillOnly');
-    // The guard must sit after the terminal status and before enablement.
-    const publish = reconciler.indexOf(
-      "setFinalStatus(initialHead, 'success', successDescription)",
-    );
-    const guard = reconciler.indexOf('if (backfillOnly) {');
-    const enable = reconciler.indexOf('enablePullRequestAutoMerge');
-    expect(publish).toBeGreaterThan(-1);
-    expect(guard).toBeGreaterThan(publish);
-    expect(enable).toBeGreaterThan(guard);
   });
 
   it('keeps the last read before a terminal write on the live pull request', () => {
@@ -400,18 +379,33 @@ describe('spec-only workflow contract', () => {
     );
   });
 
-  it('reads a ready attestation back only for a current design owner', () => {
-    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
-    const decision = read('.github/scripts/spec-owner-decision.cjs');
-
-    expect(reconciler).toContain('owners: designOwners');
-    expect(decision).toContain('!allowed.has(owner)');
-  });
-
   it('does not run the privileged visual-report path for spec-only PRs', () => {
     const workflow = read('.github/workflows/pr-comment.yml');
     expect(workflow).toContain("needs.resolve.outputs.spec_only != 'true'");
     expect(workflow).toContain("needs.resolve.outputs.spec_only == 'true'");
     expect(workflow).not.toContain("context: 'visual-acceptance'");
+  });
+
+  it('lets only the two review workflows publish the review contexts', () => {
+    const dir = path.join(root, '.github/workflows');
+    const writers = fs
+      .readdirSync(dir)
+      .filter(name =>
+        /context: '(review-required|spec-owner-approval)'|reconcileSpecOwnerGate/.test(
+          fs.readFileSync(path.join(dir, name), 'utf8'),
+        ),
+      );
+    expect(writers.sort()).toEqual(['review-clear.yml', 'review-signal.yml']);
+  });
+});
+
+describe('docsite-test spec validation', () => {
+  it('validates spec records whenever its own scope is spec-only or undecided', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const job = ci.slice(ci.indexOf('\n  docsite-test:\n'));
+    const validate = job.slice(job.indexOf('- name: Validate spec records'));
+    expect(validate.split('\n')[1].trim()).toBe(
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
   });
 });

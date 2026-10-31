@@ -75,7 +75,7 @@ post-selection lifecycle of an empty-query bootstrap menu, and an experimental
 touch presentation in which a trigger opens one searchable modal bottom sheet in
 place of the inline combobox. The descriptor lets Layer prepare placement without
 exposing DOM refs, pointer coordinates, or width policy to consumers. The
-dependent [PowerSearch draft](https://github.com/facebook/astryx/pull/5804)
+dependent [PowerSearch draft](https://github.com/meta/astryx/pull/5804)
 remains evidence for the need, not authority for this record.
 
 ## Compatibility and migration
@@ -371,9 +371,11 @@ presentation.
   once the confirmation has closed, since a message sent while the
   confirmation covers the sheet is not heard — `spec:AST-086/FR14`), the
   search's busy start, and how each search
-  ended — the result count for a non-empty query, or the empty state's text
-  when it shows — are announced once per occasion from inside the sheet
-  through `useAnnounce`, which `spec:AST-086/FR14` routes into the persistent
+  ended — the result count for a non-empty query, or the empty state's text when
+  it shows, both from the search's own `useAnnounce({hasReplace: true})`
+  instance (`spec:AST-086/FR9`, FR13), so a newer one replaces one not yet
+  spoken — are announced once per occasion from inside the sheet through
+  `useAnnounce`, which `spec:AST-086/FR14` routes into the persistent
   polite container of the sheet's own dialog while it is open, because the
   shared page-body channel is not exposed behind a native modal; the
   container follows FR3, FR5, and FR6 of that record (WCAG 2.2 SC 4.1.3
@@ -423,7 +425,7 @@ they compose.
   keeps its component-local token/input and source-loading behavior inside that
   boundary.
 - The PowerSearch contract at
-  [#5804](https://github.com/facebook/astryx/pull/5804) depends on the approved
+  [#5804](https://github.com/meta/astryx/pull/5804) depends on the approved
   descriptor and owns its own editor width policy. It is dependent draft evidence,
   not authority for Tokenizer.
 
