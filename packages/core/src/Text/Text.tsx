@@ -362,6 +362,7 @@ export function Text({
     }
     return () => observer.disconnect();
   }, []);
+  const callerTabIndex = props.tabIndex;
   const isTabStop =
     tooltipEnabled && !isExcludedByAncestor && !isInsideFocusOwner;
 
@@ -425,6 +426,11 @@ export function Text({
               </span>
             }
             placement={tooltipPlacement}
+            // The tooltip decides once, when it attaches, whether to listen
+            // for focus; a stop added later (revealed content) re-attaches it.
+            focusTrigger={
+              isTabStop && callerTabIndex == null ? 'always' : 'auto'
+            }
           />
         </Suspense>
       )}

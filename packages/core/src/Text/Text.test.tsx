@@ -5,7 +5,7 @@
  * Tests for Text component
  */
 
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ClickableCard} from '../ClickableCard/ClickableCard';
 import {Dialog} from '../Dialog/Dialog';
 import {SelectableCard} from '../SelectableCard/SelectableCard';
@@ -552,6 +552,13 @@ describe('truncated text shows one tooltip, not two', () => {
 
   it('becomes a tab stop when the content hiding it is revealed', async () => {
     const restore = withOverflow();
+    // jsdom has no popover API; record which tooltips open.
+    const shown: HTMLElement[] = [];
+    const proto = HTMLElement.prototype as {showPopover?: unknown};
+    const originalShowPopover = proto.showPopover;
+    proto.showPopover = function (this: HTMLElement) {
+      shown.push(this);
+    };
     try {
       const {container} = render(
         <>
@@ -580,7 +587,20 @@ describe('truncated text shows one tooltip, not two', () => {
       await waitFor(() => expect(text).not.toHaveAttribute('tabindex'));
       act(() => panel.removeAttribute('aria-hidden'));
       await waitFor(() => expect(text).toHaveAttribute('tabindex', '0'));
+      // Its tooltip opens on keyboard focus, like any other stop.
+      const realMatches = text.matches.bind(text);
+      vi.spyOn(text, 'matches').mockImplementation((selector: string) =>
+        selector === ':focus-visible' ? true : realMatches(selector),
+      );
+      fireEvent.keyDown(document, {key: 'Tab'});
+      fireEvent.focusIn(text);
+      await waitFor(() =>
+        expect(shown.map(popover => popover.textContent)).toContain(
+          'Revealed later, wider than the space it has',
+        ),
+      );
     } finally {
+      proto.showPopover = originalShowPopover;
       restore();
     }
   });
