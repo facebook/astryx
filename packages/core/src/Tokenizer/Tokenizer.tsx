@@ -91,6 +91,7 @@ import {joinAriaIDs} from '../utils/inputAria';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TokenizerBottomSheetProps} from './TokenizerBottomSheet';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
 // Re-export status types for convenience
 export type {
@@ -760,6 +761,7 @@ export function Tokenizer<T extends SearchableItem>({
   'aria-labelledby': ariaLabelledByProp,
   ...restProps
 }: TokenizerWithPresentationProps<T>): React.JSX.Element {
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
     containerXstyle,
     containerClassName,
@@ -1421,6 +1423,14 @@ export function Tokenizer<T extends SearchableItem>({
                 .join(' ') || undefined
             }
             onChangeQuery={onChangeQuery}
+            // The resolved required state reaches the combobox, also when a
+            // FormLayout default hides the visible marker (component:FormLayout
+            // FR5, AR2).
+            aria-required={isEffectivelyRequired || rest['aria-required']}
+            // An error status is exposed on the combobox as on every other field
+            // (WCAG 4.1.2; spec:AST-020 FR9). Without one, a caller's own
+            // aria-required / aria-invalid still applies.
+            aria-invalid={status?.type === 'error' || rest['aria-invalid']}
             __queryEntries={createEntries}
             debounceMs={debounceMs}
             onKeyDown={handleKeyDown}

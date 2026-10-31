@@ -31,6 +31,7 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react';
+import {FormLayout} from '../FormLayout/FormLayout';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -691,6 +692,84 @@ describe('Typeahead', () => {
       />,
     );
     expect(screen.getByText(/Required/)).toBeInTheDocument();
+  });
+
+  it('exposes the resolved required state on the combobox (FormLayout FR5, AR2)', () => {
+    const field = (props: {
+      isRequired?: boolean;
+      isOptional?: boolean;
+      label: string;
+    }) => (
+      <Typeahead
+        {...props}
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />
+    );
+    render(
+      <>
+        {field({label: 'Plain'})}
+        {field({label: 'Explicit', isRequired: true})}
+        <FormLayout defaultOptionality="required">
+          {field({label: 'By default'})}
+          {field({label: 'Opted out', isOptional: true})}
+        </FormLayout>
+      </>,
+    );
+    const required = (name: string) =>
+      screen
+        .getByRole('combobox', {name: new RegExp(`^${name}`)})
+        .getAttribute('aria-required');
+    expect(required('Plain')).toBeNull();
+    expect(required('Explicit')).toBe('true');
+    // The form default hides the visible marker, so assistive technology
+    // must still hear the field as required.
+    expect(required('By default')).toBe('true');
+    expect(required('Opted out')).toBeNull();
+  });
+
+  it('marks the combobox invalid for an error status only (WCAG 4.1.2)', () => {
+    const field = (
+      label: string,
+      status?: {type: 'error' | 'warning'; message: string},
+    ) => (
+      <Typeahead
+        label={label}
+        status={status}
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />
+    );
+    render(
+      <>
+        {field('None')}
+        {field('Warned', {type: 'warning', message: 'Check this'})}
+        {field('Failed', {type: 'error', message: 'Pick one'})}
+      </>,
+    );
+    const invalid = (name: string) =>
+      screen.getByRole('combobox', {name}).getAttribute('aria-invalid');
+    expect(invalid('None')).toBeNull();
+    expect(invalid('Warned')).toBeNull();
+    expect(invalid('Failed')).toBe('true');
+  });
+
+  it("keeps a caller's own aria-invalid and aria-required when the field's own state is off", () => {
+    render(
+      <Typeahead
+        label="Caller"
+        aria-invalid="true"
+        aria-required="true"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const combobox = screen.getByRole('combobox', {name: 'Caller'});
+    expect(combobox).toHaveAttribute('aria-invalid', 'true');
+    expect(combobox).toHaveAttribute('aria-required', 'true');
   });
 
   it('renders error status message', () => {
