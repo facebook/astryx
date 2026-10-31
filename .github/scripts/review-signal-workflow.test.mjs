@@ -88,7 +88,8 @@ async function runSignal({
     rest: {
       pulls: {
         get: vi.fn(async () => ({data: pr})),
-        list: vi.fn(async () => ({data: [pr]})),
+        // Like GitHub's list endpoint, the listed PR omits changed_files.
+        list: vi.fn(async () => ({data: [{...pr, changed_files: undefined}]})),
         listFiles: vi.fn(async () => ({
           data: [{filename: 'README.md', status: 'modified'}],
         })),
@@ -206,9 +207,11 @@ describe('review-signal trusted helper ref', () => {
         description: 'Waiting on code review: community contribution',
       });
       if (options.eventName === 'workflow_dispatch') {
-        expect(
-          h.github.rest.pulls[options.backfill ? 'list' : 'get'],
-        ).toHaveBeenCalledOnce();
+        // A backfill lists the open PRs, then reads each in full.
+        if (options.backfill) {
+          expect(h.github.rest.pulls.list).toHaveBeenCalledOnce();
+        }
+        expect(h.github.rest.pulls.get).toHaveBeenCalledOnce();
       } else {
         expect(h.github.rest.pulls.get).not.toHaveBeenCalled();
       }

@@ -153,12 +153,19 @@ jobs:
             }
 
             let hadError = false;
-            for (const pr of prs) {
+            for (const listed of prs) {
               try {
+                // The list endpoint omits changed_files, which the file check
+                // below needs, so a backfill reads each PR in full.
+                const pr = listed.changed_files == null
+                  ? (await github.rest.pulls.get({
+                      owner, repo, pull_number: listed.number,
+                    })).data
+                  : listed;
                 await flagOne(pr);
               } catch (e) {
                 hadError = true;
-                core.warning(`Failed to flag PR #${pr.number}: ${e.message}`);
+                core.warning(`Failed to flag PR #${listed.number}: ${e.message}`);
               }
             }
             if (hadError) core.setFailed('One or more PRs failed to flag; see warnings.');
