@@ -2138,40 +2138,44 @@ test.describe('holding', () => {
     page,
   }) => {
     await fixture(page);
-    // #early starts 100 ms before #box's 600 ms linear move to 300 px.
-    await page.evaluate(
-      () =>
-        new Promise<void>(resolve => {
-          const early = document.createElement('div');
-          early.id = 'early';
-          document.body.append(early);
-          early.animate([{opacity: 0}, {opacity: 1}], {duration: 2000});
-          setTimeout(() => {
-            document
-              .getElementById('box')
-              ?.animate(
-                [
-                  {transform: 'translateX(0px)'},
-                  {transform: 'translateX(300px)'},
-                ],
-                {duration: 600, easing: 'linear'},
-              );
-            resolve();
-          }, 100);
-        }),
-    );
+    // #early starts before #box's 60 s linear move to 300 px. Each start time
+    // resolves at the first frame after its animation is made, which a
+    // starved page can hold back past any timer, so #box is made 100 ms after
+    // #early's start has resolved, and the gap is read from the two starts.
+    // Both run long enough for the holds to reach them on a loaded runner,
+    // where a hold read the page as late as 10 s after the runs were made.
+    const startGap = await page.evaluate(async () => {
+      const early = document.createElement('div');
+      early.id = 'early';
+      document.body.append(early);
+      const fade = early.animate([{opacity: 0}, {opacity: 1}], {
+        duration: 120_000,
+      });
+      await fade.ready;
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const move = document
+        .getElementById('box')
+        ?.animate(
+          [{transform: 'translateX(0px)'}, {transform: 'translateX(300px)'}],
+          {duration: 60_000, easing: 'linear'},
+        );
+      await move?.ready;
+      return Number(fade.startTime) - Number(move?.startTime);
+    });
     const box = page.locator('#box');
     await waitForAnimation(box);
     // The later-started element is held first.
     const [first] = await holdAnimations(page, box);
     const [later] = await holdAnimations(page, page.locator('#early'));
-    const samples = await sampleCurve(box, [0, 150, 300]);
+    const samples = await sampleCurve(box, [0, 15_000, 30_000]);
     expect(
       samples.map(sample => Math.round(sample.transform.translateX)),
     ).toEqual([0, 75, 150]);
-    // A later hold's earlier start has a negative offset; the origin stays.
+    // A later hold's earlier start has a negative offset, the difference of
+    // the two starts; the origin stays.
     expect(first.offsetMs).toBe(0);
-    expect(later.offsetMs).toBeLessThan(-50);
+    expect(startGap).toBeLessThan(-50);
+    expect(later.offsetMs).toBeCloseTo(startGap, 0);
     await releaseAnimations(page);
   });
 
