@@ -548,6 +548,9 @@
     "../Toolbar",
     "../i18n"
   ],
+  "packages/core/src/Table/plugins/columnResize/useTableColumnResize.tsx": [
+    "../../../i18n"
+  ],
   "packages/core/src/Table/plugins/filtering/useTableFiltering.tsx": [
     "../../../Button",
     "../../../DateInput",
