@@ -1722,6 +1722,184 @@ test.describe('animation state', () => {
     }
   });
 
+  // Each change to a CSS exit partway through, then the page removes its
+  // element at its end. The harness holds a 10 s exit (one its hold reaches
+  // partway however slowly the page answers) and seeks it 300 ms from its end
+  // before releasing it; the page changes a 3 s one on the first frame it is
+  // 100 ms in (one a starved page still renders partway).
+  for (const change of [
+    'held, seeked and released',
+    'held, then finished',
+    'paused, then resumed',
+    'paused, then finished',
+    'sped up',
+    'reversed',
+  ] as const) {
+    test(`a CSS exit ${change} partway, then removed at its end, is dated from the start it ended on`, async ({
+      page,
+    }) => {
+      await fixture(page);
+      const box = page.locator('#box');
+      await page.evaluate(
+        () =>
+          new Promise(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          ),
+      );
+      const held = change.startsWith('held');
+      for (const kind of ['animation', 'transition'] as const) {
+        const label = `${kind}, ${change}`;
+        const watch = await watchAnimations(box);
+        // The page keeps its own dating: the start time the engine set and
+        // where that start put the end, read from the animation itself at
+        // its finish or end event, whichever first has it, before the page
+        // removes the element.
+        await box.evaluate(
+          (el, {kind, change, durationMs, held}) => {
+            const style = document.createElement('style');
+            style.textContent =
+              '@keyframes exit-fade { from { opacity: 1 } to { opacity: 0 } }';
+            document.head.append(style);
+            const child = document.createElement('div');
+            child.style.cssText = 'width:20px;height:20px;background:#36c';
+            el.append(child);
+            if (kind === 'animation') {
+              child.style.animation = `exit-fade ${durationMs}ms linear`;
+            } else {
+              child.style.transition = `opacity ${durationMs}ms linear`;
+              child.style.opacity = getComputedStyle(child).opacity;
+              void child.offsetWidth;
+              child.style.opacity = '0';
+            }
+            const animation = child.getAnimations()[0];
+            let dated: {start: number; end: number} | null = null;
+            const note = () => {
+              if (dated == null && animation?.startTime != null) {
+                const rate = animation.playbackRate;
+                const end = Number(
+                  animation.effect?.getComputedTiming().endTime ?? 0,
+                );
+                const start =
+                  rate < 0
+                    ? Number(animation.startTime) - end / Math.abs(rate)
+                    : Number(animation.startTime);
+                dated = {start, end: start + end / Math.abs(rate || 1)};
+              }
+            };
+            animation?.addEventListener('finish', note);
+            const w = window as unknown as {
+              __exitDated?: Promise<{start: number; end: number} | null>;
+              __exitChanged?: Promise<boolean>;
+            };
+            w.__exitDated = new Promise(resolve => {
+              const ended = () => {
+                note();
+                child.remove();
+                style.remove();
+                resolve(
+                  dated == null
+                    ? null
+                    : {
+                        start: performance.timeOrigin + dated.start,
+                        end: performance.timeOrigin + dated.end,
+                      },
+                );
+              };
+              child.addEventListener(`${kind}end`, ended);
+              child.addEventListener(`${kind}cancel`, ended);
+            });
+            // Whether it was changed partway: false once it has stopped
+            // running unchanged.
+            w.__exitChanged = new Promise(resolve => {
+              const look = () => {
+                if (animation == null || animation.playState !== 'running') {
+                  if (
+                    animation == null ||
+                    animation.playState === 'finished' ||
+                    animation.playState === 'idle'
+                  ) {
+                    resolve(false);
+                    return;
+                  }
+                  requestAnimationFrame(look);
+                  return;
+                }
+                if (held) {
+                  // The harness holds it: running is enough.
+                  if (animation.startTime == null) {
+                    requestAnimationFrame(look);
+                  } else {
+                    resolve(true);
+                  }
+                  return;
+                }
+                if (
+                  animation.startTime == null ||
+                  Number(animation.currentTime ?? 0) < 100
+                ) {
+                  requestAnimationFrame(look);
+                  return;
+                }
+                if (change === 'paused, then resumed') {
+                  animation.pause();
+                  setTimeout(() => animation.play(), 150);
+                } else if (change === 'paused, then finished') {
+                  animation.pause();
+                  setTimeout(() => animation.finish(), 150);
+                } else if (change === 'sped up') {
+                  animation.playbackRate = 2;
+                } else {
+                  animation.reverse();
+                }
+                resolve(true);
+              };
+              requestAnimationFrame(look);
+            });
+          },
+          {kind, change, durationMs: held ? 10_000 : 3_000, held},
+        );
+        const changed = await page.evaluate(
+          () =>
+            (window as unknown as {__exitChanged: Promise<boolean>})
+              .__exitChanged,
+        );
+        expect(changed, `${label}: changed partway`).toBe(true);
+        if (held) {
+          const taken = await holdAnimations(page, box);
+          expect(taken.length, `${label}: held partway`).toBe(1);
+          await page.waitForTimeout(150);
+          if (change === 'held, then finished') {
+            await releaseAnimations(page, {finish: true});
+          } else {
+            await seekAnimations(page, 10_000 - 300);
+            await releaseAnimations(page);
+          }
+        }
+        const dated = await page.evaluate(
+          () =>
+            (
+              window as unknown as {
+                __exitDated: Promise<{start: number; end: number} | null>;
+              }
+            ).__exitDated,
+        );
+        expect(dated, label).not.toBeNull();
+        const [exit] = await watch.started();
+        expect(exit.finishedAt, label).not.toBeNull();
+        // From the engine's own instants: within the timeline's rounding.
+        expect
+          .soft(Math.abs(exit.from - (dated?.start ?? 0)), `${label}: from`)
+          .toBeLessThanOrEqual(1);
+        expect
+          .soft(
+            Math.abs((exit.finishedAt ?? 0) - (dated?.end ?? 0)),
+            `${label}: finishedAt`,
+          )
+          .toBeLessThanOrEqual(1);
+      }
+    });
+  }
+
   test('a run going backward is dated from when it began: with a delay, ended before the look, or cancelled when it ends', async ({
     page,
   }) => {

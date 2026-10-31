@@ -49,7 +49,6 @@ function animationRecorder(): void {
       }
     ).__harnessTimerGate?.frame ?? window.requestAnimationFrame
   ).bind(window);
-  const seen = new WeakSet<Animation>();
   const log: {
     animation: Animation;
     seenAt: number;
@@ -58,6 +57,8 @@ function animationRecorder(): void {
     // Where the run began, as the engine had it when it finished.
     finishStart: number | null;
   }[] = [];
+  // Each recorded animation's entry.
+  const entries = new WeakMap<Animation, (typeof log)[number]>();
   // Entries whose start time has not resolved yet (still pending when seen).
   let unstarted: (typeof log)[number][] = [];
   let armedAt = performance.now();
@@ -79,12 +80,22 @@ function animationRecorder(): void {
     return Number(animation.startTime) - end / Math.abs(rate);
   };
   const remember = (animation: Animation) => {
-    // A running animation is recorded while still pending: on a cold page the
-    // next frame can come only after a short animation has finished.
-    if (seen.has(animation) || animation.playState !== 'running') {
+    const recorded = entries.get(animation);
+    if (recorded != null) {
+      // A run paused and resumed (by the page, or by a hold and its release),
+      // seeked, or given another rate runs on a new start time: the start
+      // kept is the one it runs on, which its finish falls back to once the
+      // page has cancelled it.
+      if (animation.playState === 'running' && animation.startTime != null) {
+        recorded.startedAt = playStart(animation);
+      }
       return;
     }
-    seen.add(animation);
+    // A running animation is recorded while still pending: on a cold page the
+    // next frame can come only after a short animation has finished.
+    if (animation.playState !== 'running') {
+      return;
+    }
     // The target's ancestors as recorded: an exit whose element the page
     // removes at its end is still reported for the container it left.
     const ancestors: Element[] = [];
@@ -103,6 +114,7 @@ function animationRecorder(): void {
       finishStart: null as number | null,
       ancestors,
     };
+    entries.set(animation, entry);
     if (entry.startedAt == null) {
       unstarted.push(entry);
     }
@@ -115,10 +127,10 @@ function animationRecorder(): void {
       // The run as the engine has it at its finish: this listener, added as
       // the animation was made, runs before the page's own, so its start time
       // is usually still set, and the run ended where that start puts its
-      // end, through the rate. Without one, the start the recorder already
-      // holds stands in: in Chromium a CSS animation or transition whose
-      // element the page removes on its end event is cancelled before this
-      // runs. A run that ends as it starts (one reversed from rest) can finish
+      // end, through the rate. Without one, the start the recorder holds
+      // stands in, kept as the run ran (after a pause, a seek or a rate
+      // change): in Chromium a CSS animation or transition whose element the
+      // page removes on its end event is cancelled before this runs. A run that ends as it starts (one reversed from rest) can finish
       // before any start resolves: it then began where the event's timeline
       // time puts its start. Read later, the start time can say otherwise
       // (WebKit resolves or moves it a frame later), and the event itself
