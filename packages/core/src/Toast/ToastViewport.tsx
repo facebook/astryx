@@ -346,6 +346,9 @@ export function ToastViewport({
   // Tab or a click. Used to restore focus once all toasts are dismissed so
   // focus never falls to <body> (FR10).
   const prevFocusRef = useRef<HTMLElement | null>(null);
+  // The element focus last reached inside the viewport's React tree,
+  // portaled toast content included.
+  const lastFocusedWithinRef = useRef<EventTarget | null>(null);
   // When a toast is dismissed while focus lives inside it, we need to move
   // focus to a sensible neighbor after that toast unmounts. This holds the
   // id of the toast whose removal should trigger a focus handoff.
@@ -783,12 +786,16 @@ export function ToastViewport({
       ref={viewportRef}
       onFocus={event => {
         // Focus entering from outside, however it came, is where a dismissal
-        // of the last toast returns it.
+        // of the last toast returns it. React also delivers focus inside a
+        // toast's portaled content here, so focus coming back from the last
+        // element focused within is not an entry, though it sits outside
+        // this element.
         const from = event.relatedTarget;
-        if (
-          from instanceof HTMLElement &&
-          !event.currentTarget.contains(from)
-        ) {
+        const fromWithin =
+          from === lastFocusedWithinRef.current ||
+          (from instanceof Node && event.currentTarget.contains(from));
+        lastFocusedWithinRef.current = event.target;
+        if (from instanceof HTMLElement && !fromWithin) {
           prevFocusRef.current = from;
         }
       }}
