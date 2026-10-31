@@ -107,7 +107,8 @@ export interface TextProps extends Omit<BaseProps, 'children'> {
 
   /**
    * Maximum lines before truncation. 0 = no truncation.
-   * When set, shows tooltip on hover if content is truncated.
+   * When set, truncated content shows its full text in a tooltip on hover,
+   * and is a tab stop so the tooltip opens on keyboard focus too (FR4).
    * @default 0
    */
   maxLines?: number;
