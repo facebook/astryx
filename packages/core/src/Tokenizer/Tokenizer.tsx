@@ -1426,10 +1426,11 @@ export function Tokenizer<T extends SearchableItem>({
             // The resolved required state reaches the combobox, also when a
             // FormLayout default hides the visible marker (component:FormLayout
             // FR5, AR2).
-            aria-required={isEffectivelyRequired || undefined}
+            aria-required={isEffectivelyRequired || rest['aria-required']}
             // An error status is exposed on the combobox as on every other field
-            // (WCAG 4.1.2; spec:AST-020 FR9).
-            aria-invalid={status?.type === 'error' || undefined}
+            // (WCAG 4.1.2; spec:AST-020 FR9). Without one, a caller's own
+            // aria-required / aria-invalid still applies.
+            aria-invalid={status?.type === 'error' || rest['aria-invalid']}
             __queryEntries={createEntries}
             debounceMs={debounceMs}
             onKeyDown={handleKeyDown}
