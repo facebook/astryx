@@ -178,7 +178,9 @@ migration, so the map is deferred.
 
 Read from source, with no focused test yet:
 
-- FR1: the caller's `label` override.
+- FR1: the ghost variant and the microphone icon.
+- FR2: no icon while listening, and the bars scaling with `bands`.
+- FR4: the plain accent below the clipping threshold.
 - FR5: `className`, `style`, and `xstyle` composing on the wrapper, the
   `chat-dictation-button` target, and `sm` sizing.
 - FR6: the reduced-motion transition removal.
