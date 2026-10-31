@@ -361,6 +361,18 @@ export const WithEndActions: Story = {
   ),
 };
 
+/** Numbered rows with their own action: the marker sits beside the row. */
+export const NumberedWithActions: Story = {
+  render: () => (
+    <div style={{maxWidth: 420}}>
+      <List listStyle="decimal">
+        <ListItem label="Open the report" onClick={() => {}} />
+        <ListItem label="Read the summary" href="#summary" />
+      </List>
+    </div>
+  ),
+};
+
 /** Disabled items. */
 export const Disabled: Story = {
   render: () => (

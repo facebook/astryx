@@ -239,6 +239,7 @@ const FILE_MODULE_SUBPATH_EXPORTS = [
   // (architecture:react-component-runtime INV13).
   'internal/touch',
   'internal/tokenizer-presentation',
+  'internal/focusOutline.stylex',
 ];
 
 /**

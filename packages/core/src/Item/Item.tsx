@@ -60,6 +60,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   FOCUS_OWNER_ATTRIBUTE,
+  FOCUS_OWNER_GROUP_ATTRIBUTE,
   focusWithinOwnerProps,
 } from '../internal/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
@@ -935,6 +936,9 @@ export function Item({
         {isRenderable(marker) && marker}
         {isRenderable(marker) && columnMarker === marker ? (
           <span
+            // The row's own button or link sits in this cell, so the row's
+            // ring reaches it here.
+            {...{[FOCUS_OWNER_GROUP_ATTRIBUTE]: ''}}
             {...stylex.props(
               styles.markerContent,
               align === 'first-line' && styles.markerContentFirstLine,

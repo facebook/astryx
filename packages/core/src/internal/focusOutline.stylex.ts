@@ -17,8 +17,15 @@ import {focusVars} from '../theme/tokens.stylex';
 /** Marks the direct child a focus-owner wrapper rings for. */
 export const FOCUS_OWNER_ATTRIBUTE = 'data-astryx-focus-owner';
 
+/**
+ * Marks a layout wrapper (Item's content cell beside a list marker) whose
+ * direct child may be the owner, so the owner can sit one level down.
+ */
+export const FOCUS_OWNER_GROUP_ATTRIBUTE = 'data-astryx-focus-owner-group';
+
 // Rings only for the direct child marked with FOCUS_OWNER_ATTRIBUTE, wherever
-// it sits among its siblings, so every other control inside rings itself
+// it sits among its siblings (or one level down, inside a marked group), so
+// every other control inside rings itself
 // (`architecture:interaction-modality` INV3). Only a direct child counts, so a
 // nested component's own owner never rings this wrapper. Written as
 // longhands, like focusOutlineStyles.
@@ -26,22 +33,22 @@ const styles = stylex.create({
   focusWithinOwner: {
     outlineWidth: {
       default: '0',
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
+      ':has(> [data-astryx-focus-owner]:focus-visible, > [data-astryx-focus-owner-group] > [data-astryx-focus-owner]:focus-visible)':
         focusVars['--focus-outline-width'],
     },
     outlineStyle: {
       default: 'none',
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
+      ':has(> [data-astryx-focus-owner]:focus-visible, > [data-astryx-focus-owner-group] > [data-astryx-focus-owner]:focus-visible)':
         focusVars['--focus-outline-style'],
     },
     outlineColor: {
       default: null,
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
+      ':has(> [data-astryx-focus-owner]:focus-visible, > [data-astryx-focus-owner-group] > [data-astryx-focus-owner]:focus-visible)':
         focusVars['--focus-outline-color'],
     },
     outlineOffset: {
       default: '0',
-      ':has(> [data-astryx-focus-owner]:focus-visible)':
+      ':has(> [data-astryx-focus-owner]:focus-visible, > [data-astryx-focus-owner-group] > [data-astryx-focus-owner]:focus-visible)':
         focusVars['--focus-outline-offset'],
     },
   },
