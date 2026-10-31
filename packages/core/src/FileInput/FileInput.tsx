@@ -69,6 +69,7 @@ import type {TranslatorFn} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useListFormatter} from '../i18n/useListFormatter';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 function formatFileSize(bytes: number, t: TranslatorFn): string {
   if (bytes < 1024) {
     return t('@astryx.fileInput.fileSize.bytes', {size: bytes});
@@ -546,7 +547,9 @@ export function FileInput({
   // at a visually hidden "Required" span — mirroring the Field label's visible
   // indicator (where isOptional takes precedence) and the pattern Slider uses
   // for its thumbs.
-  const conveysRequired = isRequired && !isOptional;
+  // A surrounding FormLayout's defaultOptionality="required" makes an unmarked
+  // field required too (FormLayout FR5).
+  const conveysRequired = useResolvedRequired({isRequired, isOptional});
 
   const ariaDescribedBy =
     [
