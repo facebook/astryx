@@ -82,11 +82,11 @@ on:
   workflow_dispatch:
     inputs:
       pr:
-        description: 'PR number to re-flag (blank = all open PRs)'
+        description: 'PR number to re-flag (blank = every open, non-draft PR)'
         required: false
         type: string
       batch:
-        description: 'Backfill shard k/n, e.g. 2/7 (blank = every open PR)'
+        description: 'With a blank pr: re-flag only PRs whose number mod n is k-1 (k/n, e.g. 2/4)'
         required: false
         type: string
 
