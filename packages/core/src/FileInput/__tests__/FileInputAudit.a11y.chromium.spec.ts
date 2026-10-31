@@ -46,7 +46,6 @@ type Expectation = {
   mode: 'input' | 'dropzone';
   status?: 'attached' | 'detached' | 'tooltip';
   loading?: boolean;
-  disabled?: boolean;
   fileName?: string;
   uploadIcon: boolean;
   /** The loading dropzone shows only the decorative spinner. */
@@ -68,7 +67,6 @@ const EXPECTED: Record<string, Expectation> = {
     fileName: 'resume.pdf',
     uploadIcon: false,
   },
-  'input-disabled-message': {mode: 'input', disabled: true, uploadIcon: true},
   'dropzone-empty': {mode: 'dropzone', uploadIcon: true},
   'dropzone-selected': {
     mode: 'dropzone',
@@ -95,13 +93,25 @@ const EXPECTED: Record<string, Expectation> = {
     status: 'tooltip',
     uploadIcon: true,
   },
+  'dropzone-selected-error-tooltip': {
+    mode: 'dropzone',
+    status: 'tooltip',
+    fileName: 'resume.pdf',
+    uploadIcon: false,
+  },
+  'dropzone-loading-error-tooltip': {
+    mode: 'dropzone',
+    status: 'tooltip',
+    loading: true,
+    uploadIcon: false,
+    noText: true,
+  },
   'dropzone-loading': {
     mode: 'dropzone',
     loading: true,
     uploadIcon: false,
     noText: true,
   },
-  'dropzone-disabled': {mode: 'dropzone', disabled: true, uploadIcon: true},
 };
 const CASE_IDS = Object.keys(EXPECTED);
 
@@ -252,6 +262,10 @@ async function observe(page: Page) {
           '.astryx-input-status-icon',
         );
         const statusButton = statusIcon?.closest('button') ?? null;
+        const spinner = surface?.querySelector<HTMLElement>('.astryx-spinner');
+        const clearButton = surface?.querySelector<HTMLElement>(
+          '.astryx-input-clear-button',
+        );
         const nameElement =
           surface == null
             ? null
@@ -274,6 +288,41 @@ async function observe(page: Page) {
                   ),
               ) ?? null);
         const textElement = nameElement ?? placeholder;
+        // spec family:input-fields FR2: text and end controls own
+        // non-overlapping space.
+        const parts = [
+          ['status', statusButton],
+          ['spinner', spinner],
+          ['text', textElement],
+          ['clear', clearButton],
+        ]
+          .filter((part): part is [string, HTMLElement] => part[1] != null)
+          .map(([name, element]) => {
+            const box = element.getBoundingClientRect();
+            return {
+              name,
+              left: box.left,
+              right: box.right,
+              top: box.top,
+              bottom: box.bottom,
+            };
+          })
+          .filter(part => part.right > part.left && part.bottom > part.top);
+        const overlaps: string[] = [];
+        for (let a = 0; a < parts.length; a++) {
+          for (let b = a + 1; b < parts.length; b++) {
+            const p = parts[a];
+            const q = parts[b];
+            if (
+              p.left < q.right - 1 &&
+              q.left < p.right - 1 &&
+              p.top < q.bottom - 1 &&
+              q.top < p.bottom - 1
+            ) {
+              overlaps.push(`${p.name}/${q.name}`);
+            }
+          }
+        }
         const surfaceRect = surface?.getBoundingClientRect();
         const rootRect = root.getBoundingClientRect();
         const surfaceStyle = surface ? getComputedStyle(surface) : null;
@@ -302,6 +351,7 @@ async function observe(page: Page) {
           spinnerCount:
             surface?.querySelectorAll('.astryx-spinner').length ?? 0,
           nameText: nameElement?.textContent ?? null,
+          overlaps,
           nameTruncated: nameElement
             ? nameElement.scrollWidth > nameElement.clientWidth + 1
             : null,
@@ -391,8 +441,9 @@ function checkCases(
       (entry.ariaBusy === 'true') === Boolean(expected.loading),
       `${id}: aria-busy ${entry.ariaBusy}`,
     );
+    // Disabled states keep their own stories; no matrix case is disabled.
     check(
-      (entry.ariaDisabled === 'true') === Boolean(expected.disabled),
+      entry.ariaDisabled == null,
       `${id}: aria-disabled ${entry.ariaDisabled}`,
     );
     if (expected.fileName != null) {
@@ -442,15 +493,18 @@ function checkCases(
       check(entry.ariaInvalid == null, `${id}: unexpected aria-invalid`);
       check(entry.statusBoxText == null, `${id}: unexpected status box`);
     }
+    check(
+      entry.overlaps.length === 0,
+      `${id}: parts overlap (${entry.overlaps.join(', ')})`,
+    );
     check(!entry.surfaceEscapesCase, `${id}: surface escapes its column`);
     check(!entry.surfaceInlineOverflow, `${id}: surface overflows inline`);
     check(
       expected.noText ? entry.textContrast == null : entry.textContrast != null,
       `${id}: placeholder or file name text ${expected.noText ? 'rendered' : 'missing'}`,
     );
-    if (!expected.disabled && !expected.noText && !item.forcedColors) {
-      // WCAG 2.2 SC 1.4.3 for the placeholder or file name text; the
-      // inactive-control exception covers disabled cases.
+    if (!expected.noText && !item.forcedColors) {
+      // WCAG 2.2 SC 1.4.3 for the placeholder or file name text.
       check(
         entry.textContrast != null && entry.textContrast >= 4.5,
         `${id}: text contrast ${entry.textContrast}`,
@@ -550,6 +604,9 @@ for (const item of frames) {
       const restBackground = await dropzone.evaluate(
         element => getComputedStyle(element).backgroundColor,
       );
+      const restDropBorder = await dropzone.evaluate(
+        element => getComputedStyle(element).borderTopColor,
+      );
       const dataTransfer = await page.evaluateHandle(() => {
         const transfer = new DataTransfer();
         transfer.items.add(new File(['x'], 'drag.pdf'));
@@ -561,8 +618,64 @@ for (const item of frames) {
       const dragBackground = await dropzone.evaluate(
         element => getComputedStyle(element).backgroundColor,
       );
+      const dragBorder = await dropzone.evaluate(
+        element => getComputedStyle(element).borderTopColor,
+      );
       check(dragText.includes('Drop files here'), 'drop hint not shown');
-      check(dragBackground !== restBackground, 'drag-over does not paint');
+      // The drag state paints the accent border and the accent-muted fill; a
+      // theme may resolve that fill to the surface color, so either cue counts.
+      check(
+        dragBackground !== restBackground || dragBorder !== restDropBorder,
+        'drag-over does not paint',
+      );
+      await dropzone.dispatchEvent('dragleave', {dataTransfer});
+
+      // The tooltip status button is the next Tab stop after its trigger,
+      // opens its tooltip on focus, and never opens the file picker.
+      const tooltipCase = page.locator(
+        '[data-audit-case="dropzone-error-tooltip"]',
+      );
+      await tooltipCase
+        .locator('button[type="button"][aria-label]')
+        .first()
+        .focus();
+      await page.keyboard.press('Tab');
+      const statusFocusLabel = await page.evaluate(
+        () => document.activeElement?.getAttribute('aria-label') ?? null,
+      );
+      await settle(page);
+      const tooltipOpen = await page.evaluate(
+        message =>
+          Array.from(document.querySelectorAll('[role="tooltip"]')).some(
+            element =>
+              element.matches(':popover-open') &&
+              (element.textContent ?? '').includes(message),
+          ),
+        STATUS_MESSAGE,
+      );
+      check(
+        statusFocusLabel === 'Error details',
+        `Tab after the trigger landed on ${statusFocusLabel}`,
+      );
+      check(tooltipOpen, 'status tooltip does not open on focus');
+      // Positive control: a click on the empty dropzone surface does raise
+      // the file chooser, so the negative check below can fail.
+      const controlChooser = page
+        .waitForEvent('filechooser', {timeout: 3000})
+        .then(() => true)
+        .catch(() => false);
+      await page
+        .locator('[data-audit-case="dropzone-empty"] .astryx-file-input')
+        .click();
+      const controlPickerOpened = await controlChooser;
+      check(controlPickerOpened, 'surface click raises no file chooser');
+      const chooser = page
+        .waitForEvent('filechooser', {timeout: 750})
+        .then(() => true)
+        .catch(() => false);
+      await tooltipCase.getByRole('button', {name: 'Error details'}).click();
+      const pickerOpened = await chooser;
+      check(!pickerOpened, 'clicking the status button opens the file picker');
       Object.assign(interaction, {
         focusedLabel,
         restBorder,
@@ -570,6 +683,12 @@ for (const item of frames) {
         dragText,
         restBackground,
         dragBackground,
+        restDropBorder,
+        dragBorder,
+        statusFocusLabel,
+        tooltipOpen,
+        controlPickerOpened,
+        pickerOpened,
       });
     }
 

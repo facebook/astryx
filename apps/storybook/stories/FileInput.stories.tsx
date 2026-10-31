@@ -332,8 +332,6 @@ type AuditCase = {
   status?: typeof ERROR_STATUS;
   statusVariant?: 'attached' | 'detached' | 'tooltip';
   isLoading?: boolean;
-  isDisabled?: boolean;
-  disabledMessage?: string;
 };
 
 const AUDIT_CASES: AuditCase[] = [
@@ -372,13 +370,6 @@ const AUDIT_CASES: AuditCase[] = [
     statusVariant: 'tooltip',
     isLoading: true,
   },
-  {
-    id: 'input-disabled-message',
-    label: 'Resume',
-    mode: 'input',
-    isDisabled: true,
-    disabledMessage: 'Uploads open after your profile is verified',
-  },
   {id: 'dropzone-empty', label: 'Attachments', mode: 'dropzone'},
   {
     id: 'dropzone-selected',
@@ -413,16 +404,26 @@ const AUDIT_CASES: AuditCase[] = [
     statusVariant: 'tooltip',
   },
   {
+    id: 'dropzone-selected-error-tooltip',
+    label: 'Attachments',
+    mode: 'dropzone',
+    value: AUDIT_FILES.short,
+    status: ERROR_STATUS,
+    statusVariant: 'tooltip',
+  },
+  {
+    id: 'dropzone-loading-error-tooltip',
+    label: 'Attachments',
+    mode: 'dropzone',
+    status: ERROR_STATUS,
+    statusVariant: 'tooltip',
+    isLoading: true,
+  },
+  {
     id: 'dropzone-loading',
     label: 'Attachments',
     mode: 'dropzone',
     isLoading: true,
-  },
-  {
-    id: 'dropzone-disabled',
-    label: 'Attachments',
-    mode: 'dropzone',
-    isDisabled: true,
   },
 ];
 
@@ -438,16 +439,15 @@ function AuditCaseField({item}: {item: AuditCase}) {
         status={item.status}
         statusVariant={item.statusVariant}
         isLoading={item.isLoading}
-        isDisabled={item.isDisabled}
-        disabledMessage={item.disabledMessage}
       />
     </div>
   );
 }
 
 /**
- * Every mode in its empty, selected, long-name, status, loading, and disabled
- * states, including each status placement, for the component audit.
+ * Every mode in its empty, selected, long-name, status, and loading states,
+ * including each status placement, for the component audit. The disabled
+ * states keep their own stories.
  */
 export const AuditMatrix: Story = {
   render: () => (
