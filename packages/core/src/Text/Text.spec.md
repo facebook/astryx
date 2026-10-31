@@ -36,7 +36,7 @@ system_specs: [spec:AST-009]
 | Public contract         | A polymorphic text element with a semantic `type`, optional `size`, `color`, and `weight` overrides, an `as` element choice, and the text layout controls documented in `Text.doc.mjs`.                           |
 | Behavior                | `type` sets size, weight, and default color from the theme; theme-added types and colors fall back to the body and primary baselines; truncated text offers its full content in a Tooltip.                        |
 | End-user impact         | Readers get consistent type across the product; clamped text keeps its full content available on hover and in the DOM.                                                                                            |
-| Builder impact          | None; the record describes shipped behavior.                                                                                                                                                                      |
+| Builder impact          | A truncated Text with its tooltip joins the tab order; pass `tabIndex={-1}` to keep one out.                                                                                                                                                                      |
 | Compatibility/readiness | No API changes; one default changes: a truncated Text with its tooltip is a tab stop (FR4), and `tabIndex={-1}` keeps one Text out of the tab order. One implementation gap is listed under Current-state impact. |
 | Review checks           | Reject a theme-added type or color that renders unstyled, a native `title` beside the truncation Tooltip, or measurement when the tooltip is off.                                                                 |
 | Governing rules         | `architecture:component-theming-surface/INV6,INV14`; `architecture:public-component-api/INV5,INV6,INV8`.                                                                                                          |
@@ -54,8 +54,9 @@ the truncation behavior of that element. Heading is documented beside Text in
 
 - Released default preserved: `no`: a truncated Text with its tooltip is now a
   tab stop (FR4); `tabIndex={-1}` keeps one Text out of the tab order
-- Compatibility class: no public prop, default, or styling change; DOM output
-  adds `tabindex="0"` to a truncated Text with its tooltip (FR4)
+- Compatibility class: an accessibility fix that changes the default tab
+  order: a truncated Text with its tooltip renders `tabindex="0"` (FR4); no
+  public prop or styling change
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 

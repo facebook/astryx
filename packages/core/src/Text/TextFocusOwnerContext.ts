@@ -7,11 +7,14 @@
  * @input Uses createLayerScopedContext
  * @output Exports TextFocusOwnerContext
  * @position Text internals; provided by components whose own control takes
- *   focus for their whole surface (ClickableCard), read by Text
+ *   focus for their whole surface (ClickableCard, SelectableCard, interactive
+ *   Item), read by Text
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Text/Text.tsx (reads it to skip the truncation tab stop)
  * - /packages/core/src/ClickableCard/ClickableCard.tsx (provides it)
+ * - /packages/core/src/SelectableCard/SelectableCard.tsx (provides it)
+ * - /packages/core/src/Item/Item.tsx (provides it for an interactive item)
  */
 
 import {createLayerScopedContext} from '../Layer/layerScopedContext';
