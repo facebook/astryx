@@ -1046,8 +1046,7 @@ export const Disabled: Story = {
 // Disabled with an explanation tooltip. Hover or keyboard-focus the trigger to
 // see why it's disabled — the reason is announced to assistive tech via
 // aria-describedby, and the trigger stays focusable (activation is still
-// blocked). Use disabledMessage instead of wrapping a disabled Selector in
-// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+// blocked). Use disabledMessage to associate the reason with the trigger.
 export const DisabledWithMessage: Story = {
   args: {
     label: 'Owner',
