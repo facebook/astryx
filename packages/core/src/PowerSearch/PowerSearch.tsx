@@ -1063,6 +1063,9 @@ export function PowerSearch({
   // replay (which resets a flag and would speak the count present on mount
   // unprompted) announces nothing until the count changes.
   const announce = useAnnounce();
+  // PowerSearch words its Clear all as its record does; the field announces
+  // these words instead of Tokenizer's (component:Tokenizer AR7).
+  const clearAllMessage = t('@astryx.powersearch.allFiltersRemoved');
   const announcedResultCountRef = useRef(resultCountText);
   useEffect(() => {
     if (resultCountText === announcedResultCountRef.current) {
@@ -1102,8 +1105,7 @@ export function PowerSearch({
         {...themeProps('power-search')}>
         {/* The field's Clear all announces PowerSearch's own words
             (component:PowerSearch; component:Tokenizer AR7). */}
-        <TokenizerClearAllMessageContext
-          value={t('@astryx.powersearch.allFiltersRemoved')}>
+        <TokenizerClearAllMessageContext value={clearAllMessage}>
           <Tokenizer
             handleRef={tokenizerRef}
             label={label}
