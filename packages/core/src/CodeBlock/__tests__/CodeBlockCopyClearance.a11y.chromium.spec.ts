@@ -39,9 +39,13 @@ async function mount(
   );
   await expect(copyButton(page)).toBeVisible();
   if (Object.keys(args).length > 0) {
+    // Measure only once the story has re-rendered with these args. A slow
+    // runner can take longer than any fixed wait, and measuring the story's
+    // default two-line block instead of the requested one reads as a layout
+    // failure, so a missing re-render fails here rather than being measured.
     await page.evaluate(
       async ({storyId, updatedArgs}) =>
-        new Promise<void>(resolve => {
+        new Promise<void>((resolve, reject) => {
           const channel = (
             window as unknown as {
               __STORYBOOK_ADDONS_CHANNEL__: {
@@ -50,12 +54,24 @@ async function mount(
               };
             }
           ).__STORYBOOK_ADDONS_CHANNEL__;
-          channel.once('storyRendered', () => resolve());
+          const timer = setTimeout(
+            () =>
+              reject(new Error('the story did not re-render with its args')),
+            20_000,
+          );
+          channel.once('storyRendered', () => {
+            clearTimeout(timer);
+            resolve();
+          });
           channel.emit('updateStoryArgs', {storyId, updatedArgs});
-          setTimeout(resolve, 1500);
         }),
       {storyId: STORY, updatedArgs: args},
     );
+    if (typeof args.code === 'string') {
+      await expect(
+        page.locator('pre.astryx-code-block [data-line]'),
+      ).toHaveCount(args.code.split('\n').length);
+    }
   }
 }
 
