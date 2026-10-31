@@ -177,8 +177,9 @@ component-local concepts; each keeps its released default.
 
 - **PR1 — Bounded resources.** While open, the pointer menu observes its own
   size and content changes and listens for window and visual-viewport resizes
-  and image loads to decide whether it scrolls. A mouse press-open adds document
-  pointer-up and pointer-cancel listeners for the length of the press. With
+  and image loads to decide whether it scrolls. A press-open, by a mouse press or a
+  held finger, adds document pointer-up and pointer-cancel listeners for the
+  length of the press. With
   `presentation="adaptive"` the root subscribes to the compact-touch query while
   mounted; the drill-in reads it once as the menu opens.
 
