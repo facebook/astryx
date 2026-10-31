@@ -108,14 +108,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept          | Closed values or states                                                                                          | Meaning                                                        | Availability by variant/orientation/state                                       | Default   | Owner             | Stability | Invalid-value behavior                                                                                                                         |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------- | ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Structure        | static; clickable; link; link-and-remove                                                                         | Which element owns the token's own action (FR2–FR4).           | Resolved from `href`, `onClick`, `isDisabled`, and an enclosing trigger context | static    | `component:Token` | Stable    | A disabled link token stays a focusable control that exposes its disabled state (FR5); today it resolves to the static structure, the FR5 gap. |
-| Size             | `sm`, `md`, `lg`                                                                                                 | Selects the block size.                                        | All structures                                                                  | `md`      | `component:Token` | Stable    | TypeScript rejects other values.                                                                                                               |
-| Tone (`color`)   | `default`, `red`, `orange`, `yellow`, `green`, `teal`, `cyan`, `blue`, `purple`, `pink`, `gray`; theme additions | Selects fill and text color.                                   | All structures                                                                  | `default` | `component:Token` | Stable    | A theme-added value is reflected on `token` and receives no component fill or color; TypeScript rejects unregistered values.                   |
-| Removable        | present when `onRemove` is supplied; absent                                                                      | Adds the Remove button after the label and end content.        | All structures                                                                  | absent    | `component:Token` | Stable    | —                                                                                                                                              |
-| Label visibility | visible; visually hidden                                                                                         | Hides the label visually while keeping it as the token's name. | All structures                                                                  | visible   | `component:Token` | Stable    | —                                                                                                                                              |
-| Disabled         | enabled; disabled                                                                                                | Blocks every token and remove action.                          | All structures                                                                  | enabled   | `component:Token` | Stable    | —                                                                                                                                              |
+| Concept          | Closed values or states                                                                                          | Meaning                                                        | Availability by variant/orientation/state                                       | Default   | Owner             | Stability | Invalid-value behavior                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------- | ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Structure        | static; clickable; link; link-and-remove                                                                         | Which element owns the token's own action (FR2–FR4).           | Resolved from `href`, `onClick`, `isDisabled`, and an enclosing trigger context | static    | `component:Token` | Stable    | A disabled link token stays a focusable control that exposes its disabled state (FR5).                                       |
+| Size             | `sm`, `md`, `lg`                                                                                                 | Selects the block size.                                        | All structures                                                                  | `md`      | `component:Token` | Stable    | TypeScript rejects other values.                                                                                             |
+| Tone (`color`)   | `default`, `red`, `orange`, `yellow`, `green`, `teal`, `cyan`, `blue`, `purple`, `pink`, `gray`; theme additions | Selects fill and text color.                                   | All structures                                                                  | `default` | `component:Token` | Stable    | A theme-added value is reflected on `token` and receives no component fill or color; TypeScript rejects unregistered values. |
+| Removable        | present when `onRemove` is supplied; absent                                                                      | Adds the Remove button after the label and end content.        | All structures                                                                  | absent    | `component:Token` | Stable    | —                                                                                                                            |
+| Label visibility | visible; visually hidden                                                                                         | Hides the label visually while keeping it as the token's name. | All structures                                                                  | visible   | `component:Token` | Stable    | —                                                                                                                            |
+| Disabled         | enabled; disabled                                                                                                | Blocks every token and remove action.                          | All structures                                                                  | enabled   | `component:Token` | Stable    | —                                                                                                                            |
 
 ## Behavioral and layout contract
 
@@ -155,11 +155,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 ### Transformation and precedence order
 
 - **ORD1 — Structure.** Enabled `href` → `onClick` → enclosing trigger context →
-  static. `onRemove` with an enabled `href` selects the link-and-remove
-  container. A disabled `href` is skipped, so a disabled link token falls
-  through to `onClick`, a trigger context, or static; the static fall-through is
-  the FR5 gap.
-- **ORD2 — Root attributes.** Component class and `data-color`/`data-size` →
+  disabled `href` → static. `onRemove` with an `href` that wins selects the
+  link-and-remove container. A disabled `href` yields to `onClick` and a
+  trigger context; otherwise it keeps the link structure, rendered disabled
+  (FR5).
+- **ORD2 — Root attributes.** Component class and `data-color`/`data-size`/`data-disabled` →
   component styles → `xstyle` → `className` → `style` → caller props → `data-testid`, hidden-label
   `aria-label`, and `aria-description`. A hidden label's `aria-label` replaces
   a caller `aria-label`.
@@ -214,7 +214,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | End content      | Optional trailing content such as a count or status dot.     | Current source and docs  | Supporting     | FR1                |
 | Remove button    | A trailing close control that dismisses the token.           | Current source and docs  | Supporting     | FR6, AR1, AR2, AR6 |
 
-Theming: the root is the single `token` target and reflects `color` and `size`.
+Theming: the root is the single `token` target and reflects `color`, `size`, and the disabled state.
 The Label, End content, and Icon add no targets; the Remove button inherits the
 token's text color.
 
@@ -224,7 +224,7 @@ token's text color.
   for both link structures, including delegated surface clicks; Token adopts
   them through the shared link component and clickable-container delegation.
 - `spec:AST-085` owns focusable disabled controls; FR5 and AR5 record Token's
-  conformance and its one gap.
+  conformance.
 - `architecture:public-component-api` owns ref, passthrough, and styling-input
   rules; FR3 records one gap against INV5.
 - `architecture:component-theming-surface` owns the `token` target and the

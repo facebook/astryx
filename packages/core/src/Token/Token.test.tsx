@@ -270,11 +270,12 @@ describe('Token accessibility', () => {
         <Token label="Enabled" href="/docs" data-testid="enabled" />
       </>,
     );
-    for (const id of ['static', 'clickable', 'link'])
-      {expect(screen.getByTestId(id), id).toHaveAttribute(
+    for (const id of ['static', 'clickable', 'link']) {
+      expect(screen.getByTestId(id), id).toHaveAttribute(
         'data-disabled',
         'disabled',
-      );}
+      );
+    }
     expect(screen.getByTestId('enabled')).not.toHaveAttribute('data-disabled');
   });
 
@@ -299,6 +300,20 @@ describe('Token accessibility', () => {
     await user.tab();
     await user.keyboard('{Enter}');
     expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it("passes other keys to a disabled link token's onKeyDown, but not Enter or Space", async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    render(
+      <Token label="Docs" href="/docs" isDisabled onKeyDown={onKeyDown} />,
+    );
+    await user.tab();
+    await user.keyboard('{ArrowRight}');
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onKeyDown.mock.calls[0][0].key).toBe('ArrowRight');
+    await user.keyboard('{Enter} ');
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
   });
 
   it('keeps both buttons focusable and inert when isDisabled is true', async () => {

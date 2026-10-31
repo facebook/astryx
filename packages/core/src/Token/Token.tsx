@@ -355,8 +355,13 @@ export function Token({
   const isDisabledLink = isDisabled && href != null && effectiveOnClick == null;
 
   if (isDisabledLink && onRemove == null) {
+    // A disabled link is an <a> with no href, as Link renders one: nothing can
+    // navigate, it keeps a Tab stop and the link role (spec:AST-085 FR1, FR5).
+    // The router LinkComponent is skipped, since a custom router link may
+    // require a live href.
+    const DisabledAnchor = 'a';
     return (
-      <a
+      <DisabledAnchor
         ref={ref as React.Ref<HTMLAnchorElement>}
         role="link"
         aria-disabled={true}
@@ -375,10 +380,10 @@ export function Token({
           style,
         )}
         {...rest}
-        {...disabledInteractionProps()}
+        {...disabledInteractionProps(rest.onKeyDown)}
         {...sharedProps}>
         {content}
-      </a>
+      </DisabledAnchor>
     );
   }
 
