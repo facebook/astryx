@@ -981,12 +981,23 @@ export async function waitForAnimation(
                 (target === element || element.contains(target))
               );
             };
+            // The busy-window control (busy.ts) animates on its own, inside a
+            // dialog with `within`: it never answers for the component.
+            const isControl = (a: Animation) => {
+              const target =
+                (a.effect as KeyframeEffect | null)?.target ?? null;
+              return (
+                target instanceof Element &&
+                target.closest('[data-harness-control]') != null
+              );
+            };
             const after = watchedFrom ?? recorder.armedAt();
             // Document-timeline animations only, as for holdAnimations: a scroll-
             // or view-timeline one that reached its end is not a finished curve.
             const recorded = recorder.log.filter(
               e =>
                 e.seenAt >= after &&
+                !isControl(e.animation) &&
                 (inside(e.animation) || e.ancestors.includes(element)) &&
                 e.animation.timeline instanceof DocumentTimeline,
             );
@@ -1004,6 +1015,7 @@ export async function waitForAnimation(
                     .map(e => e.animation)
             ).filter(
               a =>
+                !isControl(a) &&
                 a.playState === 'running' &&
                 a.timeline instanceof DocumentTimeline,
             );
