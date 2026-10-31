@@ -11,7 +11,8 @@
  * Geometry and style signals coalesce into one full measurement per frame. A
  * scroll only moves the offset, so its event re-derives the logical edges
  * from box geometry: no computed-style read and no extra frame while the
- * user scrolls.
+ * user scrolls. A viewport may be its own content box (no inner wrapper):
+ * its direct children's sizes are then watched as well.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/useScrollableArea.doc.mjs
@@ -35,6 +36,7 @@ import {attachScrollKeyboardDelegation} from './scrollKeyboardDelegation';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {mergeProps} from '../utils/mergeProps';
 import {mergeRefs} from '../utils/mergeRefs';
+import {observeMutations} from '../utils/sharedMutationObserver';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {
   getLogicalAxisMapping,
@@ -113,6 +115,22 @@ const INITIAL_MAPPING: LogicalAxisMapping = {
   blockReversed: false,
 };
 const LOGICAL_AXES = ['inline', 'block'] as const;
+
+/** Attributes whose change can move layout or the writing mode. */
+const LAYOUT_ATTRIBUTE_FILTER = ['class', 'dir', 'hidden', 'style'];
+/** The viewport and its ancestors: their own layout attributes. */
+const LAYOUT_ATTRIBUTES: MutationObserverInit = {
+  attributes: true,
+  attributeFilter: LAYOUT_ATTRIBUTE_FILTER,
+};
+/** The content box: layout attributes, text and children, all the way down. */
+const CONTENT_MUTATIONS: MutationObserverInit = {
+  attributes: true,
+  attributeFilter: LAYOUT_ATTRIBUTE_FILTER,
+  characterData: true,
+  childList: true,
+  subtree: true,
+};
 
 const styles = stylex.create({
   overflow: (
@@ -366,6 +384,29 @@ export function useScrollableArea({
     const stopObservingViewport = observeResize(viewport, scheduleMeasure);
     const stopObservingContent = observeResize(content, scheduleMeasure);
 
+    // A viewport that is its own content box (no inner wrapper) does not
+    // resize when its content grows; its children do. Watch each direct
+    // child's size, following childList changes.
+    const childObservers = new Map<Element, () => void>();
+    const syncChildObservers = () => {
+      if (content !== viewport) {
+        return;
+      }
+      const children = new Set(Array.from(viewport.children));
+      for (const [child, stop] of childObservers) {
+        if (!children.has(child)) {
+          stop();
+          childObservers.delete(child);
+        }
+      }
+      for (const child of children) {
+        if (!childObservers.has(child)) {
+          childObservers.set(child, observeResize(child, scheduleMeasure));
+        }
+      }
+    };
+    syncChildObservers();
+
     viewport.addEventListener('scroll', onScroll, {passive: true});
     window.addEventListener('resize', scheduleMeasure);
     window.visualViewport?.addEventListener('resize', scheduleMeasure);
@@ -377,28 +418,28 @@ export function useScrollableArea({
 
     // Geometry invalidation is independent of keyboard eligibility. The latter
     // is inspected only on native keyboard entry, never by these observers.
-    const mutationObserver =
-      typeof MutationObserver === 'undefined'
-        ? null
-        : new MutationObserver(scheduleMeasure);
-    mutationObserver?.observe(viewport, {
-      attributes: true,
-      attributeFilter: ['class', 'dir', 'hidden', 'style'],
-    });
-    mutationObserver?.observe(content, {
-      attributes: true,
-      attributeFilter: ['class', 'dir', 'hidden', 'style'],
-      characterData: true,
-      childList: true,
-      subtree: true,
-    });
-    let ancestor = viewport.parentElement;
-    while (ancestor != null) {
-      mutationObserver?.observe(ancestor, {
-        attributes: true,
-        attributeFilter: ['class', 'dir', 'hidden', 'style'],
-      });
-      ancestor = ancestor.parentElement;
+    // They are the shared mutation observers, one per set of options for
+    // every scroll area on the page (react-component-runtime INV7).
+    const onTreeChange = () => {
+      syncChildObservers();
+      scheduleMeasure();
+    };
+    const stopObservingMutations = [
+      observeMutations(content, CONTENT_MUTATIONS, onTreeChange),
+    ];
+    if (viewport !== content) {
+      stopObservingMutations.push(
+        observeMutations(viewport, LAYOUT_ATTRIBUTES, onTreeChange),
+      );
+    }
+    for (
+      let ancestor = viewport.parentElement;
+      ancestor != null;
+      ancestor = ancestor.parentElement
+    ) {
+      stopObservingMutations.push(
+        observeMutations(ancestor, LAYOUT_ATTRIBUTES, onTreeChange),
+      );
     }
 
     const fonts = document.fonts;
@@ -411,7 +452,12 @@ export function useScrollableArea({
       unregisterScrollOwner(viewport);
       stopObservingViewport();
       stopObservingContent();
-      mutationObserver?.disconnect();
+      for (const stop of childObservers.values()) {
+        stop();
+      }
+      for (const stop of stopObservingMutations) {
+        stop();
+      }
       viewport.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', scheduleMeasure);
       window.visualViewport?.removeEventListener('resize', scheduleMeasure);

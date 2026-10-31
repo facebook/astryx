@@ -200,6 +200,30 @@ describe('useScrollableArea', () => {
     });
   }
 
+  it('shares its mutation observers with every other scroll area', () => {
+    const Native = globalThis.MutationObserver;
+    let constructed = 0;
+    vi.stubGlobal(
+      'MutationObserver',
+      class extends Native {
+        constructor(callback: MutationCallback) {
+          super(callback);
+          constructed += 1;
+        }
+      },
+    );
+    render(
+      <>
+        <Fixture />
+        <Fixture />
+        <Fixture />
+      </>,
+    );
+    // One observer for content boxes and one for layout attributes, however
+    // many scroll areas the page has.
+    expect(constructed).toBeLessThanOrEqual(2);
+  });
+
   it('starts inactive and fitting without creating a tab stop', () => {
     render(<Fixture />);
     const viewport = screen.getByTestId('viewport');
