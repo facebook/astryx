@@ -90,6 +90,22 @@ describe('Carousel', () => {
       );
     });
 
+    // Named by its owner (spec:AST-025 FR12): the caller's label above, else
+    // the carousel's translated default.
+    it("takes the carousel's translated default name when the caller gives none", () => {
+      render(
+        <Carousel>
+          <div>One</div>
+          <div>Two</div>
+        </Carousel>,
+      );
+      const scroller = screen.getByRole('group', {name: 'Carousel'});
+      expect(scroller).toHaveAccessibleName('Carousel');
+      expect(scroller.parentElement).toBe(
+        screen.getByRole('region', {name: 'Carousel'}),
+      );
+    });
+
     it('takes a tab stop only while its content overflows', () => {
       render(
         <Carousel aria-label="Photos">
