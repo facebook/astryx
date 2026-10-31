@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
-import {useMemo, type ReactElement, type Ref} from 'react';
+import {createContext, use, useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {BaseTable} from './BaseTable';
@@ -135,16 +135,25 @@ const scrollWrapperStyles = stylex.create({
   },
 });
 
+/**
+ * The Table's own name, for the scroll region that names itself after it.
+ * Internal to Table: the scroll wrapper is not given it as a prop, so it adds
+ * nothing to the public table types.
+ */
+const TableNameContext = createContext<{
+  label?: string;
+  labelledBy?: string;
+} | null>(null);
+TableNameContext.displayName = 'TableNameContext';
+
 function TableScrollWrapper({
   children,
   htmlProps,
   xstyle: pluginStyles,
   beforeTable,
   afterTable,
-  tableName,
 }: {
   children: React.ReactNode;
-  tableName?: {label?: string; labelledBy?: string};
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
@@ -153,6 +162,7 @@ function TableScrollWrapper({
   afterTable?: React.ReactNode;
 }) {
   const t = useTranslator();
+  const tableName = use(TableNameContext);
   // The focusable scroll region takes the table's own name (spec:AST-025),
   // so two tables are not two groups both named "Table"; the generic name is
   // the fallback for an unnamed table.
@@ -252,18 +262,26 @@ function TableInner<T extends Record<string, unknown>>({
     }),
     [density, dividers, isStriped, hasHover, verticalAlign, textOverflow],
   );
+  const tableLabel = rest['aria-label'];
+  const tableLabelledBy = rest['aria-labelledby'];
+  const tableName = useMemo(
+    () => ({label: tableLabel, labelledBy: tableLabelledBy}),
+    [tableLabel, tableLabelledBy],
+  );
 
   return (
     <TableContext value={contextValue}>
-      <BaseTable<T>
-        ref={ref}
-        data={data}
-        columns={columns}
-        plugins={mergedPlugins}
-        textOverflow={textOverflow}
-        scrollWrapper={TableScrollWrapper}
-        {...rest}
-      />
+      <TableNameContext value={tableName}>
+        <BaseTable<T>
+          ref={ref}
+          data={data}
+          columns={columns}
+          plugins={mergedPlugins}
+          textOverflow={textOverflow}
+          scrollWrapper={TableScrollWrapper}
+          {...rest}
+        />
+      </TableNameContext>
     </TableContext>
   );
 }

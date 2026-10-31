@@ -624,8 +624,6 @@ export interface BaseTableProps<
     xstyle?: StyleXStyles[];
     beforeTable?: ReactNode;
     afterTable?: ReactNode;
-    /** The table's own name, for a scroll region that names itself after it. */
-    tableName?: {label?: string; labelledBy?: string};
   }>;
   /**
    * How default-rendered body cell text behaves when it exceeds column width.

@@ -628,11 +628,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
         htmlProps={scrollWrapperRenderProps.htmlProps}
         xstyle={scrollWrapperRenderProps.xstyle}
         beforeTable={scrollWrapperRenderProps.beforeTable}
-        afterTable={scrollWrapperRenderProps.afterTable}
-        tableName={{
-          label: rest['aria-label'],
-          labelledBy: rest['aria-labelledby'],
-        }}>
+        afterTable={scrollWrapperRenderProps.afterTable}>
         {tableElement}
       </ScrollWrapper>
     );
