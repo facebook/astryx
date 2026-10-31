@@ -19,17 +19,5 @@
   },
   "aroundMentions": [],
   "query": "trash can",
-  "fields": [
-    "command",
-    "description",
-    "displayName",
-    "domain",
-    "import",
-    "kind",
-    "name",
-    "package",
-    "reason",
-    "score"
-  ],
   "mentions": []
 }

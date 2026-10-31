@@ -1,9 +1,2 @@
-Results for "experimental"
-command:
-description:
-domain:
-name:
-package:
-parent:
-section:
-title:
+Results for "experimental" (<n>)
+More in packages you could add: pnpm exec astryx discover experimental

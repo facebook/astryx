@@ -19,21 +19,6 @@
   },
   "aroundMentions": [],
   "query": "icon",
-  "fields": [
-    "command",
-    "description",
-    "displayName",
-    "domain",
-    "import",
-    "kind",
-    "name",
-    "package",
-    "parent",
-    "reason",
-    "score",
-    "section",
-    "title"
-  ],
   "mentions": [
     "Export a compatible icon definition from a public package path, then import that path from the template.",
     "This lets you swap the icon set (e.g."

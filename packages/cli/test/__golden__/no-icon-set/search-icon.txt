@@ -1,11 +1,1 @@
-Results for "icon"
-command:
-description:
-domain:
-import:
-kind:
-name:
-package:
-parent:
-section:
-title:
+Results for "icon" (<n>)

@@ -19,21 +19,6 @@
   },
   "aroundMentions": [],
   "query": "search",
-  "fields": [
-    "command",
-    "description",
-    "displayName",
-    "domain",
-    "import",
-    "kind",
-    "name",
-    "package",
-    "parent",
-    "reason",
-    "score",
-    "section",
-    "title"
-  ],
   "mentions": [
     "Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components.…"
   ]

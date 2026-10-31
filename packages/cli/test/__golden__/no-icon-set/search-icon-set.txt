@@ -1,11 +1,2 @@
-Results for "icon set"
-command:
-description:
-domain:
-import:
-kind:
-name:
-package:
-parent:
-section:
-title:
+Results for "icon set" (<n>)
+More in packages you could add: pnpm exec astryx discover 'icon set'

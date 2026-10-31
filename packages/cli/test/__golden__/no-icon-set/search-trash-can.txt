@@ -1,8 +1,1 @@
-Results for "trash can"
-command:
-description:
-domain:
-import:
-kind:
-name:
-package:
+Results for "trash can" (<n>)

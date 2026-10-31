@@ -19,21 +19,6 @@
   },
   "aroundMentions": [],
   "query": "close",
-  "fields": [
-    "command",
-    "description",
-    "displayName",
-    "domain",
-    "import",
-    "kind",
-    "name",
-    "package",
-    "parent",
-    "reason",
-    "score",
-    "section",
-    "title"
-  ],
   "mentions": [
     "This lets you swap the icon set (e.g."
   ]

@@ -19,18 +19,6 @@
   },
   "aroundMentions": [],
   "query": "experimental",
-  "fields": [
-    "command",
-    "description",
-    "domain",
-    "name",
-    "package",
-    "parent",
-    "reason",
-    "score",
-    "section",
-    "title"
-  ],
   "mentions": [
     "Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components.…",
     "description mentions \"experimental\"",

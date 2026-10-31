@@ -19,20 +19,5 @@
   },
   "aroundMentions": [],
   "query": "delete",
-  "fields": [
-    "command",
-    "description",
-    "displayName",
-    "domain",
-    "import",
-    "kind",
-    "name",
-    "package",
-    "parent",
-    "reason",
-    "score",
-    "section",
-    "title"
-  ],
   "mentions": []
 }
