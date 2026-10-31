@@ -238,12 +238,14 @@ The `chat-layout` target itself is declared on the Chat family document
 
 Read from source, with no focused test yet:
 
+- FR3, FR4: whether the root is the scroll container.
 - FR5: `null` and `undefined` children selecting the empty state.
 - FR6: `null` rendering nothing, an omitted `scrollButton` selecting the wired
   default, and the default not rendering beside a supplied node.
 - FR8: the published scroll container.
 - FR7: the dock, message-area, dock-inner, and blur geometry for each density.
 - FR9: `ref`, DOM props, `className`, `style`, and `xstyle` on the root.
+- AR2: the new-messages label replacing the catalog name.
 - AR3: the catalog strings; AR4: no landmark or name on caller regions.
 - PR1–PR2: no layout measurement of the component's own, and the pooled
   observer.
