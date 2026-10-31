@@ -110,7 +110,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR5 | The visible root carries `dropdown-menu-item`; size and destructive state reflect on it (`data-size`, `data-variant`); semantic tokens own layout and paint before caller styling inputs compose.                                                                                                                     | `architecture:component-theming-surface`; current source and tests |
 | FR6 | Ref, supported host attributes and handlers, `className`, `style`, and `xstyle` reach or compose on the row root without replacing owned role, tab stop, disabled behavior, destination handling, or activation order.                                                                                                | `architecture:public-component-api` INV5–INV9; current tests       |
 | FR7 | Disabled menu rows are inert, and the parent menu's arrow keys and typeahead skip them. Shipped behavior, not a requirement until OQ1 is ruled.                                                                                                                                                                       | `component:DropdownMenu` FR17, OQ1                                 |
-| FR8 | Keyboard focus paints the row's hover background with no outline; in forced-colors mode that background is not drawn, so focus has no visible indicator. Shipped behavior; the forced-colors treatment is OQ2.                                                                                                        | Current source                                                     |
+| FR8 | Keyboard focus paints the row's hover background with no outline, about 1.1:1 against the menu surface in the default themes; in forced-colors mode that background is not drawn, so focus has no visible indicator. Shipped behavior; the focus treatment is OQ2.                                                    | Current source                                                     |
 
 ### Allowed variation
 
@@ -153,8 +153,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR2 — Disabled state.** Disabled rows expose state and cannot activate or navigate.
 - **AR3 — Keyboard ownership.** DropdownMenu owns focus collection and activation;
   the item remains a single row in that model.
-- **AR4 — Focus perception.** Focus paints the row background in ordinary
-  themes; FR8 records that forced-colors mode shows no indicator (OQ2).
+- **AR4 — Focus perception.** Focus paints a low-contrast row background in
+  ordinary themes and no indicator in forced-colors mode (FR8, OQ2).
 
 ## Design relationships
 
@@ -193,8 +193,9 @@ No component-local visual decision is recorded.
 
 ## Current-state impact
 
-- **Forced-colors focus (FR8).** Keyboard focus on a row has no visible
-  indicator in forced-colors mode; the treatment is OQ2.
+- **Focus visibility (FR8).** Keyboard focus on a row shows only a background
+  tint about 1.1:1 against the menu surface, and no indicator in forced-colors
+  mode; the treatment is OQ2.
 
 ## Decision log
 

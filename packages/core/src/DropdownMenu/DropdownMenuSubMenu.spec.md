@@ -163,7 +163,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR3 — Disabled discoverability.** Whether disabled rows stay
   keyboard-discoverable is owned by `component:DropdownMenu` (its OQ1).
 - **AR4 — Focus visibility.** Keyboard focus paints only the menu overlay
-  tint with no outline, and nothing under forced colors. The shared row
+  tint, about 1.1:1 against the menu surface in the default themes, with no
+  outline, and nothing under forced colors. The shared row
   treatment is `component:DropdownMenuItem` OQ2.
 
 ## Design relationships
@@ -207,8 +208,9 @@ No component-local visual decision is recorded.
 
 - **Drill-in close report (FR6).** When the root menu closes a drilled-in view,
   `onOpenChange(false)` does not run (OQ1).
-- **Forced-colors focus (AR4).** Keyboard focus on the row has no visible
-  indicator in forced-colors mode; the shared row treatment is
+- **Focus visibility (AR4).** Keyboard focus on the row shows only an
+  overlay tint about 1.1:1 against the menu surface, and no indicator in
+  forced-colors mode; the shared row treatment is
   `component:DropdownMenuItem` OQ2.
 
 ## Decision log

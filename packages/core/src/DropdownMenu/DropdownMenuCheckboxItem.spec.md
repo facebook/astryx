@@ -131,6 +131,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   accessible name, checked state, focus, and activation; the marker is
   decorative.
 - **AR2 — Disabled state.** A disabled row is inert.
+- **AR3 — Focus visibility.** Keyboard focus paints only the menu overlay
+  tint, about 1.1:1 against the menu surface in the default themes, with no
+  outline, and nothing under forced colors. The shared row treatment is
+  `component:DropdownMenuItem` OQ2.
 
 ## Design relationships
 
@@ -159,10 +163,14 @@ anatomy-theming map.
 | FR4       | `DropdownMenuSelectable.test.tsx` "composes the caller pointer-move handler with menu hover focus" and "a ref reaches the menuitemcheckbox element"                                                                                                                                                                                                                                 | Ref; pointer move                      | A dropped ref or handler fails. Evidence gap: no test asserts host attributes, `className`, `style`, or `xstyle` on the row.                          | `audit:DropdownMenuCheckboxItem/api`           |
 | FR5       | `DropdownMenuSelectable.test.tsx` "maps a small menu to the small shared checkbox marker"                                                                                                                                                                                                                                                                                           | Small menu                             | A marker that ignores the menu size fails. Evidence gap: no test asserts the `dropdown-menu-item` target on this row.                                 | `audit:DropdownMenuCheckboxItem/theming`       |
 | FR6       | `DropdownMenu.test.tsx` "arrow navigation reaches consumer-rendered menuitemradio and menuitemcheckbox items" and "skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation"                                                                                                                                                                            | Enabled and disabled rows              | A row the arrows miss, or a disabled row they land on, fails.                                                                                         | `audit:DropdownMenuCheckboxItem/accessibility` |
-| PR1       | Evidence gap: no test asserts the listener bound                                                                                                                                                                                                                                                                                                                                    | —                                      | —                                                                                                                                                     | `audit:DropdownMenuCheckboxItem/behavior`      |
+| AR3, PR1  | Evidence gap: no test asserts the focus paint or the listener bound                                                                                                                                                                                                                                                                                                                 | —                                      | —                                                                                                                                                     | `audit:DropdownMenuCheckboxItem/behavior`      |
 
 ## Current-state impact
 
+- **Focus visibility (AR3).** Keyboard focus on a checkbox row shows only an
+  overlay tint about 1.1:1 against the menu surface, and no indicator in
+  forced-colors mode; the shared row treatment is `component:DropdownMenuItem`
+  OQ2.
 - **Enter keeps the menu open (FR2).** Enter on a checkbox row toggles it and
   leaves the menu open by default, against the Menu pattern's Enter that
   `spec:AST-020` FR15 adopts, with no named exception (OQ1).
