@@ -39,10 +39,21 @@ async function mount(
   );
   await expect(copyButton(page)).toBeVisible();
   if (Object.keys(args).length > 0) {
-    // Measure only once the story has re-rendered with these args. A slow
-    // runner can take longer than any fixed wait, and measuring the story's
-    // default two-line block instead of the requested one reads as a layout
-    // failure, so a missing re-render fails here rather than being measured.
+    // Measure only the story as these args render it. Storybook emits
+    // `storyRendered` for the story's own first render too, shortly after it
+    // is visible, so the update waits for that render to finish first; the
+    // `storyRendered` it then waits for is the re-render with the args, and a
+    // re-render that never comes fails here instead of being measured. Each
+    // arg the cases pass is also checked in the page, so a slow runner can
+    // never measure the default story in its place.
+    await page.waitForFunction(
+      () =>
+        (
+          window as unknown as {
+            __STORYBOOK_PREVIEW__?: {currentRender?: {phase?: string}};
+          }
+        ).__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished',
+    );
     await page.evaluate(
       async ({storyId, updatedArgs}) =>
         new Promise<void>((resolve, reject) => {
@@ -71,6 +82,14 @@ async function mount(
       await expect(
         page.locator('pre.astryx-code-block [data-line]'),
       ).toHaveCount(args.code.split('\n').length);
+    }
+    if (typeof args.title === 'string') {
+      await expect(page.getByText(args.title, {exact: true})).toBeVisible();
+    }
+    if (args.isWrapped === true) {
+      await expect(
+        page.locator('pre.astryx-code-block [data-line="1"]'),
+      ).toHaveCSS('white-space', 'pre-wrap');
     }
   }
 }
