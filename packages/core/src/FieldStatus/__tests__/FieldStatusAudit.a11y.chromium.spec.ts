@@ -55,6 +55,9 @@ const EXPECTED_CASES = [
   'detached-long-prose',
   'attached-long-token',
   'detached-long-token',
+  'attached-empty',
+  'detached-empty',
+  'attached-long-token-in-row',
 ];
 
 const cases: AuditCase[] = [];
@@ -213,7 +216,8 @@ async function observe(page: Page) {
         lines: lineRects.length,
         boxInlineOverflow: box.scrollWidth > box.clientWidth + 1,
         textInlineOverflow:
-          textRect.left < rect.left - 1 || textRect.right > rect.right + 1,
+          lineRects.length > 0 &&
+          (textRect.left < rect.left - 1 || textRect.right > rect.right + 1),
         escapesColumn: column
           ? rect.left < column.left - 1 || rect.right > column.right + 1
           : null,
@@ -363,16 +367,25 @@ for (const item of cases) {
         check(box.iconCount === 1, `${id}: ${box.iconCount} status glyphs`);
         check(box.iconHidden === true, `${id}: status glyph exposed to AT`);
         check(box.iconBeforeText === true, `${id}: glyph not before text`);
-        check(
-          box.iconOnFirstLine === true,
-          `${id}: glyph not aligned to first line`,
-        );
+        // An empty message has no text line to align to.
+        if (box.lines > 0) {
+          check(
+            box.iconOnFirstLine === true,
+            `${id}: glyph not aligned to first line`,
+          );
+        }
       } else {
         check(box.iconCount === 0, `${id}: attached box renders a glyph`);
       }
       check(!box.boxInlineOverflow, `${id}: message overflows its box`);
       check(!box.textInlineOverflow, `${id}: text paints outside its box`);
       check(box.escapesColumn === false, `${id}: box escapes its container`);
+      // WCAG 2.2 SC 1.4.3: 12px supporting text needs 4.5:1 against the
+      // composited fill it is painted on.
+      check(
+        box.contrast != null && box.contrast >= 4.5,
+        `${id}: text contrast ${box.contrast}`,
+      );
       if (item.forcedColors) {
         check(box.outlineStyle === 'solid', `${id}: no forced-colors boundary`);
       }

@@ -52,7 +52,7 @@ const STATUS_MESSAGES = {
 // one unbroken token, so it can only fit a narrow field if the message wraps
 // inside it.
 const LONG_TOKEN_MESSAGE =
-  'Enter a valid address: firstname.lastname.department.team@subdomain.example-organization.com is not recognised';
+  'Enter a valid address: firstname.lastname.department.team@subdomain.example.com is not recognised';
 
 const LONG_PROSE_MESSAGE =
   'Passwords must be at least twelve characters long and include a mix of letters, numbers, and symbols so that they are hard to guess.';
@@ -75,9 +75,14 @@ const columnStyle = {
 
 const narrowColumnStyle = {...columnStyle, maxWidth: 240} as const;
 
+// A flex row sizes its items from their min-content width, the way a
+// horizontal form row or an inline toolbar would.
+const rowStyle = {display: 'flex', minWidth: 0} as const;
+
 /**
  * Every status tone in both presentations, plus wrapping content in a narrow
- * container: a long sentence and a message carrying one long unbroken token.
+ * container: a long sentence, a message carrying one long unbroken token, an
+ * empty message, and the long-token message as an item of a flex row.
  */
 export const AuditMatrix: Story = {
   render: () => (
@@ -114,6 +119,22 @@ export const AuditMatrix: Story = {
             data-audit-case={`${variant}-long-token`}
           />
         ))}
+        {PRESENTATIONS.map(variant => (
+          <FieldStatus
+            key={`${variant}-empty`}
+            type="success"
+            variant={variant}
+            message=""
+            data-audit-case={`${variant}-empty`}
+          />
+        ))}
+        <div style={rowStyle}>
+          <FieldStatus
+            type="error"
+            message={LONG_TOKEN_MESSAGE}
+            data-audit-case="attached-long-token-in-row"
+          />
+        </div>
       </div>
     </div>
   ),
