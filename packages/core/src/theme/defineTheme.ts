@@ -132,7 +132,7 @@ import {
 } from './themeAdaptations';
 
 import type {DomainTokenName} from './domainTokens';
-import {domainTokenDefaults} from './domainTokens';
+import {domainTokenDefaults} from './domainTokens/domainTokenDefaults';
 import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
 import {resolveLocalTokenContract} from './localTokens';

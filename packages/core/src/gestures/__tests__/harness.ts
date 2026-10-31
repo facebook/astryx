@@ -40,7 +40,13 @@ export interface Harness {
   claims: number[];
   /** Deferred clicks as they resolved. */
   deferredClicks: {id: number; allowed: boolean; time: number}[];
-  environment: {width: number; height: number; rtl: boolean};
+  environment: {
+    width: number;
+    height: number;
+    rtl: boolean;
+    /** The box every recognizer's view measures, when a test sets one. */
+    view?: {left?: number; top?: number; width: number; height: number};
+  };
   finger(id: number): Finger;
   /** Advance the clock and run every timer due by `time`. */
   advance(time: number): void;
@@ -51,7 +57,11 @@ export function createHarness(): Harness {
   const log: string[] = [];
   const claims: number[] = [];
   const deferredClicks: Harness['deferredClicks'] = [];
-  const environment = {width: 390, height: 844, rtl: false};
+  const environment: Harness['environment'] = {
+    width: 390,
+    height: 844,
+    rtl: false,
+  };
   const fingers = new Map<number, Finger>();
   const env: GestureEnvironment = {
     viewportSize: () => ({
@@ -59,6 +69,15 @@ export function createHarness(): Harness {
       height: environment.height,
     }),
     isRtl: () => environment.rtl,
+    viewRect: () =>
+      environment.view == null
+        ? null
+        : {
+            left: environment.view.left ?? 0,
+            top: environment.view.top ?? 0,
+            width: environment.view.width,
+            height: environment.view.height,
+          },
   };
   const arena: GestureArena = new GestureArena({
     clock,

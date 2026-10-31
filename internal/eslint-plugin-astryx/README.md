@@ -76,6 +76,9 @@ Approved implementations:
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
 - `packages/core/src/NumberInput/numberParser.ts` — reads typed and pasted
   numbers under the field's locale
+- `packages/core/src/utils/timeFormat.ts` — time-of-day text for TimeInput and
+  DateTimeInput: the locale's hour cycle, digits, separator, and day periods,
+  formatted and parsed back
 - `packages/core/src/i18n/useCollator.ts`
 - `packages/charts/src/formatters.ts`
 

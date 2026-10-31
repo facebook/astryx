@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead; focus bootstraps a replaced search source
+ * @output Exports BaseTypeahead; empty feedback belongs to the current settled query
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -531,14 +531,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  // `isLoading` starts with the request, after debouncing. Until then the
+  // cached empty answer belongs to the old query, not the text now typed.
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('');
+  const isSearchPending = isLoading || query !== lastSearchedQuery;
 
-  // Only the WORDS move here, not the timing. An empty query still reports
-  // nothing — a focus-opened menu that bootstrapped to nothing is not a
-  // search that failed — and a search still in flight reports nothing, which
-  // matters because the row is in the DOM before the spinner clears.
+  // An empty query reports nothing: an empty focus bootstrap is not a failed
+  // search. A newer query stays silent through debounce and pending work;
+  // only its settled empty row supplies the words to announce.
   useAnnounceRenderedText(
     emptyStateRef,
-    results.length === 0 && hasSearched && query.length > 0 && !isLoading,
+    results.length === 0 && hasSearched && query.length > 0 && !isSearchPending,
     query,
   );
 
@@ -715,6 +718,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
+      setLastSearchedQuery(searchQuery);
       setLoading(true);
       setHasSearched(true);
       try {
@@ -1250,7 +1254,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          {results.length === 0 && hasSearched ? (
+          {results.length === 0 && hasSearched && !isSearchPending ? (
             <div
               ref={emptyStateRef}
               role="option"
