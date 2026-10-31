@@ -1,12 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file Selector.stories.tsx
- * @input Selector props, controlled values, and availability transitions
- * @output Interactive examples of selection and disabled popup behavior
- * @position Storybook; demonstrates Selector consumer behavior
- */
-
 import type {Meta, StoryObj} from '@storybook/react';
 import {expect, waitFor} from 'storybook/test';
 import {useState} from 'react';
@@ -1047,29 +1040,6 @@ export const Disabled: Story = {
     value: 'Apple',
     isDisabled: true,
     placeholder: 'Select a fruit...',
-  },
-};
-
-// The parent disables the selector during the opening click. Existing options
-// remain visible, but choosing one must not change the selected value.
-export const DisabledAfterOpening: Story = {
-  render: () => {
-    const [value, setValue] = useState('Apple');
-    const [isDisabled, setIsDisabled] = useState(false);
-    return (
-      <>
-        <Selector
-          label="Fruit"
-          options={['Apple', 'Banana', 'Orange']}
-          value={value}
-          onChange={setValue}
-          isDisabled={isDisabled}
-          disabledMessage="Selection is unavailable"
-          onClick={() => setIsDisabled(true)}
-        />
-        <Button label="Enable again" onClick={() => setIsDisabled(false)} />
-      </>
-    );
   },
 };
 
