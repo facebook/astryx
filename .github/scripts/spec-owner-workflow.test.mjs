@@ -16,7 +16,7 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 describe('spec-only workflow contract', () => {
   it('keeps classification in one tested helper', () => {
     for (const workflow of [
-      '.github/workflows/ci.yml',
+      '.github/actions/test-scope/action.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
       '.github/workflows/internal-registry.yml',
@@ -32,8 +32,18 @@ describe('spec-only workflow contract', () => {
   });
 
   it('packages every dependency for trusted-base isolated classification', () => {
+    // ci.yml's jobs read the same three files from the base commit through
+    // the scope action (the GitHub API, no history needed).
+    const action = read('.github/actions/test-scope/action.yml');
+    for (const file of [
+      '.github/scripts/change-scope.cjs',
+      '.github/scripts/knowledge-paths.cjs',
+      'scripts/component-packages.cjs',
+    ]) {
+      expect(action).toContain(`'${file}'`);
+    }
+    expect(action).toContain('ref: pr.base.sha');
     for (const workflow of [
-      '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/cli-smoke-test.yml',
       '.github/workflows/internal-registry.yml',
@@ -105,10 +115,7 @@ describe('spec-only workflow contract', () => {
 
   it('routes spec-only changes without unrelated CI commands', () => {
     const ci = read('.github/workflows/ci.yml');
-    expect(ci).toContain(
-      'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
-    );
-    expect(ci).toContain('spec_only: ${{ steps.scope.outputs.spec_only }}');
+    expect(ci).toContain('uses: ./.test-scope/.github/actions/test-scope');
 
     const jobBlock = name => {
       const start = ci.indexOf(`  ${name}:`);
@@ -117,25 +124,26 @@ describe('spec-only workflow contract', () => {
       return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
     };
     const unrelatedJobs = [
-      'check-components',
       'test-ui',
       'test-node',
       'registry-contract',
       'test',
       'build-storybook',
-      'pr-rtl',
     ];
     for (const job of unrelatedJobs) {
       expect(jobBlock(job), job).toContain(
-        "needs.check-scope.outputs.spec_only != 'true'",
+        "steps.scope.outputs.spec_only != 'true'",
       );
     }
+    // No job reads a scope job any more.
+    expect(ci).not.toContain('needs.check-scope');
+    expect(ci).not.toContain('needs.check-components');
     expect(jobBlock('build')).toContain(
       "needs.build-storybook.result != 'skipped'",
     );
 
     const docsite = jobBlock('docsite-test');
-    expect(docsite).toContain("needs.check-scope.outputs.spec_only == 'true'");
+    expect(docsite).toContain("steps.scope.outputs.spec_only == 'true'");
     expect(docsite).toContain('node scripts/check-knowledge.mjs');
 
     const lint = read('.github/workflows/lint.yml');
@@ -189,23 +197,29 @@ describe('spec-only workflow contract', () => {
     expect(checkout).toBeGreaterThanOrEqual(0);
     expect(setup).toBeGreaterThan(checkout);
     expect(validate).toBeGreaterThan(setup);
+    // It validates on the spec-only lane, and whenever its own scope step
+    // could not decide, so an undecided lane never skips validation.
     expect(docsiteJob.slice(setup, validate)).toContain(
-      "if: needs.check-scope.outputs.spec_only == 'true'",
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
     );
     expect(docsiteJob).not.toContain('- name: Build core package');
     expect(docsiteJob).not.toContain('- name: Generate and test docsite data');
 
-    const header = dataJob.slice(0, dataJob.indexOf('steps:'));
-    expect(header).toContain("needs.check-scope.outputs.spec_only != 'true'");
+    const setupStep = dataJob.slice(
+      dataJob.indexOf('- uses: ./.github/actions/setup'),
+    );
+    expect(setupStep.slice(0, 200)).toContain(
+      "steps.scope.outputs.spec_only != 'true'",
+    );
     const build = dataJob.indexOf('- name: Build core package');
     const generate = dataJob.indexOf('- name: Generate and test docsite data');
     expect(build).toBeGreaterThanOrEqual(0);
     expect(generate).toBeGreaterThan(build);
     expect(dataJob.slice(build, generate)).toContain(
-      "if: needs.check-scope.outputs.spec_only != 'true'",
+      "if: steps.scope.outputs.spec_only != 'true'",
     );
     expect(dataJob.slice(generate)).toContain(
-      "if: needs.check-scope.outputs.spec_only != 'true'",
+      "if: steps.scope.outputs.spec_only != 'true'",
     );
   });
 
@@ -223,16 +237,20 @@ describe('spec-only workflow contract', () => {
 
     expect(commandSteps.length).toBeGreaterThan(0);
     for (const step of commandSteps) {
-      expect(step).toContain("needs.check-scope.outputs.spec_only != 'true'");
+      expect(step).toContain("steps.scope.outputs.spec_only != 'true'");
     }
   });
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}", PR_REPORT_GATE)}`,
+      `if: ${gated("${{ github.event_name != 'workflow_dispatch' && !startsWith(github.base_ref, 'release/v') && always() && !cancelled() }}", PR_REPORT_GATE)}`,
     );
-    expect(ci).toContain("if: needs.check-scope.result != 'success'");
+    const action = read('.github/actions/test-scope/action.yml');
+    expect(action).toContain(
+      "throw new Error('GitHub truncated the file list at 3000')",
+    );
+    expect(action).toContain('core.setFailed(');
 
     const reviewSignal = read('.github/workflows/review-signal.yml');
     expect(reviewSignal).toContain('allFiles.length !== pr.changed_files');
@@ -389,5 +407,16 @@ describe('spec-only workflow contract', () => {
         ),
       );
     expect(writers.sort()).toEqual(['review-clear.yml', 'review-signal.yml']);
+  });
+});
+
+describe('docsite-test spec validation', () => {
+  it('validates spec records whenever its own scope is spec-only or undecided', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const job = ci.slice(ci.indexOf('\n  docsite-test:\n'));
+    const validate = job.slice(job.indexOf('- name: Validate spec records'));
+    expect(validate.split('\n')[1].trim()).toBe(
+      "if: (steps.scope.outputs.spec_only == 'true' || steps.scope.outputs.decided != 'true')",
+    );
   });
 });

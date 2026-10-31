@@ -19,7 +19,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const ci = yaml.parse(read('.github/workflows/ci.yml'));
 const job = ci.jobs['registry-contract'];
-const SPEC_FALSE = "needs.check-scope.outputs.spec_only != 'true'";
+const SPEC_FALSE = "steps.scope.outputs.spec_only != 'true'";
 
 function step(name) {
   return job.steps.find(candidate => candidate.name === name);
@@ -34,13 +34,13 @@ function runLines() {
 
 describe('ShadCN registry CI contract', () => {
   it('runs as a bounded fail-closed gate and feeds the required test context', () => {
-    expect(job.needs).toEqual(['check-scope']);
-    expect(job.if).toContain('always()');
+    // It decides its own scope; there is no scope job to wait on.
+    expect(job.needs).toBeUndefined();
+    expect(job.steps.find(candidate => candidate.id === 'scope').uses).toBe(
+      './.test-scope/.github/actions/test-scope',
+    );
     expect(job['runs-on']).toBe('ubuntu-latest');
     expect(job['timeout-minutes']).toBe(15);
-    expect(step('Require successful scope classification').run).toContain(
-      'refusing to skip required work',
-    );
 
     expect(ci.jobs.test.needs).toContain('registry-contract');
     const join = ci.jobs.test.steps.find(candidate =>
@@ -55,7 +55,8 @@ describe('ShadCN registry CI contract', () => {
   it('runs every material step except on the trusted spec-only lane', () => {
     for (const candidate of job.steps) {
       if (
-        candidate.name === 'Require successful scope classification' ||
+        candidate.id === 'scope' ||
+        candidate.with?.path === '.test-scope' ||
         candidate.name === 'Skip registry work for spec-only changes'
       ) {
         continue;

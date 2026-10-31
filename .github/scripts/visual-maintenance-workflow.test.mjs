@@ -119,16 +119,14 @@ describe('CI baseline maintenance routing', () => {
     expect(runs(visual, {needs})).toBe(false);
   });
 
-  it('preserves focused PR routing on an opted-in pull request when the maintenance guard is skipped', () => {
+  it('runs on an opted-in pull request when the maintenance guard is skipped', () => {
     const needs = dependencies(visual);
     needs['maintenance-request'].result = 'skipped';
     const optedIn = {event: 'pull_request', needs, labels: ['ci:heavy-lanes']};
+    // The job decides its stable visual scope in its own steps.
     expect(runs(visual, optedIn)).toBe(true);
     // Without the opt-in label a pull request update runs no visual owner.
     expect(runs(visual, {event: 'pull_request', needs})).toBe(false);
-    needs['check-components'].outputs.has_stable_visual = 'false';
-    expect(runs(visual, optedIn)).toBe(false);
-    needs['check-components'].outputs.has_stable_visual = 'true';
     needs['build-storybook'].result = 'failure';
     expect(runs(visual, optedIn)).toBe(false);
     expect(runs(visual, {event: 'merge_group', needs})).toBe(false);
@@ -173,7 +171,10 @@ describe('canonical capture and checked-in baseline separation', () => {
     expect(capture.run).not.toMatch(
       /--(?:sample|only|components|themes|max-shots|tiers)\b/,
     );
-    expect(visual.permissions).toEqual({contents: 'read'});
+    expect(visual.permissions).toEqual({
+      contents: 'read',
+      'pull-requests': 'read',
+    });
   });
 
   it('keeps browser-refresh capture reachable, but only uploads validated full captures', () => {

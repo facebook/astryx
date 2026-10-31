@@ -70,15 +70,19 @@ interface DocumentPictureInPicture {
 /** Copy the page's style sheets into a second document, as an app does. */
 function adoptPageStyles(target: Document) {
   for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      const style = target.createElement('style');
-      style.textContent = Array.from(sheet.cssRules, rule => rule.cssText).join(
-        '\n',
-      );
-      target.head.append(style);
-    } catch {
-      // A cross-origin sheet cannot be read; the page's own sheets can.
+    // A sheet from another origin cannot be read, so only that one is skipped.
+    // Any other error in the copy throws.
+    if (
+      sheet.href != null &&
+      new URL(sheet.href).origin !== window.location.origin
+    ) {
+      continue;
     }
+    const style = target.createElement('style');
+    style.textContent = Array.from(sheet.cssRules, rule => rule.cssText).join(
+      '\n',
+    );
+    target.head.append(style);
   }
 }
 
