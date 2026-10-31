@@ -163,12 +163,16 @@ function TableScrollWrapper({
 }) {
   const t = useTranslator();
   const tableName = use(TableNameContext);
-  // The focusable scroll region takes the table's own name (spec:AST-025),
-  // so two tables are not two groups both named "Table"; the generic name is
-  // the fallback for an unnamed table.
+  // The focusable scroll region takes the table's own name (spec:AST-025
+  // FR12), so two tables are not two groups both named "Table". It is named
+  // the way the table is: `aria-labelledby` wins over `aria-label`, as it does
+  // in accessible-name computation; the generic name is the fallback for an
+  // unnamed table.
+  const labelledBy = tableName?.labelledBy;
   const label =
-    tableName?.label ??
-    (tableName?.labelledBy != null ? undefined : t('@astryx.table.label'));
+    labelledBy != null
+      ? undefined
+      : (tableName?.label ?? t('@astryx.table.label'));
   const {getViewportProps, getContentProps, state} = useScrollableArea({
     axis: 'inline',
     keyboardAccess: {owner: 'content'},
@@ -180,9 +184,7 @@ function TableScrollWrapper({
     'aria-label': label,
     // A plugin's explicit name stays authoritative (Table FR1).
     'aria-labelledby':
-      tableName?.label == null && restHtmlProps['aria-label'] == null
-        ? tableName?.labelledBy
-        : undefined,
+      restHtmlProps['aria-label'] == null ? labelledBy : undefined,
     ...(state.inline.isScrollable ? {tabIndex: 0} : {}),
     ...restHtmlProps,
     ref,

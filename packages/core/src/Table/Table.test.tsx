@@ -967,6 +967,13 @@ describe('Table', () => {
         <Table aria-label="Orders" data={users} columns={columns} />
         <h2 id="refunds-title">Refunds</h2>
         <Table aria-labelledby="refunds-title" data={users} columns={columns} />
+        <h2 id="returns-title">Returns</h2>
+        <Table
+          aria-label="Ignored label"
+          aria-labelledby="returns-title"
+          data={users}
+          columns={columns}
+        />
         <Table data={users} columns={columns} />
       </>,
     );
@@ -975,6 +982,13 @@ describe('Table', () => {
       'aria-labelledby',
       'refunds-title',
     );
+    // With both, the region is named as the table is: by aria-labelledby.
+    expect(screen.getByRole('table', {name: 'Returns'})).toBeInTheDocument();
+    const returns = screen.getByRole('group', {name: 'Returns'});
+    expect(returns).not.toHaveAttribute('aria-label');
+    expect(
+      screen.queryByRole('group', {name: 'Ignored label'}),
+    ).not.toBeInTheDocument();
     // An unnamed table keeps the generic fallback.
     expect(screen.getAllByRole('group', {name: 'Table'})).toHaveLength(1);
   });
