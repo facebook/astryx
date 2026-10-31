@@ -84,6 +84,16 @@ describe('stable and canary publication authority', () => {
     expect(publish).not.toContain('--tag canary');
   });
 
+  it('never cancels a canary that has started publishing', () => {
+    // A cancelled canary can leave a partial package set on npm; pending runs
+    // still coalesce under a non-cancelling group.
+    expect(canary.concurrency).toEqual({
+      group: 'npm-release-canary',
+      'cancel-in-progress': false,
+    });
+    expect(canary.concurrency.group).not.toBe(stable.concurrency.group);
+  });
+
   it('publishes canaries only while main is strictly ahead of stable', () => {
     const eligibility = step(
       canary,
