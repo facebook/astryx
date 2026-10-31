@@ -119,10 +119,15 @@ interface Timer {
   callback: () => void;
 }
 
+/**
+ * The arena that decides which recognizer gets a touch.
+ */
 export class GestureArena {
   readonly environment: GestureEnvironment;
   private readonly clock: GestureClock;
   private readonly options: GestureArenaOptions;
+  /** The touches whose move the arena is delivering right now. */
+  private movingIds: ReadonlySet<number> = new Set();
   private readonly records = new Map<number, TouchRecord>();
   /** Recognizers involved in the current interaction, in resolution order. */
   private active: GestureRecognizer[] = [];
@@ -134,6 +139,10 @@ export class GestureArena {
   /** The latest time processed: input never moves the clock backwards. */
   private latestTime = Number.NEGATIVE_INFINITY;
   private depth = 0;
+  /** Open `deferResolution` calls: what their stops unblock waits. */
+  private deferDepth = 0;
+  /** A deferred stop left recognitions, held touches or resets to settle. */
+  private owesResolution = false;
 
   constructor(options: GestureArenaOptions = {}) {
     this.options = options;
@@ -308,8 +317,14 @@ export class GestureArena {
         return;
       }
       const context = this.context();
-      for (const recognizer of [...this.active]) {
-        recognizer.deliverMoved(changed, context);
+      const previous = this.movingIds;
+      this.movingIds = new Set(changed.map(touch => touch.id));
+      try {
+        for (const recognizer of [...this.active]) {
+          recognizer.deliverMoved(changed, context);
+        }
+      } finally {
+        this.movingIds = previous;
       }
       for (const touch of changed) {
         const record = this.records.get(touch.id);
@@ -457,12 +472,42 @@ export class GestureArena {
   }
 
   /** Cancel an active recognizer, or fail a possible one. */
+  /**
+   * Runs `body`, code outside input that stops recognizers (an Effect that
+   * turns one off or detaches it), without resolving what those stops
+   * unblock: the recognitions waiting on them, the touches they held from a
+   * view, the resets. A pass a microtask later resolves all of it, at the
+   * last event's time, so the listeners and consumers it reaches hear it
+   * outside the caller's frame and read the recognized state
+   * (react-component-runtime INV2).
+   */
+  deferResolution(body: () => void): void {
+    this.deferDepth += 1;
+    try {
+      body();
+    } finally {
+      this.deferDepth -= 1;
+    }
+    if (this.deferDepth === 0 && this.owesResolution) {
+      queueMicrotask(() => {
+        if (this.owesResolution && this.deferDepth === 0) {
+          this.run(this.lastEventTime(), () => {});
+        }
+      });
+    }
+  }
+
+  /** The last event's time, or now before any event. */
+  private lastEventTime(): number {
+    return Number.isFinite(this.latestTime)
+      ? this.latestTime
+      : this.clock.now();
+  }
+
   stop(recognizer: GestureRecognizer): void {
     // A cancel from code between events happens at the last event's time:
     // wall time would run deadlines ahead of input still queued (FR16).
-    const time =
-      this.currentTime ??
-      (Number.isFinite(this.latestTime) ? this.latestTime : this.clock.now());
+    const time = this.currentTime ?? this.lastEventTime();
     this.run(time, () => {
       if (isActive(recognizer.state)) {
         this.apply(recognizer, 'cancelled');
@@ -569,6 +614,11 @@ export class GestureArena {
     }
     recognizer.pending = null;
     this.apply(recognizer, 'failed');
+    if (this.deferDepth > 0) {
+      // Inside `deferResolution`, the next pass settles.
+      this.owesResolution = true;
+      return;
+    }
     this.reviewPending();
   }
 
@@ -576,12 +626,19 @@ export class GestureArena {
    * A recognition that claimed its touches and then fails or is cancelled (a
    * waiting recognition that fails, a gesture a second finger or the app
    * cancels) gives them back to the browser unless another recognition owns
-   * them, so a finger still resting there can pinch-zoom the page.
+   * them, so a finger still resting there can pinch-zoom the page. A gesture
+   * that cancels itself on a finger's move (a long press past its tolerance)
+   * keeps that finger until it lifts: the drag goes on, and the page never
+   * takes it over midway (`spec:AST-094` FR14), as UIKit's scroll view never
+   * takes a touch another recognizer had.
    */
-  private releaseClaim(recognizer: GestureRecognizer): void {
+  private releaseClaim(
+    recognizer: GestureRecognizer,
+    keep: ReadonlySet<number> = new Set(),
+  ): void {
     for (const touch of recognizer.trackedTouches) {
       const record = this.records.get(touch.id);
-      if (record == null || !record.isClaimed) {
+      if (record == null || !record.isClaimed || keep.has(touch.id)) {
         continue;
       }
       // A recognized discrete gesture (`ended`, a swipe) still owns its
@@ -612,7 +669,9 @@ export class GestureArena {
     if (isTerminal(next)) {
       this.clearTimer(recognizer);
     }
-    if (next === 'cancelled' || next === 'failed') {
+    if (next === 'cancelled') {
+      this.releaseClaim(recognizer, this.movingIds);
+    } else if (next === 'failed') {
       this.releaseClaim(recognizer);
     }
   }
@@ -870,9 +929,15 @@ export class GestureArena {
       this.currentTime = this.clampTime(time);
       body();
       // Re-entrant calls settle with the outermost one: settling mid-delivery
-      // would reset recognizers that have not heard the event yet.
+      // would reset recognizers that have not heard the event yet. Inside
+      // `deferResolution`, the next pass settles.
       if (this.depth === 1) {
-        this.settle();
+        if (this.deferDepth > 0) {
+          this.owesResolution = true;
+        } else {
+          this.owesResolution = false;
+          this.settle();
+        }
       }
     } finally {
       this.depth -= 1;

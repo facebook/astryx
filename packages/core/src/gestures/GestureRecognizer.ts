@@ -118,7 +118,9 @@ export function isActive(state: GestureState): boolean {
   return state === 'began' || state === 'changed';
 }
 
-/** The browser behaviors `touch-action` can keep or remove. */
+/**
+ * The browser behaviors `touch-action` can keep or remove.
+ */
 export interface NativeTouchBehavior {
   readonly panX: boolean;
   readonly panY: boolean;
