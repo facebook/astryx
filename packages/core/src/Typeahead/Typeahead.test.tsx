@@ -2314,6 +2314,40 @@ describe('Typeahead disabledMessage', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('does not open a list for a search that settles after the field became disabled', async () => {
+    let resolveSearch: (items: SearchableItem[]) => void = () => {};
+    const pendingSource: SearchSource = {
+      search: async () =>
+        new Promise(resolve => {
+          resolveSearch = resolve;
+        }),
+      bootstrap: () => [],
+    };
+    const user = userEvent.setup();
+    const field = (isDisabled: boolean) => (
+      <Typeahead
+        label="Assignee"
+        searchSource={pendingSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        isDisabled={isDisabled}
+        disabledMessage={isDisabled ? 'You need the Editor role' : undefined}
+      />
+    );
+    const {rerender} = render(field(false));
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'ap');
+    rerender(field(true));
+    await act(async () => {
+      resolveSearch(fruits);
+    });
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('remains natively disabled when disabled without a reason', () => {
     render(
       <Typeahead

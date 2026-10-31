@@ -334,7 +334,7 @@ export const docsZh = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。它会阻止文本输入，但如果结果已打开，按 Enter 仍可选择高亮选项。',
+        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。它会阻止文本输入、打开结果列表和选择结果，在它生效前已打开的结果中也是如此；Escape 或 Tab 仍可关闭列表。',
       default: 'false',
     },
     {

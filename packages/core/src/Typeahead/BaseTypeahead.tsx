@@ -684,11 +684,25 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Show the layer, deferring past the active click if a pointer is down.
   // Without this, popover="auto" light-dismiss immediately closes the
   // dropdown when it opens between pointerdown and pointerup/click.
+  // Read at show time, so a search or bootstrap that settles after the field
+  // became disabled does not open the list (spec:AST-085 FR2).
+  const isDisabledRef = useRef(isDisabled);
+  useIsomorphicLayoutEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
   const showLayer = useCallback(() => {
+    if (isDisabledRef.current) {
+      return;
+    }
     if (pointerActiveRef.current) {
       document.addEventListener(
         'click',
-        () => requestAnimationFrame(() => popover.show()),
+        () =>
+          requestAnimationFrame(() => {
+            if (!isDisabledRef.current) {
+              popover.show();
+            }
+          }),
         {once: true},
       );
     } else {
