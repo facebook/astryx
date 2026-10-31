@@ -13,6 +13,7 @@ review_triggers: [public-api, behavior, layout, theming, accessibility, testing]
 verified_by:
   [
     packages/core/src/Chat/ChatMessage.test.tsx,
+    packages/core/src/Chat/ChatMessageBubble.test.tsx,
     packages/core/src/theme/themingTargets.test.ts,
     apps/storybook/stories/ChatMessage.stories.tsx,
   ]
@@ -118,7 +119,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR4 | Density MUST resolve explicit `density` → nearest `ChatMessageList` density → `balanced`, and the resolved value MUST reflect on the root target.                                                                                                                                                           | shipped implementation; consumer docs; focused tests; theming metadata |
 | FR5 | Descendants MUST receive the resolved `{sender, density}` value through `ChatMessageContext`.                                                                                                                                                                                                               | shipped implementation; descendant composition                         |
 | FR6 | The article MUST carry the translated sender fallback as `aria-label`, and a non-system `name` that is not a skipped scalar MUST also label it through `aria-labelledby`. A name that renders text names the article; one that renders none leaves the fallback (accessible name computation 1.2, step 2B). | owner direction; accessible name computation 1.2; focused tests        |
-| FR7 | Accepted `ref`, DOM/data/ARIA props, `className`, `style`, and `xstyle` MUST reach and compose on the same article that carries the `chat-message` target.                                                                                                                                                  | `architecture:public-component-api/INV5–INV6, INV8`; focused tests     |
+| FR7 | Accepted `ref`, DOM/data/ARIA props, `className`, `style`, and `xstyle` MUST reach and compose on the same article that carries the `chat-message` target, except `aria-label` and `aria-labelledby`, which the component owns for naming (FR6, AR1).                                                       | `architecture:public-component-api/INV5–INV6, INV8`; focused tests     |
 
 ### Allowed variation
 
@@ -154,7 +155,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **ORD2 — Accessible name.** A system `name` or a skipped scalar creates no
   name wrapper. Otherwise the article references the name wrapper's generated
   id; the rendered text there names the article, and empty text yields to the
-  translated fallback carried as `aria-label`.
+  translated fallback carried as `aria-label`. A caller `aria-label` or
+  `aria-labelledby` does not override this naming.
 
 ### Performance and resources
 
@@ -215,20 +217,19 @@ No component-local design decision is recorded.
 
 ## Verification map
 
-| Contract     | Verification                                                    | Representative states                                                                      | Mutation or failure expectation                                                    | Audit section          |
-| ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------------------- |
-| FR1–FR3      | `ChatMessage.test.tsx`; `ChatMessage.stories.tsx`               | all senders; skipped scalar, renders-nothing, numeric, content, and suppressed slot states | Removing the scalar skip or the CSS collapse leaves an empty slot or a gap         | `audit:ChatMessage/§4` |
-| FR4–FR5      | `ChatMessage.test.tsx`; `themingTargets.test.ts`                | standalone; inherited density; explicit override                                           | Changing precedence or reflection gives descendants and themes a different density | `audit:ChatMessage/§2` |
-| FR6, AR1–AR2 | `ChatMessage.test.tsx`; Chromium accessibility tree             | visible, omitted, skipped-scalar, renders-nothing, and system names                        | Dropping the fallback `aria-label` or the name reference leaves an article unnamed | `audit:ChatMessage/§1` |
-| FR7          | `ChatMessage.test.tsx`; public export and theming-target checks | ref; data prop; class; style                                                               | Moving passthrough or ref off the target article breaks the public root contract   | `audit:ChatMessage/§3` |
-| RTL          | `ChatMessage.stories.tsx`                                       | all senders; narrow long content                                                           | Physical direction keeps user or assistant on the same side in both directions     | `audit:ChatMessage/§9` |
+| Contract     | Verification                                                                   | Representative states                                                                      | Mutation or failure expectation                                                    | Audit section          |
+| ------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------------------- |
+| FR1–FR3      | `ChatMessage.test.tsx`; `ChatMessage.stories.tsx`                              | all senders; skipped scalar, renders-nothing, numeric, content, and suppressed slot states | Removing the scalar skip or the CSS collapse leaves an empty slot or a gap         | `audit:ChatMessage/§4` |
+| FR4–FR5      | `ChatMessage.test.tsx`; `ChatMessageBubble.test.tsx`; `themingTargets.test.ts` | standalone; inherited density; explicit override                                           | Changing precedence or reflection gives descendants and themes a different density | `audit:ChatMessage/§2` |
+| FR6, AR1–AR2 | `ChatMessage.test.tsx`                                                         | visible, omitted, skipped-scalar, renders-nothing, and system names                        | Dropping the fallback `aria-label` or the name reference leaves an article unnamed | `audit:ChatMessage/§1` |
+| FR7          | `ChatMessage.test.tsx`; public export and theming-target checks                | ref; data prop; class; style                                                               | Moving passthrough or ref off the target article breaks the public root contract   | `audit:ChatMessage/§3` |
+| RTL          | `ChatMessage.stories.tsx`                                                      | all senders; narrow long content                                                           | Physical direction keeps user or assistant on the same side in both directions     | `audit:ChatMessage/§9` |
 
 Read from source, with no focused test yet:
 
 - FR1: start, end, and centre alignment by sender.
-- FR3: the visual slot order, skipping boolean and empty-string values, and a
-  wrapper collapsing when its content renders nothing.
-- FR5: the context value descendants receive.
+- FR3: the visual slot order.
+- FR7: a caller `aria-label` or `aria-labelledby` not overriding the naming.
 - FR6: a name that renders no text leaving the fallback name.
 - AR2–AR3: no slot inspection, and no keyboard model of the component's own.
 
