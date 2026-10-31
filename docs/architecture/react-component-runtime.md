@@ -44,7 +44,8 @@ deciding_specs:
       "INV11",
       "INV12",
       "INV13",
-      "INV15"
+      "INV15",
+      "INV16"
     ]
   }
 }
