@@ -1,4 +1,23 @@
 {
+  "envelope": [
+    "apiVersion",
+    "type",
+    "data",
+    "meta"
+  ],
+  "data": [
+    "query",
+    "matchCount",
+    "results"
+  ],
+  "meta": {
+    "answeredBy": {
+      "cli": "<version>",
+      "core": "<version>",
+      "copy": "project"
+    }
+  },
+  "aroundMentions": [],
   "query": "experimental",
   "fields": [
     "command",

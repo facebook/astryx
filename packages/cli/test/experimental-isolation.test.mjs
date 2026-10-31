@@ -7,20 +7,23 @@
  *
  *   The goldens under `__golden__/no-icon-set/` were written by the CLI
  *   without the icon-set feature, so a result, field, section, count, or
- *   `stability` that an experimental surface adds to search, the docs, a
- *   template copy, doctor, or an integration's verify report fails here, as
- *   does any sentence that names an experimental surface. They hold no prose
+ *   `stability` that an experimental surface adds to the docs, a template
+ *   copy, doctor, or an integration's verify report fails here, as does any
+ *   sentence that names an experimental surface; search is held as below.
+ *   They hold no prose
  *   (titles, summaries, descriptions, snippets), so main's ordinary doc and
  *   command wording edits rewrite none of them. Help, the
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
  * Search ranks and counts by prose, so a golden of its counts and ranking
- * would follow every docs edit. Its goldens hold, over every match (not the
+ * would follow every docs edit. Its goldens hold the response's envelope (its
+ * keys, the data keys, the meta skeleton) and, over every match (not the
  * first page), the fields results carry, the text's line labels, and every
- * sentence that names an experimental surface; each match is asserted to be no
- * experimental surface; and with an icon set installed, search is compared at
- * run time with the same search without one.
+ * sentence that names an experimental surface. Each match is asserted to be no
+ * experimental surface, its name none of the routes the `cli` listings mark
+ * experimental; and with an icon set installed, search is compared at run time
+ * with the same search without one.
  *
  * Updating the goldens has two phases.
  *
@@ -266,7 +269,9 @@ function withoutComputerChecks(stdout) {
  * names, kinds, packages, commands), structure (which fields, sections,
  * children, and results there are, in order), counts, and the leak fields:
  * every `stability`, and every sentence that names `experimental`, an icon
- * set, or an icon definition.
+ * set, or an icon definition. Search's goldens keep its envelope, its
+ * results' fields and the leak fields, not its counts or ranking, which follow
+ * prose; each of its matches is checked instead (`searchEveryMatch`).
  */
 
 /** String fields kept as they are: identities, never prose. */
@@ -406,12 +411,43 @@ function textShape(text, keep = []) {
 /** More matches than any query has: search lists every match, not a page. */
 const EVERY_MATCH = '100000';
 
+/** @type {Map<string, string[]>} */
+const experimentalRoutesIn = new Map();
+
+/**
+ * The routes the `cli` listings mark `stability: 'experimental'` (the
+ * experimental command group, its commands, and their API functions), read
+ * from the CLI that answers in `cwd`. A search match whose name is one of
+ * them, or a route under one, is an experimental doc that search let through.
+ * @param {string} cwd
+ */
+function experimentalCliRoutes(cwd) {
+  let routes = experimentalRoutesIn.get(cwd);
+  if (routes == null) {
+    routes = [];
+    for (const listing of ['cli', 'cli/commands', 'cli/api/functions']) {
+      const json = JSON.parse(astryx(['docs', listing, '--json'], cwd).stdout);
+      for (const slot of json.data.slots) {
+        for (const child of slot.children) {
+          if (child.stability === 'experimental') routes.push(child.route);
+        }
+      }
+    }
+    // Main's CLI lists none while it lacks the feature; with it, the guard
+    // below must have routes to check.
+    if (!REGENERATING) expect(routes.length).toBeGreaterThan(0);
+    experimentalRoutesIn.set(cwd, routes);
+  }
+  return routes;
+}
+
 /**
  * `astryx search` over every match, with FR18's one stable addition taken out:
  * the JSON body and the text's result blocks. Every match, not the first page:
  * a leak ranked past it would show only in a count. Each match is asserted to
- * be no experimental surface: no `stability`, no icon or icon-definition
- * domain, and no identity that names one.
+ * be no experimental surface: no route the `cli` listings mark experimental,
+ * no `stability`, no icon or icon-definition domain, and no identity that
+ * names one.
  * @param {string} query
  * @param {string} cwd
  */
@@ -429,7 +465,15 @@ function searchEveryMatch(query, cwd) {
     (/** @type {any} */ result) => !isStableAddition(result),
   );
   body.data.matchCount -= added;
+  const experimental = experimentalCliRoutes(cwd);
   for (const result of body.data.results) {
+    const name = String(result.name ?? '');
+    expect(
+      experimental.filter(
+        route => name === route || name.startsWith(`${route}/`),
+      ),
+      `${name} is a route the cli listings mark experimental`,
+    ).toEqual([]);
     expect(result).not.toHaveProperty('stability');
     expect(['icon', 'icon-set', 'icon-definition']).not.toContain(
       result.domain,
@@ -492,8 +536,10 @@ function searchOutput(query, cwd) {
 
 /**
  * `astryx search` as a golden: what icon sets could change in search that
- * does not follow prose. Over every match: the fields results carry, the line
- * labels of the text, and every sentence that names an experimental surface.
+ * does not follow prose. The envelope: its keys, the data keys, the meta
+ * skeleton, and any sentence around the results that names an experimental
+ * surface. Over every match: the fields results carry, the line labels of the
+ * text, and every sentence that names an experimental surface.
  * The counts and the ranking are left out, since search ranks and counts by
  * prose: a docs edit elsewhere rewrites none of it.
  * @param {string} query
@@ -519,8 +565,20 @@ function searchGolden(query, cwd) {
       ),
     ),
   ].sort();
+  // The response around the results: a key added to it, or a sentence in it
+  // that names an experimental surface, shows without following prose.
+  const {query: asked, results: _results, ...rest} = body.data;
+  const around = {...body, data: rest};
   return {
-    json: asGolden({query: body.data.query, fields, mentions}),
+    json: asGolden({
+      envelope: Object.keys(body),
+      data: Object.keys(body.data),
+      meta: skeleton(body.meta),
+      aroundMentions: leakMentions(around),
+      query: asked,
+      fields,
+      mentions,
+    }),
     text: [`Results for "${query}"`, ...labels.map(label => `${label}:`)].join(
       '\n',
     ),
