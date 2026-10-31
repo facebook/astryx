@@ -4,7 +4,7 @@
  * @file animator.ts
  * @input An element, target values, and a spring, momentum curves (coast.ts)
  *   or any closed-form curve
- * @output Exports `createAnimator`: a compositor animator for translate,
+ * @output Exports `createMotionAnimator`: a compositor animator for translate,
  *   rotate, scale and opacity, with presentation values and velocities read
  *   from the analytic curves, velocity-preserving retargeting, freeze-in-place
  *   `stop`, completion promises, a shared clock, and UIKit's Reduced Motion
@@ -292,7 +292,7 @@ export interface MotionCurve {
 }
 
 /**
- * Options of `createAnimator`.
+ * Options of `createMotionAnimator`.
  */
 /** How `set` puts values in place. */
 export interface SetOptions {
@@ -778,7 +778,7 @@ export function animatorFor(
   const key = options.pseudoElement ?? '';
   let animator = byPseudo.get(key);
   if (animator == null) {
-    animator = createAnimator(element, options);
+    animator = createMotionAnimator(element, options);
     byPseudo.set(key, animator);
   }
   return animator;
@@ -895,7 +895,7 @@ const REDUCED_TRANSITION: SpringTransition = {
  *
  * @example
  * ```
- * const animator = createAnimator(sheet);
+ * const animator = createMotionAnimator(sheet);
  * // finger lifts at 1200 px/s heading for the detent at 0 (a component
  * // passes the spring of its motion role):
  * animator.animate({y: 0}, {spring: {response: 0.45, dampingRatio: 0.9}, velocity: {y: 1200}});
@@ -904,7 +904,7 @@ const REDUCED_TRANSITION: SpringTransition = {
  * animator.stop(['y']);
  * ```
  */
-export function createAnimator(
+export function createMotionAnimator(
   element: HTMLElement | null,
   options: AnimatorOptions = {},
 ): Animator {
