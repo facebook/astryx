@@ -92,9 +92,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Item's label, description, slots, invisible button, delegated activation,
   and disabled and selected semantics — Item's shipped behavior, uncontracted
   here.
-- What each edge treatment, density, and divider setting does to row geometry,
-  the touch target, press paint, row motion, and row menus — owned by
-  `component:List`.
+- What each edge treatment does to row geometry and the row inset, the touch
+  target, press paint, row motion, and row menus — owned by `component:List`.
 - The `ListMarkerScope` that sets a marker or task state for Markdown's nested
   lists — internal and uncontracted here.
 - Whole number markers and text alignment for Markdown lists — owned by
@@ -164,9 +163,11 @@ migration, so the map is deferred.
 - `component:Item` owns the row's alignment; its other row behavior is
   uncontracted. `spec:AST-057` owns swipe actions and
   `family:navigation-destinations` owns link destinations.
-- `component:List` owns the collection-wide edge treatment, density, dividers,
-  marker style, and row geometry.
-- `architecture:component-theming-surface` owns the `list-item` target.
+- `component:List` owns the edge treatment and its row geometry and inset;
+  its record leaves the density, divider, and marker-style settings
+  uncontracted, and FR2 and FR4 here cover what a row does with them.
+- `architecture:component-theming-surface` owns target qualification; FR5 owns
+  the `list-item` target.
 
 ## Verification map
 
@@ -181,7 +182,8 @@ migration, so the map is deferred.
 Read from source, with no focused test yet:
 
 - FR1: `interactiveRef`, `rel`, and `ref` reaching the Item row.
-- FR3: no marker outside a List.
+- FR2: the divider border and square corners.
+- FR3: `balanced` density, no dividers, and no marker outside a List.
 - FR4: the circle marker's drawing.
 - FR5: the `list-item` target, and `xstyle` applying after ListItem's styles.
 
