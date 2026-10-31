@@ -755,6 +755,43 @@ describe('ComplexSelector trigger semantics', () => {
     expect(trigger).toHaveAttribute('aria-labelledby', 'trip-heading');
   });
 
+  // WCAG 2.5.3 Label in Name (axe `label-content-name-mismatch`) applies to
+  // controls named from their content. A button named by `aria-labelledby`
+  // while showing the chosen value failed it, and hid the value from the
+  // accessibility tree. As a combobox the label is the name and the text it
+  // shows is the value, as on `Selector`.
+  it('names the trigger by its label and shows the chosen value as its content', () => {
+    render(
+      <ComplexSelector
+        label="Supplier"
+        value="1"
+        onChange={() => {}}
+        triggerLabel="Acme Ltd">
+        {() => <p>Choose a supplier</p>}
+      </ComplexSelector>,
+    );
+    // A combobox takes no name from its content, so the value is not in the
+    // name and Label in Name has nothing to compare it with.
+    expect(screen.queryByRole('button', {name: /Supplier/})).toBeNull();
+    const trigger = screen.getByRole('combobox', {name: 'Supplier'});
+    expect(trigger).toHaveTextContent('Acme Ltd');
+    expect(trigger).toHaveAccessibleName('Supplier');
+  });
+
+  it('keeps the field label as the name when the trigger shows the placeholder', () => {
+    render(
+      <ComplexSelector
+        label="Supplier"
+        value=""
+        onChange={() => {}}
+        placeholder="Choose a supplier">
+        {() => <p>Pick one</p>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Supplier'});
+    expect(trigger).toHaveTextContent('Choose a supplier');
+  });
+
   it('spreads the combobox role, required, and disabled state onto a caller control', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();

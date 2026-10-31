@@ -23,7 +23,7 @@ import {
   typeScaleVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps} from '../utils/mergeProps';
 import {useFocusAcrossSwap} from '../utils/useFocusAcrossSwap';
 import type {BaseProps} from '../BaseProps';
 import {useNavHeadingMenuContext} from './NavMenuContext';

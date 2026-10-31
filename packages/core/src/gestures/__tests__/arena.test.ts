@@ -39,6 +39,11 @@ interface Script {
  * gesture ends with its last touch and a possible one fails.
  */
 class Scripted extends GestureRecognizer {
+  // A discrete one decides at the lift, as a tap does.
+  override get kind(): GestureRecognizer['kind'] {
+    return this.discrete ? 'tap' : 'pan';
+  }
+
   /** Expects more input after its touches lifted (a multi-tap between taps). */
   isWaiting = false;
   private readonly discrete: boolean;

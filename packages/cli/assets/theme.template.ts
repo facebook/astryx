@@ -217,7 +217,7 @@ export const myTheme = defineTheme({
   //   --radius-*       none · inner · element · container · page · chat · full
   //   --shadow-*       low/med/high + inset-{hover,selected,success,warning,error}
   //   --duration-*     {fast,medium,slow} × {-min, base, -max}
-  //   --ease-standard
+  //   --ease-*         standard (arriving, state) · exit (leaving)
   //   --font-family-*  body · heading · code
   //   --font-size-*    4xs … 5xl
   //   --font-weight-*  normal · medium · semibold · bold
