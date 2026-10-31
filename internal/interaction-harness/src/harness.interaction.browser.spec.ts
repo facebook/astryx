@@ -477,6 +477,14 @@ test.describe('frame evidence', () => {
     const box = page.locator('#box');
     await markElement(box, {mode: 'outline'});
     const run = async (driver: 'compositor' | 'raf') => {
+      // Judged against what the compositor presented in the same window too:
+      // a loaded runner's compositor skips frames a display-rate bound counts.
+      const control = await startBusyControl(page);
+      const cast = await startScreencast(page);
+      const compositor = await startCompositorTrace(page);
+      // Started once the control, the cast and the trace run, so the whole
+      // window lies inside its motion however long they take to start on a
+      // loaded runner.
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
@@ -497,36 +505,50 @@ test.describe('frame evidence', () => {
           requestAnimationFrame(step);
         }
       }, driver);
-      const cast = await startScreencast(page);
-      const compositor = await startCompositorTrace(page);
       await page.waitForTimeout(200);
       const window = await blockMainThread(page, 700);
       await page.waitForTimeout(200);
       const presented = await compositor.stop();
-      const tracked = await trackMarker(page, await cast.stop());
-      return {window, tracked, presented};
+      const frames = await cast.stop();
+      await control.remove();
+      const tracked = await trackMarker(page, frames);
+      const controlTracked = await trackMarker(page, frames, {
+        rgb: CONTROL_RGB,
+      });
+      return {window, tracked, presented, controlTracked};
     };
 
     const moving = await run('compositor');
     expect(moving.presented.length).toBeGreaterThan(0);
-    // The screencast as a loaded machine delivers it: four frames in a row
-    // skipped mid-block, which the compositor still presented.
-    const mid = moving.tracked.findIndex(f => f.t > moving.window.from + 350);
-    const skipped = moving.tracked.filter((_, i) => i < mid || i >= mid + 4);
+    // The screencast as a loaded machine delivers it: every frame of 200 ms
+    // mid-block skipped, which the compositor still presented. 200 ms is more
+    // than the stall bound's three intervals at any cast rate the proof
+    // judges, so without the record the gap is a stall.
+    const from = moving.window.from + 250;
+    const to = from + 200;
+    const kept = (f: {t: number}) => f.t <= from || f.t > to;
+    const skipped = moving.tracked.filter(kept);
     const alone = busyWindowProof(skipped, moving.window, {axis: 'y'});
     expect(alone.verdict.failures.join('\n'), alone.summary).toMatch(
       /longest stall/,
     );
+    // The control is read from the same frames, so it misses the same ones.
     const proof = busyWindowProof(skipped, moving.window, {
       axis: 'y',
       presented: moving.presented,
+      control: moving.controlTracked.filter(kept),
     });
     testInfo.annotations.push({
       type: 'busy-main-thread compositor record',
       description: proof.summary,
     });
     expect(proof.verdict.failures, proof.summary).toEqual([]);
-    expect(proof.recorderSkipped).toBeGreaterThanOrEqual(4);
+    // The record excused frames the screencast skipped: the compositor
+    // presented frames in the dropped span.
+    expect(
+      moving.presented.filter(t => t > from && t <= to).length,
+    ).toBeGreaterThan(0);
+    expect(proof.recorderSkipped).toBeGreaterThan(0);
 
     // A rAF animation presents no change for the whole block: the record
     // excuses nothing, whatever the compositor drew meanwhile.
@@ -539,8 +561,10 @@ test.describe('frame evidence', () => {
       type: 'busy-main-thread rAF control, compositor record',
       description: `${still.summary}; compositor frames inside the block: ${frozen.presented.filter(t => t > frozen.window.from && t < frozen.window.to).length}`,
     });
+    // The freeze is still a stall with the record: it excused nothing that
+    // the element did not present (a skip outside the block, on a loaded
+    // runner, is the record's to excuse).
     expect(still.verdict.pass).toBe(false);
-    expect(still.recorderSkipped).toBe(0);
     expect(still.verdict.failures.join('\n')).toMatch(/longest stall/);
   });
 
