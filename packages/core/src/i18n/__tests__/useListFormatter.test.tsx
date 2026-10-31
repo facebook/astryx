@@ -25,7 +25,9 @@ function wrapperFor(locale: string) {
 }
 
 const oracle = (locale: string, list: string[]) =>
-  new Intl.ListFormat(locale, {type: 'unit', style: 'short'}).format(list);
+  new Intl.ListFormat(locale, {type: 'conjunction', style: 'narrow'}).format(
+    list,
+  );
 
 describe('useListFormatter', () => {
   test('joins with the en fallback when rendered without a provider', () => {
@@ -35,14 +37,14 @@ describe('useListFormatter', () => {
 
   test('joins in the provider locale', () => {
     const three = ['un', 'deux', 'trois'];
-    const {result: fr} = renderHook(() => useListFormatter(), {
-      wrapper: wrapperFor('fr-FR'),
+    const {result: zh} = renderHook(() => useListFormatter(), {
+      wrapper: wrapperFor('zh-CN'),
     });
     const {result: en} = renderHook(() => useListFormatter(), {
       wrapper: wrapperFor('en'),
     });
-    expect(fr.current(three)).toBe(oracle('fr-FR', three));
-    expect(fr.current(three)).not.toBe(en.current(three));
+    expect(zh.current(three)).toBe(oracle('zh-CN', three));
+    expect(zh.current(three)).not.toBe(en.current(three));
   });
 
   test('keeps the same function while the locale is unchanged', () => {

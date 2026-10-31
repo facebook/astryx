@@ -24,15 +24,18 @@ import {use, useMemo} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
 
 /**
- * Returns a function that joins items as a unit list (`a, b, c` in English)
- * for the active provider locale, memoized while the locale is unchanged.
+ * Returns a function that joins items as a narrow conjunction list (`a, b, c`
+ * in English) for the active provider locale, memoized while the locale is
+ * unchanged. The narrow conjunction separates items in every shipped locale,
+ * including whole sentences, where a unit list runs them together in some
+ * (no separator in zh-CN, only a space in ja-JP).
  */
 export function useListFormatter(): (items: ReadonlyArray<string>) => string {
   const ctx = use(InternationalizationContext);
   return useMemo(() => {
     const format = new Intl.ListFormat(ctx.locale, {
-      type: 'unit',
-      style: 'short',
+      type: 'conjunction',
+      style: 'narrow',
     });
     return (items: ReadonlyArray<string>) => format.format(items);
   }, [ctx.locale]);

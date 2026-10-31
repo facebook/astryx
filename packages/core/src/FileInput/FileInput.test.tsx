@@ -530,6 +530,40 @@ describe('FileInput', () => {
       ]);
     });
 
+    it('separates the rejected files in a locale whose unit list would run them together', async () => {
+      render(
+        <InternationalizationProvider
+          locale="zh-CN"
+          overrides={{
+            'zh-CN': {
+              '@astryx.fileInput.errorInvalidType': '“{fileName}”类型不受支持',
+              '@astryx.fileInput.errorMaxSize': '“{fileName}”超过 {maxSize}',
+            },
+          }}>
+          <FileInput
+            label="报告"
+            value={null}
+            onChange={() => {}}
+            isMultiple
+            accept=".pdf"
+            maxSize={1024}
+          />
+        </InternationalizationProvider>,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {
+          files: [createFile('photo.png', 100), createFile('large.pdf', 4096)],
+        },
+      });
+      await waitFor(() => {
+        const status = document.querySelector('.astryx-field-status');
+        // The two messages are separated (、), not run together.
+        expect(status?.textContent).toMatch(
+          /“photo\.png”类型不受支持、“large\.pdf”超过 /,
+        );
+      });
+    });
+
     it('announces a validation error exactly once across live regions', async () => {
       render(
         <FileInput
