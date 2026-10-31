@@ -35,15 +35,15 @@ system_specs: [spec:AST-094, spec:AST-107]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes. ContextMenu takes caller `children` as the Trigger area, data-driven `items` or compound `menuContent`, `label`, `presentation`, `isDisabled`, and `triggerAs`.                                                               |
-| Behavior                | Right-click, Shift+F10 or the Menu key, and a touch long press open a menu at the cursor (or the trigger's bottom-left from the keyboard), or a bottom sheet; rows follow DropdownMenu's rows and press model.                              |
-| End-user impact         | People reach a region's actions by mouse, keyboard, or a held finger; a sub-menu drills in on a phone. Under a finger the menu does not grow from where it was opened or lift its trigger, and a scroll that starts outside leaves it open. |
-| Builder impact          | Builders wrap any region, including an inline reference in prose (`triggerAs="span"`).                                                                                                                                                      |
-| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. The touch grow, pan dismissal, and trigger lift (FR5) are listed under Current-state impact.                                                                                      |
-| Review checks           | Reject a trigger that gains a role or `aria-haspopup`, a menu that bypasses the shared Escape stack, a `context-menu` target moved off the painted surface, or behavior beside the headless factory's.                                      |
-| Governing rules         | `spec:AST-107` FR8; `spec:AST-094` FR26–FR35; `module:DropdownMenu/useMenuPress`; `family:overlay-dismissal`; `architecture:component-theming-surface`; `architecture:layer-runtime`.                                                       |
+| Area                    | Contract                                                                                                                                                                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes. ContextMenu takes caller `children` as the Trigger area, data-driven `items` or compound `menuContent`, `label`, `presentation`, `isDisabled`, and `triggerAs`.                                                                                    |
+| Behavior                | Right-click, Shift+F10 or the Menu key, and a touch long press open a menu at the cursor (or the trigger's bottom-left from the keyboard), or a bottom sheet; rows follow DropdownMenu's rows and press model.                                                   |
+| End-user impact         | People reach a region's actions by mouse, keyboard, or a held finger; a sub-menu drills in on a phone. Under a finger the menu does not grow from where it was opened or lift its trigger, and a scroll that starts outside leaves it open.                      |
+| Builder impact          | Builders wrap any region, including an inline reference in prose (`triggerAs="span"`).                                                                                                                                                                           |
+| Compatibility/readiness | Records shipped behavior; no API or DOM change; the released default under a finger moves as `spec:AST-094` FR25 lists, with `presentation=\"popover\"` keeping it. The touch grow, pan dismissal, and trigger lift (FR5) are listed under Current-state impact. |
+| Review checks           | Reject a trigger that gains a role or `aria-haspopup`, a menu that bypasses the shared Escape stack, a `context-menu` target moved off the painted surface, or behavior beside the headless factory's.                                                           |
+| Governing rules         | `spec:AST-107` FR8; `spec:AST-094` FR26–FR35; `module:DropdownMenu/useMenuPress`; `family:overlay-dismissal`; `architecture:component-theming-surface`; `architecture:layer-runtime`.                                                                            |
 
 This table is a review projection; the body below is authoritative.
 
@@ -54,12 +54,13 @@ cursor-positioned pointer menu or a BottomSheet-hosted touch action list.
 
 ## Compatibility and migration
 
-- Released default preserved: yes
-- Compatibility class: records shipped behavior; no public prop, default,
-  export, or DOM change
+- Released default preserved: `no` under a finger: the omitted `presentation`
+  follows `spec:AST-094` FR31–FR33 (FR5); `presentation="popover"` keeps the
+  released menu (`spec:AST-094` FR25)
+- Compatibility class: records shipped behavior; no public prop, export, or
+  DOM change
 - Controlled/uncontrolled behavior: internally managed open state
-- Migration decision: none; a caller that needs the released menu under a
-  finger passes `presentation="popover"` (`spec:AST-094` FR25)
+- Migration decision: `spec:AST-094` FR25
 
 Consumer migration instructions belong in consumer docs and release notes.
 
