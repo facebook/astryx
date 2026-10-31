@@ -71,6 +71,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   owned by the product callsite.
 - Whether an individual key badge should gain a public target — open (OQ1).
 - Listening for or handling the shortcut — not provided; Kbd is display only.
+- Caller DOM props, `ref`, `className`, `style`, and `xstyle` on the group —
+  shipped and documented, uncontracted here beyond FR4's role and label
+  precedence.
 
 ## Public concepts
 
@@ -160,6 +163,7 @@ target.
 | FR2                 | `Kbd.test.tsx` theme-class case                                                                                                                      | Root target and child badges              | A missing root target fails the class assertion.                                                                                                  | `audit:Kbd/theming`       |
 | FR3, FR4            | `Kbd.test.tsx` glyph, platform, accessible-name, override, and localization cases ("localizes visible key text and the spoken shortcut combination") | Mac and non-Mac; special and unknown keys | A wrong glyph, an exposed badge, an overridable name, or text that skips the catalog fails.                                                       | `audit:Kbd/accessibility` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                        | Canonical anatomy and targets             | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                             | `audit:Kbd/theming`       |
+| ORD1, PR1, AR1, AR2 | ORD1 is covered by the FR1 and FR3 rows and AR1 and AR2 by the FR3, FR4 row. Evidence gap: no test asserts the absence of listeners                  | —                                         | —                                                                                                                                                 | `audit:Kbd/behavior`      |
 
 ## Current-state impact
 
