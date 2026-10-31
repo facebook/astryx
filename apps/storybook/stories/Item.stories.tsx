@@ -11,6 +11,7 @@ import {useState, type ReactNode} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {expect} from 'storybook/test';
 import {Item} from '@astryxdesign/core/Item';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -51,6 +52,8 @@ import {
   ArchiveBoxIcon,
   EnvelopeIcon,
   TrashIcon,
+  ShareIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Item> = {
@@ -318,6 +321,55 @@ export const SearchResults: Story = {
         href="/docs/button-group"
       />
     </Stack>
+  ),
+};
+
+/**
+ * Rows holding a control of their own in `endContent`: a row with an action
+ * rings for that action, a row without one draws no ring, and the end
+ * control rings itself, so each tab stop shows one focus ring.
+ */
+export const WithEndActions: Story = {
+  render: () => (
+    <div style={{maxWidth: 420}}>
+      <Item
+        label="Quarterly report"
+        description="Opens the report"
+        onClick={() => {}}
+        endContent={
+          <IconButton
+            label="Share Quarterly report"
+            icon={<Icon icon={ShareIcon} />}
+            variant="ghost"
+            size="sm"
+          />
+        }
+      />
+      <Item
+        label="Archived notes"
+        description="No row action"
+        endContent={
+          <IconButton
+            label="Restore Archived notes"
+            icon={<Icon icon={ArrowUturnLeftIcon} />}
+            variant="ghost"
+            size="sm"
+          />
+        }
+      />
+    </div>
+  ),
+};
+
+/** Numbered rows with their own action: the marker sits beside the row. */
+export const NumberedWithActions: Story = {
+  render: () => (
+    <div style={{maxWidth: 420}}>
+      <List listStyle="decimal">
+        <ListItem label="Open the report" onClick={() => {}} />
+        <ListItem label="Read the summary" href="#summary" />
+      </List>
+    </div>
   ),
 };
 

@@ -42,7 +42,11 @@ export interface TokenLinkProps extends HTMLAttributes<HTMLElement> {
   /** Resolved link component (native `<a>` or a router link). */
   LinkComponent: LinkComponentType;
   /** `stylex.props()` output applied to the invisible inner link. */
-  linkStyleProps: {className?: string; style?: CSSProperties};
+  linkStyleProps: {
+    className?: string;
+    style?: CSSProperties;
+    'data-astryx-focus-owner'?: string;
+  };
   /** Visible (or visually hidden) label node rendered inside the link. */
   labelContent: ReactNode;
   /** Optional leading icon. */
