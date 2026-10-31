@@ -943,9 +943,18 @@ jobs:
 
       # The story-tree check reads the built index and skips without one, so it
       # runs here, where Storybook was just built (apps/storybook/README.md).
+      # This job builds the pull request's head, and a head that predates the
+      # check carries the earlier test, which also rejects the A11y/ fixture
+      # root; such a head skips the check, visibly, until it merges main.
       - name: Check the story tree
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm exec vitest run --project node apps/storybook/.storybook/story-tree.test.ts
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
+        run: |
+          STORY_TREE_TEST=apps/storybook/.storybook/story-tree.test.ts
+          if ! grep -q 'FIXTURE_ROOT' "$STORY_TREE_TEST"; then
+            echo "::notice title=Head predates the story-tree check::Skipping the story-tree check; merge main to run it."
+            exit 0
+          fi
+          pnpm exec vitest run --project node "$STORY_TREE_TEST"
 
       - name: Stamp Storybook source revision
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true' && steps.scope.outputs.tooling_only != 'true'
