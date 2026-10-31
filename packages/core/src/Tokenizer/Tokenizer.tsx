@@ -1214,18 +1214,23 @@ export function Tokenizer<T extends SearchableItem>({
   );
 
   // Handle clearing all items
-  const handleClearAll = useCallback(() => {
-    if (isDisabled || value.length === 0) {
-      return;
-    }
-    // Report the last item as removed (convention)
-    const lastItem = value[value.length - 1];
-    onChange([], {item: lastItem, type: 'remove'});
-    // Focus moves to the input, so the emptied selection is announced, in
-    // the sheet's words (component:Tokenizer AR6; WCAG 4.1.3).
-    announce(t('@astryx.tokenizer.allRemoved'));
-    inputRef.current?.focus();
-  }, [value, onChange, isDisabled, announce, t]);
+  const handleClearAll = useCallback(
+    (options?: {silent?: boolean}) => {
+      if (isDisabled || value.length === 0) {
+        return;
+      }
+      // Report the last item as removed (convention)
+      const lastItem = value[value.length - 1];
+      onChange([], {item: lastItem, type: 'remove'});
+      // Focus moves to the input, so the emptied selection is announced, in
+      // the sheet's words (WCAG 4.1.3). The sheet announces its own Clear all.
+      if (!options?.silent) {
+        announce(t('@astryx.tokenizer.allRemoved'));
+      }
+      inputRef.current?.focus();
+    },
+    [value, onChange, isDisabled, announce, t],
+  );
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
@@ -1628,7 +1633,7 @@ export function Tokenizer<T extends SearchableItem>({
               emptySearchText={emptySearchText}
               onAdd={handleAdd}
               onRemove={handleRemove}
-              onClearAll={handleClearAll}
+              onClearAll={() => handleClearAll({silent: true})}
               onChangeQuery={handleSheetQueryChange}
             />
           )}
