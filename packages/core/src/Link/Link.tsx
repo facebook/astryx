@@ -86,6 +86,15 @@ const styles = stylex.create({
     padding: 0,
     pointerEvents: 'auto',
     position: 'relative',
+    // A browser's stylesheet resets these text properties on a <button>; the
+    // anchor form inherits them from the surrounding text, so this form does
+    // too. Its text-indent stays reset: inherited, it would indent the words
+    // inside the button's own box.
+    letterSpacing: 'inherit',
+    wordSpacing: 'inherit',
+    textTransform: 'inherit',
+    textShadow: 'inherit',
+    textAlign: 'inherit',
   },
   hasUnderline: {
     textDecoration: 'underline',
